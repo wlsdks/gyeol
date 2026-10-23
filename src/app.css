@@ -234,6 +234,13 @@ select {
   align-self: flex-start;
 }
 
+/* 넷처럼 한 줄에 다 들어가지 않는 선택지는 어중간하게 줄바꿈하지 않고 두 줄 두 칸으로 */
+.seg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
 .seg-btn {
   height: 30px;
   padding: 0 14px;
@@ -2020,6 +2027,17 @@ select {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px 12px;
+}
+
+.ins-group + .ins-group {
+  margin-top: 22px;
+}
+
+.ins-group-h {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .ins-layout {

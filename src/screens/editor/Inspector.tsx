@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
-import { highlightOf, LAYOUTS, LAYOUT_ORDER, variantOf } from '../../deck/layouts'
+import { highlightOf, LAYOUTS, LAYOUT_GROUPS, variantOf } from '../../deck/layouts'
 import { isDarkLook, MOTIONS, motionOf, toneOf, TONES } from '../../deck/themes'
 import type { Deck, LayoutId, Motion, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
@@ -130,7 +130,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
         )}
         <div className="ins-row ins-row-wrap">
           <span className="ins-label">움직임</span>
-          <div className="seg seg-wrap" role="group" aria-label="이 장의 움직임">
+          <div className="seg seg-grid" role="group" aria-label="이 장의 움직임">
             {[{ id: undefined, name: '전체 설정' }, ...MOTIONS].map((m) => {
               const on = (slide.options.motion ?? undefined) === m.id
               return (
@@ -158,11 +158,16 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
       <section className="ins-sec">
         <h2 className="ins-h">레이아웃 바꾸기</h2>
         <p className="ins-note">지금 쓴 내용 그대로 모양만 바뀌어요.</p>
-        <div className="ins-layouts">
-          {LAYOUT_ORDER.map((id) => (
-            <LayoutChoice key={id} id={id} name={LAYOUTS[id].name} look={look} slide={slide} on={slide.layout === id} onPick={() => changeLayout(slide.id, id)} />
-          ))}
-        </div>
+        {LAYOUT_GROUPS.map((g) => (
+          <div key={g.name} className="ins-group" role="group" aria-label={g.name}>
+            <p className="ins-group-h">{g.name}</p>
+            <div className="ins-layouts">
+              {g.layouts.map((id) => (
+                <LayoutChoice key={id} id={id} name={LAYOUTS[id].name} look={look} slide={slide} on={slide.layout === id} onPick={() => changeLayout(slide.id, id)} />
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="ins-sec">
