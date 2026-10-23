@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { readField, visibleItems } from '../deck/fields'
 import { highlightOf, hintFor } from '../deck/layouts'
-import type { LayoutId, Slide } from '../deck/types'
+import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
-import { formatNumber, parseDelta, parseNumber } from './numbers'
+import { formatNumber, isNumericCell, parseDelta, parseNumber } from './numbers'
 import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
 
 function Head({ lead = false }: { lead?: boolean }) {
@@ -515,6 +515,56 @@ function Bridge() {
   )
 }
 
+/** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값, 기본 너비 */
+const TABLE_COLS: { head: string; key: ItemKey; fr: number }[] = [
+  { head: 'h1', key: 'title', fr: 1.3 },
+  { head: 'h2', key: 'meta', fr: 1 },
+  { head: 'h3', key: 'value', fr: 0.9 },
+  { head: 'h4', key: 'body', fr: 1.8 },
+]
+
+function Table() {
+  const { slide, meta, mode } = useSlide()
+  const items = useItems()
+  const highlight = highlightOf(slide)
+  // 발표할 때는 머리말도 칸도 비어 있는 칸을 뺀다. 편집할 때는 채울 수 있게 모두 보인다.
+  const cols = TABLE_COLS.filter(
+    (c, i) => i === 0 || mode !== 'final' || readField(slide, meta, c.head).trim() || items.some((it) => it[c.key].trim()),
+  )
+  const numeric = (key: ItemKey) => {
+    const filled = items.map((it) => it[key].trim()).filter(Boolean)
+    return filled.length > 0 && filled.every(isNumericCell)
+  }
+  const style = { '--cols': cols.map((c) => `minmax(0, ${c.fr}fr)`).join(' ') } as CSSProperties
+  return (
+    <>
+      <Head />
+      <div className="s-body tb" data-n={items.length} style={style}>
+        <div className="tb-row tb-headrow">
+          {cols.map((c) => (
+            <T key={c.head} k={c.head} as="span" className={cx('tb-h', numeric(c.key) && 'is-num')} />
+          ))}
+        </div>
+        {items.map((it, i) => (
+          <div key={it.id} className={cx('it tb-row', highlight === i && 'is-hl')}>
+            {cols.map((c) => (
+              <IT
+                key={c.key}
+                i={i}
+                k={c.key}
+                className={cx('tb-cell', c.key === 'title' && 'tb-first', numeric(c.key) && 'is-num')}
+                multiline={c.key === 'body'}
+              />
+            ))}
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
 /** 2×2: 세로 기준(위로 갈수록)과 가로 기준(오른쪽으로 갈수록)으로 나눈 네 칸. 항목 순서는 왼쪽 위부터 글 읽는 순서. */
 function Matrix() {
   const { slide } = useSlide()
@@ -577,6 +627,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   kpi: Kpi,
   scorecard: Scorecard,
   bridge: Bridge,
+  table: Table,
   points: Points,
   compare: Compare,
   matrix: Matrix,

@@ -57,6 +57,27 @@ function extraSlides(): Slide[] {
         source: '영업관리 시스템, 9월 말 기준',
       },
     ),
+    withOptions(withItems(
+      makeSlide('table'),
+      [
+        { title: '견적 양식 통일', meta: '영업기획팀', value: '11월', body: '팀마다 다른 양식을 하나로' },
+        { title: '단가표 공유', meta: '구매팀', value: '12월', body: '분기마다 새로 올림' },
+        { title: '승인 단계 줄이기', meta: '영업본부', value: '1월', body: '세 단계를 두 단계로' },
+        { title: '효과 점검', meta: '영업기획팀', value: '2월', body: '견적 한 건에 드는 시간을 다시 잼' },
+      ],
+      { title: '네 가지를 2월까지 끝내요', h1: '과제', h2: '담당', h3: '기한', h4: '비고' },
+    ), { highlight: 0 }),
+    withItems(
+      makeSlide('table'),
+      [
+        { title: '수도권', meta: '58억 원', value: '+14%', body: '신규 고객 2곳' },
+        { title: '충청권', meta: '31억 원', value: '+6%' },
+        { title: '영남권', meta: '27억 원', value: '−3%', body: '큰 계약 1건이 4분기로' },
+        { title: '호남권', meta: '15억 원', value: '+2%' },
+        { title: '합계', meta: '131억 원', value: '+7%' },
+      ],
+      { title: '수도권이 전체 성장을 이끌었어요', h1: '권역', h2: '3분기 매출', h3: '지난해보다', h4: '비고', source: '영업관리 시스템, 9월 말 기준' },
+    ),
     withItems(
       makeSlide('matrix'),
       [

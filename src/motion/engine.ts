@@ -395,6 +395,13 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), end + 200)
         break
       }
+      case 'table': {
+        const t = head()
+        fade(one('.tb-headrow'), t, 500)
+        const end = items('.tb-row.it', t + 120, (el, at) => rise(el, at, L.y * 0.5), L.step * 0.8)
+        fade(one('.s-source'), end + 200)
+        break
+      }
       case 'matrix': {
         const t = head()
         const grid = one('.mx-grid')

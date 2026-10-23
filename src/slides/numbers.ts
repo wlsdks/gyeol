@@ -19,3 +19,14 @@ export function parseDelta(text: string): number {
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(n)
 }
+
+const NUMERIC_CELL = /^[+\-−–▲▼△]?\s?[\d.,]+\s?(%p?|배|건|명|곳|개|점|원|[천만억조]\s?원?|시간|kg|톤)?$/
+
+/**
+ * 짧은 숫자만 든 칸(금액, 비율, 건수). 표에서 이런 칸만 오른쪽에 맞춰 자릿수가 줄을 맞추게 한다.
+ * '11월', '3분기' 같은 날짜와 시기는 글로 본다.
+ */
+export function isNumericCell(text: string): boolean {
+  const t = text.trim()
+  return t.length > 0 && t.length <= 12 && NUMERIC_CELL.test(t)
+}

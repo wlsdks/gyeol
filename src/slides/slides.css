@@ -99,7 +99,7 @@
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
     .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
-    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta
+    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -2076,6 +2076,79 @@
 .wf.is-demo .wf-val > :not(.ed),
 .wf.is-demo .wf-end .wf-val {
   opacity: 0.45;
+}
+
+/* ---------- 표 ----------
+   면 없이 줄로만. 머리 아래 굵은 줄, 첫째 칸은 굵게. 칸 너비는 보이는 칸만으로 --cols 에 받는다. */
+
+.tb {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tb-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--cols);
+  column-gap: 48px;
+  align-items: baseline;
+  padding: 30px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tb-headrow {
+  padding-top: 0;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.tb-h {
+  color: var(--ink-3);
+  font-size: calc(var(--t-label) * var(--scale, 1));
+  font-weight: 600;
+}
+
+.tb-cell {
+  --fs: 34px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.tb:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4']) .tb-row:not(.tb-headrow) {
+  padding-block: 36px;
+}
+
+.tb-first {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tb :is(.tb-h, .tb-cell).is-num {
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tb-cell.is-num {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tb-row.is-hl {
+  background: var(--accent-soft);
+}
+
+.tb-row.is-hl .tb-first {
+  color: var(--accent);
+}
+
+.tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
+  padding-block: 20px;
+}
+
+.tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-cell {
+  --fs: 30px;
 }
 
 /* ---------- 2×2 우선순위 ---------- */
