@@ -121,7 +121,7 @@
 }
 
 .slide .one-line {
-  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1)), calc(100cqi / var(--units, 1)));
+  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1)), calc(100cqi / (var(--units, 1) * var(--glyph-k, 1))));
   white-space: nowrap;
 }
 

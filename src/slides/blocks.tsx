@@ -123,7 +123,9 @@ function Delta() {
       <div className="bk-dl-row">
         <div className="bk-dl-side bk-dl-from">
           <span className="bk-dl-k">전</span>
-          <T k="before" className="bk-dl-v" oneLine />
+          <div className="bk-dl-vbox">
+            <T k="before" className="bk-dl-v" oneLine />
+          </div>
         </div>
         <span className="bk-dl-arrow" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -132,7 +134,9 @@ function Delta() {
         </span>
         <div className="bk-dl-side bk-dl-to">
           <span className="bk-dl-k">후</span>
-          <T k="after" className="bk-dl-v" oneLine />
+          <div className="bk-dl-vbox">
+            <T k="after" className="bk-dl-v" oneLine />
+          </div>
         </div>
       </div>
       <div className="bk-dl-foot">
@@ -163,10 +167,16 @@ function Goal() {
         <span className="bk-gl-fill" />
       </div>
       <p className="bk-gl-of">
-        <T k="value" as="span" className="bk-gl-v" />
+        <span className="bk-gl-num">
+          <T k="value" as="span" className="bk-gl-v" />
+          {/* 단위는 한 번만 적고 실적과 목표에 같이 붙인다 */}
+          {mode !== 'edit' && read('unit').trim() && <span className="bk-gl-vu">{read('unit')}</span>}
+        </span>
         <span className="bk-gl-sep">/ 목표</span>
-        <T k="target" as="span" className="bk-gl-t" />
-        {(mode !== 'final' || read('unit').trim()) && <T k="unit" as="span" className="bk-gl-u" />}
+        <span className="bk-gl-num">
+          <T k="target" as="span" className="bk-gl-t" />
+          {(mode !== 'final' || read('unit').trim()) && <T k="unit" as="span" className="bk-gl-u" />}
+        </span>
       </p>
       <T k="note" className="bk-gl-n" multiline />
     </div>

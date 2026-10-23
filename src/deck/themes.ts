@@ -167,9 +167,10 @@ export function accentOf(deckTheme: Deck['theme']): string {
   return deckTheme.accent || THEMES[deckTheme.id].accent
 }
 
-const FONT_LOOK: Record<FontId, { font: string; weight: number; tracking: string }> = {
-  sans: { font: SANS, weight: 700, tracking: '-0.022em' },
-  serif: { font: SERIF, weight: 600, tracking: '-0.012em' },
+/** glyph: 한 줄로 줄이는 글(숫자 등)의 글자 폭이 고딕(textUnits의 기준)보다 얼마나 넓은지. 명조는 숫자와 %가 넓다 */
+const FONT_LOOK: Record<FontId, { font: string; weight: number; tracking: string; glyph: number }> = {
+  sans: { font: SANS, weight: 700, tracking: '-0.022em', glyph: 1 },
+  serif: { font: SERIF, weight: 600, tracking: '-0.012em', glyph: 1.15 },
 }
 
 /** 테마가 원래 쓰는 글꼴 */
@@ -262,5 +263,6 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--head-weight': f.weight,
     '--display-weight': f.weight + 100,
     '--head-tracking': f.tracking,
+    '--glyph-k': f.glyph,
   } as CSSProperties
 }

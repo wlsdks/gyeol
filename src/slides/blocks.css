@@ -384,20 +384,32 @@
 .bk-dl-row {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 1fr);
+  /* 이름표(전, 후)는 한 줄에, 값은 아래 줄에서 글자 밑줄을 맞춘다 */
+  grid-template-rows: auto auto;
   align-items: end;
-  gap: 28px;
+  gap: 4px 28px;
+  /* 넓은 칸에서 전과 후가 멀리 떨어지지 않게 */
+  max-width: 1040px;
   margin-top: 24px;
 }
 
 .bk-dl-side {
+  display: grid;
+  grid-row: 1 / span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
+
+/* 값은 이 칸 너비에 맞춰 한 줄로 줄어든다. 재는 칸(container)은 부모 줄을 나눠 쓸 수 없어서(subgrid) 값만 감싼다 */
+.bk-dl-vbox {
   container-type: inline-size;
+  align-self: end;
   min-width: 0;
 }
 
 .bk-dl-k {
   --fs: var(--t-small);
   display: block;
-  margin-bottom: 4px;
   color: var(--ink-3);
   font-weight: 600;
 }
@@ -411,6 +423,14 @@
   line-height: 1.05;
 }
 
+.bk-dl-from {
+  grid-column: 1;
+}
+
+.bk-dl-to {
+  grid-column: 3;
+}
+
 .bk-dl-from .bk-dl-v {
   --fs: 76px;
   color: var(--ink-3);
@@ -421,6 +441,8 @@
 }
 
 .bk-dl-arrow {
+  grid-row: 2;
+  grid-column: 2;
   display: grid;
   place-items: center;
   width: 64px;
@@ -541,9 +563,20 @@
   --fs: var(--t-small);
 }
 
-.bk-gl-v {
+.bk-gl-v,
+.bk-gl-vu {
   color: var(--ink);
   font-weight: 700;
+}
+
+/* 숫자와 단위는 붙여 쓴다 (10억 원) */
+.bk-gl-num {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.m-edit .bk-gl-num {
+  gap: 20px;
 }
 
 .bk-gl-n {
@@ -551,6 +584,19 @@
   margin-top: 10px;
   color: var(--ink-3);
   line-height: 1.45;
+}
+
+/* 큰 칸에 혼자 있는 숫자, 강조 상자, 인용은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게) */
+@container bk (min-width: 1100px) and (min-height: 380px) {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-callout, .bk-quote) > .bk-in {
+    --bk-w: 1.2;
+  }
+}
+
+@container bk (min-width: 1300px) and (min-height: 500px) {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-callout, .bk-quote) > .bk-in {
+    --bk-w: 1.36;
+  }
 }
 
 /* ---------- 그림 ---------- */
@@ -582,6 +628,7 @@
 
 .bk-area.is-empty {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   border: 3px dashed color-mix(in srgb, var(--ink) 18%, transparent);
   border-radius: var(--r-panel);

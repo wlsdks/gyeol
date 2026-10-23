@@ -19,12 +19,13 @@ function fitClass(text: string, fit?: Fit): string {
 export function textUnits(text: string): number {
   let w = 0
   for (const ch of text) {
-    if (/[\u3130-\u318f\uac00-\ud7a3\u4e00-\u9fff]/.test(ch)) w += 0.88
-    else if (/[0-9]/.test(ch)) w += 0.58
-    else if (/[A-Z%]/.test(ch)) w += ch === '%' ? 0.82 : 0.66
-    else if (/[a-z]/.test(ch)) w += 0.52
-    else if (/[.,:;'!|]/.test(ch)) w += 0.24
-    else if (/\s/.test(ch)) w += 0.22
+    // 고딕 굵은 글씨, 고정폭 숫자(tabular-nums)를 재어 본 폭 (em)
+    if (/[\u3130-\u318f\uac00-\ud7a3\u4e00-\u9fff]/.test(ch)) w += 0.86
+    else if (/[0-9]/.test(ch)) w += 0.64
+    else if (/[A-Z%]/.test(ch)) w += ch === '%' ? 0.96 : 0.66
+    else if (/[a-z]/.test(ch)) w += 0.54
+    else if (/[.,:;'!|]/.test(ch)) w += 0.26
+    else if (/\s/.test(ch)) w += 0.26
     else w += 0.6
   }
   return Math.max(1, w * 1.04)
