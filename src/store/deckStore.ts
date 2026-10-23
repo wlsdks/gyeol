@@ -36,6 +36,7 @@ interface DeckState {
   setOptions(slideId: string, options: SlideOptions): void
   setHidden(slideId: string, hidden: boolean): void
   changeLayout(slideId: string, layout: LayoutId): void
+  setVariant(slideId: string, variant: string): void
 
   /** 되돌리기 기록에 남기지 않는 설정 */
   setAiShare(on: boolean): void
@@ -163,9 +164,13 @@ export const useDeck = create<DeckState>((set, get) => {
           const items = [...s.items]
           // 내용은 지우지 않는다. 최소 개수보다 적으면 빈 항목만 더한다.
           if (spec) while (items.length < spec.min) items.push(emptyItem())
-          return { ...s, layout, items, options: withDefaultOptions(layout, s.options, items.length) }
+          // 모양은 레이아웃마다 따로라서 기본 모양으로
+          return { ...s, layout, items, variant: undefined, options: withDefaultOptions(layout, s.options, items.length) }
         }),
       )
+    },
+    setVariant(slideId, variant) {
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })))
     },
 
     setAiShare(on) {

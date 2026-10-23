@@ -61,6 +61,8 @@ export interface Slide {
   guide: string
   notes: string
   options: SlideOptions
+  /** 같은 레이아웃 안의 모양. 레이아웃마다 정해 둔 것 중 하나이고, 없으면 첫째 모양 */
+  variant?: string
   hidden?: boolean
 }
 

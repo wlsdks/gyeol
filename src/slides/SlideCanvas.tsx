@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { LAYOUTS } from '../deck/layouts'
+import { LAYOUTS, variantOf } from '../deck/layouts'
 import { themeStyle } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
@@ -62,7 +62,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
       <div
-        className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`, `mo-${deck.motion ?? 'calm'}`)}
+        className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`, `mo-${deck.motion ?? 'calm'}`, `va-${variantOf(slide)}`)}
         style={themeStyle(deck.theme)}
       >
         <View />

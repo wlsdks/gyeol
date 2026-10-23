@@ -6,7 +6,7 @@
 
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
-import { LAYOUTS } from '../deck/layouts'
+import { LAYOUTS, variantIds, variantOf } from '../deck/layouts'
 import { MOTIONS, THEME_ORDER } from '../deck/themes'
 import type { Deck, Item, ItemKey, LayoutId, Motion, Slide, ThemeId } from '../deck/types'
 import { shapeDeckId, shapeSlideId } from './share'
@@ -25,7 +25,7 @@ export type Op =
   | { op: 'add_slide'; after: SlideRef | null; layout?: LayoutId; role?: string; as?: string }
   | { op: 'remove_slide'; slide: SlideRef }
   | { op: 'move_slide'; slide: SlideRef; after: SlideRef | null }
-  | { op: 'set_layout'; slide: SlideRef; layout: LayoutId }
+  | { op: 'set_layout'; slide: SlideRef; layout: LayoutId; variant?: string }
   | { op: 'set_hidden'; slide: SlideRef; hidden: boolean }
   | { op: 'set_item_count'; slide: SlideRef; count: number }
   | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; contain?: boolean }
@@ -124,7 +124,11 @@ export function parseOp(v: unknown): Op | null {
       const slide = refOrNull(v.slide)
       if (!slide) return null
       if (v.op === 'remove_slide') return only(v, ['op', 'slide']) ? { op: v.op, slide } : null
-      if (v.op === 'set_layout') return only(v, ['op', 'slide', 'layout']) && isLayout(v.layout) ? { op: v.op, slide, layout: v.layout } : null
+      if (v.op === 'set_layout') {
+        if (!only(v, ['op', 'slide', 'layout', 'variant']) || !isLayout(v.layout)) return null
+        if (v.variant !== undefined && !variantIds(v.layout).includes(v.variant as string)) return null
+        return { op: v.op, slide, layout: v.layout, variant: v.variant as string | undefined }
+      }
       if (v.op === 'set_hidden') {
         return only(v, ['op', 'slide', 'hidden']) && typeof v.hidden === 'boolean' ? { op: v.op, slide, hidden: v.hidden } : null
       }
@@ -299,11 +303,13 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         return done
       }
       case 'set_layout': {
-        if (op.layout === s.layout) return fail('no_change')
+        const variant = op.variant ?? (op.layout === s.layout ? variantOf(s) : variantIds(op.layout)[0])
+        if (op.layout === s.layout && variant === variantOf(s)) return fail('no_change')
         const items = [...s.items]
         const next = LAYOUTS[op.layout].items
         if (next) while (items.length < next.min) items.push(emptyItem())
-        put(i, { ...s, layout: op.layout, items, options: withDefaultOptions(op.layout, s.options, items.length) })
+        const keep = variant === variantIds(op.layout)[0] ? undefined : variant
+        put(i, { ...s, layout: op.layout, items, variant: keep, options: withDefaultOptions(op.layout, s.options, items.length) })
         return done
       }
       case 'set_hidden':

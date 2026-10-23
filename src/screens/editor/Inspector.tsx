@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
-import { LAYOUTS, LAYOUT_ORDER } from '../../deck/layouts'
+import { LAYOUTS, LAYOUT_ORDER, variantOf } from '../../deck/layouts'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -20,7 +20,11 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
   const changeLayout = useDeck((s) => s.changeLayout)
   const setOptions = useDeck((s) => s.setOptions)
   const setHidden = useDeck((s) => s.setHidden)
+  const setVariant = useDeck((s) => s.setVariant)
   const missing = missingFields(slide, deck.meta)
+  const variants = LAYOUTS[slide.layout].variants ?? []
+  const current = variantOf(slide)
+  const hasOptions = slide.layout === 'pricing' || slide.layout === 'bars' || slide.layout === 'imageText'
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
 
   return (
@@ -49,9 +53,25 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
         )}
       </section>
 
-      {(slide.layout === 'pricing' || slide.layout === 'bars' || slide.layout === 'imageText') && (
+      {(variants.length > 1 || hasOptions) && (
         <section className="ins-sec">
           <h2 className="ins-h">모양</h2>
+          {variants.length > 1 && (
+            <div className="ins-layouts ins-variants">
+              {variants.map((v) => (
+                <LayoutChoice
+                  key={v.id}
+                  id={slide.layout}
+                  variant={v.id}
+                  name={v.name}
+                  look={look}
+                  slide={slide}
+                  on={current === v.id}
+                  onPick={() => setVariant(slide.id, v.id)}
+                />
+              ))}
+            </div>
+          )}
           {(slide.layout === 'pricing' || slide.layout === 'bars') && (
             <div className="ins-row ins-row-wrap">
               <span className="ins-label">{slide.layout === 'pricing' ? '추천 표시' : '강조할 막대'}</span>
@@ -88,7 +108,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
         <p className="ins-note">지금 쓴 내용 그대로 모양만 바뀌어요.</p>
         <div className="ins-layouts">
           {LAYOUT_ORDER.map((id) => (
-            <LayoutChoice key={id} id={id} look={look} slide={slide} on={slide.layout === id} onPick={() => changeLayout(slide.id, id)} />
+            <LayoutChoice key={id} id={id} name={LAYOUTS[id].name} look={look} slide={slide} on={slide.layout === id} onPick={() => changeLayout(slide.id, id)} />
           ))}
         </div>
       </section>
@@ -102,12 +122,16 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
 
 function LayoutChoice({
   id,
+  variant,
+  name,
   look,
   slide,
   on,
   onPick,
 }: {
   id: LayoutId
+  variant?: string
+  name: string
   look: Pick<Deck, 'meta' | 'theme' | 'title'>
   slide: Slide
   on: boolean
@@ -119,14 +143,14 @@ function LayoutChoice({
     const want = spec ? Math.max(spec.min, slide.items.length || spec.default) : 0
     const items = [...slide.items]
     while (items.length < want) items.push(emptyItem())
-    return { ...slide, layout: id, items }
-  }, [slide, id])
+    return { ...slide, layout: id, items, variant: variant ?? (id === slide.layout ? slide.variant : undefined) }
+  }, [slide, id, variant])
   return (
     <button type="button" className={cx('ins-layout', on && 'is-on')} aria-pressed={on} onClick={onPick}>
       <ScaledSlide width={124}>
         <SlideCanvas deck={look} slide={preview} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
       </ScaledSlide>
-      <span>{LAYOUTS[id].name}</span>
+      <span>{name}</span>
     </button>
   )
 }

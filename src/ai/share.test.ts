@@ -73,7 +73,7 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'empty', 'filled', 'long', 'html-maker/shape']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape']
     expect(onlyKnownStrings(shape, words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)
     expect(onlyKnownStrings({ [SECRET]: 1 }, words)).toBe(false)

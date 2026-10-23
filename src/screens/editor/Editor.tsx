@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
-import { LAYOUTS } from '../../deck/layouts'
+import { LAYOUTS, variantOf } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
@@ -15,7 +15,7 @@ import { downloadDeckFile } from '../../store/deckFile'
 import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiShare } from '../../ai/useAiShare'
 import { AiInbox, AiMenu, AiReview } from './AiShare'
@@ -363,6 +363,8 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
   )
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
+  const variants = spec.variants ?? []
+  const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variantOf(slide)) + 1) % variants.length] : null
 
   // 테마 메뉴에서 움직임을 고르면 이 장에서 발표할 때처럼 한 번 보여 준다
   const [preview, setPreview] = useState(0)
@@ -391,6 +393,17 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
           below={
             <div className="stage-tools">
               <div className="stage-tools-l">
+                {nextVariant && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    title={`다음 모양: ${nextVariant.name}`}
+                    onClick={() => store.setVariant(slide.id, nextVariant.id)}
+                  >
+                    <ShapesIcon />
+                    다른 모양
+                  </button>
+                )}
                 {spec.items && (
                   <button type="button" className="btn btn-ghost btn-sm" disabled={!canAddItem} onClick={() => store.addItem(slide.id)}>
                     <PlusIcon />

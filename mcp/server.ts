@@ -43,7 +43,7 @@ const MESSAGES = {
 const PROTOCOL_WORDS = [
   // 모양 파일
   SHAPE_FORMAT, 'format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides',
-  'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain',
+  'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
@@ -152,7 +152,7 @@ const TOOLS = [
       '- add_slide {after: 장 id 또는 null(맨 앞), role?: 카탈로그의 역할 이름, layout?: 레이아웃 id, as?: "n1"} role이나 layout 중 하나는 있어야 한다.',
       '- remove_slide {slide} 빈 장만 지운다. 내용이 있으면 has_content로 실패하니 set_hidden을 쓴다.',
       '- move_slide {slide, after: 장 id 또는 null(맨 앞)}',
-      '- set_layout {slide, layout} 내용은 그대로 두고 모양만 바꾼다. 넘치는 항목은 숨겨질 뿐 지워지지 않는다.',
+      '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 안 비교와 막대 비교), flip?, contain?: 이미지와 설명}',

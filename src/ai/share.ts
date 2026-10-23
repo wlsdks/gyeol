@@ -6,7 +6,7 @@
 
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
-import { LAYOUTS, LAYOUT_ORDER } from '../deck/layouts'
+import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
 import { MOTIONS, THEMES, THEME_ORDER } from '../deck/themes'
 import type { Audience, Deck, DeckType, LayoutId, Method, Motion, Slide, ThemeId } from '../deck/types'
 
@@ -29,6 +29,8 @@ export interface ShapeSlide {
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
   options: { highlight?: number; flip?: boolean; contain?: boolean }
+  /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
+  variant: string
 }
 
 export interface ShapeDeck {
@@ -73,6 +75,7 @@ export function catalog() {
         id,
         name: spec.name,
         description: spec.description,
+        variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
         fields: spec.fields.map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
         items: spec.items
           ? {
@@ -201,6 +204,7 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     fields,
     items,
     options,
+    variant: variantOf(slide),
   }
 }
 
@@ -217,10 +221,11 @@ function checkStates(v: unknown, keys: string[]): boolean {
 
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options'])) return false
+  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant'])) return false
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
   if (typeof v.layout !== 'string' || !(v.layout in LAYOUTS)) return false
   const spec = LAYOUTS[v.layout as LayoutId]
+  if (!variantIds(v.layout as LayoutId).includes(v.variant as string)) return false
   if (v.role !== null && !(typeof v.role === 'string' && roleStrings().has(v.role))) return false
   if (v.section !== null && !(typeof v.section === 'string' && roleStrings().has(v.section))) return false
   if (typeof v.hidden !== 'boolean' || !isInt(v.hiddenItems, 0, 1000)) return false

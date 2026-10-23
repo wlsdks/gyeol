@@ -19,10 +19,18 @@ export interface ItemFieldSpec {
   image?: boolean
 }
 
+/** 같은 칸을 다르게 놓은 모양. 내용은 그대로 두고 배치만 바뀐다. */
+export interface VariantSpec {
+  id: string
+  name: string
+}
+
 export interface LayoutSpec {
   id: LayoutId
   name: string
   description: string
+  /** 첫째가 기본 모양. 없으면 한 가지 모양뿐 */
+  variants?: VariantSpec[]
   fields: FieldSpec[]
   items?: {
     label: string
@@ -308,4 +316,16 @@ export function hintFor(
   const spec = LAYOUTS[layout]
   if (itemKey) return spec.items?.fields.find((f) => f.key === itemKey)?.hint ?? ''
   return spec.fields.find((f) => f.key === key)?.hint ?? ''
+}
+
+/** 이 레이아웃의 모양 id들. 한 가지뿐이면 ['base'] */
+export function variantIds(layout: LayoutId): string[] {
+  return LAYOUTS[layout].variants?.map((v) => v.id) ?? ['base']
+}
+
+/** 이 장의 모양. 레이아웃에 없는 값이면 첫째 모양 */
+export function variantOf(slide: { layout: LayoutId; variant?: string }): string {
+  const variants = LAYOUTS[slide.layout].variants
+  if (!variants?.length) return 'base'
+  return variants.some((v) => v.id === slide.variant) ? slide.variant! : variants[0].id
 }

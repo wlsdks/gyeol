@@ -174,8 +174,12 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)} 지우기`, detail: '빈 장만 지워요' }
     case 'move_slide':
       return { text: `${name(op.slide)} 옮기기`, detail: op.after === null ? '맨 앞으로' : `${name(op.after)} 뒤로` }
-    case 'set_layout':
-      return { text: `${name(op.slide)} 레이아웃 바꾸기`, detail: `${slide ? LAYOUTS[slide.layout].name : '?'} → ${LAYOUTS[op.layout].name}` }
+    case 'set_layout': {
+      const variantName = (id?: string) => LAYOUTS[op.layout].variants?.find((v) => v.id === id)?.name
+      const to = op.variant && variantName(op.variant) ? `${LAYOUTS[op.layout].name}(${variantName(op.variant)})` : LAYOUTS[op.layout].name
+      if (slide && slide.layout === op.layout) return { text: `${name(op.slide)} 모양 바꾸기`, detail: to }
+      return { text: `${name(op.slide)} 레이아웃 바꾸기`, detail: `${slide ? LAYOUTS[slide.layout].name : '?'} → ${to}` }
+    }
     case 'set_hidden':
       return { text: `${name(op.slide)} ${op.hidden ? '발표에서 빼기' : '발표에 다시 넣기'}` }
     case 'set_item_count': {
