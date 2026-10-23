@@ -229,6 +229,8 @@ function Ratio() {
   const n = !ok ? 0 : exact ? total : 100
   const on = !ok ? 0 : exact ? Math.round(Math.min(Math.max(value, 0), total)) : Math.round(Math.min(1, Math.max(0, value / total)) * 100)
   const cols = n <= 10 ? n : n <= 20 ? Math.ceil(n / 2) : 20
+  // 높이가 남는 칸에서는 줄을 늘려 점을 키운다 (10개면 다섯씩 두 줄, 100개면 열씩 열 줄)
+  const tall = n <= 10 ? Math.ceil(n / 2) : n <= 20 ? Math.ceil(n / 4) : 10
   // 사람을 센 것이면 점 대신 사람 모양
   const person = /^(명|분|사람|인)$/.test(unit)
   return (
@@ -251,7 +253,11 @@ function Ratio() {
       </div>
       {n > 0 && (
         <div className="bk-rt-box" aria-hidden="true">
-          <div className="bk-rt-dots" data-kind={person ? 'person' : 'dot'} style={{ '--cols': cols, '--rows': Math.ceil(n / cols) } as CSSProperties}>
+          <div
+            className="bk-rt-dots"
+            data-kind={person ? 'person' : 'dot'}
+            style={{ '--cols': cols, '--rows': Math.ceil(n / cols), '--cols-t': tall, '--rows-t': Math.ceil(n / tall) } as CSSProperties}
+          >
             {Array.from({ length: n }, (_, i) => (
               <span key={i} className={cx('bk-rt-d', i < on && 'is-on')}>
                 {person && <PersonIcon />}
