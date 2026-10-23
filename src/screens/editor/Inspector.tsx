@@ -47,7 +47,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
         ) : (
           <ul className="ins-missing">
             {missing.map((m) => (
-              <li key={`${m.item ?? ''}${m.key}`}>
+              <li key={`${m.block ?? ''}.${m.item ?? ''}.${m.key}`}>
                 <button type="button" className="ins-missing-btn" onClick={() => onFocusField(m)}>
                   {m.label}
                 </button>
