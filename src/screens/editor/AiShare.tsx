@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
 import { shapeSlideId, toShape } from '../../ai/share'
+import { mcpCommand } from '../../ai/client'
 import type { AiShare } from '../../ai/useAiShare'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { THEMES } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { CheckIcon, CopyIcon, Popover, SparkIcon, Toggle } from '../ui'
@@ -90,9 +92,9 @@ function AiDetails({ deck, ai }: { deck: Deck; ai: AiShare }) {
       {ai.status && (
         <details className="ai-pop-more">
           <summary>Claude Code, Codex에 연결하기</summary>
-          <p className="ai-pop-step">터미널에 한 번만 입력하세요. 쓰는 쪽 하나만 하면 돼요.</p>
-          <Command label="Claude Code" text={`claude mcp add html-maker -- node "${ai.status.mcpPath}"`} />
-          <Command label="Codex" text={`codex mcp add html-maker -- node "${ai.status.mcpPath}"`} />
+          <p className="ai-pop-step">{isMac ? '터미널' : 'PowerShell'}에 한 번만 입력하세요. 쓰는 쪽 하나만 하면 돼요.</p>
+          <Command label="Claude Code" text={`claude mcp add html-maker -- ${mcpCommand(ai.status)}`} />
+          <Command label="Codex" text={`codex mcp add html-maker -- ${mcpCommand(ai.status)}`} />
           <p className="ai-pop-step">그다음 AI에게 이렇게 말해 보세요. “html-maker에 공유한 발표를 본부장 보고에 맞게 구성을 다듬어 줘”</p>
         </details>
       )}
@@ -274,7 +276,7 @@ export function AiReview({
               </li>
             ))}
           </ol>
-          <p className="air-foot">적용하기 전 지금 상태를 버전으로 남겨요. 되돌리기(⌘Z)로도 바로 돌아올 수 있어요.</p>
+          <p className="air-foot">적용하기 전 지금 상태를 버전으로 남겨요. 되돌리기({keys('mod+Z')})로도 바로 돌아올 수 있어요.</p>
         </aside>
         <div className="vpp-body air-slides">
           {applied.deck.slides.map((s, i) => {

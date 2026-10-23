@@ -5,6 +5,7 @@ import { LAYOUTS } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
+import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
 import type { SlideActions } from '../../slides/context'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
@@ -244,10 +245,10 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
 
         <div className="ed-top-r">
-          <button type="button" className="icon-btn" aria-label="되돌리기" title="되돌리기 (⌘Z)" disabled={!store.past.length} onClick={store.undo}>
+          <button type="button" className="icon-btn" aria-label="되돌리기" title={`되돌리기 (${keys('mod+Z')})`} disabled={!store.past.length} onClick={store.undo}>
             <UndoIcon />
           </button>
-          <button type="button" className="icon-btn" aria-label="다시 하기" title="다시 하기 (⇧⌘Z)" disabled={!store.future.length} onClick={store.redo}>
+          <button type="button" className="icon-btn" aria-label="다시 하기" title={`다시 하기 (${isMac ? keys('mod+shift+Z') : keys('mod+Y')})`} disabled={!store.future.length} onClick={store.redo}>
             <RedoIcon />
           </button>
           <button

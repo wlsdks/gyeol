@@ -8,7 +8,7 @@
 - 강한 카피레프트(GPL, LGPL, AGPL)나 사용 제한 라이선스(SSPL, BUSL, Elastic, 비상업 CC)는 **하나도 없습니다**.
 - 약한 카피레프트인 MPL-2.0이 하나 있지만(lightningcss), **만들 때만 쓰는 도구**이고 나눠 주는 파일에는 들어가지 않습니다.
 - 로컬 서버와 MCP 서버는 외부 패키지 없이 **Node.js 내장 기능만** 씁니다.
-- 받는 사람 PC에 필요한 것은 Node.js(MIT) 하나입니다.
+- 윈도우 배포본에는 Node.js(MIT) 공식 실행 파일을 같이 넣어서, 받는 사람이 아무것도 설치하지 않아도 됩니다.
 
 ## 나눠 주는 파일에 들어가는 것 (14개)
 
@@ -38,7 +38,7 @@
 
 | 이름 | 라이선스 | 비고 |
 |---|---|---|
-| Node.js | MIT | 받는 사람 PC에 설치 |
+| Node.js 24 (`node\node.exe`) | MIT | 윈도우 배포본에 공식 배포 파일을 고치지 않고 넣음. Node.js에 들어 있는 OpenSSL(Apache-2.0), ICU, libuv 등의 라이선스는 함께 넣는 `node\LICENSE.txt`에 모두 있음. 맥에서는 설치된 Node.js를 씀 |
 | 크롬, 엣지 | 각 회사 약관 | 사용자가 이미 쓰는 브라우저. 이 저장소가 나눠 주지 않음 |
 | Codex CLI | Apache-2.0 (오픈소스) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음 |
 | Claude Code | Anthropic 상용 약관 (오픈소스 아님) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음. 회사의 AI 도구 사용 정책을 따름 |
@@ -47,7 +47,7 @@ html-maker는 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI �
 
 ## 나눠 줄 때 지킬 것
 
-- **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.
+- **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣고, Node.js의 `LICENSE`는 `node\LICENSE.txt`로 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.
 - **글꼴(OFL-1.1):** 글꼴만 따로 팔 수 없고, 문서에 넣는 것은 자유입니다. 내보낸 HTML에는 글꼴 원작자가 미리 나눠 둔 부분 파일(unicode-range 조각)을 **고치지 않고** 넣으므로 수정본이 아니며, 'Pretendard' 예약 글꼴 이름 조항에 걸리지 않습니다. 글꼴 파일 안의 저작권 정보도 그대로 남습니다.
 
 ## 새 패키지를 넣을 때

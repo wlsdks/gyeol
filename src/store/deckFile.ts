@@ -31,11 +31,23 @@ export function decodeDeckFile(text: string): Deck | null {
   }
 }
 
-/** 윈도우와 맥 어디서나 쓸 수 있는 파일 이름 */
-export function safeFileName(title: string, fallback = '제목 없는 발표'): string {
-  // eslint-disable-next-line no-control-regex
-  const name = title.replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim()
-  return name.slice(0, 80).trim() || fallback
+/**
+ * 윈도우와 맥 어디서나 쓸 수 있는 파일 이름.
+ * 윈도우는 경로 전체가 260자를 넘으면 못 쓰는 프로그램이 많아서, 버전 기록 폴더까지 생각해 짧게 자른다.
+ */
+export function safeFileName(title: string, fallback = '제목 없는 발표', max = 60): string {
+  const name = title
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .normalize('NFC')
+    .slice(0, max)
+    // 윈도우는 끝의 점과 빈칸을 지워 버려서 다른 파일과 이름이 겹칠 수 있다
+    .replace(/[. ]+$/, '')
+    .trim()
+  // CON, NUL, COM1 같은 이름은 윈도우에서 파일로 만들 수 없다
+  if (/^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\.|$)/i.test(name)) return `${name} 발표`
+  return name || fallback
 }
 
 /** 2026-10-23 15-12 처럼 이름순으로 정렬하면 시간순이 되는 표기 */

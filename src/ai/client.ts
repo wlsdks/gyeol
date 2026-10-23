@@ -12,6 +12,13 @@ export interface AiStatus {
   shared: string[]
   /** Claude Code, Codex 설정에 넣을 MCP 서버 파일 경로 */
   mcpPath: string
+  /** MCP 서버를 띄울 node 프로그램 경로 */
+  nodePath: string
+}
+
+/** Claude Code, Codex에 붙여 넣을 MCP 서버 실행 명령. 경로에 빈칸이 있어도 되게 따옴표로 감싼다. */
+export function mcpCommand(status: AiStatus): string {
+  return `"${status.nodePath || 'node'}" "${status.mcpPath}"`
 }
 
 async function call(path: string, init: RequestInit = {}): Promise<Response | null> {
@@ -29,7 +36,7 @@ export async function aiStatus(): Promise<AiStatus | null> {
   if (!res?.ok) return null
   try {
     const body = (await res.json()) as AiStatus & { ok?: boolean }
-    return body.ok ? { shared: body.shared ?? [], mcpPath: body.mcpPath ?? '' } : null
+    return body.ok ? { shared: body.shared ?? [], mcpPath: body.mcpPath ?? '', nodePath: body.nodePath ?? '' } : null
   } catch {
     return null
   }

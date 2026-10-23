@@ -4,6 +4,7 @@ import { pageInfo } from '../deck/fields'
 import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
+import { safeFileName } from '../store/deckFile'
 import slidesCss from '../slides/slides.css?inline'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
@@ -168,7 +169,7 @@ ${slides}
 }
 
 function fileName(title: string): string {
-  return `${title.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim() || '발표'}.html`
+  return `${safeFileName(title, '발표')}.html`
 }
 
 export async function downloadHtml(deck: Deck): Promise<void> {

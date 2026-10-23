@@ -110,6 +110,15 @@ function alreadyRunning(): Promise<boolean> {
   })
 }
 
+/** 윈도우에서 크롬, 엣지가 설치되는 곳. `start chrome`은 없을 때 오류 창을 띄워서 직접 찾는다. */
+function windowsBrowsers(): string[] {
+  const env = process.env
+  const roots = [env.PROGRAMFILES, env['PROGRAMFILES(X86)'], env.LOCALAPPDATA].filter((r): r is string => !!r)
+  const chrome = roots.map((r) => join(r, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+  const edge = roots.map((r) => join(r, 'Microsoft', 'Edge', 'Application', 'msedge.exe'))
+  return [...chrome, ...edge].filter((file) => existsSync(file))
+}
+
 /** 크롬이나 엣지로 연다. 둘 다 없으면 기본 브라우저로. */
 function openBrowser(url: string) {
   if (process.env.HTML_MAKER_NO_OPEN) return
@@ -121,10 +130,7 @@ function openBrowser(url: string) {
           ['open', [url]],
         ]
       : process.platform === 'win32'
-        ? [
-            ['cmd', ['/c', 'start', '', 'chrome', url]],
-            ['cmd', ['/c', 'start', '', 'msedge', url]],
-          ]
+        ? [...windowsBrowsers().map((exe): [string, string[]] => [exe, [url]]), ['explorer', [url]]]
         : [
             ['google-chrome', [url]],
             ['microsoft-edge', [url]],
@@ -133,19 +139,33 @@ function openBrowser(url: string) {
   const next = (i: number) => {
     if (i >= tries.length) return
     const [cmd, args] = tries[i]
-    const child = spawn(cmd, args, { stdio: 'ignore', detached: true })
+    const child = spawn(cmd, args, { stdio: 'ignore', detached: true, windowsHide: true })
     child.on('error', () => next(i + 1))
-    child.on('exit', (code) => code !== 0 && next(i + 1))
+    // explorer는 잘 열어도 1을 돌려준다
+    child.on('exit', (code) => code !== 0 && cmd !== 'explorer' && next(i + 1))
     child.unref()
   }
   next(0)
 }
 
-async function main() {
-  if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) {
-    console.error('화면 파일이 없어요. 먼저 "npm run build"를 실행해 주세요.')
-    process.exit(1)
+/**
+ * 켜지 못한 이유를 보여 주고 끝낸다. 윈도우에서는 작게 내린 창에서 돌기 때문에
+ * 바로 닫히면 이유를 볼 수 없어서, 키를 누를 때까지 창을 남긴다.
+ */
+function fail(message: string): never {
+  console.error(`\n  ${message}\n`)
+  if (process.platform === 'win32' && process.stdin.isTTY) {
+    console.error('  아무 키나 누르면 이 창이 닫혀요.')
+    process.stdin.setRawMode(true)
+    process.stdin.resume()
+    process.stdin.once('data', () => process.exit(1))
+    return undefined as never
   }
+  process.exit(1)
+}
+
+async function main() {
+  if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
   if (await alreadyRunning()) {
     console.log(`html-maker가 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
     openBrowser(ORIGIN)
@@ -153,9 +173,10 @@ async function main() {
   }
   const server = createAppServer()
   server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') console.error(`${PORT}번 포트를 다른 프로그램이 쓰고 있어요. 그 프로그램을 끄고 다시 실행해 주세요.`)
-    else console.error(err.message)
-    process.exit(1)
+    if (err.code === 'EADDRINUSE') fail(`${PORT}번 포트를 다른 프로그램이 쓰고 있어요. 그 프로그램을 끄고 다시 실행해 주세요.`)
+    // 윈도우는 Hyper-V, WSL, Docker가 포트 묶음을 미리 잡아 두면 EACCES가 난다
+    if (err.code === 'EACCES') fail(`이 PC가 ${PORT}번 포트를 쓰지 못하게 막고 있어요. 회사 IT 담당자에게 이 메시지를 보여 주세요.`)
+    fail(err.message)
   })
   server.listen(PORT, HOST, () => {
     console.log(`html-maker가 켜졌어요: ${ORIGIN}`)

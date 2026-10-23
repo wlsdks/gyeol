@@ -219,7 +219,7 @@ export interface FolderVersion {
   named: boolean
 }
 
-/** 버전 기록/<발표 파일 이름>/2026-10-23 15-12 고객 전달본.deck */
+/** 버전 기록/<발표 파일 이름>/2026-10-23 15-12 본부장 보고본.deck */
 export function writeVersionToFolder(deck: Deck, version: FolderVersion): Promise<boolean> {
   return serial(async () => {
     const dir = await readyFolder()
@@ -228,7 +228,7 @@ export function writeVersionToFolder(deck: Deck, version: FolderVersion): Promis
       const base = (await fileNameFor(dir, deck)).slice(0, -DECK_EXT.length)
       const root = await dir.getDirectoryHandle(VERSIONS_DIR, { create: true })
       const own = await root.getDirectoryHandle(base, { create: true })
-      const label = version.named ? ` ${safeFileName(version.name, '버전')}${DECK_EXT}` : AUTO_SUFFIX
+      const label = version.named ? ` ${safeFileName(version.name, '버전', 40)}${DECK_EXT}` : AUTO_SUFFIX
       await writeText(own, `${fileStamp(version.createdAt)}${label}`, encodeDeckFile(deck))
       if (!version.named) await pruneAuto(own)
       return true

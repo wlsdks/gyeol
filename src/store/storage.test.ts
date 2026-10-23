@@ -34,6 +34,11 @@ describe('작업 파일', () => {
   it('파일 이름에 쓸 수 없는 글자를 뺀다', () => {
     expect(safeFileName('예시: 한빛/제조 *제안*?')).toBe('예시 한빛 제조 제안')
     expect(safeFileName('   ')).toBe('제목 없는 발표')
+    // 윈도우에서 만들 수 없는 이름
+    expect(safeFileName('CON')).toBe('CON 발표')
+    expect(safeFileName('nul.txt')).toBe('nul.txt 발표')
+    expect(safeFileName('보고서...')).toBe('보고서')
+    expect(safeFileName('한'.normalize('NFD'))).toBe('한')
   })
 
   it('시각 표기는 이름순 정렬이 시간순이 된다', () => {

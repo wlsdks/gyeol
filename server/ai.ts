@@ -47,7 +47,8 @@ export function ensureShareDir(root: string): ShareDirs {
   const dirs = shareDirs(root)
   for (const d of [dirs.decks, dirs.requests, dirs.results]) mkdirSync(d, { recursive: true })
   const readme = join(root, '읽어 주세요.txt')
-  if (!existsSync(readme)) writeFileSync(readme, README)
+  // 윈도우 메모장이 한글을 바로 알아보게 BOM과 CRLF로 쓴다
+  if (!existsSync(readme)) writeFileSync(readme, '\uFEFF' + README.replace(/\n/g, '\r\n'))
   return dirs
 }
 
@@ -135,6 +136,8 @@ function readBody(req: IncomingMessage): Promise<string | null> {
 export interface AiSetup {
   /** MCP 서버 파일의 경로. Claude Code, Codex 설정에 넣는다. */
   mcpPath: string
+  /** MCP 서버를 띄울 node. 윈도우 배포본에는 node.exe가 들어 있어서 PATH의 node가 아닐 수 있다. */
+  nodePath?: string
 }
 
 function json(res: ServerResponse, status: number, body: unknown) {
@@ -171,7 +174,7 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
 
     if (method === 'GET' && path.join('/') === 'status') {
       const shared = existsSync(dirs.decks) ? readdirSync(dirs.decks).filter((n) => /^d[0-9a-f]{8}\.json$/.test(n)).map((n) => n.slice(0, -5)) : []
-      json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath })
+      json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath })
       return true
     }
 

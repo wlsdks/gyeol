@@ -34,6 +34,15 @@
   box-sizing: border-box;
 }
 
+/* 윈도우는 스크롤바가 자리를 차지하고 굵게 보인다. 얇게, 화면 색에 맞춰 그린다. */
+:root {
+  scrollbar-color: #c3c7ce transparent;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
 html,
 body,
 #root {
@@ -1043,6 +1052,48 @@ select {
   backdrop-filter: blur(8px);
 }
 
+/* 윈도우 노트북(1920×1080을 150%로 키운 화면)은 브라우저 안 높이가 600px 남짓이다 */
+@media (max-height: 760px) {
+  .wz-top {
+    height: 56px;
+  }
+
+  .wz-main {
+    padding-top: 20px;
+  }
+
+  .wz-h {
+    font-size: 26px;
+  }
+
+  .wz-sub {
+    margin-bottom: 22px;
+    font-size: 15px;
+  }
+
+  .wz-type {
+    padding: 18px 20px 16px;
+  }
+
+  .wz-group {
+    margin-bottom: 22px;
+  }
+
+  .wz-plan {
+    top: 12px;
+    max-height: calc(100vh - 56px - 69px - 24px);
+    overflow-y: auto;
+  }
+
+  .wz-plan-list li {
+    padding-block: 5px;
+  }
+
+  .wz-bottom {
+    padding-block: 12px;
+  }
+}
+
 /* ---------- 편집기 ---------- */
 
 .ed-app {
@@ -1252,7 +1303,9 @@ select {
   flex: 1;
   min-height: 0;
   padding: 12px 12px 4px;
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .sl > .pop-wrap {
@@ -1272,7 +1325,7 @@ select {
 .thumb {
   position: relative;
   display: grid;
-  grid-template-columns: 18px 1fr;
+  grid-template-columns: 18px minmax(0, 1fr);
   gap: 6px;
   margin-bottom: 10px;
 }
@@ -1860,6 +1913,16 @@ select {
     opacity: 0;
     transform: translateX(-28px);
   }
+}
+
+.present-blank {
+  position: fixed;
+  inset: 0;
+  background: #000;
+}
+
+.present-blank.is-white {
+  background: #fff;
 }
 
 .present-bar {
