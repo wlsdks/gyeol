@@ -1,0 +1,173 @@
+/* 편집기에서만 쓰는 슬라이드 표시. 내보낸 파일에는 들어가지 않는다. 값은 1920 캔버스 기준. */
+
+.slide.m-edit .ed {
+  display: grid;
+  border-radius: 8px;
+  outline: 3px dashed transparent;
+  outline-offset: 12px;
+  cursor: text;
+  transition: outline-color 0.12s;
+}
+
+.slide.m-edit .ed > * {
+  grid-area: 1 / 1;
+}
+
+.slide.m-edit .ed:hover {
+  outline-color: rgb(58 111 248 / 0.45);
+}
+
+.slide.m-edit .ed:focus-within {
+  outline: 3px solid #3a6ff8;
+}
+
+.ed-hint {
+  opacity: 0.34;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ed:not(.is-empty) > .ed-hint {
+  display: none;
+}
+
+.one-line > .ed-input {
+  white-space: nowrap;
+}
+
+.ed-input {
+  display: block;
+  min-width: 1em;
+  outline: none;
+  white-space: pre-wrap;
+  caret-color: #3a6ff8;
+}
+
+/* 항목 빼기 */
+.slide.m-edit .it {
+  position: relative;
+}
+
+.it-remove {
+  position: absolute;
+  z-index: 5;
+  top: -26px;
+  right: -26px;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #191c22;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.22);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.it:hover > .it-remove,
+.it-remove:focus-visible {
+  opacity: 1;
+}
+
+.it-remove svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.6;
+}
+
+/* 이미지 칸 */
+.img-ed.img-empty {
+  outline: 3px dashed color-mix(in oklch, var(--ink) 22%, transparent);
+  outline-offset: -3px;
+  background: color-mix(in oklch, var(--ink) 4%, var(--bg));
+}
+
+.t-navy .lg-cell .img-ed.img-empty {
+  outline-color: rgb(16 20 31 / 0.2);
+  background: rgb(16 20 31 / 0.04);
+}
+
+.img-ed.is-over {
+  outline: 4px solid #3a6ff8;
+}
+
+.img-drop {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  text-align: center;
+  cursor: pointer;
+}
+
+.t-navy .lg-cell .img-drop {
+  color: #5d677b;
+}
+
+.img-drop-t {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.img-drop-s {
+  font-size: 22px;
+  opacity: 0.7;
+}
+
+.cv-logo .img-drop,
+.cs-logo .img-drop {
+  align-items: flex-start;
+  padding-left: 28px;
+}
+
+:is(.cv-logo, .cs-logo, .lg-img) .img-drop-s {
+  display: none;
+}
+
+.img-tools {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.img-ed:hover .img-tools,
+.img-tools:focus-within {
+  opacity: 1;
+}
+
+.img-tools button {
+  all: unset;
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: rgb(25 28 34 / 0.88);
+  color: #fff;
+  font: 600 22px/1 var(--font-body);
+  cursor: pointer;
+}
+
+:is(.cv-logo, .cs-logo, .lg-img) .img-tools {
+  right: 4px;
+  bottom: 4px;
+}
+
+:is(.cv-logo, .cs-logo, .lg-img) .img-tools button {
+  padding: 8px 14px;
+  font-size: 18px;
+}

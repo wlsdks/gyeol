@@ -1,0 +1,84 @@
+export type LayoutId =
+  | 'cover'
+  | 'section'
+  | 'agenda'
+  | 'statement'
+  | 'kpi'
+  | 'points'
+  | 'compare'
+  | 'timeline'
+  | 'case'
+  | 'pricing'
+  | 'imageText'
+  | 'logos'
+  | 'bars'
+  | 'closing'
+
+export type DeckType = 'proposal' | 'product' | 'review' | 'company' | 'blank'
+export type Audience = 'exec' | 'practitioner' | 'mixed'
+export type Method = 'live' | 'remote' | 'send'
+export type ThemeId = 'white' | 'navy' | 'serif'
+
+/** 덱 단위 값. 슬라이드에서는 `$customer`처럼 `$`를 붙여 참조한다. */
+export type MetaKey = 'customer' | 'presenter' | 'date' | 'contact' | 'logo'
+
+export interface Item {
+  id: string
+  title: string
+  body: string
+  value: string
+  meta: string
+  image: string
+}
+
+export type ItemKey = Exclude<keyof Item, 'id'>
+
+export interface SlideOptions {
+  /** 요금제에서 강조할 항목 (0부터, -1은 강조 없음) */
+  highlight?: number
+  /** 이미지와 설명: 이미지를 오른쪽에 */
+  flip?: boolean
+  /** 이미지와 설명: 자르지 않고 전체 보이기 */
+  contain?: boolean
+}
+
+export interface Slide {
+  id: string
+  layout: LayoutId
+  /** 이 장의 역할. 슬라이드 목록과 도움말에 보인다. */
+  purpose: string
+  /** 하단에 보이는 섹션 이름 */
+  section: string
+  fields: Record<string, string>
+  items: Item[]
+  /** 칸별 안내 문구. 키는 `title`, `items.value` 같은 형태. 없으면 레이아웃 기본값을 쓴다. */
+  hints: Record<string, string>
+  /** 이 장을 어떻게 채우면 좋은지에 대한 설명 */
+  guide: string
+  notes: string
+  options: SlideOptions
+  hidden?: boolean
+}
+
+export interface DeckMeta {
+  type: DeckType
+  audience: Audience
+  duration: number
+  method: Method
+  customer: string
+  presenter: string
+  date: string
+  contact: string
+  logo: string
+}
+
+export interface Deck {
+  id: string
+  version: 1
+  title: string
+  createdAt: number
+  updatedAt: number
+  meta: DeckMeta
+  theme: { id: ThemeId; accent?: string }
+  slides: Slide[]
+}

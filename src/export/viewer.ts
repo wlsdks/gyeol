@@ -1,0 +1,91 @@
+// 내보낸 HTML 파일 안에서 쓰는 보기 화면. 열면 모든 장이 세로로 보이고, "발표 시작"으로 슬라이드쇼가 된다.
+
+/** 보기 화면에 쓰이는 글자 (폰트 묶음 고르기에 쓴다) */
+export const VIEWER_TEXT = 'PDF로 저장 발표 시작 0123456789 /'
+
+export const VIEWER_CSS = `
+html,body{margin:0;background:#e9ebef;font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+.v-bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px;background:rgb(255 255 255/.94);border-bottom:1px solid #dde1e7;backdrop-filter:blur(8px)}
+.v-title{min-width:0;overflow:hidden;color:#191c22;font-size:15px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.v-actions{display:flex;flex:none;gap:8px}
+.v-btn{padding:10px 16px;border:1px solid #d3d7de;border-radius:8px;background:#fff;color:#191c22;font:600 14px/1 inherit;cursor:pointer}
+.v-btn:focus-visible{outline:2px solid #3a6ff8;outline-offset:2px}
+.v-btn-primary{border-color:#191c22;background:#191c22;color:#fff}
+.v-deck{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px 16px 64px}
+.v-slide{width:100%;max-width:1280px}
+.v-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:6px;box-shadow:0 1px 2px rgb(0 0 0/.06),0 8px 24px rgb(0 0 0/.08);cursor:pointer}
+.v-scale{position:absolute;top:0;left:0;width:1920px;height:1080px;transform:scale(var(--s,.5));transform-origin:0 0}
+.v-count{display:none}
+body.is-present{overflow:hidden;background:#000}
+body.is-present .v-bar{display:none}
+body.is-present .v-deck{position:fixed;inset:0;display:block;padding:0}
+body.is-present .v-slide{position:absolute;inset:0;display:none;max-width:none}
+body.is-present .v-slide.is-current{display:flex;align-items:center;justify-content:center}
+body.is-present .v-frame{width:var(--pw);height:var(--ph);aspect-ratio:auto;border-radius:0;box-shadow:none;cursor:default}
+body.is-present .v-count{position:fixed;right:20px;bottom:16px;display:block;padding:8px 12px;border-radius:999px;background:rgb(0 0 0/.45);color:rgb(255 255 255/.8);font:600 13px/1 inherit;opacity:0;transition:opacity .2s}
+body.is-present.is-awake .v-count{opacity:1}
+body.is-present:not(.is-awake){cursor:none}
+@media (prefers-reduced-motion:no-preference){body.is-present .v-slide.is-current .v-scale{animation:v-in .26s ease-out}}
+@keyframes v-in{from{opacity:0}to{opacity:1}}
+@media print{
+  @page{size:1920px 1080px;margin:0}
+  html,body{background:#fff}
+  .v-bar,.v-count{display:none!important}
+  .v-deck{display:block;padding:0}
+  .v-slide{width:1920px;max-width:none;height:1080px;break-after:page}
+  .v-frame{width:1920px;height:1080px;border-radius:0;box-shadow:none}
+  .v-scale{transform:none}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+`
+
+export const VIEWER_JS = `(function(){
+var slides=[].slice.call(document.querySelectorAll('.v-slide'));
+var body=document.body,root=document.documentElement,count=document.querySelector('.v-count');
+var i=0,timer=0;
+function presenting(){return body.classList.contains('is-present')}
+function fit(){
+  if(presenting()){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    root.style.setProperty('--pw',1920*s+'px');root.style.setProperty('--ph',1080*s+'px');
+    slides.forEach(function(el){el.querySelector('.v-frame').style.setProperty('--s',s)});
+  }else{
+    slides.forEach(function(el){var f=el.querySelector('.v-frame');f.style.setProperty('--s',f.clientWidth/1920)});
+  }
+}
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach(function(el,k){el.classList.toggle('is-current',k===i)});
+  count.textContent=(i+1)+' / '+slides.length;
+}
+function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
+function start(n){
+  body.classList.add('is-present');fit();show(n);wake();
+  if(root.requestFullscreen)root.requestFullscreen().catch(function(){});
+}
+function stop(){
+  body.classList.remove('is-present');
+  if(document.fullscreenElement)document.exitFullscreen().catch(function(){});
+  fit();if(slides[i])slides[i].scrollIntoView({block:'center'});
+}
+document.getElementById('v-present').addEventListener('click',function(){start(0)});
+document.getElementById('v-print').addEventListener('click',function(){print()});
+slides.forEach(function(el,k){el.querySelector('.v-frame').addEventListener('click',function(e){if(!presenting()){e.stopPropagation();start(k)}})});
+document.addEventListener('click',function(e){if(presenting())show(e.clientX<innerWidth*.3?i-1:i+1)});
+document.addEventListener('mousemove',function(){if(presenting())wake()});
+document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&presenting())stop()});
+document.addEventListener('keydown',function(e){
+  var k=e.key;
+  if(!presenting()){if(k==='F5'){e.preventDefault();start(0)}return}
+  if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].indexOf(k)>=0)show(i+1);
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace','p'].indexOf(k)>=0)show(i-1);
+  else if(k==='Home')show(0);
+  else if(k==='End')show(slides.length-1);
+  else if(k==='Escape')stop();
+  else return;
+  e.preventDefault();
+});
+addEventListener('resize',fit);
+fit();
+if(document.fonts)document.fonts.ready.then(fit);
+})();`

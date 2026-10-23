@@ -1,0 +1,1008 @@
+/*
+ * 슬라이드 디자인 시스템. 모든 값은 1920×1080 캔버스 기준 px.
+ * 테마 색과 서체는 SlideCanvas가 CSS 변수로 넣는다 (deck/themes.ts).
+ * 이 파일은 내보낸 HTML 파일에도 그대로 들어간다.
+ */
+
+.slide {
+  --t-title: 68px;
+  --t-lead: 30px;
+  --t-body: 27px;
+  --accent-soft: color-mix(in oklch, var(--accent) 11%, var(--bg));
+  --accent-line: color-mix(in oklch, var(--accent) 30%, var(--bg));
+  --pad-x: 128px;
+
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  width: 1920px;
+  height: 1080px;
+  padding: 112px var(--pad-x) 128px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.slide.d-read {
+  --t-title: 60px;
+  --t-lead: 28px;
+  --t-body: 25px;
+}
+
+.slide *,
+.slide *::before,
+.slide *::after {
+  box-sizing: border-box;
+}
+
+.slide :where(h1, h2, h3, p, blockquote, ol, ul, dl, dt, dd) {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+.slide :where(ol, ul) {
+  list-style: none;
+}
+
+/* 글자 칸: --fs로 기본 크기를 정하고, 길이에 따라 --fit 배율로 줄인다 */
+.slide
+  :where(
+    .s-title, .s-lead, .cv-title, .cv-lead, .cv-customer-name, .sc-title, .sc-lead, .ag-t,
+    .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
+    .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
+    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b
+  ) {
+  font-size: calc(var(--fs) * var(--fit, 1));
+  white-space: pre-line;
+}
+
+.slide .one-line {
+  font-size: min(calc(var(--fs) * var(--fit, 1)), calc(100cqi / var(--units, 1)));
+  white-space: nowrap;
+}
+
+.slide .fit-1 {
+  --fit: 0.84;
+}
+
+.slide .fit-2 {
+  --fit: 0.7;
+}
+
+.slide :where(.s-title, .cv-title, .sc-title, .st-title, .cs-title, .cl-title, .pt-title, .tl-title, .ix-title) {
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  text-wrap: balance;
+}
+
+.slide :where(.kp-value, .cs-value, .pr-price, .br-value, .sc-num) {
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 공통: 제목, 본문 영역, 하단 ---------- */
+
+.s-head {
+  flex: none;
+  max-width: 1500px;
+}
+
+.s-title {
+  --fs: var(--t-title);
+  line-height: 1.2;
+}
+
+.s-lead {
+  --fs: var(--t-lead);
+  max-width: 1240px;
+  margin-top: 24px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.s-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 80px;
+}
+
+.s-foot {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: 52px;
+  left: var(--pad-x);
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  color: var(--ink-3);
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.s-page {
+  font-variant-numeric: tabular-nums;
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meta-row dt {
+  color: var(--ink-3);
+  font-size: 20px;
+}
+
+.meta-row dd {
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+/* 이미지 */
+.img {
+  position: relative;
+  overflow: hidden;
+}
+
+.img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.img.is-cover img {
+  object-fit: cover;
+}
+
+.img.is-contain img {
+  object-fit: contain;
+}
+
+.img-empty {
+  background: var(--surface);
+}
+
+/* ---------- 표지 ---------- */
+
+.l-cover {
+  flex-direction: row;
+  padding: 0;
+}
+
+.cv-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 112px 120px 104px var(--pad-x);
+}
+
+.cv-logo {
+  width: 320px;
+  height: 72px;
+}
+
+.cv-logo img {
+  object-position: left center;
+}
+
+.cv-text {
+  margin-top: auto;
+}
+
+.cv-title {
+  --fs: 104px;
+  max-width: 1160px;
+  font-weight: var(--display-weight);
+  line-height: 1.14;
+  letter-spacing: calc(var(--head-tracking) - 0.01em);
+}
+
+.cv-lead {
+  --fs: 34px;
+  margin-top: 32px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.cv-meta {
+  display: flex;
+  gap: 72px;
+  margin-top: 80px;
+}
+
+.cv-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 520px;
+  padding: 112px 72px 104px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.cv-customer-label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 20px;
+  opacity: 0.72;
+}
+
+.cv-customer-name {
+  --fs: 54px;
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+}
+
+/* ---------- 섹션 구분 ---------- */
+
+.l-section {
+  justify-content: space-between;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.sc-num {
+  font-size: 280px;
+  font-weight: var(--display-weight);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+}
+
+.sc-text {
+  max-width: 1400px;
+}
+
+.sc-title {
+  --fs: 100px;
+  font-weight: var(--display-weight);
+  line-height: 1.14;
+}
+
+.sc-lead {
+  --fs: 34px;
+  margin-top: 28px;
+  opacity: 0.8;
+}
+
+/* ---------- 목차 ---------- */
+
+.ag {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 560px 1fr;
+  gap: 120px;
+  align-items: start;
+}
+
+.ag-list {
+  border-top: 2px solid var(--ink);
+}
+
+.ag-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: baseline;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ag-n {
+  color: var(--accent);
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ag-t {
+  --fs: 44px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- 한 문장 메시지 ---------- */
+
+.st {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 1600px;
+  margin-top: 0;
+  padding-bottom: 40px;
+}
+
+.st-title {
+  --fs: 88px;
+  line-height: 1.26;
+}
+
+.st-lead {
+  --fs: 32px;
+  max-width: 1240px;
+  margin-top: 44px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ---------- 핵심 숫자 ---------- */
+
+.kp {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  align-content: end;
+}
+
+.kp-item {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px 48px 0 40px;
+  border-left: 2px solid var(--line);
+}
+
+.kp-value {
+  --fs: 136px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.kp[data-n='1'] .kp-value {
+  --fs: 220px;
+}
+
+.kp[data-n='4'] .kp-value {
+  --fs: 112px;
+}
+
+.kp-label {
+  --fs: 32px;
+  margin-top: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.kp-body {
+  --fs: 25px;
+  margin-top: 14px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ---------- 핵심 포인트 ---------- */
+
+.pt {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 64px;
+  align-content: end;
+}
+
+.pt-item {
+  position: relative;
+  padding-top: 36px;
+  border-top: 3px solid var(--ink);
+}
+
+.pt-title {
+  --fs: 40px;
+  line-height: 1.3;
+}
+
+.pt-body {
+  --fs: var(--t-body);
+  margin-top: 20px;
+  color: var(--ink-2);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+/* ---------- 비교 ---------- */
+
+.cp {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  padding-bottom: 24px;
+}
+
+.cp::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc((100% - 120px) / 2);
+  border-radius: 28px;
+  background: var(--accent-soft);
+  content: '';
+}
+
+.cp-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  align-items: center;
+}
+
+.cp-row + .cp-row .cp-l {
+  border-top: 1px solid var(--line);
+}
+
+.cp-row + .cp-row .cp-r {
+  border-top: 1px solid var(--accent-line);
+}
+
+.cp-h {
+  padding: 36px 0 20px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.cp-hl {
+  color: var(--ink-3);
+}
+
+.cp-hr {
+  padding-left: 56px;
+  color: var(--accent);
+}
+
+.cp-l {
+  --fs: 29px;
+  align-self: stretch;
+  padding: 30px 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.cp-r {
+  --fs: 31px;
+  align-self: stretch;
+  margin-right: 0;
+  padding: 30px 56px;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cp-arrow {
+  justify-self: center;
+  width: 36px;
+  height: 36px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- 일정 ---------- */
+
+.tl {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 40px;
+  align-content: end;
+  padding-bottom: 8px;
+}
+
+.tl-item {
+  position: relative;
+  padding-right: 8px;
+}
+
+.tl-item::before {
+  position: absolute;
+  top: 75px;
+  right: -40px;
+  left: 0;
+  height: 2px;
+  background: var(--line);
+  content: '';
+}
+
+.tl-item:last-child::before {
+  right: 0;
+}
+
+.tl-meta {
+  --fs: 26px;
+  height: 40px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 40px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-dot {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 25px 0 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 8px var(--bg);
+}
+
+.tl-title {
+  --fs: 34px;
+  line-height: 1.3;
+}
+
+.tl-body {
+  --fs: 24px;
+  margin-top: 14px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ---------- 고객 사례 ---------- */
+
+.cs {
+  display: grid;
+  grid-template-columns: 1fr 500px;
+  gap: 120px;
+  margin-top: 0;
+}
+
+.cs-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cs-client {
+  color: var(--accent);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.cs-title {
+  --fs: 64px;
+  margin-top: 20px;
+  line-height: 1.22;
+}
+
+.cs-body {
+  --fs: var(--t-body);
+  max-width: 1000px;
+  margin-top: 36px;
+  color: var(--ink-2);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.cs-quote {
+  --fs: 30px;
+  margin-top: auto;
+  padding-left: 32px;
+  border-left: 4px solid var(--accent);
+  font-family: var(--font-head);
+  line-height: 1.5;
+}
+
+.cs-side {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  padding-left: 64px;
+  border-left: 1px solid var(--line);
+}
+
+.cs-logo {
+  width: 280px;
+  height: 96px;
+}
+
+.cs-logo img {
+  object-position: left center;
+}
+
+.cs-results {
+  display: flex;
+  flex-direction: column;
+  gap: 52px;
+  margin-top: auto;
+}
+
+.cs-res {
+  position: relative;
+}
+
+.cs-value {
+  --fs: 112px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.cs-label {
+  --fs: 28px;
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+/* ---------- 요금제 ---------- */
+
+.pr {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 32px;
+}
+
+.pr[data-n='1'] {
+  grid-auto-columns: minmax(0, 760px);
+}
+
+.pr-plan {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  padding: 44px 48px;
+  border: 2px solid var(--line);
+  border-radius: 28px;
+}
+
+.pr-plan.is-hl {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pr-name {
+  --fs: 32px;
+  font-weight: 700;
+}
+
+.pr-tag {
+  flex: none;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pr-price {
+  --fs: 72px;
+  margin-top: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.pr-meta {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: 22px;
+}
+
+.pr-body {
+  --fs: 25px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  line-height: 1.85;
+}
+
+.pr-plan.is-hl .pr-body {
+  border-color: var(--accent-line);
+}
+
+/* ---------- 이미지와 설명 ---------- */
+
+.l-imageText {
+  padding: 0;
+}
+
+.ix {
+  display: grid;
+  grid-template-columns: 1080px 1fr;
+  height: 100%;
+}
+
+.ix.is-flip {
+  grid-template-columns: 1fr 1080px;
+}
+
+.ix.is-flip .ix-img {
+  order: 2;
+}
+
+.ix-img {
+  height: 100%;
+}
+
+.ix-img.is-contain {
+  padding: 80px;
+  background: var(--surface);
+}
+
+.ix-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 112px var(--pad-x) 150px 104px;
+}
+
+.ix.is-flip .ix-text {
+  padding: 112px 104px 150px var(--pad-x);
+}
+
+.ix-title {
+  --fs: 60px;
+}
+
+.ix-body {
+  --fs: var(--t-body);
+  margin-top: 32px;
+  color: var(--ink-2);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.l-imageText .s-foot {
+  left: calc(1080px + 104px);
+}
+
+.l-imageText:has(.ix.is-flip) .s-foot {
+  right: calc(1080px + 104px);
+  left: var(--pad-x);
+}
+
+/* ---------- 고객 로고 ---------- */
+
+.lg {
+  flex: 0 1 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: start;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.lg:is([data-n='2']) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.lg:is([data-n='3']) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.lg:is([data-n='9'], [data-n='10'], [data-n='11'], [data-n='12']) {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.lg-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  height: 220px;
+  padding: 24px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 어두운 화면에서는 검은 로고가 묻히므로 밝은 바탕을 깐다 */
+.t-navy :is(.cv-logo, .cs-logo):not(.img-empty) {
+  width: auto;
+  max-width: 360px;
+  padding: 16px 24px;
+  border-radius: 14px;
+  background: #eef1f6;
+}
+
+.t-navy :is(.cv-logo, .cs-logo):not(.img-empty) img {
+  width: auto;
+  max-width: 100%;
+}
+
+.t-navy .lg-cell {
+  background: #eef1f6;
+}
+
+.t-navy .lg-name {
+  color: #5d677b;
+}
+
+.lg-img {
+  width: 72%;
+  height: 96px;
+}
+
+.lg-img.img-empty {
+  background: transparent;
+}
+
+.lg-img img {
+  filter: grayscale(1);
+  opacity: 0.88;
+}
+
+.lg-name {
+  color: var(--ink-3);
+  font-size: 20px;
+  text-align: center;
+}
+
+/* ---------- 막대 비교 ---------- */
+
+.br {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.br-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 380px 1fr 240px;
+  align-items: center;
+  gap: 40px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.br-name {
+  --fs: 30px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.br-meta {
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 21px;
+}
+
+.br-track {
+  height: 48px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.br-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--accent);
+}
+
+.br-value {
+  --fs: 42px;
+  font-weight: 700;
+  text-align: right;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- 마지막 장 ---------- */
+
+.l-closing {
+  justify-content: space-between;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.cl-main {
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+
+.cl-title {
+  --fs: 112px;
+  font-weight: var(--display-weight);
+  line-height: 1.1;
+}
+
+.cl-steps {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 56px;
+  max-width: 1620px;
+}
+
+.cl-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 28px;
+  border-top: 2px solid color-mix(in srgb, var(--accent-ink) 35%, transparent);
+}
+
+.cl-n {
+  font-size: 24px;
+  font-weight: 700;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-step-t {
+  --fs: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cl-step-b {
+  --fs: 24px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.cl-contact {
+  display: flex;
+  gap: 80px;
+}
+
+.l-closing .meta-row :is(dt, dd) {
+  color: inherit;
+}
+
+.l-closing .meta-row dt {
+  opacity: 0.7;
+}
+
+/* 미리보기에서 빈칸은 안내 문구를 흐리게 */
+.slide .is-hint {
+  opacity: 0.34;
+}
+
+.img-empty > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  font-size: 26px;
+}
