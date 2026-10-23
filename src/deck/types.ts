@@ -9,6 +9,7 @@ export type LayoutId =
   | 'bridge'
   | 'trend'
   | 'progress'
+  | 'share'
   | 'table'
   | 'points'
   | 'compare'

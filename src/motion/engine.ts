@@ -433,6 +433,23 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), end + 200)
         break
       }
+      case 'share': {
+        const t = head()
+        fade(one('.sh-top'), t, 500)
+        if (variant === 'donut') {
+          // 고리가 돌며 자리 잡고, 조각이 차례로 맺힌다. 가운데 합계는 그다음
+          const svg = one('.sh-ring svg')
+          if (svg) run(anims, svg, [{ opacity: 0, rotate: '-200deg', scale: '0.86' }], s(t), levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
+          $('.sh-arc').forEach((el, i) => fade(el, t + 120 + i * 90, 500))
+          rise(one('.sh-total'), t + 420, L.y * 0.4)
+        } else wipe(one('.sh-band'), t, 'left', 900)
+        const end = items('.sh-item', t + 260, (el, at) => {
+          rise(el, at, L.y * 0.5)
+          count(el.querySelector('.sh-pct'), at + 60)
+        })
+        fade(one('.s-source'), end + 200)
+        break
+      }
       case 'table': {
         const t = head()
         fade(one('.tb-headrow'), t, 500)

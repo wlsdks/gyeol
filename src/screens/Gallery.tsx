@@ -81,6 +81,16 @@ function extraSlides(): Slide[] {
       ],
       { title: '다섯 과제 중 하나가 2주 늦어지고 있어요', source: '10월 3주 기준' },
     ),
+    withItems(
+      makeSlide('share'),
+      [
+        { title: '제조', value: '58', meta: '신규 2곳 포함' },
+        { title: '유통', value: '39' },
+        { title: '금융', value: '21' },
+        { title: '공공', value: '13' },
+      ],
+      { title: '매출의 절반 가까이가 제조에서 나와요', unit: '억 원', source: '영업관리 시스템, 9월 말 기준' },
+    ),
     withOptions(withItems(
       makeSlide('table'),
       [
@@ -160,6 +170,27 @@ function edgeSlides(): Slide[] {
       ],
       { title: '일곱 과제, 상태를 비운 칸은 진행률로 짐작해요', source: '10월 3주 기준' },
     ),
+    withItems(
+      makeSlide('share'),
+      [
+        { title: '제조', value: '40%' },
+        { title: '유통', value: '35%' },
+        { title: '금융', value: '15%' },
+        { title: '공공', value: '6%' },
+        { title: '기타', value: '3%' },
+        { title: '해외 시범 사업', value: '1%' },
+      ],
+      { title: '비율로 적은 여섯 항목', source: '9월 말 기준' },
+    ),
+    withOptions(withItems(
+      makeSlide('share'),
+      [
+        { title: '인건비', value: '3,200' },
+        { title: '장비', value: '0.4' },
+        { title: '교육', value: '' },
+      ],
+      { title: '강조 없이, 아주 작은 조각과 빈 값', unit: '만 원' },
+    ), { highlight: -1 }),
   ]
 }
 

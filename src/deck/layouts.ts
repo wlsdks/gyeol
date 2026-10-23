@@ -253,6 +253,28 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  share: {
+    id: 'share',
+    name: '구성비',
+    description: '전체를 나눈 비중 (매출 구성, 비용 구성, 시장 점유)',
+    variants: [
+      { id: 'base', name: '띠' },
+      { id: 'donut', name: '도넛' },
+    ],
+    highlight: { label: '강조할 항목', fallback: 0 },
+    fields: [title('구성이 말해 주는 결론'), { key: 'unit', label: '단위', hint: '억 원', optional: true }, source],
+    items: {
+      label: '항목',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목 이름', hints: ['제조', '유통', '금융', '공공', '기타', '그 밖'] },
+        { key: 'value', label: '숫자', hint: '48', hints: ['48', '31', '14', '7', '5', '3'] },
+        { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
+      ],
+    },
+  },
   table: {
     id: 'table',
     name: '표',
@@ -506,6 +528,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'bridge',
   'trend',
   'progress',
+  'share',
   'table',
   'compare',
   'matrix',

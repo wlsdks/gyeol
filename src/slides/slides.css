@@ -101,7 +101,8 @@
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
     .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
     .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
-    .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count
+    .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
+    .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -2518,6 +2519,203 @@
 
 .ps.is-demo :is(.ps-fill, .ps-sum, .ps-chip) {
   opacity: 0.35;
+}
+
+/* ---------- 구성비 ----------
+   조각 색은 --c(강조할 조각만 강조색, 나머지는 회색 단계)로 받는다. 띠는 한 줄 막대를 나누고
+   아래 이름표마다 같은 색 윗줄을, 도넛은 고리를 나누고 오른쪽에 줄마다 같은 색 왼쪽 줄을 둔다. */
+
+.sh {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+.sh-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 48px;
+  margin-bottom: 20px;
+}
+
+.sh-sum {
+  --fs: 28px;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.sh-unit {
+  --fs: 24px;
+  color: var(--ink-3);
+}
+
+.sh-band {
+  display: flex;
+  gap: 6px;
+  height: 112px;
+}
+
+.sh-seg {
+  flex-basis: 0;
+  min-width: 6px;
+  border-radius: 8px;
+}
+
+.sh-legend {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 40px;
+  margin-top: 56px;
+}
+
+.sh-item {
+  position: relative;
+  min-width: 0;
+  padding-top: 28px;
+  border-top: 6px solid var(--c);
+}
+
+.sh-pct {
+  --fs: 72px;
+  display: block;
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-item.is-hl .sh-pct {
+  color: var(--accent);
+}
+
+.sh-text {
+  margin-top: 18px;
+}
+
+.sh-name {
+  --fs: 30px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sh-value {
+  --fs: 26px;
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-meta {
+  --fs: 24px;
+  margin-top: 4px;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+
+/* 모양: 도넛 */
+.va-donut .sh {
+  display: grid;
+  grid-template-columns: 540px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  column-gap: 120px;
+}
+
+.va-donut .sh-top {
+  grid-column: 1 / -1;
+}
+
+.sh-ring {
+  position: relative;
+  width: 540px;
+  aspect-ratio: 1;
+}
+
+.sh-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  rotate: -90deg;
+}
+
+.sh-ring-track,
+.sh-arc {
+  fill: none;
+  stroke-width: 15;
+}
+
+.sh-ring-track {
+  stroke: var(--surface);
+}
+
+.sh-total {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.sh-total-k {
+  --fs: 26px;
+  color: var(--ink-3);
+}
+
+.sh-total-v {
+  --fs: 52px;
+  margin-top: 6px;
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.va-donut .sh-legend {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: 0;
+}
+
+.va-donut .sh-item {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  gap: 32px;
+  padding: 22px 0 22px 36px;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 8px 0 0 var(--c);
+}
+
+.va-donut .sh-pct {
+  --fs: 56px;
+}
+
+.va-donut .sh-text {
+  margin-top: 0;
+}
+
+.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-item {
+  padding-block: 12px;
+}
+
+.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-pct {
+  --fs: 46px;
+}
+
+.sh.is-demo :is(.sh-band, .sh-ring svg) {
+  opacity: 0.35;
+}
+
+.sh.is-demo .sh-pct {
+  opacity: 0.45;
 }
 
 /* ---------- 표 ----------
