@@ -12,6 +12,8 @@ import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
 import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, PlusIcon, Popover, TrashIcon, UploadIcon, useToast } from './ui'
 
+const SAMPLE_ID = 'sample'
+
 export function Home() {
   const [decks, setDecks] = useState<Deck[] | null>(null)
   const [toDelete, setToDelete] = useState<Deck | null>(null)
@@ -40,8 +42,14 @@ export function Home() {
     refresh()
   }
 
+  // 예시는 하나만 둔다. 누를 때마다 새로 만들면 같은 예시가 목록에 쌓인다. 지웠으면 다시 만든다.
   const openSample = async () => {
-    const deck = createSampleDeck()
+    const existing = (await listDecks()).find((d) => d.id === SAMPLE_ID)
+    if (existing) {
+      go({ name: 'edit', id: existing.id })
+      return
+    }
+    const deck = { ...createSampleDeck(), id: SAMPLE_ID }
     await persistNow(deck)
     go({ name: 'edit', id: deck.id })
   }
