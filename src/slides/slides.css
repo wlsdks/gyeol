@@ -359,6 +359,74 @@
   display: none;
 }
 
+/* 모양: 아래 띠. 제목은 위에 넓게, 결정 요청과 발표자는 아래 색 띠에 한 줄로 */
+.l-cover:is(.va-band, .va-full) {
+  flex-direction: column;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-main {
+  padding: 96px var(--pad-x) 72px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-title {
+  max-width: 1500px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-side {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 96px;
+  width: auto;
+  min-height: 300px;
+  padding: 64px var(--pad-x) 72px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-ask {
+  flex: 1;
+  max-width: 1080px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-meta {
+  flex: none;
+  flex-direction: row;
+  gap: 56px;
+  padding: 0 0 0 56px;
+  border-top: 0;
+  border-left: 2px solid var(--bold-line);
+}
+
+/* 모양: 색 면. 장 전체를 색 면으로, 결정 요청은 아래에 줄로 나눠 */
+.l-cover.va-full {
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+.l-cover.va-full .cv-lead {
+  color: inherit;
+  opacity: 0.82;
+}
+
+.l-cover.va-full .cv-side {
+  margin: 0 var(--pad-x);
+  padding: 56px 0 88px;
+  border-top: 2px solid var(--bold-line);
+  background: none;
+}
+
+.l-cover.va-full .cv-logo:not(.img-empty) {
+  width: auto;
+  max-width: 380px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  background: #edf0f5;
+}
+
+.l-cover.va-full .cv-logo:not(.img-empty) img {
+  width: auto;
+  max-width: 100%;
+}
+
 /* ---------- 섹션 구분 ---------- */
 
 .l-section {

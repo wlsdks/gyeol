@@ -61,6 +61,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'cover',
     name: '표지',
     description: '보고 제목과 결정 요청, 발표자',
+    variants: [
+      { id: 'base', name: '오른쪽 결정 요청' },
+      { id: 'band', name: '아래 띠' },
+      { id: 'full', name: '색 면' },
+    ],
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },

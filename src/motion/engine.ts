@@ -232,7 +232,9 @@ export function motionEngine(): MotionEngine {
 
     switch (layout) {
       case 'cover': {
-        if (levelName === 'lively') wipe(one('.cv-side'), 0, 'right', 1100)
+        // 띠는 아래에서, 오른쪽 면은 오른쪽에서 밀려 들어온다. 색 면 모양은 면이 장 전체라 줄만 나타난다
+        if (variant === 'full') fade(one('.cv-side'), 300, 700)
+        else if (levelName === 'lively') wipe(one('.cv-side'), 0, variant === 'band' ? 'bottom' : 'right', 1100)
         else fade(one('.cv-side'), 0, 700)
         fade(one('.cv-logo'), 200)
         const t = words(one('.cv-title'), 180)
