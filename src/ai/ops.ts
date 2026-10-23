@@ -6,9 +6,9 @@
 
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
-import { LAYOUTS, variantIds, variantOf } from '../deck/layouts'
-import { MOTIONS, THEME_ORDER } from '../deck/themes'
-import type { Deck, Item, ItemKey, LayoutId, Motion, Slide, ThemeId } from '../deck/types'
+import { BOLD_LAYOUTS, LAYOUTS, variantIds, variantOf } from '../deck/layouts'
+import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
+import type { Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { shapeDeckId, shapeSlideId } from './share'
 
 export const REQUEST_FORMAT = 'html-maker/request'
@@ -28,8 +28,19 @@ export type Op =
   | { op: 'set_layout'; slide: SlideRef; layout: LayoutId; variant?: string }
   | { op: 'set_hidden'; slide: SlideRef; hidden: boolean }
   | { op: 'set_item_count'; slide: SlideRef; count: number }
-  | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; contain?: boolean }
-  | { op: 'set_theme'; theme?: ThemeId; accent?: string | null; motion?: Motion }
+  /** motion: null이면 발표 전체 설정을 따르게 되돌린다 */
+  | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; contain?: boolean; motion?: Motion | null; tone?: Tone }
+  /** font: null이면 테마의 글꼴로 */
+  | {
+      op: 'set_theme'
+      theme?: ThemeId
+      accent?: string | null
+      motion?: Motion
+      font?: FontId | null
+      size?: TextSize
+      footer?: FooterMode
+      transition?: Transition
+    }
   | { op: 'set_guide'; slide: SlideRef; text: string }
   | { op: 'set_hint'; slide: SlideRef; field: string; item?: number; text: string }
 
@@ -78,6 +89,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const REF = /^(s[0-9a-f]{8}|n[0-9]{1,2})$/
 const NEW_REF = /^n[0-9]{1,2}$/
 const HEX = /^#[0-9a-f]{6}$/i
+const oneOf = (list: { id: string }[], v: unknown) => list.some((x) => x.id === v)
 export const REQUEST_ID = /^r[0-9a-f]{12}$/
 
 /** 한 줄 안내 글. 줄바꿈과 보이지 않는 제어 문자는 받지 않는다. */
@@ -146,12 +158,22 @@ export function parseOp(v: unknown): Op | null {
         return only(v, ['op', 'slide', 'after']) && after !== undefined ? { op: v.op, slide, after } : null
       }
       if (v.op === 'set_options') {
-        if (!only(v, ['op', 'slide', 'highlight', 'flip', 'contain'])) return null
+        if (!only(v, ['op', 'slide', 'highlight', 'flip', 'contain', 'motion', 'tone'])) return null
         if (v.highlight !== undefined && !(Number.isInteger(v.highlight) && (v.highlight as number) >= -1 && (v.highlight as number) < 20)) return null
         if (v.flip !== undefined && typeof v.flip !== 'boolean') return null
         if (v.contain !== undefined && typeof v.contain !== 'boolean') return null
-        if (v.highlight === undefined && v.flip === undefined && v.contain === undefined) return null
-        return { op: v.op, slide, highlight: v.highlight as number | undefined, flip: v.flip as boolean | undefined, contain: v.contain as boolean | undefined }
+        if (v.motion !== undefined && v.motion !== null && !oneOf(MOTIONS, v.motion)) return null
+        if (v.tone !== undefined && !oneOf(TONES, v.tone)) return null
+        if ([v.highlight, v.flip, v.contain, v.motion, v.tone].every((x) => x === undefined)) return null
+        return {
+          op: v.op,
+          slide,
+          highlight: v.highlight as number | undefined,
+          flip: v.flip as boolean | undefined,
+          contain: v.contain as boolean | undefined,
+          motion: v.motion as Motion | null | undefined,
+          tone: v.tone as Tone | undefined,
+        }
       }
       // set_hint
       if (!only(v, ['op', 'slide', 'field', 'item', 'text'])) return null
@@ -161,12 +183,25 @@ export function parseOp(v: unknown): Op | null {
       return { op: 'set_hint', slide, field: v.field, item: v.item as number | undefined, text }
     }
     case 'set_theme': {
-      if (!only(v, ['op', 'theme', 'accent', 'motion'])) return null
+      if (!only(v, ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'])) return null
       if (v.theme !== undefined && !THEME_ORDER.includes(v.theme as ThemeId)) return null
       if (v.accent !== undefined && v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return null
-      if (v.motion !== undefined && !MOTIONS.some((m) => m.id === v.motion)) return null
-      if (v.theme === undefined && v.accent === undefined && v.motion === undefined) return null
-      return { op: 'set_theme', theme: v.theme as ThemeId | undefined, accent: v.accent as string | null | undefined, motion: v.motion as Motion | undefined }
+      if (v.motion !== undefined && !oneOf(MOTIONS, v.motion)) return null
+      if (v.font !== undefined && v.font !== null && !oneOf(FONTS, v.font)) return null
+      if (v.size !== undefined && !oneOf(TEXT_SIZES, v.size)) return null
+      if (v.footer !== undefined && !oneOf(FOOTERS, v.footer)) return null
+      if (v.transition !== undefined && !oneOf(TRANSITIONS, v.transition)) return null
+      if ([v.theme, v.accent, v.motion, v.font, v.size, v.footer, v.transition].every((x) => x === undefined)) return null
+      return {
+        op: 'set_theme',
+        theme: v.theme as ThemeId | undefined,
+        accent: v.accent as string | null | undefined,
+        motion: v.motion as Motion | undefined,
+        font: v.font as FontId | null | undefined,
+        size: v.size as TextSize | undefined,
+        footer: v.footer as FooterMode | undefined,
+        transition: v.transition as Transition | undefined,
+      }
     }
     default:
       return null
@@ -254,8 +289,13 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       const next = { ...theme }
       if (op.theme) next.id = op.theme
       if (op.accent !== undefined) next.accent = op.accent === null ? undefined : op.accent.toLowerCase()
+      if (op.font !== undefined) next.font = op.font ?? undefined
+      if (op.size) next.size = op.size
+      if (op.footer) next.footer = op.footer
+      if (op.transition) next.transition = op.transition
       const nextMotion = op.motion ?? motion
-      if (next.id === theme.id && next.accent === theme.accent && (nextMotion ?? 'calm') === (motion ?? 'calm')) return fail('no_change')
+      const same = (Object.keys({ ...theme, ...next }) as (keyof typeof next)[]).every((k) => theme[k] === next[k])
+      if (same && (nextMotion ?? 'calm') === (motion ?? 'calm')) return fail('no_change')
       theme = next
       motion = nextMotion
       return done
@@ -343,6 +383,12 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           if (s.layout !== 'imageText') return fail('not_for_layout')
           if (op.flip !== undefined) options.flip = op.flip
           if (op.contain !== undefined) options.contain = op.contain
+        }
+        if (op.motion !== undefined) options.motion = op.motion ?? undefined
+        if (op.tone !== undefined) {
+          // 색 면 장(표지, 섹션, 마지막 장)은 바탕을 바꾸지 않는다
+          if (BOLD_LAYOUTS.includes(s.layout)) return fail('not_for_layout')
+          options.tone = op.tone === 'base' ? undefined : op.tone
         }
         put(i, { ...s, options })
         return done

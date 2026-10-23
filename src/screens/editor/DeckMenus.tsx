@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { makeSlide } from '../../deck/generate'
-import { ACCENT_PRESETS, MOTIONS, THEMES, THEME_ORDER, accentOf } from '../../deck/themes'
+import { ACCENT_PRESETS, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -16,7 +16,12 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
   const setTheme = useDeck((s) => s.setTheme)
   const setAccent = useDeck((s) => s.setAccent)
   const setMotion = useDeck((s) => s.setMotion)
+  const setLook = useDeck((s) => s.setLook)
   const motion = deck.motion ?? 'calm'
+  const font = fontOf(deck.theme)
+  const size = deck.theme.size ?? 'normal'
+  const footer = deck.theme.footer ?? 'all'
+  const transition = deck.theme.transition ?? 'auto'
   const cover = useMemo(() => {
     const s = makeSlide('cover')
     s.fields.title = deck.slides.find((x) => x.layout === 'cover')?.fields.title || deck.title
@@ -82,6 +87,12 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label="강조색 직접 고르기" />
             </label>
           </div>
+          <p className="menu-h">제목 글꼴</p>
+          <Choice label="제목 글꼴" options={FONTS} value={font} onPick={(id) => setLook({ font: id })} />
+          <p className="menu-h">글자 크기</p>
+          <Choice label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
+          <p className="menu-h">아래 표시</p>
+          <Choice label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
           <p className="menu-h">발표할 때 움직임</p>
           <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
             {MOTIONS.map((m) => (
@@ -118,9 +129,39 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               </button>
             )}
           </p>
+          <p className="menu-h">장 넘기기</p>
+          <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} wrap />
         </div>
       )}
     </Popover>
+  )
+}
+
+/** 몇 가지 중 하나를 고르는 줄. 고른 것의 설명을 아래에 보여 준다. */
+function Choice<T extends string>({
+  label,
+  options,
+  value,
+  onPick,
+  wrap,
+}: {
+  label: string
+  options: { id: T; name: string; description: string }[]
+  value: T
+  onPick: (id: T) => void
+  wrap?: boolean
+}) {
+  return (
+    <>
+      <div className={cx('seg', wrap ? 'seg-wrap seg-pad' : 'seg-full')} role="group" aria-label={label}>
+        {options.map((o) => (
+          <button key={o.id} type="button" className={cx('seg-btn', value === o.id && 'is-on')} aria-pressed={value === o.id} onClick={() => onPick(o.id)}>
+            {o.name}
+          </button>
+        ))}
+      </div>
+      <p className="menu-note choice-note">{options.find((o) => o.id === value)?.description}</p>
+    </>
   )
 }
 

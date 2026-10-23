@@ -1,6 +1,6 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LAYOUTS, variantOf } from '../deck/layouts'
-import { themeStyle } from '../deck/themes'
+import { isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -58,17 +58,37 @@ export const SlideCanvas = memo(function SlideCanvas({
   const bold = BOLD_LAYOUTS.includes(slide.layout)
   const canRemoveItem = !!spec.items && slide.items.length > spec.items.min
   const density = deck.meta.method === 'send' ? 'd-read' : 'd-present'
+  // 색 면 장(표지, 섹션, 마지막 장)은 이미 색이 정해져 있어 바탕을 바꾸지 않는다
+  const tone = bold ? 'base' : toneOf(slide)
+  const size = deck.theme.size === 'small' || deck.theme.size === 'large' ? `sz-${deck.theme.size}` : null
+  const footer = deck.theme.footer ?? 'all'
 
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
       <div
-        className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`, `mo-${deck.motion ?? 'calm'}`, `va-${variantOf(slide)}`)}
-        style={themeStyle(deck.theme)}
+        className={cx(
+          'slide',
+          `l-${slide.layout}`,
+          `t-${deck.theme.id}`,
+          density,
+          bold && 'is-bold',
+          `m-${mode}`,
+          // 움직임과 전환은 클래스로 남겨 내보낸 파일의 뷰어도 같은 값을 읽게 한다
+          `mo-${motionOf(deck, slide)}`,
+          `tr-${transitionOf(deck)}`,
+          `va-${variantOf(slide)}`,
+          size,
+          tone !== 'base' && `tone-${tone}`,
+          isDarkLook(deck.theme, tone) && 'is-dark',
+        )}
+        style={themeStyle(deck.theme, tone)}
       >
         <View />
-        {!bold && page > 0 && (
+        {!bold && page > 0 && footer !== 'none' && (
           <footer className="s-foot">
-            {sections.length > 1 && sectionIndex >= 0 ? (
+            {footer === 'page' ? (
+              <span />
+            ) : sections.length > 1 && sectionIndex >= 0 ? (
               <ol className="s-map">
                 {sections.map((name, i) => (
                   <li key={i} className={cx(i === sectionIndex && 'is-on')}>

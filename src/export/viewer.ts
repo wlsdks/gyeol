@@ -49,6 +49,7 @@ var slides=[].slice.call(document.querySelectorAll('.v-slide'));
 var body=document.body,root=document.documentElement,count=document.querySelector('.v-count'),blank=document.querySelector('.v-blank');
 var i=0,timer=0,stopMotion=null;
 function levelOf(el){var s=el&&el.querySelector('.slide');return !s?'none':s.classList.contains('mo-lively')?'lively':s.classList.contains('mo-calm')?'calm':'none'}
+function transitionOf(el){var s=el&&el.querySelector('.slide'),m=s&&/\\btr-(\\w+)/.exec(s.className);return m?m[1]:'none'}
 function halt(){if(stopMotion){stopMotion();stopMotion=null}}
 function presenting(){return body.classList.contains('is-present')}
 function fit(){
@@ -71,7 +72,7 @@ function show(n,first){
     // 앞으로 넘긴 장만 움직인다. 이전 장으로 돌아가면 다 보인 상태로.
     if(forward&&level!=='none')stopMotion=engine.play(slides[i],level);
   }
-  if(first)apply();else engine.swap(apply,level,forward?1:-1);
+  if(first)apply();else engine.swap(apply,transitionOf(slides[next]),forward?1:-1);
 }
 function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}

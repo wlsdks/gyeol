@@ -15,7 +15,7 @@ export interface MotionEngine {
   /** 한 장을 움직인다. 돌려받은 함수를 부르면 바로 끝 모습으로 */
   play(root: Element, level: MotionLevel): () => void
   /** 장을 바꾸는 동안 앞 장과 다음 장을 이어 준다. 지원하지 않으면 그냥 바꾼다 */
-  swap(update: () => void, level: MotionLevel | 'none', direction: 1 | -1): void
+  swap(update: () => void, kind: string, direction: 1 | -1): void
 }
 
 export function motionEngine(): MotionEngine {
@@ -424,16 +424,18 @@ export function motionEngine(): MotionEngine {
 
   // ---------- 장 바꾸기 ----------
 
-  function swap(update: () => void, level: MotionLevel | 'none', direction: 1 | -1) {
+  /** 장을 바꾼다. kind는 전환 이름(fade, slide, zoom, none). 예전처럼 움직임 정도(calm, lively)를 넘겨도 된다. */
+  function swap(update: () => void, kind: string, direction: 1 | -1) {
     type Transition = { finished: Promise<void>; ready: Promise<void>; updateCallbackDone: Promise<void> }
     const doc = document as Document & { startViewTransition?: (cb: () => void) => Transition }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (level === 'none' || reduced || !doc.startViewTransition) {
+    const name = kind === 'calm' ? 'fade' : kind === 'lively' ? 'slide' : kind
+    if ((name !== 'fade' && name !== 'slide' && name !== 'zoom') || reduced || !doc.startViewTransition) {
       update()
       return
     }
     const html = document.documentElement
-    html.dataset.moSwap = level
+    html.dataset.moSwap = name
     html.dataset.moDir = direction > 0 ? 'next' : 'prev'
     const done = () => {
       delete html.dataset.moSwap

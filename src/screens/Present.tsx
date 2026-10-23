@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
+import { motionOf, transitionOf } from '../deck/themes'
 import { motionEngine } from '../motion/engine'
 import { presentChannel, type Blank, type PresentMessage } from '../present/link'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
@@ -19,9 +20,12 @@ export const BLANK_KEYS: Record<string, 'black' | 'white'> = { b: 'black', B: 'b
 export function Present({ deck, startId, onExit }: { deck: Deck; startId?: string; onExit: () => void }) {
   const slides = useMemo(() => deck.slides.filter((s) => !s.hidden), [deck.slides])
   const info = pageInfo(deck.slides)
-  const level = deck.motion ?? 'calm'
+  const transition = transitionOf(deck)
   const engine = useMemo(() => motionEngine(), [])
-  const [view, setView] = useState(() => ({ index: Math.max(0, slides.findIndex((s) => s.id === startId)), play: level !== 'none' }))
+  const [view, setView] = useState(() => {
+    const index = Math.max(0, slides.findIndex((s) => s.id === startId))
+    return { index, play: motionOf(deck, slides[index]) !== 'none' }
+  })
   const [idle, setIdle] = useState(false)
   const [blank, setBlankState] = useState<Blank>(null)
   const idleTimer = useRef(0)
@@ -44,10 +48,11 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
       if (to === from) return
       const dir = to > from ? 1 : -1
       // 앞으로 넘길 때만 움직인다. 이전 장으로 돌아가면 다 보인 상태로 (PowerPoint와 같게).
-      engine.swap(() => flushSync(() => setView({ index: to, play: level !== 'none' && dir > 0 })), level, dir)
+      const play = motionOf(deck, slides[to]) !== 'none' && dir > 0
+      engine.swap(() => flushSync(() => setView({ index: to, play })), transition, dir)
       if (!fromLink) link.current?.post({ type: 'state', index: to, blank: now.current.blank })
     },
-    [slides.length, engine, level],
+    [slides, deck, engine, transition],
   )
 
   const setBlank = useCallback((next: Blank, fromLink = false) => {
@@ -130,6 +135,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   }, [])
 
   // 장이 화면에 붙자마자(그리기 전에) 움직임을 건다. 그래야 다 보인 모습이 한 번 번쩍이지 않는다.
+  const level = motionOf(deck, slides[view.index])
   useLayoutEffect(() => {
     if (!ready || !view.play || !stageRef.current || level === 'none') return
     return engine.play(stageRef.current, level)

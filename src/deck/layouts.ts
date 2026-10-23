@@ -118,10 +118,6 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'statement',
     name: '한 문장 메시지',
     description: '가장 중요한 말을 크게',
-    variants: [
-      { id: 'base', name: '바탕' },
-      { id: 'bold', name: '색 면' },
-    ],
     fields: [
       { key: 'title', label: '메시지', hint: '전하고 싶은 메시지를 한 문장으로', multiline: true },
       lead(),
@@ -374,6 +370,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     },
   },
 }
+
+/** 색 면을 쓰는 장. 하단 쪽 번호를 넣지 않고, 장마다 바탕을 바꾸지 않는다. */
+export const BOLD_LAYOUTS: LayoutId[] = ['cover', 'section', 'closing']
 
 export const LAYOUT_ORDER: LayoutId[] = [
   'summary',

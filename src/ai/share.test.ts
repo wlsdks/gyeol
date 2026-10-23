@@ -14,7 +14,8 @@ export function secretDeck(): Deck {
     id: s('deck-id'),
     title: s('title'),
     meta: { ...deck.meta, org: s('org'), presenter: s('presenter'), date: s('date'), contact: s('contact'), logo: `data:image/png;base64,${SECRET}` },
-    theme: { id: deck.theme.id, accent: s('accent') },
+    // 가져온 파일이면 고르는 값 자리에도 아무 글이나 들어 있을 수 있다
+    theme: { id: deck.theme.id, accent: s('accent'), font: s('font'), size: s('size'), footer: s('footer'), transition: s('transition') } as unknown as Deck['theme'],
     slides: deck.slides.map((slide, i) => ({
       ...slide,
       id: s(`slide-${i}`),
@@ -23,6 +24,7 @@ export function secretDeck(): Deck {
       guide: s('guide'),
       notes: s('notes'),
       hints: { title: s('hint') },
+      options: { ...slide.options, motion: s('motion'), tone: s('tone') } as unknown as Deck['slides'][number]['options'],
       fields: Object.fromEntries([...Object.keys(slide.fields), 'title', 'lead', 'body'].map((k) => [k, s(`field-${k}`)])),
       items: slide.items.map((it, j) => ({ ...it, id: s(`item-${j}`), title: s('t'), body: s('b'), value: s('v'), meta: s('m'), image: s('img') })),
     })),
@@ -73,7 +75,7 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape']
     expect(onlyKnownStrings(shape, words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)
     expect(onlyKnownStrings({ [SECRET]: 1 }, words)).toBe(false)

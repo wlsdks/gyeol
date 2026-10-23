@@ -2,9 +2,12 @@ import { useMemo } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { highlightOf, LAYOUTS, LAYOUT_ORDER, variantOf } from '../../deck/layouts'
-import type { Deck, LayoutId, Slide } from '../../deck/types'
+import { isDarkLook, MOTIONS, motionOf, toneOf, TONES } from '../../deck/themes'
+import type { Deck, LayoutId, Motion, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { PREVIEW_MOTION } from './DeckMenus'
 import { Toggle } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
@@ -103,6 +106,54 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
           )}
         </section>
       )}
+
+      <section className="ins-sec">
+        <h2 className="ins-h">이 장 꾸미기</h2>
+        {!BOLD_LAYOUTS.includes(slide.layout) && (
+          <div className="ins-row ins-row-wrap">
+            <span className="ins-label">바탕</span>
+            <div className="seg seg-wrap" role="group" aria-label="바탕">
+              {TONES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={cx('seg-btn', toneOf(slide) === t.id && 'is-on')}
+                  aria-pressed={toneOf(slide) === t.id}
+                  title={t.description}
+                  onClick={() => setOptions(slide.id, { tone: t.id === 'base' ? undefined : t.id })}
+                >
+                  {t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="ins-row ins-row-wrap">
+          <span className="ins-label">움직임</span>
+          <div className="seg seg-wrap" role="group" aria-label="이 장의 움직임">
+            {[{ id: undefined, name: '전체 설정' }, ...MOTIONS].map((m) => {
+              const on = (slide.options.motion ?? undefined) === m.id
+              return (
+                <button
+                  key={m.id ?? 'deck'}
+                  type="button"
+                  className={cx('seg-btn', on && 'is-on')}
+                  aria-pressed={on}
+                  title={m.id ? undefined : '테마 메뉴에서 정한 발표 전체의 움직임을 따라요'}
+                  onClick={() => setOptions(slide.id, { motion: m.id as Motion | undefined })}
+                >
+                  {m.name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {motionOf(deck, slide) !== 'none' && (
+          <button type="button" className="link-btn ins-link" onClick={() => window.dispatchEvent(new Event(PREVIEW_MOTION))}>
+            이 장의 움직임 미리 보기
+          </button>
+        )}
+      </section>
 
       <section className="ins-sec">
         <h2 className="ins-h">레이아웃 바꾸기</h2>

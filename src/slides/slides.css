@@ -55,7 +55,7 @@
 }
 
 /* 어두운 테마의 색 면은 밝은 강조색 대신 깊은 색 */
-.slide.t-navy {
+.slide.is-dark {
   --bold-bg: color-mix(in oklch, var(--accent) 24%, var(--bg));
   --bold-ink: var(--ink);
   --bold-line: color-mix(in srgb, var(--ink) 18%, transparent);
@@ -87,20 +87,30 @@
   list-style: none;
 }
 
-/* 글자 칸: --fs로 기본 크기를 정하고, 길이에 따라 --fit 배율로 줄인다 */
+/* 글자 칸: --fs로 기본 크기를 정하고, 길이에 따라 --fit 배율로 줄인다.
+   --scale은 발표 전체의 글자 크기 설정(작게, 보통, 크게). 새 칸을 만들면 여기에 이름을 넣는다. */
 .slide
   :where(
     .s-title, .s-lead, .cv-title, .cv-lead, .cv-ask-text, .sc-title, .sc-lead, .ag-t,
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
-    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b
+    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
+    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body
   ) {
-  font-size: calc(var(--fs) * var(--fit, 1));
+  font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
 }
 
+.slide.sz-small {
+  --scale: 0.92;
+}
+
+.slide.sz-large {
+  --scale: 1.08;
+}
+
 .slide .one-line {
-  font-size: min(calc(var(--fs) * var(--fit, 1)), calc(100cqi / var(--units, 1)));
+  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1)), calc(100cqi / var(--units, 1)));
   white-space: nowrap;
 }
 
@@ -529,34 +539,6 @@
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;
-}
-
-/* 모양: 색 면. 발표 중 한 번, 가장 중요한 말에만.
-   테마 색은 슬라이드에 직접 붙어 있어 변수를 덮어쓸 수 없으니 색을 하나씩 바꾼다 */
-.l-statement.va-bold {
-  background: var(--bold-bg);
-  color: var(--bold-ink);
-}
-
-.l-statement.va-bold .st-lead {
-  border-color: var(--bold-line);
-  color: inherit;
-  opacity: 0.82;
-}
-
-.l-statement.va-bold .s-foot,
-.l-statement.va-bold .s-page,
-.l-statement.va-bold .s-total,
-.l-statement.va-bold .s-map li.is-on {
-  color: inherit;
-}
-
-.l-statement.va-bold .s-foot {
-  opacity: 0.72;
-}
-
-.l-statement.va-bold .s-map li.is-on::before {
-  background: currentColor;
 }
 
 /* ---------- 핵심 숫자 ---------- */
@@ -1395,22 +1377,22 @@
 }
 
 /* 어두운 테마에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 */
-.t-navy .pr-plan.is-hl {
+.is-dark .pr-plan.is-hl {
   background: var(--bold-bg);
   box-shadow: inset 0 0 0 3px var(--accent);
   color: var(--ink);
 }
 
-.t-navy .pr-plan.is-hl .pr-price {
+.is-dark .pr-plan.is-hl .pr-price {
   color: var(--accent);
 }
 
-.t-navy .pr-plan.is-hl .pr-tag {
+.is-dark .pr-plan.is-hl .pr-tag {
   background: var(--accent);
   color: var(--accent-ink);
 }
 
-.t-navy .pr-plan.is-hl .pr-body {
+.is-dark .pr-plan.is-hl .pr-body {
   border-color: var(--bold-line);
 }
 
@@ -1489,7 +1471,7 @@
 
 .va-rows .pr-plan,
 .va-rows .pr-plan.is-hl,
-.t-navy .va-rows .pr-plan.is-hl {
+.is-dark.va-rows .pr-plan.is-hl {
   display: grid;
   grid-template-columns: 360px 420px minmax(0, 1fr);
   grid-template-rows: auto auto;
@@ -1504,7 +1486,7 @@
 }
 
 .va-rows .pr-plan.is-hl,
-.t-navy .va-rows .pr-plan.is-hl {
+.is-dark.va-rows .pr-plan.is-hl {
   background: var(--accent-soft);
 }
 
@@ -1552,7 +1534,7 @@
 }
 
 .va-rows .pr-tag,
-.t-navy .va-rows .pr-plan.is-hl .pr-tag {
+.is-dark.va-rows .pr-plan.is-hl .pr-tag {
   background: var(--accent);
   color: var(--accent-ink);
 }
@@ -1687,15 +1669,15 @@
 }
 
 /* 어두운 화면에서는 검은 로고가 묻히므로 밝은 바탕을 깐다 */
-.t-navy .lg-cell {
+.is-dark .lg-cell {
   background: #edf0f5;
 }
 
-.t-navy .lg-name {
+.is-dark .lg-name {
   color: #5d677b;
 }
 
-.t-navy :is(.cv-logo, .cs-logo):not(.img-empty) {
+.is-dark :is(.cv-logo, .cs-logo):not(.img-empty) {
   width: auto;
   max-width: 380px;
   padding: 16px 24px;
@@ -1703,7 +1685,7 @@
   background: #edf0f5;
 }
 
-.t-navy :is(.cv-logo, .cs-logo):not(.img-empty) img {
+.is-dark :is(.cv-logo, .cs-logo):not(.img-empty) img {
   width: auto;
   max-width: 100%;
 }
@@ -2131,13 +2113,13 @@
   font-size: 26px;
 }
 
-/* 어두운 테마의 색 면: 큰 숫자와 지금 단락은 강조색으로 */
-.t-navy .sc-num {
+/* 어두운 바탕의 색 면: 큰 숫자와 지금 단락은 강조색으로 */
+.is-dark .sc-num {
   color: var(--accent);
   opacity: 0.22;
 }
 
-.t-navy .sc-map li.is-on,
-.t-navy .cl-n {
+.is-dark .sc-map li.is-on,
+.is-dark .cl-n {
   color: var(--accent);
 }

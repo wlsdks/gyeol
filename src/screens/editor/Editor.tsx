@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
 import { LAYOUTS, variantOf } from '../../deck/layouts'
+import { motionOf } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
@@ -454,16 +455,16 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
     return () => window.removeEventListener(PREVIEW_MOTION, on)
   }, [])
   const engine = useMemo(() => motionEngine(), [])
+  const level = motionOf(deck, slide)
   useLayoutEffect(() => {
     if (!preview) return
-    const level = deck.motion ?? 'calm'
     const stop = level !== 'none' && previewRef.current ? engine.play(previewRef.current, level) : undefined
     const t = window.setTimeout(() => setPreview(0), 3200)
     return () => {
       window.clearTimeout(t)
       stop?.()
     }
-  }, [preview, deck.motion, engine])
+  }, [preview, level, engine])
 
   return (
     <main className="stage">
@@ -497,22 +498,28 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
                   </p>
                 )}
               </div>
+              {/* 슬라이드가 좁게 보일 때는 오른쪽 단추의 글자를 숨기고 그림만 남긴다 (이름은 title로) */}
               <div className="stage-tools-r">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={onPresentHere}>
+                <button type="button" className="btn btn-ghost btn-sm" title="여기서부터 발표" onClick={onPresentHere}>
                   <PlayIcon />
-                  여기서부터 발표
+                  <span className="btn-t">여기서부터 발표</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => store.duplicateSlide(slide.id)}>
+                <button type="button" className="btn btn-ghost btn-sm" title="복제" onClick={() => store.duplicateSlide(slide.id)}>
                   <CopyIcon />
-                  복제
+                  <span className="btn-t">복제</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => store.setHidden(slide.id, !slide.hidden)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  title={slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}
+                  onClick={() => store.setHidden(slide.id, !slide.hidden)}
+                >
                   {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
-                  {slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}
+                  <span className="btn-t">{slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" disabled={deck.slides.length <= 1} onClick={() => onRemove(slide)}>
+                <button type="button" className="btn btn-ghost btn-sm" title="지우기" disabled={deck.slides.length <= 1} onClick={() => onRemove(slide)}>
                   <TrashIcon />
-                  지우기
+                  <span className="btn-t">지우기</span>
                 </button>
               </div>
             </div>

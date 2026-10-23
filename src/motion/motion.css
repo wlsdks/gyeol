@@ -49,29 +49,54 @@
   }
 }
 
+/* 다가오기: 앞 장은 커지며 사라지고, 다음 장이 조금 작은 데서 다가온다. 뒤로 가면 반대로 */
+@keyframes mo-vt-zoom-out {
+  to {
+    opacity: 0;
+    scale: var(--mo-vt-zoom-old, 1.06);
+  }
+}
+
+@keyframes mo-vt-zoom-in {
+  from {
+    opacity: 0;
+    scale: var(--mo-vt-zoom-new, 0.94);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html[data-mo-swap]::view-transition-group(root) {
     animation: none;
   }
 
-  html[data-mo-swap='calm']::view-transition-old(root) {
+  html[data-mo-swap='fade']::view-transition-old(root) {
     animation: mo-vt-fade-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
   }
 
-  html[data-mo-swap='calm']::view-transition-new(root) {
+  html[data-mo-swap='fade']::view-transition-new(root) {
     animation: mo-vt-fade-in 420ms cubic-bezier(0, 0, 0.2, 1) both;
   }
 
-  html[data-mo-swap='lively']::view-transition-old(root) {
+  html[data-mo-swap='slide']::view-transition-old(root) {
     animation: mo-vt-back 720ms cubic-bezier(0.5, 0, 0.2, 1) both;
   }
 
-  html[data-mo-swap='lively']::view-transition-new(root) {
+  html[data-mo-swap='slide']::view-transition-new(root) {
     animation: mo-vt-push 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  html[data-mo-swap='zoom']::view-transition-old(root) {
+    animation: mo-vt-zoom-out 360ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  html[data-mo-swap='zoom']::view-transition-new(root) {
+    animation: mo-vt-zoom-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
   }
 
   html[data-mo-dir='prev'] {
     --mo-vt-back: 14%;
     --mo-vt-push: -100%;
+    --mo-vt-zoom-old: 0.94;
+    --mo-vt-zoom-new: 1.06;
   }
 }

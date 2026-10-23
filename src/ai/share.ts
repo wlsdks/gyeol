@@ -7,8 +7,8 @@
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
-import { MOTIONS, THEMES, THEME_ORDER } from '../deck/themes'
-import type { Audience, Deck, DeckType, LayoutId, Method, Motion, Slide, ThemeId } from '../deck/types'
+import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
+import type { Audience, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
 
@@ -28,7 +28,7 @@ export interface ShapeSlide {
   hiddenItems: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  options: { highlight?: number; flip?: boolean; contain?: boolean }
+  options: { highlight?: number; flip?: boolean; contain?: boolean; motion?: Motion; tone?: Tone }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
 }
@@ -44,9 +44,16 @@ export interface ShapeDeck {
   theme: ThemeId
   accent: string | null
   motion: Motion
+  /** 아래 넷은 나중에 생겨서, 예전 앱이 쓴 모양 파일에는 없을 수 있다 */
+  font?: FontId | null
+  size?: TextSize
+  footer?: FooterMode
+  transition?: Transition
   updatedAt: number
   slides: ShapeSlide[]
 }
+
+const isOneOf = <T extends string>(list: { id: T }[], v: unknown): v is T => list.some((x) => x.id === v)
 
 const OPAQUE_ID = /^[sd][0-9a-f]{8}$/
 const HEX = /^#[0-9a-f]{6}$/i
@@ -108,6 +115,11 @@ export function catalog() {
     methods: METHODS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     themes: THEME_ORDER.map((id) => ({ id, name: THEMES[id].name, description: THEMES[id].description, accent: THEMES[id].accent })),
     motions: MOTIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    fonts: FONTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    textSizes: TEXT_SIZES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    footers: FOOTERS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    transitions: TRANSITIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    tones: TONES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
 }
 
@@ -171,6 +183,10 @@ export function toShape(deck: Deck): ShapeDeck {
     theme: THEME_ORDER.includes(deck.theme.id) ? deck.theme.id : 'white',
     accent: deck.theme.accent && HEX.test(deck.theme.accent) ? deck.theme.accent.toLowerCase() : null,
     motion: MOTIONS.some((m) => m.id === deck.motion) ? deck.motion! : 'calm',
+    font: isOneOf(FONTS, deck.theme.font) ? deck.theme.font : null,
+    size: isOneOf(TEXT_SIZES, deck.theme.size) ? deck.theme.size : 'normal',
+    footer: isOneOf(FOOTERS, deck.theme.footer) ? deck.theme.footer : 'all',
+    transition: isOneOf(TRANSITIONS, deck.theme.transition) ? deck.theme.transition : 'auto',
     updatedAt: Math.round(deck.updatedAt) || 0,
     slides: deck.slides.filter((s) => s.layout in LAYOUTS).map((s) => shapeSlide(deck, s)),
   }
@@ -195,6 +211,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     options.flip = !!o.flip
     options.contain = !!o.contain
   }
+  if (isOneOf(MOTIONS, o.motion)) options.motion = o.motion
+  if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
   return {
     id: shapeSlideId(slide),
     layout: slide.layout,
@@ -235,8 +253,10 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'contain'])) return false
+  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'contain', 'motion', 'tone'])) return false
   if (o.highlight !== undefined && !isInt(o.highlight, -1, 20)) return false
+  if (o.motion !== undefined && !isOneOf(MOTIONS, o.motion)) return false
+  if (o.tone !== undefined && !isOneOf(TONES, o.tone)) return false
   if (o.flip !== undefined && typeof o.flip !== 'boolean') return false
   if (o.contain !== undefined && typeof o.contain !== 'boolean') return false
   return true
@@ -244,7 +264,8 @@ function checkSlide(v: unknown): boolean {
 
 export function checkShape(v: unknown): v is ShapeDeck {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides'])) return false
+  if (!keysIn(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'updatedAt', 'slides']))
+    return false
   if (v.format !== SHAPE_FORMAT || v.version !== 1) return false
   if (typeof v.deck !== 'string' || !OPAQUE_ID.test(v.deck) || v.deck[0] !== 'd') return false
   if (!ALL_TYPES.includes(v.type as DeckType)) return false
@@ -254,6 +275,10 @@ export function checkShape(v: unknown): v is ShapeDeck {
   if (!THEME_ORDER.includes(v.theme as ThemeId)) return false
   if (v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return false
   if (!MOTIONS.some((m) => m.id === v.motion)) return false
+  if (v.font !== undefined && v.font !== null && !isOneOf(FONTS, v.font)) return false
+  if (v.size !== undefined && !isOneOf(TEXT_SIZES, v.size)) return false
+  if (v.footer !== undefined && !isOneOf(FOOTERS, v.footer)) return false
+  if (v.transition !== undefined && !isOneOf(TRANSITIONS, v.transition)) return false
   if (!Array.isArray(v.slides) || v.slides.length > 300 || !v.slides.every(checkSlide)) return false
   return new Set((v.slides as ShapeSlide[]).map((s) => s.id)).size === v.slides.length
 }

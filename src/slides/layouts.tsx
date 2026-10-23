@@ -505,5 +505,4 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   closing: Closing,
 }
 
-/** 색 면을 쓰는 장. 하단 쪽 번호를 넣지 않는다. */
-export const BOLD_LAYOUTS: LayoutId[] = ['cover', 'section', 'closing']
+export { BOLD_LAYOUTS } from '../deck/layouts'

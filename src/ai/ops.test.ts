@@ -91,4 +91,26 @@ describe('제안 적용', () => {
     const { results } = run({ op: 'set_options', slide: sid(0), highlight: 1 }, { op: 'set_options', slide: 's00000000', flip: true })
     expect(results.map((r) => r.code)).toEqual(['not_for_layout', 'no_slide'])
   })
+
+  it('장마다 바탕과 움직임, 발표 전체의 글꼴과 전환을 정해진 값으로만 바꾼다', () => {
+    const body = shape.slides.findIndex((s) => s.layout === 'kpi')
+    const { deck: next, results } = run(
+      { op: 'set_options', slide: sid(body), tone: 'invert', motion: 'lively' },
+      { op: 'set_options', slide: sid(0), tone: 'accent' },
+      { op: 'set_theme', font: 'serif', size: 'large', footer: 'page', transition: 'zoom' },
+      { op: 'set_theme', font: 'serif', size: 'large' },
+    )
+    expect(results.map((r) => r.code)).toEqual(['applied', 'not_for_layout', 'applied', 'no_change'])
+    expect(next.slides[body].options).toMatchObject({ tone: 'invert', motion: 'lively' })
+    expect(next.theme).toMatchObject({ font: 'serif', size: 'large', footer: 'page', transition: 'zoom' })
+    expect(writtenText(next)).toEqual(writtenText(deck))
+
+    const back = applyOps(next, [{ op: 'set_options', slide: sid(body), tone: 'base', motion: null }]).deck
+    expect(back.slides[body].options.tone).toBeUndefined()
+    expect(back.slides[body].options.motion).toBeUndefined()
+
+    expect(parseOp({ op: 'set_options', slide: sid(body), tone: 'neon' })).toBeNull()
+    expect(parseOp({ op: 'set_theme', font: 'Comic Sans' })).toBeNull()
+    expect(parseOp({ op: 'set_theme', transition: 'spin' })).toBeNull()
+  })
 })

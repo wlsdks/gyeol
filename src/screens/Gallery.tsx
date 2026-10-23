@@ -2,12 +2,13 @@ import { pageInfo } from '../deck/fields'
 import { createDeck, emptyItem, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { createSampleDeck, SAMPLE_LOGOS } from '../deck/sample'
-import type { Deck, DeckType, Item, Slide, ThemeId } from '../deck/types'
+import type { Deck, DeckTheme, DeckType, Item, Slide, ThemeId, Tone } from '../deck/types'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
+// &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page 는 발표 전체 설정을 바꿔 본다.
 
 function withItems(slide: Slide, items: Partial<Item>[], fields: Record<string, string> = {}): Slide {
   return { ...slide, fields: { ...slide.fields, ...fields }, items: items.map((it) => ({ ...emptyItem(), ...it })) }
@@ -103,7 +104,17 @@ export function Gallery() {
     params.get('variants') === '1'
       ? picked.flatMap((s) => (LAYOUTS[s.layout].variants ?? [{ id: 'base' }]).map((v) => ({ ...s, id: `${s.id}-${v.id}`, variant: v.id })))
       : picked
-  const deck = { ...base, slides }
+  const tone = params.get('tone') as Tone | null
+  const look: Partial<DeckTheme> = {}
+  for (const k of ['font', 'size', 'footer'] as const) {
+    const v = params.get(k)
+    if (v) (look as Record<string, string>)[k] = v
+  }
+  const deck = {
+    ...base,
+    theme: { ...base.theme, ...look },
+    slides: tone ? slides.map((s) => ({ ...s, options: { ...s.options, tone } })) : slides,
+  }
   const info = pageInfo(deck.slides)
   return (
     <div className="gallery">
