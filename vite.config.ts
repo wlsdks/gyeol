@@ -1,6 +1,8 @@
+import { join } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { CSP } from './server/serve.mjs'
+import { createAiHandler, SHARE_DIR_NAME } from './server/ai'
+import { CSP } from './server/csp'
 
 /** 빌드한 화면에도 서버와 같은 CSP를 넣는다. 다른 방법으로 열어도 이 PC 밖으로는 연결하지 못한다. */
 function cspMeta(): Plugin {
@@ -16,7 +18,22 @@ function cspMeta(): Plugin {
   }
 }
 
+/** 개발 서버에서도 'AI 공유' 창구를 연다. 실제 서버(server/serve.ts)와 같은 처리기를 쓴다. */
+function aiShare(): Plugin {
+  return {
+    name: 'html-maker-ai',
+    apply: 'serve',
+    configureServer(server) {
+      const root = process.cwd()
+      const handle = createAiHandler(join(root, SHARE_DIR_NAME), { mcpPath: join(root, 'dist-node', 'html-maker-mcp.mjs') })
+      server.middlewares.use((req, res, next) => {
+        handle(req, res).then((done) => done || next(), next)
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), cspMeta()],
+  plugins: [react(), cspMeta(), aiShare()],
   base: './',
 })

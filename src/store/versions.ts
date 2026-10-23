@@ -22,7 +22,7 @@ const dataStore = createStore('html-maker-version-data', 'versions')
 const AUTO_KEEP = 30
 export const AUTO_INTERVAL = 10 * 60 * 1000
 
-export type VersionReason = 'open' | 'interval' | 'present' | 'export' | 'restore' | 'file'
+export type VersionReason = 'open' | 'interval' | 'present' | 'export' | 'restore' | 'file' | 'ai'
 
 export interface DeckVersion {
   id: string
@@ -65,6 +65,7 @@ export const REASON_LABEL: Record<VersionReason, string> = {
   export: '내보내기 전',
   restore: '되돌리기 전',
   file: '파일을 열기 전',
+  ai: 'AI 제안을 적용하기 전',
 }
 
 /** 내용이 같은지 보는 짧은 값. 수정 시각처럼 내용이 아닌 것은 뺀다. */

@@ -5,3 +5,5 @@ dist
 .vite
 .playwright-mcp
 release
+dist-node
+AI 공유

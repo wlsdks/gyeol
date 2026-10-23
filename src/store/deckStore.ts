@@ -36,6 +36,11 @@ interface DeckState {
   setHidden(slideId: string, hidden: boolean): void
   changeLayout(slideId: string, layout: LayoutId): void
 
+  /** 되돌리기 기록에 남기지 않는 설정 */
+  setAiShare(on: boolean): void
+  /** 덱을 통째로 바꾼다 (AI 제안 적용). 되돌리기 한 번으로 돌아온다. */
+  replaceDeck(next: Deck): void
+
   addSlide(layout: LayoutId, afterId?: string): void
   duplicateSlide(slideId: string): void
   removeSlide(slideId: string): void
@@ -157,6 +162,16 @@ export const useDeck = create<DeckState>((set, get) => {
           return { ...s, layout, items, options: withDefaultOptions(layout, s.options, items.length) }
         }),
       )
+    },
+
+    setAiShare(on) {
+      const { deck } = get()
+      if (deck) set({ deck: { ...deck, aiShare: on, updatedAt: Date.now() } })
+    },
+    replaceDeck(next) {
+      commit(() => next)
+      const { deck, selectedId } = get()
+      if (deck && !deck.slides.some((s) => s.id === selectedId)) set({ selectedId: deck.slides[0]?.id ?? null })
     },
 
     addSlide(layout, afterId) {

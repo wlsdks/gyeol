@@ -10,13 +10,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const out = join(root, 'release', `html-maker-${version}`)
 
+// 사내에서 써도 되는 라이선스가 아니면 여기서 멈춘다
+execSync('node scripts/licenses.mjs', { cwd: root, stdio: 'inherit' })
 execSync('npm run build', { cwd: root, stdio: 'inherit' })
 
 // 빌드 결과에 바깥 주소가 섞이면 멈춘다. SVG 네임스페이스와 문서 주소는 연결이 아니라서 뺀다.
-const allowed = [/^http:\/\/www\.w3\.org\//, /^https?:\/\/(reactjs\.org|react\.dev)\//]
+const allowed = [
+  /^http:\/\/www\.w3\.org\//,
+  /^https?:\/\/(reactjs\.org|react\.dev)\//,
+  // 로컬 서버가 자기 주소(127.0.0.1)를 만드는 곳
+  /^http:\/\/(127\.0\.0\.1|\$\{HOST\}|\$\{req\.headers\.host\})/,
+]
 const external = new Set()
-for (const file of execSync('find dist -type f', { cwd: root, encoding: 'utf8' }).trim().split('\n')) {
-  if (!/\.(js|css|html)$/.test(file)) continue
+for (const file of execSync('find dist dist-node -type f', { cwd: root, encoding: 'utf8' }).trim().split('\n')) {
+  if (!/\.(m?js|css|html)$/.test(file)) continue
   for (const [url] of readFileSync(join(root, file), 'utf8').matchAll(/https?:\/\/[^\s"'`)<>\\]+/g)) {
     if (!allowed.some((re) => re.test(url))) external.add(`${file}: ${url}`)
   }
@@ -27,14 +34,15 @@ if (external.size) {
 }
 
 rmSync(out, { recursive: true, force: true })
-mkdirSync(join(out, 'server'), { recursive: true })
+mkdirSync(out, { recursive: true })
 cpSync(join(root, 'dist'), join(out, 'dist'), { recursive: true })
-cpSync(join(root, 'server', 'serve.mjs'), join(out, 'server', 'serve.mjs'))
+cpSync(join(root, 'dist-node'), join(out, 'dist-node'), { recursive: true })
+execSync(`node scripts/licenses.mjs --notices "${join(out, '오픈소스 라이선스.txt')}"`, { cwd: root, stdio: 'ignore' })
 for (const name of ['html-maker 시작.command', 'html-maker 시작.bat', '사용법.txt']) {
   cpSync(join(root, 'launch', name), join(out, name))
 }
 chmodSync(join(out, 'html-maker 시작.command'), 0o755)
-// server/serve.mjs가 ES 모듈로 돌도록
+// dist-node의 .mjs는 그 자체로 ES 모듈이지만, 폴더를 알아보기 쉽게 이름과 버전을 남긴다
 writeFileSync(join(out, 'package.json'), JSON.stringify({ name: 'html-maker', version, private: true, type: 'module' }, null, 2) + '\n')
 
 console.log(`\n나눠 줄 폴더를 만들었어요: ${out}`)

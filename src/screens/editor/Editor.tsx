@@ -14,6 +14,9 @@ import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
 import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { applyOps, type ChangeRequest } from '../../ai/ops'
+import { useAiShare } from '../../ai/useAiShare'
+import { AiInbox, AiMenu, AiReview } from './AiShare'
 import { ExportMenu, ThemeMenu } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
@@ -125,7 +128,26 @@ function EditorBody({ deck }: { deck: Deck }) {
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; missing: number } | null>(null)
   const [printing, setPrinting] = useState(false)
+  const [reviewing, setReviewing] = useState<ChangeRequest | null>(null)
   const toast = useToast()
+  const ai = useAiShare(deck)
+
+  const applyAi = async (request: ChangeRequest) => {
+    // 적용 전 상태를 버전으로 남긴다. 미리 본 뒤에 덱이 바뀌었을 수 있으니 지금 덱에 다시 적용한다.
+    markVersion('ai')
+    const current = useDeck.getState().deck ?? deck
+    const result = applyOps(current, request.ops)
+    store.replaceDeck(result.deck)
+    setReviewing(null)
+    toast.show('AI 제안을 적용했어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+    await ai.resolve(request, 'applied', result.results)
+  }
+
+  const rejectAi = async (request: ChangeRequest) => {
+    setReviewing(null)
+    toast.show('AI 제안을 거절했어요')
+    await ai.resolve(request, 'rejected', [])
+  }
 
   const startPresent = useCallback(
     (startId?: string, force = false) => {
@@ -238,6 +260,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           >
             <HistoryIcon />
           </button>
+          <AiMenu deck={deck} ai={ai} />
           <ThemeMenu deck={deck} />
           <ExportMenu
             onHtml={exportHtml}
@@ -296,6 +319,16 @@ function EditorBody({ deck }: { deck: Deck }) {
         </Modal>
       )}
       {printing && <PrintDeck deck={deck} onDone={() => setPrinting(false)} />}
+      {!reviewing && <AiInbox ai={ai} onOpen={setReviewing} />}
+      {reviewing && (
+        <AiReview
+          deck={deck}
+          request={reviewing}
+          onClose={() => setReviewing(null)}
+          onApply={() => applyAi(reviewing)}
+          onReject={() => rejectAi(reviewing)}
+        />
+      )}
       {toast.node}
     </div>
   )

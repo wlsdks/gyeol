@@ -13,6 +13,7 @@ import {
   type FolderStatus,
 } from './folder'
 import { deleteDeck, listDecks, loadDeck, saveDeck } from './library'
+import { unshareDeck } from '../ai/client'
 import { deckSignature, deleteDeckVersions, saveVersion } from './versions'
 
 /*
@@ -150,12 +151,14 @@ export async function loadBestDeck(id: string): Promise<Deck | undefined> {
 export async function importDeck(deck: Deck): Promise<Deck> {
   const local = await loadDeck(deck.id)
   if (local && deckSignature(local) !== deckSignature(deck)) await saveVersion(local, { reason: 'file' })
-  const next = { ...deck, updatedAt: Date.now() }
+  // 가져온 발표는 AI 공유를 끈 채로 시작한다. 공유는 발표마다 사람이 켠다.
+  const next = { ...deck, aiShare: false, updatedAt: Date.now() }
   await persistNow(next)
   return next
 }
 
 export async function removeDeck(deck: Deck): Promise<void> {
+  if (deck.aiShare) await unshareDeck(deck)
   await trashDeckInFolder(deck)
   await deleteDeck(deck.id)
   await deleteDeckVersions(deck.id)

@@ -10,7 +10,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "dist\index.html" (
+if not exist "dist-node\serve.mjs" (
   if exist "node_modules" (
     echo 처음 실행이라 화면 파일을 만들고 있어요...
     call npm run build || (pause & exit /b 1)
@@ -21,5 +21,5 @@ if not exist "dist\index.html" (
   )
 )
 
-node server\serve.mjs
+node dist-node\serve.mjs
 pause

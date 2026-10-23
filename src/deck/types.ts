@@ -84,4 +84,6 @@ export interface Deck {
   meta: DeckMeta
   theme: { id: ThemeId; accent?: string }
   slides: Slide[]
+  /** AI(MCP)에게 이 발표의 모양을 보여 줄지. 사용자가 발표마다 직접 켠다. */
+  aiShare?: boolean
 }

@@ -5,6 +5,7 @@ import { LAYOUTS, LAYOUT_ORDER } from '../../deck/layouts'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { Toggle } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['단락 1', '단락 2', '단락 3']
@@ -130,12 +131,3 @@ function LayoutChoice({
   )
 }
 
-function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="toggle">
-      <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} />
-      <span className="toggle-track" aria-hidden="true" />
-      <span>{label}</span>
-    </label>
-  )
-}

@@ -58,17 +58,37 @@
 - **이 PC 안에서만 돕니다.** 서버는 `127.0.0.1`에만 묶여 있어 같은 네트워크의 다른 PC에서 접속할 수 없고, 다른 주소 이름으로 들어온 요청은 거절합니다. 화면 파일만 내주고 발표 내용은 받지 않습니다.
 - **바깥으로 연결하지 않습니다.** 화면과 내보낸 HTML 파일 모두 CSP로 바깥 주소 연결을 막습니다. 글꼴과 이미지도 모두 안에 들어 있습니다. `npm run pack`은 빌드 결과에 바깥 주소가 섞이면 멈춥니다.
 - **저장은 두 곳뿐입니다.** 이 브라우저(IndexedDB)와 사용자가 고른 보관 폴더입니다.
-- **AI는 모양만 다룹니다.** (만드는 중) Claude Code나 Codex를 MCP로 연결해도 AI는 장 구성과 레이아웃만 보고 고칠 수 있게 하고, 적어 넣은 글은 넘기지 않습니다. 자세한 설계는 [docs/DESIGN.md](docs/DESIGN.md)에 있습니다.
+- **AI는 모양만 다룹니다.** 아래 ‘AI에게 구성 맡기기’를 보세요.
+- **오픈소스만 씁니다.** 모두 사내에서 써도 되는 라이선스(MIT, Apache-2.0, BSD, OFL 등)입니다. [docs/OPEN-SOURCE.md](docs/OPEN-SOURCE.md)에 정리했고, `npm run licenses`로 확인합니다.
+
+## AI에게 구성 맡기기
+
+Claude Code나 Codex가 발표의 **장 구성과 모양**을 보고 바꾸자고 제안할 수 있습니다. 적은 글은 AI에게 가지 않습니다.
+
+1. 편집 화면 위쪽 **AI** 버튼을 누르고 **이 발표를 AI에게 보여 주기**를 켭니다. 발표마다 따로 켭니다.
+2. 같은 창의 **Claude Code, Codex에 연결하기**에 나오는 명령을 터미널에 한 번 입력합니다.
+   ```bash
+   claude mcp add html-maker -- node "<html-maker 폴더>/dist-node/html-maker-mcp.mjs"
+   codex mcp add html-maker -- node "<html-maker 폴더>/dist-node/html-maker-mcp.mjs"
+   ```
+3. AI에게 “html-maker에 공유한 발표를 본부장 보고에 맞게 구성을 다듬어 줘”처럼 말합니다.
+4. 제안이 오면 편집 화면 오른쪽 아래에 알림이 뜹니다. 바뀌는 모습을 미리 보고 **적용하기**나 **거절하기**를 누릅니다.
+
+- **AI에게 보이는 것:** 보고 종류와 시간, 장 순서와 레이아웃, 칸이 비었는지, 테마와 강조색. AI 버튼에서 **AI에게 보이는 내용 그대로 보기**로 직접 확인할 수 있습니다.
+- **보이지 않는 것:** 제목과 적은 글, 숫자와 이미지, 발표자 노트, 소속·이름·연락처.
+- **AI가 할 수 없는 것:** 칸에 글 쓰기, 내용이 있는 장이나 항목 지우기. 제안은 사람이 적용해야 바뀌고, 적용 전 상태는 버전으로 남습니다.
+- AI와는 html-maker 폴더 안의 `AI 공유` 폴더로만 주고받습니다. MCP 서버는 Node 권한 모델로 이 폴더 밖의 파일을 읽을 수 없게 실행됩니다.
 
 ## 개발
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173 (개발용. 저장소가 실제 주소와 따로입니다)
-npm test           # 구성 생성 규칙, 작업 파일, 버전 비교, 로컬 서버 테스트
-npm run build      # dist/ 에 화면 파일 생성
-npm start          # dist/ 를 http://127.0.0.1:41580 으로 띄우기
-npm run pack       # 나눠 줄 폴더와 zip 만들기
+npm test           # 구성 생성 규칙, 작업 파일, 버전 비교, 로컬 서버, AI 공유, MCP 서버 테스트
+npm run build      # dist/(화면)와 dist-node/(로컬 서버, MCP 서버) 만들기
+npm start          # http://127.0.0.1:41580 으로 띄우기
+npm run licenses   # 쓰는 패키지의 라이선스 확인
+npm run pack       # 라이선스 확인 후 나눠 줄 폴더와 zip 만들기
 ```
 
-설계와 앞으로 할 일은 [docs/DESIGN.md](docs/DESIGN.md)에 있습니다.
+설계와 앞으로 할 일은 [docs/DESIGN.md](docs/DESIGN.md), AI 에이전트가 이 저장소에서 지킬 규칙은 [AGENTS.md](AGENTS.md)에 있습니다.

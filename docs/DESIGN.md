@@ -120,7 +120,7 @@ Item  { id, title, body, value, meta, image }
 ## 9. 기술
 
 - Vite + React + TypeScript 정적 웹앱.
-- **로컬 서버** (`server/serve.mjs`, 의존성 없음): `127.0.0.1:41580`에만 묶는다. 포트를 고정하는 이유는 IndexedDB와 폴더 권한이 주소(포트 포함)마다 따로라서다. `localhost`로 오면 `127.0.0.1`로 보내고, 다른 Host 헤더는 거절한다(DNS 리바인딩 방어). GET/HEAD만, `dist` 밖 파일은 내주지 않는다. 모든 응답에 CSP(`connect-src 'self'` 등)를 붙이고, 빌드한 `index.html`에도 같은 CSP를 meta로 넣는다.
+- **로컬 서버** (`server/serve.ts`, Node 내장만. 빌드하면 `dist-node/serve.mjs`): `127.0.0.1:41580`에만 묶는다. 포트를 고정하는 이유는 IndexedDB와 폴더 권한이 주소(포트 포함)마다 따로라서다. `localhost`로 오면 `127.0.0.1`로 보내고, 다른 Host 헤더는 거절한다(DNS 리바인딩 방어). GET/HEAD만, `dist` 밖 파일은 내주지 않는다. 모든 응답에 CSP(`connect-src 'self'` 등)를 붙이고, 빌드한 `index.html`에도 같은 CSP를 meta로 넣는다.
 - **나눠 주기:** `npm run pack`이 `dist`, 서버, 더블클릭 실행 파일(맥 `.command`, 윈도우 `.bat`), 사용법을 묶는다. 받는 사람은 Node.js만 있으면 된다. 빌드 결과에 바깥 주소가 있으면 멈춘다.
 - 상태: zustand, 저장: IndexedDB(idb-keyval) + File System Access API, 정렬: dnd-kit.
 - 폰트: pretendard(dynamic subset), @fontsource-variable/hahmlet.
@@ -130,3 +130,24 @@ Item  { id, title, body, value, meta, image }
 1. 발표자 보기: 두 번째 창에 노트, 다음 장, 타이머
 2. PPTX 내보내기 (PPT로 받길 원하는 분께)
 3. 팀 표준 덱: 자주 쓰는 구성을 팀 템플릿으로 저장
+
+## 11. AI(MCP): 모양만 보고, 제안만 한다
+
+Claude Code나 Codex가 MCP로 붙어서 발표의 구성과 모양을 다듬을 수 있다. 사람이 적은 글은 AI에게 가지 않는다(MCP 응답은 AI 회사 서버로 간다고 보고 설계했다).
+
+```
+브라우저 앱 ──PUT 모양──▶ 로컬 서버 ──▶ AI 공유/decks/<해시>.json ──▶ MCP 서버 ──▶ Claude Code / Codex
+     ▲                                                                   │
+     └──GET 제안── 로컬 서버 ◀── AI 공유/requests/<id>.json ◀── propose_changes
+     └──POST 결과─▶ 로컬 서버 ──▶ AI 공유/results/<id>.json ──▶ get_result
+```
+
+- **켜는 법:** 편집기 위쪽 **AI** 버튼에서 발표마다 직접 켠다(`deck.aiShare`). 가져온 발표, 복제한 발표는 꺼진 채로 시작한다. 같은 곳에서 AI에게 보이는 내용을 그대로 볼 수 있고, Claude Code·Codex 연결 명령을 복사할 수 있다.
+- **모양(`src/ai/share.ts`):** 덱에서 고른 값으로 새로 만든다. 보고 종류, 시간, 장 순서, 레이아웃, 장 역할(카탈로그에 있는 말만), 숨김, 칸마다 `empty | filled | long`, 항목 수, 옵션, 테마와 강조색. 장과 덱의 원래 id 대신 해시를 쓴다(가져온 파일의 id에는 아무 글이나 있을 수 있다). 제목, 적은 글, 숫자, 이미지, 노트, 소속·이름·연락처는 넣지 않는다.
+- **세 겹 확인:** 앱이 만들고, 로컬 서버가 `checkShape`로 꼴을 확인해서 쓰고, MCP 서버가 읽을 때 다시 `checkShape`, 내보낼 때 `onlyKnownStrings`(모든 글자가 카탈로그·정해진 말·해시인지)로 막는다.
+- **MCP 서버(`mcp/server.ts`):** 의존성 없는 stdio JSON-RPC. 스스로를 Node 권한 모델(`--permission --allow-fs-read/write=AI 공유`)로 다시 띄워서 다른 파일을 읽지 못하고 다른 프로그램을 실행하지 못한다. 권한 모델이 심볼릭 링크를 따라가는 문제는 링크·하드 링크를 읽지 않는 것으로 막는다. 오류는 정해진 문구만.
+- **도구 다섯 개:** `list_decks`, `get_catalog`, `get_shape`, `propose_changes`, `get_result`. 글을 읽는 도구는 없다.
+- **제안(`src/ai/ops.ts`):** 장 넣기·빈 장 지우기·옮기기·숨기기, 레이아웃, 항목 수(빈 항목만 줄임), 옵션, 테마, 장 안내, 칸 안내 문구. 칸의 글을 쓰는 동작은 없다. 꼴이 하나라도 어긋나면 제안 전체를 받지 않는다. 한 발표에 보지 않은 제안은 5개까지.
+- **사람이 결정:** 제안이 오면 오른쪽 아래에 알림이 뜨고, 미리 보기에서 바뀌는 것 목록과 적용한 뒤의 장들을 본다. 적용하면 그 전 상태를 버전(‘AI 제안을 적용하기 전’)으로 남기고, 되돌리기 한 번으로 돌아온다. 결과(적용/거절, op마다 코드)는 AI가 `get_result`로 본다.
+- **다른 웹사이트 막기:** AI 창구는 `X-HTML-Maker` 머리글이 있어야 하고 Origin이 같아야 한다. 다른 사이트가 머리글을 붙이면 브라우저가 먼저 허락을 묻는데(OPTIONS), 서버는 허락하지 않는다.
+

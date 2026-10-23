@@ -35,7 +35,7 @@ export function Home() {
 
   const duplicate = async (deck: Deck) => {
     const now = Date.now()
-    const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now }
+    const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
     await persistNow(copy)
     refresh()
   }

@@ -8,7 +8,7 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ ! -f dist/index.html ]; then
+if [ ! -f dist/index.html ] || [ ! -f dist-node/serve.mjs ]; then
   if [ -d node_modules ]; then
     echo "처음 실행이라 화면 파일을 만들고 있어요..."
     npm run build || { read -r -p "만들지 못했어요. Enter를 누르면 닫혀요."; exit 1; }
@@ -19,4 +19,4 @@ if [ ! -f dist/index.html ]; then
   fi
 fi
 
-node server/serve.mjs
+node dist-node/serve.mjs
