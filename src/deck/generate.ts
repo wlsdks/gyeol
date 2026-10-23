@@ -53,7 +53,7 @@ export function makeSlide(layout: LayoutId, recipe?: Partial<Recipe>): Slide {
     hints: { ...(recipe?.hints ?? {}) },
     guide: recipe?.guide ?? spec.description,
     notes: '',
-    options: withDefaultOptions(layout, {}, count),
+    options: withDefaultOptions(layout, { ...recipe?.options }, count),
     ...(recipe?.variant ? { variant: recipe.variant } : {}),
   }
 }

@@ -102,7 +102,8 @@
     .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
     .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
-    .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v
+    .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
+    .pc-title, .pc-meta, .pc-body
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -2716,6 +2717,203 @@
 
 .sh.is-demo .sh-pct {
   opacity: 0.45;
+}
+
+/* ---------- 단계 흐름 ----------
+   화살표: 단계마다 꺾쇠 모양 면. 앞 단계의 뾰족한 끝이 다음 단계의 홈에 들어가 맞물리게
+   끝을 --tip 만큼 다음 칸으로 내민다(틈은 --tip - --overlap). 칸: 화살표로 이은 면. */
+
+.pc {
+  --tip: 44px;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  align-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pc-step {
+  position: relative;
+  min-width: 0;
+}
+
+.pc-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 176px;
+  margin-right: calc(var(--tip) * -1 + 12px);
+  padding: 0 calc(var(--tip) + 20px) 0 calc(var(--tip) + 28px);
+  background: var(--surface);
+  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%, var(--tip) 50%);
+}
+
+.pc-step:first-child .pc-head {
+  padding-left: 40px;
+  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
+}
+
+.pc-step:last-child .pc-head {
+  margin-right: 0;
+}
+
+.pc-n {
+  flex: none;
+  color: var(--ink-3);
+  font-family: var(--font-head);
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-title {
+  --fs: 34px;
+  min-width: 0;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.l-process:not(.va-cards) .pc-step.is-hl .pc-head {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.l-process:not(.va-cards) .pc-step.is-hl .pc-n {
+  color: inherit;
+  opacity: 0.72;
+}
+
+.pc-text {
+  padding: 36px 40px 0 var(--pc-text-x, var(--tip));
+}
+
+.pc-step:first-child {
+  --pc-text-x: 40px;
+}
+
+.pc-meta {
+  --fs: 24px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.pc-body {
+  --fs: 30px;
+  margin-top: 12px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.pc:is([data-n='5'], [data-n='6']) .pc-title {
+  --fs: 28px;
+}
+
+.pc:is([data-n='5'], [data-n='6']) .pc-body {
+  --fs: 26px;
+}
+
+.pc:is([data-n='5'], [data-n='6']) .pc-text {
+  padding-right: 24px;
+}
+
+/* 모양: 칸. 꺾쇠 대신 둥근 면, 사이에 화살표 */
+.va-cards .pc {
+  --pc-gap: 64px;
+  gap: var(--pc-gap);
+}
+
+.va-cards .pc:is([data-n='5'], [data-n='6']) {
+  --pc-gap: 44px;
+}
+
+.va-cards .pc-step {
+  display: flex;
+  flex-direction: column;
+  min-height: 440px;
+  padding: 44px 40px;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-step {
+  padding: 36px 28px;
+}
+
+.va-cards .pc-step.is-hl {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.va-cards .pc-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  background: none;
+  clip-path: none;
+}
+
+.va-cards .pc-step:first-child .pc-head {
+  padding: 0;
+  clip-path: none;
+}
+
+.va-cards .pc-n {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 26px;
+}
+
+.va-cards .pc-step.is-hl .pc-n {
+  color: inherit;
+  opacity: 1;
+}
+
+.va-cards .pc-text {
+  padding: 24px 0 0;
+}
+
+.va-cards .pc-step.is-hl :is(.pc-meta, .pc-body) {
+  color: inherit;
+}
+
+.va-cards .pc-step.is-hl .pc-body {
+  opacity: 0.85;
+}
+
+/* 어두운 바탕에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 (안 비교와 같은 방식) */
+.is-dark.va-cards .pc-step.is-hl {
+  background: var(--bold-bg);
+  box-shadow: inset 0 0 0 3px var(--accent);
+  color: var(--ink);
+}
+
+.is-dark.va-cards .pc-step.is-hl :is(.pc-n, .pc-meta) {
+  color: var(--accent);
+}
+
+/* 칸 사이 화살표: 두 변만 그린 마름모를 돌려 화살촉으로 */
+.va-cards .pc-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: calc(var(--pc-gap) / -2 - 6px);
+  width: 16px;
+  height: 16px;
+  border-top: 3px solid var(--ink-3);
+  border-right: 3px solid var(--ink-3);
+  rotate: 45deg;
+  translate: 0 -50%;
 }
 
 /* ---------- 표 ----------

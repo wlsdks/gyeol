@@ -10,6 +10,7 @@ export type LayoutId =
   | 'trend'
   | 'progress'
   | 'share'
+  | 'process'
   | 'table'
   | 'points'
   | 'compare'

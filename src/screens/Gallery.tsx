@@ -92,6 +92,16 @@ function extraSlides(): Slide[] {
       { title: '매출의 절반 가까이가 제조에서 나와요', unit: '억 원', source: '영업관리 시스템, 9월 말 기준' },
     ),
     withOptions(withItems(
+      makeSlide('process'),
+      [
+        { title: '요청 접수', meta: '영업 담당, 당일', body: '고객 요청을 시스템에 남겨요' },
+        { title: '견적 작성', meta: '영업 담당, 하루', body: '단가표로 견적을 바로 계산해요' },
+        { title: '검토와 승인', meta: '팀장, 반나절', body: '세 단계를 한 번으로 줄여요' },
+        { title: '고객에게 보내기', meta: '영업 담당, 당일', body: '정해진 양식으로 보내요' },
+      ],
+      { title: '견적이 나가기까지 네 단계, 이틀이면 돼요', lead: '지금은 같은 일에 닷새가 걸려요' },
+    ), { highlight: 2 }),
+    withOptions(withItems(
       makeSlide('table'),
       [
         { title: '견적 양식 통일', meta: '영업기획팀', value: '11월', body: '팀마다 다른 양식을 하나로' },
@@ -191,6 +201,18 @@ function edgeSlides(): Slide[] {
       ],
       { title: '강조 없이, 아주 작은 조각과 빈 값', unit: '만 원' },
     ), { highlight: -1 }),
+    withOptions(withItems(
+      makeSlide('process'),
+      [
+        { title: '요청 접수', meta: '영업 담당', body: '고객 요청을 남겨요' },
+        { title: '현장 확인과 사진 기록', body: '설치 자리를 직접 보고 사진으로 남겨 견적에 붙여요' },
+        { title: '견적', meta: '영업 담당, 하루' },
+        { title: '검토와 승인' },
+        { title: '계약', meta: '영업본부, 사흘', body: '계약 조건을 확정해요' },
+        { title: '사후 관리', body: '쓰는 모습을 살펴요' },
+      ],
+      { title: '여섯 단계, 긴 이름과 빈 칸' },
+    ), { highlight: 5 }),
   ]
 }
 

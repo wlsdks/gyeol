@@ -1,4 +1,4 @@
-import type { Audience, DeckType, ItemKey, LayoutId } from './types'
+import type { Audience, DeckType, ItemKey, LayoutId, SlideOptions } from './types'
 
 /*
  * 보고의 골격. 영업 대표가 팀장, 본부장 같은 윗분에게 "이 사업을 이렇게 하자"고 보고하고 결정을 받는 자리를 위한 구성이다.
@@ -25,6 +25,8 @@ export interface Recipe {
   items?: number
   /** 처음 쓸 모양. 없으면 레이아웃의 기본 모양 */
   variant?: string
+  /** 처음 정해 두는 장 옵션 (예: 강조할 단계) */
+  options?: SlideOptions
 }
 
 export interface Blueprint {
@@ -474,6 +476,15 @@ const improve: Blueprint = {
           body: ['한 가지 양식으로 써요', '단가표에서 바로 찾아요', '하루 안에 승인해요'],
         }),
       },
+    },
+    {
+      layout: 'process',
+      purpose: '바뀌는 절차',
+      priority: 2,
+      section: '개선안',
+      guide: '바뀐 뒤 일이 흘러가는 순서를 단계로 보여주세요. 가장 크게 바뀌는 단계 하나를 강조하면 무엇이 달라지는지 바로 보여요.',
+      options: { highlight: 2 },
+      hints: { title: '견적이 나가기까지 네 단계, 이틀이면 돼요', lead: '지금은 같은 일에 닷새가 걸려요' },
     },
     options('방안 비교', 3, '개선안', {
       title: '세 가지 방안 중 B안을 추천해요',

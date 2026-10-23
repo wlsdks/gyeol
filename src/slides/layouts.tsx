@@ -802,6 +802,33 @@ function Share() {
   )
 }
 
+/** 단계 흐름: 맞물린 꺾쇠 띠(화살표) 또는 화살표로 이은 칸. 단계는 순서라 번호를 붙인다. */
+function Process() {
+  const { slide } = useSlide()
+  const items = useItems()
+  const highlight = highlightOf(slide)
+  return (
+    <>
+      <Head lead />
+      <ol className="s-body pc" data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+        {items.map((it, i) => (
+          <li key={it.id} className={cx('it pc-step', i === highlight && 'is-hl')}>
+            <div className="pc-head">
+              <span className="pc-n">{i + 1}</span>
+              <IT i={i} k="title" className="pc-title" />
+            </div>
+            <div className="pc-text">
+              <IT i={i} k="meta" className="pc-meta" />
+              <IT i={i} k="body" className="pc-body" multiline />
+            </div>
+            <ItemTools i={i} />
+          </li>
+        ))}
+      </ol>
+    </>
+  )
+}
+
 /** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값, 기본 너비 */
 const TABLE_COLS: { head: string; key: ItemKey; fr: number }[] = [
   { head: 'h1', key: 'title', fr: 1.3 },
@@ -917,6 +944,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   trend: Trend,
   progress: Progress,
   share: Share,
+  process: Process,
   table: Table,
   points: Points,
   compare: Compare,

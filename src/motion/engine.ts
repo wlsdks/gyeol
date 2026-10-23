@@ -450,6 +450,16 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), end + 200)
         break
       }
+      case 'process': {
+        const t = head()
+        // 꺾쇠는 모양을 clip-path로 그려서 닦아 내기(wipe) 대신 왼쪽에서 밀려 들어온다
+        items('.pc-step', t, (el, at) => {
+          run(anims, variant === 'cards' ? el : el.querySelector('.pc-head') || el, [{ opacity: 0, translate: `${-L.y}px 0` }], s(at), L.move)
+          if (variant === 'cards') run(anims, el, [{ opacity: 0 }], s(at + 200), { easing: OUT, duration: 400 }, '::after')
+          rise(el.querySelector('.pc-text'), at + 140, L.y * 0.5)
+        }, L.step * 1.4)
+        break
+      }
       case 'table': {
         const t = head()
         fade(one('.tb-headrow'), t, 500)
