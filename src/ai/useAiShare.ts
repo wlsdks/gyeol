@@ -12,6 +12,8 @@ export interface AiShare {
   /** 이 발표에 온, 아직 보지 않은 제안 */
   requests: ChangeRequest[]
   resolve(request: ChangeRequest, status: 'applied' | 'rejected', results: OpResult[]): Promise<void>
+  /** 기다리지 않고 바로 다시 가져온다 (부탁한 제안이 막 왔을 때) */
+  refresh(): void
 }
 
 /**
@@ -21,6 +23,7 @@ export interface AiShare {
 export function useAiShare(deck: Deck): AiShare {
   const [status, setStatus] = useState<AiStatus | null | undefined>(undefined)
   const [requests, setRequests] = useState<ChangeRequest[]>([])
+  const [nudge, setNudge] = useState(0)
   const shared = !!deck.aiShare
   const ready = !!status
 
@@ -72,12 +75,14 @@ export function useAiShare(deck: Deck): AiShare {
       alive = false
       window.clearInterval(t)
     }
-  }, [ready, shared, deck.id])
+  }, [ready, shared, deck.id, nudge])
+
+  const refresh = useCallback(() => setNudge((n) => n + 1), [])
 
   const resolve = useCallback(async (request: ChangeRequest, result: 'applied' | 'rejected', results: OpResult[]) => {
     setRequests((prev) => prev.filter((r) => r.id !== request.id))
     await sendResult(request.id, result, results)
   }, [])
 
-  return { status, requests, resolve }
+  return { status, requests, resolve, refresh }
 }

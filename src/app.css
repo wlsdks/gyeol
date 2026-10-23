@@ -3378,7 +3378,10 @@ select {
 
 .pop-ai {
   width: 420px;
+  /* 1280×600에서도 아래 설명까지 닿게 */
+  max-height: calc(100vh - 72px);
   padding: 0;
+  overflow-y: auto;
 }
 
 .ai-pop {
@@ -3564,6 +3567,118 @@ select {
   -webkit-line-clamp: 2;
 }
 
+/* AI가 말한 까닭은 끝까지 읽히게 */
+.ai-inbox-p.ai-reason {
+  -webkit-line-clamp: 6;
+  line-height: 1.55;
+}
+
+/* ---------- AI에게 부탁 ---------- */
+
+/* 슬라이드 아래 단추에서 열리므로 위로 연다 */
+.pop.pop-ask {
+  top: auto;
+  bottom: calc(100% + 6px);
+  width: 340px;
+  padding: 6px;
+}
+
+.ask-list {
+  display: grid;
+  gap: 2px;
+}
+
+.ai-pop .ask {
+  margin: 12px -8px 0;
+}
+
+.ask-item {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ask-item:hover:not(:disabled) {
+  background: #f1f3f5;
+}
+
+.ask-item:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.ask-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ask-desc {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.ask-copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--sel);
+  font-size: 12px;
+}
+
+.ask-copied .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ask-note {
+  margin: 4px 10px 8px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ask-foot {
+  margin: 6px 4px 4px;
+  padding: 10px 6px 2px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ask-btn .icon {
+  color: var(--sel);
+}
+
+/* 맡겨 둔 동안: 반짝이 그림이 천천히 숨 쉬듯 */
+.ask-btn.is-busy .icon,
+.ai-inbox-icon.is-busy svg {
+  animation: ask-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes ask-breathe {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-btn.is-busy .icon,
+  .ai-inbox-icon.is-busy svg {
+    animation: none;
+  }
+}
+
 /* 제안 미리 보기: 왼쪽에 바뀌는 것, 오른쪽에 적용한 뒤의 장들 */
 .air-body {
   display: grid;
@@ -3666,6 +3781,7 @@ select {
 .air-slides {
   grid-template-columns: repeat(auto-fit, 480px);
 }
+
 
 .air .vpp-item.is-hidden .vpp-slide {
   opacity: 0.4;

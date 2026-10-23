@@ -19,8 +19,9 @@ import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/vers
 import { Present } from '../Present'
 import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
-import { useAiShare } from '../../ai/useAiShare'
-import { AiInbox, AiMenu, AiReview } from './AiShare'
+import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
+import { useAiShare, type AiShare } from '../../ai/useAiShare'
+import { ASK_ERROR, AiInbox, AiMenu, AiReview, AskStatus, SlideAsk } from './AiShare'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
@@ -137,6 +138,26 @@ function EditorBody({ deck }: { deck: Deck }) {
   const [reviewing, setReviewing] = useState<ChangeRequest | null>(null)
   const toast = useToast()
   const ai = useAiShare(deck)
+  const ask = useAiAsk(deck)
+
+  // 부탁이 끝나면: 제안이 왔으면 미리 보기를 바로 열고, 아니면 왜인지 알려 준다.
+  // 바꿀 게 없다고 하면 AI가 말한 까닭을 읽을 수 있게 오른쪽 아래 카드를 남겨 둔다.
+  const job = ask.job
+  useEffect(() => {
+    if (!job || job.state === 'running' || job.state === 'no_change') return
+    if (job.state === 'done') {
+      const request = ai.requests.find((r) => r.id === job.request)
+      if (!request) {
+        ai.refresh()
+        return
+      }
+      setReviewing(request)
+    } else if (job.state === 'failed') {
+      toast.show(ASK_ERROR[job.error ?? 'failed'], undefined, 8000)
+    }
+    ask.dismiss()
+    // toast는 그릴 때마다 새로 만들어져서 의존성에서 뺀다
+  }, [job, ai.requests])
 
   const applyAi = async (request: ChangeRequest) => {
     // 적용 전 상태를 버전으로 남긴다. 미리 본 뒤에 덱이 바뀌었을 수 있으니 지금 덱에 다시 적용한다.
@@ -311,7 +332,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           >
             <HistoryIcon />
           </button>
-          <AiMenu deck={deck} ai={ai} />
+          <AiMenu deck={deck} ai={ai} ask={ask} />
           <ThemeMenu deck={deck} />
           <ExportMenu
             onHtml={exportHtml}
@@ -331,7 +352,7 @@ function EditorBody({ deck }: { deck: Deck }) {
       <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
         {view === 'slides' && slide ? (
-          <SlideStage deck={deck} slide={slide} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
+          <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
         ) : (
           <OutlineView
             deck={deck}
@@ -401,7 +422,7 @@ function EditorBody({ deck }: { deck: Deck }) {
         </Modal>
       )}
       {printing && <PrintDeck deck={deck} onDone={() => setPrinting(false)} />}
-      {!reviewing && <AiInbox ai={ai} onOpen={setReviewing} />}
+      {!reviewing && (job ? <AskStatus deck={deck} job={job} onCancel={ask.cancel} /> : <AiInbox ai={ai} onOpen={setReviewing} />)}
       {reviewing && (
         <AiReview
           deck={deck}
@@ -426,7 +447,21 @@ function focusField(slideId: string, m: Missing) {
   el.scrollIntoView({ block: 'nearest' })
 }
 
-function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slide: Slide; onRemove: (s: Slide) => void; onPresentHere: () => void }) {
+function SlideStage({
+  deck,
+  slide,
+  ai,
+  ask,
+  onRemove,
+  onPresentHere,
+}: {
+  deck: Deck
+  slide: Slide
+  ai: AiShare
+  ask: AiAsk
+  onRemove: (s: Slide) => void
+  onPresentHere: () => void
+}) {
   const store = useDeck()
   const info = pageInfo(deck.slides)
   const spec = LAYOUTS[slide.layout]
@@ -499,6 +534,7 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
                 </div>
               ) : (
               <div className="stage-tools-l">
+                <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
                 {nextVariant && (
                   <button
                     type="button"

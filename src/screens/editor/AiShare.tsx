@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ASKS, askOf, askSentence, type AskError, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
-import { shapeSlideId, toShape } from '../../ai/share'
+import { shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
 import { mcpCommand } from '../../ai/client'
+import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES } from '../../deck/themes'
-import type { Deck } from '../../deck/types'
+import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -24,9 +26,141 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   not_reviewed: '보지 않았어요',
 }
 
+const ASK_STEP: Record<AskStep, string> = {
+  starting: 'Claude Code를 켜고 있어요',
+  looking: '발표의 모양을 보고 있어요',
+  proposing: '바꿀 것을 정리하고 있어요',
+}
+
+export const ASK_ERROR: Record<AskError, string> = {
+  busy: 'AI가 다른 부탁을 하고 있어요. 끝난 뒤에 다시 눌러 주세요.',
+  no_agent: '이 PC에서 Claude Code를 찾지 못했어요. Claude Code를 설치한 뒤 다시 눌러 주세요.',
+  not_shared: '발표의 모양을 AI에게 보여 주지 못했어요. 다시 눌러 주세요.',
+  bad_ask: '이 장에는 할 수 없는 부탁이에요.',
+  timeout: 'AI가 3분 안에 끝내지 못해서 멈췄어요. 다시 눌러 주세요.',
+  login: 'Claude Code에 로그인돼 있지 않아요. 터미널에서 claude를 한 번 실행해 로그인한 뒤 다시 눌러 주세요.',
+  failed: 'AI가 부탁을 끝내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
+}
+
+// ---------- 부탁 고르기 ----------
+
+/**
+ * 고를 수 있는 부탁. 이 PC에 Claude Code가 있으면 누르는 대로 바로 맡기고,
+ * 없으면 Claude Code나 Codex에 붙여 넣을 문장을 복사한다 (그 문장도 정해진 말과 해시 id뿐).
+ */
+function AskList({ scope, deck, slide, ai, ask, onPicked }: { scope: AskScope; deck: Deck; slide: Slide | null; ai: AiShare; ask: AiAsk; onPicked: () => void }) {
+  const setAiShare = useDeck((s) => s.setAiShare)
+  const [copied, setCopied] = useState<string | null>(null)
+  const direct = !!ai.status?.agent
+  const busy = ask.job?.state === 'running'
+
+  const pick = async (id: (typeof ASKS)[number]['id']) => {
+    if (direct) {
+      onPicked()
+      void ask.start(id, slide)
+      return
+    }
+    // 붙여 넣은 부탁을 AI가 들어주려면 모양이 공유돼 있어야 한다
+    if (!deck.aiShare) setAiShare(true)
+    try {
+      await navigator.clipboard.writeText(askSentence(id, shapeDeckId(deck), slide ? shapeSlideId(slide) : null))
+      setCopied(id)
+    } catch {
+      setCopied(null)
+    }
+  }
+
+  return (
+    <div className="ask">
+      {!direct && <p className="ask-note">이 PC에서 Claude Code를 찾지 못했어요. 누르면 부탁을 복사해요. Claude Code나 Codex에 붙여 넣어 주세요.</p>}
+      <div className="ask-list">
+        {ASKS.filter((a) => a.scope === scope).map((a) => (
+          <button key={a.id} type="button" className="ask-item" disabled={busy} onClick={() => void pick(a.id)}>
+            <span className="ask-name">
+              {a.name}
+              {copied === a.id && (
+                <span className="ask-copied">
+                  <CheckIcon />
+                  복사했어요
+                </span>
+              )}
+            </span>
+            <span className="ask-desc">{a.description}</span>
+          </button>
+        ))}
+      </div>
+      {busy && <p className="ask-note">AI가 다른 부탁을 하고 있어요. 끝나면 고를 수 있어요.</p>}
+    </div>
+  )
+}
+
+/** 슬라이드 아래의 'AI에게 부탁'. 이 장 하나를 맡긴다 */
+export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; ai: AiShare; ask: AiAsk }) {
+  if (!ai.status) return null
+  const busy = ask.job?.state === 'running'
+  return (
+    <Popover
+      align="left"
+      className="pop-ask"
+      button={({ toggle, open }) => (
+        <button type="button" className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')} aria-expanded={open} onClick={toggle}>
+          <SparkIcon />
+          {busy ? 'AI가 보는 중' : 'AI에게 부탁'}
+        </button>
+      )}
+    >
+      {(close) => (
+        <div className="ask-pop">
+          <p className="menu-h">이 장을 AI에게 부탁하기</p>
+          <AskList scope="slide" deck={deck} slide={slide} ai={ai} ask={ask} onPicked={close} />
+          <p className="ask-foot">AI에게는 장 순서, 레이아웃, 칸이 비었는지만 보여요. 적은 글은 보내지 않아요. 바뀌는 모습을 미리 보고 적용할지 정해요.</p>
+        </div>
+      )}
+    </Popover>
+  )
+}
+
+/** 부탁을 맡긴 뒤 오른쪽 아래에 뜨는 진행 상황. 제안이 오면 미리 보기가 바로 열린다 */
+export function AskStatus({ deck, job, onCancel }: { deck: Deck; job: AskJob; onCancel: () => void }) {
+  const i = job.slideId ? deck.slides.findIndex((s) => s.id === job.slideId) : -1
+  const target = i >= 0 ? `${i + 1}장 ‘${deck.slides[i].purpose}’` : '발표 전체'
+  if (job.state === 'no_change') {
+    return (
+      <div className="ai-inbox" role="status">
+        <span className="ai-inbox-icon" aria-hidden="true">
+          <CheckIcon />
+        </span>
+        <div className="ai-inbox-text">
+          <p className="ai-inbox-h">AI가 바꿀 곳을 찾지 못했어요</p>
+          <p className="ai-inbox-p ai-reason">{job.reason ?? `${target}은 지금 모양이 이미 잘 맞는다는 뜻이에요.`}</p>
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+          닫기
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="ai-inbox" role="status">
+      <span className="ai-inbox-icon is-busy" aria-hidden="true">
+        <SparkIcon />
+      </span>
+      <div className="ai-inbox-text">
+        <p className="ai-inbox-h">AI에게 ‘{askOf(job.ask)?.name}’ 부탁했어요</p>
+        <p className="ai-inbox-p">
+          {target}: {job.state === 'done' ? '제안을 가져오고 있어요' : ASK_STEP[job.step]}
+        </p>
+      </div>
+      <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
+        그만두기
+      </button>
+    </div>
+  )
+}
+
 // ---------- 위쪽 AI 버튼 ----------
 
-export function AiMenu({ deck, ai }: { deck: Deck; ai: AiShare }) {
+export function AiMenu({ deck, ai, ask }: { deck: Deck; ai: AiShare; ask: AiAsk }) {
   return (
     <Popover
       className="pop-ai"
@@ -38,24 +172,28 @@ export function AiMenu({ deck, ai }: { deck: Deck; ai: AiShare }) {
         </button>
       )}
     >
-      {() => <AiDetails deck={deck} ai={ai} />}
+      {(close) => <AiDetails deck={deck} ai={ai} ask={ask} onPicked={close} />}
     </Popover>
   )
 }
 
-function AiDetails({ deck, ai }: { deck: Deck; ai: AiShare }) {
+function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: AiAsk; onPicked: () => void }) {
   const setAiShare = useDeck((s) => s.setAiShare)
   const shape = useMemo(() => JSON.stringify(toShape(deck), null, 2), [deck])
   return (
     <div className="ai-pop">
-      <p className="save-pop-h">AI에게 구성 맡기기</p>
-      <p className="save-pop-p">
-        Claude Code나 Codex가 이 발표의 장 구성과 모양을 보고 바꾸자고 제안할 수 있어요. 적은 글은 AI에게 보이지 않아요.
-      </p>
+      <p className="save-pop-h">AI에게 부탁하기</p>
+      <p className="save-pop-p">AI가 이 발표의 장 구성과 모양을 보고 바꾸자고 제안해요. 적은 글은 AI에게 보이지 않아요.</p>
 
       {ai.status === undefined && <p className="ai-pop-note">연결을 확인하고 있어요…</p>}
       {ai.status === null && (
         <p className="ai-pop-note is-warn">AI 연결은 ‘html-maker 시작’ 파일로 켰을 때만 쓸 수 있어요. 지금 화면은 다른 방법으로 열려 있어요.</p>
+      )}
+      {ai.status && (
+        <>
+          <AskList scope="deck" deck={deck} slide={null} ai={ai} ask={ask} onPicked={onPicked} />
+          <p className="ai-pop-note">장 하나만 맡기려면 슬라이드 아래 ‘AI에게 부탁’을 눌러요.</p>
+        </>
       )}
       {ai.status && (
         <div className="ai-pop-toggle">
@@ -91,8 +229,8 @@ function AiDetails({ deck, ai }: { deck: Deck; ai: AiShare }) {
 
       {ai.status && (
         <details className="ai-pop-more">
-          <summary>Claude Code, Codex에 연결하기</summary>
-          <p className="ai-pop-step">{isMac ? '터미널' : 'PowerShell'}에 한 번만 입력하세요. 쓰는 쪽 하나만 하면 돼요.</p>
+          <summary>터미널에서 Claude Code, Codex로 직접 부탁하기</summary>
+          <p className="ai-pop-step">위의 부탁 말고 직접 말로 부탁하려면 {isMac ? '터미널' : 'PowerShell'}에 한 번만 입력하세요. 쓰는 쪽 하나만 하면 돼요.</p>
           <Command label="Claude Code" text={`claude mcp add html-maker -- ${mcpCommand(ai.status)}`} />
           <Command label="Codex" text={`codex mcp add html-maker -- ${mcpCommand(ai.status)}`} />
           <p className="ai-pop-step">그다음 AI에게 이렇게 말해 보세요. “html-maker에 공유한 발표를 본부장 보고에 맞게 구성을 다듬어 줘”</p>
