@@ -663,6 +663,15 @@ export function motionEngine(): MotionEngine {
             fade(el.querySelector('.bk-ck-s'), at + 220, 400)
           })
           break
+        case 'swot':
+          // 네 칸이 읽는 차례(강점, 약점, 기회, 위협)로: 글자가 맺히고 이름과 내용이 따라 올라온다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          items('.bk-sw-q', 140, (el, at) => {
+            pop(el.querySelector('.bk-sw-k'), at)
+            rise(el.querySelector('.bk-sw-t'), at + 80, L.y * 0.4)
+            rise(el.querySelector('.bk-sw-b'), at + 160, L.y * 0.4)
+          }, L.step * 1.4)
+          break
         case 'gantt':
           // 기간 칸과 지금 띠가 먼저 깔리고, 할 일마다 이름이 올라오며 막대가 시작 칸에서 끝 칸으로 그어진다
           rise(one('.bk-h'), 60, L.y * 0.5)

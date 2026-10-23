@@ -266,6 +266,40 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  swot: {
+    name: '강점과 약점',
+    description: '강점, 약점, 기회, 위협을 네 칸에 (SWOT)',
+    motion: '네 칸이 차례로 나타나요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 우리 제안의 강점과 약점', optional: true }],
+    items: {
+      label: '칸',
+      min: 4,
+      max: 4,
+      default: 4,
+      fields: [
+        { key: 'title', label: '칸 이름', hint: '칸 이름', hints: ['강점', '약점', '기회', '위협'] },
+        {
+          key: 'body',
+          label: '내용',
+          hint: '한두 줄로',
+          hints: ['우리가 잘하는 것', '우리가 모자란 것', '밖에서 오는 좋은 일', '밖에서 오는 걱정거리'],
+          multiline: true,
+        },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    weight: 1.4,
+    sample: {
+      fields: { heading: '우리 제안의 강점과 약점' },
+      items: [
+        { title: '강점', body: '불량 원인까지 분석해 주는 곳은 우리뿐이에요' },
+        { title: '약점', body: '경쟁사보다 첫해 비용이 0.9억 원 많아요' },
+        { title: '기회', body: '고객사가 내년에 품질 투자를 늘리기로 했어요' },
+        { title: '위협', body: '경쟁사가 가격을 더 낮출 수 있어요' },
+      ],
+    },
+  },
   faq: {
     name: '예상 질문',
     description: '받을 만한 질문과 짧은 답을 미리',
@@ -460,7 +494,7 @@ export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
   { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
   { name: '차트', types: ['bars', 'trend', 'share', 'bridge', 'funnel'] },
   { name: '흐름과 일정', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
-  { name: '비교와 표', types: ['facts', 'risks', 'compare', 'matrix', 'pricing', 'table'] },
+  { name: '비교와 표', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'pricing', 'table'] },
   { name: '그림과 사람', types: ['image', 'people', 'logos'] },
 ]
 
@@ -745,6 +779,7 @@ const MIN_H: Record<BlockType, (n: number, variant: string) => number> = {
   spark: () => 330,
   facts: (n) => 220 + 45 * n,
   risks: (n) => 120 + 100 * n,
+  swot: () => 490,
   faq: (n) => 90 + 120 * n,
   checks: (n) => 220 + 70 * n,
   gantt: (n) => 130 + 75 * n,

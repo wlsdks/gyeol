@@ -95,6 +95,7 @@ export type NativeBlockType =
   | 'spark'
   | 'facts'
   | 'risks'
+  | 'swot'
   | 'faq'
   | 'checks'
   | 'gantt'
