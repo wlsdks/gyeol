@@ -3782,6 +3782,36 @@ select {
   grid-template-columns: repeat(auto-fit, 480px);
 }
 
+/* 바뀌는 장: 지금 → 적용하면 */
+.air-pair {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.air-arrow {
+  display: grid;
+  place-items: center;
+  margin-bottom: 30px;
+  color: #ffc94d;
+}
+
+.air-arrow .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.air-all {
+  grid-column: 1 / -1;
+  margin: 12px 0 -8px;
+  padding-top: 20px;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  color: #c9cdd5;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 .air .vpp-item.is-hidden .vpp-slide {
   opacity: 0.4;

@@ -7,13 +7,13 @@ import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
-import { MOTIONS, THEMES } from '../../deck/themes'
+import { MOTIONS, THEMES, TONES } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { CheckIcon, CopyIcon, Popover, SparkIcon, Toggle } from '../ui'
+import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle } from '../ui'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',
@@ -329,6 +329,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.highlight !== undefined) parts.push(op.highlight < 0 ? '강조 없음' : `${op.highlight + 1}번째를 강조`)
       if (op.flip !== undefined) parts.push(op.flip ? '이미지를 오른쪽에' : '이미지를 왼쪽에')
       if (op.contain !== undefined) parts.push(op.contain ? '이미지 전체 보이기' : '이미지로 채우기')
+      if (op.tone) parts.push(`바탕: ${TONES.find((t) => t.id === op.tone)?.name}`)
+      if (op.motion !== undefined) parts.push(op.motion === null ? '움직임: 발표 전체 설정대로' : `움직임: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
       return { text: `${name(op.slide)} 모양 설정`, detail: parts.join(', ') }
     }
     case 'set_theme': {
@@ -369,6 +371,10 @@ export function AiReview({
   const okCount = applied.results.filter((r) => r.ok).length
   const before = new Set(deck.slides.map((s) => s.id))
   const info = pageInfo(applied.deck.slides)
+  const beforeInfo = pageInfo(deck.slides)
+  // 장 몇 개만 바뀌면 (장 하나를 부탁했을 때처럼) 그 장의 지금과 바꾼 뒤를 맨 위에 나란히 보여 준다
+  const changed = applied.deck.slides.filter((s) => before.has(s.id) && applied.touched.has(s.id))
+  const pairs = changed.length > 0 && changed.length <= 3 ? changed : []
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -422,6 +428,37 @@ export function AiReview({
           <p className="air-foot">적용하기 전 지금 상태를 버전으로 남겨요. 되돌리기({keys('mod+Z')})로도 바로 돌아올 수 있어요.</p>
         </aside>
         <div className="vpp-body air-slides">
+          {pairs.map((s) => {
+            const was = deck.slides.find((x) => x.id === s.id)!
+            const n = applied.deck.slides.indexOf(s) + 1
+            return (
+              <section key={`pair-${s.id}`} className="air-pair" aria-label={`${n}장 바뀌기 전과 뒤`}>
+                <figure className="vpp-item">
+                  <ScaledSlide width={400} className="vpp-slide">
+                    <SlideCanvas deck={deck} slide={was} mode="preview" {...pageProps(beforeInfo, was.id)} />
+                  </ScaledSlide>
+                  <figcaption className="vpp-cap">
+                    <span>{n}</span>
+                    {was.purpose}: 지금
+                  </figcaption>
+                </figure>
+                <span className="air-arrow" aria-hidden="true">
+                  <ChevronIcon />
+                </span>
+                <figure className="vpp-item is-diff">
+                  <ScaledSlide width={400} className="vpp-slide">
+                    <SlideCanvas deck={applied.deck} slide={s} mode="preview" {...pageProps(info, s.id)} />
+                  </ScaledSlide>
+                  <figcaption className="vpp-cap">
+                    <span>{n}</span>
+                    {s.purpose}
+                    <em>적용하면</em>
+                  </figcaption>
+                </figure>
+              </section>
+            )
+          })}
+          {pairs.length > 0 && <p className="air-all">발표 전체</p>}
           {applied.deck.slides.map((s, i) => {
             const note = !before.has(s.id) ? '새 장' : s.hidden ? '발표에서 빠짐' : applied.touched.has(s.id) ? '바뀌는 장' : null
             return (
