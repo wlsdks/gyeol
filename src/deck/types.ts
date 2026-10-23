@@ -97,6 +97,7 @@ export type NativeBlockType =
   | 'risks'
   | 'faq'
   | 'checks'
+  | 'gantt'
   | 'people'
   | 'image'
 

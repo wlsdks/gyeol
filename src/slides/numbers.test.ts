@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatNumber, isNumericCell, parseDelta, parseNumber, statusOf } from './numbers'
+import { colsOf, formatNumber, isNumericCell, parseDelta, parseNumber, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 숫자만 읽는다', () => {
@@ -42,5 +42,34 @@ describe('숫자 읽기', () => {
     expect(statusOf('', 0)).toBe('todo')
     expect(statusOf('', 35)).toBe('doing')
     expect(statusOf('', null)).toBe(null)
+  })
+})
+
+describe('추진 일정의 기간', () => {
+  const cols = colsOf('11월 12월 1월 2월 3월')
+
+  it('기간 칸은 띄어 쓰기나 쉼표로 나눈다', () => {
+    expect(cols).toEqual(['11월', '12월', '1월', '2월', '3월'])
+    expect(colsOf('1분기, 2분기,3분기')).toEqual(['1분기', '2분기', '3분기'])
+    expect(colsOf('')).toEqual([])
+  })
+
+  it('적은 기간의 처음 칸과 끝 칸을 찾는다', () => {
+    expect(spanIn('12월~2월', cols)).toEqual([1, 3])
+    expect(spanIn('11월부터 1월까지', cols)).toEqual([0, 2])
+    expect(spanIn('3월', cols)).toEqual([4, 4])
+    expect(spanIn('12월 2주 ~ 2월 1주', cols)).toEqual([1, 3])
+  })
+
+  it("'1월'을 '11월'이나 '12월' 안에서 잡지 않는다", () => {
+    expect(spanIn('11월', cols)).toEqual([0, 0])
+    expect(spanIn('12월', cols)).toEqual([1, 1])
+    expect(spanIn('1', colsOf('1 2 12'))).toEqual([0, 0])
+  })
+
+  it('칸 이름이 없으면 막대를 그리지 않는다', () => {
+    expect(spanIn('내년 상반기', cols)).toBe(null)
+    expect(spanIn('', cols)).toBe(null)
+    expect(spanIn('11월', [])).toBe(null)
   })
 })

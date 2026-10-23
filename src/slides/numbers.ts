@@ -51,3 +51,20 @@ export function statusOf(text: string, pct: number | null): Status | null {
   if (pct === null) return null
   return pct >= 100 ? 'done' : pct <= 0 ? 'todo' : 'doing'
 }
+
+/** 추진 일정의 기간 칸 이름. 띄어 쓰기나 쉼표로 나눈다. 너무 많으면 막대가 가늘어져서 열둘까지 */
+export function colsOf(text: string): string[] {
+  return text
+    .split(/[\s,·/|]+/)
+    .filter(Boolean)
+    .slice(0, 12)
+}
+
+/**
+ * 글에 나오는 기간 칸의 처음과 끝 ('12월~2월'이면 12월 칸부터 2월 칸까지).
+ * '1월'이 '11월', '12월' 안에서 잡히지 않게 앞뒤에 숫자가 붙은 것은 칸 이름으로 보지 않는다
+ */
+export function spanIn(text: string, cols: string[]): [number, number] | null {
+  const hit = cols.flatMap((c, i) => (new RegExp(`(?<!\\d)${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!\\d)`).test(text) ? [i] : []))
+  return hit.length ? [Math.min(...hit), Math.max(...hit)] : null
+}

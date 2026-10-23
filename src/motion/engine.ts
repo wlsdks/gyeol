@@ -663,6 +663,16 @@ export function motionEngine(): MotionEngine {
             fade(el.querySelector('.bk-ck-s'), at + 220, 400)
           })
           break
+        case 'gantt':
+          // 기간 칸과 지금 띠가 먼저 깔리고, 할 일마다 이름이 올라오며 막대가 시작 칸에서 끝 칸으로 그어진다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-gt-cols'), 120, 500)
+          fade(one('.bk-gt-now'), 160, 800)
+          items('.bk-gt-row', 240, (el, at) => {
+            rise(el.querySelector('.bk-gt-label'), at, L.y * 0.4)
+            grow(el.querySelector('.bk-gt-bar'), at + 120, 'x')
+          })
+          break
         case 'people':
           rise(one('.bk-h'), 60, L.y * 0.5)
           items('.bk-pp-card', 160, (el, at) => {

@@ -322,6 +322,39 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  gantt: {
+    name: '추진 일정',
+    description: '할 일마다 언제부터 언제까지 하는지 막대로 (간트 차트)',
+    motion: '막대가 차례로 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 추진 일정', optional: true },
+      { key: 'cols', label: '기간 칸', hint: '11월 12월 1월 2월 3월' },
+      { key: 'now', label: '지금', hint: '지금이 어느 칸인지 (예: 12월)', optional: true },
+    ],
+    items: {
+      label: '할 일',
+      min: 1,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['업체 고르기', '라인 설치', '현장 교육', '효과 점검', '결과 보고', '넓히기'] },
+        { key: 'body', label: '기간', hint: '예: 12월~2월', hints: ['11월', '11월~12월', '1월', '2월~3월', '3월', '3월'] },
+        { key: 'meta', label: '담당', hint: '담당', optional: true },
+      ],
+    },
+    minSpan: 8,
+    prefSpan: 12,
+    weight: 1.3,
+    sample: {
+      fields: { heading: '추진 일정', cols: '11월 12월 1월 2월 3월', now: '12월' },
+      items: [
+        { title: '카메라 업체 고르기', body: '11월', meta: '구매팀' },
+        { title: '시범 라인 설치', body: '11월~12월', meta: '생산기술팀' },
+        { title: '현장 교육', body: '1월', meta: '품질팀' },
+        { title: '효과 점검과 보고', body: '2월~3월', meta: '경영기획팀' },
+      ],
+    },
+  },
   people: {
     name: '맡은 사람',
     description: '누가 무엇을 맡는지 (추진 체계)',
@@ -426,7 +459,7 @@ export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
   { name: '글과 메시지', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
   { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
   { name: '차트', types: ['bars', 'trend', 'share', 'bridge', 'funnel'] },
-  { name: '흐름과 일정', types: ['checks', 'process', 'timeline', 'progress', 'agenda'] },
+  { name: '흐름과 일정', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   { name: '비교와 표', types: ['facts', 'risks', 'compare', 'matrix', 'pricing', 'table'] },
   { name: '그림과 사람', types: ['image', 'people', 'logos'] },
 ]
@@ -714,6 +747,7 @@ const MIN_H: Record<BlockType, (n: number, variant: string) => number> = {
   risks: (n) => 120 + 100 * n,
   faq: (n) => 90 + 120 * n,
   checks: (n) => 220 + 70 * n,
+  gantt: (n) => 130 + 75 * n,
   people: (n, v) => (v === 'list' ? 140 + 100 * n : 260),
   image: () => 200,
   summary: (n) => (n <= 4 ? 280 : 560),

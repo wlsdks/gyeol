@@ -9,7 +9,7 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, T } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { formatNumber, parseDelta, statusOf, type Status } from './numbers'
+import { colsOf, formatNumber, parseDelta, spanIn, statusOf, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -468,6 +468,71 @@ function Checks() {
   )
 }
 
+/**
+ * 추진 일정: 기간 칸을 위에 늘어놓고 할 일마다 그 기간에 막대를 긋는다.
+ * 지금 칸을 적으면 지난 일은 흐리게, 하는 일은 강조색, 앞으로 할 일은 옅은 강조색으로 나눠 칠한다
+ */
+function Gantt() {
+  const { slide, mode } = useSlide()
+  const { demo, read } = useDemo(['cols'])
+  const cols = colsOf(read('cols'))
+  const now = spanIn(read('now'), cols)?.[0] ?? -1
+  const items = slide.items.slice(0, BLOCKS.gantt.items!.max)
+  // 기간이 비어 있으면 편집할 때만 안내 기간으로 흐린 막대를 보인다
+  const periodOf = (i: number) => items[i].body.trim() || (mode === 'final' ? '' : hintFor(slide.layout, slide.hints, 'body', 'body', i))
+  return (
+    <div className={cx('bk-gt', demo && 'is-demo')} style={{ '--n': Math.max(1, cols.length), '--now': now } as CSSProperties}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <div className="bk-gt-grid">
+        {now >= 0 && <span className="bk-gt-now" aria-hidden="true" />}
+        {/* 편집할 때는 기간 칸 이름 자리에서 바로 고쳐 쓰고, 비어 있는 왼쪽 위에 지금 칸을 적는다 (편집 때만 줄이 늘지 않게) */}
+        {mode === 'edit' ? (
+          <div className="bk-gt-head">
+            <div className="bk-gt-nowset">
+              <span className="bk-gt-sk">지금</span>
+              <T k="now" as="span" className="bk-gt-sv" />
+            </div>
+            <T k="cols" className="bk-gt-sv bk-gt-colsed" />
+          </div>
+        ) : (
+          <div className="bk-gt-head">
+            <span />
+            <div className="bk-gt-cols">
+              {cols.map((c, i) => (
+                <span key={i} className={cx('bk-gt-c', i === now && 'is-now')}>
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        <ul className="bk-gt-list" data-n={items.length}>
+          {items.map((it, i) => {
+            const period = periodOf(i)
+            const span = spanIn(period, cols)
+            const state = !span || now < 0 ? null : span[1] < now ? 'done' : span[0] > now ? 'later' : 'now'
+            // 막대가 기간을 보여 주므로, 기간 글은 칸 이름 말고 더 적은 것이 있을 때만 ('12월 2주~2월 1주', '내년 상반기')
+            const more = !span || cols.reduce((t, c) => t.split(c).join(''), period).replace(/[\s~\-–—부터까지]/g, '') !== ''
+            return (
+              <li key={it.id} className={cx('it bk-gt-row', state && `is-${state}`, !it.body.trim() && 'is-hint')}>
+                <div className="bk-gt-label">
+                  <IT i={i} k="title" className="bk-gt-t" />
+                  <IT i={i} k="meta" className="bk-gt-m" />
+                  {(mode === 'edit' || more) && <IT i={i} k="body" className="bk-gt-p" />}
+                </div>
+                <div className="bk-gt-track">
+                  {span && <span className="bk-gt-bar" style={{ '--s': span[0], '--e': span[1] + 1 } as CSSProperties} />}
+                </div>
+                <ItemTools i={i} />
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 /** 맡은 사람: 이름 첫 글자를 동그라미에. 사진은 받지 않는다(사람 사진을 발표 파일에 담지 않게) */
 function People() {
   const { slide, mode } = useSlide()
@@ -523,6 +588,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   risks: Risks,
   faq: Faq,
   checks: Checks,
+  gantt: Gantt,
   people: People,
   image: Picture,
 }
