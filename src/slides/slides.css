@@ -28,10 +28,11 @@
   --accent-soft: color-mix(in oklch, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in oklch, var(--accent) 26%, var(--bg));
   --on-accent-line: color-mix(in srgb, var(--accent-ink) 26%, transparent);
-  /* 섹션, 마지막 장 같은 색 면. 어두운 테마는 밝은 강조색 대신 깊은 색을 깐다 */
-  --bold-bg: var(--accent);
-  --bold-ink: var(--accent-ink);
-  --bold-line: var(--on-accent-line);
+  /* 섹션, 마지막 장, 표지 옆면 같은 색 면. 강조색을 글자색 쪽으로 깊게 가라앉혀 쨍하지 않게 한다.
+     oklch로 섞으면 초록이 청록으로 틀어져 sRGB로 섞는다. 밝은 테마의 글자색은 늘 어두워 면도 늘 어둡다 */
+  --bold-bg: color-mix(in srgb, var(--accent) 36%, var(--ink));
+  --bold-ink: var(--bg);
+  --bold-line: color-mix(in srgb, var(--bold-ink) 22%, transparent);
 
   position: relative;
   box-sizing: border-box;
@@ -452,7 +453,7 @@
 .sc-num {
   flex: none;
   margin-right: -0.04em;
-  color: color-mix(in srgb, currentColor 16%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
   font-size: 600px;
   font-weight: var(--display-weight);
   line-height: 1;

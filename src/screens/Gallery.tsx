@@ -8,7 +8,7 @@ import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
-// &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page 는 발표 전체 설정을 바꿔 본다.
+// &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=C2410C 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
 
 function withItems(slide: Slide, items: Partial<Item>[], fields: Record<string, string> = {}): Slide {
@@ -156,6 +156,8 @@ export function Gallery() {
     const v = params.get(k)
     if (v) (look as Record<string, string>)[k] = v
   }
+  const accent = params.get('accent')
+  if (accent) look.accent = `#${accent}`
   const deck = {
     ...base,
     theme: { ...base.theme, ...look },
