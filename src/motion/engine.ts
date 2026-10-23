@@ -595,6 +595,81 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-gl-of'), 380, 500)
           fade(one('.bk-gl-n'), 520, 500)
           break
+        case 'ring': {
+          fade(one('.bk-rg-l'), 60, 500)
+          fade(one('.bk-rg-track'), 80, 500)
+          // 둘레가 12시 방향에서부터 비율만큼 차오르고, 가운데 숫자가 같이 올라간다
+          const arc = one('.bk-rg-arc')
+          if (arc) run(anims, arc, [{ strokeDasharray: '0 100' }], s(160), { easing: OUT, duration: d(levelName === 'lively' ? 1500 : 1100) })
+          countIn(one('.bk-rg-v'), 160)
+          fade(one('.bk-rg-n'), 640, 500)
+          break
+        }
+        case 'ratio': {
+          fade(one('.bk-rt-l'), 60, 500)
+          fade(one('.bk-rt-of'), 120, 500)
+          rise(one('.bk-rt-big'), 160, L.y * 0.4)
+          count(one('.bk-rt-v'), 180)
+          // 점이 많아도 1초 안에 다 맺히게
+          const dots = $('.bk-rt-d')
+          const step = Math.min(L.step, 900 / Math.max(1, dots.length))
+          dots.forEach((el, i) => (el.classList.contains('is-on') ? pop(el, 240 + i * step) : fade(el, 240 + i * step, 300)))
+          fade(one('.bk-rt-n'), 360 + dots.length * step, 500)
+          break
+        }
+        case 'spark': {
+          fade(one('.bk-sp-l'), 60, 500)
+          rise(one('.bk-sp-v'), 100, L.y * 0.4)
+          count(one('.bk-sp-v'), 120)
+          // 선은 왼쪽부터 같은 빠르기로 그려지고, 끝점(지금)이 선이 닿을 때 맺힌다
+          const draw = levelName === 'lively' ? 1300 : 1000
+          for (const el of $('.bk-sp-fill, .bk-sp-svg')) run(anims, el, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(200), { easing: 'linear', duration: d(draw) })
+          pop(one('.bk-sp-dot'), 200 + draw)
+          fade(one('.bk-sp-n'), 400, 500)
+          break
+        }
+        case 'facts':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          items('.bk-fc-row', 160, (el, at) => {
+            grow(el, at, 'x', '::before')
+            rise(el.querySelector('.bk-fc-k'), at + 80, L.y * 0.4)
+            rise(el.querySelector('.bk-fc-v'), at + 140, L.y * 0.4)
+          })
+          break
+        case 'risks':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-rk-head'), 120, 500)
+          items('.bk-rk-row', 220, (el, at) => {
+            rise(el.querySelector('.bk-rk-t'), at, L.y * 0.4)
+            const arrow = el.querySelector('.bk-rk-arrow')
+            if (arrow) run(anims, arrow, [{ opacity: 0, translate: `${-L.y * 0.6}px 0` }], s(at + 160), L.move)
+            rise(el.querySelector('.bk-rk-b'), at + 260, L.y * 0.4)
+          }, L.step * 1.8)
+          break
+        case 'faq':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          items('.bk-qa-item', 160, (el, at) => {
+            pop(el.querySelector('.bk-qa-k'), at)
+            rise(el.querySelector('.bk-qa-qt'), at + 60, L.y * 0.4)
+            fade(el.querySelector('.bk-qa-a'), at + 260, 600)
+          }, L.step * 1.8)
+          break
+        case 'checks':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-ck-sum'), 160, 500)
+          items('.bk-ck-row', 200, (el, at) => {
+            rise(el.querySelector('.bk-ck-text'), at, L.y * 0.4)
+            pop(el.querySelector('.bk-ck-mark'), at + 140)
+            fade(el.querySelector('.bk-ck-s'), at + 220, 400)
+          })
+          break
+        case 'people':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          items('.bk-pp-card', 160, (el, at) => {
+            pop(el.querySelector('.bk-pp-av'), at)
+            rise(el.querySelector('.bk-pp-text'), at + 100, L.y * 0.4)
+          }, L.step * 1.5)
+          break
         case 'image': {
           wipe(one('.bk-img-i'), 0, 'left', 1000)
           const img = one('.bk-img-i img')

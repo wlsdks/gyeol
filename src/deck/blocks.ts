@@ -163,6 +163,197 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     look: 'card',
     sample: { fields: { label: '연간 수주', value: '7.2', target: '10', unit: '억 원', note: '4분기 계약 3건이 남았어요' } },
   },
+  ring: {
+    name: '비율 원',
+    description: '비율 하나를 원으로 크게 (달성률, 만족도)',
+    motion: '원이 차오르며 숫자가 올라가요',
+    fields: [
+      { key: 'label', label: '무엇의 비율', hint: '무엇의 비율인지 (예: 자동 검사 비율)' },
+      { key: 'value', label: '비율', hint: '72%' },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 지난해 41%)', optional: true, multiline: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    weight: 1,
+    look: 'card',
+    sample: { fields: { label: '사람 손 없이 끝내는 검사', value: '72%', note: '지난해에는 41%였어요' } },
+  },
+  ratio: {
+    name: '몇 중 몇',
+    description: '전체 가운데 몇인지 점으로 (10곳 중 7곳)',
+    motion: '점이 하나씩 채워져요',
+    fields: [
+      { key: 'label', label: '무엇을 센 것', hint: '무엇을 센 것인지 (예: 도입한 고객사)' },
+      { key: 'value', label: '몇', hint: '7' },
+      { key: 'total', label: '전체', hint: '10' },
+      { key: 'unit', label: '단위', hint: '곳', optional: true },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명', optional: true, multiline: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    weight: 1,
+    look: 'card',
+    sample: { fields: { label: '시범 뒤 도입을 정한 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 정해요' } },
+  },
+  spark: {
+    name: '숫자와 흐름',
+    description: '지금 숫자와 그동안의 흐름을 작은 선으로',
+    motion: '선이 그려지고 숫자가 올라가요',
+    fields: [
+      { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지 (예: 월 불량률)' },
+      { key: 'value', label: '지금 숫자', hint: '1.1%' },
+      { key: 'series', label: '흐름', hint: '3.2, 3.0, 2.1, 1.6, 1.1' },
+      { key: 'note', label: '덧붙임', hint: '기간이나 기준 (예: 5월부터 9월까지)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    weight: 1,
+    look: 'card',
+    sample: { fields: { label: '월 불량률', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
+  },
+  facts: {
+    name: '개요',
+    description: '기간, 예산, 담당처럼 항목과 내용을 짝지어',
+    motion: '줄마다 선이 그어지며 들어와요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 사업 개요', optional: true }],
+    items: {
+      label: '줄',
+      min: 1,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목', hints: ['기간', '예산', '대상', '담당', '효과', '다음 보고'] },
+        { key: 'body', label: '내용', hint: '내용 한 줄', multiline: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 6,
+    weight: 1.1,
+    sample: {
+      fields: { heading: '사업 개요' },
+      items: [
+        { title: '기간', body: '11월부터 1월까지, 3개월' },
+        { title: '예산', body: '2.4억 원 (카메라 1.6억, 설치 0.8억)' },
+        { title: '대상', body: '불량이 많은 3개 라인' },
+        { title: '담당', body: '품질팀 2명, 생산기술팀 1명' },
+      ],
+    },
+  },
+  risks: {
+    name: '걱정과 대책',
+    description: '윗분이 걱정할 만한 점과 막는 방법을 짝지어',
+    motion: '걱정 다음에 대책이 따라 들어와요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 걱정되는 점과 대책', optional: true }],
+    items: {
+      label: '걱정',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '걱정되는 점', hint: '걱정되는 점', multiline: true },
+        { key: 'body', label: '대책', hint: '이렇게 막아요', multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    weight: 1.3,
+    sample: {
+      fields: {},
+      items: [
+        { title: '설치하는 동안 라인이 멈춰요', body: '주말 이틀씩 나눠 설치해 평일 생산은 그대로' },
+        { title: '카메라가 불량을 놓칠 수 있어요', body: '첫 달은 사람 검사와 같이 돌려 놓친 것을 맞춰 봐요' },
+        { title: '현장이 새 방식을 낯설어해요', body: '라인마다 담당 1명을 먼저 가르쳐 옆에서 돕게 해요' },
+      ],
+    },
+  },
+  faq: {
+    name: '예상 질문',
+    description: '받을 만한 질문과 짧은 답을 미리',
+    motion: '질문이 먼저, 답이 뒤따라요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 예상 질문', optional: true }],
+    items: {
+      label: '질문',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '질문', hint: '받을 만한 질문', hints: ['왜 지금 해야 하나요?', '비용은 언제 되찾나요?', '다른 공장에도 쓸 수 있나요?', '안 하면 어떻게 되나요?'], multiline: true },
+        { key: 'body', label: '답', hint: '짧은 답', multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    weight: 1.3,
+    sample: {
+      fields: {},
+      items: [
+        { title: '왜 지금 해야 하나요?', body: '1분기에 고객 감사가 있어서 그 전에 검사 기록을 갖춰야 해요' },
+        { title: '비용은 언제 되찾나요?', body: '불량 처리비가 줄어 14개월이면 설치비를 되찾아요' },
+        { title: '다른 공장에도 쓸 수 있나요?', body: '같은 카메라를 써서 설정만 바꾸면 돼요' },
+      ],
+    },
+  },
+  checks: {
+    name: '준비 상황',
+    description: '할 일마다 완료, 진행 중, 지연, 예정을 표시',
+    motion: '줄마다 표시가 찍혀요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 준비 상황', optional: true }],
+    items: {
+      label: '할 일',
+      min: 1,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['예산 승인', '업체 고르기', '라인 설치', '현장 교육', '효과 점검', '결과 보고'] },
+        { key: 'body', label: '상태', hint: '완료, 진행 중, 지연, 예정', hints: ['완료', '완료', '진행 중', '예정', '예정', '예정'], optional: true },
+        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 6,
+    weight: 1.2,
+    sample: {
+      fields: { heading: '준비 상황' },
+      items: [
+        { title: '예산 승인', body: '완료', meta: '경영기획팀, 10월' },
+        { title: '카메라 업체 고르기', body: '완료', meta: '구매팀, 10월' },
+        { title: '시범 라인 설치', body: '진행 중', meta: '생산기술팀, 11월' },
+        { title: '현장 교육', body: '1주 지연', meta: '품질팀, 11월' },
+      ],
+    },
+  },
+  people: {
+    name: '맡은 사람',
+    description: '누가 무엇을 맡는지 (추진 체계)',
+    motion: '사람마다 차례로 나타나요',
+    variants: [
+      { id: 'row', name: '나란히' },
+      { id: 'list', name: '목록' },
+    ],
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 추진 체계', optional: true }],
+    items: {
+      label: '사람',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '이름과 직급' },
+        { key: 'meta', label: '역할', hint: '역할', hints: ['사업 총괄', '현장 설치', '품질 검증', '예산 관리'] },
+        { key: 'body', label: '맡은 일', hint: '맡은 일 한 줄', optional: true, multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    weight: 1.2,
+    sample: {
+      fields: {},
+      items: [
+        { title: '한도윤 책임', meta: '사업 총괄', body: '일정과 예산, 윗분 보고' },
+        { title: '서지우 선임', meta: '현장 설치', body: '라인마다 카메라 설치와 시험' },
+        { title: '문하린 선임', meta: '품질 검증', body: '사람 검사와 결과 맞춰 보기' },
+      ],
+    },
+  },
   image: {
     name: '그림',
     description: '화면, 현장 사진, 도면',
@@ -232,12 +423,12 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 
 /** 부품 고르기의 묶음. 모든 부품이 꼭 한 번씩 (테스트가 확인) */
 export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
-  { name: '글과 메시지', types: ['message', 'text', 'bullets', 'quote', 'callout', 'summary', 'points'] },
-  { name: '숫자', types: ['number', 'delta', 'goal', 'kpi', 'scorecard'] },
+  { name: '글과 메시지', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
+  { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
   { name: '차트', types: ['bars', 'trend', 'share', 'bridge', 'funnel'] },
-  { name: '흐름과 일정', types: ['process', 'timeline', 'progress', 'agenda'] },
-  { name: '비교와 표', types: ['compare', 'matrix', 'pricing', 'table'] },
-  { name: '그림', types: ['image', 'logos'] },
+  { name: '흐름과 일정', types: ['checks', 'process', 'timeline', 'progress', 'agenda'] },
+  { name: '비교와 표', types: ['facts', 'risks', 'compare', 'matrix', 'pricing', 'table'] },
+  { name: '그림과 사람', types: ['image', 'people', 'logos'] },
 ]
 
 export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
@@ -311,7 +502,11 @@ function nativeHints(block: Block): Record<string, string> {
   const spec = BLOCKS[block.type]
   const out: Record<string, string> = {}
   for (const f of spec.fields) out[f.key] = f.hint
-  for (const f of spec.items?.fields ?? []) out[`items.${f.key}`] = f.hint
+  for (const f of spec.items?.fields ?? []) {
+    out[`items.${f.key}`] = f.hint
+    // 자리마다 다른 안내 (개요의 기간, 예산...). 사람이 그 칸의 안내를 고쳤으면 고친 것을 쓴다
+    if (!block.hints?.[`items.${f.key}`]) f.hints?.forEach((h, i) => (out[`items.${i}.${f.key}`] = h))
+  }
   return { ...out, ...block.hints }
 }
 
@@ -508,6 +703,15 @@ const MIN_H: Record<BlockType, (n: number, variant: string) => number> = {
   number: () => 220,
   delta: () => 250,
   goal: () => 200,
+  // 원은 글 사이에서 너무 작아지지 않게
+  ring: () => 330,
+  ratio: () => 340,
+  spark: () => 330,
+  facts: (n) => 220 + 45 * n,
+  risks: (n) => 120 + 100 * n,
+  faq: (n) => 90 + 120 * n,
+  checks: (n) => 220 + 70 * n,
+  people: (n, v) => (v === 'list' ? 120 + 100 * n : 260),
   image: () => 200,
   summary: (n) => (n <= 4 ? 280 : 560),
   points: (n, v) => (v !== 'base' ? 320 : n <= 3 ? 260 : 620),

@@ -9,7 +9,7 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, T } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { formatNumber, parseDelta } from './numbers'
+import { formatNumber, parseDelta, statusOf, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -184,6 +184,313 @@ function Goal() {
   )
 }
 
+/** 비율 원: 가운데에 비율, 둘레가 그만큼 찬다 */
+function Ring() {
+  const { demo, read } = useDemo(['value'])
+  const v = numberOrNull(read('value'))
+  const p = v === null ? 0 : Math.min(100, Math.max(0, v))
+  return (
+    <div className={cx('bk-rg', demo && 'is-demo')} style={{ '--p': p.toFixed(1) } as CSSProperties}>
+      <T k="label" className="bk-rg-l" />
+      <div className="bk-rg-box">
+        <div className="bk-rg-sq">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle className="bk-rg-track" cx="50" cy="50" r="44" />
+            {v !== null && p > 0 && <circle className="bk-rg-arc" cx="50" cy="50" r="44" pathLength="100" />}
+          </svg>
+          <div className="bk-rg-c">
+            <T k="value" className="bk-rg-v" oneLine />
+          </div>
+        </div>
+      </div>
+      <T k="note" className="bk-rg-n" multiline />
+    </div>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="7" r="4.6" />
+      <path d="M3.2 22c0-5 3.9-8.6 8.8-8.6s8.8 3.6 8.8 8.6z" />
+    </svg>
+  )
+}
+
+/** 몇 중 몇: 전체가 20개까지면 점 하나가 하나, 더 많으면 점 100개로 백분율 */
+function Ratio() {
+  const { mode } = useSlide()
+  const { demo, read } = useDemo(['value', 'total'])
+  const value = numberOrNull(read('value'))
+  const total = numberOrNull(read('total'))
+  const unit = read('unit').trim()
+  const ok = value !== null && total !== null && total > 0
+  const exact = ok && total <= 20 && Number.isInteger(total)
+  const n = !ok ? 0 : exact ? total : 100
+  const on = !ok ? 0 : exact ? Math.round(Math.min(Math.max(value, 0), total)) : Math.round(Math.min(1, Math.max(0, value / total)) * 100)
+  const cols = n <= 10 ? n : n <= 20 ? Math.ceil(n / 2) : 20
+  // 사람을 센 것이면 점 대신 사람 모양
+  const person = /^(명|분|사람|인)$/.test(unit)
+  return (
+    <div className={cx('bk-rt', demo && 'is-demo')}>
+      <div className="bk-rt-text">
+        <T k="label" className="bk-rt-l" />
+        <p className="bk-rt-of">
+          <span className="bk-rt-num">
+            <T k="total" as="span" className="bk-rt-t" />
+            {/* 단위는 한 번만 적고 전체와 몇에 같이 붙인다 */}
+            {mode === 'edit' ? <T k="unit" as="span" className="bk-rt-u" /> : unit && <span className="bk-rt-u">{unit}</span>}
+          </span>
+          <span className="bk-rt-sep">중</span>
+        </p>
+        <p className="bk-rt-big">
+          <T k="value" as="span" className="bk-rt-v" />
+          {mode !== 'edit' && unit && <span className="bk-rt-vu">{unit}</span>}
+        </p>
+        <T k="note" className="bk-rt-n" multiline />
+      </div>
+      {n > 0 && (
+        <div className="bk-rt-box" aria-hidden="true">
+          <div className="bk-rt-dots" data-kind={person ? 'person' : 'dot'} style={{ '--cols': cols, '--rows': Math.ceil(n / cols) } as CSSProperties}>
+            {Array.from({ length: n }, (_, i) => (
+              <span key={i} className={cx('bk-rt-d', i < on && 'is-on')}>
+                {person && <PersonIcon />}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 흐름 칸의 숫자들. 쉼표나 띄어쓰기로 나눈다. '1,200'처럼 천 단위 쉼표가 든 숫자는 하나로 본다
+ * (그래서 천 단위 숫자를 이어 적을 때는 쉼표 뒤를 띄어 쓴다: 1,200, 1,500)
+ */
+export function seriesOf(text: string): number[] {
+  const out: number[] = []
+  for (const tok of text.split(/[\s/·|]+|,\s+/)) {
+    if (!tok) continue
+    const parts = /^[-−–△▼+]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(tok) ? [tok] : tok.split(',')
+    for (const p of parts) if (/\d/.test(p)) out.push(parseDelta(p))
+  }
+  return out
+}
+
+/** 숫자와 흐름: 지금 숫자를 크게, 그동안의 흐름은 작은 선으로. 선 끝이 지금 숫자다 */
+function Spark() {
+  const { mode } = useSlide()
+  const { demo, read } = useDemo(['value', 'series'])
+  const pts = seriesOf(read('series')).slice(-24)
+  const lo = Math.min(...pts)
+  const hi = Math.max(...pts)
+  // 위아래 끝에 점이 잘리지 않게 조금 띄운다
+  const at = pts.map((v, i) => ({ x: (i / Math.max(1, pts.length - 1)) * 100, y: hi === lo ? 50 : 90 - ((v - lo) / (hi - lo)) * 80 }))
+  const line = at.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
+  const last = at[at.length - 1]
+  return (
+    <div className={cx('bk-sp', demo && 'is-demo')}>
+      <div className="bk-sp-text">
+        <T k="label" className="bk-sp-l" />
+        <T k="value" className="bk-sp-v" oneLine />
+        <T k="note" className="bk-sp-n" />
+      </div>
+      <div className="bk-sp-chart" aria-hidden="true">
+        {pts.length >= 2 && (
+          <>
+            <svg className="bk-sp-fill" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path d={`${line} L100 100 L0 100 Z`} />
+            </svg>
+            <svg className="bk-sp-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path d={line} />
+            </svg>
+            <span className="bk-sp-dot" style={{ '--x': last.x, '--y': last.y } as CSSProperties} />
+          </>
+        )}
+      </div>
+      {/* 흐름 숫자는 편집할 때만 보인다. 발표 화면에는 선만 */}
+      {mode === 'edit' && (
+        <div className="bk-sp-sw">
+          <span className="bk-sp-sk">흐름</span>
+          <T k="series" className="bk-sp-s" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 개요: 항목과 내용을 짝지은 줄 */
+function Facts() {
+  const { slide } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.facts.items!.max)
+  return (
+    <div className="bk-fc">
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <dl className="bk-fc-list" data-n={items.length}>
+        {items.map((it, i) => (
+          <div key={it.id} className="it bk-fc-row">
+            <IT i={i} k="title" as="dt" className="bk-fc-k" />
+            <IT i={i} k="body" as="dd" className="bk-fc-v" multiline />
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 12h15M13 6l6 6-6 6" />
+    </svg>
+  )
+}
+
+/** 걱정과 대책: 걱정되는 점 옆에 막는 방법. 대책이 '답'이라 강조색은 대책 쪽에만 */
+function Risks() {
+  const { slide } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.risks.items!.max)
+  return (
+    <div className="bk-rk">
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <div className="bk-rk-head" aria-hidden="true">
+        <span className="bk-rk-hk">걱정되는 점</span>
+        <span className="bk-rk-hk is-fix">대책</span>
+      </div>
+      <ul className="bk-rk-list" data-n={items.length}>
+        {items.map((it, i) => (
+          <li key={it.id} className="it bk-rk-row">
+            <IT i={i} k="title" className="bk-rk-t" multiline />
+            <span className="bk-rk-arrow" aria-hidden="true">
+              <ArrowIcon />
+            </span>
+            <IT i={i} k="body" className="bk-rk-b" multiline />
+            <ItemTools i={i} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** 예상 질문: 질문과 짧은 답 */
+function Faq() {
+  const { slide } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.faq.items!.max)
+  return (
+    <div className="bk-qa">
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <dl className="bk-qa-list" data-n={items.length}>
+        {items.map((it, i) => (
+          <div key={it.id} className="it bk-qa-item">
+            <dt className="bk-qa-q">
+              <span className="bk-qa-k" aria-hidden="true">
+                Q
+              </span>
+              <IT i={i} k="title" className="bk-qa-qt" multiline />
+            </dt>
+            <dd className="bk-qa-a">
+              <IT i={i} k="body" className="bk-qa-at" multiline />
+            </dd>
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
+function StatusMark({ status }: { status: Status | null }) {
+  return (
+    <span className="bk-ck-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32">
+        {status === 'done' ? (
+          <>
+            <circle className="bk-ck-fill" cx="16" cy="16" r="15" />
+            <path className="bk-ck-glyph" d="M9.5 16.5l4.2 4.2 8.8-9.2" />
+          </>
+        ) : status === 'late' ? (
+          <>
+            <circle className="bk-ck-fill" cx="16" cy="16" r="15" />
+            <path className="bk-ck-glyph" d="M16 8.5v9M16 22.6v.4" />
+          </>
+        ) : status === 'doing' ? (
+          <>
+            <circle className="bk-ck-ring" cx="16" cy="16" r="13.5" />
+            <path className="bk-ck-fill" d="M16 6.5a9.5 9.5 0 0 1 0 19z" />
+          </>
+        ) : (
+          <circle className="bk-ck-ring" cx="16" cy="16" r="13.5" />
+        )}
+      </svg>
+    </span>
+  )
+}
+
+/** 준비 상황: 할 일마다 상태 표시. 상태 글(완료, 진행 중, 지연, 예정)을 읽어 표시를 고르고, 글은 그대로 보인다 */
+function Checks() {
+  const { slide } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.checks.items!.max)
+  const states = items.map((it) => statusOf(it.body, null))
+  const done = states.filter((s) => s === 'done').length
+  return (
+    <div className="bk-ck">
+      <div className="bk-ck-top">
+        <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+        {states.some((s) => s !== null) && (
+          <p className="bk-ck-sum">
+            {items.length}개 중 <b>{done}개</b> 완료
+          </p>
+        )}
+      </div>
+      <ul className="bk-ck-list" data-n={items.length}>
+        {items.map((it, i) => (
+          <li key={it.id} className={cx('it bk-ck-row', states[i] && `is-${states[i]}`)}>
+            <StatusMark status={states[i]} />
+            <div className="bk-ck-text">
+              <IT i={i} k="title" className="bk-ck-t" />
+              <IT i={i} k="meta" className="bk-ck-m" />
+            </div>
+            <IT i={i} k="body" className="bk-ck-s" />
+            <ItemTools i={i} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** 맡은 사람: 이름 첫 글자를 동그라미에. 사진은 받지 않는다(사람 사진을 발표 파일에 담지 않게) */
+function People() {
+  const { slide, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.people.items!.max)
+  return (
+    <div className="bk-pp">
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ul className="bk-pp-list" data-n={items.length}>
+        {items.map((it, i) => {
+          const initial = [...it.title.trim()][0]
+          return (
+            <li key={it.id} className="it bk-pp-card">
+              <span className={cx('bk-pp-av', !initial && 'is-blank')} aria-hidden="true">
+                {initial ?? (mode === 'final' ? null : <PersonIcon />)}
+              </span>
+              <div className="bk-pp-text">
+                <IT i={i} k="title" className="bk-pp-name" />
+                <IT i={i} k="meta" className="bk-pp-role" />
+                <IT i={i} k="body" className="bk-pp-b" multiline />
+              </div>
+              <ItemTools i={i} />
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function Picture() {
   const { slide } = useSlide()
   return (
@@ -203,6 +510,14 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   number: BigNumber,
   delta: Delta,
   goal: Goal,
+  ring: Ring,
+  ratio: Ratio,
+  spark: Spark,
+  facts: Facts,
+  risks: Risks,
+  faq: Faq,
+  checks: Checks,
+  people: People,
   image: Picture,
 }
 
