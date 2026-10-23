@@ -20,7 +20,9 @@ export interface SlideCtx {
   mode: SlideMode
   actions?: SlideActions
   canRemoveItem: boolean
-  sectionNumber?: number
+  /** 발표의 단락 이름들과 이 장이 속한 단락 (0부터, 없으면 -1) */
+  sections: readonly string[]
+  sectionIndex: number
 }
 
 export const SlideContext = createContext<SlideCtx | null>(null)

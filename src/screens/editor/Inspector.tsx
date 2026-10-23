@@ -7,6 +7,8 @@ import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 
+const PREVIEW_SECTIONS = ['단락 1', '단락 2', '단락 3']
+
 const METHOD_TIPS: Record<Deck['meta']['method'], string> = {
   live: '현장 발표에서는 화면의 글을 줄이고, 말로 할 설명은 아래 발표자 노트에 적어 두세요.',
   remote: '화면 공유에서는 글씨가 작게 보일 수 있어요. 한 장에 한 가지만 담아 주세요.',
@@ -121,7 +123,7 @@ function LayoutChoice({
   return (
     <button type="button" className={cx('ins-layout', on && 'is-on')} aria-pressed={on} onClick={onPick}>
       <ScaledSlide width={124}>
-        <SlideCanvas deck={look} slide={preview} mode="preview" sectionNumber={1} />
+        <SlideCanvas deck={look} slide={preview} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
       </ScaledSlide>
       <span>{LAYOUTS[id].name}</span>
     </button>

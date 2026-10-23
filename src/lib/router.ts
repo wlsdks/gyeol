@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { name: 'home' } | { name: 'new' } | { name: 'edit'; id: string }
+export type Route = { name: 'home' } | { name: 'new' } | { name: 'edit'; id: string } | { name: 'gallery' }
 
 function parse(hash: string): Route {
   const path = hash.replace(/^#/, '')
   const edit = /^\/edit\/([\w-]+)/.exec(path)
   if (edit) return { name: 'edit', id: edit[1] }
   if (path.startsWith('/new')) return { name: 'new' }
+  if (import.meta.env.DEV && path.startsWith('/gallery')) return { name: 'gallery' }
   return { name: 'home' }
 }
 

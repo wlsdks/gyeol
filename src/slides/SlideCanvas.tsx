@@ -1,6 +1,7 @@
-import { memo, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LAYOUTS } from '../deck/layouts'
 import { themeStyle } from '../deck/themes'
+import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
@@ -17,7 +18,28 @@ export interface SlideCanvasProps {
   /** 화면에 보이는 장 기준 번호 (1부터). 0이면 표시하지 않는다. */
   page?: number
   total?: number
-  sectionNumber?: number
+  /** 발표의 단락 이름들과 이 장이 속한 단락 (0부터) */
+  sections?: readonly string[]
+  sectionIndex?: number
+}
+
+const NO_SECTIONS: readonly string[] = []
+
+/** 덱 전체 정보에서 한 장에 필요한 쪽 번호와 단락 정보를 꺼낸다 */
+export function pageProps(info: PageInfo, slideId: string) {
+  return {
+    page: info.page.get(slideId) ?? 0,
+    total: info.total,
+    sections: info.sections,
+    sectionIndex: info.sectionOf.get(slideId) ?? -1,
+  }
+}
+
+/** 단락 이름이 그대로면 같은 배열을 돌려준다. 축소 목록이 글자 하나 칠 때마다 다시 그려지지 않게. */
+export function useStableSections(info: PageInfo): readonly string[] {
+  const key = info.sections.join('\n')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => info.sections, [key])
 }
 
 /** 1920×1080 슬라이드 한 장. 크기 맞춤은 바깥 프레임이 한다. */
@@ -28,7 +50,8 @@ export const SlideCanvas = memo(function SlideCanvas({
   actions,
   page = 0,
   total = 0,
-  sectionNumber,
+  sections = NO_SECTIONS,
+  sectionIndex = -1,
 }: SlideCanvasProps) {
   const View = LAYOUT_VIEWS[slide.layout]
   const spec = LAYOUTS[slide.layout]
@@ -37,7 +60,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   const density = deck.meta.method === 'send' ? 'd-read' : 'd-present'
 
   return (
-    <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sectionNumber }}>
+    <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
       <div
         className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`)}
         style={themeStyle(deck.theme)}
@@ -45,9 +68,20 @@ export const SlideCanvas = memo(function SlideCanvas({
         <View />
         {!bold && page > 0 && (
           <footer className="s-foot">
-            <span>{slide.section || deck.title}</span>
+            {sections.length > 1 && sectionIndex >= 0 ? (
+              <ol className="s-map">
+                {sections.map((name, i) => (
+                  <li key={i} className={cx(i === sectionIndex && 'is-on')}>
+                    {name}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <span className="s-deck">{deck.title}</span>
+            )}
             <span className="s-page">
-              {page} / {total}
+              {page}
+              <span className="s-total"> / {total}</span>
             </span>
           </footer>
         )}

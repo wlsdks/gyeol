@@ -1909,3 +1909,12 @@ select {
     transition-duration: 0s !important;
   }
 }
+
+/* 개발용 레이아웃 모음 */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 960px);
+  gap: 24px;
+  padding: 24px;
+  background: #6b7080;
+}

@@ -4,13 +4,14 @@ import { LAYOUTS, hintFor, type FieldSpec, type ItemFieldSpec } from '../../deck
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { imageToDataUrl, pickImage } from '../../lib/image'
-import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { PlusIcon, TrashIcon } from '../ui'
 
 /** 문서 모드: 모든 장의 칸을 문서처럼 이어서 쓴다 */
 export function OutlineView({ deck, onOpenSlide }: { deck: Deck; onOpenSlide: (id: string) => void }) {
   const info = pageInfo(deck.slides)
+  const sections = useStableSections(info)
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
   return (
     <div className="ol">
@@ -23,7 +24,8 @@ export function OutlineView({ deck, onOpenSlide }: { deck: Deck; onOpenSlide: (i
             slide={slide}
             page={info.page.get(slide.id) ?? 0}
             total={info.total}
-            sectionNumber={info.section.get(slide.id)}
+            sections={sections}
+            sectionIndex={info.sectionOf.get(slide.id) ?? -1}
             onOpen={onOpenSlide}
           />
         ))}
@@ -37,11 +39,12 @@ interface OutlineSlideProps {
   slide: Slide
   page: number
   total: number
-  sectionNumber?: number
+  sections: readonly string[]
+  sectionIndex: number
   onOpen: (id: string) => void
 }
 
-const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sectionNumber, onOpen }: OutlineSlideProps) {
+const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sections, sectionIndex, onOpen }: OutlineSlideProps) {
   const setField = useDeck((s) => s.setField)
   const setItem = useDeck((s) => s.setItem)
   const addItem = useDeck((s) => s.addItem)
@@ -112,7 +115,15 @@ const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sect
 
       <button type="button" className="ol-thumb" aria-label={`${page}번 장 열기`} onClick={() => onOpen(slide.id)}>
         <ScaledSlide width={288}>
-          <SlideCanvas deck={look} slide={slide} mode="preview" page={page} total={total} sectionNumber={sectionNumber} />
+          <SlideCanvas
+            deck={look}
+            slide={slide}
+            mode="preview"
+            page={page}
+            total={total}
+            sections={sections}
+            sectionIndex={sectionIndex}
+          />
         </ScaledSlide>
       </button>
     </section>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
-import { FitSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 
 const NEXT_KEYS = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n']
 const PREV_KEYS = ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p']
@@ -80,9 +80,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
             deck={deck}
             slide={slide}
             mode="final"
-            page={info.page.get(slide.id)}
-            total={info.total}
-            sectionNumber={info.section.get(slide.id)}
+            {...pageProps(info, slide.id)}
           />
         </div>
       </FitSlide>

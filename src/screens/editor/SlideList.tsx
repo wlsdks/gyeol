@@ -6,7 +6,7 @@ import { missingFields, pageInfo } from '../../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
 
@@ -15,6 +15,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   const moveSlide = useDeck((s) => s.moveSlide)
   const addSlide = useDeck((s) => s.addSlide)
   const info = pageInfo(deck.slides)
+  const sections = useStableSections(info)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -52,7 +53,8 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
                 slide={slide}
                 page={info.page.get(slide.id) ?? 0}
                 total={info.total}
-                sectionNumber={info.section.get(slide.id)}
+                sections={sections}
+                sectionIndex={info.sectionOf.get(slide.id) ?? -1}
                 selected={slide.id === selectedId}
                 missing={missingFields(slide, deck.meta).length}
                 onSelect={select}
@@ -102,14 +104,15 @@ interface ThumbProps {
   slide: Slide
   page: number
   total: number
-  sectionNumber?: number
+  sections: readonly string[]
+  sectionIndex: number
   selected: boolean
   missing: number
   onSelect: (id: string) => void
 }
 
 const Thumb = memo(function Thumb(props: ThumbProps) {
-  const { meta, theme, title, slide, page, total, sectionNumber, selected, missing, onSelect } = props
+  const { meta, theme, title, slide, page, total, sections, sectionIndex, selected, missing, onSelect } = props
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id })
   return (
@@ -131,7 +134,15 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         role="button"
       >
         <ScaledSlide width={176}>
-          <SlideCanvas deck={look} slide={slide} mode="preview" page={page} total={total} sectionNumber={sectionNumber} />
+          <SlideCanvas
+            deck={look}
+            slide={slide}
+            mode="preview"
+            page={page}
+            total={total}
+            sections={sections}
+            sectionIndex={sectionIndex}
+          />
         </ScaledSlide>
         <span className="thumb-label">
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}

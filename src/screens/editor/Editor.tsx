@@ -7,7 +7,7 @@ import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
 import { go } from '../../lib/router'
 import type { SlideActions } from '../../slides/context'
-import { FitSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { loadDeck, saveDeck } from '../../store/library'
 import { Present } from '../Present'
@@ -309,9 +309,7 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
             slide={slide}
             mode="edit"
             actions={actions}
-            page={info.page.get(slide.id)}
-            total={info.total}
-            sectionNumber={info.section.get(slide.id)}
+            {...pageProps(info, slide.id)}
           />
         </FitSlide>
       </div>
@@ -383,7 +381,7 @@ function PrintDeck({ deck, onDone }: { deck: Deck; onDone: () => void }) {
         .filter((s) => !s.hidden)
         .map((s) => (
           <div key={s.id} className="print-page">
-            <SlideCanvas deck={deck} slide={s} mode="final" page={info.page.get(s.id)} total={info.total} sectionNumber={info.section.get(s.id)} />
+            <SlideCanvas deck={deck} slide={s} mode="final" {...pageProps(info, s.id)} />
           </div>
         ))}
     </div>,

@@ -50,20 +50,34 @@ export function deckMissingCount(deck: Deck): number {
 export interface PageInfo {
   /** 숨긴 장을 뺀 쪽 번호 (1부터). 숨긴 장은 없다. */
   page: Map<string, number>
-  /** 섹션 구분 장의 번호 */
-  section: Map<string, number>
   total: number
+  /** 발표의 큰 단락 이름. 섹션 구분 장이 있으면 그 제목들, 없으면 장마다 적힌 단락 이름 */
+  sections: string[]
+  /** 장마다 속한 단락 순번 (0부터). 첫 단락 앞의 표지, 목차 같은 장은 없다. */
+  sectionOf: Map<string, number>
 }
 
 export function pageInfo(slides: Slide[]): PageInfo {
+  const visible = slides.filter((s) => !s.hidden)
   const page = new Map<string, number>()
-  const section = new Map<string, number>()
-  let n = 0
-  let sections = 0
-  for (const s of slides) {
-    if (s.hidden) continue
-    page.set(s.id, ++n)
-    if (s.layout === 'section') section.set(s.id, ++sections)
+  visible.forEach((s, i) => page.set(s.id, i + 1))
+
+  const sections: string[] = []
+  const sectionOf = new Map<string, number>()
+  if (visible.some((s) => s.layout === 'section')) {
+    // 섹션 구분 장부터 다음 구분 장 전까지가 한 단락이다.
+    for (const s of visible) {
+      if (s.layout === 'section') sections.push(s.fields.title?.trim() || s.section || `${sections.length + 1}단락`)
+      if (sections.length) sectionOf.set(s.id, sections.length - 1)
+    }
+  } else {
+    for (const s of visible) {
+      const name = s.section.trim()
+      if (!name) continue
+      let i = sections.indexOf(name)
+      if (i < 0) i = sections.push(name) - 1
+      sectionOf.set(s.id, i)
+    }
   }
-  return { page, section, total: n }
+  return { page, total: visible.length, sections, sectionOf }
 }

@@ -3,12 +3,12 @@ import { visibleItems } from '../deck/fields'
 import type { LayoutId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
-import { IT, ImageSlot, ItemTools, MetaRow, T } from './fields'
+import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
 
 function Head({ lead = false }: { lead?: boolean }) {
   return (
     <header className="s-head">
-      <T k="title" as="h2" className="s-title" fit={[26, 44]} multiline />
+      <T k="title" as="h2" className="s-title" fit={[24, 40]} multiline />
       {lead && <T k="lead" as="p" className="s-lead" multiline />}
     </header>
   )
@@ -19,47 +19,73 @@ function useItems() {
   return visibleItems(slide)
 }
 
+/** 나란히 놓인 숫자들이 같은 크기로 보이게, 가장 긴 값의 폭을 함께 쓴다 */
+function useSharedUnits(key: 'value') {
+  const { slide, mode } = useSlide()
+  const items = visibleItems(slide)
+  const texts = items.map((it) => it[key].trim()).filter(Boolean)
+  if (mode !== 'final' && texts.length < items.length) return undefined
+  return texts.length ? Math.max(...texts.map(textUnits)) : undefined
+}
+
 function Cover() {
+  const { meta, mode } = useSlide()
+  const showCustomer = mode !== 'final' || !!meta.customer.trim()
   return (
     <>
       <div className="cv-main">
         <ImageSlot k="$logo" className="cv-logo" contain optional />
         <div className="cv-text">
-          <T k="title" as="h1" className="cv-title" fit={[18, 30]} multiline />
-          <T k="lead" as="p" className="cv-lead" />
-          <dl className="cv-meta">
-            <MetaRow label="발표" k="$presenter" />
-            <MetaRow label="날짜" k="$date" />
-          </dl>
+          <T k="title" as="h1" className="cv-title" fit={[16, 28]} multiline />
+          <T k="lead" as="p" className="cv-lead" multiline />
         </div>
       </div>
       <div className="cv-side">
-        <CoverCustomer />
+        {showCustomer && (
+          <div className="cv-customer">
+            <span className="cv-label">고객사</span>
+            <T k="$customer" as="p" className="cv-customer-name" fit={[7, 12]} multiline />
+          </div>
+        )}
+        <dl className="cv-meta">
+          <MetaRow label="발표" k="$presenter" />
+          <MetaRow label="날짜" k="$date" />
+        </dl>
       </div>
     </>
   )
 }
 
-function CoverCustomer() {
-  const { meta, mode } = useSlide()
-  if (mode === 'final' && !meta.customer.trim()) return null
+/** 발표 전체의 단락 지도. 지금 단락만 또렷하게. */
+function SectionMap({ className }: { className: string }) {
+  const { sections, sectionIndex } = useSlide()
+  if (sections.length < 2) return null
   return (
-    <div className="cv-customer">
-      <span className="cv-customer-label">고객사</span>
-      <T k="$customer" as="p" className="cv-customer-name" fit={[8, 14]} />
-    </div>
+    <ol className={className}>
+      {sections.map((name, i) => (
+        <li key={i} className={cx(i === sectionIndex && 'is-on')}>
+          <span className="map-n">{i + 1}</span>
+          <span className="map-t">{name}</span>
+        </li>
+      ))}
+    </ol>
   )
 }
 
 function Section() {
-  const { sectionNumber } = useSlide()
+  const { sectionIndex } = useSlide()
   return (
     <>
-      <div className="sc-num">{sectionNumber ?? ''}</div>
+      {sectionIndex >= 0 && (
+        <div className="sc-num" aria-hidden="true">
+          {sectionIndex + 1}
+        </div>
+      )}
       <div className="sc-text">
-        <T k="title" as="h2" className="sc-title" fit={[14, 24]} />
+        <T k="title" as="h2" className="sc-title" fit={[12, 20]} multiline />
         <T k="lead" as="p" className="sc-lead" multiline />
       </div>
+      <SectionMap className="sc-map" />
     </>
   )
 }
@@ -69,11 +95,11 @@ function Agenda() {
   return (
     <div className="ag">
       <T k="title" as="h2" className="s-title ag-title" fit={[10, 18]} multiline />
-      <ol className="ag-list">
+      <ol className="ag-list" data-n={items.length}>
         {items.map((it, i) => (
           <li key={it.id} className="it ag-item">
             <span className="ag-n">{i + 1}</span>
-            <IT i={i} k="title" className="ag-t" fit={[16, 26]} />
+            <IT i={i} k="title" className="ag-t" fit={[14, 24]} />
             <ItemTools i={i} />
           </li>
         ))}
@@ -85,7 +111,7 @@ function Agenda() {
 function Statement() {
   return (
     <div className="s-body st">
-      <T k="title" as="h2" className="st-title" fit={[28, 50]} multiline />
+      <T k="title" as="h2" className="st-title" fit={[26, 46]} multiline />
       <T k="lead" as="p" className="st-lead" multiline />
     </div>
   )
@@ -93,14 +119,15 @@ function Statement() {
 
 function Kpi() {
   const items = useItems()
+  const units = useSharedUnits('value')
   return (
     <>
       <Head />
       <div className="s-body kp" data-n={items.length}>
         {items.map((it, i) => (
           <div key={it.id} className="it kp-item">
-            <IT i={i} k="value" className="kp-value" oneLine />
             <IT i={i} k="title" className="kp-label" />
+            <IT i={i} k="value" className="kp-value" oneLine units={units} />
             <IT i={i} k="body" className="kp-body" multiline />
             <ItemTools i={i} />
           </div>
@@ -128,11 +155,13 @@ function Points() {
   )
 }
 
-function Chevron() {
+function Arrow() {
   return (
-    <svg className="cp-arrow" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9 5l7 7-7 7" />
-    </svg>
+    <span className="cp-arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M5 12h13M13 6l6 6-6 6" />
+      </svg>
+    </span>
   )
 }
 
@@ -141,17 +170,16 @@ function Compare() {
   return (
     <>
       <Head />
-      <div className="s-body cp">
+      <div className="s-body cp" data-n={items.length}>
         <div className="cp-row cp-headrow">
           <T k="leftTitle" className="cp-h cp-hl" />
-          <span />
           <T k="rightTitle" className="cp-h cp-hr" />
         </div>
         {items.map((it, i) => (
           <div key={it.id} className="it cp-row">
             <IT i={i} k="title" className="cp-l" multiline />
-            <Chevron />
             <IT i={i} k="body" className="cp-r" multiline />
+            <Arrow />
             <ItemTools i={i} />
           </div>
         ))}
@@ -182,11 +210,12 @@ function Timeline() {
 
 function Case() {
   const items = useItems()
+  const units = useSharedUnits('value')
   return (
-    <div className="s-body cs">
+    <>
       <div className="cs-main">
         <T k="client" className="cs-client" />
-        <T k="title" as="h2" className="cs-title" fit={[24, 40]} multiline />
+        <T k="title" as="h2" className="cs-title" fit={[22, 36]} multiline />
         <T k="body" className="cs-body" multiline />
         <T k="quote" as="blockquote" className="cs-quote" multiline />
       </div>
@@ -195,20 +224,21 @@ function Case() {
         <div className="cs-results">
           {items.map((it, i) => (
             <div key={it.id} className="it cs-res">
-              <IT i={i} k="value" className="cs-value" oneLine />
+              <IT i={i} k="value" className="cs-value" oneLine units={units} />
               <IT i={i} k="title" className="cs-label" />
               <ItemTools i={i} />
             </div>
           ))}
         </div>
       </aside>
-    </div>
+    </>
   )
 }
 
 function Pricing() {
   const { slide } = useSlide()
   const items = useItems()
+  const units = useSharedUnits('value')
   const highlight = slide.options.highlight ?? -1
   return (
     <>
@@ -220,7 +250,7 @@ function Pricing() {
               <IT i={i} k="title" className="pr-name" />
               {highlight === i && <span className="pr-tag">추천</span>}
             </div>
-            <IT i={i} k="value" className="pr-price" oneLine />
+            <IT i={i} k="value" className="pr-price" oneLine units={units} />
             <IT i={i} k="meta" className="pr-meta" />
             <IT i={i} k="body" className="pr-body" multiline />
             <ItemTools i={i} />
@@ -237,7 +267,7 @@ function ImageText() {
     <div className={cx('ix', slide.options.flip && 'is-flip')}>
       <ImageSlot k="image" className="ix-img" contain={slide.options.contain} />
       <div className="ix-text">
-        <T k="title" as="h2" className="s-title ix-title" fit={[18, 32]} multiline />
+        <T k="title" as="h2" className="s-title ix-title" fit={[16, 28]} multiline />
         <T k="body" className="ix-body" multiline />
       </div>
     </div>
@@ -249,7 +279,7 @@ function Logos() {
   return (
     <>
       <Head lead />
-      <div className="s-body lg" data-n={items.length}>
+      <div className="s-body lg" data-n={items.length} data-rows={Math.ceil(items.length / logoColumns(items.length))}>
         {items.map((it, i) => (
           <div key={it.id} className="it lg-cell">
             <ImageSlot i={i} className="lg-img" contain />
@@ -262,15 +292,24 @@ function Logos() {
   )
 }
 
+function logoColumns(n: number): number {
+  if (n <= 2) return 2
+  if (n === 3 || n === 6) return 3
+  if (n >= 9) return 6
+  return 4
+}
+
 function parseNumber(text: string): number {
   const n = parseFloat(text.replace(/,/g, '').replace(/[^0-9.-]/g, ''))
   return Number.isFinite(n) ? n : 0
 }
 
 function Bars() {
+  const { slide } = useSlide()
   const items = useItems()
   const values = items.map((it) => parseNumber(it.value))
   const max = Math.max(0, ...values)
+  const highlight = slide.options.highlight ?? 0
   return (
     <>
       <Head lead />
@@ -278,7 +317,7 @@ function Bars() {
         {items.map((it, i) => {
           const pct = max > 0 && values[i] > 0 ? Math.max(2, (values[i] / max) * 100) : 0
           return (
-            <div key={it.id} className="it br-row">
+            <div key={it.id} className={cx('it br-row', highlight === i && 'is-hl')}>
               <div className="br-label">
                 <IT i={i} k="title" className="br-name" />
                 <IT i={i} k="meta" className="br-meta" />
@@ -301,24 +340,26 @@ function Closing() {
   return (
     <>
       <div className="cl-main">
-        <T k="title" as="h2" className="cl-title" fit={[10, 20]} multiline />
-        {items.length > 0 && (
-          <ol className="cl-steps" data-n={items.length}>
-            {items.map((it, i) => (
-              <li key={it.id} className="it cl-step">
-                <span className="cl-n">{i + 1}</span>
+        <T k="title" as="h2" className="cl-title" fit={[8, 16]} multiline />
+        <dl className="cl-contact">
+          <MetaRow label="발표" k="$presenter" />
+          <MetaRow label="연락처" k="$contact" />
+        </dl>
+      </div>
+      {items.length > 0 && (
+        <ol className="cl-steps" data-n={items.length}>
+          {items.map((it, i) => (
+            <li key={it.id} className="it cl-step">
+              <span className="cl-n">{i + 1}</span>
+              <div className="cl-step-text">
                 <IT i={i} k="title" className="cl-step-t" />
                 <IT i={i} k="body" className="cl-step-b" multiline />
-                <ItemTools i={i} />
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
-      <dl className="cl-contact">
-        <MetaRow label="발표" k="$presenter" />
-        <MetaRow label="연락처" k="$contact" />
-      </dl>
+              </div>
+              <ItemTools i={i} />
+            </li>
+          ))}
+        </ol>
+      )}
     </>
   )
 }

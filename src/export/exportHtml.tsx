@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { pageInfo } from '../deck/fields'
 import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
-import { SlideCanvas } from '../slides/SlideCanvas'
+import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import slidesCss from '../slides/slides.css?inline'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
@@ -19,7 +19,7 @@ function ExportSlides({ deck }: { deck: Deck }) {
           <section key={s.id} className="v-slide">
             <div className="v-frame">
               <div className="v-scale">
-                <SlideCanvas deck={deck} slide={s} mode="final" page={info.page.get(s.id)} total={info.total} sectionNumber={info.section.get(s.id)} />
+                <SlideCanvas deck={deck} slide={s} mode="final" {...pageProps(info, s.id)} />
               </div>
             </div>
           </section>

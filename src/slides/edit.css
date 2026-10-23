@@ -2,29 +2,42 @@
 
 .slide.m-edit .ed {
   display: grid;
-  border-radius: 8px;
+  border-radius: 10px;
   outline: 3px dashed transparent;
   outline-offset: 12px;
   cursor: text;
-  transition: outline-color 0.12s;
+  transition: outline-color 0.12s, background-color 0.12s, box-shadow 0.12s;
 }
 
 .slide.m-edit .ed > * {
   grid-area: 1 / 1;
 }
 
+/* 빈칸은 늘 보이게: 옅은 면 + 점선. 채우면 사라진다. */
+.slide.m-edit .ed.is-empty {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  box-shadow: 0 0 0 12px color-mix(in srgb, currentColor 6%, transparent);
+  outline-color: color-mix(in srgb, currentColor 26%, transparent);
+}
+
 .slide.m-edit .ed:hover {
-  outline-color: rgb(58 111 248 / 0.45);
+  outline-color: rgb(58 111 248 / 0.55);
 }
 
 .slide.m-edit .ed:focus-within {
+  background: transparent;
+  box-shadow: none;
   outline: 3px solid #3a6ff8;
 }
 
 .ed-hint {
-  opacity: 0.34;
+  opacity: 0.5;
   pointer-events: none;
   user-select: none;
+}
+
+.ed:focus-within > .ed-hint {
+  opacity: 0.32;
 }
 
 .ed:not(.is-empty) > .ed-hint {

@@ -16,7 +16,7 @@ function fitClass(text: string, fit?: Fit): string {
 }
 
 /** 굵은 Pretendard 기준으로 어림한 글자 폭(em). 한 줄짜리 숫자 칸이 칸 너비를 넘지 않게 글자 크기를 정하는 데 쓴다. */
-function textUnits(text: string): number {
+export function textUnits(text: string): number {
   let w = 0
   for (const ch of text) {
     if (/[\u3130-\u318f\uac00-\ud7a3\u4e00-\u9fff]/.test(ch)) w += 0.88
@@ -37,10 +37,13 @@ interface TextProps {
   multiline?: boolean
   /** 줄바꿈 없이 한 줄로 두고, 길면 칸 너비에 맞게 줄인다 */
   oneLine?: boolean
+  /** 한 장 안의 숫자들을 같은 크기로 맞출 때 가장 긴 값의 폭 */
+  units?: number
 }
 
-function oneLineProps(text: string, oneLine?: boolean) {
-  return oneLine ? { cls: 'one-line', style: { '--units': textUnits(text).toFixed(2) } as CSSProperties } : { cls: '', style: undefined }
+function oneLineProps(text: string, oneLine?: boolean, units?: number) {
+  if (!oneLine) return { cls: '', style: undefined }
+  return { cls: 'one-line', style: { '--units': (units ?? textUnits(text)).toFixed(2) } as CSSProperties }
 }
 
 interface FieldProps extends TextProps {
@@ -56,12 +59,12 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine }: FieldProps) {
+function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
     if (!text) return null
-    const one = oneLineProps(text, oneLine)
+    const one = oneLineProps(text, oneLine, units)
     return (
       <Tag className={cx(className, fitClass(text, fit), one.cls)} style={one.style}>
         {text}
@@ -69,7 +72,7 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
     )
   }
   const shown = value || hint
-  const one = oneLineProps(shown, oneLine)
+  const one = oneLineProps(shown, oneLine, units)
   if (mode === 'preview' || !onChange) {
     return (
       <Tag className={cx(className, fitClass(shown, fit), one.cls, !value && 'is-hint')} style={one.style}>
