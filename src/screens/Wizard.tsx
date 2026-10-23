@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { createDeck, formatDate, makeSlide } from '../deck/generate'
@@ -33,6 +33,11 @@ export function Wizard() {
     [type, audience, minutes, method, theme],
   )
   const previewInfo = useMemo(() => pageInfo(preview.slides), [preview])
+
+  // 단계를 넘기면 맨 위부터 보이게. 앞 단계에서 내려 둔 스크롤이 남으면 제목과 단계 표시가 가려진다
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [step])
 
   const chooseType = (t: DeckType) => {
     setType(t)

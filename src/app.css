@@ -1451,16 +1451,18 @@ select {
     height: 56px;
   }
 
+  /* 2단계(듣는 분과 시간)가 스크롤 없이 한 화면에 들어가게 세로 여백을 줄인다 */
   .wz-main {
-    padding-top: 20px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 
   .wz-h {
-    font-size: 26px;
+    font-size: 25px;
   }
 
   .wz-sub {
-    margin-bottom: 22px;
+    margin-bottom: 16px;
     font-size: 15px;
   }
 
@@ -1469,7 +1471,15 @@ select {
   }
 
   .wz-group {
-    margin-bottom: 22px;
+    margin-bottom: 16px;
+  }
+
+  .wz-group legend {
+    margin-bottom: 8px;
+  }
+
+  .opt {
+    padding: 11px 14px;
   }
 
   /* 테마 이름까지 아래 단추 줄에 가리지 않게. 설명은 그림과 이름으로 충분해서 낮은 화면에서는 뺀다 */
