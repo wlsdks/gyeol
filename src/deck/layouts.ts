@@ -80,6 +80,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'section',
     name: '섹션 구분',
     description: '이야기의 큰 단락을 나눠요',
+    variants: [
+      { id: 'base', name: '색 면' },
+      { id: 'plain', name: '바탕' },
+    ],
     fields: [title('이번 단락의 제목'), lead('이 단락에서 다룰 내용')],
   },
   agenda: {
@@ -417,6 +421,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'closing',
     name: '결정 요청',
     description: '결정해 주실 것과 언제까지 필요한지',
+    variants: [
+      { id: 'base', name: '색 면' },
+      { id: 'plain', name: '바탕' },
+    ],
     fields: [
       title('결정해 주실 것'),
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
@@ -435,7 +443,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
 }
 
-/** 색 면을 쓰는 장. 하단 쪽 번호를 넣지 않고, 장마다 바탕을 바꾸지 않는다. */
+/** 색 면을 쓰는 장. 하단 쪽 번호를 넣지 않고, 장마다 바탕을 바꾸지 않는다(색 면이 싫으면 '바탕' 모양을 고른다). */
 export const BOLD_LAYOUTS: LayoutId[] = ['cover', 'section', 'closing']
 
 export const LAYOUT_ORDER: LayoutId[] = [

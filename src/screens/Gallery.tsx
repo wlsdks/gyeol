@@ -138,9 +138,16 @@ export function Gallery() {
   const base = galleryDeck(params.get('set') ?? 'sample', theme, params)
   const only = params.get('only')?.split(',')
   const picked = only ? base.slides.filter((s) => only.includes(s.layout)) : base.slides
+  // 모양마다 늘어놓은 장은 원래 장의 쪽 번호와 단락을 그대로 쓴다. 단락이 겹쳐 세지지 않게
+  const origin = new Map<string, string>()
   const slides =
     params.get('variants') === '1'
-      ? picked.flatMap((s) => (LAYOUTS[s.layout].variants ?? [{ id: 'base' }]).map((v) => ({ ...s, id: `${s.id}-${v.id}`, variant: v.id })))
+      ? picked.flatMap((s) =>
+          (LAYOUTS[s.layout].variants ?? [{ id: 'base' }]).map((v) => {
+            origin.set(`${s.id}-${v.id}`, s.id)
+            return { ...s, id: `${s.id}-${v.id}`, variant: v.id }
+          }),
+        )
       : picked
   const tone = params.get('tone') as Tone | null
   const hl = params.get('hl')
@@ -161,7 +168,7 @@ export function Gallery() {
       },
     })),
   }
-  const info = pageInfo(deck.slides)
+  const info = pageInfo(picked)
   return (
     <div className="gallery">
       {deck.slides.map((slide) => (
@@ -170,7 +177,7 @@ export function Gallery() {
             deck={deck}
             slide={slide}
             mode={mode}
-            {...pageProps(info, slide.id)}
+            {...pageProps(info, origin.get(slide.id) ?? slide.id)}
           />
         </ScaledSlide>
       ))}

@@ -440,22 +440,34 @@
   color: var(--bold-ink);
 }
 
+.sc-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 96px;
+}
+
+/* 단락 번호. 화면 밖으로 넘기지 않고, 숫자의 아랫단을 제목 덩어리의 아랫단과 같은 선에 맞춘다.
+   text-box로 글자 위아래 빈자리를 잘라 내야 숫자 모양 그대로 줄이 맞는다 */
 .sc-num {
-  position: absolute;
-  top: -150px;
-  right: 72px;
-  font-size: 920px;
+  flex: none;
+  margin-right: -0.04em;
+  color: color-mix(in srgb, currentColor 16%, transparent);
+  font-size: 600px;
   font-weight: var(--display-weight);
   line-height: 1;
-  letter-spacing: -0.06em;
-  opacity: 0.13;
+  letter-spacing: -0.05em;
+  font-variant-numeric: lining-nums;
+  text-box: trim-both cap alphabetic;
   pointer-events: none;
   user-select: none;
 }
 
 .sc-text {
   position: relative;
-  max-width: 1360px;
+  flex: 1;
+  min-width: 0;
+  max-width: 1240px;
 }
 
 .sc-title {
@@ -496,6 +508,42 @@
 
 .map-n {
   font-variant-numeric: tabular-nums;
+}
+
+/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에, 단락 번호만 강조색으로 제목 위에 둔다 */
+.l-section.va-plain {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.l-section.va-plain .sc-body {
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 56px;
+}
+
+.l-section.va-plain .sc-num {
+  margin-right: 0;
+  color: var(--accent);
+  font-size: 200px;
+}
+
+.l-section.va-plain .sc-lead {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.l-section.va-plain .sc-map {
+  border-top-color: var(--line);
+}
+
+.l-section.va-plain .sc-map li {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.l-section.va-plain .sc-map li.is-on {
+  color: var(--accent);
 }
 
 /* ---------- 목차 ---------- */
@@ -2437,6 +2485,31 @@
   color: inherit;
 }
 
+/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에, 요청 번호만 강조색으로 채운다 */
+.l-closing.va-plain {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.l-closing.va-plain :is(.cl-steps, .cl-step) {
+  border-color: var(--line);
+}
+
+.l-closing.va-plain .cl-n {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.l-closing.va-plain .cl-step-b {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.l-closing.va-plain .meta-row dt {
+  color: var(--ink-3);
+}
+
 /* ---------- 빈칸 ---------- */
 
 /* 미리보기에서 빈칸은 안내 문구를 흐리게 */
@@ -2460,8 +2533,7 @@
 
 /* 어두운 바탕의 색 면: 큰 숫자와 지금 단락은 강조색으로 */
 .is-dark .sc-num {
-  color: var(--accent);
-  opacity: 0.22;
+  color: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .is-dark .sc-map li.is-on,

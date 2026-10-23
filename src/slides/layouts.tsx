@@ -88,14 +88,16 @@ function Section() {
   const { sectionIndex } = useSlide()
   return (
     <>
-      {sectionIndex >= 0 && (
-        <div className="sc-num" aria-hidden="true">
-          {sectionIndex + 1}
+      <div className="sc-body">
+        <div className="sc-text">
+          <T k="title" as="h2" className="sc-title" fit={[12, 20]} multiline />
+          <T k="lead" as="p" className="sc-lead" multiline />
         </div>
-      )}
-      <div className="sc-text">
-        <T k="title" as="h2" className="sc-title" fit={[12, 20]} multiline />
-        <T k="lead" as="p" className="sc-lead" multiline />
+        {sectionIndex >= 0 && (
+          <div className="sc-num" aria-hidden="true">
+            {sectionIndex + 1}
+          </div>
+        )}
       </div>
       <SectionMap className="sc-map" />
     </>
