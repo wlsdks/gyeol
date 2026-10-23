@@ -310,6 +310,24 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  funnel: {
+    id: 'funnel',
+    name: '깔때기',
+    description: '단계를 거치며 얼마나 남는지 (영업 단계, 고객 전환). 전환율은 저절로 계산돼요',
+    highlight: { label: '강조할 단계', fallback: 'last' },
+    fields: [title('전환을 요약하는 한 문장'), { key: 'unit', label: '단위', hint: '건', optional: true }, source],
+    items: {
+      label: '단계',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '단계', hint: '단계 이름', hints: ['첫 만남', '제안', '협상', '계약', '재계약', '추천'] },
+        { key: 'value', label: '숫자', hint: '120', hints: ['120', '48', '20', '9', '6', '3'] },
+        { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
+      ],
+    },
+  },
   table: {
     id: 'table',
     name: '표',
@@ -565,6 +583,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'progress',
   'share',
   'process',
+  'funnel',
   'table',
   'compare',
   'matrix',

@@ -604,6 +604,13 @@ const report: Blueprint = {
       hints: { title: '다섯 과제 중 하나가 2주 늦어지고 있어요' },
     },
     {
+      layout: 'funnel',
+      purpose: '영업 단계별 현황',
+      priority: 3,
+      guide: '첫 만남부터 계약까지 단계마다 고객 수를 적으면 단계 사이 전환율이 저절로 계산돼요. 가장 많이 빠지는 단계가 다음 계획의 근거가 돼요.',
+      hints: { title: '제안까지 간 고객 다섯 중 한 곳이 계약했어요', unit: '곳' },
+    },
+    {
       layout: 'points',
       purpose: '잘된 점',
       priority: 2,

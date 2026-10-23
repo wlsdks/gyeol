@@ -829,6 +829,76 @@ function Process() {
   )
 }
 
+/** 비율을 읽기 좋게: 10% 미만은 소수 한 자리, 1% 미만은 두 자리까지 (0%로 뭉개지지 않게) */
+function rateText(p: number): string {
+  const r = p < 1 ? Math.round(p * 100) / 100 : p < 10 ? Math.round(p * 10) / 10 : Math.round(p)
+  return `${formatNumber(r)}%`
+}
+
+/**
+ * 깔때기: 단계마다 가운데 맞춘 막대가 줄어들고, 막대 사이는 옅은 사다리꼴로 잇는다.
+ * 막대 너비는 첫 단계(가장 큰 값) 기준. 단계 사이 전환율과 처음부터 끝까지의 전환율은 계산한다.
+ */
+function Funnel() {
+  const { slide, meta, mode } = useSlide()
+  const items = useItems()
+  const final = mode === 'final'
+  const highlight = highlightOf(slide)
+  const demo = !final && items.every((it) => !it.value.trim())
+  const values = items.map((it, i) => Math.max(0, numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value) ?? 0))
+  const top = Math.max(0, ...values)
+  const widths = values.map((v) => (top > 0 ? Math.max(3, (v / top) * 100) : 0))
+  const unit = readField(slide, meta, 'unit').trim()
+  const first = values[0]
+  const last = values[values.length - 1]
+  return (
+    <>
+      <Head />
+      <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length}>
+        {items.map((it, i) => {
+          // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다
+          const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
+          const rate = linked ? (values[i] / values[i - 1]) * 100 : null
+          const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2) } as CSSProperties
+          return (
+            <div key={it.id} className={cx('it fn-row', i === highlight && 'is-hl', !values[i] && 'is-blank')} style={style}>
+              <div className="fn-label">
+                <IT i={i} k="title" className="fn-name" />
+                <IT i={i} k="meta" className="fn-meta" />
+              </div>
+              <div className="fn-zone">
+                {linked && <span className="fn-link" />}
+                {rate !== null && <span className="fn-rate">{rateText(rate)}</span>}
+                <span className="fn-bar" />
+              </div>
+              <div className="fn-val">
+                <IT i={i} k="value" as="span" className="fn-num" oneLine />
+                {unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>}
+              </div>
+              <ItemTools i={i} />
+            </div>
+          )
+        })}
+        {(!final || (first > 0 && last > 0 && items.length > 2)) && (
+          <p className="fn-total">
+            {first > 0 && last > 0 && (
+              <span>
+                처음부터 끝까지 <b>{rateText((last / first) * 100)}</b>
+              </span>
+            )}
+            {!final && (
+              <span className="fn-unit-slot">
+                단위: <T k="unit" as="span" oneLine />
+              </span>
+            )}
+          </p>
+        )}
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
 /** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값, 기본 너비 */
 const TABLE_COLS: { head: string; key: ItemKey; fr: number }[] = [
   { head: 'h1', key: 'title', fr: 1.3 },
@@ -945,6 +1015,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   progress: Progress,
   share: Share,
   process: Process,
+  funnel: Funnel,
   table: Table,
   points: Points,
   compare: Compare,

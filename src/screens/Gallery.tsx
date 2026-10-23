@@ -101,6 +101,16 @@ function extraSlides(): Slide[] {
       ],
       { title: '견적이 나가기까지 네 단계, 이틀이면 돼요', lead: '지금은 같은 일에 닷새가 걸려요' },
     ), { highlight: 2 }),
+    withItems(
+      makeSlide('funnel'),
+      [
+        { title: '첫 만남', value: '120', meta: '전시회와 소개' },
+        { title: '제안', value: '48' },
+        { title: '협상', value: '20' },
+        { title: '계약', value: '9', meta: '평균 4.8억 원' },
+      ],
+      { title: '제안까지 간 고객 다섯 중 한 곳이 계약했어요', unit: '곳', source: '영업관리 시스템, 1~9월' },
+    ),
     withOptions(withItems(
       makeSlide('table'),
       [
@@ -213,6 +223,18 @@ function edgeSlides(): Slide[] {
       ],
       { title: '여섯 단계, 긴 이름과 빈 칸' },
     ), { highlight: 5 }),
+    withItems(
+      makeSlide('funnel'),
+      [
+        { title: '홈페이지 방문', value: '12,400' },
+        { title: '자료 내려받기', value: '1,860' },
+        { title: '상담 신청', value: '310' },
+        { title: '현장 방문', value: '' },
+        { title: '제안', value: '42' },
+        { title: '계약', value: '3', meta: '평균 1.2억 원' },
+      ],
+      { title: '여섯 단계, 큰 차이와 빈 값', unit: '건' },
+    ),
   ]
 }
 

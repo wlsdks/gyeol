@@ -103,7 +103,7 @@
     .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
-    .pc-title, .pc-meta, .pc-body
+    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -2914,6 +2914,160 @@
   border-right: 3px solid var(--ink-3);
   rotate: 45deg;
   translate: 0 -50%;
+}
+
+/* ---------- 깔때기 ----------
+   막대 너비는 --w(첫 단계 대비 0~100), 앞 단계 너비는 --pw. 막대 사이의 사다리꼴(.fn-link)은
+   두 너비로 clip-path를 잘라 앞 막대 아랫변과 이 막대 윗변을 잇는다. */
+
+.fn {
+  --fn-gap: 48px;
+  --fn-h: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--fn-gap);
+  min-height: 0;
+}
+
+.fn:is([data-n='5'], [data-n='6']) {
+  --fn-gap: 30px;
+  --fn-h: 56px;
+}
+
+.fn:is([data-n='5'], [data-n='6']) .fn-meta {
+  margin-top: 0;
+}
+
+.fn-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr) 260px;
+  align-items: center;
+  gap: 48px;
+}
+
+.fn-name {
+  --fs: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.fn-meta {
+  --fs: 23px;
+  margin-top: 4px;
+  color: var(--ink-3);
+  line-height: 1.3;
+}
+
+.fn-zone {
+  position: relative;
+  height: var(--fn-h);
+}
+
+.fn-bar {
+  position: relative;
+  display: block;
+  width: calc(var(--w) * 1%);
+  height: 100%;
+  margin-inline: auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink-3) 40%, var(--bg));
+}
+
+.fn-row.is-hl .fn-bar {
+  background: var(--accent);
+}
+
+.fn-row.is-blank .fn-bar {
+  visibility: hidden;
+}
+
+.fn-link {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--fn-gap);
+  background: var(--surface);
+  clip-path: polygon(
+    calc(50% - var(--pw) * 0.5%) 0,
+    calc(50% + var(--pw) * 0.5%) 0,
+    calc(50% + var(--w) * 0.5%) 100%,
+    calc(50% - var(--w) * 0.5%) 100%
+  );
+}
+
+/* 단계 사이 전환율: 사다리꼴 한가운데 */
+.fn-rate {
+  --fs: 22px;
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + var(--fn-gap) / 2);
+  left: 50%;
+  translate: -50% 50%;
+  padding: 2px 14px;
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.fn-val {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fn-num {
+  --fs: 48px;
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fn-row.is-hl .fn-num {
+  color: var(--accent);
+}
+
+.fn-unit {
+  --fs: 26px;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.fn-total {
+  --fs: 26px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 40px;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.fn-total b {
+  margin-left: 10px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.fn-unit-slot {
+  color: var(--ink-3);
+}
+
+.fn.is-demo :is(.fn-bar, .fn-link) {
+  opacity: 0.35;
+}
+
+.fn.is-demo .fn-val > :not(.ed) {
+  opacity: 0.45;
 }
 
 /* ---------- 표 ----------

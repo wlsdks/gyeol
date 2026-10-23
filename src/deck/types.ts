@@ -11,6 +11,7 @@ export type LayoutId =
   | 'progress'
   | 'share'
   | 'process'
+  | 'funnel'
   | 'table'
   | 'points'
   | 'compare'

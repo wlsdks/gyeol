@@ -460,6 +460,21 @@ export function motionEngine(): MotionEngine {
         }, L.step * 1.4)
         break
       }
+      case 'funnel': {
+        const t = head()
+        // 위 단계부터 막대가 가운데에서 양옆으로 벌어지고, 잇는 면과 전환율은 막대가 선 뒤에
+        const end = items('.fn-row', t, (el, at) => {
+          rise(el.querySelector('.fn-label'), at, L.y * 0.5)
+          const bar = el.querySelector('.fn-bar')
+          if (bar) run(anims, bar, [{ scale: '0 1' }, { scale: '1 1' }], s(at + 80), L.grow)
+          fade(el.querySelector('.fn-link'), at, 400)
+          pop(el.querySelector('.fn-rate'), at + 260)
+          countIn(el.querySelector('.fn-num'), at + 120)
+        }, L.step * 1.3)
+        fade(one('.fn-total'), end + 100, 500)
+        fade(one('.s-source'), end + 200)
+        break
+      }
       case 'table': {
         const t = head()
         fade(one('.tb-headrow'), t, 500)
