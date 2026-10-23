@@ -27,7 +27,6 @@
   --r-panel: 24px;
   --accent-soft: color-mix(in oklch, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in oklch, var(--accent) 26%, var(--bg));
-  --on-accent-line: color-mix(in srgb, var(--accent-ink) 26%, transparent);
   /* 섹션, 마지막 장, 표지 옆면 같은 색 면. 강조색을 글자색 쪽으로 깊게 가라앉혀 쨍하지 않게 한다.
      oklch로 섞으면 초록이 청록으로 틀어져 sRGB로 섞는다. 밝은 테마의 글자색은 늘 어두워 면도 늘 어둡다 */
   --bold-bg: color-mix(in srgb, var(--accent) 36%, var(--ink));
@@ -1526,9 +1525,10 @@
   background: var(--surface);
 }
 
+/* 추천안은 넓은 면이라 쨍한 강조색 대신 색 면(--bold-bg)으로 깊게. 강조색은 '추천' 표만 */
 .pr-plan.is-hl {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bold-bg);
+  color: var(--bold-ink);
 }
 
 /* 어두운 테마에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 */
@@ -1567,8 +1567,8 @@
   flex: none;
   padding: 8px 20px;
   border-radius: 999px;
-  background: var(--accent-ink);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
   font-size: 21px;
   font-weight: 700;
   line-height: 1.2;
@@ -1606,8 +1606,14 @@
 }
 
 .pr-plan.is-hl .pr-body {
-  border-color: var(--on-accent-line);
+  border-color: var(--bold-line);
   opacity: 0.92;
+}
+
+/* 밝은 강조색을 바탕으로 깐 장은 강조색이 글자색(어두운 색)이 되어 색 면과 겹친다. 표를 색 면의 반대로 */
+.tone-accent:not(.is-dark) .pr-plan.is-hl .pr-tag {
+  background: var(--bold-ink);
+  color: var(--bold-bg);
 }
 
 /* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄만 옅은 강조색 바탕 */
@@ -2785,6 +2791,13 @@
   color: var(--accent-ink);
 }
 
+/* 밝은 테마에서는 넓은 꺾쇠 면을 색 면으로 깊게 (안 비교의 추천안과 같은 방식). 어두운 테마의 색 면은
+   칸 면과 거의 같아 구분되지 않아서 강조색 그대로 둔다 */
+.slide:not(.is-dark).l-process:not(.va-cards) .pc-step.is-hl .pc-head {
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
 .l-process:not(.va-cards) .pc-step.is-hl .pc-n {
   color: inherit;
   opacity: 0.72;
@@ -2848,8 +2861,8 @@
 }
 
 .va-cards .pc-step.is-hl {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bold-bg);
+  color: var(--bold-ink);
 }
 
 .va-cards .pc-head {
