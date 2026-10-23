@@ -114,3 +114,34 @@ describe('제안 적용', () => {
     expect(parseOp({ op: 'set_theme', transition: 'spin' })).toBeNull()
   })
 })
+
+describe('부품 장', () => {
+  const block = (id: string, fields: Record<string, string> = {}) => ({ id, type: 'text' as const, fields, items: [] })
+  const withCompose = (fields: Record<string, string>) => {
+    const d = createSampleDeck()
+    const slide = { ...d.slides[1], id: 'compose-1', layout: 'compose' as const, fields: {}, items: [], notes: '', rows: [{ id: 'r', blocks: [block('b', fields)] }] }
+    return { ...d, slides: [...d.slides, slide] }
+  }
+
+  it('AI는 부품 장을 만들거나 그 장으로 바꾸지 않는다', () => {
+    expect(parseOp({ op: 'add_slide', after: null, layout: 'compose' })).toBeNull()
+    expect(parseOp({ op: 'set_layout', slide: sid(1), layout: 'compose' })).toBeNull()
+  })
+
+  it('부품 장의 레이아웃은 바꾸지 않는다', () => {
+    const d = withCompose({ body: '적은 글' })
+    const id = shapeSlideId(d.slides[d.slides.length - 1])
+    const { deck: next, results } = applyOps(d, [{ op: 'set_layout', slide: id, layout: 'points' }])
+    expect(results[0]).toEqual({ ok: false, code: 'not_for_layout' })
+    expect(next.slides[next.slides.length - 1].layout).toBe('compose')
+  })
+
+  it('부품이 있는 장은 글을 비워 둬도 빈 장이 아니라서 지우지 못한다', () => {
+    const d = withCompose({})
+    expect(slideEmpty(d.slides[d.slides.length - 1])).toBe(false)
+    const id = shapeSlideId(d.slides[d.slides.length - 1])
+    const { deck: next, results } = applyOps(d, [{ op: 'remove_slide', slide: id }])
+    expect(results[0]).toEqual({ ok: false, code: 'has_content' })
+    expect(next.slides).toHaveLength(d.slides.length)
+  })
+})

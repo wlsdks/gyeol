@@ -17,7 +17,7 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, REQUEST_FORMAT, REQUEST_ID, requestId, type ChangeRequest } from '../src/ai/ops'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { LAYOUT_ORDER } from '../src/deck/layouts'
+import { AI_LAYOUTS } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
 const SHARE_DIR_NAME = 'AI 공유'
@@ -45,6 +45,8 @@ const PROTOCOL_WORDS = [
   SHAPE_FORMAT, 'format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides',
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
+  // 부품 장
+  'blocks', 'span', 'look', 'effect',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
   'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed',
@@ -125,7 +127,7 @@ const TOOLS = [
   {
     name: 'get_catalog',
     description:
-      '쓸 수 있는 레이아웃(칸과 항목 수 범위 포함), 보고 종류별 장 역할(role)과 순서, 보고 받는 분, 시간, 방식, 테마. ' +
+      '쓸 수 있는 레이아웃(칸과 항목 수 범위 포함), 보고 종류별 장 역할(role)과 순서, 보고 받는 분, 시간, 방식, 테마, 부품 장에 쓰이는 부품(blocks). ' +
       '제안을 만들기 전에 한 번 읽는다. add_slide의 role에 여기 나온 역할 이름을 쓰면 그 장의 안내와 이름표까지 같이 들어간다.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: false },
@@ -134,6 +136,7 @@ const TOOLS = [
     name: 'get_shape',
     description:
       '발표 하나의 모양: 장 순서, 장마다 레이아웃과 역할, 숨김 여부, 칸마다 비었는지(empty)/채웠는지(filled)/길어서 넘칠 수 있는지(long), 항목 수, 옵션, 테마. ' +
+      '부품 장(layout compose)은 사람이 부품을 골라 꾸민 장으로, blocks에 줄마다 부품의 종류, 너비(span, 12 기준), 바탕, 움직임, 칸 상태가 나온다. ' +
       '사람이 적은 글은 이 서버에 없다. 글의 내용을 추측하거나 사용자에게 붙여 달라고 하지 말고 모양만으로 판단한다.',
     inputSchema: {
       type: 'object',
@@ -152,7 +155,7 @@ const TOOLS = [
       '- add_slide {after: 장 id 또는 null(맨 앞), role?: 카탈로그의 역할 이름, layout?: 레이아웃 id, as?: "n1"} role이나 layout 중 하나는 있어야 한다.',
       '- remove_slide {slide} 빈 장만 지운다. 내용이 있으면 has_content로 실패하니 set_hidden을 쓴다.',
       '- move_slide {slide, after: 장 id 또는 null(맨 앞)}',
-      '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다.',
+      '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다. 부품 장(compose)은 바꾸지 않고, 부품 장으로 바꾸지도 않는다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?, contain?: 이미지와 설명, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨)}',
@@ -176,7 +179,7 @@ const TOOLS = [
               op: { type: 'string', enum: OP_NAMES },
               slide: refSchema,
               after: { anyOf: [refSchema, { type: 'null' }] },
-              layout: { type: 'string', enum: LAYOUT_ORDER },
+              layout: { type: 'string', enum: AI_LAYOUTS },
               role: { type: 'string', maxLength: 24 },
               as: { type: 'string', pattern: '^n[0-9]{1,2}$' },
               hidden: { type: 'boolean' },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleDeck } from '../deck/sample'
-import type { Deck } from '../deck/types'
+import type { Block, Deck } from '../deck/types'
 import { checkShape, onlyKnownStrings, toShape } from './share'
 
 export const SECRET = '기밀7731'
@@ -16,7 +16,7 @@ export function secretDeck(): Deck {
     meta: { ...deck.meta, org: s('org'), presenter: s('presenter'), date: s('date'), contact: s('contact'), logo: `data:image/png;base64,${SECRET}` },
     // 가져온 파일이면 고르는 값 자리에도 아무 글이나 들어 있을 수 있다
     theme: { id: deck.theme.id, accent: s('accent'), font: s('font'), size: s('size'), footer: s('footer'), transition: s('transition') } as unknown as Deck['theme'],
-    slides: deck.slides.map((slide, i) => ({
+    slides: (deck.slides.map((slide, i) => ({
       ...slide,
       id: s(`slide-${i}`),
       purpose: s('purpose'),
@@ -27,8 +27,33 @@ export function secretDeck(): Deck {
       options: { ...slide.options, motion: s('motion'), tone: s('tone') } as unknown as Deck['slides'][number]['options'],
       fields: Object.fromEntries([...Object.keys(slide.fields), 'title', 'lead', 'body'].map((k) => [k, s(`field-${k}`)])),
       items: slide.items.map((it, j) => ({ ...it, id: s(`item-${j}`), title: s('t'), body: s('b'), value: s('v'), meta: s('m'), image: s('img') })),
-    })),
+    })) as Deck['slides']).concat(composeSecret(s)),
   }
+}
+
+/** 부품 장: 부품의 칸, 항목, 안내, id, 그리고 고르는 값 자리(바탕, 움직임, 모양, 너비)에도 비밀을 심는다 */
+function composeSecret(s: (k: string) => string): Deck['slides'] {
+  const it = (j: number) => ({ id: s(`bi-${j}`), title: s('bt'), body: s('bb'), value: s('bv'), meta: s('bm'), image: s('bimg') })
+  const block = (type: string, j: number) =>
+    ({ id: s(`block-${j}`), type, fields: { text: s('bf'), body: s('bf'), label: s('bf'), [s('key')]: s('bf') }, items: [it(0), it(1)], hints: { body: s('bh') }, look: s('look'), effect: s('fx'), variant: s('va'), highlight: 1 }) as unknown as Block
+  return [
+    {
+      id: s('compose'),
+      layout: 'compose',
+      purpose: s('purpose'),
+      section: s('section'),
+      guide: s('guide'),
+      notes: s('notes'),
+      hints: { title: s('hint') },
+      options: {},
+      fields: { title: s('ct'), lead: s('cl') },
+      items: [],
+      rows: [
+        { id: s('row-1'), spans: [s('span')] as unknown as number[], blocks: [block('message', 1), block('bullets', 2)] },
+        { id: s('row-2'), blocks: [block('kpi', 3), block(s('type'), 4)] },
+      ],
+    },
+  ]
 }
 
 describe('모양만 고르기', () => {
@@ -42,6 +67,15 @@ describe('모양만 고르기', () => {
     const shape = toShape(secretDeck())
     expect(shape.slides.every((s) => s.role === null && s.section === null)).toBe(true)
     expect(shape.accent).toBeNull()
+  })
+
+  it('부품 장은 부품의 종류, 너비, 바탕, 움직임과 칸 상태만 보인다', () => {
+    const shape = toShape(secretDeck())
+    const compose = shape.slides.find((x) => x.layout === 'compose')!
+    expect(compose.blocks?.map((r) => r.map((b) => b.type))).toEqual([['message', 'bullets'], ['kpi']])
+    expect(compose.blocks?.[0][0]).toMatchObject({ look: 'plain', effect: 'auto', variant: 'base', fields: { text: 'filled' } })
+    expect(compose.blocks?.[0].reduce((a, b) => a + b.span, 0)).toBe(12)
+    expect(checkShape(shape)).toBe(true)
   })
 
   it('원래 덱에서는 장 역할과 칸 상태가 보인다', () => {
@@ -71,12 +105,27 @@ describe('모양만 고르기', () => {
     expect(bad((v) => (v.slides[0].id = SECRET))).toBe(false)
     expect(bad((v) => (v.accent = SECRET))).toBe(false)
     expect(bad((v) => (v.deck = 'd' + SECRET))).toBe(false)
+    // 부품 장이 아닌 장에 부품, 모르는 부품, 모르는 바탕
+    expect(bad((v) => (v.slides[1].blocks = []))).toBe(false)
+    const withBlocks = toShape(secretDeck())
+    const badBlocks = (fn: (b: Record<string, unknown>) => void) => {
+      const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; blocks?: Record<string, unknown>[][] }[] }
+      fn(copy.slides.find((x) => x.layout === 'compose')!.blocks![0][0])
+      return checkShape(copy)
+    }
+    expect(badBlocks(() => {})).toBe(true)
+    expect(badBlocks((b) => (b.type = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.look = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.span = 13))).toBe(false)
+    expect(badBlocks((b) => (b.note = SECRET))).toBe(false)
+    expect(badBlocks((b) => ((b.fields as Record<string, string>).text = SECRET))).toBe(false)
   })
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect']
     expect(onlyKnownStrings(shape, words)).toBe(true)
+    expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)
     expect(onlyKnownStrings({ [SECRET]: 1 }, words)).toBe(false)
   })

@@ -6,7 +6,7 @@
 
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
-import { BOLD_LAYOUTS, LAYOUTS, variantIds, variantOf } from '../deck/layouts'
+import { AI_LAYOUTS, BOLD_LAYOUTS, LAYOUTS, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { shapeDeckId, shapeSlideId } from './share'
@@ -108,7 +108,8 @@ function refOrNull(v: unknown): SlideRef | null | undefined {
 }
 
 const only = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).every((k) => keys.includes(k))
-const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && v in LAYOUTS
+// 부품 장은 사람이 직접 꾸미는 장이라 AI가 만들거나 그 장으로 바꾸지 않는다
+const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && AI_LAYOUTS.includes(v as LayoutId)
 
 /** 정해진 꼴이 아니면 null. 모르는 키가 하나라도 있으면 받지 않는다. */
 export function parseOp(v: unknown): Op | null {
@@ -243,7 +244,9 @@ const itemEmpty = (it: Item) => (['title', 'body', 'value', 'meta', 'image'] as 
 
 /** 사람이 적은 것이 하나도 없는 장인지. 노트도 내용이다. */
 export function slideEmpty(slide: Slide): boolean {
-  return Object.values(slide.fields).every(blank) && slide.items.every(itemEmpty) && !slide.notes.trim()
+  // 부품 장의 부품에 적은 글도 사람이 적은 글이다. 부품이 하나라도 있으면 빈 장이 아니다
+  const blocks = (slide.rows ?? []).flatMap((r) => r.blocks)
+  return Object.values(slide.fields).every(blank) && slide.items.every(itemEmpty) && !slide.notes.trim() && !blocks.length
 }
 
 /** 보고 구성에 있는 역할이면 그 장의 안내와 미리 넣는 이름표까지 같이 쓴다. */
@@ -343,6 +346,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         return done
       }
       case 'set_layout': {
+        // 부품 장의 부품은 다른 레이아웃의 칸으로 옮길 수 없다. 바꾸면 사람이 꾸민 것이 안 보이게 된다
+        if (s.layout === 'compose') return fail('not_for_layout')
         const variant = op.variant ?? (op.layout === s.layout ? variantOf(s) : variantIds(op.layout)[0])
         if (op.layout === s.layout && variant === variantOf(s)) return fail('no_change')
         const items = [...s.items]

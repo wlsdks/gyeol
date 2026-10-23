@@ -4,11 +4,12 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
+import { blockItems, cleanRows, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Audience, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Audience, Block, BlockEffect, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
 
@@ -31,6 +32,20 @@ export interface ShapeSlide {
   options: { highlight?: number; flip?: boolean; contain?: boolean; motion?: Motion; tone?: Tone }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
+  /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
+  blocks?: ShapeBlock[][]
+}
+
+export interface ShapeBlock {
+  type: BlockType
+  /** 칸 너비 (12 기준) */
+  span: number
+  look: BlockLook
+  effect: BlockEffect
+  /** 카탈로그 blocks[].variants 중 하나, 한 가지뿐이면 'base' */
+  variant: string
+  fields: Record<string, FieldState>
+  items: Record<string, FieldState>[]
 }
 
 export interface ShapeDeck {
@@ -120,8 +135,33 @@ export function catalog() {
     footers: FOOTERS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     transitions: TRANSITIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     tones: TONES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    blocks: BLOCK_TYPES.map((type) => {
+      const spec = BLOCKS[type]
+      return {
+        type,
+        name: spec.name,
+        description: spec.description,
+        motion: spec.motion,
+        minSpan: spec.minSpan,
+        variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
+        fields: blockFieldSpecs(type).map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
+        items: spec.items
+          ? {
+              label: spec.items.label,
+              min: spec.items.min,
+              max: spec.items.max,
+              fields: spec.items.fields.map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
+            }
+          : null,
+      }
+    }),
+    blockLooks: BLOCK_LOOKS.map((m) => ({ id: m.id, name: m.name })),
+    blockEffects: BLOCK_EFFECTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
 }
+
+/** 부품의 칸 가운데 부품마다 적는 것 ($로 시작하는 발표 전체의 값은 빼고) */
+const blockFieldSpecs = (type: BlockType) => BLOCKS[type].fields.filter((f) => !f.key.startsWith('$'))
 
 function collectStrings(value: unknown, out: Set<string>) {
   if (typeof value === 'string') out.add(value)
@@ -213,7 +253,7 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   }
   if (isOneOf(MOTIONS, o.motion)) options.motion = o.motion
   if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
-  return {
+  const out: ShapeSlide = {
     id: shapeSlideId(slide),
     layout: slide.layout,
     role: fromCatalog(slide.purpose ?? ''),
@@ -225,6 +265,29 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     options,
     variant: variantOf(slide),
   }
+  if (slide.layout === 'compose') {
+    // 가져온 파일일 수 있어서 꼴부터 맞춘다 (모르는 부품, 넘치는 개수는 뺀다)
+    out.blocks = cleanRows(slide.rows)
+      .map((r) => {
+        const spans = spansOf(r)
+        return r.blocks.map((b, i) => shapeBlock(b, spans[i]))
+      })
+  }
+  return out
+}
+
+function shapeBlock(block: Block, span: number): ShapeBlock {
+  const spec = BLOCKS[block.type]
+  const fields: Record<string, FieldState> = {}
+  for (const f of blockFieldSpecs(block.type)) fields[f.key] = stateOf(block.fields[f.key] ?? '', !!f.multiline)
+  const items = spec.items
+    ? blockItems(block).map((item) => {
+        const o: Record<string, FieldState> = {}
+        for (const f of spec.items!.fields) o[f.key] = stateOf(item[f.key] ?? '', !!f.multiline)
+        return o
+      })
+    : []
+  return { type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
 }
 
 // ---------- 확인: 모양 파일이 정해진 꼴 그대로인지. 하나라도 어긋나면 통째로 버린다. ----------
@@ -238,9 +301,26 @@ function checkStates(v: unknown, keys: string[]): boolean {
   return isObj(v) && Object.keys(v).length === keys.length && keys.every((k) => STATES.includes(v[k] as FieldState))
 }
 
+function checkBlock(v: unknown): boolean {
+  if (!isObj(v) || !keysIn(v, ['type', 'span', 'look', 'effect', 'variant', 'fields', 'items'])) return false
+  if (!BLOCK_TYPES.includes(v.type as BlockType)) return false
+  const spec = BLOCKS[v.type as BlockType]
+  if (!isInt(v.span, 1, 12)) return false
+  if (!BLOCK_LOOK_IDS.includes(v.look as BlockLook) || !BLOCK_EFFECT_IDS.includes(v.effect as BlockEffect)) return false
+  if (!(spec.variants ?? [{ id: 'base' }]).some((x) => x.id === v.variant)) return false
+  if (!checkStates(v.fields, blockFieldSpecs(v.type as BlockType).map((f) => f.key))) return false
+  if (!Array.isArray(v.items) || v.items.length > (spec.items?.max ?? 0)) return false
+  const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
+  return v.items.every((it) => checkStates(it, itemKeys))
+}
+
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant'])) return false
+  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks'])) return false
+  if (v.blocks !== undefined) {
+    if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_ROWS) return false
+    if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_IN_ROW && r.every(checkBlock))) return false
+  }
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
   if (typeof v.layout !== 'string' || !(v.layout in LAYOUTS)) return false
   const spec = LAYOUTS[v.layout as LayoutId]
