@@ -42,6 +42,22 @@ function extraSlides(): Slide[] {
       { title: '네 지표 중 세 개가 목표를 넘었어요', source: '영업관리 시스템, 9월 말 기준' },
     ),
     withItems(
+      makeSlide('bridge'),
+      [
+        { title: '신규 고객', value: '+9', meta: '2곳 수주' },
+        { title: '단가 인상', value: '+7' },
+        { title: '기존 고객 이탈', value: '-2', meta: '1곳 해지' },
+      ],
+      {
+        title: '신규 고객과 단가로 목표보다 14억 원 더 팔았어요',
+        startTitle: '목표',
+        startValue: '117',
+        endTitle: '실적',
+        unit: '억 원',
+        source: '영업관리 시스템, 9월 말 기준',
+      },
+    ),
+    withItems(
       makeSlide('matrix'),
       [
         { title: '틈틈이 하기', body: '견적 양식 통일, 단가표 공유 폴더' },

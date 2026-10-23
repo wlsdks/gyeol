@@ -6,6 +6,7 @@ export type LayoutId =
   | 'statement'
   | 'kpi'
   | 'scorecard'
+  | 'bridge'
   | 'points'
   | 'compare'
   | 'matrix'

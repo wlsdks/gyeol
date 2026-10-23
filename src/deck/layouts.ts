@@ -174,6 +174,30 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  bridge: {
+    id: 'bridge',
+    name: '증감 요인',
+    description: '처음 값에서 끝 값까지, 무엇이 얼마나 더하고 뺐는지',
+    fields: [
+      title('증감을 요약하는 한 문장'),
+      { key: 'startTitle', label: '처음 이름', hint: '목표', optional: true },
+      { key: 'startValue', label: '처음 값', hint: '117' },
+      { key: 'endTitle', label: '끝 이름', hint: '실적', optional: true },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      source,
+    ],
+    items: {
+      label: '요인',
+      min: 1,
+      max: 6,
+      default: 3,
+      fields: [
+        { key: 'title', label: '요인', hint: '요인 이름', hints: ['신규 고객', '단가 인상', '기존 고객 이탈', '환율', '할인', '기타'] },
+        { key: 'value', label: '증감', hint: '+9', hints: ['+9', '+7', '-2', '+3', '-1', '+1'] },
+        { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
+      ],
+    },
+  },
   points: {
     id: 'points',
     name: '핵심 포인트',
@@ -387,6 +411,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'points',
   'kpi',
   'scorecard',
+  'bridge',
   'compare',
   'matrix',
   'pricing',

@@ -4,6 +4,7 @@ import { highlightOf, hintFor } from '../deck/layouts'
 import type { LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
+import { formatNumber, parseDelta, parseNumber } from './numbers'
 import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
 
 function Head({ lead = false }: { lead?: boolean }) {
@@ -334,10 +335,6 @@ function logoColumns(n: number): number {
   return 4
 }
 
-function parseNumber(text: string): number {
-  const n = parseFloat(text.replace(/,/g, '').replace(/[^0-9.-]/g, ''))
-  return Number.isFinite(n) ? n : 0
-}
 
 /** 숫자를 넣기 전, 편집할 때 흐리게 보여 줄 예시 길이. 어떤 모양의 장인지 알아보게만 한다. */
 const DEMO_BARS = [64, 78, 100, 86, 72, 92]
@@ -443,6 +440,81 @@ function Scorecard() {
   )
 }
 
+/**
+ * 증감 요인(폭포): 처음 값 → 요인마다 더하고 뺀 만큼 뜬 막대 → 끝 값. 끝 값은 계산한다(따로 적으면 서로 안 맞을 수 있어서).
+ * 처음과 끝이 증감보다 훨씬 크면 바닥부터 세운 막대 때문에 증감이 안 보이므로, 바닥을 올리고 잘린 표시를 한다.
+ */
+function Bridge() {
+  const { slide, meta, mode } = useSlide()
+  const items = useItems()
+  const startText = readField(slide, meta, 'startValue')
+  const unit = readField(slide, meta, 'unit').trim()
+  // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
+  const demo = mode !== 'final' && !startText.trim() && items.every((it) => !it.value.trim())
+  const start = parseNumber(demo ? hintFor(slide.layout, slide.hints, 'startValue') : startText)
+  const deltas = items.map((it, i) => parseDelta(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
+  const levels = deltas.reduce((acc, d) => [...acc, acc[acc.length - 1] + d], [start])
+  const end = levels[levels.length - 1]
+  const lo = Math.min(...levels)
+  const hi = Math.max(...levels)
+  const span = hi - lo || Math.abs(hi) || 1
+  const cut = lo > 0 && lo - span * 1.5 > 0
+  const floor = cut ? lo - span * 1.5 : Math.min(0, lo)
+  const top = Math.max(hi, 0)
+  const pct = (v: number) => (((v - floor) / (top - floor || 1)) * 100).toFixed(2)
+  const base = cut ? floor : 0
+  const col = (a: number, b: number, link?: number) =>
+    ({ '--lo': pct(Math.min(a, b)), '--hi': pct(Math.max(a, b)), ...(link !== undefined ? { '--link': pct(link) } : {}) }) as CSSProperties
+  const known = demo || !!startText.trim()
+  return (
+    <>
+      <Head />
+      <div className={cx('s-body wf', demo && 'is-demo', cut && 'is-cut')} style={{ '--n': items.length + 2 } as CSSProperties}>
+        <div className="wf-col wf-total" style={col(base, start, start)}>
+          <div className="wf-plot">
+            <span className="wf-bar" />
+            <span className="wf-val">
+              <T k="startValue" as="span" className="wf-num" oneLine />
+              {(unit || mode !== 'final') && <T k="unit" as="span" className="wf-unit" oneLine />}
+            </span>
+          </div>
+          <Label k="startTitle" fallback="시작" className="wf-title" />
+        </div>
+        {items.map((it, i) => (
+          <div
+            key={it.id}
+            className={cx('it wf-col', deltas[i] < 0 ? 'wf-down' : 'wf-up', !demo && !it.value.trim() && 'is-blank')}
+            style={col(levels[i], levels[i + 1], levels[i + 1])}
+          >
+            <div className="wf-plot">
+              <span className="wf-bar" />
+              <span className="wf-val">
+                <IT i={i} k="value" as="span" className="wf-num" oneLine />
+              </span>
+            </div>
+            <div className="wf-label">
+              <IT i={i} k="title" className="wf-title" />
+              <IT i={i} k="meta" className="wf-meta" />
+            </div>
+            <ItemTools i={i} />
+          </div>
+        ))}
+        <div className="wf-col wf-total wf-end" style={col(base, end)}>
+          <div className="wf-plot">
+            <span className="wf-bar" />
+            <span className="wf-val">
+              <span className="wf-num">{known ? formatNumber(end) : '–'}</span>
+              {known && (unit || demo) && <span className="wf-unit">{unit || hintFor(slide.layout, slide.hints, 'unit')}</span>}
+            </span>
+          </div>
+          <Label k="endTitle" fallback="결과" className="wf-title" />
+        </div>
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
 /** 2×2: 세로 기준(위로 갈수록)과 가로 기준(오른쪽으로 갈수록)으로 나눈 네 칸. 항목 순서는 왼쪽 위부터 글 읽는 순서. */
 function Matrix() {
   const { slide } = useSlide()
@@ -504,6 +576,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   statement: Statement,
   kpi: Kpi,
   scorecard: Scorecard,
+  bridge: Bridge,
   points: Points,
   compare: Compare,
   matrix: Matrix,

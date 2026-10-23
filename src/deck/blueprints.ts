@@ -540,6 +540,19 @@ const report: Blueprint = {
       },
     },
     {
+      layout: 'bridge',
+      purpose: '증감 요인',
+      priority: 2,
+      guide: '목표와 실적의 차이가 어디서 왔는지 요인별로 보여주세요. 더한 것은 +, 뺀 것은 -로 적으면 실적은 저절로 계산돼요.',
+      fields: { startTitle: '목표', endTitle: '실적' },
+      hints: {
+        title: '목표보다 14억 원 더 팔았어요',
+        startValue: '117',
+        unit: '억 원',
+        ...each({ title: ['신규 고객', '단가 인상', '기존 고객 이탈'], value: ['+9', '+7', '-2'] }),
+      },
+    },
+    {
       layout: 'bars',
       purpose: '기간별 실적',
       priority: 2,

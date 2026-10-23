@@ -99,7 +99,7 @@
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
     .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
-    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body
+    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -1907,6 +1907,175 @@
 
 .sk:is([data-n='5'], [data-n='6']) .sk-rate {
   font-size: 44px;
+}
+
+/* ---------- 증감 요인 (폭포) ----------
+   처음과 끝은 진한 글자색 막대, 더한 요인은 강조색, 뺀 요인은 옅은 회색. 좋고 나쁨이 아니라 방향만 보인다.
+   막대 위치는 --lo, --hi(0~100), 다음 막대로 잇는 점선 높이는 --link 로만 받는다. */
+
+.wf {
+  --wf-gap: 16px;
+
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: var(--wf-gap);
+  margin-top: 24px;
+}
+
+.wf-col {
+  position: relative;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
+
+.wf-plot {
+  position: relative;
+  border-bottom: 2px solid var(--line);
+}
+
+/* 바닥줄은 칸 사이 틈까지 이어지게 */
+.wf-col:not(:last-child) .wf-plot::before {
+  position: absolute;
+  right: calc(var(--wf-gap) * -1);
+  bottom: -2px;
+  width: var(--wf-gap);
+  border-bottom: 2px solid var(--line);
+  content: '';
+}
+
+/* 막대 위에 값이 들어갈 자리를 남긴다 */
+.wf-bar,
+.wf-val,
+.wf-plot::after {
+  --area: calc(100% - 96px);
+}
+
+.wf-bar {
+  position: absolute;
+  right: 20%;
+  bottom: calc(var(--area) * var(--lo) / 100);
+  left: 20%;
+  height: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100));
+  border-radius: 8px;
+  background: var(--accent);
+}
+
+.wf-total .wf-bar {
+  border-radius: 8px 8px 0 0;
+  background: var(--ink);
+}
+
+.wf-down .wf-bar {
+  background: color-mix(in oklch, var(--ink-3) 42%, var(--bg));
+}
+
+.is-dark .wf-down .wf-bar {
+  background: color-mix(in oklch, var(--ink-3) 70%, var(--bg));
+}
+
+/* 다음 막대로 잇는 점선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
+.wf-col:not(.wf-end) .wf-plot::after {
+  position: absolute;
+  bottom: calc(var(--area) * var(--link) / 100);
+  left: 80%;
+  width: calc(40% + var(--wf-gap));
+  border-top: 2px dashed var(--ink-3);
+  opacity: 0.55;
+  content: '';
+}
+
+/* 바닥을 올렸을 때: 처음과 끝 막대 아래쪽을 비스듬히 끊어 잘렸음을 보인다 */
+.wf.is-cut .wf-total .wf-bar::after {
+  position: absolute;
+  right: -2px;
+  bottom: 30px;
+  left: -2px;
+  height: 14px;
+  background: var(--bg);
+  transform: skewY(-10deg);
+  content: '';
+}
+
+.wf-val {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--area) * var(--hi) / 100 + 18px);
+  left: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.wf-num {
+  --fs: 48px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-total .wf-num {
+  --fs: 56px;
+}
+
+.wf-up .wf-num {
+  color: var(--accent);
+}
+
+.wf-down .wf-num {
+  color: var(--ink-2);
+}
+
+.wf-unit {
+  color: var(--ink-2);
+  font-size: calc(26px * var(--scale, 1));
+  font-weight: 600;
+}
+
+.wf-col > .wf-title,
+.wf-label {
+  padding: 24px 8px 0;
+  text-align: center;
+}
+
+.wf-title {
+  --fs: 30px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.wf-total .wf-title {
+  font-weight: 700;
+}
+
+.wf-meta {
+  --fs: 22px;
+  margin-top: 6px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* 아직 적지 않은 요인은 막대를 그리지 않는다 (0으로 보이지 않게) */
+.wf-col.is-blank .wf-bar {
+  visibility: hidden;
+}
+
+.wf.is-demo .wf-bar,
+.wf.is-demo .wf-plot::after {
+  opacity: 0.3;
+}
+
+.wf.is-demo .wf-val > :not(.ed),
+.wf.is-demo .wf-end .wf-val {
+  opacity: 0.45;
 }
 
 /* ---------- 2×2 우선순위 ---------- */

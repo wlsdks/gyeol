@@ -380,6 +380,21 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), end + 200)
         break
       }
+      case 'bridge': {
+        const t = head()
+        // 처음 막대부터 차례로: 더한 요인은 아래에서 솟고, 뺀 요인은 위에서 내려온다. 잇는 점선은 막대가 선 뒤에.
+        const end = items('.wf-col', t, (el, at) => {
+          const down = el.classList.contains('wf-down')
+          fade(el.querySelector('.wf-label') || el.querySelector(':scope > .wf-title'), at, 500)
+          grow(el.querySelector('.wf-bar'), at + 80, down ? 'down' : 'up')
+          rise(el.querySelector('.wf-val'), at + 220, L.y * 0.4)
+          if (el.classList.contains('wf-total')) count(el.querySelector('.wf-num'), at + 120)
+          const plot = el.querySelector('.wf-plot')
+          if (plot) run(anims, plot, [{ opacity: 0 }], s(at + 420), { easing: OUT, duration: s(400) }, '::after')
+        }, L.step * 1.3)
+        fade(one('.s-source'), end + 200)
+        break
+      }
       case 'matrix': {
         const t = head()
         const grid = one('.mx-grid')
