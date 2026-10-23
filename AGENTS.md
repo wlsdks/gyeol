@@ -25,7 +25,7 @@
    - 모양을 바꾸면 `checkShape`(꼴 확인)와 MCP 서버의 `PROTOCOL_WORDS`도 같이 고칩니다.
    - `src/ai/share.test.ts`의 비밀 심기 테스트와 `mcp/server.test.ts`가 통과해야 합니다.
 3. **AI의 제안은 사람이 적은 글을 쓰거나 지우지 못한다.**
-   - `src/ai/ops.ts`에 칸의 글(fields, items)을 쓰는 op를 만들지 않습니다.
+   - `src/ai/ops.ts`에 칸의 글(fields, items)을 쓰는 op를 만들지 않습니다. 부품 장은 사람이 꾸미는 장이라 AI가 만들거나 레이아웃을 바꾸지 않고, 부품이 있으면 빈 장이 아닙니다.
    - 지우는 op는 빈 장, 빈 항목만 지웁니다. 제안은 사람이 미리 보고 적용하며, 적용 전 상태는 버전으로 남깁니다.
 4. **MCP 서버는 'AI 공유' 폴더만 다룬다.**
    - `mcp/server.ts`의 Node 권한 모델 실행(`--permission`, `--allow-fs-*`)을 빼지 않습니다.
@@ -62,8 +62,8 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 
 | 위치 | 내용 |
 |---|---|
-| `src/deck/` | 데이터 모델(`types.ts`), 보고 종류별 구성(`blueprints.ts`), 레이아웃 정의와 묶음(`layouts.ts`), 구성 만들기(`generate.ts`), 예시 발표(`sample.ts`), 레이아웃별 예시 장(`showcase.ts`) |
-| `src/slides/` | 슬라이드 그리기(`layouts.tsx`), 슬라이드 디자인(`slides.css`) |
+| `src/deck/` | 데이터 모델(`types.ts`), 보고 종류별 구성(`blueprints.ts`), 레이아웃 정의와 묶음(`layouts.ts`), 부품과 자리 규칙(`blocks.ts`), 구성 만들기(`generate.ts`), 예시 발표(`sample.ts`), 레이아웃별 예시 장(`showcase.ts`) |
+| `src/slides/` | 슬라이드 그리기(`layouts.tsx`), 부품 장(`blocks.tsx`, `blocks.css`), 슬라이드 디자인(`slides.css`), 편집 표시(`edit.css`) |
 | `src/screens/` | 홈, 마법사, 편집기(`editor/`), 발표 화면, 장 모음(`System.tsx`, 디자인 시스템) |
 | `src/store/` | 편집 상태(zustand), 저장(IndexedDB + 보관 폴더), 버전 |
 | `src/export/` | HTML 내보내기와 뷰어 |
@@ -78,6 +78,8 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 - 색은 테마 변수(`--accent`, `--ink`, `--bold-bg` 등)만 씁니다. 세 테마(화이트, 네이비, 세리프)와 장의 바탕(반대 색, 강조색)에서 모두 보기 좋아야 합니다. 어두운 바탕만의 규칙은 `.t-navy`가 아니라 `.is-dark`에 씁니다.
 - 사용자가 바꿀 수 있는 것은 '고르는 값'으로 엽니다(테마 메뉴: 글꼴, 글자 크기, 아래 표시, 장 넘기기 / 이 장 설정: 모양, 바탕, 움직임). 값 목록은 `src/deck/themes.ts`에 두고 AI 카탈로그, 모양 파일, 제안(op)에 함께 넣습니다.
 - 새 글자 칸은 `slides.css`의 글자 칸 목록(`--fs` 규칙)에 이름을 넣어야 크기와 글자 크기 설정이 먹습니다.
+- 부품 장(`compose`)의 부품은 `src/deck/blocks.ts`에 있습니다. 부품은 정해진 줄과 칸(12칸 격자의 정한 비율)에만 들어가고, 부품마다 잘리지 않는 높이(`MIN_H`)를 갤러리 `#/gallery?set=blocks`(`&fill=max`)에서 재서 정합니다. 새 부품은 `BLOCK_GROUPS`와 예시, 움직임(`engine.ts`의 `nativeAuto`)이 있어야 합니다. 레이아웃 부품은 레이아웃을 그대로 쓰므로 레이아웃을 고치면 부품도 같이 봅니다.
+- 부품 장으로 바꾸기(`composeFrom`)는 글을 하나도 잃으면 안 됩니다(`blocks.test.ts`가 모든 레이아웃을 확인).
 - 슬라이드를 고쳤으면 갤러리에서 세 테마를 직접 보고 확인합니다(`&variants=1`로 모든 모양, `&tone=invert|accent`로 바탕, `&hl=2`로 강조 항목, `&only=bridge,table`로 몇 장만). 화면을 고쳤으면 편집기를 직접 띄워 봅니다.
 - 회색을 다른 색과 섞을 때는 `color-mix(in srgb, …)`를 씁니다. oklch로 섞으면 세리프 테마의 회녹색이 분홍빛으로 틀어집니다.
 - 보고용입니다. 결론부터(표지의 결정 요청, 한 장 요약), 숫자는 크게, 장식은 적게.
