@@ -2353,10 +2353,11 @@ select {
   background: #fff;
 }
 
+/* 장 아래쪽 오른편에는 장의 쪽 번호가 있어 겹친다. 거의 모든 장에서 비어 있는 위 오른편에 둔다 */
 .present-bar {
   position: fixed;
+  top: 14px;
   right: 16px;
-  bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;

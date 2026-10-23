@@ -25,7 +25,7 @@ body.is-present .v-deck{position:fixed;inset:0;display:block;padding:0}
 body.is-present .v-slide{position:absolute;inset:0;display:none;max-width:none}
 body.is-present .v-slide.is-current{display:flex;align-items:center;justify-content:center}
 body.is-present .v-frame{width:var(--pw);height:var(--ph);aspect-ratio:auto;border-radius:0;box-shadow:none;cursor:default}
-body.is-present .v-count{position:fixed;right:20px;bottom:16px;display:block;padding:8px 12px;border-radius:999px;background:rgb(0 0 0/.45);color:rgb(255 255 255/.8);font:600 13px/1 inherit;opacity:0;transition:opacity .2s}
+body.is-present .v-count{position:fixed;right:20px;top:16px;display:block;padding:8px 12px;border-radius:999px;background:rgb(0 0 0/.45);color:rgb(255 255 255/.8);font:600 13px/1 inherit;opacity:0;transition:opacity .2s}
 body.is-present.is-awake .v-count{opacity:1}
 body.is-present:not(.is-awake){cursor:none}
 .v-blank{display:none}
