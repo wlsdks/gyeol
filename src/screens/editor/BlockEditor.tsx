@@ -13,19 +13,21 @@ import {
   copyBlock,
   dropTarget,
   effectOf,
-  fitsHeight,
+  fitsWith,
   insertAt,
   lookOf,
   makeBlock,
+  NO_ROOM,
   removeBlock,
   sameTarget,
   shiftBlock,
   spansAt,
   targetOf,
   variantOfBlock,
+  withItem,
   type DropTarget,
 } from '../../deck/blocks'
-import { emptyItem, uid } from '../../deck/generate'
+import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
@@ -523,18 +525,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   const selectedBlock = selected ? (slide.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected) : undefined
-  /** 부품을 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 잘리지 않고 장에 들어가는지 */
-  const fitsWith = (b: Block, fn: (x: Block) => Block) => {
+  /** 부품을 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 잘리지 않고 장에 들어가는지. 본문 상자는 화면에서 잰다 */
+  const room = (b: Block, fn: (x: Block) => Block) => {
     const area = measureArea(areaEl.current)
-    if (!area) return true
-    const rows = (slide.rows ?? []).map((r) => ({ ...r, blocks: r.blocks.map((x) => (x.id === b.id ? fn(x) : x)) }))
-    return fitsHeight(rows, area.size.h)
+    return !area || fitsWith(slide.rows ?? [], b.id, fn, area.size.h)
   }
   const tools = (b: Block) => (
     <BlockTools
       block={b}
-      roomForItem={fitsWith(b, withItem)}
-      roomForVariant={(v) => fitsWith(b, (x) => ({ ...x, variant: v }))}
+      roomForItem={room(b, withItem)}
+      roomForVariant={(v) => room(b, (x) => ({ ...x, variant: v }))}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setRows(slideRef.current.id, shiftBlock(slideRef.current.rows ?? [], b.id, dir))}
       onLook={(lk) => update(b.id, (x) => ({ ...x, look: lk }))}
@@ -703,18 +703,6 @@ function Floating({ anchor, children }: { anchor: string; children: ReactNode })
     </div>
   )
 }
-
-/** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
-function withItem(x: Block): Block {
-  const max = BLOCKS[x.type].items?.max ?? 0
-  const visible = Math.min(x.items.length, max)
-  if (visible >= max) return x
-  const items = [...x.items]
-  items.splice(visible, 0, emptyItem())
-  return { ...x, items }
-}
-
-const NO_ROOM = '장에 자리가 모자라요. 다른 부품을 빼거나 다음 장으로 나눠 보세요'
 
 function BlockTools({
   block,

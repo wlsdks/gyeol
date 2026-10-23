@@ -9,10 +9,12 @@ import {
   blockMinH,
   canCompose,
   cleanRows,
+  composeAreaH,
   composeFrom,
   dropTarget,
   fitSpans,
   fitsHeight,
+  fitsWith,
   insertAt,
   makeBlock,
   MAX_BLOCKS,
@@ -25,6 +27,7 @@ import {
   targetOf,
   unwrapCompose,
   validTargets,
+  withItem,
 } from './blocks'
 import { sampleBlock } from './blockSamples'
 import { LAYOUT_ORDER } from './layouts'
@@ -141,6 +144,21 @@ describe('자리 정하기', () => {
     for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'))!, areaH)).toBe(true)
     const hs = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], areaH)
     expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
+  })
+
+  it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {
+    const slide = { fields: { title: '제목' } } as unknown as Slide
+    const areaH = composeAreaH(slide)
+    let rows = [row(block('message', 'm')), row(block('bullets', 'p'), block('callout', 'c'))]
+    expect(fitsHeight(rows, areaH)).toBe(true)
+    // 더할 수 있는 동안 더하면, 마지막까지 잘리지 않는 높이 안에 있다
+    for (let i = 0; i < 20 && fitsWith(rows, 'p', withItem, areaH); i++) {
+      rows = rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id === 'p' ? withItem(b) : b)) }))
+    }
+    expect(fitsHeight(rows, areaH)).toBe(true)
+    expect(fitsWith(rows, 'p', withItem, areaH)).toBe(false)
+    // 제목과 부제를 비우면 본문 상자가 그만큼 높다
+    expect(composeAreaH({ fields: {} } as unknown as Slide)).toBe(1080 - 100 - 140)
   })
 
   it('아무 데나 놓아도 정해진 자리 가운데 하나로 들어간다', () => {

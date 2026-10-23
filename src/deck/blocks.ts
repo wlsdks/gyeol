@@ -601,6 +601,38 @@ export function fitsHeight(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): bo
   return rows.reduce((a, r) => a + rowMinH(r), 0) + Math.max(0, rows.length - 1) * gap <= areaH + 1
 }
 
+/** 부품 하나를 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 장에 들어가는지 */
+export function fitsWith(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): boolean {
+  return fitsHeight(
+    rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id === blockId ? fn(b) : b)) })),
+    areaH,
+  )
+}
+
+/** 자리가 모자라 항목을 더하거나 모양을 바꿀 수 없을 때의 안내 */
+export const NO_ROOM = '장에 자리가 모자라요. 다른 부품을 빼거나 다음 장으로 나눠 보세요'
+
+/**
+ * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다).
+ * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기) 쓴다. 제목 73, 부제 53, 그 사이 28, 제목 아래 64를 잰 값이다
+ */
+export function composeAreaH(slide: Slide): number {
+  const title = !!slide.fields.title?.trim()
+  const lead = !!slide.fields.lead?.trim()
+  const head = (title ? 73 : 0) + (lead ? 53 : 0) + (title && lead ? 28 : 0)
+  return 1080 - 100 - 140 - (head ? head + 64 : 0)
+}
+
+/** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
+export function withItem(b: Block): Block {
+  const max = BLOCKS[b.type].items?.max ?? 0
+  const visible = Math.min(b.items.length, max)
+  if (visible >= max) return b
+  const items = [...b.items]
+  items.splice(visible, 0, emptyItem())
+  return { ...b, items }
+}
+
 export interface Rect {
   x: number
   y: number

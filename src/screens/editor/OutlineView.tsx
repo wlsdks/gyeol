@@ -1,6 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react'
-import { allBlocks, blockFieldPrefix, blockItems, blockSlide, BLOCKS } from '../../deck/blocks'
-import { emptyItem } from '../../deck/generate'
+import { allBlocks, blockFieldPrefix, blockItems, blockSlide, BLOCKS, composeAreaH, fitsWith, NO_ROOM, withItem } from '../../deck/blocks'
 import { pageInfo, readField, visibleItems } from '../../deck/fields'
 import { LAYOUTS, hintFor, type FieldSpec, type ItemFieldSpec } from '../../deck/layouts'
 import type { Block, Deck, Slide } from '../../deck/types'
@@ -142,6 +141,8 @@ function BlockFields({ slide, block }: { slide: Slide; block: Block }) {
   const items = blockItems(block)
   const prefix = `${slide.id}:${blockFieldPrefix(block.id)}`
   const update = (fn: (b: Block) => Block, key?: string) => updateBlock(slide.id, block.id, fn, key)
+  // 문서 보기에서는 슬라이드를 재지 못해서 본문 상자 높이를 어림한다
+  const room = fitsWith(slide.rows ?? [], block.id, withItem, composeAreaH(slide))
   return (
     <div className="ol-block">
       <p className="ol-block-name">{spec.name}</p>
@@ -164,17 +165,7 @@ function BlockFields({ slide, block }: { slide: Slide; block: Block }) {
               {spec.items.label} {items.length}개
             </span>
             {items.length < spec.items.max && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() =>
-                  update((b) => {
-                    const next = [...b.items]
-                    next.splice(blockItems(b).length, 0, emptyItem())
-                    return { ...b, items: next }
-                  })
-                }
-              >
+              <button type="button" className="btn btn-ghost btn-sm" disabled={!room} title={room ? undefined : NO_ROOM} onClick={() => update(withItem)}>
                 <PlusIcon />
                 {spec.items.label} 추가
               </button>
