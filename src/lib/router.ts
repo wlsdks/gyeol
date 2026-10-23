@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { name: 'home' } | { name: 'new' } | { name: 'edit'; id: string } | { name: 'presenter'; id: string } | { name: 'gallery' }
+export type Route =
+  | { name: 'home' }
+  | { name: 'new' }
+  | { name: 'edit'; id: string }
+  | { name: 'presenter'; id: string }
+  | { name: 'system' }
+  | { name: 'gallery' }
 
 function parse(hash: string): Route {
   const path = hash.replace(/^#/, '')
@@ -9,12 +15,20 @@ function parse(hash: string): Route {
   const presenter = /^\/presenter\/([\w-]+)/.exec(path)
   if (presenter) return { name: 'presenter', id: presenter[1] }
   if (path.startsWith('/new')) return { name: 'new' }
+  if (path.startsWith('/system')) return { name: 'system' }
   if (import.meta.env.DEV && path.startsWith('/gallery')) return { name: 'gallery' }
   return { name: 'home' }
 }
 
 export function go(route: Route) {
-  location.hash = route.name === 'edit' ? `/edit/${route.id}` : route.name === 'presenter' ? `/presenter/${route.id}` : route.name === 'new' ? '/new' : '/'
+  location.hash = hashOf(route)
+}
+
+export function hashOf(route: Route): string {
+  if (route.name === 'edit') return `#/edit/${route.id}`
+  if (route.name === 'presenter') return `#/presenter/${route.id}`
+  if (route.name === 'new' || route.name === 'system' || route.name === 'gallery') return `#/${route.name}`
+  return '#/'
 }
 
 export function useRoute(): Route {

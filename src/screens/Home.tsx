@@ -78,11 +78,16 @@ export function Home() {
       <main className="home-main">
         <div className="home-head">
           <h1 className="home-h">내 발표</h1>
-          {decks && decks.length > 0 && (
-            <button type="button" className="btn-link" onClick={openSample}>
-              완성된 예시 보기
+          <div className="home-links">
+            <button type="button" className="btn-link" onClick={() => go({ name: 'system' })}>
+              장 모음 보기
             </button>
-          )}
+            {decks && decks.length > 0 && (
+              <button type="button" className="btn-link" onClick={openSample}>
+                완성된 예시 보기
+              </button>
+            )}
+          </div>
         </div>
 
         <StorageNote onSynced={refresh} />

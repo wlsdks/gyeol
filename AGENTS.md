@@ -50,7 +50,7 @@ npm run licenses     # 라이선스 확인
 npm run pack         # 나눠 줄 폴더와 zip (release/)
 ```
 
-슬라이드 디자인은 개발용 갤러리에서 한 번에 봅니다.
+모든 장과 모양, 색과 글자 크기는 장 모음(`#/system`, 쓰는 사람도 봄)에서 봅니다. 새 레이아웃은 `LAYOUT_GROUPS`의 묶음 하나와 `showcase.ts`의 예시 장이 있어야 합니다(테스트가 확인). 무너지기 쉬운 경우까지 늘어놓고 점검할 때는 개발용 갤러리를 씁니다.
 
 ```
 #/gallery?theme=white|navy|serif&mode=edit|preview|final&set=sample|blank&type=business|deal|improve|report
@@ -60,9 +60,9 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 
 | 위치 | 내용 |
 |---|---|
-| `src/deck/` | 데이터 모델(`types.ts`), 보고 종류별 구성(`blueprints.ts`), 레이아웃 정의(`layouts.ts`), 구성 만들기(`generate.ts`), 예시(`sample.ts`) |
+| `src/deck/` | 데이터 모델(`types.ts`), 보고 종류별 구성(`blueprints.ts`), 레이아웃 정의와 묶음(`layouts.ts`), 구성 만들기(`generate.ts`), 예시 발표(`sample.ts`), 레이아웃별 예시 장(`showcase.ts`) |
 | `src/slides/` | 슬라이드 그리기(`layouts.tsx`), 슬라이드 디자인(`slides.css`) |
-| `src/screens/` | 홈, 마법사, 편집기(`editor/`), 발표 화면 |
+| `src/screens/` | 홈, 마법사, 편집기(`editor/`), 발표 화면, 장 모음(`System.tsx`, 디자인 시스템) |
 | `src/store/` | 편집 상태(zustand), 저장(IndexedDB + 보관 폴더), 버전 |
 | `src/export/` | HTML 내보내기와 뷰어 |
 | `src/ai/` | 모양(`share.ts`), 제안(`ops.ts`), 로컬 서버와 이야기하는 곳(`client.ts`, `useAiShare.ts`) |

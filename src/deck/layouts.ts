@@ -599,6 +599,16 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'closing',
 ]
 
+/** 쓰임으로 묶은 레이아웃. 장 추가 메뉴와 장 모음 화면에 이 묶음과 순서로 보인다. 모든 레이아웃이 한 번씩 들어간다. */
+export const LAYOUT_GROUPS: { name: string; description: string; layouts: LayoutId[] }[] = [
+  { name: '결론과 메시지', description: '하고 싶은 말을 먼저', layouts: ['summary', 'statement', 'points'] },
+  { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'bridge', 'trend', 'share', 'funnel'] },
+  { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
+  { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'pricing', 'table'] },
+  { name: '자료와 사례', description: '화면, 사례, 고객사', layouts: ['imageText', 'case', 'logos'] },
+  { name: '시작과 끝', description: '표지, 목차, 단락, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
+]
+
 /** 칸의 안내 문구. 항목 하나에 붙은 안내, 슬라이드에 지정된 안내, 레이아웃 기본값 순으로 쓴다. */
 export function hintFor(
   layout: LayoutId,

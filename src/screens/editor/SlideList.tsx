@@ -3,9 +3,10 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from '@dnd-kit/utilities'
 import { memo, useMemo } from 'react'
 import { missingFields, pageInfo } from '../../deck/fields'
-import { LAYOUTS, LAYOUT_ORDER } from '../../deck/layouts'
+import { LAYOUTS, LAYOUT_GROUPS } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { hashOf } from '../../lib/router'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
@@ -75,21 +76,29 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
       >
         {(close) => (
           <div className="menu menu-layouts">
-            <p className="menu-h">어떤 장을 추가할까요?</p>
-            {LAYOUT_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                className="menu-item"
-                onClick={() => {
-                  addSlide(id, selectedId ?? undefined)
-                  close()
-                }}
-              >
-                <span className="menu-item-name">{LAYOUTS[id].name}</span>
-                <span className="menu-item-desc">{LAYOUTS[id].description}</span>
-              </button>
+            {LAYOUT_GROUPS.map((g) => (
+              <div key={g.name} className="menu-group" role="group" aria-label={g.name}>
+                <p className="menu-h">{g.name}</p>
+                {g.layouts.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className="menu-item"
+                    onClick={() => {
+                      addSlide(id, selectedId ?? undefined)
+                      close()
+                    }}
+                  >
+                    <span className="menu-item-name">{LAYOUTS[id].name}</span>
+                    <span className="menu-item-desc">{LAYOUTS[id].description}</span>
+                  </button>
+                ))}
+              </div>
             ))}
+            {/* 편집하던 화면은 그대로 두고 새 탭에서 모든 장을 크게 본다 */}
+            <a className="menu-foot" href={hashOf({ name: 'system' })} target="_blank" rel="noopener">
+              모든 장을 그림으로 보기
+            </a>
           </div>
         )}
       </Popover>

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS } from './blueprints'
 import { createDeck, planRecipes, targetCount } from './generate'
-import { hintFor } from './layouts'
+import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER } from './layouts'
+import { showcaseSlides } from './showcase'
 
 describe('planRecipes', () => {
   it('발표 시간에 맞는 장 수를 넘지 않는다', () => {
@@ -87,5 +88,17 @@ describe('createDeck', () => {
     const deck = createDeck({ ...input, type: 'report', title: '', ask: '' })
     expect(deck.title).toBe('실적 보고')
     expect(deck.slides[0].fields.ask).toBeUndefined()
+  })
+})
+
+describe('레이아웃 묶음과 예시', () => {
+  it('모든 레이아웃이 묶음에 한 번씩 들어간다', () => {
+    const grouped = LAYOUT_GROUPS.flatMap((g) => g.layouts)
+    expect([...grouped].sort()).toEqual([...LAYOUT_ORDER].sort())
+  })
+
+  it('모든 레이아웃에 내용을 채운 예시 장이 있다 (장 모음 화면)', () => {
+    const shown = new Set(showcaseSlides().map((s) => s.layout))
+    expect(LAYOUT_ORDER.filter((id) => !shown.has(id))).toEqual([])
   })
 })
