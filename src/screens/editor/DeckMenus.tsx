@@ -102,7 +102,7 @@ export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; 
             }}
           >
             <span className="menu-item-name">발표 파일 (HTML)</span>
-            <span className="menu-item-desc">인터넷 없이도 열리는 파일이에요. 고객에게 보내도 발표자 노트는 들어가지 않아요.</span>
+            <span className="menu-item-desc">인터넷 없이도 열리는 파일이에요. 메일로 미리 보내도 발표자 노트는 들어가지 않아요.</span>
           </button>
           <button
             type="button"
@@ -125,7 +125,7 @@ export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; 
             }}
           >
             <span className="menu-item-name">작업 파일 (.deck)</span>
-            <span className="menu-item-desc">발표자 노트까지 담긴 원본이에요. 다른 PC에서 이어서 고칠 때 ‘파일 열기’로 불러오세요. 고객에게는 보내지 마세요.</span>
+            <span className="menu-item-desc">발표자 노트까지 담긴 원본이에요. 다른 PC에서 이어서 고칠 때 ‘파일 열기’로 불러오세요. 다른 분께는 보내지 마세요.</span>
           </button>
         </div>
       )}

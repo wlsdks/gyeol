@@ -101,7 +101,7 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 }
 
-/** 다시 열어 편집할 수 있게 덱을 넣어 둔다. 발표자 노트는 빼서 고객에게 보내도 안전하다. */
+/** 다시 열어 편집할 수 있게 덱을 넣어 둔다. 발표자 노트는 빼서 다른 사람에게 보내도 안전하다. */
 function deckData(deck: Deck): string {
   const safe: Deck = { ...deck, slides: deck.slides.map((s) => ({ ...s, notes: '' })) }
   return JSON.stringify(safe).replace(/</g, '\\u003c')

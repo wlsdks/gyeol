@@ -119,7 +119,7 @@ export function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close
           <button type="button" className="btn-link" onClick={download}>
             작업 파일 내려받기
           </button>
-          <span>발표자 노트까지 들어 있어요. 고객에게는 ‘내보내기’의 발표 파일을 보내세요.</span>
+          <span>발표자 노트까지 들어 있어요. 다른 분께 보낼 때는 ‘내보내기’의 발표 파일을 쓰세요.</span>
         </p>
       )}
     </div>

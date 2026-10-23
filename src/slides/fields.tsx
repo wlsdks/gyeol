@@ -150,7 +150,7 @@ function Editable({
   )
 }
 
-/** 슬라이드 칸 또는 덱 단위 값(`$customer` 등) */
+/** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
   const { slide, meta, actions } = useSlide()
   return (
@@ -170,7 +170,7 @@ export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
   return (
     <Field
       value={slide.items[i]?.[k] ?? ''}
-      hint={hintFor(slide.layout, slide.hints, k, k)}
+      hint={hintFor(slide.layout, slide.hints, k, k, i)}
       fieldId={`${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       {...props}
@@ -203,7 +203,7 @@ interface ImageProps {
 export function ImageSlot({ k = 'image', i, className, contain, optional }: ImageProps) {
   const { slide, meta, mode, actions } = useSlide()
   const value = i === undefined ? readField(slide, meta, k) : (slide.items[i]?.image ?? '')
-  const hint = i === undefined ? hintFor(slide.layout, slide.hints, k) : hintFor(slide.layout, slide.hints, 'image', 'image')
+  const hint = i === undefined ? hintFor(slide.layout, slide.hints, k) : hintFor(slide.layout, slide.hints, 'image', 'image', i)
   const fitCls = contain ? 'is-contain' : 'is-cover'
 
   if (mode !== 'edit' || !actions) {

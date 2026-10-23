@@ -10,17 +10,18 @@ import { ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
 import { Brand, ChevronIcon } from './ui'
 
-const STEPS = ['발표 종류', '청중과 시간', '기본 정보']
+const STEPS = ['보고 종류', '듣는 분과 시간', '기본 정보']
 
 export function Wizard() {
   const [step, setStep] = useState(0)
-  const [type, setType] = useState<DeckType>('proposal')
+  const [type, setType] = useState<DeckType>('business')
   const [audience, setAudience] = useState<Audience>('mixed')
   const [minutes, setMinutes] = useState(20)
   const [method, setMethod] = useState<Method>('live')
   const [title, setTitle] = useState('')
-  const [customer, setCustomer] = useState('')
+  const [org, setOrg] = useState('')
   const [presenter, setPresenter] = useState('')
+  const [ask, setAsk] = useState('')
   const [theme, setTheme] = useState<ThemeId>('white')
   const [busy, setBusy] = useState(false)
 
@@ -34,7 +35,7 @@ export function Wizard() {
 
   const create = async () => {
     setBusy(true)
-    const deck = createDeck({ type, audience, minutes, method, title, customer, presenter, theme })
+    const deck = createDeck({ type, audience, minutes, method, title, org, presenter, ask, theme })
     await persistNow(deck)
     go({ name: 'edit', id: deck.id })
   }
@@ -59,8 +60,8 @@ export function Wizard() {
       <main className="wz-main">
         {step === 0 && (
           <section className="wz-sec">
-            <h1 className="wz-h">어떤 발표인가요?</h1>
-            <p className="wz-sub">고르면 발표에 맞는 순서와 장 구성을 잡아 드려요.</p>
+            <h1 className="wz-h">어떤 보고인가요?</h1>
+            <p className="wz-sub">팀장님, 본부장님께 무엇을 보고하는지 고르면 그에 맞는 순서와 장 구성을 잡아 드려요.</p>
             <div className="wz-types">
               {DECK_TYPES.map((t) => {
                 const bp = BLUEPRINTS[t]
@@ -94,11 +95,11 @@ export function Wizard() {
         {step === 1 && (
           <section className="wz-sec wz-split">
             <div className="wz-form">
-              <h1 className="wz-h">누구 앞에서, 얼마나 발표하나요?</h1>
+              <h1 className="wz-h">누구에게, 얼마나 보고하나요?</h1>
               <p className="wz-sub">고르는 대로 오른쪽 구성이 바로 바뀌어요.</p>
 
               <fieldset className="wz-group">
-                <legend>듣는 사람</legend>
+                <legend>보고 받는 분</legend>
                 <div className="wz-options">
                   {AUDIENCES.map((a) => (
                     <Option key={a.id} on={audience === a.id} onClick={() => setAudience(a.id)} name={a.name} desc={a.description} />
@@ -159,18 +160,24 @@ export function Wizard() {
                 <input
                   className="input"
                   value={title}
-                  placeholder={blueprint.defaultTitle}
+                  placeholder={`예: ${blueprint.examples.title}`}
                   onChange={(e) => setTitle(e.target.value)}
                   autoFocus
                 />
               </label>
               <label className="field">
-                <span className="field-label">고객사</span>
-                <input className="input" value={customer} placeholder="예: 한빛제조" onChange={(e) => setCustomer(e.target.value)} />
+                <span className="field-label">소속</span>
+                <input className="input" value={org} placeholder="예: 영업 2팀" onChange={(e) => setOrg(e.target.value)} />
               </label>
               <label className="field">
                 <span className="field-label">발표자</span>
                 <input className="input" value={presenter} placeholder="예: 김민준 매니저" onChange={(e) => setPresenter(e.target.value)} />
+              </label>
+              <label className="field wz-field-wide">
+                <span className="field-label">
+                  결정받고 싶은 것 <span className="field-opt">표지에 크게 보여요</span>
+                </span>
+                <input className="input" value={ask} placeholder={`예: ${blueprint.examples.ask}`} onChange={(e) => setAsk(e.target.value)} />
               </label>
             </div>
 
@@ -184,15 +191,16 @@ export function Wizard() {
                     on={theme === id}
                     onClick={() => setTheme(id)}
                     title={title || blueprint.defaultTitle}
-                    customer={customer}
+                    org={org}
                     presenter={presenter}
+                    ask={ask}
                   />
                 ))}
               </div>
             </fieldset>
 
             <p className="wz-privacy">
-              입력한 내용은 이 브라우저에만 저장돼요. 어디에도 전송하지 않아요.
+              입력한 내용은 이 PC 안(브라우저와 고른 보관 폴더)에만 저장돼요. 인터넷으로 보내지 않아요.
             </p>
           </section>
         )}
@@ -238,19 +246,20 @@ function Option({ on, onClick, name, desc }: { on: boolean; onClick: () => void;
   )
 }
 
-function ThemeCard(props: { id: ThemeId; on: boolean; onClick: () => void; title: string; customer: string; presenter: string }) {
-  const { id, on, onClick, title, customer, presenter } = props
+function ThemeCard(props: { id: ThemeId; on: boolean; onClick: () => void; title: string; org: string; presenter: string; ask: string }) {
+  const { id, on, onClick, title, org, presenter, ask } = props
   const slide = useMemo(() => {
     const s = makeSlide('cover')
     s.fields.title = title
+    s.fields.ask = ask
     return s
-  }, [title])
+  }, [title, ask])
   const meta: DeckMeta = {
-    type: 'proposal',
+    type: 'business',
     audience: 'mixed',
     duration: 20,
     method: 'live',
-    customer,
+    org,
     presenter,
     date: formatDate(),
     contact: '',

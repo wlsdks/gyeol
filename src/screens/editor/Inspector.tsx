@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { missingFields, type Missing } from '../../deck/fields'
+import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { LAYOUTS, LAYOUT_ORDER } from '../../deck/layouts'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
@@ -48,14 +48,14 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
         )}
       </section>
 
-      {(slide.layout === 'pricing' || slide.layout === 'imageText') && (
+      {(slide.layout === 'pricing' || slide.layout === 'bars' || slide.layout === 'imageText') && (
         <section className="ins-sec">
           <h2 className="ins-h">모양</h2>
-          {slide.layout === 'pricing' && (
-            <div className="ins-row">
-              <span className="ins-label">추천 표시</span>
-              <div className="seg" role="group" aria-label="추천 표시">
-                {[-1, ...slide.items.slice(0, 3).map((_, i) => i)].map((i) => (
+          {(slide.layout === 'pricing' || slide.layout === 'bars') && (
+            <div className="ins-row ins-row-wrap">
+              <span className="ins-label">{slide.layout === 'pricing' ? '추천 표시' : '강조할 막대'}</span>
+              <div className="seg seg-wrap" role="group" aria-label={slide.layout === 'pricing' ? '추천 표시' : '강조할 막대'}>
+                {[-1, ...visibleItems(slide).map((_, i) => i)].map((i) => (
                   <button
                     key={i}
                     type="button"

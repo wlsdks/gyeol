@@ -29,8 +29,8 @@ function useSharedUnits(key: 'value') {
 }
 
 function Cover() {
-  const { meta, mode } = useSlide()
-  const showCustomer = mode !== 'final' || !!meta.customer.trim()
+  const { slide, mode } = useSlide()
+  const showAsk = mode !== 'final' || !!slide.fields.ask?.trim()
   return (
     <>
       <div className="cv-main">
@@ -41,14 +41,17 @@ function Cover() {
         </div>
       </div>
       <div className="cv-side">
-        {showCustomer && (
-          <div className="cv-customer">
-            <span className="cv-label">고객사</span>
-            <T k="$customer" as="p" className="cv-customer-name" fit={[7, 12]} multiline />
+        {showAsk ? (
+          <div className="cv-ask">
+            <span className="cv-label">결정 요청</span>
+            <T k="ask" as="p" className="cv-ask-text" fit={[16, 28]} multiline />
           </div>
+        ) : (
+          <span />
         )}
         <dl className="cv-meta">
           <MetaRow label="발표" k="$presenter" />
+          <MetaRow label="소속" k="$org" />
           <MetaRow label="날짜" k="$date" />
         </dl>
       </div>
@@ -147,6 +150,27 @@ function Points() {
           <div key={it.id} className="it pt-item">
             <IT i={i} k="title" className="pt-title" fit={[12, 20]} />
             <IT i={i} k="body" className="pt-body" multiline />
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 한 장 요약: 결론 아래에 이름표와 요점을 줄마다. 이름표는 작게, 요점은 크게. */
+function Summary() {
+  const items = useItems()
+  return (
+    <>
+      <header className="s-head">
+        <T k="title" as="h2" className="s-title sm-title" fit={[30, 48]} multiline />
+      </header>
+      <div className="s-body sm" data-n={items.length}>
+        {items.map((it, i) => (
+          <div key={it.id} className="it sm-row">
+            <IT i={i} k="title" className="sm-label" />
+            <IT i={i} k="body" className="sm-body" multiline />
             <ItemTools i={i} />
           </div>
         ))}
@@ -368,6 +392,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   cover: Cover,
   section: Section,
   agenda: Agenda,
+  summary: Summary,
   statement: Statement,
   kpi: Kpi,
   points: Points,

@@ -210,6 +210,12 @@ select {
   background: #e7e9ed;
 }
 
+.seg-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
+
 .seg-btn {
   height: 30px;
   padding: 0 14px;
@@ -973,9 +979,13 @@ select {
 
 .wz-fields {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 16px;
   margin-bottom: 36px;
+}
+
+.wz-field-wide:last-child {
+  grid-column: 1 / -1;
 }
 
 .wz-themes {
@@ -1527,6 +1537,11 @@ select {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.ins-row + .ins-row,
+.ins-row + .toggle {
+  margin-top: 14px;
 }
 
 .ins-label {

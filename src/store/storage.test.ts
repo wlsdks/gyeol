@@ -5,7 +5,7 @@ import { decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckF
 import { deckSignature, slideSignatures, versionChanges, type DeckVersion } from './versions'
 
 const deck = () =>
-  createDeck({ type: 'proposal', audience: 'mixed', minutes: 20, method: 'live', title: '품질 관리 제안', customer: '한빛제조', presenter: '김민준', theme: 'white' })
+  createDeck({ type: 'deal', audience: 'mixed', minutes: 20, method: 'live', title: '품질 관리 제안 계획', org: '영업 2팀', presenter: '김민준', theme: 'white' })
 
 const version = (d: Deck): DeckVersion => ({
   id: 'v',

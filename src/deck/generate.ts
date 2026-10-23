@@ -10,12 +10,12 @@ export function emptyItem(): Item {
   return { id: uid(), title: '', body: '', value: '', meta: '', image: '' }
 }
 
-/** 발표 시간에 맞는 목표 장 수. 대략 한 장에 2분. */
+/** 발표 시간에 맞는 목표 장 수. 보고는 질문과 토론 시간이 길어서 한 장에 2분 남짓. */
 export function targetCount(minutes: number): number {
-  if (minutes <= 10) return 6
-  if (minutes <= 20) return 10
-  if (minutes <= 30) return 14
-  return 18
+  if (minutes <= 5) return 5
+  if (minutes <= 10) return 7
+  if (minutes <= 20) return 11
+  return 15
 }
 
 /** 청중과 시간에 맞춰 blueprint에서 장을 고른다. 순서는 유지한다. */
@@ -49,7 +49,7 @@ export function makeSlide(layout: LayoutId, recipe?: Partial<Recipe>): Slide {
     purpose: recipe?.purpose ?? spec.name,
     section: recipe?.section ?? '',
     fields: { ...(recipe?.fields ?? {}) },
-    items: Array.from({ length: count }, emptyItem),
+    items: Array.from({ length: count }, (_, i) => ({ ...emptyItem(), ...recipe?.prefill?.[i] })),
     hints: { ...(recipe?.hints ?? {}) },
     guide: recipe?.guide ?? spec.description,
     notes: '',
@@ -71,8 +71,10 @@ export interface DeckInput {
   minutes: number
   method: Method
   title: string
-  customer: string
+  org: string
   presenter: string
+  /** 표지에 적는 결정 요청 한 줄 */
+  ask?: string
   theme: ThemeId
 }
 
@@ -88,7 +90,10 @@ export function createDeck(input: DeckInput): Deck {
 
   const slides = recipes.map((recipe) => {
     const slide = makeSlide(recipe.layout, recipe)
-    if (recipe.layout === 'cover') slide.fields.title = title
+    if (recipe.layout === 'cover') {
+      slide.fields.title = title
+      if (input.ask?.trim()) slide.fields.ask = input.ask.trim()
+    }
     if (recipe.layout === 'agenda' && sectionTitles.length) {
       slide.items = sectionTitles.map((t) => ({ ...emptyItem(), title: t }))
     }
@@ -107,7 +112,7 @@ export function createDeck(input: DeckInput): Deck {
       audience: input.audience,
       duration: input.minutes,
       method: input.method,
-      customer: input.customer.trim(),
+      org: input.org.trim(),
       presenter: input.presenter.trim(),
       date: formatDate(),
       contact: '',

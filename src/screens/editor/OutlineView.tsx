@@ -96,7 +96,7 @@ const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sect
                       spec={f}
                       compact
                       value={item[f.key]}
-                      hint={hintFor(slide.layout, slide.hints, f.key, f.key)}
+                      hint={hintFor(slide.layout, slide.hints, f.key, f.key, i)}
                       dataField={`${slide.id}:${i}.${f.key}`}
                       onChange={(v) => setItem(slide.id, i, f.key, v)}
                     />

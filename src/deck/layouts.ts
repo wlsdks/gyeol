@@ -1,7 +1,7 @@
 import type { ItemKey, LayoutId } from './types'
 
 export interface FieldSpec {
-  /** 슬라이드 칸 이름. `$`로 시작하면 덱 단위 값(고객사, 발표자 등) */
+  /** 슬라이드 칸 이름. `$`로 시작하면 덱 단위 값(소속, 발표자 등) */
   key: string
   label: string
   hint: string
@@ -46,11 +46,12 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   cover: {
     id: 'cover',
     name: '표지',
-    description: '발표 제목과 고객사, 발표자',
+    description: '보고 제목과 결정 요청, 발표자',
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },
-      { key: '$customer', label: '고객사', hint: '고객사 이름', optional: true },
+      { key: 'ask', label: '결정 요청', hint: '결정받고 싶은 것을 한 줄로', multiline: true, optional: true },
+      { key: '$org', label: '소속', hint: '소속 (예: 영업 2팀)', optional: true },
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
       { key: '$date', label: '날짜', hint: '발표 날짜', optional: true },
       { key: '$logo', label: '회사 로고', hint: '회사 로고', optional: true, image: true },
@@ -73,6 +74,22 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [{ key: 'title', label: '항목', hint: '다룰 내용' }],
+    },
+  },
+  summary: {
+    id: 'summary',
+    name: '한 장 요약',
+    description: '결론과 줄마다의 요점을 한 장에',
+    fields: [{ key: 'title', label: '결론', hint: '한 줄 결론', multiline: true }],
+    items: {
+      label: '줄',
+      min: 2,
+      max: 5,
+      default: 4,
+      fields: [
+        { key: 'title', label: '이름', hint: '배경' },
+        { key: 'body', label: '내용', hint: '한두 문장', multiline: true },
+      ],
     },
   },
   statement: {
@@ -120,11 +137,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   compare: {
     id: 'compare',
     name: '비교',
-    description: '지금과 바뀐 뒤를 줄마다 비교',
+    description: '두 가지를 줄마다 나란히 (지금과 바뀐 뒤, 위험과 대응)',
     fields: [
       title('비교해서 보여줄 결론'),
       { key: 'leftTitle', label: '왼쪽 머리말', hint: '지금' },
-      { key: 'rightTitle', label: '오른쪽 머리말', hint: '도입 후' },
+      { key: 'rightTitle', label: '오른쪽 머리말', hint: '바뀐 뒤' },
     ],
     items: {
       label: '비교 줄',
@@ -156,13 +173,13 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
   case: {
     id: 'case',
-    name: '고객 사례',
-    description: '다른 고객이 얻은 결과',
+    name: '사례',
+    description: '비슷한 사례와 그 결과',
     fields: [
-      { key: 'client', label: '고객', hint: '고객사 또는 업종' },
-      { key: 'title', label: '결과', hint: '고객이 얻은 결과를 한 문장으로', multiline: true },
+      { key: 'client', label: '대상', hint: '고객사, 업종 또는 부서' },
+      { key: 'title', label: '결과', hint: '얻은 결과를 한 문장으로', multiline: true },
       { key: 'body', label: '내용', hint: '어떤 과제를 어떻게 해결했는지', multiline: true },
-      { key: 'quote', label: '고객의 말', hint: '고객의 한마디', multiline: true, optional: true },
+      { key: 'quote', label: '한마디', hint: '담당자나 고객의 한마디', multiline: true, optional: true },
       { key: 'image', label: '로고 또는 사진', hint: '로고', optional: true, image: true },
     ],
     items: {
@@ -178,19 +195,19 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
   pricing: {
     id: 'pricing',
-    name: '요금제',
-    description: '요금제 1~3개 비교',
-    fields: [title('비용을 요약하는 제목')],
+    name: '안 비교',
+    description: '두세 가지 안이나 가격을 나란히, 추천안 강조',
+    fields: [title('어느 안을 추천하는지 한 문장으로')],
     items: {
-      label: '요금제',
+      label: '안',
       min: 1,
       max: 3,
       default: 3,
       fields: [
-        { key: 'title', label: '이름', hint: '요금제 이름' },
-        { key: 'value', label: '가격', hint: '월 50만 원' },
-        { key: 'meta', label: '기준', hint: '사용자 10명 기준', optional: true },
-        { key: 'body', label: '포함 내용', hint: '포함 내용을 한 줄에 하나씩', multiline: true },
+        { key: 'title', label: '이름', hint: 'A안' },
+        { key: 'value', label: '비용', hint: '1.2억 원' },
+        { key: 'meta', label: '조건', hint: '기간, 인력 같은 조건', optional: true },
+        { key: 'body', label: '내용', hint: '내용과 장단점을 한 줄에 하나씩', multiline: true },
       ],
     },
   },
@@ -206,9 +223,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
   logos: {
     id: 'logos',
-    name: '고객 로고',
-    description: '함께한 고객사 로고 모음',
-    fields: [title('함께한 고객'), lead('한 줄 설명')],
+    name: '로고 모음',
+    description: '고객사나 협력사 로고 모음',
+    fields: [title('로고들을 묶는 제목'), lead('한 줄 설명')],
     items: {
       label: '로고',
       min: 2,
@@ -239,36 +256,37 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
   closing: {
     id: 'closing',
-    name: '마지막 장',
-    description: '다음 단계와 연락처',
+    name: '결정 요청',
+    description: '결정해 주실 것과 언제까지 필요한지',
     fields: [
-      title('다음 단계'),
+      title('결정해 주실 것'),
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
-      { key: '$contact', label: '연락처', hint: '이메일 또는 전화번호', optional: true },
+      { key: '$contact', label: '연락처', hint: '이메일이나 내선 번호', optional: true },
     ],
     items: {
-      label: '다음 단계',
+      label: '요청',
       min: 0,
       max: 3,
       default: 3,
       fields: [
-        { key: 'title', label: '단계', hint: '함께 할 다음 일' },
-        { key: 'body', label: '설명', hint: '언제, 누가', optional: true },
+        { key: 'title', label: '요청', hint: '결정해 주실 일' },
+        { key: 'body', label: '설명', hint: '언제까지, 왜 필요한지', optional: true },
       ],
     },
   },
 }
 
 export const LAYOUT_ORDER: LayoutId[] = [
+  'summary',
   'statement',
-  'kpi',
   'points',
+  'kpi',
   'compare',
+  'pricing',
   'bars',
   'timeline',
-  'case',
-  'pricing',
   'imageText',
+  'case',
   'logos',
   'agenda',
   'section',
@@ -276,13 +294,15 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'closing',
 ]
 
-/** 칸의 안내 문구. 슬라이드에 지정된 값이 우선이다. */
+/** 칸의 안내 문구. 항목 하나에 붙은 안내, 슬라이드에 지정된 안내, 레이아웃 기본값 순으로 쓴다. */
 export function hintFor(
   layout: LayoutId,
   hints: Record<string, string>,
   key: string,
   itemKey?: ItemKey,
+  index?: number,
 ): string {
+  if (itemKey && index !== undefined && hints[`items.${index}.${itemKey}`]) return hints[`items.${index}.${itemKey}`]
   const path = itemKey ? `items.${itemKey}` : key
   if (hints[path]) return hints[path]
   const spec = LAYOUTS[layout]

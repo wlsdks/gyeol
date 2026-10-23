@@ -157,7 +157,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
               className="input"
               autoFocus
               value={name}
-              placeholder="예: 고객 전달본, 1차 미팅 후 수정"
+              placeholder="예: 본부장 보고본, 팀장 검토 반영"
               aria-label="버전 이름"
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), setNaming(false))}
@@ -203,7 +203,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
                         name="name"
                         autoFocus
                         defaultValue={v.named ? v.name : ''}
-                        placeholder="예: 고객 전달본"
+                        placeholder="예: 본부장 보고본"
                         aria-label="버전 이름"
                         onBlur={(e) => rename(v, e.target.value)}
                         onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), setRenaming(null))}

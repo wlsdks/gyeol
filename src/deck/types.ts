@@ -2,6 +2,7 @@ export type LayoutId =
   | 'cover'
   | 'section'
   | 'agenda'
+  | 'summary'
   | 'statement'
   | 'kpi'
   | 'points'
@@ -14,13 +15,14 @@ export type LayoutId =
   | 'bars'
   | 'closing'
 
-export type DeckType = 'proposal' | 'product' | 'review' | 'company' | 'blank'
+/** 윗분(팀장, 본부장)에게 하는 보고의 종류 */
+export type DeckType = 'business' | 'deal' | 'improve' | 'report' | 'blank'
 export type Audience = 'exec' | 'practitioner' | 'mixed'
 export type Method = 'live' | 'remote' | 'send'
 export type ThemeId = 'white' | 'navy' | 'serif'
 
-/** 덱 단위 값. 슬라이드에서는 `$customer`처럼 `$`를 붙여 참조한다. */
-export type MetaKey = 'customer' | 'presenter' | 'date' | 'contact' | 'logo'
+/** 덱 단위 값. 슬라이드에서는 `$org`처럼 `$`를 붙여 참조한다. */
+export type MetaKey = 'org' | 'presenter' | 'date' | 'contact' | 'logo'
 
 export interface Item {
   id: string
@@ -34,7 +36,7 @@ export interface Item {
 export type ItemKey = Exclude<keyof Item, 'id'>
 
 export interface SlideOptions {
-  /** 요금제에서 강조할 항목 (0부터, -1은 강조 없음) */
+  /** 안 비교, 막대 비교에서 강조할 항목 (0부터, -1은 강조 없음) */
   highlight?: number
   /** 이미지와 설명: 이미지를 오른쪽에 */
   flip?: boolean
@@ -65,7 +67,8 @@ export interface DeckMeta {
   audience: Audience
   duration: number
   method: Method
-  customer: string
+  /** 발표자 소속 (예: 영업 2팀) */
+  org: string
   presenter: string
   date: string
   contact: string

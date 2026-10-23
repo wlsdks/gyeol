@@ -1,7 +1,7 @@
 import { createDeck, emptyItem } from './generate'
 import type { Deck, Item, Slide } from './types'
 
-// 처음 쓰는 사람이 완성된 모습을 볼 수 있는 예시 발표. 회사와 숫자는 모두 지어낸 것이다.
+// 처음 쓰는 사람이 완성된 모습을 볼 수 있는 예시 보고. 회사, 사람, 숫자는 모두 지어낸 것이다.
 
 function svg(body: string, w = 360, h = 120): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`
@@ -13,7 +13,8 @@ function wordmark(name: string, shape: string): string {
   )
 }
 
-const LOGOS = [
+/** 개발용 레이아웃 모음에서도 쓰는 예시 로고 */
+export const SAMPLE_LOGOS = [
   wordmark('대성정밀', '<rect x="24" y="36" width="52" height="52" rx="10" fill="#1d2330"/>'),
   wordmark('한결테크', '<circle cx="50" cy="62" r="27" fill="#1d2330"/>'),
   wordmark('누리소재', '<path d="M24 88 L50 36 L76 88 Z" fill="#1d2330"/>'),
@@ -24,7 +25,7 @@ const LOGOS = [
   wordmark('세움건설', '<path d="M24 88h52V36z" fill="#1d2330"/>'),
 ]
 
-const DASHBOARD = svg(
+export const SAMPLE_DASHBOARD = svg(
   `<rect width="1600" height="1000" fill="#eef1f6"/>
   <rect x="0" y="0" width="1600" height="72" fill="#ffffff"/>
   <rect x="40" y="24" width="140" height="24" rx="6" fill="#1d2330"/>
@@ -58,92 +59,93 @@ const DASHBOARD = svg(
 
 type Fill = { fields?: Record<string, string>; items?: Partial<Item>[] }
 
+// 영업 2팀 김민준 매니저가 영업본부장에게 하는 수주 제안 계획 보고
 const CONTENT: Record<string, Fill> = {
-  표지: { fields: { lead: '한빛제조 평택 공장을 위한 스마트 품질 관리 제안' } },
-  '핵심 요약': {
-    fields: { title: '이 제안으로 얻는 것' },
-    items: [
-      { value: '48%', title: '불량률 감소', body: '6개월 시범 운영 평균' },
-      { value: '3개월', title: '전 라인 도입 기간', body: '현장 중단 없이 단계별로' },
-      { value: '2.1억', title: '연간 절감 비용', body: '불량 처리와 보고 업무 기준' },
-    ],
-  },
-  '고객의 과제': {
+  표지: {
     fields: {
-      title: '검사 기록이 종이에 남아 있어, 불량의 원인을 찾는 데 평균 6일이 걸립니다',
-      lead: '원인을 찾는 동안에도 같은 불량이 계속 나오고, 그 비용은 모두 현장이 떠안고 있습니다.',
+      lead: '수주 전략과 제안 가격 승인 요청',
+      ask: '제안 가격 4.8억 원과 시범 구축 인력 2명 승인',
     },
   },
-  '바뀌는 모습': {
-    fields: { title: '기록부터 보고까지, 손이 덜 가는 방식으로 바뀝니다' },
+  '한 장 요약': {
+    fields: { title: '한빛제조 품질 관리 사업, 12월 계약을 목표로 4.8억 원에 제안하겠습니다' },
     items: [
-      { title: '검사 결과를 종이에 적고 나중에 옮겨 적음', body: '태블릿으로 바로 입력, 모든 라인이 실시간으로 모임' },
-      { title: '불량 원인을 찾는 데 평균 6일', body: '설비와 자재별 원인을 당일에 확인' },
-      { title: '월말마다 엑셀로 보고서 작성', body: '보고서가 자동으로 만들어짐' },
+      { title: '사업 기회', body: '한빛제조가 평택 공장 검사 시스템 교체를 검토 중이고, 12월에 업체를 정해요.' },
+      { title: '제안 내용', body: 'AI 외관 검사와 불량 원인 분석을 묶어 불량이 많은 3개 라인에 먼저 구축해요.' },
+      { title: '예상 매출', body: '첫해 4.8억 원, 3년 유지보수를 더하면 7.2억 원이에요. 이익률은 22%예요.' },
+      { title: '요청 사항', body: '제안 가격 4.8억 원 승인, 시범 구축 인력 2명 지원' },
     ],
   },
-  '해결 방안': {
-    fields: { title: '세 가지로 불량을 줄입니다' },
-    items: [
-      { title: '실시간 검사 기록', body: '현장에서 태블릿으로 입력하면 모든 라인의 결과가 바로 한곳에 모입니다.' },
-      { title: '원인 자동 분석', body: '설비, 자재, 작업 시간대별로 불량이 몰리는 곳을 찾아 알려 줍니다.' },
-      { title: '즉시 알림', body: '기준을 벗어나는 순간 담당자의 휴대폰으로 알림이 갑니다.' },
-    ],
-  },
-  '제품 화면': {
+  '섹션: 사업 기회': { fields: { lead: '한빛제조가 앞둔 결정' } },
+  '사업 기회': {
     fields: {
-      title: '라인별 불량 현황을 한 화면에서 봅니다',
-      body: '품질팀은 아침마다 이 화면 하나로 어제의 불량과 원인을 확인합니다. 빨간색으로 표시된 설비부터 점검하면 됩니다.',
-      image: DASHBOARD,
+      title: '한빛제조가 12월에 평택 공장 품질 검사 시스템을 바꿔요',
+      lead: '지금 시스템의 유지보수가 내년 3월에 끝나서 품질팀장이 연내에 업체를 정하려고 해요. 최종 결정은 공장장이 해요.',
     },
   },
-  '기대 효과': {
-    fields: { title: '도입하면 이렇게 달라져요' },
+  '사업 규모': {
+    fields: { title: '첫해 4.8억 원, 3년이면 7.2억 원 규모예요' },
     items: [
-      { value: '48%', title: '불량률 감소', body: '시범 운영 6개월 평균' },
-      { value: '1일', title: '원인 파악 시간', body: '기존 평균 6일' },
-      { value: '120시간', title: '매달 줄어드는 보고 업무', body: '품질팀 4명 기준' },
+      { title: '예상 매출', value: '4.8억 원', body: '첫해 구축비, 3개 라인 기준' },
+      { title: '계약 기간', value: '3년', body: '유지보수 포함 총 7.2억 원' },
+      { title: '예상 이익률', value: '22%', body: '본부 평균 18%보다 높아요' },
     ],
   },
-  '유사 고객 사례': {
+  '경쟁 상황': {
+    fields: { title: '가격은 높지만 구축 기간과 사례로 앞서요' },
+    items: [
+      { title: '대명시스템이 3.9억 원을 낼 것으로 보여요', body: '4.8억 원이지만 불량 원인 분석까지 들어 있어요' },
+      { title: '구축에 6개월, 그동안 라인을 세워야 해요', body: '3개월, 라인을 세우지 않고 구축해요' },
+      { title: '같은 업종 구축 사례가 없어요', body: '자동차 부품사 2곳에 구축했어요' },
+    ],
+  },
+  '섹션: 제안 전략': { fields: { lead: '무엇을 얼마에 제안할지' } },
+  '제안 내용': {
+    fields: { title: '검사 자동화와 원인 분석을 묶어서 제안해요' },
+    items: [
+      { title: 'AI 외관 검사', body: '사람이 하던 외관 검사를 카메라와 AI로 바꿔 검사 시간을 절반으로 줄여요.' },
+      { title: '불량 원인 분석', body: '검사 결과를 공정 데이터와 묶어 어느 공정에서 불량이 생기는지 보여줘요.' },
+      { title: '3개 라인부터', body: '불량이 가장 많은 3개 라인에 먼저 구축하고, 효과를 확인한 뒤 넓혀요.' },
+    ],
+  },
+  '가격 안': {
+    fields: { title: '추천 가격은 B안 4.8억 원이에요' },
+    items: [
+      { title: 'A안', value: '3.9억 원', meta: '이익률 9%', body: '경쟁사 가격에 맞춤\n원인 분석 빼고 검사만\n수주 가능성은 높지만 남는 게 적어요' },
+      { title: 'B안', value: '4.8억 원', meta: '이익률 22%', body: '검사 자동화와 원인 분석 함께\n3개 라인 먼저 구축\n가격 차이는 구축 기간으로 설득' },
+      { title: 'C안', value: '6.5억 원', meta: '이익률 25%', body: '8개 라인 전체를 한 번에\n고객 예산을 넘을 가능성이 커요' },
+    ],
+  },
+  '제안할 솔루션': {
     fields: {
-      client: '자동차 부품 제조, 대성정밀',
-      title: '도입 4개월 만에 불량률이 3.2%에서 1.4%로 줄었습니다',
-      body: '라인 6개에서 하루 2만 개의 부품을 검사하던 대성정밀은 종이 기록 때문에 불량 원인을 늦게 찾았습니다. 시범 라인 2개에서 시작해 3개월 만에 전 라인으로 넓혔습니다.',
-      quote: '이제는 불량이 나오면 그날 바로 원인을 압니다.\n대성정밀 품질팀장',
-      image: LOGOS[0],
+      title: '고객에게 보여줄 품질 대시보드',
+      body: '라인별 불량률과 원인 공정을 한 화면에서 봐요. 11월 3주 현장 시연 때 시범 라인 데이터로 보여줄 예정이에요.',
+      image: SAMPLE_DASHBOARD,
     },
+  },
+  '섹션: 실행 계획': { fields: { lead: '수주까지 할 일' } },
+  '수주 일정': {
+    fields: { title: '12월 계약이 목표예요' },
     items: [
-      { value: '56%', title: '불량률 감소' },
-      { value: '4개월', title: '투자 회수 기간' },
+      { meta: '11월 1주', title: '제안서 제출', body: '품질팀장에게 직접 전달' },
+      { meta: '11월 3주', title: '현장 시연', body: '평택 공장 시범 라인에서' },
+      { meta: '12월 1주', title: '가격 협상', body: '구매팀과' },
+      { meta: '12월 3주', title: '계약', body: '공장장 최종 결정' },
     ],
   },
-  '함께한 고객': {
-    fields: { title: '제조 현장 120곳이 함께하고 있어요', lead: '자동차 부품, 전자, 화학, 식품 공장에서 쓰고 있어요.' },
-    items: LOGOS.map((image) => ({ image })),
-  },
-  '도입 일정': {
-    fields: { title: '3개월이면 전 라인에서 쓸 수 있어요' },
+  '위험과 대응': {
+    fields: { title: '이런 위험은 이렇게 대비해요' },
     items: [
-      { meta: '1주 차', title: '현장 진단', body: '검사 항목과 기록 방식 확인' },
-      { meta: '2~4주 차', title: '시스템 준비', body: '검사 양식과 알림 기준 설정' },
-      { meta: '5~8주 차', title: '시범 운영', body: '라인 2개에서 먼저 사용' },
-      { meta: '3개월 차', title: '전 라인 확대', body: '교육과 함께 모든 라인 적용' },
+      { title: '경쟁사가 가격을 더 낮출 수 있어요', body: '유지보수 1년 무상을 협상 카드로 준비해요' },
+      { title: '시범 구축 인력이 부족해요', body: '기술팀 2명을 11월부터 지원받아야 해요' },
+      { title: '고객 예산 확정이 늦어질 수 있어요', body: '두 번에 나눠 구축해서 첫해 비용을 낮춘 안을 준비해요' },
     ],
   },
-  '투자 비용': {
-    fields: { title: '라인 수에 맞춰 고르실 수 있어요' },
+  '결정 요청': {
     items: [
-      { title: '기본', value: '월 120만 원', meta: '라인 2개 기준', body: '실시간 검사 기록\n기본 리포트\n이메일 지원' },
-      { title: '표준', value: '월 280만 원', meta: '라인 5개 기준', body: '기본의 모든 기능\n원인 자동 분석\n즉시 알림\n전담 매니저' },
-      { title: '확장', value: '별도 협의', meta: '라인 6개 이상', body: '표준의 모든 기능\n사내 시스템 연동\n현장 교육' },
-    ],
-  },
-  '다음 단계': {
-    items: [
-      { title: '현장 진단 일정 잡기', body: '11월 첫째 주, 평택 공장' },
-      { title: '시범 라인 고르기', body: '품질팀과 함께' },
-      { title: '시범 운영 시작', body: '11월 중' },
+      { title: '제안 가격 4.8억 원 승인', body: '11월 1주 제안서 제출 전까지' },
+      { title: '시범 구축 인력 2명 지원', body: '기술팀, 11월부터 3개월' },
+      { title: '유지보수 1년 무상 카드 사용', body: '가격 협상에서 필요할 때만' },
     ],
   },
 }
@@ -160,19 +162,19 @@ function fill(slide: Slide): Slide {
 
 export function createSampleDeck(): Deck {
   const deck = createDeck({
-    type: 'proposal',
+    type: 'deal',
     audience: 'mixed',
-    minutes: 45,
+    minutes: 30,
     method: 'live',
-    title: '제조 현장의 불량률을 절반으로 줄이는 방법',
-    customer: '한빛제조',
+    title: '한빛제조 평택 공장 품질 관리 제안 계획',
+    org: '영업 2팀',
     presenter: '김민준 매니저',
     theme: 'white',
   })
   return {
     ...deck,
-    title: '예시: 한빛제조 품질 관리 제안',
-    meta: { ...deck.meta, contact: 'minjun.kim@dataworks.kr' },
+    title: '예시: 한빛제조 품질 관리 제안 계획',
+    meta: { ...deck.meta, contact: '내선 2417' },
     slides: deck.slides.map(fill),
   }
 }

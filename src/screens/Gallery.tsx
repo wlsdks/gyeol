@@ -1,52 +1,66 @@
 import { pageInfo } from '../deck/fields'
 import { createDeck, emptyItem, makeSlide } from '../deck/generate'
-import { createSampleDeck } from '../deck/sample'
-import type { Deck, Item, Slide, ThemeId } from '../deck/types'
+import { createSampleDeck, SAMPLE_LOGOS } from '../deck/sample'
+import type { Deck, DeckType, Item, Slide, ThemeId } from '../deck/types'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 
-// 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank
+// 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 
 function withItems(slide: Slide, items: Partial<Item>[], fields: Record<string, string> = {}): Slide {
   return { ...slide, fields: { ...slide.fields, ...fields }, items: items.map((it) => ({ ...emptyItem(), ...it })) }
 }
 
+function withOptions(slide: Slide, options: Slide['options']): Slide {
+  return { ...slide, options: { ...slide.options, ...options } }
+}
+
 function extraSlides(): Slide[] {
   return [
-    withItems(
+    withOptions(withItems(
       makeSlide('bars'),
       [
-        { title: '우리 제품', meta: '도입 6개월', value: '1.4%' },
-        { title: '업계 평균', meta: '2025년 조사', value: '2.9%' },
-        { title: '도입 전', meta: '한빛제조', value: '3.2%' },
+        { title: '1분기', meta: '억 원', value: '96' },
+        { title: '2분기', meta: '억 원', value: '104' },
+        { title: '3분기', meta: '억 원', value: '131' },
+        { title: '목표', meta: '억 원', value: '117' },
       ],
-      { title: '불량률은 업계 평균의 절반 수준이에요', lead: '같은 기간, 같은 공정 기준으로 비교했어요.' },
-    ),
-    withItems(makeSlide('kpi'), [{ value: '2.1억', title: '연간 절감 비용', body: '불량 처리와 보고 업무를 합친 금액' }], {
-      title: '한 해에 이만큼 아낄 수 있어요',
+      { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준' },
+    ), { highlight: 2 }),
+    withItems(makeSlide('kpi'), [{ value: '112%', title: '3분기 목표 달성률', body: '목표 117억 원, 실적 131억 원' }], {
+      title: '3분기 목표를 넘겼어요',
     }),
     withItems(
-      makeSlide('points'),
+      makeSlide('case'),
       [
-        { title: '현장 진단', body: '지금 쓰는 검사 양식과 기록 방식을 그대로 옮겨요.' },
-        { title: '시범 운영', body: '라인 두 곳에서 먼저 써 보고 고칠 점을 찾아요.' },
-        { title: '전 라인 확대', body: '교육과 함께 모든 라인에 적용해요.' },
-        { title: '운영 지원', body: '전담 매니저가 매달 결과를 함께 봐요.' },
+        { value: '38%', title: '검사 시간 단축' },
+        { value: '3개월', title: '구축 기간' },
       ],
-      { title: '네 단계로 함께 진행해요' },
+      {
+        client: '자동차 부품사 대성정밀',
+        title: '같은 구성으로 작년에 수주해서 3개월 만에 구축했어요',
+        body: '검사 자동화와 원인 분석을 함께 제안했고, 경쟁사보다 15% 비쌌지만 구축 기간으로 설득했어요.',
+        quote: '라인을 세우지 않고 바꿀 수 있다는 점이 결정적이었어요.',
+        image: SAMPLE_LOGOS[0],
+      },
+    ),
+    withItems(
+      makeSlide('logos'),
+      SAMPLE_LOGOS.map((image) => ({ image })),
+      { title: '함께한 제조 고객사' },
     ),
   ]
 }
 
-function galleryDeck(set: string, theme: ThemeId): Deck {
+function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck {
   if (set === 'blank') {
     const deck = createDeck({
-      type: 'proposal',
+      type: (params.get('type') as DeckType | null) ?? 'business',
       audience: 'mixed',
-      minutes: 45,
+      minutes: 30,
       method: 'live',
       title: '',
-      customer: '',
+      org: '',
       presenter: '',
       theme,
     })
@@ -60,7 +74,7 @@ export function Gallery() {
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '')
   const theme = (params.get('theme') ?? 'white') as ThemeId
   const mode = (params.get('mode') ?? 'final') as SlideMode
-  const deck = galleryDeck(params.get('set') ?? 'sample', theme)
+  const deck = galleryDeck(params.get('set') ?? 'sample', theme, params)
   const info = pageInfo(deck.slides)
   return (
     <div className="gallery">
