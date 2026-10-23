@@ -1,0 +1,162 @@
+import { create } from 'zustand'
+import type { Deck } from '../deck/types'
+import { useDeck } from './deckStore'
+import {
+  allowFolder,
+  chooseFolder,
+  folderStatus,
+  listFolderDecks,
+  readFolderDeck,
+  trashDeckInFolder,
+  trashedDeckIds,
+  writeDeckToFolder,
+  type FolderStatus,
+} from './folder'
+import { deleteDeck, listDecks, loadDeck, saveDeck } from './library'
+import { deckSignature, deleteDeckVersions, saveVersion } from './versions'
+
+/*
+ * 저장은 두 곳에 한다.
+ * 1. 이 브라우저(IndexedDB): 늘 저장. 빠르지만 기록을 지우면 사라질 수 있다.
+ * 2. 보관 폴더: 폴더를 골라 두면 같이 저장. 브라우저와 상관없이 남는다.
+ */
+
+export type WriteState = 'idle' | 'saving' | 'saved' | 'failed'
+
+interface StorageState {
+  folder: FolderStatus | null
+  browser: WriteState
+  folderWrite: WriteState
+  lastSavedAt: number | null
+  refresh(): Promise<FolderStatus>
+  choose(): Promise<FolderStatus>
+  allow(): Promise<FolderStatus>
+}
+
+export const useStorage = create<StorageState>((set) => ({
+  folder: null,
+  browser: 'idle',
+  folderWrite: 'idle',
+  lastSavedAt: null,
+  async refresh() {
+    const folder = await folderStatus()
+    set({ folder })
+    return folder
+  },
+  async choose() {
+    const folder = await chooseFolder()
+    set({ folder })
+    if (folder.kind === 'ready') await syncWithFolder()
+    return folder
+  },
+  async allow() {
+    const folder = await allowFolder()
+    set({ folder })
+    if (folder.kind === 'ready') await syncWithFolder()
+    return folder
+  },
+}))
+
+let persistAsked = false
+/** 브라우저가 저장 공간을 함부로 비우지 않도록 요청한다. 허락 여부와 상관없이 저장은 계속된다. */
+function askPersistent() {
+  if (persistAsked) return
+  persistAsked = true
+  navigator.storage?.persist?.().catch(() => {})
+}
+
+/** 브라우저에 저장. 편집 중에는 자주 부른다. */
+export async function saveToBrowser(deck: Deck): Promise<boolean> {
+  askPersistent()
+  useStorage.setState({ browser: 'saving' })
+  const ok = await saveDeck(deck)
+  useStorage.setState({ browser: ok ? 'saved' : 'failed', lastSavedAt: ok ? Date.now() : useStorage.getState().lastSavedAt })
+  return ok
+}
+
+/** 보관 폴더에 저장. 폴더가 준비되지 않았으면 아무것도 하지 않는다. */
+export async function saveToFolder(deck: Deck): Promise<boolean> {
+  const folder = useStorage.getState().folder ?? (await useStorage.getState().refresh())
+  if (folder.kind !== 'ready') return false
+  useStorage.setState({ folderWrite: 'saving' })
+  const ok = await writeDeckToFolder(deck)
+  useStorage.setState({ folderWrite: ok ? 'saved' : 'failed' })
+  return ok
+}
+
+/** 새로 만들거나 들여온 발표를 두 곳에 바로 저장한다 */
+export async function persistNow(deck: Deck): Promise<boolean> {
+  const ok = await saveToBrowser(deck)
+  await saveToFolder(deck)
+  return ok
+}
+
+/**
+ * 폴더와 브라우저를 맞춘다. 더 최근에 고친 쪽을 남기고,
+ * 브라우저 쪽을 덮어쓸 때는 덮이기 전 상태를 버전으로 남긴다.
+ */
+export async function syncWithFolder(): Promise<void> {
+  const status = useStorage.getState().folder
+  if (status?.kind !== 'ready') return
+  const inFolder = await listFolderDecks()
+  const seen = new Set<string>()
+  for (const fileDeck of inFolder) {
+    seen.add(fileDeck.id)
+    // 편집기에 열려 있는 발표는 저장소가 아니라 화면에 있는 것과 비교한다
+    const editing = useDeck.getState().deck
+    const local = editing?.id === fileDeck.id ? editing : await loadDeck(fileDeck.id)
+    if (!local) {
+      await saveDeck(fileDeck)
+    } else if (fileDeck.updatedAt > local.updatedAt) {
+      if (deckSignature(local) !== deckSignature(fileDeck)) await saveVersion(local, { reason: 'file' })
+      await saveDeck(fileDeck)
+      if (editing?.id === fileDeck.id) useDeck.getState().open(fileDeck)
+    } else if (local.updatedAt > fileDeck.updatedAt) {
+      await writeDeckToFolder(local)
+    }
+  }
+  // 폴더에 없는 발표: 다른 PC에서 지웠으면 여기서도 목록에서 뺀다. 그 밖에는 폴더로 옮겨 둔다.
+  const trashed = await trashedDeckIds()
+  for (const local of await listDecks()) {
+    if (seen.has(local.id)) continue
+    if (trashed.has(local.id)) await deleteDeck(local.id)
+    else await writeDeckToFolder(local)
+  }
+}
+
+/**
+ * 편집기를 열 때 쓸 발표. 폴더와 브라우저 중 더 최근 것을 고른다.
+ * 다른 PC에서 고친 내용이 폴더에 있으면 그걸 연다.
+ */
+export async function loadBestDeck(id: string): Promise<Deck | undefined> {
+  const local = await loadDeck(id)
+  const status = await useStorage.getState().refresh()
+  if (status.kind !== 'ready') return local
+  const fileDeck = await readFolderDeck(id)
+  if (!fileDeck) {
+    if (local) void writeDeckToFolder(local)
+    return local
+  }
+  if (!local || fileDeck.updatedAt > local.updatedAt) {
+    if (local && deckSignature(local) !== deckSignature(fileDeck)) await saveVersion(local, { reason: 'file' })
+    await saveDeck(fileDeck)
+    return fileDeck
+  }
+  if (local.updatedAt > fileDeck.updatedAt) void writeDeckToFolder(local)
+  return local
+}
+
+/** 내려받아 둔 작업 파일을 연다. 같은 발표가 이미 있으면 지금 상태를 버전으로 남기고 바꾼다. */
+export async function importDeck(deck: Deck): Promise<Deck> {
+  const local = await loadDeck(deck.id)
+  if (local && deckSignature(local) !== deckSignature(deck)) await saveVersion(local, { reason: 'file' })
+  const next = { ...deck, updatedAt: Date.now() }
+  await persistNow(next)
+  return next
+}
+
+export async function removeDeck(deck: Deck): Promise<void> {
+  await trashDeckInFolder(deck)
+  await deleteDeck(deck.id)
+  await deleteDeckVersions(deck.id)
+}

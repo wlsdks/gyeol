@@ -9,15 +9,17 @@ import { go } from '../../lib/router'
 import type { SlideActions } from '../../slides/context'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
-import { loadDeck, saveDeck } from '../../store/library'
+import { downloadDeckFile } from '../../store/deckFile'
+import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
+import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, CheckIcon, CopyIcon, EyeIcon, EyeOffIcon, Modal, PlayIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { ExportMenu, ThemeMenu } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
+import { SaveStatus } from './SaveStatus'
 import { SlideList } from './SlideList'
-
-type SaveState = 'saved' | 'saving' | 'failed'
+import { VersionPanel } from './Versions'
 
 export function Editor({ id }: { id: string }) {
   const deck = useDeck((s) => s.deck)
@@ -26,7 +28,7 @@ export function Editor({ id }: { id: string }) {
 
   useEffect(() => {
     if (useDeck.getState().deck?.id === id) return
-    loadDeck(id).then((d) => (d ? open(d) : setNotFound(true)))
+    loadBestDeck(id).then((d) => (d ? open(d) : setNotFound(true)))
   }, [id, open])
 
   if (notFound) {
@@ -43,26 +45,83 @@ export function Editor({ id }: { id: string }) {
   return <EditorBody deck={deck} />
 }
 
-function useAutosave(deck: Deck): SaveState {
-  const [state, setState] = useState<SaveState>('saved')
+/**
+ * 고칠 때마다 저장한다. 브라우저에는 바로, 보관 폴더에는 조금 모아서.
+ * 고치는 중에는 10분마다 자동 버전을 남긴다. 화면을 떠나거나 창을 닫을 때는 남은 저장을 바로 끝낸다.
+ */
+function useAutosave(deck: Deck) {
+  const latest = useRef(deck)
+  const dirty = useRef({ browser: false, folder: false })
+  const lastVersionAt = useRef(Date.now())
+  latest.current = deck
+
+  const flush = useCallback(() => {
+    const d = latest.current
+    if (dirty.current.browser) {
+      dirty.current.browser = false
+      void saveToBrowser(d)
+    }
+    if (dirty.current.folder) {
+      dirty.current.folder = false
+      void saveToFolder(d)
+    }
+  }, [])
+
+  // 열 때 한 번 남긴다. 앞 버전과 같으면 저장소가 건너뛴다.
+  useEffect(() => {
+    void saveVersion(latest.current, { reason: 'open' })
+  }, [deck.id])
+
   const first = useRef(true)
   useEffect(() => {
     if (first.current) {
       first.current = false
       return
     }
-    setState('saving')
-    const t = window.setTimeout(async () => setState((await saveDeck(deck)) ? 'saved' : 'failed'), 400)
-    return () => window.clearTimeout(t)
+    dirty.current = { browser: true, folder: true }
+    const tb = window.setTimeout(() => {
+      dirty.current.browser = false
+      void saveToBrowser(deck)
+    }, 400)
+    const tf = window.setTimeout(() => {
+      dirty.current.folder = false
+      void saveToFolder(deck)
+      if (Date.now() - lastVersionAt.current >= AUTO_INTERVAL) {
+        lastVersionAt.current = Date.now()
+        void saveVersion(deck, { reason: 'interval' })
+      }
+    }, 1500)
+    return () => {
+      window.clearTimeout(tb)
+      window.clearTimeout(tf)
+    }
   }, [deck])
-  return state
+
+  useEffect(() => {
+    const onHide = () => document.visibilityState === 'hidden' && flush()
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', onHide)
+      flush()
+    }
+  }, [flush])
+
+  /** 발표나 내보내기처럼 중요한 순간 전에 부른다 */
+  return useCallback((reason: VersionReason) => {
+    flush()
+    lastVersionAt.current = Date.now()
+    void saveVersion(latest.current, { reason })
+  }, [flush])
 }
 
 function EditorBody({ deck }: { deck: Deck }) {
   const slide = useSelectedSlide() ?? deck.slides[0]
   const store = useDeck()
-  const saveState = useAutosave(deck)
+  const markVersion = useAutosave(deck)
   const [view, setView] = useState<'slides' | 'doc'>('slides')
+  const [versionsOpen, setVersionsOpen] = useState(false)
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; missing: number } | null>(null)
   const [printing, setPrinting] = useState(false)
@@ -76,10 +135,11 @@ function EditorBody({ deck }: { deck: Deck }) {
         return
       }
       setConfirmPresent(null)
+      markVersion('present')
       document.documentElement.requestFullscreen?.().catch(() => {})
       setPresenting({ startId })
     },
-    [deck],
+    [deck, markVersion],
   )
 
   const focusFirstMissing = () => {
@@ -118,6 +178,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   }, [presenting, startPresent, slide?.id, store])
 
   const exportHtml = async () => {
+    markVersion('export')
     toast.show('발표 파일을 만들고 있어요')
     try {
       await downloadHtml(deck)
@@ -148,7 +209,7 @@ function EditorBody({ deck }: { deck: Deck }) {
             onChange={(e) => store.setTitle(e.target.value)}
             onBlur={(e) => !e.target.value.trim() && store.setTitle('제목 없는 발표')}
           />
-          <SaveBadge state={saveState} />
+          <SaveStatus deck={deck} onOpenVersions={() => setVersionsOpen(true)} />
         </div>
 
         <div className="seg ed-view" role="group" aria-label="보기">
@@ -167,8 +228,28 @@ function EditorBody({ deck }: { deck: Deck }) {
           <button type="button" className="icon-btn" aria-label="다시 하기" title="다시 하기 (⇧⌘Z)" disabled={!store.future.length} onClick={store.redo}>
             <RedoIcon />
           </button>
+          <button
+            type="button"
+            className={cx('icon-btn', versionsOpen && 'is-on')}
+            aria-label="버전 기록"
+            title="버전 기록"
+            aria-pressed={versionsOpen}
+            onClick={() => setVersionsOpen((o) => !o)}
+          >
+            <HistoryIcon />
+          </button>
           <ThemeMenu deck={deck} />
-          <ExportMenu onHtml={exportHtml} onPdf={() => setPrinting(true)} />
+          <ExportMenu
+            onHtml={exportHtml}
+            onPdf={() => {
+              markVersion('export')
+              setPrinting(true)
+            }}
+            onDeckFile={() => {
+              downloadDeckFile(deck)
+              toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
+            }}
+          />
           <button type="button" className="btn btn-primary" title="처음부터 발표 (F5)" onClick={() => startPresent()}>
             <PlayIcon />
             발표하기
@@ -176,13 +257,10 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
       </header>
 
-      <div className={cx('ed-body', view === 'doc' && 'is-doc')}>
+      <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
         {view === 'slides' && slide ? (
-          <>
-            <SlideStage deck={deck} slide={slide} onRemove={removeSlide} onPresentHere={() => startPresent(slide.id)} />
-            <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
-          </>
+          <SlideStage deck={deck} slide={slide} onRemove={removeSlide} onPresentHere={() => startPresent(slide.id)} />
         ) : (
           <OutlineView
             deck={deck}
@@ -191,6 +269,11 @@ function EditorBody({ deck }: { deck: Deck }) {
               setView('slides')
             }}
           />
+        )}
+        {versionsOpen ? (
+          <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
+        ) : (
+          view === 'slides' && slide && <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
         )}
       </div>
 
@@ -226,22 +309,6 @@ function focusField(slideId: string, m: Missing) {
   if (!el) return
   el.focus()
   el.scrollIntoView({ block: 'nearest' })
-}
-
-function SaveBadge({ state }: { state: SaveState }) {
-  if (state === 'failed') return <span className="save is-failed">저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.</span>
-  return (
-    <span className="save" aria-live="polite">
-      {state === 'saving' ? (
-        '저장 중'
-      ) : (
-        <>
-          <CheckIcon />
-          이 브라우저에 저장됨
-        </>
-      )}
-    </span>
-  )
 }
 
 function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slide: Slide; onRemove: (s: Slide) => void; onPresentHere: () => void }) {

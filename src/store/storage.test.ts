@@ -1,0 +1,67 @@
+import { describe, expect, it } from 'vitest'
+import { createDeck } from '../deck/generate'
+import type { Deck } from '../deck/types'
+import { decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckFile'
+import { deckSignature, slideSignatures, versionChanges, type DeckVersion } from './versions'
+
+const deck = () =>
+  createDeck({ type: 'proposal', audience: 'mixed', minutes: 20, method: 'live', title: '품질 관리 제안', customer: '한빛제조', presenter: '김민준', theme: 'white' })
+
+const version = (d: Deck): DeckVersion => ({
+  id: 'v',
+  deckId: d.id,
+  createdAt: 0,
+  name: '',
+  named: false,
+  title: d.title,
+  slideCount: d.slides.length,
+  signature: deckSignature(d),
+  slides: slideSignatures(d),
+})
+
+describe('작업 파일', () => {
+  it('저장한 그대로 다시 읽힌다 (발표자 노트 포함)', () => {
+    const d = deck()
+    d.slides[0].notes = '첫 장에서 고객 이름을 꼭 부른다'
+    expect(decodeDeckFile(encodeDeckFile(d))).toEqual(d)
+  })
+
+  it('다른 JSON이나 깨진 파일은 열지 않는다', () => {
+    expect(decodeDeckFile('{"slides":[]}')).toBeNull()
+    expect(decodeDeckFile('not json')).toBeNull()
+  })
+
+  it('파일 이름에 쓸 수 없는 글자를 뺀다', () => {
+    expect(safeFileName('예시: 한빛/제조 *제안*?')).toBe('예시 한빛 제조 제안')
+    expect(safeFileName('   ')).toBe('제목 없는 발표')
+  })
+
+  it('시각 표기는 이름순 정렬이 시간순이 된다', () => {
+    expect(fileStamp(new Date(2026, 9, 3, 9, 5).getTime())).toBe('2026-10-03 09-05')
+  })
+})
+
+describe('버전 비교', () => {
+  it('수정 시각만 바뀌면 같은 내용으로 본다', () => {
+    const d = deck()
+    expect(deckSignature({ ...d, updatedAt: d.updatedAt + 1000 })).toBe(deckSignature(d))
+  })
+
+  it('고친 장, 더한 장, 뺀 장을 찾는다', () => {
+    const before = deck()
+    const after: Deck = structuredClone(before)
+    after.slides[1].fields.title = '바뀐 제목'
+    const removed = after.slides.pop()!
+    after.slides.push({ ...structuredClone(removed), id: 'new-slide', purpose: '새 장' })
+
+    const c = versionChanges(version(after), version(before))
+    expect(c.changed).toEqual([before.slides[1].purpose])
+    expect(c.added).toEqual(['새 장'])
+    expect(c.removed).toEqual([removed.purpose])
+  })
+
+  it('내용이 같으면 바뀐 것이 없다', () => {
+    const d = deck()
+    expect(versionChanges(version(d), version(structuredClone(d)))).toEqual({ changed: [], added: [], removed: [] })
+  })
+})

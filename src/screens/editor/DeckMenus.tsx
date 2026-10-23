@@ -81,7 +81,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
   )
 }
 
-export function ExportMenu({ onHtml, onPdf }: { onHtml: () => void; onPdf: () => void }) {
+export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; onPdf: () => void; onDeckFile: () => void }) {
   return (
     <Popover
       button={({ toggle, open }) => (
@@ -114,6 +114,18 @@ export function ExportMenu({ onHtml, onPdf }: { onHtml: () => void; onPdf: () =>
           >
             <span className="menu-item-name">PDF</span>
             <span className="menu-item-desc">인쇄 창이 열리면 대상에서 ‘PDF로 저장’을 고르세요.</span>
+          </button>
+          <div className="menu-sep" role="separator" />
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => {
+              close()
+              onDeckFile()
+            }}
+          >
+            <span className="menu-item-name">작업 파일 (.deck)</span>
+            <span className="menu-item-desc">발표자 노트까지 담긴 원본이에요. 다른 PC에서 이어서 고칠 때 ‘파일 열기’로 불러오세요. 고객에게는 보내지 마세요.</span>
           </button>
         </div>
       )}

@@ -32,6 +32,10 @@ export const MoreIcon = () => <Icon className="icon-fill" d="M5 10.5a1.5 1.5 0 1
 export const DownloadIcon = () => <Icon d="M12 4v11M7 10l5 5 5-5M5 20h14" />
 export const UploadIcon = () => <Icon d="M12 20V9M7 14l5-5 5 5M5 4h14" />
 export const CheckIcon = () => <Icon d="M5 12.5l4.5 4.5L19 7.5" />
+export const HistoryIcon = () => <Icon d="M4 12a8 8 0 102.3-5.6L4 8.7M4 4v4.7h4.7M12 8v4.5l3 2" />
+export const FolderIcon = () => <Icon d="M3 7.5A1.5 1.5 0 014.5 6H9l2 2.2h8.5A1.5 1.5 0 0121 9.7v8.8a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 18.5z" />
+export const AlertIcon = () => <Icon d="M12 4l9 16H3zM12 10v4.5M12 17.2v.3" />
+export const CloseIcon = () => <Icon d="M6 6l12 12M18 6L6 18" />
 
 /** 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다. */
 export function Popover({

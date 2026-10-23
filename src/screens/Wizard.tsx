@@ -7,7 +7,7 @@ import type { Audience, DeckMeta, DeckType, Method, ThemeId } from '../deck/type
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
 import { ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { saveDeck } from '../store/library'
+import { persistNow } from '../store/persist'
 import { Brand, ChevronIcon } from './ui'
 
 const STEPS = ['발표 종류', '청중과 시간', '기본 정보']
@@ -35,7 +35,7 @@ export function Wizard() {
   const create = async () => {
     setBusy(true)
     const deck = createDeck({ type, audience, minutes, method, title, customer, presenter, theme })
-    await saveDeck(deck)
+    await persistNow(deck)
     go({ name: 'edit', id: deck.id })
   }
 

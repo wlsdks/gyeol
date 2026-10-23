@@ -6,45 +6,61 @@ import type { Deck } from '../deck/types'
 import { readDeckFromHtml } from '../export/exportHtml'
 import { go, timeAgo } from '../lib/router'
 import { FitSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { deleteDeck, listDecks, saveDeck } from '../store/library'
-import { Brand, CopyIcon, Modal, MoreIcon, PlusIcon, Popover, TrashIcon, UploadIcon, useToast } from './ui'
+import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
+import { useDeck } from '../store/deckStore'
+import { listDecks } from '../store/library'
+import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
+import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, PlusIcon, Popover, TrashIcon, UploadIcon, useToast } from './ui'
 
 export function Home() {
   const [decks, setDecks] = useState<Deck[] | null>(null)
   const [toDelete, setToDelete] = useState<Deck | null>(null)
+  const folder = useStorage((s) => s.folder)
   const toast = useToast()
 
   const refresh = () => listDecks().then(setDecks)
   useEffect(() => {
+    // 편집기에 들고 있던 발표는 놓는다. 폴더에서 더 새것이 들어올 수 있다.
+    useDeck.getState().close()
     refresh()
+    useStorage
+      .getState()
+      .refresh()
+      .then(async (status) => {
+        if (status.kind !== 'ready') return
+        await syncWithFolder()
+        refresh()
+      })
   }, [])
 
   const duplicate = async (deck: Deck) => {
-    const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, updatedAt: Date.now() }
-    await saveDeck(copy)
+    const now = Date.now()
+    const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now }
+    await persistNow(copy)
     refresh()
   }
 
   const openSample = async () => {
     const deck = createSampleDeck()
-    await saveDeck(deck)
+    await persistNow(deck)
     go({ name: 'edit', id: deck.id })
   }
 
   const openFile = () => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.html,text/html'
+    input.accept = `${DECK_EXT},.html,text/html`
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
-      const deck = readDeckFromHtml(await file.text())
+      const text = await file.text()
+      const deck = file.name.endsWith(DECK_EXT) ? decodeDeckFile(text) : readDeckFromHtml(text)
       if (!deck) {
-        toast.show('html-maker에서 내보낸 HTML 파일만 열 수 있어요.')
+        toast.show('html-maker에서 저장한 작업 파일(.deck)이나 내보낸 발표 파일(.html)만 열 수 있어요.')
         return
       }
-      await saveDeck(deck)
-      go({ name: 'edit', id: deck.id })
+      const opened = await importDeck(deck)
+      go({ name: 'edit', id: opened.id })
     }
     input.click()
   }
@@ -68,6 +84,8 @@ export function Home() {
             </button>
           )}
         </div>
+
+        <StorageNote onSynced={refresh} />
 
         {decks && decks.length === 0 && (
           <div className="home-empty">
@@ -110,7 +128,7 @@ export function Home() {
                 type="button"
                 className="btn btn-danger"
                 onClick={async () => {
-                  await deleteDeck(toDelete.id)
+                  await removeDeck(toDelete)
                   setToDelete(null)
                   refresh()
                 }}
@@ -120,7 +138,11 @@ export function Home() {
             </>
           }
         >
-          <p>‘{toDelete.title}’을 지우면 되돌릴 수 없어요. 내보낸 파일은 그대로 남아요.</p>
+          <p>
+            {folder?.kind === 'ready'
+              ? `‘${toDelete.title}’을 목록에서 지워요. 보관 폴더의 작업 파일은 ‘지운 발표’ 폴더로 옮겨 두니, 필요하면 파일 열기로 다시 불러올 수 있어요.`
+              : `‘${toDelete.title}’을 지우면 되돌릴 수 없어요. 버전 기록도 함께 지워지고, 내보낸 파일은 그대로 남아요.`}
+          </p>
         </Modal>
       )}
       {toast.node}
@@ -182,5 +204,69 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
         </Popover>
       </div>
     </article>
+  )
+}
+
+/** 발표가 어디에 보관되는지. 폴더를 정하지 않았으면 정하도록 권한다. */
+function StorageNote({ onSynced }: { onSynced: () => void }) {
+  const { folder, choose, allow } = useStorage()
+  if (!folder) return null
+
+  const run = async (fn: () => Promise<{ kind: string }>) => {
+    const next = await fn()
+    if (next.kind === 'ready') onSynced()
+  }
+
+  if (folder.kind === 'ready') {
+    return (
+      <p className="store-note is-ready">
+        <FolderIcon />
+        <span>
+          ‘<b>{folder.name}</b>’ 폴더에 자동으로 보관하고 있어요. 고칠 때마다 저장되고, 버전 기록도 이 폴더에 남아요.
+        </span>
+        <button type="button" className="btn-link" onClick={() => run(choose)}>
+          폴더 바꾸기
+        </button>
+      </p>
+    )
+  }
+
+  if (folder.kind === 'locked') {
+    return (
+      <div className="store-note is-warn">
+        <FolderIcon />
+        <p>
+          <b>‘{folder.name}’ 폴더와 다시 연결해 주세요.</b> 브라우저를 새로 열면 한 번 더 허용해야 해요. 허용하기 전까지는 이 브라우저에만 저장돼요.
+        </p>
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => run(allow)}>
+          허용하기
+        </button>
+      </div>
+    )
+  }
+
+  if (folder.kind === 'none') {
+    return (
+      <div className="store-note is-warn">
+        <FolderIcon />
+        <p>
+          <b>보관 폴더를 정해 두세요.</b> 지금은 이 브라우저에만 저장돼서 기록을 지우거나 PC를 바꾸면 사라질 수 있어요. 폴더를 정하면 고칠 때마다 그
+          폴더에 파일로 저장되고, 버전 기록도 함께 남아요.
+        </p>
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => run(choose)}>
+          보관 폴더 고르기
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <p className="store-note is-warn">
+      <FolderIcon />
+      <span>
+        지금은 이 브라우저에만 저장돼요. 크롬이나 엣지에서 열면 PC 폴더에 자동으로 보관할 수 있어요. 그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을
+        내려받아 두세요.
+      </span>
+    </p>
   )
 }
