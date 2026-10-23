@@ -30,3 +30,24 @@ export function isNumericCell(text: string): boolean {
   const t = text.trim()
   return t.length > 0 && t.length <= 12 && NUMERIC_CELL.test(t)
 }
+
+export type Status = 'done' | 'doing' | 'late' | 'todo'
+
+export const STATUS_NAMES: Record<Status, string> = { done: '완료', doing: '진행 중', late: '지연', todo: '예정' }
+
+/**
+ * 과제의 상태. 사람이 적은 상태 글을 먼저 읽고, 비어 있으면 진행률로 짐작한다(100%는 완료, 0%는 예정).
+ * 읽을 수 없는 글('검토 중' 같은)은 null이라 색 없이 그 글 그대로 보인다.
+ */
+export function statusOf(text: string, pct: number | null): Status | null {
+  const t = text.replace(/\s/g, '')
+  if (t) {
+    if (/지연|늦|위험|차질|보류|중단|밀림|미달/.test(t)) return 'late'
+    if (/완료|끝|마침|마감됨|종료/.test(t)) return 'done'
+    if (/예정|대기|준비|시작전|착수전/.test(t)) return 'todo'
+    if (/진행|하는중|착수|추진/.test(t)) return 'doing'
+    return null
+  }
+  if (pct === null) return null
+  return pct >= 100 ? 'done' : pct <= 0 ? 'todo' : 'doing'
+}

@@ -229,6 +229,30 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  progress: {
+    id: 'progress',
+    name: '진행 현황',
+    description: '과제마다 얼마나 됐는지와 완료, 진행 중, 지연, 예정 상태',
+    fields: [title('진행 상황을 요약하는 한 문장'), source],
+    items: {
+      label: '과제',
+      min: 1,
+      max: 7,
+      default: 5,
+      fields: [
+        { key: 'title', label: '과제', hint: '과제 이름', hints: ['견적 자동 계산', '단가표 공유', '승인 단계 줄이기', '현장 교육', '효과 점검', '양식 정리', '결과 보고'] },
+        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true, hints: ['영업기획팀, 10월', '구매팀, 11월', '영업본부, 11월', '교육팀, 12월', '영업기획팀, 1월', '영업기획팀, 1월', '영업본부, 2월'] },
+        { key: 'value', label: '진행률', hint: '80%', hints: ['100%', '80%', '40%', '20%', '0%', '50%', '0%'] },
+        {
+          key: 'body',
+          label: '상태',
+          hint: '완료, 진행 중, 지연, 예정',
+          optional: true,
+          hints: ['완료', '진행 중', '2주 지연', '진행 중', '예정', '진행 중', '예정'],
+        },
+      ],
+    },
+  },
   table: {
     id: 'table',
     name: '표',
@@ -481,6 +505,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'scorecard',
   'bridge',
   'trend',
+  'progress',
   'table',
   'compare',
   'matrix',

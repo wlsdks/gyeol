@@ -70,6 +70,17 @@ function extraSlides(): Slide[] {
       ],
       { title: '여름부터 매출이 꾸준히 늘었어요', lead: '신규 고객 2곳이 8월부터 반영됐어요', unit: '억 원', target: '115', source: '영업관리 시스템, 9월 말 기준' },
     ),
+    withItems(
+      makeSlide('progress'),
+      [
+        { title: '견적 자동 계산', meta: '영업기획팀, 10월', value: '100%', body: '완료' },
+        { title: '단가표 공유', meta: '구매팀, 11월', value: '80%', body: '진행 중' },
+        { title: '승인 단계 줄이기', meta: '영업본부, 11월', value: '40%', body: '2주 지연' },
+        { title: '현장 교육', meta: '교육팀, 12월', value: '20%', body: '진행 중' },
+        { title: '효과 점검', meta: '영업기획팀, 1월', value: '0%', body: '예정' },
+      ],
+      { title: '다섯 과제 중 하나가 2주 늦어지고 있어요', source: '10월 3주 기준' },
+    ),
     withOptions(withItems(
       makeSlide('table'),
       [
@@ -136,6 +147,19 @@ function edgeSlides(): Slide[] {
     trend('빈 달이 있어요', ['96', '', '99', '108', '', '131']),
     trend('값이 모두 같아요', ['50', '50', '50', '50']),
     trend('0부터 시작해요', ['0', '12', '30', '41', '38', '60'], { unit: '건' }),
+    withItems(
+      makeSlide('progress'),
+      [
+        { title: '거래처별 단가 이력을 한곳에 모으고 분기마다 다시 확인하기', meta: '영업기획팀과 구매팀, 12월 말', value: '100%' },
+        { title: '견적 양식 통일', value: '65%', body: '검토 중' },
+        { title: '승인 단계 줄이기', value: '30%', body: '보류' },
+        { title: '현장 교육', value: '0%' },
+        { title: '효과 점검', value: '' },
+        { title: '결과 보고', value: '10%', body: '착수' },
+        { title: '내년 계획', value: '0%', body: '시작 전' },
+      ],
+      { title: '일곱 과제, 상태를 비운 칸은 진행률로 짐작해요', source: '10월 3주 기준' },
+    ),
   ]
 }
 

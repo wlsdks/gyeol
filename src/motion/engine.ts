@@ -218,6 +218,11 @@ export function motionEngine(): MotionEngine {
     const count = (el: Element | null, at: number) => {
       if (el) countUp(el, s(at), levelName === 'lively' ? 1400 : 900, stops)
     }
+    /** 감싼 줄이 따로 나타나지 않는 숫자: 올라가기 시작할 때 함께 나타난다. 아직 차례가 아닌 줄에 0이 미리 보이지 않게 */
+    const countIn = (el: Element | null, at: number) => {
+      fade(el, at, 240)
+      count(el, at)
+    }
     const items = (sel: string, at: number, each: (el: HTMLElement, at: number, i: number) => void, step = L.step) => {
       $(sel).forEach((el, i) => each(el, at + i * step, i))
       return at + $(sel).length * step
@@ -361,7 +366,7 @@ export function motionEngine(): MotionEngine {
           rise(el.querySelector('.br-label'), at, L.y * 0.5)
           fade(el.querySelector('.br-track'), at, 400)
           grow(el.querySelector(variant === 'columns' ? '.br-track' : '.br-fill'), at + 120, variant === 'columns' ? 'up' : 'x')
-          count(el.querySelector('.br-value'), at + 120)
+          countIn(el.querySelector('.br-value'), at + 120)
         })
         fade(one('.s-source'), t + 400)
         break
@@ -374,8 +379,8 @@ export function motionEngine(): MotionEngine {
           grow(el.querySelector('.sk-fill'), at + 120)
           pop(el.querySelector('.sk-mark'), at + 320)
           fade(el.querySelector('.sk-target'), at + 80, 500)
-          count(el.querySelector('.sk-value'), at + 120)
-          count(el.querySelector('.sk-rate'), at + 200)
+          countIn(el.querySelector('.sk-value'), at + 120)
+          countIn(el.querySelector('.sk-rate'), at + 200)
         })
         fade(one('.s-source'), end + 200)
         break
@@ -413,6 +418,19 @@ export function motionEngine(): MotionEngine {
         items('.tn-col', t, (el, at) => fade(el, at, 400), 30)
         fade(one('.tn-target'), t + 200, 600)
         fade(one('.s-source'), t + draw)
+        break
+      }
+      case 'progress': {
+        const t = head()
+        fade(one('.ps-sum'), t, 500)
+        fade(one('.ps-headrow'), t + 80, 500)
+        const end = items('.ps-row.it', t + 160, (el, at) => {
+          rise(el.querySelector('.ps-name'), at, L.y * 0.5)
+          grow(el.querySelector('.ps-fill'), at + 120)
+          countIn(el.querySelector('.ps-pct'), at + 120)
+          pop(el.querySelector('.ps-chip'), at + 380)
+        })
+        fade(one('.s-source'), end + 200)
         break
       }
       case 'table': {

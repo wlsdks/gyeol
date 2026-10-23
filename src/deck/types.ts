@@ -8,6 +8,7 @@ export type LayoutId =
   | 'scorecard'
   | 'bridge'
   | 'trend'
+  | 'progress'
   | 'table'
   | 'points'
   | 'compare'

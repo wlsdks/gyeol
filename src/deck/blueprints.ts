@@ -574,6 +574,13 @@ const report: Blueprint = {
       },
     },
     {
+      layout: 'progress',
+      purpose: '과제 진행 현황',
+      priority: 2,
+      guide: '과제마다 진행률과 상태(완료, 진행 중, 지연, 예정)를 적어 주세요. 늦어지는 과제는 숨기지 말고 얼마나 늦는지 적으면 신뢰가 쌓여요.',
+      hints: { title: '다섯 과제 중 하나가 2주 늦어지고 있어요' },
+    },
+    {
       layout: 'points',
       purpose: '잘된 점',
       priority: 2,

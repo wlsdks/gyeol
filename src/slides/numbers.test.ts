@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatNumber, isNumericCell, parseDelta, parseNumber } from './numbers'
+import { formatNumber, isNumericCell, parseDelta, parseNumber, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 숫자만 읽는다', () => {
@@ -30,5 +30,17 @@ describe('숫자 읽기', () => {
   it('표에서 오른쪽에 맞출 숫자 칸은 금액, 비율, 건수만', () => {
     for (const v of ['4.8억 원', '1,200', '22%', '+3%p', '15곳', '2배', '120건', '3,000만 원', '▲9']) expect(isNumericCell(v), v).toBe(true)
     for (const v of ['11월', '3분기', '12월 1주', '영업기획팀', '약 3억', '']) expect(isNumericCell(v), v).toBe(false)
+  })
+
+  it('과제 상태는 적은 글을 먼저 읽고, 비었으면 진행률로 짐작해요', () => {
+    expect(statusOf('완료', 60)).toBe('done')
+    expect(statusOf('2주 지연', 40)).toBe('late')
+    expect(statusOf('진행 중', 40)).toBe('doing')
+    expect(statusOf('시작 전', null)).toBe('todo')
+    expect(statusOf('검토 중', 50)).toBe(null)
+    expect(statusOf('', 100)).toBe('done')
+    expect(statusOf('', 0)).toBe('todo')
+    expect(statusOf('', 35)).toBe('doing')
+    expect(statusOf('', null)).toBe(null)
   })
 })
