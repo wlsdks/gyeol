@@ -1969,11 +1969,11 @@
 }
 
 .wf-down .wf-bar {
-  background: color-mix(in oklch, var(--ink-3) 42%, var(--bg));
+  background: color-mix(in srgb, var(--ink-3) 42%, var(--bg));
 }
 
 .is-dark .wf-down .wf-bar {
-  background: color-mix(in oklch, var(--ink-3) 70%, var(--bg));
+  background: color-mix(in srgb, var(--ink-3) 70%, var(--bg));
 }
 
 /* 다음 막대로 잇는 점선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
