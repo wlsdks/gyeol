@@ -100,7 +100,8 @@
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
     .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
-    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell
+    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
+    .tn-num, .tn-name, .tn-unit, .tn-target-label
   ) {
   font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
   white-space: pre-line;
@@ -2124,6 +2125,198 @@
 
 .wf.is-demo .wf-val > :not(.ed),
 .wf.is-demo .wf-end .wf-val {
+  opacity: 0.45;
+}
+
+/* ---------- 추이 ----------
+   점의 자리는 --x, --y(0~100)로만 받는다. 선은 늘어나는 SVG에 그리되 굵기는 그대로(non-scaling-stroke),
+   점과 숫자는 HTML이라 장 크기가 바뀌어도 찌그러지지 않는다. 위쪽 띠는 가장 높은 점의 숫자 자리. */
+
+.tn {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tn-plot {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-bottom: 2px solid var(--line);
+}
+
+.tn-canvas {
+  position: absolute;
+  inset: 104px 0 0;
+}
+
+.tn-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.tn-unit {
+  --fs: 24px;
+  color: var(--ink-3);
+}
+
+.tn-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tn-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tn-area {
+  display: none;
+  fill: var(--accent);
+  opacity: 0.16;
+}
+
+/* 모양: 면. 선 아래를 강조색으로 옅게 채우고, 아래로 갈수록 흐려진다 */
+.va-area .tn-area {
+  display: inline;
+}
+
+.va-area .tn-svg {
+  mask-image: linear-gradient(to bottom, #000 40%, rgb(0 0 0 / 0.25));
+}
+
+.tn-pt {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  bottom: calc(var(--y) * 1%);
+  width: 0;
+  height: 0;
+}
+
+.tn-dot {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 5px var(--accent);
+}
+
+.tn-pt.is-hl .tn-dot {
+  top: -15px;
+  left: -15px;
+  width: 30px;
+  height: 30px;
+  background: var(--accent);
+  box-shadow: 0 0 0 8px var(--bg), 0 0 0 20px var(--accent-soft);
+}
+
+.tn-pt.is-blank .tn-dot {
+  display: none;
+}
+
+.tn-val {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  translate: -50% 0;
+  white-space: nowrap;
+}
+
+.tn-pt.is-below .tn-val {
+  top: 24px;
+  bottom: auto;
+}
+
+.tn-num {
+  --fs: 30px;
+  display: block;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  /* 목표선이나 선이 숫자를 가로지르지 않게 바탕색으로 둘레를 지운다 */
+  text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg), 0 0 12px var(--bg);
+}
+
+.tn-pt.is-hl .tn-val {
+  bottom: 40px;
+}
+
+.tn-pt.is-hl .tn-num {
+  --fs: 60px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+}
+
+.tn-target,
+.tn-zero {
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: calc(var(--y) * 1%);
+  height: 0;
+}
+
+.tn-target {
+  border-top: 2px dashed var(--ink-3);
+}
+
+.tn-zero {
+  border-top: 2px solid var(--line);
+}
+
+.tn-target-label {
+  --fs: 24px;
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  padding-left: 12px;
+  background: var(--bg);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.tn-x {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  margin-top: 22px;
+}
+
+.tn-col {
+  position: relative;
+  min-width: 0;
+  text-align: center;
+}
+
+.tn-name {
+  --fs: 26px;
+  color: var(--ink-3);
+  line-height: 1.2;
+}
+
+.tn-col.is-hl .tn-name {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tn.is-demo :is(.tn-svg, .tn-dot, .tn-target) {
+  opacity: 0.3;
+}
+
+.tn.is-demo .tn-val > :not(.ed) {
   opacity: 0.45;
 }
 

@@ -10,6 +10,7 @@ import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=C2410C 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
+// set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 
 function withItems(slide: Slide, items: Partial<Item>[], fields: Record<string, string> = {}): Slide {
   return { ...slide, fields: { ...slide.fields, ...fields }, items: items.map((it) => ({ ...emptyItem(), ...it })) }
@@ -56,6 +57,18 @@ function extraSlides(): Slide[] {
         unit: '억 원',
         source: '영업관리 시스템, 9월 말 기준',
       },
+    ),
+    withItems(
+      makeSlide('trend'),
+      [
+        { title: '4월', value: '96' },
+        { title: '5월', value: '101' },
+        { title: '6월', value: '99' },
+        { title: '7월', value: '108' },
+        { title: '8월', value: '117' },
+        { title: '9월', value: '131' },
+      ],
+      { title: '여름부터 매출이 꾸준히 늘었어요', lead: '신규 고객 2곳이 8월부터 반영됐어요', unit: '억 원', target: '115', source: '영업관리 시스템, 9월 말 기준' },
     ),
     withOptions(withItems(
       makeSlide('table'),
@@ -113,6 +126,19 @@ function extraSlides(): Slide[] {
   ]
 }
 
+/** set=edge: 차트 장이 무너지기 쉬운 값들 (음수, 빈 값, 많은 항목, 모두 같은 값, 긴 이름) */
+function edgeSlides(): Slide[] {
+  const trend = (title: string, values: string[], fields: Record<string, string> = {}) =>
+    withItems(makeSlide('trend'), values.map((value, i) => ({ title: `${i + 1}월`, value })), { title, ...fields })
+  return [
+    trend('성장률이 마이너스에서 돌아섰어요', ['-3%', '-1.5%', '△0.5%', '1%', '2.5%', '4%'], { unit: '%', target: '3' }),
+    trend('열두 달 흐름', ['96', '101', '99', '108', '117', '131', '126', '134', '140', '138', '145', '152'], { unit: '억 원' }),
+    trend('빈 달이 있어요', ['96', '', '99', '108', '', '131']),
+    trend('값이 모두 같아요', ['50', '50', '50', '50']),
+    trend('0부터 시작해요', ['0', '12', '30', '41', '38', '60'], { unit: '건' }),
+  ]
+}
+
 function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck {
   if (set === 'blank') {
     const deck = createDeck({
@@ -128,6 +154,7 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
     return deck
   }
   const deck = createSampleDeck()
+  if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 

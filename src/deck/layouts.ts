@@ -33,8 +33,8 @@ export interface LayoutSpec {
   description: string
   /** 첫째가 기본 모양. 없으면 한 가지 모양뿐 */
   variants?: VariantSpec[]
-  /** 항목 하나를 강조할 수 있으면 그 이름과, 고르지 않았을 때 강조할 항목(-1은 없음) */
-  highlight?: { label: string; fallback: number }
+  /** 항목 하나를 강조할 수 있으면 그 이름과, 고르지 않았을 때 강조할 항목(-1은 없음, 'last'는 마지막 항목) */
+  highlight?: { label: string; fallback: number | 'last' }
   fields: FieldSpec[]
   items?: {
     label: string
@@ -199,6 +199,33 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
         { key: 'title', label: '요인', hint: '요인 이름', hints: ['신규 고객', '단가 인상', '기존 고객 이탈', '환율', '할인', '기타'] },
         { key: 'value', label: '증감', hint: '+9', hints: ['+9', '+7', '-2', '+3', '-1', '+1'] },
         { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
+      ],
+    },
+  },
+  trend: {
+    id: 'trend',
+    name: '추이',
+    description: '달마다, 분기마다 숫자가 어떻게 움직였는지 선으로',
+    variants: [
+      { id: 'base', name: '선' },
+      { id: 'area', name: '면' },
+    ],
+    highlight: { label: '강조할 점', fallback: 'last' },
+    fields: [
+      title('흐름이 말해 주는 결론'),
+      lead(),
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      { key: 'target', label: '목표선', hint: '120', optional: true },
+      source,
+    ],
+    items: {
+      label: '점',
+      min: 3,
+      max: 12,
+      default: 6,
+      fields: [
+        { key: 'title', label: '시기', hint: '시기', hints: ['4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월', '1월', '2월', '3월'] },
+        { key: 'value', label: '숫자', hint: '120', hints: ['96', '101', '99', '108', '117', '131', '126', '134', '140', '138', '145', '152'] },
       ],
     },
   },
@@ -453,6 +480,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'kpi',
   'scorecard',
   'bridge',
+  'trend',
   'table',
   'compare',
   'matrix',
@@ -500,8 +528,11 @@ export function variantOf(slide: { layout: LayoutId; variant?: string }): string
 }
 
 /** 강조할 항목. 고르지 않았으면 레이아웃의 기본값, 강조가 없는 레이아웃이면 -1 */
-export function highlightOf(slide: Pick<Slide, 'layout' | 'options'>): number {
-  const spec = LAYOUTS[slide.layout].highlight
-  if (!spec) return -1
-  return slide.options.highlight ?? spec.fallback
+export function highlightOf(slide: Pick<Slide, 'layout' | 'options' | 'items'>): number {
+  const spec = LAYOUTS[slide.layout]
+  if (!spec.highlight) return -1
+  if (slide.options.highlight !== undefined) return slide.options.highlight
+  // 추이의 마지막 점처럼 '지금'을 강조하는 장은 항목 수가 바뀌어도 늘 마지막을 따라간다
+  if (spec.highlight.fallback === 'last') return Math.min(slide.items.length, spec.items?.max ?? 0) - 1
+  return spec.highlight.fallback
 }

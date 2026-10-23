@@ -395,6 +395,26 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), end + 200)
         break
       }
+      case 'trend': {
+        const t = head()
+        fade(one('.tn-unit'), t, 500)
+        // 선은 왼쪽에서부터 그려지고, 점은 선이 닿을 때 하나씩 맺힌다. 그래서 선은 일정한 빠르기로
+        const draw = levelName === 'lively' ? 1500 : 1100
+        const svg = one('.tn-svg')
+        if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(t + 100), { easing: 'linear', duration: s(draw) })
+        $('.tn-pt').forEach((el) => {
+          const at = t + 100 + ((parseFloat(el.style.getPropertyValue('--x')) || 0) / 100) * draw
+          pop(el.querySelector('.tn-dot'), at)
+          if (el.classList.contains('is-hl')) {
+            rise(el.querySelector('.tn-val'), at + 60, L.y * 0.5)
+            count(el.querySelector('.tn-num'), at + 60)
+          } else fade(el.querySelector('.tn-val'), at + 40, 400)
+        })
+        items('.tn-col', t, (el, at) => fade(el, at, 400), 30)
+        fade(one('.tn-target'), t + 200, 600)
+        fade(one('.s-source'), t + draw)
+        break
+      }
       case 'table': {
         const t = head()
         fade(one('.tb-headrow'), t, 500)

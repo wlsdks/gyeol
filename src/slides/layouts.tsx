@@ -517,6 +517,107 @@ function Bridge() {
   )
 }
 
+/** 숫자 칸을 읽는다. 비었거나 숫자가 없으면 null. '△3', '-2%'처럼 줄어든 값은 음수로 */
+function numberOrNull(text: string): number | null {
+  return text.trim() && /\d/.test(text) ? parseDelta(text) : null
+}
+
+/**
+ * 추이: 시기마다 점을 찍고 선으로 잇는다. 흐름을 보는 장이라 모두 0보다 크고 폭이 좁으면 0부터 그리지 않는다.
+ * 값 이름표는 점 위에, 양옆보다 낮은 점은 선에 가리지 않게 점 아래에 둔다.
+ */
+function Trend() {
+  const { slide, meta, mode } = useSlide()
+  const items = useItems()
+  const highlight = highlightOf(slide)
+  const final = mode === 'final'
+  // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
+  const demo = !final && items.every((it) => !it.value.trim())
+  const values = items.map((it, i) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
+  // 목표를 비워 두면 선을 긋지 않는다. 예시로 그릴 때만 예시 목표값에 흐리게
+  const target = numberOrNull(readField(slide, meta, 'target')) ?? (demo ? numberOrNull(hintFor(slide.layout, slide.hints, 'target')) : null)
+  const known = values.filter((v): v is number => v !== null)
+  const all = target === null ? known : [...known, target]
+  const lo = all.length ? Math.min(...all) : 0
+  const hi = all.length ? Math.max(...all) : 1
+  const span = hi - lo || Math.abs(hi) || 1
+  const floor = lo >= 0 ? (lo - span * 1.2 > 0 ? lo - span * 0.5 : 0) : lo - span * 0.12
+  const ceil = hi + span * 0.06
+  const y = (v: number) => ((v - floor) / (ceil - floor || 1)) * 100
+  const x = (i: number) => ((i + 0.5) / items.length) * 100
+  const pts = values.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
+  const drawn = pts.filter((p): p is { x: number; y: number } => p !== null)
+  const line = drawn.map((p) => `${p.x.toFixed(2)},${(100 - p.y).toFixed(2)}`).join(' ')
+  const area = drawn.length > 1 ? `${drawn[0].x.toFixed(2)},100 ${line} ${drawn[drawn.length - 1].x.toFixed(2)},100` : ''
+  const dip = (i: number) => {
+    const [a, v, b] = [values[i - 1], values[i], values[i + 1]]
+    return i !== highlight && v !== null && a != null && b != null && v < a && v < b
+  }
+  const at = (p: { x: number; y: number }) => ({ '--x': p.x.toFixed(2), '--y': p.y.toFixed(2) }) as CSSProperties
+  return (
+    <>
+      <Head lead />
+      <div className={cx('s-body tn', demo && 'is-demo')} style={{ '--n': items.length } as CSSProperties}>
+        {/* 단위와 (비어 있을 때의) 목표선 칸은 그래프 위 따로 둔 줄에. 가장 높은 점의 숫자와 부딪히지 않게 */}
+        {(!final || readField(slide, meta, 'unit').trim()) && (
+          <div className="tn-meta">
+            <span className="tn-unit">
+              단위: <T k="unit" as="span" oneLine />
+            </span>
+            {!final && target === null && (
+              <span className="tn-unit">
+                목표선: <T k="target" as="span" oneLine />
+              </span>
+            )}
+          </div>
+        )}
+        <div className="tn-plot">
+          <div className="tn-canvas">
+            {floor < 0 && <span className="tn-zero" style={{ '--y': y(0).toFixed(2) } as CSSProperties} />}
+            {target !== null && (
+              <div className="tn-target" style={{ '--y': y(target).toFixed(2) } as CSSProperties}>
+                <span className="tn-target-label">
+                  목표 <T k="target" as="span" oneLine />
+                </span>
+              </div>
+            )}
+            <svg className="tn-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {area && <polygon className="tn-area" points={area} />}
+              {drawn.length > 1 && <polyline className="tn-line" points={line} />}
+            </svg>
+            {items.map((it, i) => {
+              const p = pts[i]
+              // 발표할 때 숫자가 없는 시기는 점을 찍지 않는다. 편집할 때는 바닥에 칸을 둬서 채울 수 있게
+              if (!p && final) return null
+              return (
+                <div
+                  key={it.id}
+                  className={cx('tn-pt', i === highlight && 'is-hl', dip(i) && 'is-below', !p && 'is-blank')}
+                  style={at(p ?? { x: x(i), y: 0 })}
+                >
+                  <span className="tn-dot" />
+                  <span className="tn-val">
+                    <IT i={i} k="value" as="span" className="tn-num" oneLine />
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <div className="tn-x">
+          {items.map((it, i) => (
+            <div key={it.id} className={cx('it tn-col', i === highlight && 'is-hl')}>
+              <IT i={i} k="title" className="tn-name" oneLine />
+              <ItemTools i={i} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
 /** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값, 기본 너비 */
 const TABLE_COLS: { head: string; key: ItemKey; fr: number }[] = [
   { head: 'h1', key: 'title', fr: 1.3 },
@@ -629,6 +730,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   kpi: Kpi,
   scorecard: Scorecard,
   bridge: Bridge,
+  trend: Trend,
   table: Table,
   points: Points,
   compare: Compare,

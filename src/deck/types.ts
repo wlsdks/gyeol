@@ -7,6 +7,7 @@ export type LayoutId =
   | 'kpi'
   | 'scorecard'
   | 'bridge'
+  | 'trend'
   | 'table'
   | 'points'
   | 'compare'
