@@ -175,6 +175,7 @@ export function motionEngine(): MotionEngine {
     const $ = (sel: string) => Array.prototype.slice.call(slide.querySelectorAll(sel)) as HTMLElement[]
     const one = (sel: string) => slide.querySelector(sel) as HTMLElement | null
     const layout = (/\bl-([a-zA-Z]+)/.exec(slide.className) || [])[1] || ''
+    const variant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
     const s = (ms: number) => ms * L.speed
 
     const rise = (el: Element | null, at: number, y = L.y, timing: Spring = L.move) => {
@@ -191,7 +192,8 @@ export function motionEngine(): MotionEngine {
     }
     const grow = (el: Element | null, at: number, axis: 'x' | 'y' = 'x', pseudo?: string) => {
       if (!el) return
-      const origin = axis === 'x' ? 'left center' : 'center bottom'
+      // 가로는 왼쪽에서, 세로는 위에서 자란다 (막대는 왼쪽부터, 세로 일정의 선은 위부터)
+      const origin = axis === 'x' ? 'left center' : 'center top'
       run(anims, el, [{ scale: axis === 'x' ? '0 1' : '1 0', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), L.grow, pseudo)
     }
     const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom', duration = 1000) => {
@@ -255,8 +257,7 @@ export function motionEngine(): MotionEngine {
         break
       }
       case 'statement': {
-        grow(one('.st'), 0, 'x', '::before')
-        const t = words(one('.st-title'), 120, L.word * 1.4, levelName === 'lively')
+        const t = words(one('.st-title'), 0, L.word * 1.4, levelName === 'lively')
         rise(one('.st-lead'), t + 80, L.y * 0.6)
         break
       }
@@ -270,10 +271,13 @@ export function motionEngine(): MotionEngine {
       }
       case 'kpi': {
         const t = head()
-        items('.kp-item', t, (el, at) => {
-          card(el, at)
+        const end = items('.kp-item', t, (el, at) => {
+          // 면이 있는 카드만 커지며 들어오고, 띠는 숫자가 올라오기만
+          if (variant === 'cards') card(el, at)
+          else rise(el, at, L.y * 0.7)
           count(el.querySelector('.kp-value'), at + 120)
         })
+        fade(one('.s-source'), end + 200)
         break
       }
       case 'points': {
@@ -299,7 +303,7 @@ export function motionEngine(): MotionEngine {
       case 'timeline': {
         const t = head()
         items('.tl-item', t, (el, at) => {
-          grow(el, at, 'x', '::before')
+          grow(el, at, variant === 'steps' ? 'y' : 'x', '::before')
           pop(el.querySelector('.tl-dot'), at + 140)
           rise(el.querySelector('.tl-meta'), at + 60, L.y * 0.5)
           rise(el.querySelector('.tl-title'), at + 200, L.y * 0.6)
@@ -357,6 +361,7 @@ export function motionEngine(): MotionEngine {
           grow(el.querySelector('.br-fill'), at + 120)
           count(el.querySelector('.br-value'), at + 120)
         })
+        fade(one('.s-source'), t + 400)
         break
       }
       case 'closing': {

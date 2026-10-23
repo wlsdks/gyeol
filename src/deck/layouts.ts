@@ -42,6 +42,8 @@ export interface LayoutSpec {
 }
 
 const title = (hint: string): FieldSpec => ({ key: 'title', label: '제목', hint })
+/** 숫자 장 아래의 출처·기준. 윗분이 "이 숫자 어디서 나왔어요?"를 묻지 않게 */
+const source: FieldSpec = { key: 'source', label: '출처', hint: '출처나 기준 시점 (예: 영업관리 시스템, 9월 말 기준)', optional: true }
 const lead = (hint = '제목을 뒷받침하는 한두 문장'): FieldSpec => ({
   key: 'lead',
   label: '부제',
@@ -75,6 +77,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'agenda',
     name: '목차',
     description: '오늘 다룰 순서',
+    variants: [
+      { id: 'base', name: '목록' },
+      { id: 'columns', name: '나란히' },
+    ],
     fields: [title('목차')],
     items: {
       label: '목차 항목',
@@ -88,6 +94,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'summary',
     name: '한 장 요약',
     description: '결론과 줄마다의 요점을 한 장에',
+    variants: [
+      { id: 'base', name: '줄' },
+      { id: 'grid', name: '칸' },
+    ],
     fields: [{ key: 'title', label: '결론', hint: '한 줄 결론', multiline: true }],
     items: {
       label: '줄',
@@ -104,6 +114,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'statement',
     name: '한 문장 메시지',
     description: '가장 중요한 말을 크게',
+    variants: [
+      { id: 'base', name: '바탕' },
+      { id: 'bold', name: '색 면' },
+    ],
     fields: [
       { key: 'title', label: '메시지', hint: '전하고 싶은 메시지를 한 문장으로', multiline: true },
       lead(),
@@ -113,7 +127,12 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'kpi',
     name: '핵심 숫자',
     description: '숫자 2~4개를 크게',
-    fields: [title('숫자들이 말해 주는 결론')],
+    variants: [
+      { id: 'base', name: '나란히' },
+      { id: 'focus', name: '하나 크게' },
+      { id: 'cards', name: '카드' },
+    ],
+    fields: [title('숫자들이 말해 주는 결론'), source],
     items: {
       label: '숫자',
       min: 1,
@@ -130,6 +149,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'points',
     name: '핵심 포인트',
     description: '나란히 놓는 2~4가지',
+    variants: [
+      { id: 'base', name: '줄' },
+      { id: 'columns', name: '세로 칸' },
+      { id: 'tiles', name: '타일' },
+    ],
     fields: [title('포인트들을 묶는 제목'), lead()],
     items: {
       label: '포인트',
@@ -146,6 +170,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'compare',
     name: '비교',
     description: '두 가지를 줄마다 나란히 (지금과 바뀐 뒤, 위험과 대응)',
+    variants: [
+      { id: 'base', name: '두 면' },
+      { id: 'table', name: '표' },
+    ],
     fields: [
       title('비교해서 보여줄 결론'),
       { key: 'leftTitle', label: '왼쪽 머리말', hint: '지금' },
@@ -166,6 +194,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'timeline',
     name: '일정',
     description: '단계별 순서와 시기',
+    variants: [
+      { id: 'base', name: '가로' },
+      { id: 'steps', name: '세로' },
+    ],
     fields: [title('일정을 요약하는 제목')],
     items: {
       label: '단계',
@@ -249,7 +281,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'bars',
     name: '막대 비교',
     description: '숫자를 막대 길이로 비교',
-    fields: [title('비교가 말해 주는 결론'), lead()],
+    fields: [title('비교가 말해 주는 결론'), lead(), source],
     items: {
       label: '막대',
       min: 2,

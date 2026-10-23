@@ -6,7 +6,8 @@ export interface Theme {
   name: string
   description: string
   accent: string
-  colors: { bg: string; ink: string; ink2: string; ink3: string; line: string; surface: string }
+  /** good, bad: 목표 대비, 증감처럼 좋고 나쁨을 보일 때만 쓴다. 늘 글자(▲▼, 달성)와 함께 */
+  colors: { bg: string; ink: string; ink2: string; ink3: string; line: string; surface: string; good: string; bad: string }
   headFont: string
   headWeight: number
   headTracking: string
@@ -28,10 +29,12 @@ export const THEMES: Record<ThemeId, Theme> = {
       ink3: '#8790A2',
       line: '#E3E7EE',
       surface: '#F3F5F9',
+      good: '#13795B',
+      bad: '#C8372D',
     },
     headFont: SANS,
     headWeight: 700,
-    headTracking: '-0.03em',
+    headTracking: '-0.022em',
   },
   navy: {
     id: 'navy',
@@ -45,10 +48,12 @@ export const THEMES: Record<ThemeId, Theme> = {
       ink3: '#6F7B91',
       line: '#243047',
       surface: '#172036',
+      good: '#6FD3A0',
+      bad: '#FF8A80',
     },
     headFont: SANS,
     headWeight: 700,
-    headTracking: '-0.03em',
+    headTracking: '-0.022em',
   },
   serif: {
     id: 'serif',
@@ -62,10 +67,12 @@ export const THEMES: Record<ThemeId, Theme> = {
       ink3: '#7F8B83',
       line: '#D3D9D1',
       surface: '#E5E9E2',
+      good: '#1E6B4F',
+      bad: '#A63D2F',
     },
     headFont: SERIF,
     headWeight: 600,
-    headTracking: '-0.02em',
+    headTracking: '-0.012em',
   },
 }
 
@@ -123,6 +130,8 @@ export function themeStyle(deckTheme: Deck['theme']): CSSProperties {
     '--ink-3': c.ink3,
     '--line': c.line,
     '--surface': c.surface,
+    '--good': c.good,
+    '--bad': c.bad,
     '--accent': accent,
     '--accent-ink': inkOn(accent),
     '--font-head': theme.headFont,

@@ -4,23 +4,27 @@
  * 이 파일은 내보낸 HTML 파일에도 그대로 들어간다.
  *
  * 원칙
- * - 회의실 뒷자리에서도 읽히는 크기: 제목 80, 본문 31, 가장 작은 글자 20.
- * - 장마다 크게 보이는 것은 하나. 나머지는 조용하게.
- * - 본문 영역은 비워 두지 않는다. 면(패널)과 줄 나눔으로 바닥까지 채운다.
- * - 강조색은 숫자, 지금 단락, 색 면 장에만 쓴다.
+ * - 회의실 뒷자리에서도 읽히는 크기: 제목 72, 본문 34(18pt), 가장 작은 글자(출처) 22.
+ * - 제목은 결론 한 문장. 장마다 크게 보이는 것은 하나, 나머지는 조용하게.
+ * - 본문 영역은 비워 두지 않는다. 줄 나눔과 배치로 바닥까지 채운다. 면(패널)은 꼭 필요할 때만.
+ * - 강조색은 '답'에만 쓴다: 숫자, 추천안, 강조한 막대, 지금 단락, 색 면 장.
+ * - 좋고 나쁨(--good, --bad)은 목표 대비, 증감에만 쓰고 늘 글자(▲▼, 달성)와 함께.
+ * - 같은 레이아웃 안의 모양(va-*)은 같은 칸을 다르게 놓을 뿐, 칸은 늘거나 줄지 않는다.
  */
 
 .slide {
-  --t-title: 80px;
+  --t-title: 72px;
   --t-lead: 36px;
   --t-h: 44px;
-  --t-body: 31px;
-  --t-small: 25px;
+  --t-body: 34px;
+  --t-small: 26px;
+  --t-label: 28px;
+  --t-source: 22px;
   --pad-x: 120px;
   --pad-top: 100px;
   --pad-bottom: 140px;
   --gap: 28px;
-  --r-panel: 36px;
+  --r-panel: 24px;
   --accent-soft: color-mix(in oklch, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in oklch, var(--accent) 26%, var(--bg));
   --on-accent-line: color-mix(in srgb, var(--accent-ink) 26%, transparent);
@@ -50,19 +54,21 @@
   text-rendering: optimizeLegibility;
 }
 
-/* 보내는 자료: 혼자 읽으니 글이 조금 많아도 되게 한 단계 작게 */
+/* 어두운 테마의 색 면은 밝은 강조색 대신 깊은 색 */
 .slide.t-navy {
   --bold-bg: color-mix(in oklch, var(--accent) 24%, var(--bg));
   --bold-ink: var(--ink);
   --bold-line: color-mix(in srgb, var(--ink) 18%, transparent);
 }
 
+/* 보내는 자료: 혼자 읽으니 글이 조금 많아도 되게 한 단계 작게 */
 .slide.d-read {
-  --t-title: 72px;
+  --t-title: 64px;
   --t-lead: 32px;
   --t-h: 40px;
-  --t-body: 28px;
-  --t-small: 23px;
+  --t-body: 30px;
+  --t-small: 24px;
+  --t-label: 26px;
 }
 
 .slide *,
@@ -127,7 +133,7 @@
 
 .s-title {
   --fs: var(--t-title);
-  line-height: 1.16;
+  line-height: 1.2;
 }
 
 .s-lead {
@@ -143,6 +149,17 @@
   flex: 1;
   min-height: 0;
   margin-top: 72px;
+}
+
+/* 숫자 장의 출처·기준: 가장 작고 흐리게, 쪽 번호 바로 위에 */
+.s-source {
+  position: absolute;
+  bottom: 92px;
+  left: var(--pad-x);
+  max-width: 1280px;
+  color: var(--ink-3);
+  font-size: var(--t-source);
+  line-height: 1.3;
 }
 
 /* 하단: 발표의 단락 지도와 쪽 번호 */
@@ -421,27 +438,69 @@
   border-top: 3px solid var(--ink);
 }
 
-.ag-list:is([data-n='1'], [data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(0, 200px);
+/* 항목이 적으면 줄을 너무 높이지 않고 위에서부터 */
+.ag-list:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: minmax(0, 236px);
 }
 
 .ag-item {
   position: relative;
   display: grid;
-  grid-template-columns: 112px 1fr;
+  grid-template-columns: 128px 1fr;
   align-items: center;
   border-bottom: 1px solid var(--line);
 }
 
 .ag-n {
   color: var(--accent);
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 700;
 }
 
 .ag-t {
-  --fs: 52px;
+  --fs: 60px;
   line-height: 1.25;
+}
+
+/* 모양: 나란히. 단락이 서너 개일 때 한눈에 */
+.va-columns .ag {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 120px;
+}
+
+.va-columns .ag-list,
+.va-columns .ag-list:is([data-n='2'], [data-n='3']) {
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-rows: minmax(0, 1fr);
+  border-top: 0;
+}
+
+/* 칸마다 세로 줄로 나누고, 번호는 위에 크게, 이름은 바닥에 */
+.va-columns .ag-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 48px 8px;
+  border-bottom: 0;
+  border-left: 2px solid var(--line);
+}
+
+.va-columns .ag-item:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.va-columns .ag-n {
+  font-size: 200px;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+}
+
+.va-columns .ag-t {
+  --fs: 52px;
 }
 
 /* ---------- 한 문장 메시지 ---------- */
@@ -455,15 +514,6 @@
   padding-bottom: 32px;
 }
 
-.st::before {
-  width: 104px;
-  height: 12px;
-  margin-bottom: 72px;
-  border-radius: 6px;
-  background: var(--accent);
-  content: '';
-}
-
 .st-title {
   --fs: 104px;
   line-height: 1.24;
@@ -473,19 +523,51 @@
 .st-lead {
   --fs: 38px;
   max-width: 1280px;
-  margin-top: 52px;
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: 2px solid var(--line);
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;
 }
 
+/* 모양: 색 면. 발표 중 한 번, 가장 중요한 말에만.
+   테마 색은 슬라이드에 직접 붙어 있어 변수를 덮어쓸 수 없으니 색을 하나씩 바꾼다 */
+.l-statement.va-bold {
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+.l-statement.va-bold .st-lead {
+  border-color: var(--bold-line);
+  color: inherit;
+  opacity: 0.82;
+}
+
+.l-statement.va-bold .s-foot,
+.l-statement.va-bold .s-page,
+.l-statement.va-bold .s-total,
+.l-statement.va-bold .s-map li.is-on {
+  color: inherit;
+}
+
+.l-statement.va-bold .s-foot {
+  opacity: 0.72;
+}
+
+.l-statement.va-bold .s-map li.is-on::before {
+  background: currentColor;
+}
+
 /* ---------- 핵심 숫자 ---------- */
+/* 기본(나란히): 면 없이 세로 줄로 나눈 띠. 이름 → 숫자 → 설명 순으로 위에서 읽힌다. */
 
 .kp {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  gap: var(--gap);
+  align-content: center;
+  padding-bottom: 40px;
 }
 
 .kp-item {
@@ -494,65 +576,188 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 52px 56px 60px;
-  border-radius: var(--r-panel);
-  background: var(--surface);
+  padding: 8px 56px 12px;
+  border-left: 2px solid var(--line);
+}
+
+.kp-item:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
 
 .kp-label {
-  --fs: 34px;
-  font-weight: 700;
+  --fs: 32px;
+  color: var(--ink-2);
+  font-weight: 600;
   line-height: 1.3;
 }
 
 .kp-value {
-  --fs: 168px;
-  margin-top: auto;
-  padding-top: 40px;
+  --fs: 176px;
+  margin-top: 28px;
   color: var(--accent);
   font-weight: 700;
   line-height: 0.95;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.035em;
 }
 
 .kp[data-n='2'] .kp-value {
-  --fs: 200px;
+  --fs: 220px;
 }
 
 .kp[data-n='4'] .kp-value {
-  --fs: 132px;
+  --fs: 136px;
 }
 
 .kp-body {
-  --fs: 27px;
-  margin-top: 28px;
+  --fs: 30px;
+  margin-top: 36px;
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;
 }
 
-/* 숫자 하나: 면 없이 크게 */
+/* 숫자 하나: 면 없이 아주 크게. 이름과 설명은 숫자 오른쪽 아래에 붙여 가로를 채운다 */
+.kp[data-n='1'] {
+  align-content: center;
+}
+
 .kp[data-n='1'] .kp-item {
-  justify-content: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 88px;
+  align-content: center;
   padding: 0;
-  background: none;
 }
 
 .kp[data-n='1'] .kp-value {
-  --fs: 300px;
-  order: -1;
-  margin: 0 0 56px;
-  padding: 0;
+  --fs: 340px;
+  grid-row: 1 / span 2;
+  align-self: end;
+  margin: 0;
+  line-height: 0.8;
 }
 
 .kp[data-n='1'] .kp-label {
-  --fs: 48px;
+  --fs: 52px;
+  grid-column: 2;
+  align-self: end;
+  padding-top: 40px;
+  border-top: 3px solid var(--ink);
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .kp[data-n='1'] .kp-body {
-  --fs: 32px;
-  max-width: 1100px;
+  --fs: 34px;
+  grid-column: 2;
+  align-self: end;
+  max-width: 720px;
   margin-top: 20px;
+}
+
+.kp[data-n='1'] .kp-item:not(:has(.kp-body)) .kp-label {
+  grid-row: 1 / span 2;
+}
+
+/* 모양: 카드. 숫자마다 면을 깔아 따로따로 */
+.va-cards .kp {
+  align-content: stretch;
+  gap: var(--gap);
+  padding-bottom: 0;
+}
+
+.va-cards .kp-item,
+.va-cards .kp-item:first-child {
+  padding: 52px 56px 56px;
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.va-cards .kp-value {
+  margin-top: auto;
+  padding-top: 40px;
+}
+
+.va-cards .kp[data-n='1'] .kp-item {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.va-cards .kp[data-n='1'] .kp-value {
+  margin: 0;
+  padding: 0;
+}
+
+/* 모양: 하나 크게. 첫 숫자가 답, 나머지는 오른쪽에 근거로 */
+.va-focus .kp:not([data-n='1']) {
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+  column-gap: 96px;
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item {
+  justify-content: center;
+  padding: 0 0 0 0;
+  border-left: 0;
+  border-top: 2px solid var(--line);
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child {
+  grid-row: 1 / span 3;
+  border-top: 0;
+}
+
+.va-focus .kp[data-n='2'] .kp-item:first-child {
+  grid-row: 1 / span 1;
+}
+
+.va-focus .kp[data-n='3'] .kp-item:first-child {
+  grid-row: 1 / span 2;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:nth-child(2) {
+  border-top: 0;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-value {
+  --fs: 260px;
+  order: -1;
+  margin: 0 0 40px;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-label {
+  --fs: 44px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 32px;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
+  --fs: 96px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  color: var(--ink);
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-body {
+  --fs: 26px;
+  margin-top: 10px;
 }
 
 /* ---------- 한 장 요약: 결론 아래 요점. 이 장만 보고도 판단할 수 있게 요점을 크게 ---------- */
@@ -601,6 +806,37 @@
   --fs: 34px;
 }
 
+/* 모양: 네 칸. 줄 대신 칸마다 이름과 요점 */
+.va-grid .sm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: var(--gap);
+  border-top: 0;
+}
+
+.va-grid .sm:is([data-n='3'], [data-n='5']) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.va-grid .sm-row {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+  padding: 44px 52px;
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.va-grid .sm-body {
+  --fs: 38px;
+}
+
+.va-grid .sm[data-n='5'] .sm-body {
+  --fs: 32px;
+}
+
 /* ---------- 핵심 포인트: 이름과 설명을 줄마다 나란히 ---------- */
 
 .pt {
@@ -642,6 +878,70 @@
 
 .pt:is([data-n='5'], [data-n='6']) .pt-body {
   --fs: 27px;
+}
+
+/* 모양: 세로 칸. 포인트를 왼쪽에서 오른쪽으로 나란히 */
+.va-columns .pt {
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-rows: auto;
+  gap: 56px;
+  align-content: center;
+  border-top: 0;
+  padding-bottom: 40px;
+}
+
+.va-columns .pt-item {
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 28px;
+  padding-top: 40px;
+  border-top: 3px solid var(--ink);
+  border-bottom: 0;
+}
+
+.va-columns .pt-title {
+  --fs: 52px;
+}
+
+.va-columns .pt-body {
+  --fs: 34px;
+}
+
+/* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
+.va-tiles .pt {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: var(--gap);
+  border-top: 0;
+}
+
+.va-tiles .pt:is([data-n='3'], [data-n='5'], [data-n='6']) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.va-tiles .pt:is([data-n='1'], [data-n='2']) {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.va-tiles .pt-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 52px 56px 56px;
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.va-tiles .pt-title {
+  --fs: 52px;
+}
+
+.va-tiles .pt-body {
+  --fs: 32px;
 }
 
 /* ---------- 비교 ---------- */
@@ -753,6 +1053,47 @@
   stroke-width: 2.4;
 }
 
+/* 모양: 표. 면 없이 줄로만. 바뀐 뒤 쪽만 굵게, 머리에 강조색 줄 */
+.va-table .cp {
+  padding-bottom: 0;
+}
+
+.va-table .cp::before {
+  display: none;
+}
+
+.va-table .cp::after {
+  top: 0;
+  bottom: auto;
+  height: 6px;
+  border-radius: 0;
+  background: var(--accent);
+}
+
+.va-table .cp-h {
+  padding: 40px 0 24px;
+  font-size: 28px;
+}
+
+.va-table :is(.cp-l, .cp-r) {
+  margin: 0;
+  padding-right: 48px;
+}
+
+.va-table .cp-r {
+  border-color: var(--line);
+  padding-left: 80px;
+}
+
+.va-table .cp-arrow {
+  left: calc(50% + var(--gap) / 2);
+  width: 48px;
+  height: 48px;
+  background: none;
+  color: var(--accent);
+  transform: translate(0, -50%);
+}
+
 /* ---------- 일정 ---------- */
 
 .tl {
@@ -833,6 +1174,89 @@
 
 .tl:is([data-n='5'], [data-n='6']) .tl-body {
   --fs: 26px;
+}
+
+/* 모양: 세로 목록. 왼쪽에 시기, 가운데 선과 점, 오른쪽에 할 일 */
+.va-steps .tl {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 0;
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+.va-steps .tl:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: minmax(0, 220px);
+  align-content: start;
+}
+
+.va-steps .tl-item {
+  display: grid;
+  grid-template-columns: 300px 72px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 32px;
+  align-content: center;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.va-steps .tl-item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+/* 세로 선: 점을 잇는다 */
+.va-steps .tl-item::before {
+  top: 0;
+  right: auto;
+  bottom: 0;
+  left: calc(300px + 32px + 34px);
+  width: 4px;
+  height: auto;
+}
+
+.va-steps .tl-item:first-child::before {
+  top: 50%;
+}
+
+.va-steps .tl-item:last-child::before {
+  right: auto;
+  bottom: 50%;
+}
+
+.va-steps .tl-meta {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+  height: auto;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.va-steps .tl-dot {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+}
+
+.va-steps .tl-title {
+  grid-column: 3;
+  align-self: end;
+  --fs: 44px;
+}
+
+.va-steps .tl-body {
+  grid-column: 3;
+  align-self: start;
+  margin-top: 10px;
+  --fs: 30px;
+}
+
+.va-steps .tl-item:not(:has(.tl-body)) .tl-title {
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 
 /* ---------- 사례 ---------- */

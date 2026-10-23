@@ -136,6 +136,7 @@ function Kpi() {
           </div>
         ))}
       </div>
+      <T k="source" className="s-source" />
     </>
   )
 }
@@ -355,6 +356,7 @@ function Bars() {
           )
         })}
       </div>
+      <T k="source" className="s-source" />
     </>
   )
 }
