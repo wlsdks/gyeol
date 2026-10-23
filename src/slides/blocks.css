@@ -1454,15 +1454,19 @@
   margin-top: 6px;
 }
 
-/* 큰 칸에 혼자 있는 숫자, 강조 상자, 인용, 예상 질문, 맡은 사람은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게) */
-@container bk (min-width: 1100px) and (min-height: 380px) {
-  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people) > .bk-in {
+/*
+ * 큰 칸에 혼자 있는 숫자, 강조 상자, 인용, 예상 질문, 맡은 사람은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게).
+ * 키운 뒤에도 잘리지 않아야 한다: 높이 기준은 가장 키 큰 '전과 후'가 키운 크기로 들어가는 410부터.
+ * 맡은 사람의 목록 모양은 줄이 사람 수만큼 늘어 키우면 넘치므로 뺀다 (갤러리 &fill=max&bv=list에서 잰다)
+ */
+@container bk (min-width: 1100px) and (min-height: 410px) {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list)) > .bk-in {
     --bk-w: 1.2;
   }
 }
 
 @container bk (min-width: 1300px) and (min-height: 500px) {
-  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people) > .bk-in {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list)) > .bk-in {
     --bk-w: 1.36;
   }
 }

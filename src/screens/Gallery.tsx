@@ -10,7 +10,7 @@ import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
-// &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고를 수 있다.
+// &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=C2410C 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
@@ -91,7 +91,7 @@ function edgeSlides(): Slide[] {
  * 부품마다 두 장: 혼자 한 줄을 다 쓸 때와, 가장 좁은 칸에 다른 부품과 함께 낮은 줄에 들어갈 때.
  * 무너지기 쉬운 것은 좁고 낮은 칸이다.
  */
-function blockSlides(fill: string | null, only?: string[]): Slide[] {
+function blockSlides(fill: string | null, only?: string[], variant?: string | null): Slide[] {
   return BLOCK_TYPES.flatMap((type, n) => {
     if (only && !only.includes(type)) return []
     const spec = BLOCKS[type]
@@ -101,7 +101,9 @@ function blockSlides(fill: string | null, only?: string[]): Slide[] {
       fill === 'max' && spec.items && sample.items.length
         ? Array.from({ length: spec.items.max }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))
         : sample.items
-    const b = (id: string) => ({ ...sample, items, id: `${type}-${id}` })
+    // &bv=list: 그 모양이 있는 부품은 그 모양으로
+    const v = variant && spec.variants?.some((x) => x.id === variant) ? { variant } : {}
+    const b = (id: string) => ({ ...sample, ...v, items, id: `${type}-${id}` })
     const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), id: `${type}-${id}` })
     const narrow = 12 - spec.minSpan
     const partner: BlockType = narrow >= 6 ? 'bullets' : narrow >= 4 ? 'callout' : 'number'
@@ -151,7 +153,7 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   }
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
-  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(',')) }
+  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv')) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 

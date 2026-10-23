@@ -714,7 +714,7 @@ const MIN_H: Record<BlockType, (n: number, variant: string) => number> = {
   risks: (n) => 120 + 100 * n,
   faq: (n) => 90 + 120 * n,
   checks: (n) => 220 + 70 * n,
-  people: (n, v) => (v === 'list' ? 120 + 100 * n : 260),
+  people: (n, v) => (v === 'list' ? 140 + 100 * n : 260),
   image: () => 200,
   summary: (n) => (n <= 4 ? 280 : 560),
   points: (n, v) => (v !== 'base' ? 320 : n <= 3 ? 260 : 620),
