@@ -8,7 +8,8 @@ import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
 import type { SlideActions } from '../../slides/context'
-import { countUp } from '../../slides/countUp'
+import { motionEngine } from '../../motion/engine'
+import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, presenterAuto, screensPermission, type Placement } from '../../present/link'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
@@ -19,7 +20,7 @@ import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, 
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiShare } from '../../ai/useAiShare'
 import { AiInbox, AiMenu, AiReview } from './AiShare'
-import { ExportMenu, PREVIEW_MOTION, ThemeMenu } from './DeckMenus'
+import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
 import { SaveStatus } from './SaveStatus'
@@ -128,7 +129,9 @@ function EditorBody({ deck }: { deck: Deck }) {
   const [view, setView] = useState<'slides' | 'doc'>('slides')
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
-  const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; missing: number } | null>(null)
+  const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
+  // 발표자 화면을 처음 쓸 때: 화면 두 개를 다뤄도 되는지 브라우저가 묻는다
+  const [askScreens, setAskScreens] = useState<{ startId?: string; placement?: Placement } | null>(null)
   const [printing, setPrinting] = useState(false)
   const [reviewing, setReviewing] = useState<ChangeRequest | null>(null)
   const toast = useToast()
@@ -151,20 +154,65 @@ function EditorBody({ deck }: { deck: Deck }) {
     await ai.resolve(request, 'rejected', [])
   }
 
+  /** 발표자 화면과 함께: 큰 화면에 발표 화면을 꽉 채우고, 이 화면에 발표자 화면 창을 연다 */
+  const launchWithPresenter = useCallback(
+    async (startId: string | undefined, placement: Placement | null) => {
+      if (placement) {
+        // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
+        const ok = await enterFullscreen(placement.audience)
+        if (!ok) return false
+        openPresenterWindow(deck.id, placement.presenter)
+      } else {
+        // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
+        openPresenterWindow(deck.id)
+      }
+      setAskScreens(null)
+      setPresenting({ startId })
+      return true
+    },
+    [deck.id],
+  )
+
   const startPresent = useCallback(
-    (startId?: string, force = false) => {
+    async (startId?: string, force = false, how: PresentHow = 'auto') => {
       const missing = deckMissingCount(deck)
       if (missing > 0 && !force) {
-        setConfirmPresent({ startId, missing })
+        setConfirmPresent({ startId, how, missing })
         return
       }
       setConfirmPresent(null)
       markVersion('present')
-      document.documentElement.requestFullscreen?.().catch(() => {})
+      const presenter = how === 'presenter' || (how === 'auto' && presenterAuto() && hasSecondScreen())
+      if (presenter) {
+        const permission = await screensPermission()
+        if (permission === 'granted') {
+          if (await launchWithPresenter(startId, await findPlacement())) return
+        } else if (permission === 'prompt' && hasSecondScreen()) {
+          setAskScreens({ startId })
+          return
+        } else if (how === 'presenter') {
+          await launchWithPresenter(startId, null)
+          return
+        }
+      }
+      void enterFullscreen()
       setPresenting({ startId })
     },
-    [deck, markVersion],
+    [deck, markVersion, launchWithPresenter],
   )
+
+  const allowScreens = async () => {
+    if (!askScreens) return
+    // 허락 창에서 시간을 쓰면 클릭의 효력이 끝나서 전체 화면이 거절될 수 있다. 그러면 한 번 더 누르게 한다.
+    const placement = askScreens.placement ?? (await findPlacement())
+    if (!placement) {
+      setAskScreens(null)
+      void enterFullscreen()
+      setPresenting({ startId: askScreens.startId })
+      return
+    }
+    if (!(await launchWithPresenter(askScreens.startId, placement))) setAskScreens({ ...askScreens, placement })
+  }
 
   const focusFirstMissing = () => {
     setConfirmPresent(null)
@@ -184,7 +232,7 @@ function EditorBody({ deck }: { deck: Deck }) {
       const mod = e.metaKey || e.ctrlKey
       if (e.key === 'F5') {
         e.preventDefault()
-        startPresent(e.shiftKey ? slide?.id : undefined)
+        void startPresent(e.shiftKey ? slide?.id : undefined, false, e.altKey ? 'presenter' : 'auto')
         return
       }
       if (typing) return
@@ -275,17 +323,14 @@ function EditorBody({ deck }: { deck: Deck }) {
               toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
             }}
           />
-          <button type="button" className="btn btn-primary" title="처음부터 발표 (F5)" onClick={() => startPresent()}>
-            <PlayIcon />
-            발표하기
-          </button>
+          <PresentButton onStart={(how, here) => void startPresent(here ? slide?.id : undefined, false, how)} />
         </div>
       </header>
 
       <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
         {view === 'slides' && slide ? (
-          <SlideStage deck={deck} slide={slide} onRemove={removeSlide} onPresentHere={() => startPresent(slide.id)} />
+          <SlideStage deck={deck} slide={slide} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
         ) : (
           <OutlineView
             deck={deck}
@@ -311,13 +356,47 @@ function EditorBody({ deck }: { deck: Deck }) {
               <button type="button" className="btn btn-ghost" onClick={focusFirstMissing}>
                 빈칸 채우기
               </button>
-              <button type="button" className="btn btn-primary" data-autofocus onClick={() => startPresent(confirmPresent.startId, true)}>
+              <button type="button" className="btn btn-primary" data-autofocus onClick={() => void startPresent(confirmPresent.startId, true, confirmPresent.how)}>
                 그대로 발표하기
               </button>
             </>
           }
         >
           <p>빈칸은 발표 화면에서 보이지 않아요. 그래도 발표할까요?</p>
+        </Modal>
+      )}
+      {askScreens && (
+        <Modal
+          title={askScreens.placement ? '준비됐어요' : '발표자 화면을 따로 띄울게요'}
+          onClose={() => setAskScreens(null)}
+          actions={
+            <>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setAskScreens(null)
+                  void enterFullscreen()
+                  setPresenting({ startId: askScreens.startId })
+                }}
+              >
+                슬라이드만 발표
+              </button>
+              <button type="button" className="btn btn-primary" data-autofocus onClick={() => void allowScreens()}>
+                {askScreens.placement ? '발표 시작하기' : '허용하고 발표하기'}
+              </button>
+            </>
+          }
+        >
+          {askScreens.placement ? (
+            <p>큰 화면에 슬라이드를, 이 화면에 다음 장과 노트를 띄워요.</p>
+          ) : (
+            <p>
+              화면이 두 개 연결돼 있어요. 큰 화면에는 슬라이드만, 이 화면에는 다음 장, 노트, 시간이 보여요.
+              <br />
+              브라우저가 ‘창 관리’를 물으면 <b>허용</b>을 눌러 주세요. 처음 한 번만 물어요.
+            </p>
+          )}
         </Modal>
       )}
       {printing && <PrintDeck deck={deck} onDone={() => setPrinting(false)} />}
@@ -374,15 +453,17 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
     window.addEventListener(PREVIEW_MOTION, on)
     return () => window.removeEventListener(PREVIEW_MOTION, on)
   }, [])
-  useEffect(() => {
+  const engine = useMemo(() => motionEngine(), [])
+  useLayoutEffect(() => {
     if (!preview) return
-    const stop = deck.motion === 'lively' && previewRef.current ? countUp(previewRef.current) : undefined
-    const t = window.setTimeout(() => setPreview(0), 2800)
+    const level = deck.motion ?? 'calm'
+    const stop = level !== 'none' && previewRef.current ? engine.play(previewRef.current, level) : undefined
+    const t = window.setTimeout(() => setPreview(0), 3200)
     return () => {
       window.clearTimeout(t)
       stop?.()
     }
-  }, [preview, deck.motion])
+  }, [preview, deck.motion, engine])
 
   return (
     <main className="stage">
@@ -437,7 +518,7 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
             </div>
           }
         >
-          <div key={preview} ref={previewRef} className={cx(preview > 0 && 'is-playing')}>
+          <div key={preview} ref={previewRef}>
             <SlideCanvas
               deck={look}
               slide={slide}

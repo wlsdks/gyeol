@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { name: 'home' } | { name: 'new' } | { name: 'edit'; id: string } | { name: 'gallery' }
+export type Route = { name: 'home' } | { name: 'new' } | { name: 'edit'; id: string } | { name: 'presenter'; id: string } | { name: 'gallery' }
 
 function parse(hash: string): Route {
   const path = hash.replace(/^#/, '')
   const edit = /^\/edit\/([\w-]+)/.exec(path)
   if (edit) return { name: 'edit', id: edit[1] }
+  const presenter = /^\/presenter\/([\w-]+)/.exec(path)
+  if (presenter) return { name: 'presenter', id: presenter[1] }
   if (path.startsWith('/new')) return { name: 'new' }
   if (import.meta.env.DEV && path.startsWith('/gallery')) return { name: 'gallery' }
   return { name: 'home' }
 }
 
 export function go(route: Route) {
-  location.hash = route.name === 'edit' ? `/edit/${route.id}` : route.name === 'new' ? '/new' : '/'
+  location.hash = route.name === 'edit' ? `/edit/${route.id}` : route.name === 'presenter' ? `/presenter/${route.id}` : route.name === 'new' ? '/new' : '/'
 }
 
 export function useRoute(): Route {

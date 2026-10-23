@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { makeSlide } from '../../deck/generate'
 import { ACCENT_PRESETS, MOTIONS, THEMES, THEME_ORDER, accentOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { CheckIcon, DownloadIcon, Popover } from '../ui'
+import { keys } from '../../lib/keys'
+import { presenterAuto, setPresenterAuto } from '../../present/link'
+import { CheckIcon, ChevronIcon, DownloadIcon, PlayIcon, Popover, Toggle } from '../ui'
 
 /** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
@@ -171,5 +173,75 @@ export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; 
         </div>
       )}
     </Popover>
+  )
+}
+
+export type PresentHow = 'auto' | 'single' | 'presenter'
+
+/** 발표하기. 옆의 화살표로 발표자 화면을 쓸지 고른다. */
+export function PresentButton({ onStart }: { onStart: (how: PresentHow, here: boolean) => void }) {
+  const [auto, setAuto] = useState(presenterAuto)
+  return (
+    <div className="split">
+      <button type="button" className="btn btn-primary split-main" title="처음부터 발표 (F5)" onClick={() => onStart('auto', false)}>
+        <PlayIcon />
+        발표하기
+      </button>
+      <Popover
+        button={({ toggle, open }) => (
+          <button type="button" className="btn btn-primary split-more" aria-label="발표 방법 고르기" aria-expanded={open} onClick={toggle}>
+            <ChevronIcon />
+          </button>
+        )}
+      >
+        {(close) => (
+          <div className="menu menu-present">
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                close()
+                onStart('presenter', false)
+              }}
+            >
+              <span className="menu-item-name">발표자 화면과 함께 발표 <kbd>{keys('alt+F5')}</kbd></span>
+              <span className="menu-item-desc">큰 화면에는 슬라이드만, 이 화면에는 다음 장, 노트, 시간이 보여요.</span>
+            </button>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                close()
+                onStart('single', false)
+              }}
+            >
+              <span className="menu-item-name">슬라이드만 발표</span>
+              <span className="menu-item-desc">화면 하나에 슬라이드만 꽉 차게 띄워요.</span>
+            </button>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                close()
+                onStart('auto', true)
+              }}
+            >
+              <span className="menu-item-name">지금 장부터 발표 <kbd>{keys('shift+F5')}</kbd></span>
+            </button>
+            <div className="menu-sep" role="separator" />
+            <div className="menu-toggle">
+              <Toggle
+                label="화면이 두 개면 발표자 화면 쓰기"
+                on={auto}
+                onChange={(v) => {
+                  setAuto(v)
+                  setPresenterAuto(v)
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </Popover>
+    </div>
   )
 }

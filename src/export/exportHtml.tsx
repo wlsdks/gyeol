@@ -5,7 +5,7 @@ import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { safeFileName } from '../store/deckFile'
-import motionCss from '../slides/motion.css?inline'
+import motionCss from '../motion/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 

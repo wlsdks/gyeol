@@ -1965,6 +1965,410 @@ select {
   color: #fff;
 }
 
+/* ---------- 발표하기 (나뉜 단추) ---------- */
+
+.split {
+  display: flex;
+}
+
+.split .split-main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split .split-more {
+  width: 30px;
+  padding: 0;
+  border-left: 1px solid rgb(255 255 255 / 0.18);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.split-more .icon-chevron {
+  transform: rotate(90deg);
+}
+
+.menu-present {
+  width: 320px;
+}
+
+.menu-item kbd {
+  margin-left: 6px;
+  color: var(--ink-3);
+  font: 500 12px/1 inherit;
+}
+
+.menu-toggle {
+  padding: 4px 10px 6px;
+}
+
+/* ---------- 발표자 화면 ---------- */
+/* 어두운 방에서 노트북 화면이 눈부시지 않게 어둡게. 슬라이드만 밝다. */
+
+.pv {
+  --pv-bg: #111318;
+  --pv-panel: #1a1d24;
+  --pv-line: #2a2e37;
+  --pv-ink: #eef0f3;
+  --pv-ink-2: #a9aeb8;
+  --pv-ink-3: #6f7581;
+  --pv-ok: #7fd1a2;
+  --pv-soon: #f3c76b;
+  --pv-over: #ff8a80;
+
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100%;
+  background: var(--pv-bg);
+  color: var(--pv-ink);
+  user-select: none;
+}
+
+.pv-top {
+  grid-row: 1;
+}
+
+.pv-hint {
+  grid-row: 2;
+}
+
+.pv-main {
+  grid-row: 3;
+}
+
+.pv-strip {
+  grid-row: 4;
+}
+
+.pv-wait {
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  grid-template-rows: none;
+}
+
+.pv-wait-t {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.pv-wait-b {
+  margin: 0;
+  color: var(--pv-ink-2);
+}
+
+.pv-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--pv-line);
+}
+
+.pv-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--pv-ink-2);
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-timer {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.pv-elapsed {
+  font-size: 34px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.pv-elapsed.is-paused {
+  color: var(--pv-ink-3);
+}
+
+.pv-left {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-left.is-ok {
+  color: var(--pv-ok);
+}
+
+.pv-left.is-soon {
+  color: var(--pv-soon);
+}
+
+.pv-left.is-over {
+  color: var(--pv-over);
+}
+
+.pv-plan {
+  color: var(--pv-ink-3);
+  font-weight: 500;
+}
+
+.pv-clock {
+  color: var(--pv-ink-2);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-progress {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--pv-ok);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left;
+  transition: transform 0.5s linear;
+}
+
+.pv-progress.is-soon {
+  background: var(--pv-soon);
+}
+
+.pv-progress.is-over {
+  background: var(--pv-over);
+}
+
+.pv-btn {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--pv-line);
+  border-radius: 8px;
+  background: var(--pv-panel);
+  color: var(--pv-ink);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pv-btn:hover:not(:disabled) {
+  border-color: #3a3f4a;
+  background: #22262e;
+}
+
+.pv-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pv-btn:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+
+.pv-btn.is-on {
+  border-color: var(--pv-ink);
+}
+
+.pv-btn-sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.pv-btn-primary {
+  border-color: var(--pv-ink);
+  background: var(--pv-ink);
+  color: var(--pv-bg);
+}
+
+.pv-btn-primary:hover:not(:disabled) {
+  border-color: #fff;
+  background: #fff;
+}
+
+.pv-btn-end {
+  border-color: #4a2a2a;
+  background: #2a1a1b;
+  color: #ffb4ab;
+}
+
+.pv-hint {
+  margin: 0;
+  padding: 10px 20px;
+  background: #2b2416;
+  color: #f3d58c;
+  font-size: 14px;
+}
+
+.pv-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+  gap: 20px;
+  min-height: 0;
+  padding: 20px;
+}
+
+.pv-now {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  min-height: 0;
+}
+
+.pv-now-stage,
+.pv-next-stage {
+  min-height: 0;
+}
+
+.pv-now-stage .slide-frame,
+.pv-next-stage .slide-frame,
+.pv-thumb .slide-frame {
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--pv-line);
+}
+
+.pv-blanked {
+  margin: 0;
+  color: var(--pv-soon);
+  font-size: 14px;
+  text-align: center;
+}
+
+.pv-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pv-count {
+  min-width: 90px;
+  color: var(--pv-ink-2);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pv-count b {
+  color: var(--pv-ink);
+  font-size: 22px;
+}
+
+.pv-controls .pv-btn {
+  min-width: 96px;
+}
+
+.pv-side {
+  display: grid;
+  grid-template-rows: minmax(120px, 0.8fr) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.pv-next {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.pv-h {
+  margin: 0;
+  color: var(--pv-ink-3);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pv-last {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed var(--pv-line);
+  border-radius: 4px;
+  color: var(--pv-ink-3);
+}
+
+.pv-notes {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--pv-line);
+  border-radius: 8px;
+  background: var(--pv-panel);
+}
+
+.pv-notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pv-size {
+  display: flex;
+  gap: 4px;
+}
+
+.pv-notes-body {
+  overflow-y: auto;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.pv-notes-empty {
+  color: var(--pv-ink-3);
+  font-size: 15px;
+}
+
+.pv-strip {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 20px 14px;
+  overflow-x: auto;
+  border-top: 1px solid var(--pv-line);
+  list-style: none;
+  scrollbar-color: #3a3f4a transparent;
+}
+
+.pv-thumb {
+  display: grid;
+  gap: 4px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--pv-ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.pv-thumb:hover {
+  border-color: var(--pv-line);
+}
+
+.pv-thumb.is-on {
+  border-color: var(--pv-ink);
+  color: var(--pv-ink);
+}
+
+@media (max-height: 640px) {
+  .pv-strip {
+    display: none;
+  }
+}
+
 /* ---------- 인쇄 (PDF) ---------- */
 
 .print-root {

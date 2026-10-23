@@ -1,8 +1,7 @@
 // 내보낸 HTML 파일 안에서 쓰는 보기 화면. 열면 모든 장이 세로로 보이고, "발표 시작"으로 슬라이드쇼가 된다.
-// 발표할 때의 움직임은 앱의 발표 화면과 같다: 앞으로 넘긴 장에만 .is-playing을 붙이고(motion.css),
-// 생동감이면 숫자를 올린다(countUp). countUp은 소스를 그대로 넣는다.
+// 발표할 때의 움직임은 앱의 발표 화면과 같은 엔진(motion/engine.ts)을 쓴다. 엔진은 소스를 그대로 넣는다.
 
-import { countUp } from '../slides/countUp'
+import { motionEngine } from '../motion/engine'
 
 /** 보기 화면에 쓰이는 글자 (폰트 묶음 고르기에 쓴다) */
 export const VIEWER_TEXT = 'PDF로 저장 발표 시작 0123456789 /'
@@ -45,10 +44,12 @@ body.is-present .v-blank.is-white{background:#fff}
 `
 
 export const VIEWER_JS = `(function(){
-var countUp=${countUp.toString()};
+var engine=(${motionEngine.toString()})();
 var slides=[].slice.call(document.querySelectorAll('.v-slide'));
 var body=document.body,root=document.documentElement,count=document.querySelector('.v-count'),blank=document.querySelector('.v-blank');
-var i=0,timer=0,stopCount=null;
+var i=0,timer=0,stopMotion=null;
+function levelOf(el){var s=el&&el.querySelector('.slide');return !s?'none':s.classList.contains('mo-lively')?'lively':s.classList.contains('mo-calm')?'calm':'none'}
+function halt(){if(stopMotion){stopMotion();stopMotion=null}}
 function presenting(){return body.classList.contains('is-present')}
 function fit(){
   if(presenting()){
@@ -62,13 +63,15 @@ function fit(){
 function show(n,first){
   var next=Math.max(0,Math.min(slides.length-1,n));
   if(next===i&&!first)return;
-  var forward=first||next>i;
-  i=next;
-  if(stopCount){stopCount();stopCount=null}
-  slides.forEach(function(el,k){el.classList.toggle('is-current',k===i);el.classList.toggle('is-playing',k===i&&forward)});
-  count.textContent=(i+1)+' / '+slides.length;
-  var cur=slides[i];
-  if(forward&&cur.querySelector('.slide.mo-lively')&&matchMedia('(prefers-reduced-motion: no-preference)').matches)stopCount=countUp(cur);
+  var forward=first||next>i,level=levelOf(slides[next]);
+  function apply(){
+    halt();i=next;
+    slides.forEach(function(el,k){el.classList.toggle('is-current',k===i)});
+    count.textContent=(i+1)+' / '+slides.length;
+    // 앞으로 넘긴 장만 움직인다. 이전 장으로 돌아가면 다 보인 상태로.
+    if(forward&&level!=='none')stopMotion=engine.play(slides[i],level);
+  }
+  if(first)apply();else engine.swap(apply,level,forward?1:-1);
 }
 function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
@@ -78,12 +81,12 @@ function start(n){
 }
 function stop(){
   body.classList.remove('is-present');setBlank(null);
-  if(stopCount){stopCount();stopCount=null}
-  slides.forEach(function(el){el.classList.remove('is-playing')});
+  halt();
   if(document.fullscreenElement)document.exitFullscreen().catch(function(){});
   fit();if(slides[i])slides[i].scrollIntoView({block:'center'});
 }
-document.getElementById('v-present').addEventListener('click',function(){start(0)});
+// 이 클릭이 문서까지 올라가면 발표가 시작되자마자 한 장 넘어간다
+document.getElementById('v-present').addEventListener('click',function(e){e.stopPropagation();start(0)});
 document.getElementById('v-print').addEventListener('click',function(){print()});
 slides.forEach(function(el,k){el.querySelector('.v-frame').addEventListener('click',function(e){if(!presenting()){e.stopPropagation();start(k)}})});
 document.addEventListener('click',function(e){if(!presenting())return;if(!blank.hidden){setBlank(null);return}show(e.clientX<innerWidth*.3?i-1:i+1)});
