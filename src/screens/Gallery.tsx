@@ -27,8 +27,28 @@ function extraSlides(): Slide[] {
         { title: '3분기', meta: '억 원', value: '131' },
         { title: '목표', meta: '억 원', value: '117' },
       ],
-      { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준' },
+      { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준', source: '영업관리 시스템, 9월 말 기준' },
     ), { highlight: 2 }),
+    withItems(
+      makeSlide('scorecard'),
+      [
+        { title: '매출', meta: '117억 원', value: '131억 원', body: '신규 고객 2곳 수주' },
+        { title: '영업이익', meta: '14억 원', value: '15.2억 원' },
+        { title: '신규 고객', meta: '5곳', value: '4곳', body: '1곳은 4분기로 넘어감' },
+        { title: '재계약률', meta: '90%', value: '93%' },
+      ],
+      { title: '네 지표 중 세 개가 목표를 넘었어요', source: '영업관리 시스템, 9월 말 기준' },
+    ),
+    withItems(
+      makeSlide('matrix'),
+      [
+        { title: '틈틈이 하기', body: '견적 양식 통일, 단가표 공유 폴더' },
+        { title: '바로 하기', body: '견적 자동 계산, 승인 단계 줄이기' },
+        { title: '미루기', body: '외부 견적 시스템 도입' },
+        { title: '계획해서 하기', body: '고객사별 단가 이력 관리' },
+      ],
+      { title: '쉽고 효과가 큰 두 가지부터 시작해요', yAxis: '실행하기 쉬움', xAxis: '효과가 큼' },
+    ),
     withItems(makeSlide('kpi'), [{ value: '112%', title: '3분기 목표 달성률', body: '목표 117억 원, 실적 131억 원' }], {
       title: '3분기 목표를 넘겼어요',
     }),

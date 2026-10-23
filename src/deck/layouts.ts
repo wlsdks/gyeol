@@ -1,4 +1,4 @@
-import type { ItemKey, LayoutId } from './types'
+import type { ItemKey, LayoutId, Slide } from './types'
 
 export interface FieldSpec {
   /** 슬라이드 칸 이름. `$`로 시작하면 덱 단위 값(소속, 발표자 등) */
@@ -14,6 +14,8 @@ export interface ItemFieldSpec {
   key: ItemKey
   label: string
   hint: string
+  /** 항목 자리마다 다른 안내 (2×2의 네 칸처럼 자리에 뜻이 있을 때) */
+  hints?: string[]
   multiline?: boolean
   optional?: boolean
   image?: boolean
@@ -31,6 +33,8 @@ export interface LayoutSpec {
   description: string
   /** 첫째가 기본 모양. 없으면 한 가지 모양뿐 */
   variants?: VariantSpec[]
+  /** 항목 하나를 강조할 수 있으면 그 이름과, 고르지 않았을 때 강조할 항목(-1은 없음) */
+  highlight?: { label: string; fallback: number }
   fields: FieldSpec[]
   items?: {
     label: string
@@ -145,6 +149,30 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  scorecard: {
+    id: 'scorecard',
+    name: '목표 대비 실적',
+    description: '지표마다 목표와 실적, 달성률을 한 표로',
+    highlight: { label: '강조할 지표', fallback: -1 },
+    fields: [
+      title('실적을 요약하는 한 문장'),
+      { key: 'metaTitle', label: '목표 머리말', hint: '목표', optional: true },
+      { key: 'valueTitle', label: '실적 머리말', hint: '실적', optional: true },
+      source,
+    ],
+    items: {
+      label: '지표',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '지표', hint: '지표 이름' },
+        { key: 'meta', label: '목표', hint: '117억 원' },
+        { key: 'value', label: '실적', hint: '131억 원' },
+        { key: 'body', label: '설명', hint: '짧은 설명이나 원인', optional: true },
+      ],
+    },
+  },
   points: {
     id: 'points',
     name: '핵심 포인트',
@@ -187,6 +215,27 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       fields: [
         { key: 'title', label: '왼쪽', hint: '지금의 모습' },
         { key: 'body', label: '오른쪽', hint: '바뀐 뒤의 모습' },
+      ],
+    },
+  },
+  matrix: {
+    id: 'matrix',
+    name: '2×2 우선순위',
+    description: '두 기준으로 나눈 네 칸. 무엇부터 할지 보여요',
+    highlight: { label: '먼저 할 칸', fallback: 1 },
+    fields: [
+      title('어느 칸부터 할지 한 문장으로'),
+      { key: 'yAxis', label: '세로 기준', hint: '위로 갈수록 (예: 실행하기 쉬움)' },
+      { key: 'xAxis', label: '가로 기준', hint: '오른쪽으로 갈수록 (예: 효과가 큼)' },
+    ],
+    items: {
+      label: '칸',
+      min: 4,
+      max: 4,
+      default: 4,
+      fields: [
+        { key: 'title', label: '칸 이름', hint: '칸 이름', hints: ['왼쪽 위 칸 이름', '오른쪽 위 칸 이름', '왼쪽 아래 칸 이름', '오른쪽 아래 칸 이름'] },
+        { key: 'body', label: '내용', hint: '이 칸에 드는 과제', multiline: true },
       ],
     },
   },
@@ -237,6 +286,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'pricing',
     name: '안 비교',
     description: '두세 가지 안이나 가격을 나란히, 추천안 강조',
+    variants: [
+      { id: 'base', name: '카드' },
+      { id: 'rows', name: '표' },
+    ],
+    highlight: { label: '추천 표시', fallback: -1 },
     fields: [title('어느 안을 추천하는지 한 문장으로')],
     items: {
       label: '안',
@@ -281,6 +335,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'bars',
     name: '막대 비교',
     description: '숫자를 막대 길이로 비교',
+    variants: [
+      { id: 'base', name: '가로 막대' },
+      { id: 'columns', name: '세로 막대' },
+    ],
+    highlight: { label: '강조할 막대', fallback: 0 },
     fields: [title('비교가 말해 주는 결론'), lead(), source],
     items: {
       label: '막대',
@@ -321,7 +380,9 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'statement',
   'points',
   'kpi',
+  'scorecard',
   'compare',
+  'matrix',
   'pricing',
   'bars',
   'timeline',
@@ -346,7 +407,10 @@ export function hintFor(
   const path = itemKey ? `items.${itemKey}` : key
   if (hints[path]) return hints[path]
   const spec = LAYOUTS[layout]
-  if (itemKey) return spec.items?.fields.find((f) => f.key === itemKey)?.hint ?? ''
+  if (itemKey) {
+    const f = spec.items?.fields.find((x) => x.key === itemKey)
+    return (index !== undefined && f?.hints?.[index]) || f?.hint || ''
+  }
   return spec.fields.find((f) => f.key === key)?.hint ?? ''
 }
 
@@ -360,4 +424,11 @@ export function variantOf(slide: { layout: LayoutId; variant?: string }): string
   const variants = LAYOUTS[slide.layout].variants
   if (!variants?.length) return 'base'
   return variants.some((v) => v.id === slide.variant) ? slide.variant! : variants[0].id
+}
+
+/** 강조할 항목. 고르지 않았으면 레이아웃의 기본값, 강조가 없는 레이아웃이면 -1 */
+export function highlightOf(slide: Pick<Slide, 'layout' | 'options'>): number {
+  const spec = LAYOUTS[slide.layout].highlight
+  if (!spec) return -1
+  return slide.options.highlight ?? spec.fallback
 }

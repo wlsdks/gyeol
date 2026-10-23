@@ -76,6 +76,7 @@ export function catalog() {
         name: spec.name,
         description: spec.description,
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
+        highlight: spec.highlight?.label ?? null,
         fields: spec.fields.map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
         items: spec.items
           ? {
@@ -189,7 +190,7 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     : []
   const options: ShapeSlide['options'] = {}
   const o = slide.options ?? {}
-  if ((slide.layout === 'pricing' || slide.layout === 'bars') && Number.isInteger(o.highlight)) options.highlight = o.highlight
+  if (spec.highlight && Number.isInteger(o.highlight)) options.highlight = o.highlight
   if (slide.layout === 'imageText') {
     options.flip = !!o.flip
     options.contain = !!o.contain

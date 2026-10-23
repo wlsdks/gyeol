@@ -190,10 +190,10 @@ export function motionEngine(): MotionEngine {
     const pop = (el: Element | null, at: number, pseudo?: string) => {
       if (el) run(anims, el, [{ opacity: 0, scale: '0.3' }], s(at), L.pop, pseudo)
     }
-    const grow = (el: Element | null, at: number, axis: 'x' | 'y' = 'x', pseudo?: string) => {
+    /** x: 왼쪽에서 (가로 막대), down: 위에서 (세로 일정의 선), up: 바닥에서 (세로 막대) */
+    const grow = (el: Element | null, at: number, axis: 'x' | 'down' | 'up' = 'x', pseudo?: string) => {
       if (!el) return
-      // 가로는 왼쪽에서, 세로는 위에서 자란다 (막대는 왼쪽부터, 세로 일정의 선은 위부터)
-      const origin = axis === 'x' ? 'left center' : 'center top'
+      const origin = axis === 'x' ? 'left center' : axis === 'down' ? 'center top' : 'center bottom'
       run(anims, el, [{ scale: axis === 'x' ? '0 1' : '1 0', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), L.grow, pseudo)
     }
     const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom', duration = 1000) => {
@@ -303,7 +303,7 @@ export function motionEngine(): MotionEngine {
       case 'timeline': {
         const t = head()
         items('.tl-item', t, (el, at) => {
-          grow(el, at, variant === 'steps' ? 'y' : 'x', '::before')
+          grow(el, at, variant === 'steps' ? 'down' : 'x', '::before')
           pop(el.querySelector('.tl-dot'), at + 140)
           rise(el.querySelector('.tl-meta'), at + 60, L.y * 0.5)
           rise(el.querySelector('.tl-title'), at + 200, L.y * 0.6)
@@ -358,10 +358,38 @@ export function motionEngine(): MotionEngine {
         items('.br-row', t, (el, at) => {
           rise(el.querySelector('.br-label'), at, L.y * 0.5)
           fade(el.querySelector('.br-track'), at, 400)
-          grow(el.querySelector('.br-fill'), at + 120)
+          grow(el.querySelector(variant === 'columns' ? '.br-track' : '.br-fill'), at + 120, variant === 'columns' ? 'up' : 'x')
           count(el.querySelector('.br-value'), at + 120)
         })
         fade(one('.s-source'), t + 400)
+        break
+      }
+      case 'scorecard': {
+        const t = head()
+        fade(one('.sk-headrow'), t, 500)
+        const end = items('.sk-row.it', t + 120, (el, at) => {
+          rise(el.querySelector('.sk-name'), at, L.y * 0.5)
+          grow(el.querySelector('.sk-fill'), at + 120)
+          pop(el.querySelector('.sk-mark'), at + 320)
+          fade(el.querySelector('.sk-target'), at + 80, 500)
+          count(el.querySelector('.sk-value'), at + 120)
+          count(el.querySelector('.sk-rate'), at + 200)
+        })
+        fade(one('.s-source'), end + 200)
+        break
+      }
+      case 'matrix': {
+        const t = head()
+        const grid = one('.mx-grid')
+        if (grid) wipe(grid, t, 'bottom', 700)
+        fade(one('.mx-y'), t + 200, 500)
+        fade(one('.mx-x'), t + 200, 500)
+        items('.mx-cell', t + 260, (el, at) => {
+          rise(el.querySelector('.mx-title'), at, L.y * 0.5)
+          rise(el.querySelector('.mx-body'), at + 80, L.y * 0.5)
+        })
+        const hl = one('.mx-cell.is-hl')
+        if (hl) run(anims, hl, [{ backgroundColor: 'transparent' }], s(t + 260 + L.step * 4), { easing: OUT, duration: s(700) })
         break
       }
       case 'closing': {

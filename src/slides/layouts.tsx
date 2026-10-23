@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
-import { visibleItems } from '../deck/fields'
+import type { CSSProperties, ReactNode } from 'react'
+import { readField, visibleItems } from '../deck/fields'
+import { highlightOf, hintFor } from '../deck/layouts'
 import type { LayoutId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
@@ -12,6 +13,13 @@ function Head({ lead = false }: { lead?: boolean }) {
       {lead && <T k="lead" as="p" className="s-lead" multiline />}
     </header>
   )
+}
+
+/** 표 머리말처럼 비워 두면 기본 말을 쓰는 칸. 편집할 때는 그 기본 말이 안내로 보인다. */
+function Label({ k, fallback, className }: { k: string; fallback: string; className?: string }) {
+  const { slide, meta, mode } = useSlide()
+  if (mode === 'final' && !readField(slide, meta, k).trim()) return <span className={className}>{fallback}</span>
+  return <T k={k} as="span" className={className} />
 }
 
 function useItems() {
@@ -264,7 +272,7 @@ function Pricing() {
   const { slide } = useSlide()
   const items = useItems()
   const units = useSharedUnits('value')
-  const highlight = slide.options.highlight ?? -1
+  const highlight = highlightOf(slide)
   return (
     <>
       <Head />
@@ -329,26 +337,35 @@ function parseNumber(text: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
+/** 숫자를 넣기 전, 편집할 때 흐리게 보여 줄 예시 길이. 어떤 모양의 장인지 알아보게만 한다. */
+const DEMO_BARS = [64, 78, 100, 86, 72, 92]
+
 function Bars() {
-  const { slide } = useSlide()
+  const { slide, mode } = useSlide()
   const items = useItems()
   const values = items.map((it) => parseNumber(it.value))
   const max = Math.max(0, ...values)
-  const highlight = slide.options.highlight ?? 0
+  const demo = mode !== 'final' && max <= 0
+  const highlight = highlightOf(slide)
   return (
     <>
       <Head lead />
       <div className="s-body br" data-n={items.length}>
         {items.map((it, i) => {
-          const pct = max > 0 && values[i] > 0 ? Math.max(2, (values[i] / max) * 100) : 0
+          const pct = demo ? DEMO_BARS[i % DEMO_BARS.length] : max > 0 && values[i] > 0 ? Math.max(2, (values[i] / max) * 100) : 0
           return (
-            <div key={it.id} className={cx('it br-row', highlight === i && 'is-hl')}>
+            // 길이는 --p(0~100)로만 넘긴다. 가로 막대는 너비, 세로 막대는 높이로 쓴다.
+            <div
+              key={it.id}
+              className={cx('it br-row', highlight === i && 'is-hl', demo && 'is-demo')}
+              style={{ '--p': pct.toFixed(2) } as CSSProperties}
+            >
               <div className="br-label">
                 <IT i={i} k="title" className="br-name" />
                 <IT i={i} k="meta" className="br-meta" />
               </div>
               <div className="br-track">
-                <div className="br-fill" style={{ width: `${pct}%` }} />
+                <div className="br-fill" />
               </div>
               <IT i={i} k="value" className="br-value" />
               <ItemTools i={i} />
@@ -357,6 +374,84 @@ function Bars() {
         })}
       </div>
       <T k="source" className="s-source" />
+    </>
+  )
+}
+
+/** 목표 대비 실적: 지표마다 목표, 실적, 달성률. 막대에 목표 자리를 세로 줄로 표시한다. */
+function Scorecard() {
+  const { slide, mode } = useSlide()
+  const items = useItems()
+  const highlight = highlightOf(slide)
+  // 편집할 때 목표와 실적이 둘 다 비어 있으면 안내 문구의 예시 숫자로 막대를 흐리게 그린다.
+  // 한쪽만 적었으면 예시와 섞지 않는다 (엉뚱한 달성률이 보이지 않게).
+  const pair = (i: number) => {
+    const it = items[i]
+    if (it.meta.trim() || it.value.trim() || mode === 'final') return { demo: false, meta: it.meta, value: it.value }
+    return { demo: true, meta: hintFor(slide.layout, slide.hints, 'meta', 'meta', i), value: hintFor(slide.layout, slide.hints, 'value', 'value', i) }
+  }
+  return (
+    <>
+      <Head />
+      <div className="s-body sk" data-n={items.length}>
+        <div className="sk-row sk-headrow">
+          <span className="sk-h">지표</span>
+          <span className="sk-h">목표 대비</span>
+          <Label k="metaTitle" fallback="목표" className="sk-h sk-num" />
+          <Label k="valueTitle" fallback="실적" className="sk-h sk-num" />
+          <span className="sk-h sk-num">달성률</span>
+        </div>
+        {items.map((it, i) => {
+          const { demo, meta, value } = pair(i)
+          const target = parseNumber(meta)
+          const actual = parseNumber(value)
+          const known = target > 0 && value.trim() !== ''
+          // 목표와 실적 중 큰 쪽이 막대 끝. 목표를 넘으면 목표 줄이 막대 안으로 들어간다.
+          const scale = Math.max(target, actual) || 1
+          const bar = { '--a': known ? ((actual / scale) * 100).toFixed(2) : '0', '--t': known ? ((target / scale) * 100).toFixed(2) : '0' } as CSSProperties
+          return (
+            <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && actual >= target && 'is-met', demo && 'is-demo')}>
+              <div className="sk-name">
+                <IT i={i} k="title" className="sk-title" />
+                <IT i={i} k="body" className="sk-body" />
+              </div>
+              <div className="sk-bar" style={bar} aria-hidden="true">
+                <span className="sk-fill" />
+                {known && <span className="sk-mark" />}
+              </div>
+              <IT i={i} k="meta" className="sk-target sk-num" />
+              <IT i={i} k="value" className="sk-value sk-num" />
+              <span className="sk-rate sk-num">{known ? `${Math.round((actual / target) * 100)}%` : '–'}</span>
+              <ItemTools i={i} />
+            </div>
+          )
+        })}
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
+/** 2×2: 세로 기준(위로 갈수록)과 가로 기준(오른쪽으로 갈수록)으로 나눈 네 칸. 항목 순서는 왼쪽 위부터 글 읽는 순서. */
+function Matrix() {
+  const { slide } = useSlide()
+  const items = useItems()
+  const highlight = highlightOf(slide)
+  return (
+    <>
+      <Head />
+      <div className="s-body mx">
+        <T k="yAxis" className="mx-y" />
+        <div className="mx-grid">
+          {items.map((it, i) => (
+            <div key={it.id} className={cx('it mx-cell', highlight === i && 'is-hl')}>
+              <IT i={i} k="title" className="mx-title" fit={[14, 22]} />
+              <IT i={i} k="body" className="mx-body" multiline />
+            </div>
+          ))}
+        </div>
+        <T k="xAxis" className="mx-x" />
+      </div>
     </>
   )
 }
@@ -397,8 +492,10 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   summary: Summary,
   statement: Statement,
   kpi: Kpi,
+  scorecard: Scorecard,
   points: Points,
   compare: Compare,
+  matrix: Matrix,
   timeline: Timeline,
   case: Case,
   pricing: Pricing,

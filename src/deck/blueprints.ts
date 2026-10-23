@@ -23,6 +23,8 @@ export interface Recipe {
   /** 항목마다 미리 채워 두는 값 (구조에 해당하는 글자만, 예: 'A안') */
   prefill?: Partial<Record<ItemKey, string>>[]
   items?: number
+  /** 처음 쓸 모양. 없으면 레이아웃의 기본 모양 */
+  variant?: string
 }
 
 export interface Blueprint {
@@ -346,6 +348,21 @@ const improve: Blueprint = {
     },
     section('개선안', '어떻게 바꿀지'),
     {
+      layout: 'matrix',
+      purpose: '과제 우선순위',
+      priority: 3,
+      section: '개선안',
+      guide: '고칠 거리가 여럿이면 효과와 실행하기 쉬운 정도로 나눠, 무엇부터 할지 보여주세요.',
+      fields: { yAxis: '실행하기 쉬움', xAxis: '효과가 큼' },
+      hints: {
+        title: '쉽고 효과가 큰 것부터 시작해요',
+        'items.0.title': '틈틈이 하기',
+        'items.1.title': '바로 하기',
+        'items.2.title': '미루기',
+        'items.3.title': '계획해서 하기',
+      },
+    },
+    {
       layout: 'compare',
       purpose: '바뀌는 모습',
       priority: 1,
@@ -400,11 +417,19 @@ const report: Blueprint = {
     },
     agenda,
     {
-      layout: 'bars',
+      layout: 'scorecard',
       purpose: '목표 대비 실적',
       priority: 1,
-      guide: '기간별이나 항목별 실적을 막대로 비교해 보여주세요. 눈여겨볼 막대 하나를 강조할 수 있어요.',
-      hints: { title: '실적을 요약하는 한 문장', 'items.title': '항목 (예: 3분기)', 'items.value': '120', 'items.meta': '억 원' },
+      guide: '지표마다 목표와 실적을 같은 단위로 적으면 달성률은 저절로 계산돼요. 목표에 못 미친 지표는 설명 칸에 이유를 짧게 적어 주세요.',
+      hints: { title: '네 지표 중 세 개가 목표를 넘었어요', 'items.title': '지표 (예: 매출)' },
+    },
+    {
+      layout: 'bars',
+      purpose: '기간별 실적',
+      priority: 2,
+      variant: 'columns',
+      guide: '분기나 월별 실적을 세로 막대로 보여주세요. 눈여겨볼 막대 하나를 강조할 수 있어요.',
+      hints: { title: '실적 흐름을 요약하는 한 문장', 'items.title': '기간 (예: 3분기)', 'items.value': '120', 'items.meta': '억 원' },
     },
     {
       layout: 'points',

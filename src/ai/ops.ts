@@ -335,7 +335,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       case 'set_options': {
         const options = { ...s.options }
         if (op.highlight !== undefined) {
-          if (s.layout !== 'pricing' && s.layout !== 'bars') return fail('not_for_layout')
+          if (!spec.highlight) return fail('not_for_layout')
           if (op.highlight >= Math.min(s.items.length, spec.items?.max ?? 0)) return fail('out_of_range')
           options.highlight = op.highlight
         }

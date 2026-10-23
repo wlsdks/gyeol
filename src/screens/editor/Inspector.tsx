@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
-import { LAYOUTS, LAYOUT_ORDER, variantOf } from '../../deck/layouts'
+import { highlightOf, LAYOUTS, LAYOUT_ORDER, variantOf } from '../../deck/layouts'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -24,7 +24,8 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
   const missing = missingFields(slide, deck.meta)
   const variants = LAYOUTS[slide.layout].variants ?? []
   const current = variantOf(slide)
-  const hasOptions = slide.layout === 'pricing' || slide.layout === 'bars' || slide.layout === 'imageText'
+  const highlight = LAYOUTS[slide.layout].highlight
+  const hasOptions = !!highlight || slide.layout === 'imageText'
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
 
   return (
@@ -72,16 +73,16 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
               ))}
             </div>
           )}
-          {(slide.layout === 'pricing' || slide.layout === 'bars') && (
+          {highlight && (
             <div className="ins-row ins-row-wrap">
-              <span className="ins-label">{slide.layout === 'pricing' ? '추천 표시' : '강조할 막대'}</span>
-              <div className="seg seg-wrap" role="group" aria-label={slide.layout === 'pricing' ? '추천 표시' : '강조할 막대'}>
+              <span className="ins-label">{highlight.label}</span>
+              <div className="seg seg-wrap" role="group" aria-label={highlight.label}>
                 {[-1, ...visibleItems(slide).map((_, i) => i)].map((i) => (
                   <button
                     key={i}
                     type="button"
-                    className={cx('seg-btn', (slide.options.highlight ?? -1) === i && 'is-on')}
-                    aria-pressed={(slide.options.highlight ?? -1) === i}
+                    className={cx('seg-btn', highlightOf(slide) === i && 'is-on')}
+                    aria-pressed={highlightOf(slide) === i}
                     onClick={() => setOptions(slide.id, { highlight: i })}
                   >
                     {i < 0 ? '없음' : `${i + 1}번`}

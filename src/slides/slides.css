@@ -1473,6 +1473,90 @@
   opacity: 0.92;
 }
 
+/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄만 옅은 강조색 바탕 */
+.va-rows .pr,
+.va-rows .pr[data-n='1'] {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 0;
+  border-top: 3px solid var(--ink);
+}
+
+.va-rows .pr:is([data-n='1'], [data-n='2']) {
+  grid-auto-rows: minmax(0, 260px);
+}
+
+.va-rows .pr-plan,
+.va-rows .pr-plan.is-hl,
+.t-navy .va-rows .pr-plan.is-hl {
+  display: grid;
+  grid-template-columns: 360px 420px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 56px;
+  align-content: center;
+  padding: 0 40px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+}
+
+.va-rows .pr-plan.is-hl,
+.t-navy .va-rows .pr-plan.is-hl {
+  background: var(--accent-soft);
+}
+
+.va-rows .pr-top {
+  grid-row: 1 / span 2;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.va-rows .pr-price {
+  grid-column: 2;
+  margin: 0;
+  align-self: end;
+}
+
+.va-rows .pr-plan.is-hl .pr-price {
+  color: var(--accent);
+}
+
+.va-rows .pr-meta {
+  grid-column: 2;
+  align-self: start;
+  margin-top: 10px;
+}
+
+.va-rows .pr-body,
+.va-rows .pr-plan.is-hl .pr-body {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--ink-2);
+  line-height: 1.6;
+  opacity: 1;
+}
+
+.va-rows .pr-plan.is-hl .pr-meta {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.va-rows .pr-tag,
+.t-navy .va-rows .pr-plan.is-hl .pr-tag {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 /* ---------- 이미지와 설명 ---------- */
 
 .l-imageText {
@@ -1624,6 +1708,203 @@
   max-width: 100%;
 }
 
+/* ---------- 목표 대비 실적 ---------- */
+
+.sk {
+  display: grid;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(0, 1fr);
+  max-height: 100%;
+}
+
+.sk:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: minmax(0, 190px);
+}
+
+.sk-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px 250px 210px;
+  column-gap: 48px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-headrow {
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.sk-h {
+  color: var(--ink-3);
+  font-size: var(--t-source);
+  font-weight: 600;
+}
+
+.sk-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sk-title {
+  --fs: 36px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sk-body {
+  --fs: 24px;
+  margin-top: 8px;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+
+/* 막대: 실적만큼 채우고, 목표 자리에 세로 줄 */
+.sk-bar {
+  position: relative;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.sk-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--a, 0) * 1%);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--ink) 30%, var(--bg));
+}
+
+.sk-mark {
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  left: calc(var(--t, 0) * 1% - 2px);
+  width: 4px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.sk-target {
+  --fs: 32px;
+  color: var(--ink-2);
+}
+
+.sk-value {
+  --fs: 40px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sk-rate {
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.sk-row.is-hl .sk-fill {
+  background: var(--accent);
+}
+
+.sk-row.is-hl :is(.sk-rate, .sk-value) {
+  color: var(--accent);
+}
+
+.sk:is([data-n='5'], [data-n='6']) .sk-title {
+  --fs: 32px;
+}
+
+.sk:is([data-n='5'], [data-n='6']) .sk-rate {
+  font-size: 44px;
+}
+
+/* ---------- 2×2 우선순위 ---------- */
+
+.mx {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  margin-top: 56px;
+}
+
+.mx-y,
+.mx-x {
+  color: var(--ink-2);
+  font-size: var(--t-label);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.mx-y::before {
+  margin-right: 12px;
+  content: '↑';
+}
+
+.mx-x {
+  justify-self: end;
+}
+
+.mx-x::after {
+  margin-left: 12px;
+  content: '→';
+}
+
+/* 두 기준이 축: 왼쪽과 아래는 굵은 줄, 칸 사이는 가는 줄 */
+.mx-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  border-bottom: 3px solid var(--ink);
+  border-left: 3px solid var(--ink);
+}
+
+.mx-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 40px 52px;
+}
+
+.mx-cell:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+
+.mx-cell:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--line);
+}
+
+.mx-cell.is-hl {
+  background: var(--accent-soft);
+}
+
+.mx-title {
+  --fs: 42px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.25;
+}
+
+.mx-cell.is-hl .mx-title {
+  color: var(--accent);
+}
+
+.mx-body {
+  --fs: 30px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
 /* ---------- 막대 비교 ---------- */
 
 .br {
@@ -1666,6 +1947,7 @@
 }
 
 .br-fill {
+  width: calc(var(--p, 0) * 1%);
   height: 100%;
   border-radius: 14px;
   background: color-mix(in oklch, var(--ink) 22%, var(--bg));
@@ -1686,6 +1968,64 @@
 
 .br-row.is-hl .br-value {
   color: var(--accent);
+}
+
+/* 모양: 세로 막대. 기간(분기, 월)처럼 순서가 있는 숫자에. 숫자는 막대 위, 이름은 바닥 줄 아래 */
+.va-columns .br {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+.va-columns .br-row,
+.va-columns .br-row:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0;
+  border: 0;
+}
+
+.va-columns .br-value {
+  --fs: 56px;
+  order: 1;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 높이는 이 칸에서 숫자와 이름 자리를 뺀 만큼을 100으로 본다 */
+.va-columns .br-track {
+  order: 2;
+  flex: none;
+  height: calc((100% - 230px) * var(--p, 0) / 100);
+  min-height: 6px;
+  margin: 0 22%;
+  border-radius: 12px 12px 0 0;
+  background: none;
+}
+
+.va-columns .br-fill {
+  width: 100%;
+  border-radius: inherit;
+}
+
+.va-columns .br-label {
+  order: 3;
+  padding-top: 24px;
+  border-top: 2px solid var(--ink);
+  text-align: center;
+}
+
+.va-columns .br-name {
+  --fs: 32px;
+}
+
+.va-columns .br:is([data-n='5'], [data-n='6']) .br-value {
+  --fs: 48px;
 }
 
 /* ---------- 마지막 장 ---------- */
@@ -1775,6 +2115,11 @@
 /* 미리보기에서 빈칸은 안내 문구를 흐리게 */
 .slide .is-hint {
   opacity: 0.34;
+}
+
+/* 숫자를 넣기 전의 예시 막대와 달성률 */
+.slide .is-demo :is(.br-fill, .sk-fill, .sk-mark, .sk-rate) {
+  opacity: 0.3;
 }
 
 .img-empty > span {

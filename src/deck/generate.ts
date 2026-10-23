@@ -54,6 +54,7 @@ export function makeSlide(layout: LayoutId, recipe?: Partial<Recipe>): Slide {
     guide: recipe?.guide ?? spec.description,
     notes: '',
     options: withDefaultOptions(layout, {}, count),
+    ...(recipe?.variant ? { variant: recipe.variant } : {}),
   }
 }
 

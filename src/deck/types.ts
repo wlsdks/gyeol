@@ -5,8 +5,10 @@ export type LayoutId =
   | 'summary'
   | 'statement'
   | 'kpi'
+  | 'scorecard'
   | 'points'
   | 'compare'
+  | 'matrix'
   | 'timeline'
   | 'case'
   | 'pricing'
@@ -38,7 +40,7 @@ export interface Item {
 export type ItemKey = Exclude<keyof Item, 'id'>
 
 export interface SlideOptions {
-  /** 안 비교, 막대 비교에서 강조할 항목 (0부터, -1은 강조 없음) */
+  /** 강조할 항목 (0부터, -1은 강조 없음). 어느 레이아웃이 쓰는지는 LayoutSpec.highlight */
   highlight?: number
   /** 이미지와 설명: 이미지를 오른쪽에 */
   flip?: boolean
