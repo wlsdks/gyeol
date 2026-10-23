@@ -6,13 +6,17 @@
 //   ├─ requests/<요청 id>.json  AI → 앱   바꾸자는 제안 (사람이 보고 적용하거나 거절)
 //   └─ results/<요청 id>.json   앱 → AI   제안을 어떻게 했는지
 //
+// 'AI에게 부탁'(asks)은 이 PC의 Claude Code를 띄워 부탁을 전한다. 띄우는 방법과 막는 것은 agent.ts에.
+//
 // 이 창구도 모양 파일을 받을 때 checkShape로 다시 확인한다. 글이 섞인 파일은 쓰지 않는다.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
+import { validAsk, type AskError } from '../src/ai/asks'
 import { parseRequest, REQUEST_ID, type ChangeRequest, type OpCode } from '../src/ai/ops'
 import { checkShape } from '../src/ai/share'
+import { ASK_RUN_ID, createAgent, type AgentCommand } from './agent'
 
 export const SHARE_DIR_NAME = 'AI 공유'
 export const AI_PREFIX = '/__html-maker/ai/'
@@ -138,7 +142,12 @@ export interface AiSetup {
   mcpPath: string
   /** MCP 서버를 띄울 node. 윈도우 배포본에는 node.exe가 들어 있어서 PATH의 node가 아닐 수 있다. */
   nodePath?: string
+  /** 'AI에게 부탁'으로 띄울 프로그램을 찾는 방법. 시험에서만 바꾼다 */
+  findAgent?: () => AgentCommand | null
+  agentTimeoutMs?: number
 }
+
+const ASK_ERROR_STATUS: Record<AskError, number> = { bad_ask: 400, not_shared: 404, busy: 409, no_agent: 503, timeout: 500, login: 500, failed: 500 }
 
 function json(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
@@ -160,6 +169,19 @@ function empty(res: ServerResponse, status: number) {
 export function createAiHandler(shareRoot: string, setup: AiSetup) {
   const dirs = ensureShareDir(shareRoot)
   pruneResults(dirs)
+  const agent = createAgent({
+    shareRoot,
+    mcpPath: setup.mcpPath,
+    nodePath: setup.nodePath ?? process.execPath,
+    find: setup.findAgent,
+    timeoutMs: setup.agentTimeoutMs,
+    hasTarget(deck, slide) {
+      const shape = readJson(join(dirs.decks, `${deck}.json`))
+      return checkShape(shape) && shape.deck === deck && (slide === null || shape.slides.some((s) => s.id === slide))
+    },
+    requestIds: (deck) => pendingRequests(dirs).filter((r) => r.deck === deck).map((r) => r.id),
+  })
+  process.once('exit', () => agent.stopAll())
 
   return async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1')
@@ -174,8 +196,41 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
 
     if (method === 'GET' && path.join('/') === 'status') {
       const shared = existsSync(dirs.decks) ? readdirSync(dirs.decks).filter((n) => /^d[0-9a-f]{8}\.json$/.test(n)).map((n) => n.slice(0, -5)) : []
-      json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath })
+      json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath, agent: agent.available() })
       return true
+    }
+
+    if (method === 'POST' && path.join('/') === 'asks') {
+      const body = await readBody(req)
+      let v: unknown
+      try {
+        v = body === null ? undefined : JSON.parse(body)
+      } catch {
+        v = undefined
+      }
+      const o = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
+      const keysOk = !!o && Object.keys(o).every((k) => k === 'ask' || k === 'deck' || k === 'slide')
+      if (!o || !keysOk || !validAsk(o.ask, o.deck, o.slide ?? null)) {
+        json(res, 400, { error: 'bad_ask' })
+        return true
+      }
+      const run = agent.start(o.ask as Parameters<typeof agent.start>[0], o.deck as string, (o.slide as string | undefined) ?? null)
+      if (typeof run === 'string') json(res, ASK_ERROR_STATUS[run], { error: run })
+      else json(res, 202, run)
+      return true
+    }
+
+    if (path[0] === 'asks' && path.length === 2 && ASK_RUN_ID.test(path[1])) {
+      if (method === 'GET') {
+        const run = agent.get(path[1])
+        if (run) json(res, 200, run)
+        else empty(res, 404)
+        return true
+      }
+      if (method === 'DELETE') {
+        empty(res, agent.cancel(path[1]) ? 204 : 404)
+        return true
+      }
     }
 
     if (path[0] === 'decks' && path.length === 2 && DECK_ID.test(path[1])) {
