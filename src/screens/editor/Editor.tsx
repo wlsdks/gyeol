@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { blockFieldPrefix } from '../../deck/blocks'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
@@ -458,6 +458,35 @@ function focusField(slideId: string, m: Missing) {
   el.scrollIntoView({ block: 'nearest' })
 }
 
+/**
+ * 슬라이드 아래 단추줄: 왼쪽과 오른쪽 단추가 한 줄에 다 들어가지 않으면 글자를 숨긴다.
+ * 1단계는 오른쪽 단추, 2단계는 왼쪽의 덜 쓰는 단추(다른 모양, 항목 추가)까지. 왼쪽 단추 수가 장마다 달라서 너비 하나로 정하지 않고 잰다
+ */
+function useTightTools(ref: RefObject<HTMLDivElement | null>) {
+  const check = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const need = () => {
+      const l = el.querySelector<HTMLElement>('.stage-tools-l')
+      const r = el.querySelector<HTMLElement>('.stage-tools-r')
+      return (l?.scrollWidth ?? 0) + (r?.scrollWidth ?? 0) + 16
+    }
+    for (const level of ['', '1', '2']) {
+      if (level) el.dataset.tight = level
+      else delete el.dataset.tight
+      if (need() <= el.clientWidth) return
+    }
+  }, [ref])
+  useLayoutEffect(check)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [check, ref])
+}
+
 function SlideStage({
   deck,
   slide,
@@ -498,6 +527,8 @@ function SlideStage({
   // 테마 메뉴에서 움직임을 고르면 이 장에서 발표할 때처럼 한 번 보여 준다
   const [preview, setPreview] = useState(0)
   const previewRef = useRef<HTMLDivElement>(null)
+  const toolsRef = useRef<HTMLDivElement>(null)
+  useTightTools(toolsRef)
   useEffect(() => {
     const on = () => setPreview((n) => n + 1)
     window.addEventListener(PREVIEW_MOTION, on)
@@ -547,7 +578,7 @@ function SlideStage({
           padding={4}
           belowHeight={56}
           below={
-            <div className="stage-tools">
+            <div ref={toolsRef} className="stage-tools">
               {peek ? (
                 <div className="stage-tools-l">
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview((n) => n + 1)}>
@@ -577,13 +608,13 @@ function SlideStage({
                     onClick={() => store.setVariant(slide.id, nextVariant.id)}
                   >
                     <ShapesIcon />
-                    다른 모양
+                    <span className="btn-t">다른 모양</span>
                   </button>
                 )}
                 {spec.items && (
-                  <button type="button" className="btn btn-ghost btn-sm" disabled={!canAddItem} onClick={() => store.addItem(slide.id)}>
+                  <button type="button" className="btn btn-ghost btn-sm" title={`${spec.items.label} 추가`} disabled={!canAddItem} onClick={() => store.addItem(slide.id)}>
                     <PlusIcon />
-                    {spec.items.label} 추가
+                    <span className="btn-t">{spec.items.label} 추가</span>
                   </button>
                 )}
                 {overflow && (
@@ -593,7 +624,7 @@ function SlideStage({
                 )}
               </div>
               )}
-              {/* 슬라이드가 좁게 보일 때는 오른쪽 단추의 글자를 숨기고 그림만 남긴다 (이름은 title로) */}
+              {/* 단추가 한 줄에 다 들어가지 않으면 오른쪽부터 글자를 숨기고 그림만 남긴다 (이름은 title로, useTightTools) */}
               <div className="stage-tools-r">
                 <button
                   type="button"

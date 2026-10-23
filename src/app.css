@@ -1884,16 +1884,15 @@ select {
   color: var(--panel);
 }
 
-/* 1280×600 노트북처럼 슬라이드가 좁게 보이면 오른쪽 단추는 그림만 */
-@container (max-width: 640px) {
-  .stage-tools-r .btn-t {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
+/* 1280×600 노트북처럼 단추가 한 줄에 다 들어가지 않으면 그림만 (Editor.tsx의 useTightTools가 잰다) */
+.stage-tools[data-tight] .stage-tools-r .btn-t,
+.stage-tools[data-tight='2'] .stage-tools-l .btn-t {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .stage-tools-l,
