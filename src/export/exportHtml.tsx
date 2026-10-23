@@ -107,15 +107,39 @@ function deckData(deck: Deck): string {
   return JSON.stringify(safe).replace(/</g, '\\u003c')
 }
 
+async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+}
+
+/**
+ * 내보낸 파일은 메일로 오가며 어디서 열릴지 모른다. 어떤 주소로도 연결하지 못하게 막고,
+ * 스크립트는 들어 있는 뷰어 하나만 돌게 한다.
+ */
+async function exportCsp(): Promise<string> {
+  return [
+    "default-src 'none'",
+    `script-src 'sha256-${await sha256(VIEWER_JS)}'`,
+    "style-src 'unsafe-inline'",
+    'img-src data: blob:',
+    'font-src data:',
+    'media-src data: blob:',
+    "base-uri 'none'",
+    "form-action 'none'",
+  ].join('; ')
+}
+
 export async function buildHtml(deck: Deck): Promise<string> {
   const slides = renderSlides(deck)
   const families = deck.theme.id === 'serif' ? /Pretendard|Hahmlet/i : /Pretendard/i
   const text = (slides.replace(/<[^>]+>/g, ' ') + deck.title + VIEWER_TEXT).replace(/&[a-z]+;/g, ' ')
   const fonts = await embedFonts(text, families)
+  const csp = await exportCsp()
   return `<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="html-maker">
 <title>${escapeHtml(deck.title)}</title>

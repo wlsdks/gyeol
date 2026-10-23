@@ -2,11 +2,13 @@
   "name": "html-maker",
   "private": true,
   "version": "0.1.0",
-  "description": "영업 대표를 위한 HTML 발표자료 빌더",
+  "description": "팀장님, 본부장님께 하는 보고 자료를 만드는 HTML 발표 빌더",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "start": "node server/serve.mjs",
+    "pack": "node scripts/pack.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
