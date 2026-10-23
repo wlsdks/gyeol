@@ -2620,6 +2620,7 @@
 
 /* 모양: 도넛 */
 .va-donut .sh {
+  position: relative;
   display: grid;
   grid-template-columns: 540px minmax(0, 1fr);
   align-content: center;
@@ -2627,8 +2628,12 @@
   column-gap: 120px;
 }
 
+/* 도넛은 합계가 고리 안에 있어 위 줄에는 (편집할 때의) 단위 칸만 남는다. 줄을 차지하지 않게 오른쪽 위에 */
 .va-donut .sh-top {
-  grid-column: 1 / -1;
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
 }
 
 .sh-ring {
@@ -2689,7 +2694,7 @@
   grid-template-columns: 180px minmax(0, 1fr);
   align-items: center;
   gap: 32px;
-  padding: 22px 0 22px 36px;
+  padding: 19px 0 19px 36px;
   border-top: 0;
   border-bottom: 1px solid var(--line);
   box-shadow: inset 8px 0 0 var(--c);
