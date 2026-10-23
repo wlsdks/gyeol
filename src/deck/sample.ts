@@ -1,5 +1,5 @@
 import { createDeck, emptyItem } from './generate'
-import type { Deck, Item, Slide } from './types'
+import type { Deck, Item, Slide, SlideOptions } from './types'
 
 // 처음 쓰는 사람이 완성된 모습을 볼 수 있는 예시 보고. 회사, 사람, 숫자는 모두 지어낸 것이다.
 
@@ -57,7 +57,7 @@ export const SAMPLE_DASHBOARD = svg(
   1000,
 )
 
-type Fill = { fields?: Record<string, string>; items?: Partial<Item>[] }
+type Fill = { fields?: Record<string, string>; items?: Partial<Item>[]; options?: SlideOptions }
 
 // 영업 2팀 김민준 매니저가 영업본부장에게 하는 수주 제안 계획 보고
 const CONTENT: Record<string, Fill> = {
@@ -126,6 +126,7 @@ const CONTENT: Record<string, Fill> = {
   '섹션: 실행 계획': { fields: { lead: '수주까지 할 일' } },
   '수주 일정': {
     fields: { title: '12월 계약이 목표예요' },
+    options: { highlight: 0 },
     items: [
       { meta: '11월 1주', title: '제안서 제출', body: '품질팀장에게 직접 전달' },
       { meta: '11월 3주', title: '현장 시연', body: '평택 공장 시범 라인에서' },
@@ -157,6 +158,7 @@ function fill(slide: Slide): Slide {
     ...slide,
     fields: { ...slide.fields, ...content.fields },
     items: content.items ? content.items.map((it) => ({ ...emptyItem(), ...it })) : slide.items,
+    options: { ...slide.options, ...content.options },
   }
 }
 

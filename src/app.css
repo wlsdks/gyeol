@@ -1499,7 +1499,7 @@ select {
 }
 
 /* 1280×600 노트북처럼 슬라이드가 좁게 보이면 오른쪽 단추는 그림만 */
-@container (max-width: 820px) {
+@container (max-width: 640px) {
   .stage-tools-r .btn-t {
     position: absolute;
     width: 1px;
@@ -1652,6 +1652,11 @@ select {
 .ins-row + .ins-row,
 .ins-row + .toggle {
   margin-top: 14px;
+}
+
+/* 모양 그림 아래에 이어지는 고르기 줄은 그림 이름과 붙어 보이지 않게 더 띄운다 */
+.ins-layouts + :is(.ins-row, .toggle) {
+  margin-top: 20px;
 }
 
 .ins-label {

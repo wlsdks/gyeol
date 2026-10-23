@@ -46,8 +46,12 @@
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--t-body);
+  /* 단추 안의 미리보기처럼 감싸는 쪽의 글 정렬, 굵기를 물려받지 않게 */
+  font-weight: 400;
   line-height: 1.55;
   letter-spacing: -0.012em;
+  text-align: left;
+  white-space: normal;
   word-break: keep-all;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
@@ -1197,8 +1201,27 @@
   box-shadow: 0 0 0 12px var(--bg);
 }
 
-.tl-item:first-child .tl-dot {
+/* 지금 단계: 지나온 단계는 점과 선을 채우고, 지금 점에는 둘레를 둔다. 남은 단계는 비워 둔다 */
+.tl-item.is-done::before {
   background: var(--accent);
+}
+
+.tl-item:is(.is-done, .is-now) .tl-dot {
+  background: var(--accent);
+}
+
+.tl-item.is-now .tl-dot {
+  box-shadow:
+    0 0 0 10px var(--bg),
+    0 0 0 22px var(--accent-soft);
+}
+
+.has-now .tl-item:not(.is-done, .is-now) .tl-dot {
+  border-color: var(--ink-3);
+}
+
+.has-now .tl-item:not(.is-done, .is-now) .tl-meta {
+  color: var(--ink-3);
 }
 
 .tl-title {
@@ -1274,6 +1297,16 @@
   bottom: 50%;
 }
 
+/* 세로 모양에서는 지금 단계의 선이 위 절반(지나온 쪽)만 채워진다 */
+.va-steps .tl-item.is-now:not(:first-child)::before {
+  background: linear-gradient(var(--accent) 50%, var(--line) 50%);
+}
+
+.va-steps .tl-item.is-done:last-child::before,
+.va-steps .tl-item.is-now:last-child:not(:first-child)::before {
+  background: var(--accent);
+}
+
 .va-steps .tl-meta {
   grid-column: 1;
   grid-row: 1 / span 2;
@@ -1345,10 +1378,12 @@
   text-wrap: pretty;
 }
 
+/* 한마디는 본문 바로 뒤에 잇는다. 맨 아래에 붙이면 본문과 사이가 비어 보인다 */
 .cs-quote {
-  --fs: 36px;
+  --fs: 38px;
   position: relative;
-  margin-top: auto;
+  max-width: 1020px;
+  margin-top: 72px;
   padding: 0 0 0 76px;
   font-family: var(--font-head);
   font-weight: 500;
