@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
+import { countUp } from '../slides/countUp'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 
 const NEXT_KEYS = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n']
@@ -81,6 +82,15 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
     return () => window.clearTimeout(idleTimer.current)
   }, [])
 
+  // 앞으로 넘길 때만 움직인다. 이전 장으로 돌아가면 다 보인 상태로 (PowerPoint와 같게).
+  const motion = deck.motion ?? 'calm'
+  const play = motion !== 'none' && dir > 0
+  const stageRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!play || motion !== 'lively' || !stageRef.current) return
+    return countUp(stageRef.current)
+  }, [index, play, motion])
+
   const slide = slides[index]
   if (!slide) return null
 
@@ -91,7 +101,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
       onClick={(e) => (blank ? setBlank(null) : goTo(e.clientX < window.innerWidth * 0.3 ? index - 1 : index + 1))}
     >
       <FitSlide className="present-stage">
-        <div key={slide.id} className={cx('present-slide', dir > 0 ? 'from-right' : 'from-left')}>
+        <div key={slide.id} ref={stageRef} className={cx('present-slide', play && 'is-playing')}>
           <SlideCanvas
             deck={deck}
             slide={slide}

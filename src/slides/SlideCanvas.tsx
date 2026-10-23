@@ -11,7 +11,7 @@ export const SLIDE_W = 1920
 export const SLIDE_H = 1080
 
 export interface SlideCanvasProps {
-  deck: Pick<Deck, 'meta' | 'theme' | 'title'>
+  deck: Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
   slide: Slide
   mode: SlideMode
   actions?: SlideActions
@@ -62,7 +62,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
       <div
-        className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`)}
+        className={cx('slide', `l-${slide.layout}`, `t-${deck.theme.id}`, density, bold && 'is-bold', `m-${mode}`, `mo-${deck.motion ?? 'calm'}`)}
         style={themeStyle(deck.theme)}
       >
         <View />

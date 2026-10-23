@@ -1,0 +1,247 @@
+/*
+ * 발표할 때만 움직이는 연출.
+ *
+ * - 사용자는 움직임을 하나하나 붙이지 않는다. 발표마다 '없음 / 차분하게 / 생동감' 하나만 고르고,
+ *   레이아웃마다 미리 짜 둔 순서(제목 → 항목 차례로, 막대는 자라고, 일정 선은 그려지고)로 움직인다.
+ * - `.is-playing` 안에 있는 슬라이드만 움직인다. 발표 화면과 내보낸 HTML의 발표 모드가 이 표시를 붙인다.
+ *   편집 화면, 축소 목록, PDF에는 붙지 않아서 늘 다 보인 상태다.
+ * - 이전 장으로 돌아갈 때는 붙이지 않는다(PowerPoint처럼 다 보인 상태로).
+ * - 이미 있는 transform을 덮지 않게 translate, scale 속성만 움직인다.
+ */
+
+.slide.mo-calm {
+  --mo-y: 18px;
+  --mo-dur: 560ms;
+  --mo-step: 80ms;
+  --mo-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --mo-body: 200ms;
+}
+
+.slide.mo-lively {
+  --mo-y: 44px;
+  --mo-dur: 760ms;
+  --mo-step: 130ms;
+  --mo-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mo-body: 280ms;
+}
+
+/* 항목 차례. 한 줄에 놓인 항목들이 앞에서부터 나온다. */
+.slide .it:nth-child(2) { --mo-i: 1; }
+.slide .it:nth-child(3) { --mo-i: 2; }
+.slide .it:nth-child(4) { --mo-i: 3; }
+.slide .it:nth-child(5) { --mo-i: 4; }
+.slide .it:nth-child(6) { --mo-i: 5; }
+.slide .it:nth-child(7) { --mo-i: 6; }
+.slide .it:nth-child(8) { --mo-i: 7; }
+.slide .it:nth-child(9) { --mo-i: 8; }
+.slide .it:nth-child(n + 10) { --mo-i: 9; }
+
+@keyframes mo-rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--mo-y);
+  }
+}
+
+@keyframes mo-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes mo-grow-x {
+  from {
+    scale: 0 1;
+  }
+}
+
+@keyframes mo-pop {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+@keyframes mo-settle {
+  from {
+    opacity: 0;
+    scale: 1.04;
+  }
+}
+
+@keyframes mo-wipe {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
+@keyframes mo-big {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--mo-y) * 4);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .is-playing .slide:is(.mo-calm, .mo-lively) {
+    /* 모든 움직이는 것의 기본값. 아래에서 무엇을, 언제를 정한다. */
+    --mo-at: 0ms;
+
+    & :is(.s-head > *, .ag-title, .it, .cv-text, .cv-ask, .cv-meta, .cv-logo, .sc-text, .sc-num, .sc-map, .st-title, .st-lead, .ag-title, .cs-client, .cs-title, .cs-body, .cs-quote, .cs-logo, .ix-img, .ix-text, .cl-title, .cl-contact, .cp-headrow) {
+      animation: mo-rise var(--mo-dur) var(--mo-ease) both;
+      animation-delay: calc(var(--mo-at) + var(--mo-i, 0) * var(--mo-step));
+    }
+
+    /* 제목 다음에 본문 */
+    & .s-lead {
+      --mo-at: 90ms;
+    }
+
+    /* 비교의 머리 줄은 첫째 자리라서 줄들은 한 칸 뒤에 나온다 */
+    & .s-body .it,
+    & .cp-headrow {
+      --mo-at: var(--mo-body);
+    }
+
+    /* 표지: 제목, 그다음 결정 요청과 발표자 */
+    & .cv-logo {
+      animation-name: mo-fade;
+    }
+
+    & .cv-ask {
+      --mo-at: 260ms;
+    }
+
+    & .cv-meta {
+      --mo-at: 420ms;
+      animation-name: mo-fade;
+    }
+
+    /* 섹션: 큰 번호가 먼저 올라오고 제목 */
+    & .sc-num {
+      animation-name: mo-big;
+      animation-duration: calc(var(--mo-dur) * 1.6);
+    }
+
+    & .sc-text {
+      --mo-at: 160ms;
+    }
+
+    & .sc-map {
+      --mo-at: 420ms;
+      animation-name: mo-fade;
+    }
+
+    /* 한 문장 메시지: 메시지만 천천히 */
+    & .st-title {
+      animation-duration: calc(var(--mo-dur) * 1.4);
+    }
+
+    & .st-lead {
+      --mo-at: 360ms;
+    }
+
+    /* 목차 */
+    & .ag-list .it {
+      --mo-at: 160ms;
+    }
+
+    /* 비교: 화살표가 줄마다 뒤따라 */
+    & .cp-arrow {
+      animation: mo-pop calc(var(--mo-dur) * 0.8) var(--mo-ease) both;
+      animation-delay: calc(var(--mo-body) + var(--mo-step) + var(--mo-i, 0) * var(--mo-step) + 220ms);
+    }
+
+    /* 일정: 선이 왼쪽부터 그려지고, 점과 글이 차례로 */
+    & .tl-item::before {
+      transform-origin: left center;
+      animation: mo-grow-x calc(var(--mo-dur) * 1.2) var(--mo-ease) both;
+      animation-delay: calc(var(--mo-body) + var(--mo-i, 0) * var(--mo-step));
+    }
+
+    & .tl-dot {
+      animation: mo-pop var(--mo-dur) var(--mo-ease) both;
+      animation-delay: calc(var(--mo-body) + 120ms + var(--mo-i, 0) * var(--mo-step));
+    }
+
+    /* 막대 비교: 막대가 자란다 */
+    & .br-fill {
+      transform-origin: left center;
+      animation: mo-grow-x calc(var(--mo-dur) * 1.5) var(--mo-ease) both;
+      animation-delay: calc(var(--mo-body) + 120ms + var(--mo-i, 0) * var(--mo-step));
+    }
+
+    /* 사례 */
+    & .cs-title {
+      --mo-at: 80ms;
+    }
+
+    & .cs-body {
+      --mo-at: 180ms;
+    }
+
+    & .cs-quote {
+      --mo-at: 320ms;
+    }
+
+    & .cs-results .it {
+      --mo-at: 360ms;
+    }
+
+    /* 이미지와 설명: 이미지는 제자리에서 살짝 */
+    & .ix-img {
+      animation-name: mo-settle;
+      animation-duration: calc(var(--mo-dur) * 1.4);
+    }
+
+    & .ix-text {
+      --mo-at: 160ms;
+    }
+
+    /* 로고는 많아서 빨리 */
+    & .lg .it {
+      --mo-step: 45ms;
+      animation-name: mo-fade;
+    }
+
+    /* 마무리 */
+    & .cl-contact {
+      --mo-at: 260ms;
+      animation-name: mo-fade;
+    }
+
+    & .cl-steps .it {
+      --mo-at: 220ms;
+    }
+  }
+
+  /* 생동감: 색 면이 밀려 들어오고, 추천안은 마지막에 한 번 더 */
+  .is-playing .slide.mo-lively {
+    & .cv-side {
+      animation: mo-wipe 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+    }
+
+    & .cv-ask {
+      --mo-at: 520ms;
+    }
+
+    & .cv-meta {
+      --mo-at: 700ms;
+    }
+
+    & .pr-plan.is-hl {
+      animation-name: mo-rise, mo-lift;
+      animation-duration: var(--mo-dur), 600ms;
+      animation-delay:
+        calc(var(--mo-at) + var(--mo-i, 0) * var(--mo-step)),
+        calc(var(--mo-at) + var(--mo-i, 0) * var(--mo-step) + 900ms);
+      animation-timing-function: var(--mo-ease), ease-in-out;
+    }
+  }
+}
+
+@keyframes mo-lift {
+  50% {
+    scale: 1.035;
+  }
+}

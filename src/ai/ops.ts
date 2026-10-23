@@ -7,8 +7,8 @@
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
-import { THEME_ORDER } from '../deck/themes'
-import type { Deck, Item, ItemKey, LayoutId, Slide, ThemeId } from '../deck/types'
+import { MOTIONS, THEME_ORDER } from '../deck/themes'
+import type { Deck, Item, ItemKey, LayoutId, Motion, Slide, ThemeId } from '../deck/types'
 import { shapeDeckId, shapeSlideId } from './share'
 
 export const REQUEST_FORMAT = 'html-maker/request'
@@ -29,7 +29,7 @@ export type Op =
   | { op: 'set_hidden'; slide: SlideRef; hidden: boolean }
   | { op: 'set_item_count'; slide: SlideRef; count: number }
   | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; contain?: boolean }
-  | { op: 'set_theme'; theme?: ThemeId; accent?: string | null }
+  | { op: 'set_theme'; theme?: ThemeId; accent?: string | null; motion?: Motion }
   | { op: 'set_guide'; slide: SlideRef; text: string }
   | { op: 'set_hint'; slide: SlideRef; field: string; item?: number; text: string }
 
@@ -157,11 +157,12 @@ export function parseOp(v: unknown): Op | null {
       return { op: 'set_hint', slide, field: v.field, item: v.item as number | undefined, text }
     }
     case 'set_theme': {
-      if (!only(v, ['op', 'theme', 'accent'])) return null
+      if (!only(v, ['op', 'theme', 'accent', 'motion'])) return null
       if (v.theme !== undefined && !THEME_ORDER.includes(v.theme as ThemeId)) return null
       if (v.accent !== undefined && v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return null
-      if (v.theme === undefined && v.accent === undefined) return null
-      return { op: 'set_theme', theme: v.theme as ThemeId | undefined, accent: v.accent as string | null | undefined }
+      if (v.motion !== undefined && !MOTIONS.some((m) => m.id === v.motion)) return null
+      if (v.theme === undefined && v.accent === undefined && v.motion === undefined) return null
+      return { op: 'set_theme', theme: v.theme as ThemeId | undefined, accent: v.accent as string | null | undefined, motion: v.motion as Motion | undefined }
     }
     default:
       return null
@@ -226,6 +227,7 @@ export interface Applied {
 export function applyOps(deck: Deck, ops: Op[]): Applied {
   let slides = deck.slides.map((s) => s)
   let theme = { ...deck.theme }
+  let motion = deck.motion
   const named = new Map<string, string>()
   const touched = new Set<string>()
 
@@ -248,8 +250,10 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       const next = { ...theme }
       if (op.theme) next.id = op.theme
       if (op.accent !== undefined) next.accent = op.accent === null ? undefined : op.accent.toLowerCase()
-      if (next.id === theme.id && next.accent === theme.accent) return fail('no_change')
+      const nextMotion = op.motion ?? motion
+      if (next.id === theme.id && next.accent === theme.accent && (nextMotion ?? 'calm') === (motion ?? 'calm')) return fail('no_change')
       theme = next
+      motion = nextMotion
       return done
     }
 
@@ -355,7 +359,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
     }
   })
 
-  return { deck: { ...deck, theme, slides }, results, touched, named }
+  return { deck: { ...deck, theme, motion, slides }, results, touched, named }
 }
 
 /** 요청이 이 덱을 향한 것인지 */

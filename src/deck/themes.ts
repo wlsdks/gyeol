@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { Deck, ThemeId } from './types'
+import type { Deck, Motion, ThemeId } from './types'
 
 export interface Theme {
   id: ThemeId
@@ -70,6 +70,13 @@ export const THEMES: Record<ThemeId, Theme> = {
 }
 
 export const THEME_ORDER: ThemeId[] = ['white', 'navy', 'serif']
+
+/** 발표할 때의 움직임. 이름과 설명은 테마 메뉴와 AI 카탈로그에 함께 쓴다. */
+export const MOTIONS: { id: Motion; name: string; description: string }[] = [
+  { id: 'none', name: '없음', description: '넘기면 바로 다 보여요.' },
+  { id: 'calm', name: '차분하게', description: '제목, 항목이 차례로 살짝 올라와요. 보고 자리에 어울려요.' },
+  { id: 'lively', name: '생동감', description: '더 크게 움직이고 숫자가 0부터 올라가요. 발표가 길 때 좋아요.' },
+]
 
 export const ACCENT_PRESETS = [
   '#2350E8',

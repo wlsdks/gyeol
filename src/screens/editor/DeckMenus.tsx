@@ -1,15 +1,20 @@
 import { useMemo } from 'react'
 import { makeSlide } from '../../deck/generate'
-import { ACCENT_PRESETS, THEMES, THEME_ORDER, accentOf } from '../../deck/themes'
+import { ACCENT_PRESETS, MOTIONS, THEMES, THEME_ORDER, accentOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { CheckIcon, DownloadIcon, Popover } from '../ui'
 
+/** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
+export const PREVIEW_MOTION = 'html-maker:preview-motion'
+
 export function ThemeMenu({ deck }: { deck: Deck }) {
   const setTheme = useDeck((s) => s.setTheme)
   const setAccent = useDeck((s) => s.setAccent)
+  const setMotion = useDeck((s) => s.setMotion)
+  const motion = deck.motion ?? 'calm'
   const cover = useMemo(() => {
     const s = makeSlide('cover')
     s.fields.title = deck.slides.find((x) => x.layout === 'cover')?.fields.title || deck.title
@@ -27,7 +32,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
         </button>
       )}
     >
-      {() => (
+      {(close) => (
         <div className="theme-menu">
           <p className="menu-h">테마</p>
           <div className="theme-grid">
@@ -75,6 +80,42 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label="강조색 직접 고르기" />
             </label>
           </div>
+          <p className="menu-h">발표할 때 움직임</p>
+          <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
+            {MOTIONS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={cx('seg-btn', motion === m.id && 'is-on')}
+                aria-pressed={motion === m.id}
+                onClick={() => {
+                  setMotion(m.id)
+                  // 메뉴가 슬라이드를 가리지 않게 닫고 보여 준다
+                  if (m.id !== 'none') {
+                    close()
+                    window.dispatchEvent(new Event(PREVIEW_MOTION))
+                  }
+                }}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
+          <p className="menu-note motion-note">
+            {MOTIONS.find((m) => m.id === motion)?.description}
+            {motion !== 'none' && (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  close()
+                  window.dispatchEvent(new Event(PREVIEW_MOTION))
+                }}
+              >
+                지금 장에서 보기
+              </button>
+            )}
+          </p>
         </div>
       )}
     </Popover>

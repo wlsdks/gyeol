@@ -1,4 +1,8 @@
 // 내보낸 HTML 파일 안에서 쓰는 보기 화면. 열면 모든 장이 세로로 보이고, "발표 시작"으로 슬라이드쇼가 된다.
+// 발표할 때의 움직임은 앱의 발표 화면과 같다: 앞으로 넘긴 장에만 .is-playing을 붙이고(motion.css),
+// 생동감이면 숫자를 올린다(countUp). countUp은 소스를 그대로 넣는다.
+
+import { countUp } from '../slides/countUp'
 
 /** 보기 화면에 쓰이는 글자 (폰트 묶음 고르기에 쓴다) */
 export const VIEWER_TEXT = 'PDF로 저장 발표 시작 0123456789 /'
@@ -25,8 +29,9 @@ body.is-present .v-frame{width:var(--pw);height:var(--ph);aspect-ratio:auto;bord
 body.is-present .v-count{position:fixed;right:20px;bottom:16px;display:block;padding:8px 12px;border-radius:999px;background:rgb(0 0 0/.45);color:rgb(255 255 255/.8);font:600 13px/1 inherit;opacity:0;transition:opacity .2s}
 body.is-present.is-awake .v-count{opacity:1}
 body.is-present:not(.is-awake){cursor:none}
-@media (prefers-reduced-motion:no-preference){body.is-present .v-slide.is-current .v-scale{animation:v-in .26s ease-out}}
-@keyframes v-in{from{opacity:0}to{opacity:1}}
+.v-blank{display:none}
+body.is-present .v-blank:not([hidden]){position:fixed;inset:0;z-index:5;display:block;background:#000}
+body.is-present .v-blank.is-white{background:#fff}
 @media print{
   @page{size:1920px 1080px;margin:0}
   html,body{background:#fff}
@@ -40,9 +45,10 @@ body.is-present:not(.is-awake){cursor:none}
 `
 
 export const VIEWER_JS = `(function(){
+var countUp=${countUp.toString()};
 var slides=[].slice.call(document.querySelectorAll('.v-slide'));
-var body=document.body,root=document.documentElement,count=document.querySelector('.v-count');
-var i=0,timer=0;
+var body=document.body,root=document.documentElement,count=document.querySelector('.v-count'),blank=document.querySelector('.v-blank');
+var i=0,timer=0,stopCount=null;
 function presenting(){return body.classList.contains('is-present')}
 function fit(){
   if(presenting()){
@@ -53,30 +59,43 @@ function fit(){
     slides.forEach(function(el){var f=el.querySelector('.v-frame');f.style.setProperty('--s',f.clientWidth/1920)});
   }
 }
-function show(n){
-  i=Math.max(0,Math.min(slides.length-1,n));
-  slides.forEach(function(el,k){el.classList.toggle('is-current',k===i)});
+function show(n,first){
+  var next=Math.max(0,Math.min(slides.length-1,n));
+  if(next===i&&!first)return;
+  var forward=first||next>i;
+  i=next;
+  if(stopCount){stopCount();stopCount=null}
+  slides.forEach(function(el,k){el.classList.toggle('is-current',k===i);el.classList.toggle('is-playing',k===i&&forward)});
   count.textContent=(i+1)+' / '+slides.length;
+  var cur=slides[i];
+  if(forward&&cur.querySelector('.slide.mo-lively')&&matchMedia('(prefers-reduced-motion: no-preference)').matches)stopCount=countUp(cur);
 }
+function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
 function start(n){
-  body.classList.add('is-present');fit();show(n);wake();
+  body.classList.add('is-present');fit();show(n,true);wake();
   if(root.requestFullscreen)root.requestFullscreen().catch(function(){});
 }
 function stop(){
-  body.classList.remove('is-present');
+  body.classList.remove('is-present');setBlank(null);
+  if(stopCount){stopCount();stopCount=null}
+  slides.forEach(function(el){el.classList.remove('is-playing')});
   if(document.fullscreenElement)document.exitFullscreen().catch(function(){});
   fit();if(slides[i])slides[i].scrollIntoView({block:'center'});
 }
 document.getElementById('v-present').addEventListener('click',function(){start(0)});
 document.getElementById('v-print').addEventListener('click',function(){print()});
 slides.forEach(function(el,k){el.querySelector('.v-frame').addEventListener('click',function(e){if(!presenting()){e.stopPropagation();start(k)}})});
-document.addEventListener('click',function(e){if(presenting())show(e.clientX<innerWidth*.3?i-1:i+1)});
+document.addEventListener('click',function(e){if(!presenting())return;if(!blank.hidden){setBlank(null);return}show(e.clientX<innerWidth*.3?i-1:i+1)});
 document.addEventListener('mousemove',function(){if(presenting())wake()});
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&presenting())stop()});
 document.addEventListener('keydown',function(e){
   var k=e.key;
   if(!presenting()){if(k==='F5'){e.preventDefault();start(0)}return}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  var b={b:'black',B:'black','.':'black',w:'white',W:'white',',':'white'}[k];
+  if(b){setBlank(blank.hidden||blank.className.indexOf(b)<0?b:null);e.preventDefault();return}
+  if(!blank.hidden&&k!=='Escape'){setBlank(null);e.preventDefault();return}
   if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].indexOf(k)>=0)show(i+1);
   else if(['ArrowLeft','ArrowUp','PageUp','Backspace','p'].indexOf(k)>=0)show(i-1);
   else if(k==='Home')show(0);

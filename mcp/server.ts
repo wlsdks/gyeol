@@ -42,7 +42,7 @@ const MESSAGES = {
 
 const PROTOCOL_WORDS = [
   // 모양 파일
-  SHAPE_FORMAT, 'format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'updatedAt', 'slides',
+  SHAPE_FORMAT, 'format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides',
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain',
   'empty', 'filled', 'long',
   // 목록과 결과
@@ -156,7 +156,7 @@ const TOOLS = [
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 안 비교와 막대 비교), flip?, contain?: 이미지와 설명}',
-      '- set_theme {theme?: 테마 id, accent?: "#rrggbb" 또는 null(테마 기본색)}',
+      '- set_theme {theme?: 테마 id, accent?: "#rrggbb" 또는 null(테마 기본색), motion?: 발표할 때 움직임 id(카탈로그 motions)}',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
       '- set_hint {slide, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸.',
     ].join('\n'),

@@ -5,7 +5,7 @@ import { mcpCommand } from '../../ai/client'
 import type { AiShare } from '../../ai/useAiShare'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
-import { THEMES } from '../../deck/themes'
+import { MOTIONS, THEMES } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
@@ -193,7 +193,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       const parts: string[] = []
       if (op.theme) parts.push(`테마: ${THEMES[deck.theme.id].name} → ${THEMES[op.theme].name}`)
       if (op.accent !== undefined) parts.push(op.accent === null ? '강조색: 테마 기본색' : `강조색: ${op.accent}`)
-      return { text: '테마 바꾸기', detail: parts.join(', ') }
+      if (op.motion) parts.push(`발표할 때 움직임: ${MOTIONS.find((m) => m.id === (deck.motion ?? 'calm'))?.name} → ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
+      return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '발표할 때 움직임 바꾸기', detail: parts.join(', ') }
     }
     case 'set_guide':
       return { text: `${name(op.slide)} 장 안내 바꾸기`, detail: op.text }

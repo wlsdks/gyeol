@@ -8,6 +8,7 @@ import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
 import type { SlideActions } from '../../slides/context'
+import { countUp } from '../../slides/countUp'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
@@ -18,7 +19,7 @@ import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, 
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiShare } from '../../ai/useAiShare'
 import { AiInbox, AiMenu, AiReview } from './AiShare'
-import { ExportMenu, ThemeMenu } from './DeckMenus'
+import { ExportMenu, PREVIEW_MOTION, ThemeMenu } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
 import { SaveStatus } from './SaveStatus'
@@ -360,8 +361,26 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
     }),
     [slide.id],
   )
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
+  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
+
+  // 테마 메뉴에서 움직임을 고르면 이 장에서 발표할 때처럼 한 번 보여 준다
+  const [preview, setPreview] = useState(0)
+  const previewRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const on = () => setPreview((n) => n + 1)
+    window.addEventListener(PREVIEW_MOTION, on)
+    return () => window.removeEventListener(PREVIEW_MOTION, on)
+  }, [])
+  useEffect(() => {
+    if (!preview) return
+    const stop = deck.motion === 'lively' && previewRef.current ? countUp(previewRef.current) : undefined
+    const t = window.setTimeout(() => setPreview(0), 2800)
+    return () => {
+      window.clearTimeout(t)
+      stop?.()
+    }
+  }, [preview, deck.motion])
 
   return (
     <main className="stage">
@@ -405,13 +424,15 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
             </div>
           }
         >
-          <SlideCanvas
-            deck={look}
-            slide={slide}
-            mode="edit"
-            actions={actions}
-            {...pageProps(info, slide.id)}
-          />
+          <div key={preview} ref={previewRef} className={cx(preview > 0 && 'is-playing')}>
+            <SlideCanvas
+              deck={look}
+              slide={slide}
+              mode={preview > 0 ? 'final' : 'edit'}
+              actions={actions}
+              {...pageProps(info, slide.id)}
+            />
+          </div>
         </FitSlide>
       </div>
 

@@ -7,8 +7,8 @@
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER } from '../deck/layouts'
-import { THEMES, THEME_ORDER } from '../deck/themes'
-import type { Audience, Deck, DeckType, LayoutId, Method, Slide, ThemeId } from '../deck/types'
+import { MOTIONS, THEMES, THEME_ORDER } from '../deck/themes'
+import type { Audience, Deck, DeckType, LayoutId, Method, Motion, Slide, ThemeId } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
 
@@ -41,6 +41,7 @@ export interface ShapeDeck {
   method: Method
   theme: ThemeId
   accent: string | null
+  motion: Motion
   updatedAt: number
   slides: ShapeSlide[]
 }
@@ -102,6 +103,7 @@ export function catalog() {
     durations: DURATIONS.map((d) => ({ minutes: d.minutes, name: d.name })),
     methods: METHODS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     themes: THEME_ORDER.map((id) => ({ id, name: THEMES[id].name, description: THEMES[id].description, accent: THEMES[id].accent })),
+    motions: MOTIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
 }
 
@@ -164,6 +166,7 @@ export function toShape(deck: Deck): ShapeDeck {
     method: METHODS.some((m) => m.id === deck.meta.method) ? deck.meta.method : 'live',
     theme: THEME_ORDER.includes(deck.theme.id) ? deck.theme.id : 'white',
     accent: deck.theme.accent && HEX.test(deck.theme.accent) ? deck.theme.accent.toLowerCase() : null,
+    motion: MOTIONS.some((m) => m.id === deck.motion) ? deck.motion! : 'calm',
     updatedAt: Math.round(deck.updatedAt) || 0,
     slides: deck.slides.filter((s) => s.layout in LAYOUTS).map((s) => shapeSlide(deck, s)),
   }
@@ -235,7 +238,7 @@ function checkSlide(v: unknown): boolean {
 
 export function checkShape(v: unknown): v is ShapeDeck {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'updatedAt', 'slides'])) return false
+  if (!keysIn(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'updatedAt', 'slides'])) return false
   if (v.format !== SHAPE_FORMAT || v.version !== 1) return false
   if (typeof v.deck !== 'string' || !OPAQUE_ID.test(v.deck) || v.deck[0] !== 'd') return false
   if (!ALL_TYPES.includes(v.type as DeckType)) return false
@@ -244,6 +247,7 @@ export function checkShape(v: unknown): v is ShapeDeck {
   if (!isInt(v.duration, 0, 240) || !isInt(v.updatedAt, 0, Number.MAX_SAFE_INTEGER)) return false
   if (!THEME_ORDER.includes(v.theme as ThemeId)) return false
   if (v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return false
+  if (!MOTIONS.some((m) => m.id === v.motion)) return false
   if (!Array.isArray(v.slides) || v.slides.length > 300 || !v.slides.every(checkSlide)) return false
   return new Set((v.slides as ShapeSlide[]).map((s) => s.id)).size === v.slides.length
 }

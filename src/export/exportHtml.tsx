@@ -5,6 +5,7 @@ import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { safeFileName } from '../store/deckFile'
+import motionCss from '../slides/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
@@ -147,6 +148,7 @@ export async function buildHtml(deck: Deck): Promise<string> {
 <style>
 ${fonts}
 ${slidesCss}
+${motionCss}
 ${VIEWER_CSS}
 </style>
 </head>
@@ -162,6 +164,7 @@ ${VIEWER_CSS}
 ${slides}
 </main>
 <div class="v-count" aria-live="polite"></div>
+<div class="v-blank" hidden></div>
 <script type="application/json" id="${DATA_ID}">${deckData(deck)}</script>
 <script>${VIEWER_JS}</script>
 </body>

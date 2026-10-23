@@ -20,6 +20,8 @@ export type DeckType = 'business' | 'deal' | 'improve' | 'report' | 'blank'
 export type Audience = 'exec' | 'practitioner' | 'mixed'
 export type Method = 'live' | 'remote' | 'send'
 export type ThemeId = 'white' | 'navy' | 'serif'
+/** 발표할 때의 움직임. 레이아웃마다 미리 짜 둔 순서로 움직이고, 사용자는 정도만 고른다. */
+export type Motion = 'none' | 'calm' | 'lively'
 
 /** 덱 단위 값. 슬라이드에서는 `$org`처럼 `$`를 붙여 참조한다. */
 export type MetaKey = 'org' | 'presenter' | 'date' | 'contact' | 'logo'
@@ -83,6 +85,8 @@ export interface Deck {
   updatedAt: number
   meta: DeckMeta
   theme: { id: ThemeId; accent?: string }
+  /** 없으면 'calm' */
+  motion?: Motion
   slides: Slide[]
   /** AI(MCP)에게 이 발표의 모양을 보여 줄지. 사용자가 발표마다 직접 켠다. */
   aiShare?: boolean

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
 import { isMetaKey } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
-import type { Deck, ItemKey, LayoutId, MetaKey, Slide, SlideOptions, ThemeId } from '../deck/types'
+import type { Deck, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
 
 const HISTORY_LIMIT = 100
 /** 같은 칸을 이 시간 안에 이어서 고치면 되돌리기 한 단계로 묶는다 */
@@ -26,6 +26,7 @@ interface DeckState {
   setMeta(key: MetaKey, value: string): void
   setTheme(id: ThemeId): void
   setAccent(accent: string | undefined): void
+  setMotion(motion: Motion): void
 
   setField(slideId: string, key: string, value: string): void
   setItem(slideId: string, index: number, key: ItemKey, value: string): void
@@ -111,6 +112,9 @@ export const useDeck = create<DeckState>((set, get) => {
     },
     setAccent(accent) {
       commit((d) => ({ ...d, theme: { ...d.theme, accent } }))
+    },
+    setMotion(motion) {
+      commit((d) => ({ ...d, motion }))
     },
 
     setField(slideId, key, value) {
