@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BLOCK_EFFECT_IDS, BLOCK_TYPES, isLayoutBlock } from '../deck/blocks'
 import { motionEngine } from './engine'
 
 describe('움직임 엔진', () => {
@@ -7,5 +8,13 @@ describe('움직임 엔진', () => {
     const engine = rebuilt()
     expect(typeof engine.play).toBe('function')
     expect(typeof engine.swap).toBe('function')
+  })
+
+  it('부품 장만의 부품마다 짠 움직임이 있고, 고를 수 있는 움직임은 모두 엔진이 안다', () => {
+    const src = motionEngine.toString()
+    // 부품마다 짠 움직임은 nativeAuto의 case로, 고르는 움직임은 block()의 effect 비교로 들어 있다
+    // (변환을 거친 소스라 따옴표 꼴은 가리지 않는다)
+    for (const type of BLOCK_TYPES.filter((t) => !isLayoutBlock(t))) expect(src, type).toMatch(new RegExp(`case ["']${type}["']`))
+    for (const id of BLOCK_EFFECT_IDS.filter((e) => e !== 'auto' && e !== 'none')) expect(src, id).toMatch(new RegExp(`effect === ["']${id}["']`))
   })
 })
