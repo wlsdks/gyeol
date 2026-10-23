@@ -124,6 +124,13 @@ describe('자리 정하기', () => {
     expect(targetOf(added, 'b')).not.toBeNull()
   })
 
+  it('눌러서 넣으면 새 줄이 들어가지 않을 때 마지막 줄 끝에 붙는다', () => {
+    const areaH = 1080 - 100 - 140 - 200
+    const rows = [row(block('ring', 'r'), block('ratio', 'q'))]
+    const t = autoTarget(rows, block('spark', 's'), areaH)
+    expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
+  })
+
   it('줄 수, 줄마다 칸 수, 부품 수의 끝을 넘지 않는다', () => {
     let rows: BlockRow[] = []
     for (let i = 0; i < 12; i++) {

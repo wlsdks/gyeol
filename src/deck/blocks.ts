@@ -917,7 +917,7 @@ export function validTargets(rows: BlockRow[], block: Block, areaH?: number): Dr
 
 /**
  * 눌러서 넣을 때 알아서 고르는 자리: 마지막 줄 끝에 놓아도 모두 보기 좋은 너비가 되면 그 옆에,
- * 아니면 새 줄. 둘 다 안 되면 넣을 수 있는 첫 자리.
+ * 아니면 새 줄. 새 줄이 들어가지 않으면 마지막 줄 끝. 다 안 되면 넣을 수 있는 첫 자리.
  */
 export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): DropTarget | null {
   const valid = validTargets(rows, block, areaH)
@@ -933,6 +933,8 @@ export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): Drop
   }
   const below: DropTarget = { kind: 'row', index: rows.length }
   if (ok(below)) return below
+  // 새 줄이 들어가지 않으면 보기 좋은 너비가 아니어도 마지막 줄 끝에 (앞에 끼워 넣으면 읽는 차례가 뒤바뀐다)
+  if (placed && ok(beside)) return beside
   return valid[0] ?? null
 }
 
