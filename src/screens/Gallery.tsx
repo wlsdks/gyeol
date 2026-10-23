@@ -1,13 +1,16 @@
+import { BLOCKS, BLOCK_TYPES } from '../deck/blocks'
+import { sampleBlock } from '../deck/blockSamples'
 import { pageInfo } from '../deck/fields'
 import { createDeck, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { extraSlides, withItems, withOptions } from '../deck/showcase'
-import type { Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
+import type { BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
+// &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장.
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=C2410C 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
@@ -84,6 +87,39 @@ function edgeSlides(): Slide[] {
   ]
 }
 
+/**
+ * 부품마다 두 장: 혼자 한 줄을 다 쓸 때와, 가장 좁은 칸에 다른 부품과 함께 낮은 줄에 들어갈 때.
+ * 무너지기 쉬운 것은 좁고 낮은 칸이다.
+ */
+function blockSlides(fill: string | null): Slide[] {
+  return BLOCK_TYPES.flatMap((type, n) => {
+    const spec = BLOCKS[type]
+    const sample = sampleBlock(type)
+    // &fill=max: 항목을 가장 많이 넣었을 때. 예시 항목을 되풀이해 채운다
+    const items =
+      fill === 'max' && spec.items && sample.items.length
+        ? Array.from({ length: spec.items.max }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))
+        : sample.items
+    const b = (id: string) => ({ ...sample, items, id: `${type}-${id}` })
+    const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), id: `${type}-${id}` })
+    const narrow = 12 - spec.minSpan
+    const partner: BlockType = narrow >= 6 ? 'bullets' : narrow >= 4 ? 'callout' : 'number'
+    return [
+      { ...makeSlide('compose'), id: `bk-${n}-a`, fields: { title: `${spec.name}: 한 줄을 다 쓸 때` }, rows: [{ id: 'r1', blocks: [b('a')] }] },
+      {
+        ...makeSlide('compose'),
+        id: `bk-${n}-b`,
+        fields: { title: `${spec.name}: 좁은 칸, 낮은 줄` },
+        rows: [
+          { id: 'r1', blocks: [filler('m', 'message')] },
+          { id: 'r2', blocks: narrow > 0 ? [b('b'), filler('p', partner)] : [b('b')], spans: narrow > 0 ? [spec.minSpan, narrow] : [12] },
+          ...(narrow > 0 ? [] : [{ id: 'r3', blocks: [filler('n1', 'number'), filler('n2', 'number'), filler('n3', 'callout')] }]),
+        ],
+      },
+    ]
+  })
+}
+
 function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck {
   if (set === 'blank') {
     const deck = createDeck({
@@ -100,6 +136,7 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   }
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
+  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill')) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 

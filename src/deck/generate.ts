@@ -55,6 +55,7 @@ export function makeSlide(layout: LayoutId, recipe?: Partial<Recipe>): Slide {
     notes: '',
     options: withDefaultOptions(layout, { ...recipe?.options }, count),
     ...(recipe?.variant ? { variant: recipe.variant } : {}),
+    ...(layout === 'compose' ? { rows: [] } : {}),
   }
 }
 

@@ -152,12 +152,12 @@ function Editable({
 
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
-  const { slide, meta, actions } = useSlide()
+  const { slide, meta, actions, fieldPrefix = '' } = useSlide()
   return (
     <Field
       value={readField(slide, meta, k)}
       hint={hintFor(slide.layout, slide.hints, k)}
-      fieldId={k}
+      fieldId={fieldPrefix + k}
       onChange={actions && ((v) => actions.setField(k, v))}
       {...props}
     />
@@ -166,12 +166,12 @@ export function T({ k, ...props }: TextProps & { k: string }) {
 
 /** 항목 칸 */
 export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
-  const { slide, actions } = useSlide()
+  const { slide, actions, fieldPrefix = '' } = useSlide()
   return (
     <Field
       value={slide.items[i]?.[k] ?? ''}
       hint={hintFor(slide.layout, slide.hints, k, k, i)}
-      fieldId={`${i}.${k}`}
+      fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       {...props}
     />

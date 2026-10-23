@@ -165,18 +165,28 @@ export function motionEngine(): MotionEngine {
 
   // ---------- 연출표 ----------
 
+  /**
+   * 한 장을 움직인다. 부품 장의 칸(.bk) 하나를 넘기면 그 부품만 (편집기에서 움직임을 고를 때 미리 보기).
+   * 부품 장은 부품을 읽는 차례대로 하나씩: 레이아웃 부품은 그 레이아웃의 연출을 그 칸 안에서, 부품마다 고른 움직임이 있으면 그것으로.
+   */
   function play(root: Element, levelName: MotionLevel): () => void {
     const L: Level = LEVELS[levelName] || LEVELS.calm
-    const slide = root.classList.contains('slide') ? root : root.querySelector('.slide')
+    const cellOnly = root.classList.contains('bk') ? root : null
+    const slide = cellOnly ? cellOnly.closest('.slide') : root.classList.contains('slide') ? root : root.querySelector('.slide')
     const anims: Animation[] = []
     const stops: (() => void)[] = []
     const restores: (() => void)[] = []
     if (!slide || matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
-    const $ = (sel: string) => Array.prototype.slice.call(slide.querySelectorAll(sel)) as HTMLElement[]
-    const one = (sel: string) => slide.querySelector(sel) as HTMLElement | null
+    // 부품 하나를 움직이는 동안에는 그 칸 안에서만 찾고, 시간은 그 부품이 시작하는 때부터 센다
+    let scope: Element = slide
+    let t0 = 0
+    const $ = (sel: string) => Array.prototype.slice.call(scope.querySelectorAll(sel)) as HTMLElement[]
+    const one = (sel: string) => scope.querySelector(sel) as HTMLElement | null
     const layout = (/\bl-([a-zA-Z]+)/.exec(slide.className) || [])[1] || ''
-    const variant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
-    const s = (ms: number) => ms * L.speed
+    const slideVariant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
+    const s = (ms: number) => (t0 + ms) * L.speed
+    /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
+    const d = (ms: number) => ms * L.speed
 
     const rise = (el: Element | null, at: number, y = L.y, timing: Spring = L.move) => {
       if (el) run(anims, el, [{ opacity: 0, translate: `0 ${y}px` }], s(at), timing)
@@ -199,11 +209,16 @@ export function motionEngine(): MotionEngine {
     const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom', duration = 1000) => {
       if (!el) return
       const inset = from === 'left' ? 'inset(0 100% 0 0)' : from === 'right' ? 'inset(0 0 0 100%)' : 'inset(100% 0 0 0)'
-      run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: s(duration) })
+      run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(duration) })
     }
     /** 낱말마다 아래에서 올라오는 제목. 생동감은 살짝 기울었다가 바로 선다. */
     const words = (el: Element | null, at: number, gap = L.word, blur = false) => {
       if (!el) return at
+      // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 통째로 올라온다
+      if (el.closest('.m-edit')) {
+        rise(el, at, L.y * 0.6)
+        return at + 240
+      }
       const split = splitWords(el)
       restores.push(split.restore)
       split.words.forEach((w, i) => {
@@ -216,7 +231,8 @@ export function motionEngine(): MotionEngine {
       return at + split.words.length * gap + 160
     }
     const count = (el: Element | null, at: number) => {
-      if (el) countUp(el, s(at), levelName === 'lively' ? 1400 : 900, stops)
+      // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게)
+      if (el && !el.closest('.m-edit')) countUp(el, s(at), levelName === 'lively' ? 1400 : 900, stops)
     }
     /** 감싼 줄이 따로 나타나지 않는 숫자: 올라가기 시작할 때 함께 나타난다. 아직 차례가 아닌 줄에 0이 미리 보이지 않게 */
     const countIn = (el: Element | null, at: number) => {
@@ -228,14 +244,26 @@ export function motionEngine(): MotionEngine {
       return at + $(sel).length * step
     }
 
-    // 머리: 제목 낱말 → 부제. 본문은 제목이 거의 다 올라왔을 때부터.
+    // 머리: 제목 낱말 → 부제. 본문은 제목이 거의 다 올라왔을 때부터. 부품 안에서는 머리가 없다
     const head = () => {
+      if (scope !== slide) return 0
       const t = words(one('.s-head .s-title'), 0)
       rise(one('.s-head .s-lead'), Math.min(t, 420), L.y * 0.6)
       return Math.min(t, 520)
     }
 
+    function choreo(layout: string, variant: string) {
     switch (layout) {
+      case 'compose': {
+        const t = head()
+        let at = Math.min(t, 420)
+        for (const cell of $('.bk-area > .bk')) {
+          block(cell, at)
+          at += L.step * 2.6
+        }
+        fade(one('.s-source'), at + 200)
+        break
+      }
       case 'cover': {
         // 띠는 아래에서, 오른쪽 면은 오른쪽에서 밀려 들어온다. 색 면 모양은 면이 장 전체라 줄만 나타난다
         if (variant === 'full') fade(one('.cv-side'), 300, 700)
@@ -249,7 +277,7 @@ export function motionEngine(): MotionEngine {
         break
       }
       case 'section': {
-        run(anims, one('.sc-num') ?? slide, [{ opacity: 0, translate: '0 22%' }], 0, levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
+        run(anims, one('.sc-num') ?? scope, [{ opacity: 0, translate: '0 22%' }], 0, levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
         const t = words(one('.sc-title'), 160, L.word * 1.2)
         rise(one('.sc-lead'), t, L.y * 0.6)
         items('.sc-map li', t + 120, (el, at) => fade(el, at, 500), 60)
@@ -395,7 +423,7 @@ export function motionEngine(): MotionEngine {
           rise(el.querySelector('.wf-val'), at + 220, L.y * 0.4)
           if (el.classList.contains('wf-total')) count(el.querySelector('.wf-num'), at + 120)
           const plot = el.querySelector('.wf-plot')
-          if (plot) run(anims, plot, [{ opacity: 0 }], s(at + 420), { easing: OUT, duration: s(400) }, '::after')
+          if (plot) run(anims, plot, [{ opacity: 0 }], s(at + 420), { easing: OUT, duration: d(400) }, '::after')
         }, L.step * 1.3)
         fade(one('.s-source'), end + 200)
         break
@@ -406,7 +434,7 @@ export function motionEngine(): MotionEngine {
         // 선은 왼쪽에서부터 그려지고, 점은 선이 닿을 때 하나씩 맺힌다. 그래서 선은 일정한 빠르기로
         const draw = levelName === 'lively' ? 1500 : 1100
         const svg = one('.tn-svg')
-        if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(t + 100), { easing: 'linear', duration: s(draw) })
+        if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(t + 100), { easing: 'linear', duration: d(draw) })
         $('.tn-pt').forEach((el) => {
           const at = t + 100 + ((parseFloat(el.style.getPropertyValue('--x')) || 0) / 100) * draw
           pop(el.querySelector('.tn-dot'), at)
@@ -493,7 +521,7 @@ export function motionEngine(): MotionEngine {
           rise(el.querySelector('.mx-body'), at + 80, L.y * 0.5)
         })
         const hl = one('.mx-cell.is-hl')
-        if (hl) run(anims, hl, [{ backgroundColor: 'transparent' }], s(t + 260 + L.step * 4), { easing: OUT, duration: s(700) })
+        if (hl) run(anims, hl, [{ backgroundColor: 'transparent' }], s(t + 260 + L.step * 4), { easing: OUT, duration: d(700) })
         break
       }
       case 'closing': {
@@ -510,6 +538,98 @@ export function motionEngine(): MotionEngine {
         items('.s-body .it', t, (el, at) => rise(el, at))
       }
     }
+    }
+
+    /** 부품 장만의 부품이 알아서 움직이는 모습. 면이 있는 부품은 면이 먼저 자리 잡고 안의 글이 뒤따른다 */
+    function nativeAuto(cell: HTMLElement, type: string) {
+      if (!cell.classList.contains('bk-look-plain')) card(cell, 0)
+      switch (type) {
+        case 'message': {
+          grow(one('.bk-msg'), 0, 'x', '::before')
+          const t = words(one('.bk-msg-t'), 100, L.word * 1.2)
+          rise(one('.bk-msg-s'), t, L.y * 0.6)
+          break
+        }
+        case 'text':
+          rise(one('.bk-label'), 60, L.y * 0.4)
+          rise(one('.bk-h'), 120, L.y * 0.6)
+          rise(one('.bk-body'), 240, L.y * 0.6)
+          break
+        case 'bullets':
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          items('.bk-li', 160, (el, at) => {
+            pop(el.querySelector('.bk-dot'), at)
+            rise(el.querySelector('.bk-li-text'), at + 40, L.y * 0.5)
+          })
+          break
+        case 'quote':
+          pop(one('.bk-q-mark'), 60)
+          rise(one('.bk-q-t'), 200, L.y * 0.6)
+          fade(one('.bk-q-by'), 520, 600)
+          break
+        case 'callout':
+          rise(one('.bk-call-l'), 160, L.y * 0.4)
+          rise(one('.bk-call-t'), 240, L.y * 0.6)
+          break
+        case 'number':
+          fade(one('.bk-num-l'), 100, 500)
+          rise(one('.bk-num-v'), 140, L.y * 0.4)
+          count(one('.bk-num-v'), 160)
+          fade(one('.bk-num-n'), 520, 600)
+          break
+        case 'delta': {
+          fade(one('.bk-dl-l'), 80, 500)
+          rise(one('.bk-dl-from'), 140, L.y * 0.4)
+          const arrow = one('.bk-dl-arrow')
+          if (arrow) run(anims, arrow, [{ opacity: 0, translate: `${-L.y * 0.6}px 0` }], s(320), L.move)
+          rise(one('.bk-dl-to'), 420, L.y * 0.5)
+          count(one('.bk-dl-to .bk-dl-v'), 440)
+          pop(one('.bk-dl-chip'), 900)
+          fade(one('.bk-dl-n'), 980, 500)
+          break
+        }
+        case 'goal':
+          fade(one('.bk-gl-l'), 80, 500)
+          grow(one('.bk-gl-fill'), 200)
+          countIn(one('.bk-gl-pct'), 200)
+          fade(one('.bk-gl-of'), 380, 500)
+          fade(one('.bk-gl-n'), 520, 500)
+          break
+        case 'image': {
+          wipe(one('.bk-img-i'), 0, 'left', 1000)
+          const img = one('.bk-img-i img')
+          if (img) run(anims, img, [{ scale: '1.12' }, { scale: '1' }], s(0), { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2200 })
+          fade(one('.bk-img-c'), 600, 500)
+          break
+        }
+        default:
+          rise(cell, 0)
+      }
+    }
+
+    /** 부품 하나: 고른 움직임으로. '알아서'면 레이아웃 부품은 그 레이아웃의 연출, 아니면 부품마다 짜 둔 움직임 */
+    function block(cell: HTMLElement, at: number) {
+      const effect = (/\bfx-([a-z]+)/.exec(cell.className) || [])[1] || 'auto'
+      const type = cell.getAttribute('data-type') || ''
+      const saved = { scope, t0 }
+      scope = cell
+      t0 = at
+      if (effect === 'rise') rise(cell, 0)
+      else if (effect === 'fade') fade(cell, 0, 800)
+      else if (effect === 'wipe') wipe(cell, 0, 'left', 900)
+      else if (effect === 'pop') run(anims, cell, [{ opacity: 0, scale: '0.6' }], s(0), L.pop)
+      else if (effect === 'blur')
+        run(anims, cell, [{ opacity: 0, filter: 'blur(20px)', scale: '1.03' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: 1000 })
+      else if (effect === 'auto') {
+        if (cell.classList.contains('bk-layout')) choreo(type, (/\bva-([a-zA-Z]+)/.exec(cell.className) || [])[1] || 'base')
+        else nativeAuto(cell, type)
+      }
+      scope = saved.scope
+      t0 = saved.t0
+    }
+
+    if (cellOnly) block(cellOnly as HTMLElement, 0)
+    else choreo(layout, slideVariant)
 
     let restored = false
     const restore = () => {

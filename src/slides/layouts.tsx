@@ -5,6 +5,7 @@ import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
 import { formatNumber, isNumericCell, parseDelta, parseNumber, statusOf, STATUS_NAMES, type Status } from './numbers'
+import { Compose } from './blocks'
 import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
 
 function Head({ lead = false }: { lead?: boolean }) {
@@ -1027,6 +1028,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   logos: Logos,
   bars: Bars,
   closing: Closing,
+  compose: Compose,
 }
 
 export { BOLD_LAYOUTS } from '../deck/layouts'

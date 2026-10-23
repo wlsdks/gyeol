@@ -57,7 +57,13 @@ function usedIn(id: LayoutId): string {
 
 /** 빈 칸 보기: 내용을 지우고 칸마다 안내만 보이게 */
 function blankOf(slide: Slide): Slide {
-  return { ...slide, fields: {}, items: slide.items.map(() => emptyItem()) }
+  return {
+    ...slide,
+    fields: {},
+    items: slide.items.map(() => emptyItem()),
+    // 부품 장은 부품의 자리는 두고 부품 안의 글만 비운다
+    ...(slide.rows ? { rows: slide.rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => ({ ...b, fields: {}, items: b.items.map(() => emptyItem()) })) })) } : {}),
+  }
 }
 
 /** 브라우저가 계산한 색(color-mix 포함)을 #RRGGBB로 */

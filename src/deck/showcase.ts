@@ -1,6 +1,7 @@
+import { BLOCKS, composeFrom } from './blocks'
 import { emptyItem, makeSlide } from './generate'
 import { createSampleDeck, SAMPLE_LOGOS } from './sample'
-import type { Item, Slide } from './types'
+import type { Block, BlockType, Item, Slide } from './types'
 
 /*
  * 레이아웃마다 내용을 채운 예시 장. 장 모음 화면과 개발용 갤러리가 같이 쓴다.
@@ -159,7 +160,53 @@ export function extraSlides(): Slide[] {
       SAMPLE_LOGOS.map((image) => ({ image })),
       { title: '함께한 제조 고객사' },
     ),
+    composeExample(),
   ]
+}
+
+/** 부품 장만의 부품에 지어낸 예시 내용을 채운 것 */
+export function nativeSample(type: BlockType, extra: Partial<Block> = {}): Block {
+  const spec = BLOCKS[type]
+  const items = (spec.sample?.items ?? Array.from({ length: spec.items?.default ?? 0 }, () => ({}))).map((it) => ({ ...emptyItem(), ...it }))
+  return { id: `sample-${type}`, type, fields: { ...spec.sample?.fields }, items, ...extra }
+}
+
+/** 부품 장의 예시: 전과 후, 큰 숫자, 결정 요청을 한 줄에, 아래에 추이와 다음 단계 */
+function composeExample(): Slide {
+  const trend = composeFrom(
+    withItems(
+      makeSlide('trend'),
+      ['3.2', '3.0', '2.1', '1.6', '1.3', '1.1'].map((value, i) => ({ title: `${i + 4}월`, value })),
+      { unit: '%' },
+    ),
+  ).rows![0].blocks[0]
+  return {
+    ...makeSlide('compose'),
+    fields: { title: '시범 라인 석 달 만에 불량률이 3분의 1로 줄었어요', source: '품질관리 시스템, 9월 말 기준' },
+    rows: [
+      {
+        id: 'sample-row-1',
+        blocks: [
+          nativeSample('delta', { id: 'sample-delta' }),
+          { ...nativeSample('number'), id: 'sample-number', fields: { label: '한 해 아끼는 비용', value: '2.4억 원', note: '불량 처리와 재검사 비용' } },
+          { ...nativeSample('callout'), id: 'sample-callout', fields: { label: '결정 요청', text: '12월까지 나머지 라인으로 넓히는 것을 승인해 주세요' } },
+        ],
+      },
+      {
+        id: 'sample-row-2',
+        spans: [8, 4],
+        blocks: [
+          { ...trend, id: 'sample-trend' },
+          {
+            ...nativeSample('bullets'),
+            id: 'sample-bullets',
+            fields: { heading: '다음 단계' },
+            items: ['11월 나머지 5개 라인 진단', '12월 카메라 설치', '1월 전 라인 가동'].map((title) => ({ ...emptyItem(), title })),
+          },
+        ],
+      },
+    ],
+  }
 }
 
 /** 예시 발표의 장과 덧붙인 예시 장. 모든 레이아웃이 적어도 한 번 나온다. */

@@ -23,6 +23,8 @@ export type LayoutId =
   | 'logos'
   | 'bars'
   | 'closing'
+  /** 부품(블록)을 끌어다 놓아 꾸미는 장. 부품은 정해진 자리(줄과 칸)에만 들어간다 */
+  | 'compose'
 
 /** 윗분(팀장, 본부장)에게 하는 보고의 종류 */
 export type DeckType = 'business' | 'deal' | 'improve' | 'report' | 'blank'
@@ -78,6 +80,63 @@ export interface SlideOptions {
   tone?: Tone
 }
 
+/** 부품 장만의 부품. 목록과 모양은 src/deck/blocks.ts */
+export type NativeBlockType = 'message' | 'text' | 'bullets' | 'quote' | 'callout' | 'number' | 'delta' | 'goal' | 'image'
+
+/** 장 레이아웃을 그대로 부품으로 쓰는 것. 칸과 그리는 법이 그 레이아웃과 같아서, 장을 부품 장으로 바꿔도 내용과 모습이 그대로다 */
+export type LayoutBlockType = Extract<
+  LayoutId,
+  | 'summary'
+  | 'points'
+  | 'kpi'
+  | 'scorecard'
+  | 'bars'
+  | 'bridge'
+  | 'trend'
+  | 'share'
+  | 'funnel'
+  | 'progress'
+  | 'process'
+  | 'timeline'
+  | 'compare'
+  | 'matrix'
+  | 'pricing'
+  | 'table'
+  | 'logos'
+  | 'agenda'
+>
+
+export type BlockType = NativeBlockType | LayoutBlockType
+
+/** 부품의 바탕: 없음, 옅은 면, 진한 면 */
+export type BlockLook = 'plain' | 'card' | 'bold'
+/** 발표할 때 부품이 나타나는 모습. auto는 부품마다 짜 둔 움직임(숫자가 올라가고 막대가 자라는 것) */
+export type BlockEffect = 'auto' | 'rise' | 'fade' | 'wipe' | 'pop' | 'blur' | 'none'
+
+export interface Block {
+  id: string
+  type: BlockType
+  fields: Record<string, string>
+  items: Item[]
+  /** 칸별 안내 문구. 없으면 부품 기본값 */
+  hints?: Record<string, string>
+  /** 없으면 부품마다 정한 기본 바탕 */
+  look?: BlockLook
+  /** 없으면 auto */
+  effect?: BlockEffect
+  /** 같은 부품 안의 모양 (레이아웃 부품은 그 레이아웃의 모양). 없으면 첫째 */
+  variant?: string
+  /** 강조할 항목 (0부터, -1은 없음). 없으면 부품마다 정한 기본 */
+  highlight?: number
+}
+
+/** 부품 장의 한 줄. 칸 너비는 12를 나눈 값(spans)이고, 없거나 맞지 않으면 알아서 정한다 */
+export interface BlockRow {
+  id: string
+  blocks: Block[]
+  spans?: number[]
+}
+
 export interface Slide {
   id: string
   layout: LayoutId
@@ -96,6 +155,8 @@ export interface Slide {
   /** 같은 레이아웃 안의 모양. 레이아웃마다 정해 둔 것 중 하나이고, 없으면 첫째 모양 */
   variant?: string
   hidden?: boolean
+  /** 부품 장(compose)의 줄들. 다른 레이아웃에는 없다 */
+  rows?: BlockRow[]
 }
 
 export interface DeckMeta {

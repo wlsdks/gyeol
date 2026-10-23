@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LAYOUTS, variantOf } from '../deck/layouts'
 import { isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
@@ -21,6 +21,8 @@ export interface SlideCanvasProps {
   /** 발표의 단락 이름들과 이 장이 속한 단락 (0부터) */
   sections?: readonly string[]
   sectionIndex?: number
+  /** 부품 하나만 이 크기(캔버스 px)로: 부품 고르기 카드, 끌고 있는 부품 */
+  solo?: { w: number; h: number }
 }
 
 const NO_SECTIONS: readonly string[] = []
@@ -52,6 +54,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   total = 0,
   sections = NO_SECTIONS,
   sectionIndex = -1,
+  solo,
 }: SlideCanvasProps) {
   const View = LAYOUT_VIEWS[slide.layout]
   const spec = LAYOUTS[slide.layout]
@@ -80,11 +83,12 @@ export const SlideCanvas = memo(function SlideCanvas({
           size,
           tone !== 'base' && `tone-${tone}`,
           isDarkLook(deck.theme, tone) && 'is-dark',
+          solo && 'is-solo',
         )}
-        style={themeStyle(deck.theme, tone)}
+        style={solo ? { ...themeStyle(deck.theme, tone), width: solo.w, height: solo.h } : themeStyle(deck.theme, tone)}
       >
         <View />
-        {!bold && page > 0 && footer !== 'none' && (
+        {!bold && !solo && page > 0 && footer !== 'none' && (
           <footer className="s-foot">
             {footer === 'page' ? (
               <span />
@@ -154,7 +158,8 @@ export function FitSlide({
   const h = SLIDE_H * scale
   const frame = (
     <div className="slide-frame" style={{ width: w, height: h }}>
-      <div className="slide-scale" style={{ transform: `scale(${scale})` }}>
+      {/* --vs: 슬라이드 안의 편집 도구(부품 도구)가 축소와 상관없이 같은 크기로 보이게 */}
+      <div className="slide-scale" style={{ transform: `scale(${scale})`, '--vs': scale } as CSSProperties}>
         {children}
       </div>
     </div>

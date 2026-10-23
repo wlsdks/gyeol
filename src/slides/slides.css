@@ -102,9 +102,13 @@
     .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
-    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total
+    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total,
+    .bk-msg-t, .bk-msg-s, .bk-label, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-q-t, .bk-q-by, .bk-call-l, .bk-call-t,
+    .bk-num-l, .bk-num-v, .bk-num-n, .bk-dl-l, .bk-dl-k, .bk-dl-v, .bk-dl-chip, .bk-dl-n,
+    .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s
   ) {
-  font-size: calc(var(--fs) * var(--fit, 1) * var(--scale, 1));
+  /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 함께 줄인다. 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css) */
+  font-size: max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1)));
   white-space: pre-line;
 }
 
@@ -117,7 +121,7 @@
 }
 
 .slide .one-line {
-  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1)), calc(100cqi / var(--units, 1)));
+  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1)), calc(100cqi / var(--units, 1)));
   white-space: nowrap;
 }
 

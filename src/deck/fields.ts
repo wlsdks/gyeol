@@ -1,3 +1,4 @@
+import { allBlocks, blockMissing } from './blocks'
 import { LAYOUTS } from './layouts'
 import type { Deck, DeckMeta, ItemKey, MetaKey, Slide } from './types'
 
@@ -21,6 +22,8 @@ export interface Missing {
   item?: number
   itemKey?: ItemKey
   label: string
+  /** 부품 장의 부품 안 칸이면 그 부품 id */
+  block?: string
 }
 
 export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
@@ -29,6 +32,9 @@ export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
   for (const f of spec.fields) {
     if (f.optional) continue
     if (!readField(slide, meta, f.key).trim()) out.push({ key: f.key, label: f.label })
+  }
+  if (slide.layout === 'compose') {
+    for (const b of allBlocks(slide.rows ?? [])) for (const m of blockMissing(b)) out.push(m.item !== undefined ? { ...m, itemKey: m.key as ItemKey } : m)
   }
   if (spec.items) {
     visibleItems(slide).forEach((item, i) => {

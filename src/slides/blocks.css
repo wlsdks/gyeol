@@ -1,0 +1,654 @@
+/*
+ * 부품 장(compose)의 디자인. 값은 1920×1080 캔버스 기준 px. 내보낸 HTML 파일에도 그대로 들어간다.
+ * 칸의 자리(left, top, width, height)는 deck/blocks.ts의 cellStyle이 정한다. 간격은 --bk-gap 하나.
+ *
+ * - 칸마다 크기가 달라서 칸 안의 글자는 칸 너비와 높이에 맞춰 단계로 줄인다(--bk-w, --bk-h).
+ *   연속으로 줄이지 않고 단계로 줄여서, 같은 장의 비슷한 칸끼리는 글자 크기가 같다.
+ * - 바탕은 세 가지: 없음(plain), 옅은 면(card), 강조색 면(bold). 면은 꼭 필요한 부품에만.
+ */
+
+.slide.l-compose {
+  --bk-gap: 48px;
+}
+
+.bk-area {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--bk-gap);
+  min-height: 0;
+  margin-top: 64px;
+}
+
+/* 제목과 부제를 비우면 부품이 장 위쪽부터 */
+.l-compose .s-head:empty {
+  display: none;
+}
+
+.l-compose .s-head:empty + .bk-area {
+  margin-top: 0;
+}
+
+.bk {
+  position: relative;
+  container: bk / size;
+  min-width: 0;
+  min-height: 0;
+  border-radius: var(--r-panel);
+}
+
+.bk-in {
+  /* 회의실 뒷자리에서도 읽히게: 칸이 작아도 글자는 출처 글자(22px)보다 작아지지 않는다 */
+  --fs-min: 22px;
+  height: 100%;
+}
+
+/* 칸이 좁거나 낮으면 글자를 단계로 줄인다 */
+@container bk (max-width: 1100px) {
+  .bk-in {
+    --bk-w: 0.92;
+  }
+}
+
+@container bk (max-width: 820px) {
+  .bk-in {
+    --bk-w: 0.84;
+  }
+}
+
+@container bk (max-width: 560px) {
+  .bk-in {
+    --bk-w: 0.74;
+  }
+}
+
+@container bk (max-width: 420px) {
+  .bk-in {
+    --bk-w: 0.66;
+  }
+}
+
+@container bk (max-height: 440px) {
+  .bk-in {
+    --bk-h: 0.9;
+  }
+}
+
+@container bk (max-height: 320px) {
+  .bk-in {
+    --bk-h: 0.8;
+  }
+}
+
+@container bk (max-height: 230px) {
+  .bk-in {
+    --bk-h: 0.68;
+  }
+}
+
+/* ---------- 바탕 ---------- */
+
+.bk-look-card {
+  background: var(--surface);
+}
+
+.bk-look-card > .bk-in,
+.bk-look-bold > .bk-in {
+  padding: 44px 52px;
+}
+
+/* 강조색 면: 강조색이 바탕이 되고, 글자는 그 위에서 읽히는 색. 강조는 글자색 그대로 굵게.
+   자기 자신을 참조할 수 없어서 바깥 칸에 원래 색을 담아 두고 안쪽에서 바꾼다 */
+.bk-look-bold {
+  --bk-a: var(--accent);
+  --bk-ai: var(--accent-ink);
+  background: var(--accent);
+}
+
+.bk-look-bold > .bk-in {
+  --bg: var(--bk-a);
+  --ink: var(--bk-ai);
+  --ink-2: color-mix(in srgb, var(--bk-ai) 84%, var(--bk-a));
+  --ink-3: color-mix(in srgb, var(--bk-ai) 66%, var(--bk-a));
+  --line: color-mix(in srgb, var(--bk-ai) 26%, var(--bk-a));
+  --surface: color-mix(in srgb, var(--bk-ai) 10%, var(--bk-a));
+  --good: var(--bk-ai);
+  --bad: var(--bk-ai);
+  --accent: var(--bk-ai);
+  --accent-ink: var(--bk-a);
+  --accent-soft: color-mix(in srgb, var(--bk-ai) 14%, var(--bk-a));
+  --accent-line: color-mix(in srgb, var(--bk-ai) 30%, var(--bk-a));
+  color: var(--ink);
+}
+
+/* ---------- 레이아웃 부품: 그 레이아웃의 본문만, 칸을 꽉 채워 ---------- */
+
+.bk-layout > .bk-in {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 머리와 출처는 부품 장 것을 쓴다. 편집 중 칸 규칙(.slide.m-edit .ed)보다 앞서게 구체성을 높인다 */
+.slide .bk.bk-layout > .bk-in :is(.s-head, .s-source, .ag-title) {
+  display: none;
+}
+
+.bk-layout .s-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.bk-agenda .ag {
+  display: flex;
+  height: 100%;
+}
+
+.bk-agenda .ag-list {
+  flex: 1;
+}
+
+/* ---------- 핵심 한 줄 ---------- */
+
+.bk-msg {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-msg::before {
+  content: '';
+  flex: none;
+  width: 72px;
+  height: 6px;
+  margin-bottom: 40px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.bk-msg-t {
+  --fs: 66px;
+  max-width: 1500px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.28;
+  text-wrap: balance;
+}
+
+.bk-msg-s {
+  --fs: var(--t-lead);
+  max-width: 1320px;
+  margin-top: 28px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* ---------- 제목과 글, 점 목록 ---------- */
+
+.bk-tx,
+.bk-bl {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-label {
+  --fs: var(--t-label);
+  margin-bottom: 16px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-h {
+  --fs: var(--t-h);
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.bk-body {
+  --fs: var(--t-body);
+  color: var(--ink-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.bk-h + .bk-body {
+  margin-top: 20px;
+}
+
+.bk-bl .bk-h {
+  margin-bottom: 32px;
+}
+
+.bk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.bk-list[data-n='5'],
+.bk-list[data-n='6'] {
+  gap: 18px;
+}
+
+.bk-li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+}
+
+.bk-dot {
+  width: 14px;
+  height: 14px;
+  margin-top: calc(var(--t-body) * var(--bk-w, 1) * var(--bk-h, 1) * 0.55);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.bk-li-t {
+  --fs: var(--t-body);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.bk-li-b {
+  --fs: var(--t-small);
+  margin-top: 6px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+/* ---------- 인용 ---------- */
+
+.bk-q {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+}
+
+.bk-q-mark {
+  display: block;
+  height: 0.5em;
+  margin-bottom: 28px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-size: calc(170px * var(--bk-w, 1) * var(--bk-h, 1));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bk-q-t {
+  --fs: 46px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.bk-q-by {
+  --fs: var(--t-small);
+  margin-top: 28px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+/* ---------- 강조 상자 ---------- */
+
+.bk-call {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-call-l {
+  --fs: var(--t-label);
+  margin-bottom: 18px;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-call-t {
+  --fs: 44px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.36;
+  text-wrap: pretty;
+}
+
+/* ---------- 큰 숫자 ---------- */
+
+.bk-num {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-num-l {
+  --fs: var(--t-label);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-num-v {
+  --fs: 132px;
+  margin-top: 14px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.bk-num-n {
+  --fs: var(--t-small);
+  margin-top: 18px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+/* ---------- 전과 후 ---------- */
+
+.bk-dl {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-dl-l {
+  --fs: var(--t-label);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-dl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 28px;
+  margin-top: 24px;
+}
+
+.bk-dl-side {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.bk-dl-k {
+  --fs: var(--t-small);
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.bk-dl-v {
+  --fs: 104px;
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.bk-dl-from .bk-dl-v {
+  --fs: 76px;
+  color: var(--ink-3);
+}
+
+.bk-dl-to .bk-dl-v {
+  color: var(--accent);
+}
+
+.bk-dl-arrow {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  color: var(--ink-3);
+}
+
+.bk-dl-arrow svg {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.bk-dl-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 28px;
+}
+
+.bk-dl-chip {
+  --fs: var(--t-small);
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bk-dl-n {
+  --fs: var(--t-small);
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+.bk-dl.is-demo :is(.bk-dl-chip) {
+  opacity: 0.45;
+}
+
+/* ---------- 목표 대비 ---------- */
+
+.bk-gl {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.bk-gl-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.bk-gl-l {
+  --fs: var(--t-label);
+  min-width: 0;
+  padding-bottom: 10px;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-gl-pct {
+  --fs: 96px;
+  flex: none;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.bk-gl-bar {
+  position: relative;
+  height: 20px;
+  margin-top: 28px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.bk-gl-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--p) * 1%);
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.bk-gl.is-demo :is(.bk-gl-fill, .bk-gl-pct) {
+  opacity: 0.35;
+}
+
+.bk-gl-of {
+  --fs: var(--t-small);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+  margin-top: 20px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.bk-gl-of > * {
+  --fs: var(--t-small);
+}
+
+.bk-gl-v {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.bk-gl-n {
+  --fs: var(--t-small);
+  margin-top: 10px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+
+/* ---------- 그림 ---------- */
+
+.bk-img {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+}
+
+.bk-img-i {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.bk-img-c {
+  --fs: var(--t-small);
+  flex: none;
+  margin-top: 16px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* ---------- 빈 장 ---------- */
+
+.bk-area.is-empty {
+  display: grid;
+  place-items: center;
+  border: 3px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: var(--r-panel);
+}
+
+.bk-empty-t {
+  --fs: var(--t-body);
+  color: var(--ink-3);
+}
+
+.slide.m-final .bk-area.is-empty {
+  border: 0;
+}
+
+/* ---------- 부품 하나만 (부품 고르기 카드, 끌고 있는 부품) ---------- */
+
+.slide.is-solo {
+  padding: 40px;
+}
+
+.slide.is-solo :is(.s-head, .s-source) {
+  display: none;
+}
+
+.slide.is-solo .bk-area {
+  margin-top: 0;
+}
+
+/* ---------- 레이아웃 부품이 장보다 작은 칸에 들어갈 때 ----------
+   레이아웃은 장 하나를 다 쓰는 크기로 짜여 있어서, 칸이 낮거나 좁으면 줄 사이와 고정 너비를 줄인다.
+   원래 규칙보다 앞서도록 [data-n]을 붙여 구체성을 맞춘다 */
+
+@container bk (max-height: 620px) {
+  .bk-in .fn {
+    --fn-gap: 24px;
+    --fn-h: 56px;
+  }
+
+  .bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
+    padding-block: 12px;
+  }
+
+  .bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
+    padding-block: 16px;
+  }
+
+  .bk-in .pr-plan {
+    padding: 34px 40px;
+  }
+
+  .bk-in .tl {
+    gap: 32px;
+    padding-bottom: 16px;
+  }
+
+  .bk-in .sk:is([data-n]) .sk-row:not(.sk-headrow) {
+    padding-block: 12px;
+  }
+
+  .bk-in .sm:is([data-n]) .sm-row {
+    padding-block: 18px;
+  }
+}
+
+@container bk (max-width: 1150px) {
+  .bk-in .fn-row {
+    grid-template-columns: 230px minmax(0, 1fr) 170px;
+    gap: 28px;
+  }
+}

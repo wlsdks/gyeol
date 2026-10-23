@@ -7,6 +7,7 @@ import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { safeFileName } from '../store/deckFile'
 import motionCss from '../motion/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
+import blocksCss from '../slides/blocks.css?inline'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
 const DATA_ID = 'html-maker-deck'
@@ -148,6 +149,7 @@ export async function buildHtml(deck: Deck): Promise<string> {
 <style>
 ${fonts}
 ${slidesCss}
+${blocksCss}
 ${motionCss}
 ${VIEWER_CSS}
 </style>
