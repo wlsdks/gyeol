@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
-import { createDeck, formatDate, makeSlide, planRecipes } from '../deck/generate'
+import { pageInfo } from '../deck/fields'
+import { createDeck, formatDate, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { THEMES, THEME_ORDER } from '../deck/themes'
 import type { Audience, DeckMeta, DeckType, Method, ThemeId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
-import { ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
 import { Brand, ChevronIcon } from './ui'
 
@@ -26,7 +27,12 @@ export function Wizard() {
   const [busy, setBusy] = useState(false)
 
   const blueprint = BLUEPRINTS[type]
-  const plan = useMemo(() => planRecipes(type, audience, minutes), [type, audience, minutes])
+  // 2단계 오른쪽에 보여 줄 구성. 고르는 대로 바로 바뀐다
+  const preview = useMemo(
+    () => createDeck({ type, audience, minutes, method, title: '', org: '', presenter: '', theme }),
+    [type, audience, minutes, method, theme],
+  )
+  const previewInfo = useMemo(() => pageInfo(preview.slides), [preview])
 
   const chooseType = (t: DeckType) => {
     setType(t)
@@ -134,15 +140,24 @@ export function Wizard() {
               </fieldset>
             </div>
 
-            <aside className="wz-plan" aria-live="polite">
+            <aside className="wz-plan">
               <p className="wz-plan-k">{blueprint.name}</p>
-              <p className="wz-plan-h">{plan.length}장으로 구성돼요</p>
-              <ol className="wz-plan-list">
-                {plan.map((r, i) => (
-                  <li key={`${r.purpose}-${i}`} className={cx(r.layout === 'section' && 'is-section')}>
-                    <span className="wz-plan-n">{i + 1}</span>
-                    <span className="wz-plan-name">{r.layout === 'section' ? r.section : r.purpose}</span>
-                    <span className="wz-plan-layout">{LAYOUTS[r.layout].name}</span>
+              <p className="wz-plan-h" aria-live="polite">
+                {preview.slides.length}장으로 구성돼요
+              </p>
+              {/* 실제로 만들어질 장을 작게 그린다. 내용은 비어 있고 칸마다 안내만 흐리게 보인다 */}
+              <ol className="wz-plan-grid">
+                {preview.slides.map((s, i) => (
+                  <li key={s.id} className={cx(s.layout === 'section' && 'is-section')} title={LAYOUTS[s.layout].name}>
+                    <span aria-hidden="true">
+                      <ScaledSlide width={92}>
+                        <SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} />
+                      </ScaledSlide>
+                    </span>
+                    <span className="wz-plan-name">
+                      <span className="wz-plan-n">{i + 1}</span>
+                      {s.layout === 'section' ? s.section : s.purpose}
+                    </span>
                   </li>
                 ))}
               </ol>

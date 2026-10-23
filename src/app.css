@@ -984,41 +984,46 @@ select {
   letter-spacing: -0.02em;
 }
 
-.wz-plan-list {
-  display: flex;
-  flex-direction: column;
+.wz-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 92px);
+  gap: 12px 10px;
+  justify-content: space-between;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.wz-plan-list li {
-  display: grid;
-  grid-template-columns: 26px 1fr auto;
-  align-items: baseline;
-  gap: 4px;
-  padding: 7px 0;
-  border-top: 1px solid #eff0f2;
-  font-size: 14px;
+.wz-plan-grid li {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 
-.wz-plan-list li.is-section {
+.wz-plan-grid .slide-frame {
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.wz-plan-name {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wz-plan-grid li.is-section .wz-plan-name {
   color: var(--ink-3);
 }
 
 .wz-plan-n {
+  margin-right: 4px;
   color: var(--ink-3);
-  font-size: 12px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-}
-
-.wz-plan-name {
-  font-weight: 600;
-}
-
-.wz-plan-layout {
-  color: var(--ink-3);
-  font-size: 12px;
 }
 
 .wz-fields {
@@ -1129,9 +1134,6 @@ select {
     overflow-y: auto;
   }
 
-  .wz-plan-list li {
-    padding-block: 5px;
-  }
 
   .wz-bottom {
     padding-block: 12px;
