@@ -3443,8 +3443,8 @@ body.is-block-resizing * {
   z-index: 2;
   top: calc(100% + 8px);
   left: -4px;
-  width: 288px;
-  max-height: min(420px, calc(100vh - 160px));
+  width: 312px;
+  max-height: min(520px, calc(100vh - 160px));
   margin: 0;
   padding: 6px;
   overflow-y: auto;
@@ -3457,7 +3457,9 @@ body.is-block-resizing * {
 
 .bk-menu-item {
   display: grid;
-  gap: 1px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 1px 12px;
   width: 100%;
   padding: 8px 10px;
   border: 0;
@@ -3473,13 +3475,207 @@ body.is-block-resizing * {
 }
 
 .bk-menu-item b {
+  grid-column: 2;
   font-size: 13.5px;
 }
 
-.bk-menu-item span {
+.bk-menu-d {
+  grid-column: 2;
   color: var(--ink-2);
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* 움직임 메뉴의 작은 그림: 부품 하나(면 위에 줄 셋). 올리면 고른 움직임을 1.6초마다 되풀이한다 */
+.fx-demo {
+  grid-row: 1 / span 2;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  width: 40px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sel) 14%, #fff);
+}
+
+.fx-demo i {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--sel);
+  transform-origin: left center;
+}
+
+.fx-demo i:nth-child(2) {
+  width: 78%;
+  opacity: 0.6;
+}
+
+.fx-demo i:nth-child(3) {
+  width: 52%;
+  opacity: 0.6;
+}
+
+.fx-demo.is-none {
+  background: #eef0f3;
+}
+
+.fx-demo.is-none i {
+  background: #b3b9c3;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
+  animation: 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-rise {
+  animation-name: fx-rise;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-fade {
+  animation-name: fx-fade;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-wipe {
+  animation-name: fx-wipe;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-slide {
+  animation-name: fx-slide;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-pop {
+  animation-name: fx-pop;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-zoom {
+  animation-name: fx-zoom;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-flip {
+  animation-name: fx-flip;
+  transform-origin: 50% 100%;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-blur {
+  animation-name: fx-blur;
+}
+
+/* 알아서: 부품마다 짠 움직임이라 줄이 차례로 자라는 모습으로 대신 보인다 */
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i {
+  animation: fx-grow 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes fx-rise {
+  0% {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  45%, 100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes fx-fade {
+  0% {
+    opacity: 0;
+  }
+  55%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fx-wipe {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  55%, 100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes fx-slide {
+  0% {
+    opacity: 0;
+    translate: 14px 0;
+  }
+  45%, 100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes fx-pop {
+  0% {
+    opacity: 0;
+    scale: 0.5;
+  }
+  30% {
+    opacity: 1;
+    scale: 1.08;
+  }
+  45%, 100% {
+    scale: 1;
+  }
+}
+
+@keyframes fx-zoom {
+  0% {
+    opacity: 0;
+    scale: 1.3;
+  }
+  50%, 100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes fx-flip {
+  0% {
+    opacity: 0;
+    transform: perspective(120px) rotateX(-75deg);
+  }
+  50%, 100% {
+    opacity: 1;
+    transform: perspective(120px) rotateX(0deg);
+  }
+}
+
+@keyframes fx-blur {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  55%, 100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes fx-grow {
+  0% {
+    scale: 0 1;
+  }
+  45%, 100% {
+    scale: 1 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-demo,
+  .fx-demo i {
+    animation: none !important;
+  }
 }
 
 .bk-menu-item.is-on b {

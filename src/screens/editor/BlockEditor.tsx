@@ -734,6 +734,13 @@ function BlockTools({
 }) {
   const spec = BLOCKS[block.type]
   const [menu, setMenu] = useState<'motion' | null>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
+  // 메뉴는 도구 아래로 열린다. 창 아래까지 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!el) return
+    el.style.maxHeight = `${Math.max(160, Math.min(520, innerHeight - el.getBoundingClientRect().top - 12))}px`
+  }, [menu])
   const look = lookOf(block)
   const effect = effectOf(block)
   const variants = spec.variants ?? []
@@ -783,7 +790,7 @@ function BlockTools({
           <span>{BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
         {menu === 'motion' && (
-          <ul className="bk-menu" role="menu" onMouseLeave={() => undefined}>
+          <ul ref={menuRef} className="bk-menu" role="menu">
             {BLOCK_EFFECTS.map((x) => (
               <li key={x.id}>
                 <button
@@ -798,8 +805,14 @@ function BlockTools({
                     setMenu(null)
                   }}
                 >
+                  {/* 작은 그림: 마우스를 올리면 그 움직임을 되풀이한다 */}
+                  <span className={cx('fx-demo', `is-${x.id}`)} aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
                   <b>{x.name}</b>
-                  <span>{x.id === 'auto' ? spec.motion : x.description}</span>
+                  <span className="bk-menu-d">{x.id === 'auto' ? spec.motion : x.description}</span>
                 </button>
               </li>
             ))}

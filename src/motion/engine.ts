@@ -692,7 +692,21 @@ export function motionEngine(): MotionEngine {
       if (effect === 'rise') rise(cell, 0)
       else if (effect === 'fade') fade(cell, 0, 800)
       else if (effect === 'wipe') wipe(cell, 0, 'left', 900)
+      else if (effect === 'slide') run(anims, cell, [{ opacity: 0, translate: `${L.y * 2.6}px 0` }], s(0), L.move)
       else if (effect === 'pop') run(anims, cell, [{ opacity: 0, scale: '0.6' }], s(0), L.pop)
+      else if (effect === 'zoom') run(anims, cell, [{ opacity: 0, scale: '1.14' }], s(0), { easing: OUT, duration: d(900) })
+      else if (effect === 'flip')
+        // 아래 가장자리를 축으로 누워 있다가 선다. 원근은 칸마다 따로 (장 전체가 휘어 보이지 않게)
+        run(
+          anims,
+          cell,
+          [
+            { opacity: 0, transform: 'perspective(1800px) rotateX(-72deg)', transformOrigin: '50% 100%' },
+            { opacity: 1, transform: 'perspective(1800px) rotateX(0deg)', transformOrigin: '50% 100%' },
+          ],
+          s(0),
+          L.grow,
+        )
       else if (effect === 'blur')
         run(anims, cell, [{ opacity: 0, filter: 'blur(20px)', scale: '1.03' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: 1000 })
       else if (effect === 'auto') {

@@ -442,7 +442,10 @@ export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string
   { id: 'rise', name: '올라오기', description: '아래에서 살짝 올라와요' },
   { id: 'fade', name: '나타나기', description: '제자리에서 천천히 보여요' },
   { id: 'wipe', name: '펼치기', description: '왼쪽에서 오른쪽으로 걷히듯' },
+  { id: 'slide', name: '밀려오기', description: '오른쪽에서 밀려 들어와요' },
   { id: 'pop', name: '튀어나오기', description: '작게 시작해 통통 튀며 커져요' },
+  { id: 'zoom', name: '다가오기', description: '조금 크게 시작해 제자리로 다가와요' },
+  { id: 'flip', name: '세우기', description: '누워 있다가 일어서듯 세워져요' },
   { id: 'blur', name: '초점 맞추기', description: '흐릿했다가 또렷해져요' },
   { id: 'none', name: '없음', description: '처음부터 보여요' },
 ]
