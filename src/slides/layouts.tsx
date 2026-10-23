@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { readField, visibleItems } from '../deck/fields'
 import { highlightOf, hintFor } from '../deck/layouts'
-import type { LayoutId } from '../deck/types'
+import type { LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
 import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
@@ -340,19 +340,28 @@ function parseNumber(text: string): number {
 /** 숫자를 넣기 전, 편집할 때 흐리게 보여 줄 예시 길이. 어떤 모양의 장인지 알아보게만 한다. */
 const DEMO_BARS = [64, 78, 100, 86, 72, 92]
 
+/** 예시 숫자가 막대마다 있으면 그 비율로, 없으면 정해 둔 길이로. 안내 글의 숫자와 막대 길이가 맞아야 덜 어색하다. */
+function demoBars(slide: Slide, n: number): number[] {
+  const hinted = Array.from({ length: n }, (_, i) => parseNumber(hintFor(slide.layout, slide.hints, 'value', 'value', i)))
+  const top = Math.max(0, ...hinted)
+  if (top > 0 && hinted.every((v) => v > 0)) return hinted.map((v) => (v / top) * 100)
+  return Array.from({ length: n }, (_, i) => DEMO_BARS[i % DEMO_BARS.length])
+}
+
 function Bars() {
   const { slide, mode } = useSlide()
   const items = useItems()
   const values = items.map((it) => parseNumber(it.value))
   const max = Math.max(0, ...values)
   const demo = mode !== 'final' && max <= 0
+  const demoP = demo ? demoBars(slide, items.length) : []
   const highlight = highlightOf(slide)
   return (
     <>
       <Head lead />
       <div className="s-body br" data-n={items.length}>
         {items.map((it, i) => {
-          const pct = demo ? DEMO_BARS[i % DEMO_BARS.length] : max > 0 && values[i] > 0 ? Math.max(2, (values[i] / max) * 100) : 0
+          const pct = demo ? demoP[i] : max > 0 && values[i] > 0 ? Math.max(2, (values[i] / max) * 100) : 0
           return (
             // 길이는 --p(0~100)로만 넘긴다. 가로 막대는 너비, 세로 막대는 높이로 쓴다.
             <div

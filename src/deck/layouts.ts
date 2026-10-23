@@ -96,7 +96,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       min: 2,
       max: 6,
       default: 4,
-      fields: [{ key: 'title', label: '항목', hint: '다룰 내용' }],
+      fields: [{ key: 'title', label: '항목', hint: '다룰 내용', hints: ['배경', '제안', '효과와 비용', '실행 계획', '위험과 대응', '요청 사항'] }],
     },
   },
   summary: {
@@ -114,7 +114,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 5,
       default: 4,
       fields: [
-        { key: 'title', label: '이름', hint: '배경' },
+        { key: 'title', label: '이름', hint: '줄 이름', hints: ['배경', '제안', '기대 효과', '요청 사항', '일정'] },
         { key: 'body', label: '내용', hint: '한두 문장', multiline: true },
       ],
     },
@@ -144,8 +144,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 4,
       default: 3,
       fields: [
-        { key: 'value', label: '숫자', hint: '30%' },
-        { key: 'title', label: '이름', hint: '지표 이름' },
+        { key: 'value', label: '숫자', hint: '30%', hints: ['4.8억 원', '3년', '22%', '120곳'] },
+        { key: 'title', label: '이름', hint: '지표 이름', hints: ['예상 매출', '계약 기간', '예상 이익률', '대상 고객'] },
         { key: 'body', label: '설명', hint: '짧은 설명', multiline: true, optional: true },
       ],
     },
@@ -167,9 +167,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '지표', hint: '지표 이름' },
-        { key: 'meta', label: '목표', hint: '117억 원' },
-        { key: 'value', label: '실적', hint: '131억 원' },
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '영업이익', '신규 고객', '재계약률', '이익률', '방문 건수'] },
+        { key: 'meta', label: '목표', hint: '117억 원', hints: ['117억 원', '14억 원', '5곳', '90%', '12%', '300건'] },
+        { key: 'value', label: '실적', hint: '131억 원', hints: ['131억 원', '15.2억 원', '4곳', '93%', '11%', '320건'] },
         { key: 'body', label: '설명', hint: '짧은 설명이나 원인', optional: true },
       ],
     },
@@ -255,8 +255,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'meta', label: '시기', hint: '1개월 차' },
-        { key: 'title', label: '단계', hint: '단계 이름' },
+        { key: 'meta', label: '시기', hint: '시기', hints: ['1개월 차', '2개월 차', '4개월 차', '6개월 차', '9개월 차', '12개월 차'] },
+        { key: 'title', label: '단계', hint: '단계 이름', hints: ['준비', '시범 운영', '중간 점검', '확대', '안정화', '마무리'] },
         { key: 'body', label: '설명', hint: '이 단계에서 하는 일', multiline: true, optional: true },
       ],
     },
@@ -278,8 +278,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 3,
       default: 2,
       fields: [
-        { key: 'value', label: '숫자', hint: '40%' },
-        { key: 'title', label: '이름', hint: '지표 이름' },
+        { key: 'value', label: '숫자', hint: '40%', hints: ['40%', '3개월'] },
+        { key: 'title', label: '이름', hint: '지표 이름', hints: ['검사 시간 단축', '구축 기간', '처리량'] },
       ],
     },
   },
@@ -299,8 +299,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 3,
       default: 3,
       fields: [
-        { key: 'title', label: '이름', hint: 'A안' },
-        { key: 'value', label: '비용', hint: '1.2억 원' },
+        { key: 'title', label: '이름', hint: '안 이름', hints: ['A안', 'B안', 'C안'] },
+        { key: 'value', label: '비용', hint: '1.2억 원', hints: ['0.6억 원', '1.2억 원', '2.5억 원'] },
         { key: 'meta', label: '조건', hint: '기간, 인력 같은 조건', optional: true },
         { key: 'body', label: '내용', hint: '내용과 장단점을 한 줄에 하나씩', multiline: true },
       ],
@@ -349,7 +349,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       default: 4,
       fields: [
         { key: 'title', label: '항목', hint: '항목 이름' },
-        { key: 'value', label: '숫자', hint: '120' },
+        { key: 'value', label: '숫자', hint: '120', hints: ['96', '104', '131', '117', '88', '120'] },
         { key: 'meta', label: '보충', hint: '단위나 보충 설명', optional: true },
       ],
     },

@@ -266,8 +266,8 @@ function ThemeCard(props: { id: ThemeId; on: boolean; onClick: () => void; title
     logo: '',
   }
   return (
-    <button type="button" className={cx('wz-theme', on && 'is-on')} aria-pressed={on} onClick={onClick}>
-      <ScaledSlide width={300}>
+    <button type="button" className={cx('wz-theme', on && 'is-on')} aria-pressed={on} title={THEMES[id].description} onClick={onClick}>
+      <ScaledSlide width={220}>
         <SlideCanvas deck={{ meta, theme: { id }, title }} slide={slide} mode="final" />
       </ScaledSlide>
       <span className="wz-theme-name">{THEMES[id].name}</span>

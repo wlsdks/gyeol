@@ -1114,6 +1114,15 @@ select {
     margin-bottom: 22px;
   }
 
+  /* 테마 이름까지 아래 단추 줄에 가리지 않게. 설명은 그림과 이름으로 충분해서 낮은 화면에서는 뺀다 */
+  .wz-fields {
+    margin-bottom: 22px;
+  }
+
+  .wz-theme-desc {
+    display: none;
+  }
+
   .wz-plan {
     top: 12px;
     max-height: calc(100vh - 56px - 69px - 24px);

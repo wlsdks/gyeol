@@ -97,6 +97,10 @@ export function createDeck(input: DeckInput): Deck {
     }
     if (recipe.layout === 'agenda' && sectionTitles.length) {
       slide.items = sectionTitles.map((t) => ({ ...emptyItem(), title: t }))
+    } else if (recipe.layout === 'agenda' && blueprint.storyline.length) {
+      // 단락이 없는 보고(진행·실적)는 이야기 흐름을 목차의 예시로 보여 준다. 내용이 아니라 안내라서 칸은 비워 둔다.
+      slide.items = blueprint.storyline.map(() => emptyItem())
+      blueprint.storyline.forEach((t, i) => (slide.hints[`items.${i}.title`] = t))
     }
     return slide
   })

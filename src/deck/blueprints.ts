@@ -46,6 +46,14 @@ function rows(key: ItemKey, hints: string[]): Record<string, string> {
   return Object.fromEntries(hints.map((h, i) => [`items.${i}.${key}`, h]))
 }
 
+/**
+ * 여러 칸의 항목별 안내. 같은 예시가 줄마다 되풀이되면 무엇을 적을지 알기 어렵고 가짜처럼 보여서,
+ * 줄마다 다른 예시로 한 장 전체가 말이 되게 한다.
+ */
+function each(hints: Partial<Record<ItemKey, string[]>>): Record<string, string> {
+  return Object.assign({}, ...Object.entries(hints).map(([key, list]) => rows(key as ItemKey, list ?? [])))
+}
+
 function section(title: string, lead: string): Recipe {
   return {
     layout: 'section',
@@ -91,7 +99,12 @@ function options(purpose: string, priority: Recipe['priority'], sectionName: str
   }
 }
 
-function risks(priority: Recipe['priority'], sectionName?: string): Recipe {
+const RISKS = {
+  title: ['예산이 늘어날 수 있어요', '일정이 늦어질 수 있어요', '맡을 사람이 모자랄 수 있어요'],
+  body: ['단계마다 나눠 쓰고 점검해요', '중간 점검 날짜를 미리 정해 둬요', '협력사 인력을 미리 잡아 둬요'],
+}
+
+function risks(priority: Recipe['priority'], sectionName?: string, examples: Partial<Record<ItemKey, string[]>> = RISKS): Recipe {
   return {
     layout: 'compare',
     purpose: '위험과 대응',
@@ -99,18 +112,23 @@ function risks(priority: Recipe['priority'], sectionName?: string): Recipe {
     section: sectionName,
     guide: '윗분이 가장 많이 묻는 건 "잘 안 되면?"이에요. 먼저 꺼내고 대응 방법을 함께 적으면 신뢰가 쌓여요.',
     fields: { leftTitle: '예상 위험', rightTitle: '대응 방안' },
-    hints: { title: '이런 위험은 이렇게 대비해요', 'items.title': '일어날 수 있는 문제', 'items.body': '대응 방법' },
+    hints: { title: '이런 위험은 이렇게 대비해요', 'items.title': '일어날 수 있는 문제', 'items.body': '대응 방법', ...each(examples) },
   }
 }
 
-function decision(guide: string, ask: string): Recipe {
+/** asks: 첫 줄은 가장 중요한 결정, 뒤로 갈수록 덜 중요한 요청. 마지막 줄은 없으면 지워도 되는 칸이다. */
+function decision(guide: string, asks: string[]): Recipe {
   return {
     layout: 'closing',
     purpose: '결정 요청',
     priority: 1,
     guide,
     fields: { title: '결정해 주실 것' },
-    hints: { 'items.title': ask, 'items.body': '언제까지, 왜 필요한지' },
+    hints: {
+      'items.title': '결정해 주실 일',
+      'items.body': '언제까지, 왜 필요한지',
+      ...each({ title: asks, body: ['언제까지, 왜 필요한지', '언제까지, 왜 필요한지', '없으면 이 줄을 지워요'] }),
+    },
   }
 }
 
@@ -152,7 +170,11 @@ const business: Blueprint = {
       priority: 2,
       section: '배경',
       guide: '시장 규모나 잠재 고객 수처럼 기회가 얼마나 큰지 숫자로 보여주세요. 출처를 설명 칸에 적어 두면 질문에 답하기 쉬워요.',
-      hints: { title: '숫자로 보는 기회', 'items.value': '1,200억 원', 'items.title': '국내 시장 규모', 'items.body': '출처와 기준 연도' },
+      hints: {
+        title: '숫자로 보는 기회',
+        'items.body': '출처와 기준 연도',
+        ...each({ value: ['1,200억 원', '3,400곳', '18%'], title: ['국내 시장 규모', '대상 기업 수', '해마다 크는 비율'] }),
+      },
     },
     section('제안', '무엇을 어떻게 할지'),
     {
@@ -161,7 +183,12 @@ const business: Blueprint = {
       priority: 1,
       section: '제안',
       guide: '무엇을 하자는 건지 세 가지 이내로 정리해 주세요. 하지 않을 일도 분명히 하면 범위에 대한 질문이 줄어요.',
-      hints: { title: '무엇을 하자는 건지 한 문장으로', 'items.title': '할 일', 'items.body': '어떻게, 누가 하는지' },
+      hints: {
+        title: '무엇을 하자는 건지 한 문장으로',
+        'items.title': '할 일',
+        'items.body': '어떻게, 누가 하는지',
+        ...each({ title: ['구독형 서비스 출시', '대리점 판매 연계', '하지 않을 일'], body: ['어떻게, 누가 하는지', '어떻게, 누가 하는지', '이번에는 하지 않는 것 (예: 대기업 고객)'] }),
+      },
     },
     {
       layout: 'compare',
@@ -170,13 +197,20 @@ const business: Blueprint = {
       section: '제안',
       guide: '지금과 추진 후를 줄마다 나란히 놓으면 차이가 한눈에 보여요.',
       fields: { leftTitle: '지금', rightTitle: '추진 후' },
-      hints: { title: '추진하면 이렇게 달라져요', 'items.title': '지금의 모습', 'items.body': '추진 후의 모습' },
+      hints: {
+        title: '추진하면 이렇게 달라져요',
+        'items.title': '지금의 모습',
+        'items.body': '추진 후의 모습',
+        ...each({
+          title: ['한 번 팔고 끝나요', '고객이 문제를 겪어야 연락이 와요', '해마다 매출이 들쭉날쭉해요'],
+          body: ['다달이 구독료를 받아요', '먼저 이상을 알려 줘요', '매달 매출이 쌓여요'],
+        }),
+      },
     },
     options('추진 방안 비교', 2, '제안', {
       title: '세 가지 방안 중 B안을 추천해요',
-      'items.value': '1.2억 원',
-      'items.meta': '6개월, 3명',
       'items.body': '할 일과 장단점을 한 줄에 하나씩',
+      ...each({ value: ['0.6억 원', '1.2억 원', '2.5억 원'], meta: ['3개월, 2명', '6개월, 3명', '12개월, 6명'] }),
     }),
     section('효과와 비용', '얼마를 들여 무엇을 얻는지'),
     {
@@ -185,7 +219,11 @@ const business: Blueprint = {
       priority: 1,
       section: '효과와 비용',
       guide: '추진하면 무엇을 얼마나 얻는지 숫자로 보여주세요. 계산 근거를 설명 칸에 적어 두세요.',
-      hints: { title: '추진하면 얻는 것', 'items.value': '30억 원', 'items.title': '3년 누적 매출', 'items.body': '계산 근거' },
+      hints: {
+        title: '추진하면 얻는 것',
+        'items.body': '계산 근거',
+        ...each({ value: ['30억 원', '120곳', '2년'], title: ['3년 누적 매출', '구독 고객 수', '투자 회수 기간'] }),
+      },
     },
     {
       layout: 'bars',
@@ -193,7 +231,7 @@ const business: Blueprint = {
       priority: 3,
       section: '효과와 비용',
       guide: '해마다 얼마를 벌 수 있는지 막대로 보여주면 회수 시점이 보여요.',
-      hints: { title: '3년 차에 매출 12억 원', 'items.title': '1년 차', 'items.value': '4', 'items.meta': '억 원' },
+      hints: { title: '3년 차에 매출 12억 원', 'items.meta': '억 원', ...each({ title: ['1년 차', '2년 차', '3년 차'], value: ['4', '7', '12'] }) },
       items: 3,
     },
     {
@@ -202,7 +240,10 @@ const business: Blueprint = {
       priority: 2,
       section: '효과와 비용',
       guide: '예산, 인력, 기간을 숨기지 말고 먼저 보여주세요. 결정에 꼭 필요한 정보예요.',
-      hints: { title: '필요한 예산과 인력', 'items.value': '1.2억 원', 'items.body': '어디에 쓰는지' },
+      hints: {
+        title: '필요한 예산과 인력',
+        ...each({ value: ['1.2억 원', '3명', '6개월'], body: ['어디에 쓰는지', '어느 팀에서 몇 명이 맡는지', '언제부터 언제까지'] }),
+      },
       prefill: [{ title: '예산' }, { title: '인력' }, { title: '기간' }],
     },
     section('실행 계획', '언제, 어떻게 진행할지'),
@@ -212,10 +253,17 @@ const business: Blueprint = {
       priority: 2,
       section: '실행 계획',
       guide: '언제 무엇을 하는지 보이면 결정이 쉬워져요. 중간 점검 시점을 넣어 두면 더 안심해요.',
-      hints: { title: '6개월 안에 시범 운영까지', 'items.meta': '1개월 차' },
+      hints: {
+        title: '6개월 안에 시범 운영까지',
+        ...each({ meta: ['1개월 차', '2개월 차', '4개월 차', '6개월 차'], title: ['준비', '시범 운영', '중간 점검', '확대 결정'] }),
+      },
     },
     risks(2, '실행 계획'),
-    decision('오늘 받아야 할 결정을 분명하게 적어 주세요. 언제까지 필요한지 함께 쓰면 결정이 미뤄지지 않아요.', '결정해 주실 일 (예: 시범 사업 예산 1.2억 원 승인)'),
+    decision('오늘 받아야 할 결정을 분명하게 적어 주세요. 언제까지 필요한지 함께 쓰면 결정이 미뤄지지 않아요.', [
+      '결정해 주실 일 (예: 시범 사업 예산 1.2억 원 승인)',
+      '함께 정해 주실 일 (예: 전담 인력 3명)',
+      '그 밖의 요청',
+    ]),
   ],
 }
 
@@ -251,7 +299,11 @@ const deal: Blueprint = {
       priority: 1,
       section: '사업 기회',
       guide: '이 사업이 얼마짜리인지 숫자로 보여주세요. 매출만큼 이익률도 중요하게 봐요.',
-      hints: { title: '숫자로 보는 사업 규모', 'items.value': '4.8억 원', 'items.body': '계산 기준' },
+      hints: {
+        title: '숫자로 보는 사업 규모',
+        'items.body': '계산 기준',
+        ...each({ value: ['4.8억 원', '3년', '22%'], body: ['첫해 구축비 기준', '유지보수 포함 금액', '본부 평균과 비교'] }),
+      },
       prefill: [{ title: '예상 매출' }, { title: '계약 기간' }, { title: '예상 이익률' }],
     },
     {
@@ -261,7 +313,15 @@ const deal: Blueprint = {
       section: '사업 기회',
       guide: '누구와 경쟁하는지, 우리가 어디서 앞서고 어디서 밀리는지 솔직하게 적어 주세요.',
       fields: { leftTitle: '경쟁사', rightTitle: '우리' },
-      hints: { title: '경쟁사보다 앞서는 점', 'items.title': '경쟁사의 강점이나 조건', 'items.body': '우리의 강점이나 대응' },
+      hints: {
+        title: '경쟁사보다 앞서는 점',
+        'items.title': '경쟁사의 강점이나 조건',
+        'items.body': '우리의 강점이나 대응',
+        ...each({
+          title: ['가격이 더 낮아요', '구축에 6개월 걸려요', '고객과 오래 거래했어요'],
+          body: ['원인 분석까지 들어 있어요', '3개월, 라인을 세우지 않아요', '같은 업종 사례가 2곳 있어요'],
+        }),
+      },
     },
     section('제안 전략', '무엇을 어떻게 제안할지'),
     {
@@ -270,13 +330,17 @@ const deal: Blueprint = {
       priority: 1,
       section: '제안 전략',
       guide: '고객에게 무엇을 제안할지, 고객이 무엇을 얻는지 세 가지 이내로 정리해 주세요.',
-      hints: { title: '고객에게 제안할 내용', 'items.title': '제안 항목', 'items.body': '고객이 얻는 것' },
+      hints: {
+        title: '고객에게 제안할 내용',
+        'items.title': '제안 항목',
+        'items.body': '고객이 얻는 것',
+        ...each({ title: ['AI 외관 검사', '불량 원인 분석', '3개 라인부터'] }),
+      },
     },
     options('가격 안', 1, '제안 전략', {
       title: '추천 가격은 B안 4.8억 원이에요',
-      'items.value': '4.8억 원',
-      'items.meta': '이익률 22%',
       'items.body': '포함 범위와 조건을 한 줄에 하나씩',
+      ...each({ value: ['3.9억 원', '4.8억 원', '6.5억 원'], meta: ['이익률 9%', '이익률 22%', '이익률 25%'] }),
     }),
     {
       layout: 'imageText',
@@ -301,10 +365,20 @@ const deal: Blueprint = {
       priority: 2,
       section: '실행 계획',
       guide: '제안서 제출부터 계약까지 날짜를 적어 주세요. 고객이 결정하는 날을 꼭 넣으세요.',
-      hints: { title: '12월 계약이 목표예요', 'items.meta': '11월 1주', 'items.title': '단계 (예: 제안서 제출)' },
+      hints: {
+        title: '12월 계약이 목표예요',
+        ...each({ meta: ['11월 1주', '11월 3주', '12월 1주', '12월 3주'], title: ['제안서 제출', '현장 시연', '가격 협상', '계약'] }),
+      },
     },
-    risks(2, '실행 계획'),
-    decision('오늘 받아야 할 결정을 분명하게 적어 주세요. 가격, 할인 폭, 투입 인력처럼 위에서 정해 줘야 하는 것들이에요.', '결정해 주실 일 (예: 제안 가격 4.8억 원 승인)'),
+    risks(2, '실행 계획', {
+      title: ['경쟁사가 가격을 더 낮출 수 있어요', '고객 결정이 늦어질 수 있어요', '구축 인력이 모자랄 수 있어요'],
+      body: ['협상 때 쓸 조건을 미리 정해 둬요', '단계를 나눠 먼저 계약해요', '다른 팀 지원을 미리 받아 둬요'],
+    }),
+    decision('오늘 받아야 할 결정을 분명하게 적어 주세요. 가격, 할인 폭, 투입 인력처럼 위에서 정해 줘야 하는 것들이에요.', [
+      '결정해 주실 일 (예: 제안 가격 4.8억 원 승인)',
+      '함께 정해 주실 일 (예: 구축 인력 2명 지원)',
+      '그 밖의 요청 (예: 협상에 쓸 할인 폭)',
+    ]),
   ],
 }
 
@@ -336,7 +410,12 @@ const improve: Blueprint = {
       priority: 2,
       section: '문제',
       guide: '문제 때문에 드는 시간이나 비용을 막대로 보여주면 심각성이 바로 전해져요.',
-      hints: { title: '견적 한 건에 평균 6시간이 들어요', 'items.title': '항목', 'items.value': '6', 'items.meta': '시간' },
+      hints: {
+        title: '견적 한 건에 평균 6시간이 들어요',
+        'items.title': '항목',
+        'items.meta': '시간',
+        ...each({ title: ['자료 찾기', '단가 계산', '검토와 승인'], value: ['2.5', '2', '1.5'] }),
+      },
     },
     {
       layout: 'points',
@@ -344,7 +423,12 @@ const improve: Blueprint = {
       priority: 3,
       section: '문제',
       guide: '문제가 왜 생기는지 짚으면 개선안이 왜 맞는지 설득하기 쉬워요.',
-      hints: { title: '문제가 생기는 이유', 'items.title': '원인' },
+      hints: {
+        title: '문제가 생기는 이유',
+        'items.title': '원인',
+        'items.body': '왜 그런지, 얼마나 자주 그런지',
+        ...each({ title: ['양식이 팀마다 달라요', '단가표가 흩어져 있어요', '승인이 세 단계예요'] }),
+      },
     },
     section('개선안', '어떻게 바꿀지'),
     {
@@ -369,13 +453,20 @@ const improve: Blueprint = {
       section: '개선안',
       guide: '지금 방식과 바뀐 방식을 줄마다 나란히 놓으면 차이가 한눈에 보여요.',
       fields: { leftTitle: '지금', rightTitle: '개선 후' },
-      hints: { title: '이렇게 바꾸자고 제안해요', 'items.title': '지금의 방식', 'items.body': '바뀐 방식' },
+      hints: {
+        title: '이렇게 바꾸자고 제안해요',
+        'items.title': '지금의 방식',
+        'items.body': '바뀐 방식',
+        ...each({
+          title: ['팀마다 다른 양식으로 써요', '단가를 메일로 물어봐요', '승인에 사흘 걸려요'],
+          body: ['한 가지 양식으로 써요', '단가표에서 바로 찾아요', '하루 안에 승인해요'],
+        }),
+      },
     },
     options('방안 비교', 3, '개선안', {
       title: '세 가지 방안 중 B안을 추천해요',
-      'items.value': '2,000만 원',
-      'items.meta': '3개월',
       'items.body': '할 일과 장단점을 한 줄에 하나씩',
+      ...each({ value: ['500만 원', '2,000만 원', '6,000만 원'], meta: ['1개월', '3개월', '6개월'] }),
     }),
     {
       layout: 'kpi',
@@ -383,7 +474,11 @@ const improve: Blueprint = {
       priority: 1,
       section: '개선안',
       guide: '바꾸면 무엇이 얼마나 좋아지는지 숫자로 보여주세요.',
-      hints: { title: '바꾸면 얻는 것', 'items.value': '40%', 'items.title': '줄어드는 시간', 'items.body': '계산 근거' },
+      hints: {
+        title: '바꾸면 얻는 것',
+        'items.body': '계산 근거',
+        ...each({ value: ['40%', '3.6시간', '1,200시간'], title: ['줄어드는 시간', '견적 한 건에 드는 시간', '한 해에 아끼는 시간'] }),
+      },
     },
     section('실행', '언제, 어떻게 바꿀지'),
     {
@@ -392,10 +487,20 @@ const improve: Blueprint = {
       priority: 2,
       section: '실행',
       guide: '작게 시작해서 넓히는 계획이면 결정하기 훨씬 쉬워요.',
-      hints: { title: '한 팀에서 먼저 시작해요', 'items.meta': '1개월 차' },
+      hints: {
+        title: '한 팀에서 먼저 시작해요',
+        ...each({ meta: ['1개월 차', '2개월 차', '3개월 차', '4개월 차'], title: ['한 팀 시범', '결과 점검', '본부 확대', '모든 팀 적용'] }),
+      },
     },
-    risks(3, '실행'),
-    decision('바꾸는 데 필요한 승인이나 지원을 분명하게 적어 주세요.', '결정해 주실 일 (예: 시범 운영 승인)'),
+    risks(3, '실행', {
+      title: ['새 방식이 익숙하지 않을 수 있어요', '바꾸는 동안 일이 밀릴 수 있어요', '효과가 예상보다 작을 수 있어요'],
+      body: ['한 팀에서 먼저 써 보고 고쳐요', '바쁜 달을 피해 시작해요', '한 달 뒤 숫자로 점검해요'],
+    }),
+    decision('바꾸는 데 필요한 승인이나 지원을 분명하게 적어 주세요.', [
+      '결정해 주실 일 (예: 한 팀 시범 운영 승인)',
+      '함께 정해 주실 일 (예: 시범 기간 2개월)',
+      '그 밖의 요청',
+    ]),
   ],
 }
 
@@ -413,7 +518,10 @@ const report: Blueprint = {
       purpose: '핵심 실적',
       priority: 1,
       guide: '가장 중요한 숫자를 먼저 보여주세요. 목표 대비 몇 퍼센트인지가 가장 먼저 궁금한 숫자예요.',
-      hints: { title: '이번 분기 목표의 112%를 달성했어요', 'items.value': '112%', 'items.title': '목표 달성률', 'items.body': '목표와 실적 숫자' },
+      hints: {
+        title: '이번 분기 목표의 112%를 달성했어요',
+        ...each({ value: ['112%', '131억 원', '4곳'], title: ['목표 달성률', '3분기 매출', '신규 고객'], body: ['목표와 실적 숫자', '지난 분기와 비교', '목표 5곳'] }),
+      },
     },
     agenda,
     {
@@ -421,7 +529,15 @@ const report: Blueprint = {
       purpose: '목표 대비 실적',
       priority: 1,
       guide: '지표마다 목표와 실적을 같은 단위로 적으면 달성률은 저절로 계산돼요. 목표에 못 미친 지표는 설명 칸에 이유를 짧게 적어 주세요.',
-      hints: { title: '네 지표 중 세 개가 목표를 넘었어요', 'items.title': '지표 (예: 매출)' },
+      hints: {
+        title: '네 지표 중 세 개가 목표를 넘었어요',
+        'items.title': '지표 이름',
+        ...each({
+          title: ['매출', '영업이익', '신규 고객', '재계약률'],
+          meta: ['117억 원', '14억 원', '5곳', '90%'],
+          value: ['131억 원', '15.2억 원', '4곳', '93%'],
+        }),
+      },
     },
     {
       layout: 'bars',
@@ -429,14 +545,24 @@ const report: Blueprint = {
       priority: 2,
       variant: 'columns',
       guide: '분기나 월별 실적을 세로 막대로 보여주세요. 눈여겨볼 막대 하나를 강조할 수 있어요.',
-      hints: { title: '실적 흐름을 요약하는 한 문장', 'items.title': '기간 (예: 3분기)', 'items.value': '120', 'items.meta': '억 원' },
+      hints: {
+        title: '실적 흐름을 요약하는 한 문장',
+        'items.title': '기간',
+        'items.meta': '억 원',
+        ...each({ title: ['1분기', '2분기', '3분기', '4분기 전망'], value: ['96', '104', '131', '125'] }),
+      },
     },
     {
       layout: 'points',
       purpose: '잘된 점',
       priority: 2,
       guide: '실적을 만든 이유를 짚으면 다음에도 이어갈 수 있어요.',
-      hints: { title: '실적을 만든 이유', 'items.title': '잘된 점', 'items.body': '왜 잘됐는지' },
+      hints: {
+        title: '실적을 만든 이유',
+        'items.title': '잘된 점',
+        'items.body': '왜 잘됐는지',
+        ...each({ title: ['기존 고객 재계약', '새 업종 진입', '제안 기간 단축'] }),
+      },
     },
     {
       layout: 'compare',
@@ -444,17 +570,32 @@ const report: Blueprint = {
       priority: 1,
       guide: '부족했던 점을 먼저 꺼내고 대책을 함께 적으면 신뢰가 쌓여요.',
       fields: { leftTitle: '문제', rightTitle: '대책' },
-      hints: { title: '부족했던 점과 대책', 'items.title': '부족했던 점', 'items.body': '대책' },
+      hints: {
+        title: '부족했던 점과 대책',
+        'items.title': '부족했던 점',
+        'items.body': '대책',
+        ...each({
+          title: ['신규 고객이 목표보다 1곳 적어요', '제안서 준비에 시간이 많이 들어요', '큰 계약이 다음 분기로 밀렸어요'],
+          body: ['4분기에 2곳을 더 만나요', '제안서 양식을 하나로 맞춰요', '12월 계약에 맞춰 일정을 당겨요'],
+        }),
+      },
     },
     {
       layout: 'timeline',
       purpose: '다음 계획',
       priority: 1,
       guide: '다음 기간에 무엇을 언제 할지 보여주세요.',
-      hints: { title: '다음 분기 계획', 'items.meta': '1월' },
+      hints: {
+        title: '다음 분기 계획',
+        ...each({ meta: ['10월', '11월', '12월', '1월'], title: ['신규 고객 2곳 방문', '재계약 협상', '연간 실적 점검', '내년 계획 보고'] }),
+      },
     },
     {
-      ...decision('필요한 지원이 있으면 분명하게 적어 주세요. 없으면 이 장을 발표에서 빼도 돼요.', '필요한 지원 (예: 신규 인력 1명)'),
+      ...decision('필요한 지원이 있으면 분명하게 적어 주세요. 없으면 이 장을 발표에서 빼도 돼요.', [
+        '필요한 지원 (예: 신규 인력 1명)',
+        '함께 정해 주실 일',
+        '그 밖의 요청',
+      ]),
       purpose: '요청 사항',
       fields: { title: '요청 사항' },
     },
@@ -482,7 +623,7 @@ const blank: Blueprint = {
       priority: 1,
       guide: '나란히 보여줄 내용을 적어 주세요.',
     },
-    decision('오늘 받아야 할 결정을 적어 주세요.', '결정해 주실 일'),
+    decision('오늘 받아야 할 결정을 적어 주세요.', ['결정해 주실 일', '함께 정해 주실 일', '그 밖의 요청']),
   ],
 }
 
