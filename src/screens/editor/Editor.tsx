@@ -17,7 +17,7 @@ import { downloadDeckFile } from '../../store/deckFile'
 import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiShare } from '../../ai/useAiShare'
 import { AiInbox, AiMenu, AiReview } from './AiShare'
@@ -454,6 +454,21 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
     window.addEventListener(PREVIEW_MOTION, on)
     return () => window.removeEventListener(PREVIEW_MOTION, on)
   }, [])
+  // 이 장 미리보기: 편집 표시 없이 발표 화면 그대로 보여 주고 움직임을 한 번 돌린다.
+  // 발표를 시작하지 않고도 '윗분이 볼 모습'을 바로 확인하게. 슬라이드를 누르거나 Esc, 다른 장을 고르면 편집으로 돌아온다.
+  const [peek, setPeek] = useState(false)
+  useEffect(() => setPeek(false), [slide.id])
+  useEffect(() => {
+    if (!peek) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPeek(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [peek])
+  const startPeek = () => {
+    setPeek(true)
+    setPreview((n) => n + 1)
+  }
+
   const engine = useMemo(() => motionEngine(), [])
   const level = motionOf(deck, slide)
   useLayoutEffect(() => {
@@ -474,6 +489,15 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
           belowHeight={56}
           below={
             <div className="stage-tools">
+              {peek ? (
+                <div className="stage-tools-l">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview((n) => n + 1)}>
+                    <PlayIcon />
+                    움직임 다시 보기
+                  </button>
+                  <p className="stage-peek" title="빈칸과 편집 표시는 보이지 않아요">발표 화면에서 보이는 모습이에요</p>
+                </div>
+              ) : (
               <div className="stage-tools-l">
                 {nextVariant && (
                   <button
@@ -498,8 +522,19 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
                   </p>
                 )}
               </div>
+              )}
               {/* 슬라이드가 좁게 보일 때는 오른쪽 단추의 글자를 숨기고 그림만 남긴다 (이름은 title로) */}
               <div className="stage-tools-r">
+                <button
+                  type="button"
+                  className={cx('btn btn-ghost btn-sm', peek && 'is-on')}
+                  aria-pressed={peek}
+                  title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리보기'}
+                  onClick={() => (peek ? setPeek(false) : startPeek())}
+                >
+                  <ScreenIcon />
+                  <span className="btn-t">{peek ? '편집으로' : '미리보기'}</span>
+                </button>
                 <button type="button" className="btn btn-ghost btn-sm" title="여기서부터 발표" onClick={onPresentHere}>
                   <PlayIcon />
                   <span className="btn-t">여기서부터 발표</span>
@@ -525,11 +560,11 @@ function SlideStage({ deck, slide, onRemove, onPresentHere }: { deck: Deck; slid
             </div>
           }
         >
-          <div key={preview} ref={previewRef}>
+          <div key={preview} ref={previewRef} className={cx(peek && 'stage-peeking')} onPointerDown={peek ? () => setPeek(false) : undefined}>
             <SlideCanvas
               deck={look}
               slide={slide}
-              mode={preview > 0 ? 'final' : 'edit'}
+              mode={peek || preview > 0 ? 'final' : 'edit'}
               actions={actions}
               {...pageProps(info, slide.id)}
             />

@@ -1863,6 +1863,27 @@ select {
   padding-top: 14px;
 }
 
+/* 이 장 미리보기 중: 누르면 편집으로 돌아간다는 것을 손 모양으로 */
+.stage-peeking {
+  cursor: pointer;
+}
+
+.stage-peek {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-tools .btn.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+}
+
 /* 1280×600 노트북처럼 슬라이드가 좁게 보이면 오른쪽 단추는 그림만 */
 @container (max-width: 640px) {
   .stage-tools-r .btn-t {
