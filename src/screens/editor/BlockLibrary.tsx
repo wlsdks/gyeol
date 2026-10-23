@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { blockCount, blockMinH, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
+import { blockCount, blockMinH, BLOCK_GAP, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { motionOf } from '../../deck/themes'
 import type { BlockType, Deck, Slide } from '../../deck/types'
@@ -15,12 +15,16 @@ import { soloSlide, type BlockEditing } from './BlockEditor'
 type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
 
 const THUMB_RATIO = 1.5
+/** 장 본문(1680) 12칸 격자의 한 칸 너비 */
+const COL_W = (1680 - 11 * BLOCK_GAP) / 12
 
 /** 예시 부품 하나를 작은 그림으로. 부품이 잘리지 않을 높이로 그린 뒤 같은 비율의 카드에 맞춰 줄인다 */
 const Thumb = memo(function Thumb({ deck, type }: { deck: Look; type: BlockType }) {
   const block = useMemo(() => sampleBlock(type), [type])
   const slide = useMemo(() => soloSlide(block), [block])
-  const h = Math.max(480, blockMinH(block) + 80)
+  // 부품이 들어갈 수 있는 가장 좁은 칸보다 좁게 그리지 않는다 (표나 차트가 찌그러져 보이지 않게)
+  const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80
+  const h = Math.max(480, blockMinH(block) + 80, Math.round(minW / THUMB_RATIO))
   const canvas = { w: Math.round(h * THUMB_RATIO), h }
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
