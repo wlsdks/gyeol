@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { BLOCK_GROUPS, BLOCK_TYPES, BLOCKS } from '../deck/blocks'
 import { BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { emptyItem } from '../deck/generate'
@@ -6,11 +7,13 @@ import { LAYOUTS, LAYOUT_GROUPS, LAYOUT_ORDER } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { showcaseSlides } from '../deck/showcase'
 import { ACCENT_PRESETS, THEMES, THEME_ORDER, TONES, isDarkLook, themeStyle } from '../deck/themes'
-import type { Deck, DeckTheme, LayoutId, Slide, ThemeId } from '../deck/types'
+import type { BlockType, Deck, DeckTheme, LayoutId, Slide, ThemeId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
+import { motionEngine } from '../motion/engine'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { BlockThumb, type Look } from './editor/BlockLibrary'
 import { BackIcon, Brand, CheckIcon } from './ui'
 
 /*
@@ -46,6 +49,9 @@ const TYPE: { name: string; px: number; text: string; head?: boolean; tone?: 'ac
 ]
 
 const VARIANT_COUNT = LAYOUT_ORDER.reduce((n, id) => n + (LAYOUTS[id].variants?.length ?? 1), 0)
+
+/** 부품이 가장 좁게 들어가는 너비 (12칸 격자의 칸 수 → 쓰는 사람의 말) */
+const NARROWEST: Record<number, string> = { 3: '장 너비의 4분의 1', 4: '장 너비의 3분의 1', 6: '장 너비의 절반', 8: '장 너비의 3분의 2', 12: '한 줄 전체' }
 
 /** 이 레이아웃이 어느 보고 구성에 들어가는지 */
 function usedIn(id: LayoutId): string {
@@ -116,7 +122,17 @@ export function System() {
   const cols = width >= 1100 ? 3 : 2
   const thumbW = width ? Math.floor((width - gap * (cols - 1)) / cols) : 0
 
-  const sections = useMemo(() => [{ id: 'sys-tokens', name: '색과 글자' }, ...LAYOUT_GROUPS.map((g, i) => ({ id: `sys-g${i}`, name: g.name, count: g.layouts.length }))], [])
+  const sections = useMemo(
+    () => [
+      { id: 'sys-tokens', name: '색과 글자' },
+      ...LAYOUT_GROUPS.map((g, i) => ({ id: `sys-g${i}`, name: g.name, count: g.layouts.length })),
+      { id: 'sys-parts', name: '부품', count: BLOCK_TYPES.length },
+    ],
+    [],
+  )
+  // 부품은 작게 넷씩(좁으면 셋). 카드에 마우스를 올리면 발표할 때의 움직임을 한 번
+  const partCols = width >= 1100 ? 4 : 3
+  const look = useMemo<Look>(() => ({ meta: base.meta, theme: deckTheme, title: base.title }), [base, themeId, accent])
 
   // 지금 보고 있는 묶음을 목차에 표시한다
   useEffect(() => {
@@ -220,8 +236,8 @@ export function System() {
           <div className="sys-intro">
             <h1 className="sys-h1">장 모음</h1>
             <p className="sys-lead">
-              만들 수 있는 장 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지를 모았어요. 위에서 테마와 강조색을 바꾸면 모든 장이 함께 바뀌어요. 발표를
-              편집할 때 ‘장 추가’에서 넣을 수 있어요.
+              만들 수 있는 장 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지, 부품 장에 넣는 부품 {BLOCK_TYPES.length}가지를 모았어요. 위에서 테마와
+              강조색을 바꾸면 모두 함께 바뀌어요. 발표를 편집할 때 ‘장 추가’와 ‘부품 넣기’에서 넣을 수 있어요.
             </p>
           </div>
 
@@ -298,9 +314,54 @@ export function System() {
               })}
             </section>
           ))}
+
+          <section id="sys-parts" className="sys-group">
+            <h2 className="sys-h2">부품</h2>
+            <p className="sys-group-desc">
+              부품 장에 끌어다 놓는 부품이에요. 정해진 줄과 칸에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+            </p>
+            {width > 0 &&
+              BLOCK_GROUPS.map((g) => (
+                <div key={g.name} className="sys-parts">
+                  <h3 className="sys-h3">{g.name}</h3>
+                  <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` } as CSSProperties}>
+                    {g.types.map((type) => (
+                      <PartCard key={type} look={look} type={type} blank={view === 'blank'} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </section>
         </main>
       </div>
     </div>
+  )
+}
+
+const engine = motionEngine()
+const played = new WeakMap<Element, number>()
+
+/** 부품 하나: 예시 그림과 이름, 하는 일, 움직임, 가장 좁은 너비 */
+function PartCard({ look, type, blank }: { look: Look; type: BlockType; blank: boolean }) {
+  const spec = BLOCKS[type]
+  const play = (card: HTMLElement) => {
+    const cell = card.querySelector<HTMLElement>('.bk')
+    const now = performance.now()
+    // 움직이는 중에 다시 올려도 처음부터 다시 하지 않는다
+    if (!cell || now - (played.get(cell) ?? -1e9) < 1400) return
+    played.set(cell, now)
+    engine.play(cell, 'calm')
+  }
+  return (
+    <figure className="sys-thumb sys-part" onPointerEnter={(e) => play(e.currentTarget)}>
+      <BlockThumb deck={look} type={type} blank={blank} mode={blank ? 'preview' : 'final'} />
+      <figcaption>
+        <b>{spec.name}</b>
+        <span>{spec.description}</span>
+        <span className="sys-part-meta">움직임: {spec.motion}</span>
+        <span className="sys-part-meta">{NARROWEST[spec.minSpan] ?? ''}까지 좁아져요</span>
+      </figcaption>
+    </figure>
   )
 }
 

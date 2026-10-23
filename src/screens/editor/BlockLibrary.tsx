@@ -1,10 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { blockCount, blockMinH, BLOCK_GAP, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
+import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
+import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { CloseIcon } from '../ui'
 import { soloSlide, type BlockEditing } from './BlockEditor'
@@ -12,15 +14,21 @@ import { soloSlide, type BlockEditing } from './BlockEditor'
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
 
-type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
+export type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
 
 const THUMB_RATIO = 1.5
 /** 장 본문(1680) 12칸 격자의 한 칸 너비 */
 const COL_W = (1680 - 11 * BLOCK_GAP) / 12
 
-/** 예시 부품 하나를 작은 그림으로. 부품이 잘리지 않을 높이로 그린 뒤 같은 비율의 카드에 맞춰 줄인다 */
-const Thumb = memo(function Thumb({ deck, type }: { deck: Look; type: BlockType }) {
-  const block = useMemo(() => sampleBlock(type), [type])
+/**
+ * 예시 부품 하나를 작은 그림으로. 부품이 잘리지 않을 높이로 그린 뒤 같은 비율의 카드에 맞춰 줄인다.
+ * blank면 글을 비워 칸마다 안내만 (장 모음의 '빈 칸' 보기)
+ */
+export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = 'preview' }: { deck: Look; type: BlockType; blank?: boolean; mode?: SlideMode }) {
+  const block = useMemo(() => {
+    const b = sampleBlock(type)
+    return blank ? { ...b, fields: {}, items: b.items.map(() => emptyItem()) } : b
+  }, [type, blank])
   const slide = useMemo(() => soloSlide(block), [block])
   // 부품이 들어갈 수 있는 가장 좁은 칸보다 좁게 그리지 않는다 (표나 차트가 찌그러져 보이지 않게)
   const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80
@@ -39,7 +47,7 @@ const Thumb = memo(function Thumb({ deck, type }: { deck: Look; type: BlockType 
     <div ref={ref} className="lib-thumb">
       {width > 0 && (
         <div className="lib-thumb-scale" style={{ width: canvas.w, height: canvas.h, transform: `scale(${width / canvas.w})` }}>
-          <SlideCanvas deck={deck} slide={slide} mode="preview" solo={canvas} />
+          <SlideCanvas deck={deck} slide={slide} mode={mode} solo={canvas} />
         </div>
       )}
     </div>
@@ -138,7 +146,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
                     onPointerEnter={(e) => preview(e.currentTarget)}
                     onFocus={(e) => preview(e.currentTarget)}
                   >
-                    <Thumb deck={look} type={type} />
+                    <BlockThumb deck={look} type={type} />
                     <span className="lib-name">{spec.name}</span>
                     <span className="lib-desc">{spec.description}</span>
                   </button>

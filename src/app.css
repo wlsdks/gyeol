@@ -995,6 +995,28 @@ select {
   margin: 36px 0 14px;
 }
 
+/* 장 모음의 부품: 묶음마다 작은 그림 넷씩 */
+.sys-parts + .sys-parts {
+  margin-top: 36px;
+}
+
+.sys-parts .sys-h3 {
+  margin-bottom: 14px;
+}
+
+.sys-part .lib-thumb {
+  margin-bottom: 0;
+  border-radius: var(--r);
+}
+
+.sys-part figcaption .sys-part-meta {
+  font-size: 12px;
+}
+
+.sys-part figcaption > span:not(.sys-part-meta) + .sys-part-meta {
+  margin-top: 4px;
+}
+
 /* 색 견본: 실제 장과 같은 조건(테마 변수, 어두운 테마)에서 계산한 색을 읽으려는 숨은 장 */
 .sys-probe {
   position: fixed;
