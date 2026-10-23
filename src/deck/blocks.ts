@@ -569,7 +569,8 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
  * 계산은 브라우저의 격자가 한다. 그래서 내보낸 HTML도 자바스크립트 없이 같은 자리에 그려진다.
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
-  return { gridTemplateRows: rows.map((r) => `minmax(${rowMinH(r)}px, ${rowWeight(r)}fr)`).join(' ') }
+  // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다
+  return { gridTemplateRows: rows.map((r) => `minmax(calc(${rowMinH(r)}px * var(--bk-sq, 1)), ${rowWeight(r)}fr)`).join(' ') }
 }
 
 export function cellStyle(b: CellBox): Record<string, string> {

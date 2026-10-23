@@ -13,6 +13,7 @@ import {
   copyBlock,
   dropTarget,
   effectOf,
+  fitsHeight,
   insertAt,
   lookOf,
   makeBlock,
@@ -522,9 +523,18 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   const selectedBlock = selected ? (slide.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected) : undefined
+  /** 부품을 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 잘리지 않고 장에 들어가는지 */
+  const fitsWith = (b: Block, fn: (x: Block) => Block) => {
+    const area = measureArea(areaEl.current)
+    if (!area) return true
+    const rows = (slide.rows ?? []).map((r) => ({ ...r, blocks: r.blocks.map((x) => (x.id === b.id ? fn(x) : x)) }))
+    return fitsHeight(rows, area.size.h)
+  }
   const tools = (b: Block) => (
     <BlockTools
       block={b}
+      roomForItem={fitsWith(b, withItem)}
+      roomForVariant={(v) => fitsWith(b, (x) => ({ ...x, variant: v }))}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setRows(slideRef.current.id, shiftBlock(slideRef.current.rows ?? [], b.id, dir))}
       onLook={(lk) => update(b.id, (x) => ({ ...x, look: lk }))}
@@ -534,14 +544,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       }}
       onPreview={(fx) => preview(b, fx)}
       onVariant={(v) => update(b.id, (x) => ({ ...x, variant: v }))}
-      onAddItem={() => update(b.id, (x) => {
-        const max = BLOCKS[x.type].items?.max ?? 0
-        const visible = Math.min(x.items.length, max)
-        if (visible >= max) return x
-        const items = [...x.items]
-        items.splice(visible, 0, emptyItem())
-        return { ...x, items }
-      })}
+      onAddItem={() => update(b.id, withItem)}
       onDuplicate={() => duplicate(b)}
       onRemove={() => remove(b)}
     />
@@ -701,8 +704,22 @@ function Floating({ anchor, children }: { anchor: string; children: ReactNode })
   )
 }
 
+/** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
+function withItem(x: Block): Block {
+  const max = BLOCKS[x.type].items?.max ?? 0
+  const visible = Math.min(x.items.length, max)
+  if (visible >= max) return x
+  const items = [...x.items]
+  items.splice(visible, 0, emptyItem())
+  return { ...x, items }
+}
+
+const NO_ROOM = '장에 자리가 모자라요. 다른 부품을 빼거나 다음 장으로 나눠 보세요'
+
 function BlockTools({
   block,
+  roomForItem,
+  roomForVariant,
   onGrip,
   onShift,
   onLook,
@@ -714,6 +731,9 @@ function BlockTools({
   onRemove,
 }: {
   block: Block
+  /** 항목을 더해도 잘리지 않는지 */
+  roomForItem: boolean
+  roomForVariant(variant: string): boolean
   onGrip(e: ReactPointerEvent<HTMLElement>): void
   onShift(dir: -1 | 1): void
   onLook(look: Block['look']): void
@@ -732,6 +752,7 @@ function BlockTools({
   const variant = variantOfBlock(block)
   const canAdd = !!spec.items && blockItems(block).length < spec.items.max
   const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variant) + 1) % variants.length] : null
+  const variantRoom = !nextVariant || roomForVariant(nextVariant.id)
   return (
     <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
       <button
@@ -798,13 +819,19 @@ function BlockTools({
         )}
       </div>
       {nextVariant && (
-        <button type="button" className="bk-tool" title={`다음 모양: ${nextVariant.name}`} onClick={() => onVariant(nextVariant.id)}>
+        <button type="button" className="bk-tool" disabled={!variantRoom} title={variantRoom ? `다음 모양: ${nextVariant.name}` : NO_ROOM} onClick={() => onVariant(nextVariant.id)}>
           <ShapesIcon />
           <span>{variants.find((v) => v.id === variant)?.name}</span>
         </button>
       )}
       {spec.items && (
-        <button type="button" className="bk-tool" disabled={!canAdd} title={`${spec.items.label} 추가`} onClick={onAddItem}>
+        <button
+          type="button"
+          className="bk-tool"
+          disabled={!canAdd || !roomForItem}
+          title={!canAdd ? `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요` : roomForItem ? `${spec.items.label} 추가` : NO_ROOM}
+          onClick={onAddItem}
+        >
           <PlusIcon />
           <span>{spec.items.label}</span>
         </button>

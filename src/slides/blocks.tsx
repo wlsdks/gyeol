@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
 import { areaStyle, BLOCKS, blockFieldPrefix, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
@@ -6,6 +6,7 @@ import type { Block, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
+import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, T } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
 import { formatNumber, parseDelta } from './numbers'
@@ -355,6 +356,17 @@ export function BlockArea() {
   const ref = useRef<HTMLDivElement | null>(null)
   // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비
   const key = rows.map((r) => `${r.blocks.map((b) => `${b.id}:${blockMinH(b)}`).join(',')}|${spansOf(r).join(',')}`).join('/')
+  // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
+  useLayoutEffect(() => {
+    if (ref.current) fitBlocks(ref.current)
+  })
+  useEffect(() => {
+    let on = true
+    document.fonts?.ready.then(() => on && ref.current && fitBlocks(ref.current))
+    return () => {
+      on = false
+    }
+  }, [])
   useFlip(ref, !!live, key)
   const setRef = (el: HTMLDivElement | null) => {
     ref.current = el

@@ -107,8 +107,9 @@
     .bk-num-l, .bk-num-v, .bk-num-n, .bk-dl-l, .bk-dl-k, .bk-dl-v, .bk-dl-chip, .bk-dl-n,
     .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s
   ) {
-  /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 함께 줄인다. 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css) */
-  font-size: max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1)));
+  /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 함께 줄인다. 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css)
+     --bk-fit: 놓은 뒤 내용이 늘어 칸을 넘치면 slides/fitBlocks.ts가 단계로 줄인다 */
+  font-size: max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1)));
   white-space: pre-line;
 }
 
