@@ -2103,6 +2103,21 @@ select {
 }
 
 /* 문서 모드 */
+.ol-block {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 12px 0 4px 14px;
+  border-left: 2px solid var(--line);
+}
+
+.ol-block-name {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 .ol {
   min-height: 0;
   overflow-y: auto;
@@ -3229,11 +3244,444 @@ select {
   flex: none;
 }
 
+/* ---------- 부품 넣기 ---------- */
+
+.ed-body {
+  position: relative;
+}
+
+.ed-canvas {
+  position: relative;
+}
+
+.stage-blocks {
+  color: var(--sel);
+}
+
+.stage-blocks.is-on {
+  border-color: #c5d5ff;
+  background: var(--sel-soft);
+}
+
+/* 끄는 동안 놓으면 할 일 */
+.bk-hint {
+  position: absolute;
+  z-index: 30;
+  top: 6px;
+  left: 50%;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: var(--shadow-pop);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  translate: -50% 0;
+  animation: bk-hint-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bk-hint-in {
+  from {
+    opacity: 0;
+    translate: -50% -6px;
+  }
+}
+
+/* 손에 든 부품. 자리는 스크립트가 translate로 옮긴다 */
+.bk-ghost {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgb(16 20 31 / 0.12), 0 18px 44px rgb(16 20 31 / 0.24);
+  pointer-events: none;
+  will-change: translate, rotate, scale;
+}
+
+.bk-ghost.is-held {
+  transition: opacity 0.16s, box-shadow 0.2s;
+}
+
+/* 이 장에 둘 데가 없을 때: 다음 장으로 간다는 뜻으로 살짝 흐리게 */
+.bk-ghost.is-next {
+  opacity: 0.88;
+}
+
+.bk-ghost-scale {
+  transform-origin: 0 0;
+}
+
+body.is-block-dragging,
+body.is-block-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.is-block-resizing,
+body.is-block-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* 고른 부품의 도구 */
+.bk-float {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+}
+
+.bk-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  animation: bk-tools-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bk-tools-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.bk-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bk-tool:hover:not(:disabled),
+.bk-tool.is-on {
+  background: #f0f2f5;
+}
+
+.bk-tool:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.bk-tool.is-icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.bk-grip {
+  color: var(--sel);
+  cursor: grab;
+  touch-action: none;
+}
+
+.bk-tool-sep {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--line);
+}
+
+.bk-looks {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.bk-look {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bk-look.is-plain {
+  background:
+    linear-gradient(135deg, transparent 46%, var(--line-2) 46% 54%, transparent 54%),
+    var(--panel);
+}
+
+.bk-look.is-card {
+  background: #e9ecf0;
+}
+
+.bk-look.is-bold {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.bk-look.is-on {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sel);
+}
+
+.bk-tool-menu {
+  position: relative;
+}
+
+.bk-menu {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  left: -4px;
+  width: 288px;
+  max-height: min(420px, calc(100vh - 160px));
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  list-style: none;
+}
+
+.bk-menu-item {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bk-menu-item:hover,
+.bk-menu-item:focus-visible {
+  background: #f3f5f8;
+}
+
+.bk-menu-item b {
+  font-size: 13.5px;
+}
+
+.bk-menu-item span {
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.bk-menu-item.is-on b {
+  color: var(--sel);
+}
+
+/* 부품 고르기: 오른쪽 '이 장 설정' 자리에 들어가고 슬라이드는 그만큼 좁아진다 (슬라이드를 가리지 않게) */
+.ed-body.has-lib {
+  grid-template-columns: 224px minmax(0, 1fr) 368px;
+}
+
+.lib {
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  animation: lib-in 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lib-in {
+  from {
+    opacity: 0;
+    translate: 28px 0;
+  }
+}
+
+.lib-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 14px 12px 20px;
+}
+
+.lib-head-t {
+  flex: 1;
+  min-width: 0;
+}
+
+.lib-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lib-sub {
+  margin: 3px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lib-note {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 0 16px 12px 20px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--sel-soft);
+  color: #233f8f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lib-note p {
+  margin: 0;
+}
+
+.lib-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lib-tab {
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lib-tab:hover {
+  border-color: #b9bec7;
+}
+
+.lib-tab.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.lib-list {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 12px 24px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.lib-sec + .lib-sec {
+  margin-top: 20px;
+}
+
+.lib-group {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lib-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  transition: border-color 0.12s, box-shadow 0.16s, translate 0.16s;
+}
+
+.lib-card:hover {
+  border-color: var(--line-2);
+  box-shadow: 0 8px 20px rgb(16 20 31 / 0.1);
+  translate: 0 -1px;
+}
+
+.lib-card:active {
+  translate: 0 0;
+}
+
+.lib-thumb {
+  position: relative;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--line);
+  aspect-ratio: 3 / 2;
+}
+
+.lib-thumb-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.lib-name {
+  padding: 0 4px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.lib-desc {
+  display: -webkit-box;
+  padding: 0 4px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 /* ---------- 좁은 화면 ---------- */
 
 @media (max-width: 1100px) {
-  .ed-body {
+  .ed-body,
+  .ed-body.has-lib {
     grid-template-columns: 196px minmax(0, 1fr);
+  }
+
+  .lib {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: calc(100% - 40px);
+    box-shadow: -14px 0 36px rgb(16 20 31 / 0.12);
   }
 
   .ins {

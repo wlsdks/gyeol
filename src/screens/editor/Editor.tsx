@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { blockFieldPrefix } from '../../deck/blocks'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
 import { LAYOUTS, variantOf } from '../../deck/layouts'
 import { motionOf } from '../../deck/themes'
@@ -8,6 +9,7 @@ import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
+import { BlockEditContext } from '../../slides/blockEdit'
 import type { SlideActions } from '../../slides/context'
 import { motionEngine } from '../../motion/engine'
 import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, presenterAuto, screensPermission, type Placement } from '../../present/link'
@@ -17,11 +19,13 @@ import { downloadDeckFile } from '../../store/deckFile'
 import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
 import { ASK_ERROR, AiInbox, AiMenu, AiReview, AskStatus, SlideAsk } from './AiShare'
+import { useBlockEditing, type BlockEditing } from './BlockEditor'
+import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector } from './Inspector'
 import { OutlineView } from './OutlineView'
@@ -139,6 +143,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   const toast = useToast()
   const ai = useAiShare(deck)
   const ask = useAiAsk(deck)
+  const blocks = useBlockEditing(deck, slide, toast)
 
   // 부탁이 끝나면: 제안이 왔으면 미리 보기를 바로 열고, 아니면 왜인지 알려 준다.
   // 바꿀 게 없다고 하면 AI가 말한 까닭을 읽을 수 있게 오른쪽 아래 카드를 남겨 둔다.
@@ -349,10 +354,10 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
       </header>
 
-      <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions')}>
+      <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions', view === 'slides' && blocks.libraryOpen && !versionsOpen && 'has-lib')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
         {view === 'slides' && slide ? (
-          <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
+          <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
         ) : (
           <OutlineView
             deck={deck}
@@ -365,7 +370,13 @@ function EditorBody({ deck }: { deck: Deck }) {
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
-          view === 'slides' && slide && <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
+          view === 'slides' &&
+          slide &&
+          (blocks.libraryOpen ? (
+            <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
+          ) : (
+            <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
+          ))
         )}
       </div>
 
@@ -438,7 +449,7 @@ function EditorBody({ deck }: { deck: Deck }) {
 }
 
 function focusField(slideId: string, m: Missing) {
-  const key = m.item !== undefined ? `${m.item}.${m.key}` : m.key
+  const key = (m.block ? blockFieldPrefix(m.block) : '') + (m.item !== undefined ? `${m.item}.${m.key}` : m.key)
   const inCanvas = document.querySelector<HTMLElement>(`.ed-canvas [data-field="${CSS.escape(key)}"]`)
   const inDoc = document.querySelector<HTMLElement>(`[data-doc-field="${CSS.escape(`${slideId}:${key}`)}"]`)
   const el = inCanvas ?? inDoc
@@ -452,6 +463,7 @@ function SlideStage({
   slide,
   ai,
   ask,
+  blocks,
   onRemove,
   onPresentHere,
 }: {
@@ -459,6 +471,7 @@ function SlideStage({
   slide: Slide
   ai: AiShare
   ask: AiAsk
+  blocks: BlockEditing
   onRemove: (s: Slide) => void
   onPresentHere: () => void
 }) {
@@ -473,6 +486,7 @@ function SlideStage({
       setField: (key, value) => useDeck.getState().setField(slide.id, key, value),
       setItem: (index, key, value) => useDeck.getState().setItem(slide.id, index, key, value),
       removeItem: (index) => useDeck.getState().removeItem(slide.id, index),
+      updateBlock: (blockId, fn, key) => useDeck.getState().updateBlock(slide.id, blockId, fn, key),
     }),
     [slide.id],
   )
@@ -518,7 +532,17 @@ function SlideStage({
 
   return (
     <main className="stage">
-      <div className="ed-canvas" ref={canvasRef}>
+      <div
+        className="ed-canvas"
+        ref={canvasRef}
+        // 부품 밖을 누르면 부품 고르기를 끝낸다
+        onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
+      >
+        {blocks.hint && (
+          <p className="bk-hint" role="status">
+            {blocks.hint}
+          </p>
+        )}
         <FitSlide
           padding={4}
           belowHeight={56}
@@ -534,6 +558,16 @@ function SlideStage({
                 </div>
               ) : (
               <div className="stage-tools-l">
+                <button
+                  type="button"
+                  className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}
+                  aria-pressed={blocks.libraryOpen}
+                  title="부품을 골라 이 장에 넣어요"
+                  onClick={() => blocks.setLibraryOpen(!blocks.libraryOpen)}
+                >
+                  <BlocksIcon />
+                  부품 넣기
+                </button>
                 <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
                 {nextVariant && (
                   <button
@@ -597,15 +631,20 @@ function SlideStage({
           }
         >
           <div key={preview} ref={previewRef} className={cx(peek && 'stage-peeking')} onPointerDown={peek ? () => setPeek(false) : undefined}>
-            <SlideCanvas
-              deck={look}
-              slide={slide}
-              mode={peek || preview > 0 ? 'final' : 'edit'}
-              actions={actions}
-              {...pageProps(info, slide.id)}
-            />
+            <BlockEditContext.Provider value={blocks.edit}>
+              <SlideCanvas
+                deck={look}
+                // 부품을 끌어 부품 장이 아닌 장 위에 오면, 놓았을 때 바뀔 모습을 미리 보여 준다
+                slide={peek || preview > 0 ? slide : blocks.stageSlide}
+                mode={peek || preview > 0 ? 'final' : 'edit'}
+                actions={actions}
+                {...pageProps(info, slide.id)}
+              />
+            </BlockEditContext.Provider>
           </div>
         </FitSlide>
+        {blocks.ghost}
+        {!peek && !preview && blocks.toolbar}
       </div>
 
       <label className="notes">
@@ -628,7 +667,7 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide):
     const root = ref.current?.querySelector<HTMLElement>('.slide')
     if (!root) return
     const check = () => {
-      const boxes = [root, ...root.querySelectorAll<HTMLElement>('.s-body, .ix-text, .cs-main, .cs-side, .cl-main, .cv-main, .ag')]
+      const boxes = [root, ...root.querySelectorAll<HTMLElement>('.s-body, .ix-text, .cs-main, .cs-side, .cl-main, .cv-main, .ag, .bk-in')]
       // 항목 빼기 버튼이 칸 오른쪽으로 살짝 나와 있어서, 가로 넘침은 슬라이드 전체만 본다.
       setOverflow(
         root.scrollWidth - root.clientWidth > 4 || boxes.some((el) => el.scrollHeight - el.clientHeight > 4),

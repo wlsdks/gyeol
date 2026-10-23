@@ -184,3 +184,142 @@
   padding: 8px 14px;
   font-size: 18px;
 }
+
+/* ---------- 부품 장 편집 ----------
+   칸에 올리면 옅은 테두리와 손잡이, 고르면 진한 테두리. 끄는 동안 놓일 자리는 파란 점선 칸.
+   손잡이처럼 화면에서 늘 같은 크기여야 하는 것은 --vs(화면 배율)로 되돌려 키운다 */
+
+.slide.m-edit .bk-area.is-live > .bk {
+  outline: 3px solid transparent;
+  outline-offset: 12px;
+  transition: outline-color 0.12s;
+}
+
+.slide.m-edit .bk-area.is-live:not(.is-dragging) > .bk:hover {
+  outline-color: rgb(58 111 248 / 0.32);
+}
+
+.slide.m-edit .bk-area.is-live > .bk.is-selected {
+  outline-color: #3a6ff8;
+}
+
+.bk-area > .bk.is-slot {
+  outline: 0;
+  background: none;
+}
+
+.bk-slot {
+  height: 100%;
+  border: 4px dashed rgb(58 111 248 / 0.65);
+  border-radius: var(--r-panel);
+  background: rgb(58 111 248 / 0.08);
+}
+
+.bk-handle {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  left: 50%;
+  width: 46px;
+  height: 18px;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle, rgb(255 255 255 / 0.95) 1.4px, transparent 1.8px) center / 6px 6px,
+    #3a6ff8;
+  box-shadow: 0 2px 8px rgb(16 20 31 / 0.24);
+  cursor: grab;
+  opacity: 0;
+  translate: -50% -50%;
+  scale: calc(1 / var(--vs, 1));
+  transition: opacity 0.12s;
+}
+
+.bk-area.is-live:not(.is-dragging) > .bk:hover > .bk-handle,
+.bk-area.is-live > .bk.is-selected > .bk-handle {
+  opacity: 1;
+}
+
+/* 칸 사이 손잡이: 칸 사이 틈에 놓이고, 끌면 정해진 비율에 붙는다 */
+.bk-gutter {
+  position: relative;
+  z-index: 5;
+  justify-self: start;
+  width: var(--bk-gap);
+  margin-left: calc(var(--bk-gap) * -1);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.bk-gutter-grip {
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 50%;
+  width: 4px;
+  border-radius: 2px;
+  background: #3a6ff8;
+  opacity: 0;
+  translate: -50% 0;
+  scale: calc(1 / var(--vs, 1)) 1;
+  transition: opacity 0.12s;
+}
+
+.bk-gutter:hover .bk-gutter-grip,
+body.is-block-resizing .bk-gutter-grip {
+  opacity: 1;
+}
+
+/* 부품이 하나도 없을 때 */
+.bk-empty {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  max-width: 1100px;
+  text-align: center;
+}
+
+.bk-empty .bk-empty-t {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 44px;
+  font-weight: 700;
+}
+
+.bk-empty-s {
+  margin: 0 0 18px;
+  color: var(--ink-3);
+  font-size: 28px;
+  line-height: 1.5;
+}
+
+.bk-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  height: 88px;
+  padding: 0 44px;
+  border: 0;
+  border-radius: 44px;
+  background: #3a6ff8;
+  box-shadow: 0 8px 24px rgb(58 111 248 / 0.3);
+  color: #fff;
+  font: inherit;
+  font-size: 32px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bk-empty-btn .icon {
+  width: 38px;
+  height: 38px;
+}
+
+/* 놓으면 다음 장에 새로 만든다는 표시 */
+.bk-incoming {
+  position: absolute;
+  inset: -16px;
+  border: 4px dashed rgb(58 111 248 / 0.4);
+  border-radius: calc(var(--r-panel) + 16px);
+  background: rgb(58 111 248 / 0.04);
+  pointer-events: none;
+}

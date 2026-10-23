@@ -1,7 +1,9 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react'
+import { allBlocks, blockFieldPrefix, blockItems, blockSlide, BLOCKS } from '../../deck/blocks'
+import { emptyItem } from '../../deck/generate'
 import { pageInfo, readField, visibleItems } from '../../deck/fields'
 import { LAYOUTS, hintFor, type FieldSpec, type ItemFieldSpec } from '../../deck/layouts'
-import type { Deck, Slide } from '../../deck/types'
+import type { Block, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { imageToDataUrl, pickImage } from '../../lib/image'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
@@ -73,6 +75,8 @@ const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sect
           />
         ))}
 
+        {slide.layout === 'compose' && allBlocks(slide.rows ?? []).map((b) => <BlockFields key={b.id} slide={slide} block={b} />)}
+
         {spec.items && (
           <div className="ol-items">
             <div className="ol-items-head">
@@ -129,6 +133,86 @@ const OutlineSlide = memo(function OutlineSlide({ look, slide, page, total, sect
     </section>
   )
 })
+
+/** 부품 장의 부품 하나: 부품 이름 아래에 그 부품의 칸과 항목 */
+function BlockFields({ slide, block }: { slide: Slide; block: Block }) {
+  const updateBlock = useDeck((s) => s.updateBlock)
+  const spec = BLOCKS[block.type]
+  const inner = blockSlide(slide, block)
+  const items = blockItems(block)
+  const prefix = `${slide.id}:${blockFieldPrefix(block.id)}`
+  const update = (fn: (b: Block) => Block, key?: string) => updateBlock(slide.id, block.id, fn, key)
+  return (
+    <div className="ol-block">
+      <p className="ol-block-name">{spec.name}</p>
+      {spec.fields
+        .filter((f) => !f.key.startsWith('$'))
+        .map((f) => (
+          <FieldInput
+            key={f.key}
+            spec={f}
+            value={block.fields[f.key] ?? ''}
+            hint={hintFor(inner.layout, inner.hints, f.key)}
+            dataField={`${prefix}${f.key}`}
+            onChange={(v) => update((b) => ({ ...b, fields: { ...b.fields, [f.key]: v } }), `${block.id}.${f.key}`)}
+          />
+        ))}
+      {spec.items && (
+        <div className="ol-items">
+          <div className="ol-items-head">
+            <span>
+              {spec.items.label} {items.length}개
+            </span>
+            {items.length < spec.items.max && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() =>
+                  update((b) => {
+                    const next = [...b.items]
+                    next.splice(blockItems(b).length, 0, emptyItem())
+                    return { ...b, items: next }
+                  })
+                }
+              >
+                <PlusIcon />
+                {spec.items.label} 추가
+              </button>
+            )}
+          </div>
+          {items.map((item, i) => (
+            <div key={item.id} className="ol-item">
+              <span className="ol-item-n">{i + 1}</span>
+              <div className="ol-item-fields">
+                {spec.items!.fields.map((f) => (
+                  <FieldInput
+                    key={f.key}
+                    spec={f}
+                    compact
+                    value={item[f.key]}
+                    hint={hintFor(inner.layout, inner.hints, f.key, f.key, i)}
+                    dataField={`${prefix}${i}.${f.key}`}
+                    onChange={(v) => update((b) => ({ ...b, items: b.items.map((it, j) => (j === i ? { ...it, [f.key]: v } : it)) }), `${block.id}.${i}.${f.key}`)}
+                  />
+                ))}
+              </div>
+              {items.length > spec.items!.min && (
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={`${spec.items!.label} ${i + 1} 빼기`}
+                  onClick={() => update((b) => ({ ...b, items: b.items.filter((_, j) => j !== i) }))}
+                >
+                  <TrashIcon />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function FieldInput({
   spec,
