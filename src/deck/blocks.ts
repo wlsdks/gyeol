@@ -2,7 +2,7 @@
 //
 // 자리 규칙: 한 장에 줄은 셋까지, 한 줄에 칸은 셋까지, 부품은 여섯까지. 칸 너비는 12를 나눈 정해진 비율
 // (1:1, 2:1, 1:2, 1:1:1, 2:1:1 ...) 가운데 하나다. 그래서 어디에 대충 놓아도 칸이 줄과 간격에 딱 맞고
-// 삐뚤빼뚤해지지 않는다. 줄 높이는 그 줄 부품의 비중(차트는 조금 높게)으로 나눈다.
+// 삐뚤빼뚤해지지 않는다. 줄 높이는 똑같이 나눈다(잘리지 않을 높이는 지킨다).
 //
 // 칸의 자리는 측정하지 않고 계산한다. 같은 계산을 CSS calc()로 써서 편집 화면, 발표, 내보낸 HTML이
 // 똑같이 그리고, 끌어다 놓는 동안 놓일 자리를 찾을 때도 이 계산을 쓴다(움직이는 중인 화면을 재지 않는다).
@@ -28,8 +28,6 @@ export interface BlockSpec {
   minSpan: number
   /** 이만큼은 되어야 보기 좋은 너비. 알아서 놓을 때와 비율을 고를 때 쓴다 */
   prefSpan: number
-  /** 줄 높이를 나눌 때의 비중. 차트, 그림, 표는 조금 높게 */
-  weight: number
   look?: BlockLook
   /** 부품 고르기 그림과 장 모음 예시에 쓰는 지어낸 내용. 레이아웃 부품은 장 모음의 예시 장에서 가져온다 */
   sample?: { fields: Record<string, string>; items?: Partial<Item>[] }
@@ -49,7 +47,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 6,
     prefSpan: 12,
-    weight: 0.9,
     sample: { fields: { text: '12월에 계약하면 1분기부터 불량률을 절반으로 줄여요', sub: '시범 라인 3개월 결과 기준' } },
   },
   text: {
@@ -63,7 +60,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    weight: 1,
     sample: { fields: { heading: '검사 시간을 줄여요', body: '사람이 눈으로 보던 외관 검사를 카메라가 먼저 걸러요. 검사원은 의심되는 제품만 다시 봐요.' } },
   },
   bullets: {
@@ -83,7 +79,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 4,
     prefSpan: 6,
-    weight: 1.2,
     sample: {
       fields: { heading: '먼저 바꿀 것' },
       items: [{ title: '불량이 많은 3개 라인부터' }, { title: '검사 기록을 한곳에 모아요' }, { title: '분기마다 효과를 다시 봐요' }],
@@ -99,7 +94,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    weight: 1,
     sample: { fields: { quote: '검사 기록이 남으니 고객 감사 준비가 훨씬 편해졌어요', by: '시범 공장 품질 담당' } },
   },
   callout: {
@@ -112,7 +106,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    weight: 0.9,
     look: 'bold',
     sample: { fields: { label: '결정 요청', text: '시범 구축 인력 2명을 11월부터 지원해 주세요' } },
   },
@@ -127,7 +120,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    weight: 1,
     look: 'card',
     sample: { fields: { value: '4.8억 원', label: '첫해 예상 매출', note: '3년이면 7.2억 원' } },
   },
@@ -143,7 +135,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    weight: 1,
     look: 'card',
     sample: { fields: { label: '불량률', before: '3.2%', after: '1.1%', note: '시범 라인 3개월 결과' } },
   },
@@ -160,7 +151,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    weight: 0.9,
     look: 'card',
     sample: { fields: { label: '연간 수주', value: '7.2', target: '10', unit: '억 원', note: '4분기 계약 3건이 남았어요' } },
   },
@@ -179,7 +169,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    weight: 1,
     look: 'card',
     sample: { fields: { label: '사람 손 없이 끝내는 검사', value: '72%', note: '지난해에는 41%였어요' } },
   },
@@ -196,7 +185,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    weight: 1,
     look: 'card',
     sample: { fields: { label: '시범 뒤 도입을 정한 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 정해요' } },
   },
@@ -212,7 +200,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    weight: 1,
     look: 'card',
     sample: { fields: { label: '월 불량률', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
   },
@@ -233,7 +220,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 4,
     prefSpan: 6,
-    weight: 1.1,
     sample: {
       fields: { heading: '사업 개요' },
       items: [
@@ -261,7 +247,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 6,
     prefSpan: 12,
-    weight: 1.3,
     sample: {
       fields: {},
       items: [
@@ -294,7 +279,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 6,
     prefSpan: 12,
-    weight: 1.4,
     sample: {
       fields: { heading: '우리 제안의 강점과 약점' },
       items: [
@@ -322,7 +306,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 6,
     prefSpan: 12,
-    weight: 1.3,
     sample: {
       fields: {},
       items: [
@@ -350,7 +333,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 4,
     prefSpan: 6,
-    weight: 1.2,
     sample: {
       fields: { heading: '준비 상황' },
       items: [
@@ -383,7 +365,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 8,
     prefSpan: 12,
-    weight: 1.3,
     sample: {
       fields: { heading: '추진 일정', cols: '11월 12월 1월 2월 3월', now: '12월' },
       items: [
@@ -416,7 +397,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 6,
     prefSpan: 12,
-    weight: 1.2,
     sample: {
       fields: {},
       items: [
@@ -440,33 +420,32 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 6,
-    weight: 1.4,
     sample: { fields: { caption: '시범 라인에 단 검사 카메라' } },
   },
 }
 
 /** 레이아웃 부품의 칸 크기와 움직임. 칸은 그 레이아웃의 것에서 머리(제목, 부제, 출처)만 뺀다 */
-const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; weight: number; motion: string; look?: BlockLook }> = {
-  summary: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '줄마다 차례로 들어와요' },
-  points: { minSpan: 8, prefSpan: 12, weight: 1.3, motion: '하나씩 차례로 올라와요' },
-  kpi: { minSpan: 6, prefSpan: 12, weight: 1.1, motion: '숫자가 자리마다 굴러가 맞춰져요' },
-  scorecard: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '실적 막대가 목표까지 자라요' },
-  bars: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '막대가 차례로 자라요' },
-  versus: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '두 막대가 나란히 자라고, 선은 차례로 그려져요' },
-  bridge: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '막대가 하나씩 쌓여요' },
-  trend: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '선이 왼쪽부터 그려져요' },
-  share: { minSpan: 6, prefSpan: 8, weight: 1.4, motion: '조각이 차례로 채워져요' },
-  funnel: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '단계마다 줄어들며 내려와요' },
-  progress: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '진행 막대가 차올라요' },
-  process: { minSpan: 8, prefSpan: 12, weight: 1.3, motion: '점이 맺히고 다음 단계로 선이 이어져요' },
-  timeline: { minSpan: 8, prefSpan: 12, weight: 1.2, motion: '선을 따라 차례로 나타나요' },
-  compare: { minSpan: 8, prefSpan: 12, weight: 1.5, motion: '두 면이 차례로 들어와요' },
-  matrix: { minSpan: 6, prefSpan: 8, weight: 1.8, motion: '네 칸이 차례로 나타나요' },
-  position: { minSpan: 8, prefSpan: 12, weight: 1.8, motion: '점이 하나씩 제자리에 내려앉아요' },
-  pricing: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '안마다 차례로 올라와요' },
-  table: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '줄마다 차례로 들어와요' },
-  logos: { minSpan: 6, prefSpan: 12, weight: 1.2, motion: '로고가 차례로 나타나요' },
-  agenda: { minSpan: 6, prefSpan: 8, weight: 1.4, motion: '항목이 차례로 들어와요' },
+const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; motion: string; look?: BlockLook }> = {
+  summary: { minSpan: 8, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
+  points: { minSpan: 8, prefSpan: 12, motion: '하나씩 차례로 올라와요' },
+  kpi: { minSpan: 6, prefSpan: 12, motion: '숫자가 자리마다 굴러가 맞춰져요' },
+  scorecard: { minSpan: 8, prefSpan: 12, motion: '실적 막대가 목표까지 자라요' },
+  bars: { minSpan: 6, prefSpan: 8, motion: '막대가 차례로 자라요' },
+  versus: { minSpan: 6, prefSpan: 8, motion: '두 막대가 나란히 자라고, 선은 차례로 그려져요' },
+  bridge: { minSpan: 8, prefSpan: 12, motion: '막대가 하나씩 쌓여요' },
+  trend: { minSpan: 6, prefSpan: 8, motion: '선이 왼쪽부터 그려져요' },
+  share: { minSpan: 6, prefSpan: 8, motion: '조각이 차례로 채워져요' },
+  funnel: { minSpan: 6, prefSpan: 8, motion: '단계마다 줄어들며 내려와요' },
+  progress: { minSpan: 8, prefSpan: 12, motion: '진행 막대가 차올라요' },
+  process: { minSpan: 8, prefSpan: 12, motion: '점이 맺히고 다음 단계로 선이 이어져요' },
+  timeline: { minSpan: 8, prefSpan: 12, motion: '선을 따라 차례로 나타나요' },
+  compare: { minSpan: 8, prefSpan: 12, motion: '두 면이 차례로 들어와요' },
+  matrix: { minSpan: 6, prefSpan: 8, motion: '네 칸이 차례로 나타나요' },
+  position: { minSpan: 8, prefSpan: 12, motion: '점이 하나씩 제자리에 내려앉아요' },
+  pricing: { minSpan: 8, prefSpan: 12, motion: '안마다 차례로 올라와요' },
+  table: { minSpan: 8, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
+  logos: { minSpan: 6, prefSpan: 12, motion: '로고가 차례로 나타나요' },
+  agenda: { minSpan: 6, prefSpan: 8, motion: '항목이 차례로 들어와요' },
 }
 
 export const LAYOUT_BLOCKS = Object.keys(FROM_LAYOUT) as LayoutBlockType[]
@@ -836,8 +815,6 @@ export function blockMinH(block: Block, span: number): number {
 /** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */
 export const blockPrefH = (block: Block) => blockMinH(block, BLOCKS[block.type].prefSpan)
 
-/** 줄 높이를 나누는 비중. CSS의 fr은 합이 1보다 작으면 남는 자리를 다 쓰지 않아서 10을 곱해 쓴다 */
-const rowWeight = (row: BlockRow) => Math.round(Math.max(...row.blocks.map((b) => BLOCKS[b.type].weight), 0.5) * 10)
 const rowMinH = (row: BlockRow) => {
   const spans = spansOf(row)
   return Math.max(0, ...row.blocks.map((b, i) => blockMinH(b, spans[i])))
@@ -870,12 +847,14 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
 }
 
 /**
- * 부품 장의 본문 상자: 12칸 격자. 줄 높이는 비중대로 나누되 줄마다 잘리지 않을 높이 밑으로는 줄이지 않는다.
+ * 부품 장의 본문 상자: 12칸 격자. 줄 높이는 똑같이 나눈다(위아래 줄이 1:1, 세 줄이면 1:1:1). 부품마다 비중을 두어 나누면
+ * 남는 높이가 무거운 줄로 몰려 장마다 줄 높이가 제각각이 된다. 다만 잘리지 않을 높이 밑으로는 줄이지 않고,
+ * 그 줄이 더 가져간 만큼을 나머지 줄이 다시 똑같이 나눈다.
  * 계산은 브라우저의 격자가 한다. 그래서 내보낸 HTML도 자바스크립트 없이 같은 자리에 그려진다.
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
   // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다
-  return { gridTemplateRows: rows.map((r) => `minmax(calc(${rowMinH(r)}px * var(--bk-sq, 1)), ${rowWeight(r)}fr)`).join(' ') }
+  return { gridTemplateRows: rows.map((r) => `minmax(calc(${rowMinH(r)}px * var(--bk-sq, 1)), 1fr)`).join(' ') }
 }
 
 export function cellStyle(b: CellBox): Record<string, string> {
@@ -883,20 +862,19 @@ export function cellStyle(b: CellBox): Record<string, string> {
 }
 
 /**
- * 줄마다의 높이(px). 격자의 minmax(최소, 비중fr)와 같은 계산이다: 비중대로 나눠 최소보다 낮아지는 줄은
- * 최소에 묶고, 남은 높이를 나머지 줄이 다시 비중대로 나눈다. 끌어다 놓는 동안 놓일 자리를 찾을 때 쓴다.
+ * 줄마다의 높이(px). 격자의 minmax(최소, 1fr)와 같은 계산이다: 똑같이 나눠 최소보다 낮아지는 줄은
+ * 최소에 묶고, 남은 높이를 나머지 줄이 다시 똑같이 나눈다. 끌어다 놓는 동안 놓일 자리를 찾을 때 쓴다.
  */
 export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): number[] {
   const free = areaH - Math.max(0, rows.length - 1) * gap
   const mins = rows.map(rowMinH)
-  const ws = rows.map(rowWeight)
   const fixed = new Set<number>()
   for (;;) {
-    const restW = ws.reduce((a, w, i) => (fixed.has(i) ? a : a + w), 0)
+    const rest = rows.length - fixed.size
     const restH = free - [...fixed].reduce((a, i) => a + mins[i], 0)
-    const fr = restW > 0 ? Math.max(0, restH) / restW : 0
-    const next = ws.findIndex((w, i) => !fixed.has(i) && w * fr < mins[i])
-    if (next < 0) return ws.map((w, i) => (fixed.has(i) ? mins[i] : w * fr))
+    const each = rest > 0 ? Math.max(0, restH) / rest : 0
+    const next = mins.findIndex((m, i) => !fixed.has(i) && each < m)
+    if (next < 0) return mins.map((m, i) => (fixed.has(i) ? m : each))
     fixed.add(next)
   }
 }

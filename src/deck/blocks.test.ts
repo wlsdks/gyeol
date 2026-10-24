@@ -173,6 +173,22 @@ describe('자리 정하기', () => {
     expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
   })
 
+  it('줄 높이는 똑같이 나누고, 잘리지 않을 높이가 더 필요한 줄만 더 가져간다', () => {
+    // 아래 줄에 차트나 질문이 와도 남는 높이를 그 줄이 다 가져가지 않는다
+    const [a, b] = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], 800)
+    expect(Math.abs(a - b)).toBeLessThan(1)
+    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - 100 - 140)
+    expect(Math.max(...three) - Math.min(...three)).toBeLessThan(1)
+    // 낮은 장이면 한 줄이 잘리지 않을 높이에 묶이고, 다른 줄이 나머지를 가져간다
+    const tight = [row(block('message', 'm')), row(block('faq', 'f'))]
+    // 자리가 없으면 줄마다 잘리지 않을 높이가 그대로 나온다
+    const [low, need] = rowHeights(tight, 0)
+    expect(low).toBeLessThan(need - 40)
+    const hs = rowHeights(tight, need * 2 + 48 - 40)
+    expect(hs[1]).toBeCloseTo(need, 0)
+    expect(hs[0]).toBeCloseTo(need - 40, 0)
+  })
+
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {
     const slide = { fields: { title: '제목' } } as unknown as Slide
     const areaH = composeAreaH(slide)
