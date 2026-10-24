@@ -204,6 +204,19 @@ describe('자리 정하기', () => {
     expect(dropTarget(rows, dragged, { x: size.w * 0.9, y: size.h * 0.25 }, size)).toEqual({ kind: 'cell', row: 0, index: 1 })
   })
 
+  it('손이 보이는 자리 안에 있으면 자리를 바꾸지 않는다 (보이는 것과 놓이는 곳이 어긋나지 않게)', () => {
+    const size = { w: 1680, h: 640 }
+    const rows = [row(block('number', 'n'))]
+    const dragged = block('callout', 'c')
+    const left = { kind: 'cell', row: 0, index: 0 } as const
+    // 끄는 부품을 뺀 모습으로는 큰 숫자의 위쪽(새 줄)이지만, 보이는 모습에서는 왼쪽 옆자리 칸 안
+    const p = { x: size.w * 0.2, y: size.h * 0.2 }
+    expect(dropTarget(rows, dragged, p, size)).toEqual({ kind: 'row', index: 0 })
+    expect(dropTarget(rows, dragged, p, size, undefined, left)).toEqual(left)
+    // 그 칸을 벗어나면 다시 찾는다
+    expect(dropTarget(rows, dragged, { x: size.w * 0.9, y: size.h * 0.5 }, size, undefined, left)).toEqual({ kind: 'cell', row: 0, index: 1 })
+  })
+
   it('칸 사이를 끌면 정해진 비율에 붙는다', () => {
     const r = row(block('trend', 't'), block('bullets', 'b'))
     expect(spansAt(r, 0, 0.66)).toEqual([8, 4])

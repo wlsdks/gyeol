@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS } from './blueprints'
 import { createDeck, planRecipes, targetCount } from './generate'
-import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER } from './layouts'
+import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER, LAYOUTS } from './layouts'
 import { showcaseSlides } from './showcase'
 
 describe('planRecipes', () => {
@@ -82,6 +82,24 @@ describe('createDeck', () => {
     expect(summary.items.every((i) => i.body === '')).toBe(true)
     expect(hintFor(summary.layout, summary.hints, 'body', 'body', 0)).toBe('왜 지금 이 사업을 해야 하는지')
     expect(hintFor(summary.layout, summary.hints, 'body', 'body', 3)).toBe('결정해 주실 것 (예산, 인력)')
+  })
+
+  it('줄마다 다른 예시는 만드는 항목 수만큼 있다 (모자라면 남은 줄에 다른 장의 예시가 섞인다)', () => {
+    const wrong: string[] = []
+    for (const [type, bp] of Object.entries(BLUEPRINTS)) {
+      for (const r of bp.recipes) {
+        const spec = LAYOUTS[r.layout]
+        if (!spec.items) continue
+        const count = r.items ?? spec.items.default
+        const rows: Record<string, number> = {}
+        for (const key of Object.keys(r.hints ?? {})) {
+          const m = /^items\.(\d+)\.(\w+)$/.exec(key)
+          if (m) rows[m[2]] = Math.max(rows[m[2]] ?? 0, Number(m[1]) + 1)
+        }
+        for (const [key, n] of Object.entries(rows)) if (n !== count) wrong.push(`${type} ${r.purpose} ${key}: 예시 ${n}줄, 항목 ${count}개`)
+      }
+    }
+    expect(wrong).toEqual([])
   })
 
   it('제목을 비우면 보고 종류의 기본 제목을 쓴다', () => {

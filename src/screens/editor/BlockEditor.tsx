@@ -287,7 +287,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const base = s.layout === 'compose' ? d.base : (composed?.rows ?? [])
         if (area) {
           const p = { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }
-          target = dropTarget(base, d.block, p, area.size)
+          target = dropTarget(base, d.block, p, area.size, undefined, d.target)
           // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
           if (target && d.target && !sameTarget(target, d.target)) {
             const near = [-30, 30].flatMap((o) => [dropTarget(base, d.block, { x: p.x + o, y: p.y }, area.size), dropTarget(base, d.block, { x: p.x, y: p.y + o }, area.size)])

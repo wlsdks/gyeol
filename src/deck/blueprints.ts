@@ -423,6 +423,7 @@ const improve: Blueprint = {
       purpose: '문제의 크기',
       priority: 2,
       section: '문제',
+      items: 3,
       guide: '문제 때문에 드는 시간이나 비용을 막대로 보여주면 심각성이 바로 전해져요.',
       hints: {
         title: '견적 한 건에 평균 6시간이 들어요',

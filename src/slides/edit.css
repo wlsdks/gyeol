@@ -29,6 +29,11 @@
   transition: box-shadow 0.12s, background-color 0.12s;
 }
 
+/* 넘침을 재는 동안(Editor의 useOverflow): 글 밖으로 나온 편집 표시는 넘침이 아니다 */
+.slide.is-measuring :is(.ed-halo, .it-remove) {
+  display: none;
+}
+
 /* 빈칸은 늘 보이게: 옅은 면만 깐다. 칸마다 점선 상자를 두르면 장이 어수선하고 칸끼리 맞닿아 보인다. 채우면 사라진다 */
 .slide.m-edit .ed.is-empty > .ed-halo {
   background: color-mix(in srgb, currentColor 7%, transparent);
@@ -149,15 +154,18 @@
   stroke-width: 2.6;
 }
 
-/* 이미지 칸 */
+/* 이미지 칸: 빈 글 칸과 같은 옅은 면. 올리면 파란 선, 끌어 오면 굵은 파란 선 */
 .img-ed.img-empty {
-  outline: 3px dashed color-mix(in srgb, var(--ink) 22%, transparent);
-  outline-offset: -3px;
-  background: color-mix(in srgb, var(--ink) 4%, var(--bg));
+  background: color-mix(in srgb, var(--ink) 6%, var(--bg));
+  transition: box-shadow 0.12s;
+}
+
+.img-ed.img-empty:hover {
+  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) rgb(58 111 248 / 0.5);
 }
 
 .img-ed.is-over {
-  outline: 4px solid #3a6ff8;
+  box-shadow: inset 0 0 0 calc(3px / var(--vs, 0.5)) #3a6ff8;
 }
 
 .img-drop {
@@ -173,6 +181,17 @@
   font-family: var(--font-body);
   text-align: center;
   cursor: pointer;
+}
+
+.img-drop-i {
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+  opacity: 0.6;
 }
 
 .img-drop-t {
@@ -191,7 +210,7 @@
   padding-left: 28px;
 }
 
-:is(.cv-logo, .cs-logo, .lg-img) .img-drop-s {
+:is(.cv-logo, .cs-logo, .lg-img) :is(.img-drop-s, .img-drop-i) {
   display: none;
 }
 

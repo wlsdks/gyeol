@@ -1921,6 +1921,15 @@ select {
   white-space: nowrap;
 }
 
+.stage-warn-s,
+.stage-tools[data-tight] .stage-warn-l {
+  display: none;
+}
+
+.stage-tools[data-tight] .stage-warn-s {
+  display: inline;
+}
+
 .stage-tools {
   container-type: inline-size;
   display: flex;

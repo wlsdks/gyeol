@@ -265,6 +265,9 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
         </>
       ) : (
         <button type="button" className="img-drop" onClick={choose}>
+          <svg className="img-drop-i" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 7.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
+          </svg>
           <span className="img-drop-t">{hint}</span>
           <span className="img-drop-s">끌어다 놓거나 눌러서 올려요</span>
         </button>

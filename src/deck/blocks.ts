@@ -1115,11 +1115,24 @@ export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): Drop
  * 칸의 위·아래 가장자리면 새 줄, 왼쪽·오른쪽 반이면 그 옆 칸. 그 자리에 넣을 수 없으면 다른 쪽으로,
  * 그래도 안 되면 넣을 수 있는 자리 가운데 가장 가까운 곳. 그래서 대충 놓아도 늘 정해진 자리에 들어간다.
  */
-export function dropTarget(base: BlockRow[], block: Block, p: { x: number; y: number }, size: { w: number; h: number }, gap = BLOCK_GAP): DropTarget | null {
+export function dropTarget(
+  base: BlockRow[],
+  block: Block,
+  p: { x: number; y: number },
+  size: { w: number; h: number },
+  gap = BLOCK_GAP,
+  current?: DropTarget | null,
+): DropTarget | null {
   const valid = validTargets(base, block, size.h)
   if (!valid.length) return null
   const ok = (t: DropTarget) => valid.some((v) => sameTarget(v, t))
   if (!base.length) return valid[0]
+  // 끄는 동안 화면에는 놓일 자리를 넣은 모습이 보이는데, 아래의 자리 찾기는 끄는 부품을 뺀 모습으로 잰다.
+  // 손이 지금 보이는 자리 안에 있으면 바꾸지 않는다(보이는 칸 안에서 손을 움직였는데 자리가 다른 데로 튀지 않게)
+  if (current && ok(current)) {
+    const r = slotRect(base, current, block, size, gap)
+    if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return current
+  }
   for (const t of wantedTargets(base, p, size, gap)) if (ok(t)) return t
 
   // 그 둘레에 자리가 없으면 넣을 수 있는 자리 가운데 놓일 칸이 가장 가까운 곳
@@ -1134,6 +1147,12 @@ export function dropTarget(base: BlockRow[], block: Block, p: { x: number; y: nu
     }
   }
   return best
+}
+
+/** 이 자리에 놓으면 끄는 부품이 들어갈 칸 (장 본문 px) */
+export function slotRect(base: BlockRow[], t: DropTarget, block: Block, size: { w: number; h: number }, gap = BLOCK_GAP): Rect | null {
+  const rows = insertAt(base, t, block, 'x')
+  return rows ? (cellRects(rows, size, gap).get(block.id) ?? null) : null
 }
 
 /** 손 아래의 자리 (넣을 수 있는지와 상관없이). 끄는 동안 '여기는 왜 안 되는지'를 알려 줄 때 */

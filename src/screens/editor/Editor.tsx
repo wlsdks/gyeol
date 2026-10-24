@@ -653,8 +653,10 @@ function SlideStage({
                   </button>
                 )}
                 {overflow && (
-                  <p className="stage-warn" role="status" title="글을 줄이거나 오른쪽에서 레이아웃을 바꿔 보세요.">
-                    글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.
+                  // 자리가 모자라면 짧은 말만 (말줄임으로 '글이 슬...'처럼 잘리면 무슨 뜻인지 모른다)
+                  <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 오른쪽에서 레이아웃을 바꿔 보세요.">
+                    <span className="stage-warn-l">글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.</span>
+                    <span className="stage-warn-s">글이 넘쳤어요</span>
                   </p>
                 )}
               </div>
@@ -736,10 +738,12 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide):
     if (!root) return
     const check = () => {
       const boxes = [root, ...root.querySelectorAll<HTMLElement>('.s-body, .ix-text, .cs-main, .cs-side, .cl-main, .cv-main, .ag, .bk-in')]
+      // 빈칸의 옅은 면(.ed-halo)은 글보다 조금 넓게 깔려서 맨 아래 칸이면 상자 밖으로 나온다. 글이 넘친 것이 아니니 재는 동안만 숨긴다
+      root.classList.add('is-measuring')
       // 항목 빼기 버튼이 칸 오른쪽으로 살짝 나와 있어서, 가로 넘침은 슬라이드 전체만 본다.
-      setOverflow(
-        root.scrollWidth - root.clientWidth > 4 || boxes.some((el) => el.scrollHeight - el.clientHeight > 4),
-      )
+      const over = root.scrollWidth - root.clientWidth > 4 || boxes.some((el) => el.scrollHeight - el.clientHeight > 4)
+      root.classList.remove('is-measuring')
+      setOverflow(over)
     }
     check()
     document.fonts?.ready.then(check)
