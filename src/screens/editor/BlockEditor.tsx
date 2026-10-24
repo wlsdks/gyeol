@@ -720,11 +720,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       )
     : null
 
-  // 고른 부품의 도구는 슬라이드 밖(화면 맨 위 층)에 띄운다: 슬라이드 축소와 상관없이 같은 크기, 슬라이드 끝에서 잘리지 않게
-  const toolbar =
-    selectedBlock && !drag && !landing && compose
-      ? createPortal(<Floating anchor={selectedBlock.id}>{tools(selectedBlock)}</Floating>, document.body)
-      : null
+  // 고른 부품의 도구는 장 아래 도구 줄에 놓는다(Editor의 stage-tools). 부품 위에 띄우면 위 칸(제목, 위 줄 부품)을 덮는다
+  const toolbar = selectedBlock && !drag && !landing && compose ? tools(selectedBlock) : null
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
   const roomFits = (h: number) => {
@@ -832,35 +829,11 @@ function RoomZone({ fits, onOpen }: { fits(h: number): boolean; onOpen(): void }
 
 // ---------- 고른 부품 위의 도구 ----------
 
-/** 고른 칸 바로 위에 붙어 다닌다. 칸이 미끄러지는 동안에도 따라가게 매 프레임 자리를 맞춘다 */
-function Floating({ anchor, children }: { anchor: string; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    let raf = 0
-    const tick = () => {
-      const el = ref.current
-      const cell = document.querySelector<HTMLElement>(`.ed-canvas .bk[data-block="${CSS.escape(anchor)}"]`)
-      const stage = document.querySelector<HTMLElement>('.ed-canvas')
-      if (el && cell && stage) {
-        const c = cell.getBoundingClientRect()
-        const st = stage.getBoundingClientRect()
-        // 위에 자리가 없으면 칸 안쪽 위에 얹는다
-        let top = c.top - el.offsetHeight - 8
-        if (top < st.top + 2) top = c.top + 8
-        const left = Math.max(st.left + 4, Math.min(c.left, st.right - el.offsetWidth - 4))
-        el.style.translate = `${Math.round(left)}px ${Math.round(top)}px`
-        el.style.visibility = 'visible'
-      } else if (el) el.style.visibility = 'hidden'
-      raf = requestAnimationFrame(tick)
-    }
-    tick()
-    return () => cancelAnimationFrame(raf)
-  }, [anchor])
-  return (
-    <div ref={ref} className="bk-float" style={{ visibility: 'hidden' }}>
-      {children}
-    </div>
-  )
+/** 바탕 메뉴의 설명 */
+const LOOK_NOTES: Record<Block['look'] & string, string> = {
+  plain: '장 바탕 위에 바로 놓여요. 가장 가벼워요.',
+  card: '옅은 면 위에 놓여 한 묶음으로 보여요.',
+  bold: '짙은 면 위에 놓여 가장 눈에 띄어요. 한 장에 하나만 써요.',
 }
 
 function BlockTools({
@@ -902,13 +875,30 @@ function BlockTools({
   onRemove(): void
 }) {
   const spec = BLOCKS[block.type]
-  const [menu, setMenu] = useState<'motion' | 'fields' | null>(null)
+  const [menu, setMenu] = useState<'look' | 'motion' | 'fields' | null>(null)
   const menuRef = useRef<HTMLUListElement>(null)
-  // 메뉴는 도구 아래로 열린다. 창 아래까지 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
+  // 도구가 장 아래에 있어서 메뉴는 위로 열린다. 위 끝(머리 띠 아래)까지 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤
+  // (노트북의 낮은 창에서 잘리지 않게)
   useLayoutEffect(() => {
     const el = menuRef.current
     if (!el) return
-    el.style.maxHeight = `${Math.max(160, Math.min(520, innerHeight - el.getBoundingClientRect().top - 12))}px`
+    el.style.maxHeight = `${Math.max(160, Math.min(520, el.getBoundingClientRect().bottom - 64))}px`
+  }, [menu])
+  // 메뉴 밖을 누르면 닫는다. Esc는 메뉴만 닫는다 (먼저 받아서 부품 고르기 닫기, 부품 고르기 끝내기로 넘기지 않는다)
+  useEffect(() => {
+    if (!menu) return
+    const close = (e: PointerEvent) => !(e.target as Element).closest?.('.bk-tool-menu') && setMenu(null)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setMenu(null)
+    }
+    window.addEventListener('pointerdown', close)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('pointerdown', close)
+      window.removeEventListener('keydown', onKey, true)
+    }
   }, [menu])
   const look = lookOf(block)
   const effect = effectOf(block)
@@ -940,25 +930,41 @@ function BlockTools({
         <span>{spec.name}</span>
       </button>
       <span className="bk-tool-sep" />
-      <div className="bk-looks" role="group" aria-label="바탕">
-        {BLOCK_LOOKS.map((l) => {
-          // 카드와 강조색 면은 안쪽 여백만큼 높아져서, 장이 꽉 찼으면 바꿀 수 없다
-          const r = look === l.id ? null : lookIssue(l.id)
-          return (
-            <button
-              key={l.id}
-              type="button"
-              className={cx('bk-look', `is-${l.id}`, look === l.id && 'is-on', r && 'is-blocked')}
-              title={tip(r, l.name)}
-              aria-label={l.name}
-              aria-pressed={look === l.id}
-              aria-disabled={!!r}
-              onClick={() => (r ? onBlocked(r) : onLook(l.id))}
-            />
-          )
-        })}
+      {/* 바탕: 견본만 늘어놓으면 무엇을 고르는지 알 수 없어서, 지금 바탕의 이름을 보이고 누르면 설명과 함께 고른다 */}
+      <div className="bk-tool-menu">
+        <button type="button" className={cx('bk-tool', menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="부품의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
+          <span className={cx('bk-look', `is-${look}`)} aria-hidden="true" />
+          <span>{BLOCK_LOOKS.find((l) => l.id === look)?.name}</span>
+        </button>
+        {menu === 'look' && (
+          <ul ref={menuRef} className="bk-menu is-looks" role="menu">
+            {BLOCK_LOOKS.map((l) => {
+              // 옅은 면과 진한 면은 안쪽 여백만큼 높아져서, 장이 꽉 찼으면 바꿀 수 없다
+              const r = look === l.id ? null : lookIssue(l.id)
+              return (
+                <li key={l.id}>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={look === l.id}
+                    aria-disabled={!!r}
+                    className={cx('bk-menu-item', look === l.id && 'is-on', r && 'is-blocked')}
+                    onClick={() => {
+                      if (r) onBlocked(r)
+                      else onLook(l.id)
+                      setMenu(null)
+                    }}
+                  >
+                    <span className={cx('bk-look', `is-${l.id}`)} aria-hidden="true" />
+                    <b>{l.name}</b>
+                    <span className="bk-menu-d">{r ? noRoomText(r, block.type, 'change').why : LOOK_NOTES[l.id]}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
-      <span className="bk-tool-sep" />
       <div className="bk-tool-menu">
         <button type="button" className={cx('bk-tool', menu === 'motion' && 'is-on')} aria-expanded={menu === 'motion'} onClick={() => setMenu(menu === 'motion' ? null : 'motion')}>
           <MotionIcon />

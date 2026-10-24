@@ -20,29 +20,28 @@
   grid-area: 1 / 1;
 }
 
+/* 테두리 두께와 모서리는 화면에서 같은 크기로 (--vs: 화면 배율). 캔버스 px로 두면 작은 화면에서 실선이 머리카락처럼 가늘어진다 */
 .ed-halo {
   position: absolute;
   inset: calc(var(--ed-t, 10px) * -1) calc(var(--ed-r, 14px) * -1) calc(var(--ed-b, 10px) * -1) calc(var(--ed-l, 14px) * -1);
-  border: 3px dashed transparent;
-  border-radius: 10px;
+  border-radius: calc(6px / var(--vs, 0.5));
   pointer-events: none;
-  transition: border-color 0.12s, background-color 0.12s;
+  transition: box-shadow 0.12s, background-color 0.12s;
 }
 
-/* 빈칸은 늘 보이게: 옅은 면 + 점선. 채우면 사라진다. */
+/* 빈칸은 늘 보이게: 옅은 면만 깐다. 칸마다 점선 상자를 두르면 장이 어수선하고 칸끼리 맞닿아 보인다. 채우면 사라진다 */
 .slide.m-edit .ed.is-empty > .ed-halo {
-  border-color: color-mix(in srgb, currentColor 26%, transparent);
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  background: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 .slide.m-edit .ed:hover > .ed-halo {
-  border-color: rgb(58 111 248 / 0.55);
+  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) rgb(58 111 248 / 0.5);
 }
 
+/* 쓰는 중: 면을 걷고 파란 실선 하나. 입력 칸처럼 보이게 */
 .slide.m-edit .ed:focus-within > .ed-halo {
-  border-style: solid;
-  border-color: #3a6ff8;
   background: transparent;
+  box-shadow: inset 0 0 0 calc(2px / var(--vs, 0.5)) #3a6ff8;
 }
 
 .ed-hint {
@@ -63,10 +62,15 @@
   white-space: nowrap;
 }
 
+/* 쓰는 중 표시는 칸 둘레(.ed-halo)의 실선 하나로. 앱의 :focus-visible 테두리까지 겹치면 이중 선이 된다 */
+.ed-input,
+.ed-input:focus-visible {
+  outline: none;
+}
+
 .ed-input {
   display: block;
   min-width: 1em;
-  outline: none;
   white-space: pre-wrap;
   caret-color: #3a6ff8;
 }
@@ -104,24 +108,31 @@
   grid-area: 1 / 2;
 }
 
+/* 항목 빼기 단추: 화면에서 늘 22px (--vs). 장을 줄여도 커다란 검은 원이 항목을 덮지 않게, 흰 원에 회색 ×,
+   올리면 빨간색. 항목 오른쪽 위 모서리에 반쯤 걸친다 */
 .it-remove {
+  --d: calc(22px / var(--vs, 0.5));
   position: absolute;
   z-index: 5;
-  top: -26px;
-  right: -26px;
+  top: calc(var(--d) / -2);
+  right: calc(var(--d) / -2);
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: var(--d);
+  height: var(--d);
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #191c22;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.22);
-  color: #fff;
+  background: #fff;
+  box-shadow: 0 0 0 calc(1px / var(--vs, 0.5)) rgb(16 20 31 / 0.14), 0 calc(2px / var(--vs, 0.5)) calc(6px / var(--vs, 0.5)) rgb(16 20 31 / 0.16);
+  color: #5b6170;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.12s;
+  transition: opacity 0.12s, color 0.12s;
+}
+
+.it-remove:hover {
+  color: #d23b2f;
 }
 
 .it:hover > .it-remove,
@@ -130,8 +141,8 @@
 }
 
 .it-remove svg {
-  width: 26px;
-  height: 26px;
+  width: 62%;
+  height: 62%;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -224,8 +235,8 @@
    손잡이처럼 화면에서 늘 같은 크기여야 하는 것은 --vs(화면 배율)로 되돌려 키운다 */
 
 .slide.m-edit .bk-area.is-live > .bk {
-  outline: 3px solid transparent;
-  outline-offset: 12px;
+  outline: calc(1.5px / var(--vs, 0.5)) solid transparent;
+  outline-offset: 14px;
   transition: outline-color 0.16s;
 }
 
@@ -238,7 +249,8 @@
   outline-color: rgb(58 111 248 / 0.45);
 }
 
-.slide.m-edit .bk-area.is-live > .bk.is-selected {
+.slide.m-edit .bk-area.is-live > .bk.is-selected,
+.slide.m-edit .bk-area.is-live:not(.is-dragging) > .bk.is-selected:hover {
   outline-color: #3a6ff8;
 }
 
@@ -254,7 +266,7 @@
   background: rgb(58 111 248 / 0.08);
 }
 
-/* 끌기 손잡이: 테두리 왼쪽 위 바깥에 붙는 이름표. 고르면 그 자리에 도구 띠가 뜨므로 숨긴다.
+/* 끌기 손잡이: 테두리 왼쪽 위 바깥에 붙는 이름표. 올리거나 고르면 보인다 (도구는 장 아래 줄에 있다).
    슬라이드 축소와 상관없이 화면에서 같은 크기 (--vs) */
 .bk-handle {
   position: absolute;
@@ -289,7 +301,7 @@
   opacity: 0.8;
 }
 
-.bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
+.bk-area.is-live:not(.is-dragging) > .bk:is(:hover, .is-selected) > .bk-handle {
   opacity: 1;
   pointer-events: auto;
 }

@@ -8,7 +8,7 @@ import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
-import { CloseIcon } from '../ui'
+import { CloseIcon, Icon } from '../ui'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { josa, noRoomText } from './noRoom'
 
@@ -16,6 +16,17 @@ import { josa, noRoomText } from './noRoom'
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
 
 export type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
+
+/** 묶음 단추의 그림. 짧은 이름만으로는 무엇이 들어 있는지 알기 어려워서 생김새를 같이 보인다 */
+const GROUP_ICONS: Record<string, string> = {
+  전체: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  '글과 메시지': 'M5 6h14M5 11h14M5 16h9',
+  숫자: 'M10 4L8 20M16 4l-2 16M4.5 9h15M4.5 15h15',
+  차트: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
+  '흐름과 일정': 'M4 6.5h16v13H4zM4 10.5h16M8.5 4v4M15.5 4v4',
+  '비교와 표': 'M4 5h16v14H4zM4 10h16M12 10v9',
+  '그림과 사람': 'M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 7.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z',
+}
 
 const THUMB_RATIO = 1.5
 /** 장 본문(1680) 12칸 격자의 한 칸 너비 */
@@ -87,18 +98,23 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
     engine.play(cell, level === 'lively' ? 'lively' : 'calm')
   }
 
-  const full = slide.layout === 'compose' && blockCount(slide.rows ?? []) >= MAX_BLOCKS
+  const types = BLOCK_GROUPS.flatMap((g) => g.types)
+  const counted = slide.layout === 'compose' && blockCount(slide.rows ?? []) >= MAX_BLOCKS
+  // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 카드마다 표를 붙이지 않고 위에 한 번만 알린다
+  const full = counted || (slide.layout === 'compose' && types.every((t) => blocks.issueFor(t)))
   const note =
     slide.layout === 'compose'
       ? full
-        ? `이 장에는 부품이 ${MAX_BLOCKS}개 다 찼어요. 더 넣으면 다음 장에 새로 만들어 넣어요.`
+        ? counted
+          ? `이 장에는 부품이 ${MAX_BLOCKS}개 다 찼어요. 고르면 다음 장을 새로 만들어 넣어요.`
+          : '이 장에는 더 넣을 자리가 없어요. 고르면 다음 장을 새로 만들어 넣어요.'
         : null
       : canCompose(slide.layout)
         ? '부품을 넣으면 이 장이 부품 장으로 바뀌어요. 지금 내용은 그대로 남고, 부품으로 나뉘어 옮길 수 있게 돼요.'
         : '표지와 단락 장에는 부품을 넣지 않아요. 넣으면 이 장 다음에 부품 장을 새로 만들어요.'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
-  const issues = new Map(BLOCK_GROUPS.flatMap((g) => g.types).map((t) => [t, full ? null : blocks.issueFor(t)]))
+  const issues = new Map(types.map((t) => [t, full ? null : blocks.issueFor(t)]))
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (
@@ -124,13 +140,23 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         </div>
       )}
 
+      {/* 묶음 단추는 한 줄에: 두 줄로 접히면 어디까지가 묶음인지 읽히지 않는다. 묶음의 긴 이름과 설명은 목록의 제목에 */}
       <div className="lib-tabs" role="group" aria-label="부품 묶음">
         <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
+          <Icon d={GROUP_ICONS.전체} />
           전체
         </button>
         {BLOCK_GROUPS.map((g) => (
-          <button key={g.name} type="button" className={cx('lib-tab', group === g.name && 'is-on')} aria-pressed={group === g.name} onClick={() => setGroup(g.name)}>
-            {g.name}
+          <button
+            key={g.name}
+            type="button"
+            className={cx('lib-tab', group === g.name && 'is-on')}
+            aria-pressed={group === g.name}
+            title={`${g.name}: ${g.description}`}
+            onClick={() => setGroup(g.name)}
+          >
+            <Icon d={GROUP_ICONS[g.name]} />
+            {g.short}
           </button>
         ))}
       </div>
@@ -138,7 +164,11 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
       <div className="lib-list">
         {groups.map((g) => (
           <section key={g.name} className="lib-sec">
-            <h3 className="lib-group">{g.name}</h3>
+            <h3 className="lib-group">
+              {g.name}
+              <span className="lib-group-n">{g.types.length}</span>
+            </h3>
+            <p className="lib-group-d">{g.description}</p>
             <div className="lib-grid">
               {g.types.map((type) => {
                 const spec = BLOCKS[type]
@@ -161,9 +191,9 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
                     onFocus={(e) => preview(e.currentTarget)}
                   >
                     <BlockThumb deck={look} type={type} />
-                    {issue && <span className="lib-badge">이 장엔 자리 없음</span>}
                     <span className="lib-name">{spec.name}</span>
                     <span className="lib-desc">{spec.description}</span>
+                    {issue && <span className="lib-no">이 장엔 자리가 없어요</span>}
                   </button>
                 )
               })}

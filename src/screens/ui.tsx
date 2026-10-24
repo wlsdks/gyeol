@@ -10,7 +10,7 @@ export function Brand() {
   )
 }
 
-function Icon({ d, className }: { d: string; className?: string }) {
+export function Icon({ d, className }: { d: string; className?: string }) {
   return (
     <svg className={cx('icon', className)} viewBox="0 0 24 24" aria-hidden="true">
       <path d={d} />

@@ -10,6 +10,11 @@ import { useLayoutEffect, type RefObject } from 'react'
 const WANT = { x: 14, y: 10 }
 /** 이웃한 두 칸의 면 사이에 남길 틈 */
 const KEEP = 6
+/**
+ * 항목(.it)과 부품 칸(.bk) 밖으로 나가도 되는 넓이. 항목의 구분선 끝보다 면이 한참 삐져나오거나,
+ * 부품을 고르면 칸 둘레 14px 밖에 생기는 테두리에 면이 닿지 않게. 0이면 글자가 면 끝에 붙어 답답해서 조금은 둔다
+ */
+const CELL_OUT = 7
 
 interface Box {
   el: HTMLElement
@@ -31,7 +36,19 @@ export function placeHalos(slide: HTMLElement): Box[] {
   for (const el of slide.querySelectorAll<HTMLElement>('.ed')) {
     const q = el.getBoundingClientRect()
     if (!q.width && !q.height) continue
-    boxes.push({ el, t: (q.top - s.top) / k, r: (q.right - s.left) / k, b: (q.bottom - s.top) / k, l: (q.left - s.left) / k, h: [WANT.y, WANT.x, WANT.y, WANT.x] })
+    const box: Box = { el, t: (q.top - s.top) / k, r: (q.right - s.left) / k, b: (q.bottom - s.top) / k, l: (q.left - s.left) / k, h: [WANT.y, WANT.x, WANT.y, WANT.x] }
+    for (const wrap of [el.parentElement?.closest('.it'), el.closest('.bk')]) {
+      const c = wrap?.getBoundingClientRect()
+      if (!c) continue
+      const room = (d: number) => Math.max(0, d / k + CELL_OUT)
+      box.h = [
+        Math.min(box.h[0], room(q.top - c.top)),
+        Math.min(box.h[1], room(c.right - q.right)),
+        Math.min(box.h[2], room(c.bottom - q.bottom)),
+        Math.min(box.h[3], room(q.left - c.left)),
+      ]
+    }
+    boxes.push(box)
   }
   const room = (gap: number) => Math.max(0, (gap - KEEP) / 2)
   for (let i = 0; i < boxes.length; i++) {

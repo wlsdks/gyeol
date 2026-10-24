@@ -601,7 +601,19 @@ function SlideStage({
           padding={4}
           belowHeight={56}
           below={
-            <div ref={toolsRef} className="stage-tools">
+            <div ref={toolsRef} className={cx('stage-tools', !peek && !!blocks.toolbar && 'is-block')}>
+              {!peek && blocks.toolbar ? (
+                // 부품을 고르면 이 줄이 그 부품의 도구가 된다. 장의 도구는 고르기를 끝내면 돌아온다
+                <>
+                  <div className="stage-tools-l">{blocks.toolbar}</div>
+                  <div className="stage-tools-r">
+                    <button type="button" className="btn btn-sm" title="부품 고르기를 끝내요 (Esc)" onClick={() => blocks.select(null)}>
+                      완료
+                    </button>
+                  </div>
+                </>
+              ) : (
+              <>
               {peek ? (
                 <div className="stage-tools-l">
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview((n) => n + 1)}>
@@ -681,6 +693,8 @@ function SlideStage({
                   <span className="btn-t">지우기</span>
                 </button>
               </div>
+              </>
+              )}
             </div>
           }
         >
@@ -698,7 +712,6 @@ function SlideStage({
           </div>
         </FitSlide>
         {blocks.ghost}
-        {!peek && !preview && blocks.toolbar}
         {!peek && !preview && blocks.room}
       </div>
 

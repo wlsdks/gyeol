@@ -496,13 +496,14 @@ export const BLOCKS: Record<BlockType, BlockSpec> = {
 export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 
 /** 부품 고르기의 묶음. 모든 부품이 꼭 한 번씩 (테스트가 확인) */
-export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
-  { name: '글과 메시지', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
-  { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
-  { name: '차트', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel'] },
-  { name: '흐름과 일정', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
-  { name: '비교와 표', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'position', 'pricing', 'table'] },
-  { name: '그림과 사람', types: ['image', 'people', 'logos'] },
+/** 부품 묶음. short는 부품 고르기의 묶음 단추(한 줄에 다 들어가게 짧게), description은 묶음 제목 밑의 한 줄 */
+export const BLOCK_GROUPS: { name: string; short: string; description: string; types: BlockType[] }[] = [
+  { name: '글과 메시지', short: '글', description: '결론 한 줄, 설명, 목록, 인용, 예상 질문', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
+  { name: '숫자', short: '숫자', description: '큰 숫자, 전과 후, 목표 대비, 비율', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
+  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 깔때기', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel'] },
+  { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
+  { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'position', 'pricing', 'table'] },
+  { name: '그림과 사람', short: '그림', description: '사진, 화면, 담당자, 고객사 로고', types: ['image', 'people', 'logos'] },
 ]
 
 export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
@@ -643,10 +644,13 @@ export function blockMissing(block: Block): BlockMissing[] {
     if (!(block.fields[f.key] ?? '').trim()) out.push({ block: block.id, key: f.key, label: `${spec.name}의 ${f.label}` })
   }
   if (spec.items) {
+    // '예상 질문 질문 1'처럼 부품 이름이 항목 이름으로 끝나면 항목 이름은 한 번만
+    const label = spec.items.label
+    const itemName = (i: number) => (spec.name.endsWith(label) ? `${spec.name} ${i + 1}` : `${spec.name} ${label} ${i + 1}`)
     blockItems(block).forEach((item, i) => {
       for (const f of spec.items!.fields) {
         if (f.optional) continue
-        if (!item[f.key].trim()) out.push({ block: block.id, key: f.key, item: i, label: `${spec.name} ${spec.items!.label} ${i + 1}의 ${f.label}` })
+        if (!item[f.key].trim()) out.push({ block: block.id, key: f.key, item: i, label: `${itemName(i)}의 ${f.label}` })
       }
     })
   }
