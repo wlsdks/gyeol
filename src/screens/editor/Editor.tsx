@@ -22,7 +22,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
-import { BackIcon, BlocksIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, SlidersIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -183,6 +183,21 @@ function useAutosave(deck: Deck) {
   }, [])
 
   return { markVersion, saveNow }
+}
+
+/** app.css의 '좁은 화면'과 같은 너비: 이보다 좁으면 오른쪽 칸을 접는다 */
+const NARROW = '(max-width: 1100px)'
+
+/** 오른쪽 칸(이 장 설정, 컴포넌트)을 좁은 창에서 띄우고 닫는 일 */
+interface SidePanel {
+  /** 좁은 창에서 띄워 두었는지 */
+  shown: boolean
+  /** 띄운 칸이 '이 장 설정'을 보이는지 */
+  settingsShown: boolean
+  settings(): void
+  toggleSettings(): void
+  toggleLibrary(): void
+  close(): void
 }
 
 function EditorBody({ deck }: { deck: Deck }) {
@@ -377,6 +392,45 @@ function EditorBody({ deck }: { deck: Deck }) {
     toast.show('장을 지웠어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
   }
 
+  // 좁은 창(1100px 아래)에서는 오른쪽 칸을 접어 두고, 열면 슬라이드 위에 띄운다.
+  // 띄워 둘지는 어느 탭을 보는지와 따로 둔다: 탭을 '이 장 설정'으로 바꿔도 닫히지 않게 (컴포넌트를 고르는 중이면 늘 띄운다)
+  const [sideOpen, setSideOpen] = useState(false)
+  const side: SidePanel = {
+    shown: sideOpen || blocks.libraryOpen,
+    settingsShown: sideOpen && !blocks.libraryOpen,
+    settings: () => {
+      blocks.setLibraryOpen(false)
+      if (matchMedia(NARROW).matches) setSideOpen(true)
+    },
+    toggleSettings: () => {
+      if (sideOpen && !blocks.libraryOpen) setSideOpen(false)
+      else {
+        blocks.setLibraryOpen(false)
+        setSideOpen(true)
+      }
+    },
+    toggleLibrary: () => {
+      if (!blocks.libraryOpen) return blocks.setLibraryOpen(true)
+      blocks.setLibraryOpen(false)
+      setSideOpen(false)
+    },
+    close: () => {
+      setSideOpen(false)
+      blocks.setLibraryOpen(false)
+    },
+  }
+  // 띄운 '이 장 설정'은 Esc로 닫는다 (컴포넌트 탭의 Esc는 BlockLibrary가 받아 '이 장 설정'으로 돌아간다)
+  useEffect(() => {
+    if (!sideOpen || blocks.libraryOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || dialogOpen()) return
+      if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
+      setSideOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sideOpen, blocks.libraryOpen])
+
   if (presenting) return <Present deck={deck} startId={presenting.startId} onExit={() => setPresenting(null)} />
 
   return (
@@ -427,9 +481,9 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
       </header>
 
-      <div className={cx('ed-body', versionsOpen && 'has-versions', blocks.libraryOpen && !versionsOpen && 'has-lib')}>
+      <div className={cx('ed-body', versionsOpen && 'has-versions', side.shown && !versionsOpen && 'has-side')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
-        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
+        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} side={side} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
@@ -437,7 +491,7 @@ function EditorBody({ deck }: { deck: Deck }) {
             // 오른쪽 칸은 탭 두 개: 이 장 설정과 컴포넌트. 컴포넌트를 고르는 동안에도 어디로 돌아가는지 보인다
             <aside className="side" aria-label="오른쪽 칸">
               <div className="side-tabs" role="tablist">
-                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(false)}>
+                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={side.settings}>
                   이 장 설정
                 </button>
                 <button type="button" role="tab" className="side-tab" aria-selected={blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(true)}>
@@ -448,6 +502,10 @@ function EditorBody({ deck }: { deck: Deck }) {
                     슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요. 그림에 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
                   </Info>
                 )}
+                {/* 좁은 창에서 슬라이드 위에 띄웠을 때만 보인다 */}
+                <button type="button" className="icon-btn side-close" aria-label="오른쪽 칸 닫기" title="닫기 (Esc)" onClick={side.close}>
+                  <CloseIcon />
+                </button>
               </div>
               {blocks.libraryOpen ? (
                 <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
@@ -572,6 +630,7 @@ function SlideStage({
   ai,
   ask,
   blocks,
+  side,
   onRemove,
   onPresentHere,
 }: {
@@ -580,6 +639,7 @@ function SlideStage({
   ai: AiShare
   ask: AiAsk
   blocks: BlockEditing
+  side: SidePanel
   onRemove: (s: Slide) => void
   onPresentHere: () => void
 }) {
@@ -685,10 +745,21 @@ function SlideStage({
                   className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}
                   aria-pressed={blocks.libraryOpen}
                   title="컴포넌트를 골라 이 장에 넣어요"
-                  onClick={() => blocks.setLibraryOpen(!blocks.libraryOpen)}
+                  onClick={side.toggleLibrary}
                 >
                   <BlocksIcon />
                   컴포넌트 넣기
+                </button>
+                {/* 오른쪽 칸을 접는 좁은 창에서만 보인다. 레이아웃, 모양, 바탕을 여기서 연다 */}
+                <button
+                  type="button"
+                  className={cx('btn btn-sm stage-side', side.settingsShown ? 'is-on' : 'btn-ghost')}
+                  aria-pressed={side.settingsShown}
+                  title="이 장의 레이아웃, 모양, 바탕, 움직임"
+                  onClick={side.toggleSettings}
+                >
+                  <SlidersIcon />
+                  <span className="btn-t">이 장 설정</span>
                 </button>
                 <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
                 {nextVariant && (
@@ -710,7 +781,7 @@ function SlideStage({
                 )}
                 {overflow && (
                   // 자리가 모자라면 짧은 말만 (말줄임으로 '글이 슬...'처럼 잘리면 무슨 뜻인지 모른다)
-                  <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 오른쪽에서 레이아웃을 바꿔 보세요.">
+                  <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.">
                     <span className="stage-warn-l">글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.</span>
                     <span className="stage-warn-s">글이 넘쳤어요</span>
                   </p>

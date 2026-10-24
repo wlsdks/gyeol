@@ -3315,9 +3315,26 @@ select {
   color: var(--sel);
 }
 
-.stage-blocks.is-on {
+.stage-blocks.is-on,
+.stage-side.is-on {
   border-color: #c5d5ff;
   background: var(--sel-soft);
+}
+
+/* 오른쪽 칸을 접는 좁은 창에서만: 장 아래의 '이 장 설정'과 띄운 칸의 닫기 */
+.stage-side,
+.side-close {
+  display: none;
+}
+
+.side-close {
+  align-self: center;
+  margin-left: auto;
+}
+
+/* (i) 단추가 이미 오른쪽으로 밀고 있으면 그 옆에 붙는다 */
+.side-tabs > .info + .side-close {
+  margin-left: 2px;
 }
 
 /* 끄는 동안 놓으면 할 일 */
@@ -4160,16 +4177,21 @@ body.is-block-resizing * {
 
 @media (max-width: 1100px) {
   .ed-body,
-  .ed-body.has-lib {
+  .ed-body.has-side {
     grid-template-columns: 196px minmax(0, 1fr);
   }
 
-  /* 좁으면 오른쪽 칸을 접고, 컴포넌트를 고를 때만 슬라이드 위에 띄운다 (장 아래의 '컴포넌트 넣기'로 연다) */
+  /* 좁으면 오른쪽 칸을 접고, 열 때만 슬라이드 위에 띄운다 (장 아래의 '컴포넌트 넣기', '이 장 설정'으로 연다) */
   .side {
     display: none;
   }
 
-  .ed-body.has-lib .side {
+  .stage-side,
+  .side-close {
+    display: inline-flex;
+  }
+
+  .ed-body.has-side .side {
     position: absolute;
     top: 0;
     right: 0;
