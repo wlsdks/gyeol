@@ -986,6 +986,47 @@ export function motionEngine(): MotionEngine {
             count(el.querySelector('.bk-mk-v'), at + 120)
           }, 220)
           break
+        case 'pareto':
+        case 'attain':
+        case 'stack': {
+          // 막대가 바닥에서 차례로 자라고 숫자가 따라 올라온다. 달성은 막대 뒤에 목표 줄이 그어진다.
+          // 쌓은 막대는 칸마다 키우면 칸 사이가 벌어진 채 떠 보여서, 막대 하나를 바닥부터 드러내 아래 칸이 먼저 차오르게 한다.
+          // 원인 순위는 막대가 다 선 뒤에 누적 비율 선이 왼쪽부터 그어지고, 선이 닿는 점마다 맺힌다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-cc-key'), 120, 500)
+          const end = items('.bk-cc-col', 180, (el, at) => {
+            fade(el.querySelector('.bk-cc-label'), at, 400)
+            const stack = el.querySelector('.bk-st-stack')
+            if (stack) wipe(stack, at, 'bottom', 900)
+            else grow(el.querySelector('.bk-cc-fill'), at, 'up')
+            grow(el.querySelector('.bk-tg-goal'), at + 280, 'x')
+            const num = stack ? at + 520 : at + 220
+            fade(el.querySelector('.bk-cc-v, .bk-tg-v'), num, 400)
+            count(el.querySelector('.bk-cc-num'), num)
+            el.querySelectorAll('.bk-st-n').forEach((m, j) => fade(m, at + 200 + j * 180, 300))
+          }, 120)
+          const svg = one('.bk-pa-svg')
+          if (svg) {
+            const draw = levelName === 'lively' ? 1100 : 900
+            run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(end + 80), { easing: 'linear', duration: d(draw) })
+            $('.bk-pa-pt').forEach((pt) => pop(pt, end + 80 + ((parseFloat(pt.style.getPropertyValue('--x')) || 0) / 100) * draw))
+          }
+          break
+        }
+        case 'diverge':
+          // 가운데 선이 먼저 서고, 막대가 그 선에서 늘어난 쪽은 오른쪽으로, 줄어든 쪽은 왼쪽으로 뻗는다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-cc-key'), 120, 500)
+          $('.bk-dv-axis').forEach((a) => grow(a, 120, 'down'))
+          items('.bk-dv-row', 220, (el, at) => {
+            rise(el.querySelector('.bk-dv-name'), at, L.y * 0.4)
+            const bar = el.querySelector('.bk-dv-bar')
+            const origin = el.classList.contains('is-neg') ? 'right center' : 'left center'
+            if (bar) run(anims, bar, [{ scale: '0 1', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at + 80), L.grow)
+            fade(el.querySelector('.bk-dv-v'), at + 320, 400)
+            count(el.querySelector('.bk-dv-num'), at + 320)
+          })
+          break
         case 'image': {
           wipe(one('.bk-img-i'), 0, 'left', 1000)
           const img = one('.bk-img-i img')

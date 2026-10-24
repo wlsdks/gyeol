@@ -753,6 +753,327 @@ function Market() {
   )
 }
 
+// ---------- 세로 막대 차트 (원인 순위, 기간별 달성, 쌓은 막대) ----------
+// 항목마다 칸 하나(.bk-cc-col)가 그래프 줄과 이름 줄을 subgrid로 나눠 쓴다. 막대 길이는 --p(0~100)로만 넘기고,
+// 막대 위 숫자 자리는 CSS가 칸 높이에서 뺀다. 편집할 때 숫자는 막대 위 그 자리에서 고친다
+
+/** 몫을 보이는 꼴: 10% 밑은 소수 한 자리, 1% 밑은 '1% 미만' */
+function pctText(p: number): string {
+  if (p > 0 && p < 1) return '1% 미만'
+  return `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`
+}
+
+/** 칸 위의 한 줄: 요점(계산한 말), 표시 설명, 단위. 단위 칸은 편집할 때만 비어 있어도 보인다 */
+function ChartKey({ sum, keys, unitKey = 'unit' }: { sum?: ReactNode; keys?: ReactNode; unitKey?: string }) {
+  const { slide, meta, mode, folds } = useSlide()
+  const unit = readField(slide, meta, unitKey).trim()
+  // 비어서 접힌 칸이면 '단위:'만 남지 않게 줄째 뺀다 ('칸 더하기'로 열면 보인다)
+  const showUnit = !!unit || (mode !== 'final' && !folds?.has(unitKey))
+  if (!sum && !keys && !showUnit) return null
+  return (
+    <div className="bk-cc-key">
+      {sum && <p className="bk-cc-sum">{sum}</p>}
+      {keys}
+      {showUnit && (
+        <span className="bk-cc-u">
+          {unitKey === 'unit' ? '단위: ' : ''}
+          <T k={unitKey} as="span" oneLine />
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 원인 순위(파레토): 막대는 전체에서 그 원인이 차지하는 몫, 선은 앞에서부터 더한 몫. 둘이 같은 눈금(전체 = 100)이라
+ * 눈금 하나로 읽는다(눈금 둘을 겹치지 않는다). 더한 몫이 80%에 닿기까지의 원인이 먼저 잡을 원인이라 강조색, 나머지는 회색.
+ * 원인은 적은 차례 그대로 둔다. 장 위에서 순서를 바꾼 대로 보여야 해서 저절로 줄 세우지 않는다(안내에 '많은 것부터')
+ */
+function Pareto() {
+  const { slide, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.pareto.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim())
+  const values = items.map((it, i) => Math.max(0, numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value) ?? 0))
+  const total = values.reduce((a, b) => a + b, 0)
+  const share = values.map((v) => (total > 0 ? (v / total) * 100 : 0))
+  const cum: number[] = []
+  share.forEach((p, i) => cum.push((cum[i - 1] ?? 0) + p))
+  const vital = total > 0 ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
+  const n = items.length
+  // 점은 막대 칸의 오른쪽 끝: 그 칸까지 더한 몫. 가운데에 찍으면 첫 점이 첫 막대의 숫자 위에 앉는다
+  const x = (i: number) => ((i + 1) / n) * 100
+  const line = cum.map((c, i) => `${x(i).toFixed(2)},${(100 - c).toFixed(2)}`).join(' ')
+  // 몇 개가 거의 다인지가 요점. 모두가 80% 안이면 몰린 곳이 없어서 말하지 않는다
+  const sum =
+    vital > 0 && vital < n ? (
+      <>
+        {vital === 1 ? '가장 많은 하나가' : `상위 ${vital}개가`} 전체의 <b>{pctText(cum[vital - 1])}</b>
+      </>
+    ) : undefined
+  return (
+    <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n } as CSSProperties}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        sum={sum}
+        keys={
+          <span className="bk-cc-lk is-line">
+            <i aria-hidden="true" />
+            누적 비율
+          </span>
+        }
+      />
+      <div className="bk-cc-plot">
+        {total > 0 && (
+          <div className="bk-pa-canvas" aria-hidden="true">
+            <svg className="bk-pa-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polyline points={line} />
+            </svg>
+            {cum.map((c, i) => (
+              <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) } as CSSProperties}>
+                {i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+        {items.map((it, i) => (
+          // 칸 자리를 적어 둔다: 선 그림이 첫 줄 전체를 차지해서, 적지 않으면 막대 칸이 그 옆 새 칸으로 밀려난다
+          <div key={it.id} className={cx('it bk-cc-col', i < vital && 'is-hl')} style={{ '--p': share[i].toFixed(2), gridColumn: i + 1 } as CSSProperties}>
+            <div className="bk-cc-bar">
+              <span className="bk-cc-v">
+                <IT i={i} k="value" as="span" className="bk-cc-num" oneLine />
+              </span>
+              <span className="bk-cc-fill" />
+            </div>
+            <div className="bk-cc-label">
+              <IT i={i} k="title" className="bk-cc-name" />
+            </div>
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 기간별 달성: 기간마다 실적 막대와 목표 표시(가로 줄). 목표를 넘은 기간만 강조색이고 못 미친 기간은 회색이라
+ * 어느 달이 모자랐는지가 먼저 보인다. 막대 위에 실적과 목표 숫자를, 이름 아래에 달성률을 붙인다
+ */
+function Attain() {
+  const { slide, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.attain.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
+  const read = (k: 'value' | 'meta', i: number) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
+  const actual = items.map((_, i) => read('value', i))
+  const goal = items.map((_, i) => read('meta', i))
+  const top = Math.max(0, ...actual.map((v) => v ?? 0), ...goal.map((v) => v ?? 0))
+  const y = (v: number | null) => (v === null || top <= 0 ? 0 : (Math.max(0, v) / top) * 100)
+  const met = items.map((_, i) => (actual[i] === null || goal[i] === null ? null : actual[i]! >= goal[i]!))
+  const judged = met.filter((m) => m !== null).length
+  const hit = met.filter((m) => m === true).length
+  return (
+    <div
+      className={cx('bk-cc bk-tg', demo && 'is-demo', items.length <= 6 && items.every((it) => [...it.title.trim()].length <= 4) && 'is-short')}
+      style={{ '--n': items.length } as CSSProperties}
+    >
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        sum={
+          judged > 1 ? (
+            <>
+              {judged}번 중 <b>{hit}번</b> 달성
+            </>
+          ) : undefined
+        }
+        keys={
+          <>
+            <span className="bk-cc-lk is-bar">
+              <i aria-hidden="true" />
+              실적
+            </span>
+            <span className="bk-cc-lk is-goal">
+              <i aria-hidden="true" />
+              목표
+            </span>
+          </>
+        }
+      />
+      <div className="bk-cc-plot">
+        {items.map((it, i) => {
+          const rate = actual[i] !== null && goal[i] ? Math.round((actual[i]! / goal[i]!) * 100) : null
+          return (
+            <div
+              key={it.id}
+              className={cx('it bk-cc-col', met[i] === true && 'is-hl', met[i] === false && 'is-miss')}
+              style={{ '--p': y(actual[i]).toFixed(2), '--g': y(goal[i]).toFixed(2), '--m': Math.max(y(actual[i]), y(goal[i])).toFixed(2) } as CSSProperties}
+            >
+              <div className="bk-cc-bar bk-tg-bar">
+                <span className="bk-cc-fill" />
+                {(goal[i] !== null || !final) && <span className="bk-tg-goal" aria-hidden="true" />}
+                {/* 목표 숫자는 편집할 때만 막대 위에서 적는다. 발표할 때는 목표 줄과 달성률로 읽혀서, 기간마다 숫자 둘을 늘어놓지 않는다 */}
+                <span className="bk-tg-v">
+                  <IT i={i} k="value" as="span" className="bk-cc-num" oneLine />
+                  {mode === 'edit' && (
+                    <span className="bk-tg-g">
+                      목표 <IT i={i} k="meta" as="span" className="bk-tg-gv" oneLine />
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="bk-cc-label">
+                <IT i={i} k="title" className="bk-cc-name" />
+                {rate !== null && <span className="bk-tg-rate">{formatNumber(rate)}%</span>}
+              </div>
+              <ItemTools i={i} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** 쌓은 막대의 나눈 것 이름. 이름 안에 띄어 쓰기가 있을 수 있어서('제품 A') 쉼표, 가운뎃점, 빗금으로만 나눈다 */
+export function partsOf(text: string): string[] {
+  return text
+    .split(/\s*[,·/|]\s*/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, STACK_TINTS.length)
+}
+
+/** 쌓은 막대의 칸 색: 맨 아래(첫째)가 강조색, 위로 갈수록 옅게. 칸 사이는 바탕색 틈으로 나눈다 */
+const STACK_TINTS = [100, 62, 38, 22, 12]
+
+/**
+ * 쌓은 막대: 기간마다 합계 막대 하나를 나눈 것마다 칸으로 쌓는다. 값 그대로는 합계의 크기를, 100%로는 구성의 변화를 본다.
+ * 칸 안의 숫자는 칸이 충분히 클 때만(작은 칸에 넣으면 칸 밖으로 넘친다)
+ */
+function Stack() {
+  const { slide, meta, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.stack.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim())
+  const partsText = readField(slide, meta, 'parts').trim() || (final ? '' : hintFor(slide.layout, slide.hints, 'parts'))
+  const parts = partsOf(partsText)
+  const pct = slide.variant === 'pct'
+  const width = parts.length || STACK_TINTS.length
+  const rows = items.map((it, i) =>
+    seriesOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)
+      .slice(0, width)
+      .map((v) => Math.max(0, v)),
+  )
+  const totals = rows.map((r) => r.reduce((a, b) => a + b, 0))
+  const top = Math.max(0, ...totals)
+  const tint = (j: number) => `color-mix(in srgb, var(--accent) ${STACK_TINTS[j]}%, var(--bg))`
+  return (
+    <div className={cx('bk-cc bk-st', demo && 'is-demo')} style={{ '--n': items.length } as CSSProperties}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        keys={
+          <span className="bk-st-keywrap">
+            <span className="bk-st-keys">
+              {parts.map((p, j) => (
+                <span key={j} className="bk-cc-lk" style={{ '--c': tint(j) } as CSSProperties}>
+                  <i aria-hidden="true" />
+                  {p}
+                </span>
+              ))}
+            </span>
+            {/* 나눈 것 이름은 표시 줄 위에서 고친다 (올리거나 누르면 글이 보인다). 편집 때만 줄이 늘면 발표 화면과 높이가 달라진다 */}
+            {mode === 'edit' && <T k="parts" className="bk-st-partsed on-chart" oneLine />}
+          </span>
+        }
+      />
+      <div className="bk-cc-plot">
+        {items.map((it, i) => {
+          const sum = totals[i]
+          const p = pct ? (sum > 0 ? 100 : 0) : top > 0 ? (sum / top) * 100 : 0
+          return (
+            <div key={it.id} className="it bk-cc-col" style={{ '--p': p.toFixed(2) } as CSSProperties}>
+              <div className="bk-cc-bar bk-st-bar">
+                <span className="bk-cc-v">
+                  {/* 단위는 그래프 위에 한 번만 (막대마다 되풀이하지 않는다) */}
+                  {sum > 0 && <span className="bk-cc-num">{formatNumber(sum)}</span>}
+                </span>
+                <span className="bk-cc-fill bk-st-stack">
+                  {rows[i].map((v, j) => {
+                    const of = sum > 0 ? (v / sum) * 100 : 0
+                    // 칸 안 숫자는 그 칸이 막대 높이에서 차지하는 몫이 충분할 때만. 칸이 숫자보다 낮으면 CSS가 숨긴다
+                    const room = (of * p) / 100 >= 6
+                    return v > 0 ? (
+                      <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: tint(j) } as CSSProperties}>
+                        {room && <span className="bk-st-n">{pct ? pctText(of) : formatNumber(v)}</span>}
+                      </span>
+                    ) : null
+                  })}
+                </span>
+                {mode === 'edit' && <IT i={i} k="value" className="bk-st-in on-chart" oneLine />}
+              </div>
+              <div className="bk-cc-label">
+                <IT i={i} k="title" className="bk-cc-name" />
+              </div>
+              <ItemTools i={i} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 항목별 증감: 0을 세로 선으로 두고 늘어난 것은 오른쪽, 줄어든 것은 왼쪽으로 뻗는다. 0의 자리는 양쪽 가장 큰 값의 비율로 옮겨
+ * (모두 늘었으면 왼쪽 끝) 빈 반쪽이 생기지 않게 한다. 늘어난 것이 좋은지(매출) 나쁜지(비용)는 장마다 달라서 강조할 쪽을 고른다
+ */
+function Diverge() {
+  const { slide, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.diverge.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim())
+  const values = items.map((it, i) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
+  const known = values.filter((v): v is number => v !== null)
+  const pos = Math.max(0, ...known)
+  const neg = Math.max(0, ...known.map((v) => -v))
+  const range = pos + neg || 1
+  const z = (neg / range) * 100
+  const down = slide.variant === 'down'
+  return (
+    <div className={cx('bk-dv', demo && 'is-demo', neg > 0 && 'has-neg', pos > 0 && 'has-pos')} style={{ '--z': z.toFixed(2) } as CSSProperties}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey unitKey="basis" />
+      <ul className="bk-dv-list" data-n={items.length}>
+        {items.map((it, i) => {
+          const v = values[i]
+          const side = v === null || v === 0 ? null : v > 0 ? 'pos' : 'neg'
+          const hl = side !== null && (side === 'neg') === down
+          return (
+            <li
+              key={it.id}
+              className={cx('it bk-dv-row', side && `is-${side}`, hl && 'is-hl', v === null && 'is-blank')}
+              style={{ '--p': v === null ? 0 : ((Math.abs(v) / range) * 100).toFixed(2) } as CSSProperties}
+            >
+              <IT i={i} k="title" className="bk-dv-name" />
+              <div className="bk-dv-track">
+                <div className="bk-dv-scale">
+                  <span className="bk-dv-axis" aria-hidden="true" />
+                  {side && <span className="bk-dv-bar" aria-hidden="true" />}
+                  <span className="bk-dv-v">
+                    <IT i={i} k="value" as="span" className="bk-dv-num" oneLine />
+                  </span>
+                </div>
+              </div>
+              <ItemTools i={i} />
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function Picture() {
   const { slide } = useSlide()
   return (
@@ -785,6 +1106,10 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   image: Picture,
   rating: Rating,
   market: Market,
+  pareto: Pareto,
+  attain: Attain,
+  diverge: Diverge,
+  stack: Stack,
 }
 
 // ---------- 부품 하나 ----------

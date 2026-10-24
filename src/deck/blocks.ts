@@ -483,6 +483,141 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  pareto: {
+    name: '원인 순위',
+    description: '많은 것부터 막대로, 누적 비율을 선으로 (파레토)',
+    motion: '막대가 차례로 자라고, 누적 비율 선이 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 9월 불량 원인', optional: true },
+      { key: 'unit', label: '단위', hint: '건', optional: true },
+    ],
+    items: {
+      label: '원인',
+      // 둘이면 순위가 아니라 비교다
+      min: 3,
+      max: 8,
+      default: 5,
+      fields: [
+        { key: 'title', label: '원인', hint: '많은 것부터', hints: ['납땜 불량', '부품 누락', '이물질', '치수 오차', '기타', '포장 파손', '라벨 오류', '도장 불량'] },
+        { key: 'value', label: '수', hint: '412', hints: ['412', '236', '118', '64', '40', '28', '16', '9'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '9월 불량 원인 (870건)', unit: '건' },
+      items: [
+        { title: '납땜 불량', value: '412' },
+        { title: '부품 누락', value: '236' },
+        { title: '이물질', value: '118' },
+        { title: '치수 오차', value: '64' },
+        { title: '기타', value: '40' },
+      ],
+    },
+  },
+  attain: {
+    name: '기간별 달성',
+    description: '기간마다 실적 막대와 목표 표시. 못 미친 기간이 바로 보여요',
+    motion: '막대가 차례로 자라고, 목표 표시가 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 월별 매출 달성', optional: true },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '기간',
+      min: 2,
+      max: 8,
+      default: 6,
+      fields: [
+        { key: 'title', label: '기간', hint: '기간', hints: ['4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월'] },
+        { key: 'value', label: '실적', hint: '48', hints: ['42', '45', '39', '48', '51', '49', '53', '55'] },
+        { key: 'meta', label: '목표', hint: '46', hints: ['40', '44', '46', '46', '50', '52', '52', '54'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '월별 매출 달성', unit: '억 원' },
+      items: [
+        { title: '4월', value: '42', meta: '40' },
+        { title: '5월', value: '45', meta: '44' },
+        { title: '6월', value: '39', meta: '46' },
+        { title: '7월', value: '48', meta: '46' },
+        { title: '8월', value: '51', meta: '50' },
+        { title: '9월', value: '49', meta: '52' },
+      ],
+    },
+  },
+  diverge: {
+    name: '항목별 증감',
+    description: '늘어난 것은 오른쪽, 줄어든 것은 왼쪽으로. 0을 가운데 두고 견줘요',
+    motion: '막대가 가운데 선에서 양쪽으로 뻗어요',
+    variants: [
+      { id: 'up', name: '늘어난 쪽 강조' },
+      { id: 'down', name: '줄어든 쪽 강조' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 지점별 매출 증감', optional: true },
+      { key: 'basis', label: '기준', hint: '예: 작년 같은 분기 대비', optional: true },
+    ],
+    items: {
+      label: '항목',
+      min: 2,
+      max: 8,
+      default: 5,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목', hints: ['서울', '경기', '부산', '대구', '광주', '대전', '울산', '강원'] },
+        { key: 'value', label: '증감', hint: '+12% 또는 −3%', hints: ['+12%', '+8%', '−3%', '+5%', '−9%', '+2%', '−1%', '+4%'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '지점별 매출 증감', basis: '작년 같은 분기 대비' },
+      items: [
+        { title: '서울', value: '+12%' },
+        { title: '경기', value: '+8%' },
+        { title: '부산', value: '−3%' },
+        { title: '대구', value: '+5%' },
+        { title: '광주', value: '−9%' },
+      ],
+    },
+  },
+  stack: {
+    name: '쌓은 막대',
+    description: '기간마다 합계와 그 구성을 막대 하나에 쌓아요',
+    motion: '막대가 아래부터 한 칸씩 쌓여요',
+    variants: [
+      { id: 'sum', name: '값 그대로' },
+      { id: 'pct', name: '100%로' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 분기별 매출 구성', optional: true },
+      { key: 'parts', label: '나눈 것', hint: '장비, 소프트웨어, 유지보수' },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '기간',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '기간', hint: '기간', hints: ['1분기', '2분기', '3분기', '4분기', '내년 1분기', '내년 2분기'] },
+        { key: 'value', label: '값', hint: '나눈 것마다 쉼표로 (예: 12, 6, 3)', hints: ['12, 6, 3', '14, 7, 3', '15, 9, 4', '18, 11, 5', '20, 12, 6', '22, 14, 6'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '분기별 매출 구성', parts: '장비, 소프트웨어, 유지보수', unit: '억 원' },
+      items: [
+        { title: '1분기', value: '12, 6, 3' },
+        { title: '2분기', value: '14, 7, 3' },
+        { title: '3분기', value: '15, 9, 4' },
+        { title: '4분기', value: '18, 11, 5' },
+      ],
+    },
+  },
 }
 
 /** 레이아웃 부품의 칸 크기와 움직임. 칸은 그 레이아웃의 것에서 머리(제목, 부제, 출처)만 뺀다 */
@@ -540,7 +675,7 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 export const BLOCK_GROUPS: { name: string; short: string; description: string; types: BlockType[] }[] = [
   { name: '글과 메시지', short: '글', description: '결론 한 줄, 설명, 목록, 인용, 예상 질문', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
   { name: '숫자', short: '숫자', description: '큰 숫자, 전과 후, 목표 대비, 비율', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
-  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 깔때기, 시장 규모', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel', 'market'] },
+  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 달성, 원인 순위, 깔때기, 시장 규모', types: ['bars', 'versus', 'attain', 'stack', 'trend', 'share', 'bridge', 'diverge', 'pareto', 'funnel', 'market'] },
   { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 평가표, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'rating', 'matrix', 'position', 'pricing', 'table'] },
   { name: '그림과 사람', short: '그림', description: '사진, 화면, 담당자, 고객사 로고', types: ['image', 'people', 'logos'] },
@@ -1061,6 +1196,10 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   image: () => 200,
   // 겹친 원은 낮으면 안쪽 원(목표)이 점처럼 작아진다
   market: () => 340,
+  // 세로 막대 차트: 숫자와 이름 자리를 빼고 남는 높이가 막대라서 낮으면 막대가 납작해진다
+  pareto: () => 380,
+  attain: () => 380,
+  stack: () => 380,
 }
 /** 항목이 셋 이상인 부품: 칸이 이보다 낮으면 줄 사이가 붙어 빽빽해진다. 로고는 그림이라 빼고 */
 const LIST_FLOOR = 240
