@@ -364,12 +364,16 @@ export function motionEngine(): MotionEngine {
       return at + $(sel).length * step
     }
 
-    // 머리: 제목 낱말 → 부제. 본문은 제목이 거의 다 올라왔을 때부터. 부품 안에서는 머리가 없다
+    // 머리: 제목 낱말 → 부제. 본문은 제목이 거의 다 올라왔을 때부터. 부품 안에서는 머리가 없다.
+    // 본문 상자도 그때 함께 나타난다: 따로 움직이지 않는 줄(표의 선, 빈 막대 자리, 단위)이 장이 뜨자마자
+    // 제목보다 먼저 보이면 빈 틀이 깔려 있다가 채워지는 것처럼 보인다 (녹화해 보니 그랬다)
     const head = () => {
       if (scope !== slide) return 0
       const t = words(one('.s-head .s-title'), 0)
       rise(one('.s-head .s-lead'), Math.min(t, 420), L.y * 0.6)
-      return Math.min(t, 520)
+      const body = Math.min(t, 520)
+      fade(one('.s-body'), Math.max(0, body - 120), 360)
+      return body
     }
 
     function choreo(layout: string, variant: string) {
@@ -400,11 +404,13 @@ export function motionEngine(): MotionEngine {
         run(anims, one('.sc-num') ?? scope, [{ opacity: 0, translate: '0 22%' }], 0, levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
         const t = words(one('.sc-title'), 160, L.word * 1.2)
         rise(one('.sc-lead'), t, L.y * 0.6)
+        fade(one('.sc-map'), t, 400)
         items('.sc-map li', t + 120, (el, at) => fade(el, at, 500), 60)
         break
       }
       case 'agenda': {
         const t = words(one('.ag-title'), 0)
+        fade(one('.ag-list'), Math.min(t, 360) - 120, 360)
         items('.ag-item', Math.min(t, 360), (el, at) => {
           rise(el, at, L.y * 0.7)
           pop(el.querySelector('.ag-n'), at + 80)
@@ -720,7 +726,9 @@ export function motionEngine(): MotionEngine {
           if (bar) run(anims, bar, [{ scale: '0 1' }, { scale: '1 1' }], s(at + 80), L.grow)
           fade(el.querySelector('.fn-link'), at, 400)
           pop(el.querySelector('.fn-rate'), at + 260)
-          countIn(el.querySelector('.fn-num'), at + 120)
+          count(el.querySelector('.fn-num'), at + 120)
+          // 단위는 숫자와 함께: 숫자보다 먼저 나오면 막대 옆에 '곳'만 떠 있다
+          fade(el.querySelector('.fn-val'), at + 120, 240)
         }, L.step * 1.3)
         fade(one('.fn-total'), end + 100, 500)
         fade(one('.s-source'), end + 200)
@@ -770,6 +778,8 @@ export function motionEngine(): MotionEngine {
       case 'closing': {
         const t = words(one('.cl-title'), 0, L.word * 1.2)
         fade(one('.cl-contact'), t)
+        // 할 일 사이의 선도 할 일과 함께 (제목보다 먼저 빈 줄이 그어져 있지 않게)
+        fade(one('.cl-steps'), Math.min(t, 560) - 120, 360)
         items('.cl-step', Math.min(t, 560), (el, at) => {
           pop(el.querySelector('.cl-n'), at)
           rise(el.querySelector('.cl-step-text'), at + 60, L.y * 0.6)
@@ -844,6 +854,8 @@ export function motionEngine(): MotionEngine {
           const arc = one('.bk-rg-arc')
           const fill = { easing: OUT, duration: d(levelName === 'lively' ? 1500 : 1100) }
           if (arc) run(anims, arc, [{ strokeDasharray: '0 100' }], s(160), fill)
+          // 길이 0인 호도 둥근 끝 때문에 점으로 보인다. 차오르기 전에 점 하나만 떠 있지 않게
+          fade(arc, 140, 200)
           // 반원 게이지의 손잡이는 호와 같은 시간, 같은 이징으로 돌아서 호의 끝에 붙어 간다
           const knob = one('.bk-rg-knob')
           if (knob) {
@@ -978,6 +990,8 @@ export function motionEngine(): MotionEngine {
       else if (effect === 'blur')
         run(anims, cell, [{ opacity: 0, filter: 'blur(20px)', scale: '1.03' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: 1000 })
       else if (effect === 'auto') {
+        // 칸 안의 따로 움직이지 않는 줄과 빈 자리도 이 부품의 차례에 (장 머리의 본문 상자와 같은 까닭)
+        fade(cell.querySelector(':scope > .bk-in'), 0, 360)
         if (cell.classList.contains('bk-layout')) choreo(type, (/\bva-([a-zA-Z]+)/.exec(cell.className) || [])[1] || 'base')
         else nativeAuto(cell, type)
       }

@@ -29,6 +29,8 @@
   position: absolute;
   overflow: hidden;
   pointer-events: none;
+  /* 창의 위아래에서 숫자가 칼로 자른 듯 끊기지 않고 흐려지며 들고 난다. 멈춘 숫자의 글자는 창의 가운데 60%쯤이라 가리지 않는다 */
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
 }
 
 .mo-odr {
