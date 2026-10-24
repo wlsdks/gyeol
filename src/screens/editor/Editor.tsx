@@ -647,7 +647,9 @@ function SlideStage({
   const info = pageInfo(deck.slides)
   const spec = LAYOUTS[slide.layout]
   const canvasRef = useRef<HTMLDivElement>(null)
-  const overflow = useOverflow(canvasRef, slide)
+  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
+  // 테마, 글꼴, 글자 크기, 발표 정보(아래 표시의 이름, 소속)를 바꿔도 다시 잰다
+  const overflow = useOverflow(canvasRef, slide, look)
 
   const actions = useMemo<SlideActions>(
     () => ({
@@ -658,7 +660,6 @@ function SlideStage({
     }),
     [slide.id],
   )
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
   const variants = spec.variants ?? []
   const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variantOf(slide)) + 1) % variants.length] : null
@@ -858,7 +859,7 @@ function SlideStage({
 }
 
 /** 슬라이드 안의 글이 영역을 넘치는지 확인한다 */
-function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide): boolean {
+function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): boolean {
   const [overflow, setOverflow] = useState(false)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
@@ -877,7 +878,7 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide):
     // 부품 장에서 부품이 자리를 옮기는 동안(움직임 중)에는 넘쳐 보일 수 있어서, 다 움직인 뒤에 한 번 더 본다
     const t = window.setTimeout(check, 800)
     return () => window.clearTimeout(t)
-  }, [ref, slide])
+  }, [ref, slide, look])
   return overflow
 }
 
