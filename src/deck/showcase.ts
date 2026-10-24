@@ -21,12 +21,12 @@ export function extraSlides(): Slide[] {
     withOptions(withItems(
       makeSlide('bars'),
       [
-        { title: '1분기', meta: '억 원', value: '96' },
-        { title: '2분기', meta: '억 원', value: '104' },
-        { title: '3분기', meta: '억 원', value: '131' },
-        { title: '목표', meta: '억 원', value: '117' },
+        { title: '1분기', value: '96' },
+        { title: '2분기', value: '104' },
+        { title: '3분기', value: '131', meta: '신규 고객 2곳 반영' },
+        { title: '목표', value: '117' },
       ],
-      { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준', source: '영업관리 시스템, 9월 말 기준' },
+      { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준', unit: '억 원', source: '영업관리 시스템, 9월 말 기준' },
     ), { highlight: 2 }),
     withItems(
       makeSlide('scorecard'),

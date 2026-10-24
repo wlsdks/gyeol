@@ -530,7 +530,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { id: 'columns', name: '세로 막대' },
     ],
     highlight: { label: '강조할 막대', fallback: 0 },
-    fields: [title('비교가 말해 주는 결론'), lead(), source],
+    // 단위는 막대마다 되풀이하지 않고 위에 한 번만
+    fields: [title('비교가 말해 주는 결론'), lead(), { key: 'unit', label: '단위', hint: '억 원', optional: true }, source],
     items: {
       label: '막대',
       min: 2,
@@ -539,7 +540,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       fields: [
         { key: 'title', label: '항목', hint: '항목 이름' },
         { key: 'value', label: '숫자', hint: '120', hints: ['96', '104', '131', '117', '88', '120'] },
-        { key: 'meta', label: '보충', hint: '단위나 보충 설명', optional: true },
+        { key: 'meta', label: '보충', hint: '보충 설명', optional: true },
       ],
     },
   },

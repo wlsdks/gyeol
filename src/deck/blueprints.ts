@@ -245,7 +245,7 @@ const business: Blueprint = {
       priority: 3,
       section: '효과와 비용',
       guide: '해마다 얼마를 벌 수 있는지 막대로 보여주면 회수 시점이 보여요.',
-      hints: { title: '3년 차에 매출 12억 원', 'items.meta': '억 원', ...each({ title: ['1년 차', '2년 차', '3년 차'], value: ['4', '7', '12'] }) },
+      hints: { title: '3년 차에 매출 12억 원', unit: '억 원', ...each({ title: ['1년 차', '2년 차', '3년 차'], value: ['4', '7', '12'] }) },
       items: 3,
     },
     {

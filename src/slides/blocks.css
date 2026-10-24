@@ -41,6 +41,8 @@
 .bk-in {
   /* 회의실 뒷자리에서도 읽히게: 칸이 작아도 글자는 출처 글자(22px)보다 작아지지 않는다 */
   --fs-min: 22px;
+  /* 한 줄로 줄이는 글(.one-line의 100cqi)이 칸이 아니라 안쪽 여백을 뺀 너비에 맞게. 칸 크기 단계(@container bk)와 cqh는 그대로 칸을 본다 */
+  container-type: inline-size;
   height: 100%;
 }
 
@@ -90,7 +92,15 @@
 /* ---------- 바탕 ---------- */
 
 .bk-look-card {
+  --bk-s: var(--surface);
   background: var(--surface);
+}
+
+/* 카드 위에서는 카드 면이 바탕이다. 바탕색으로 지우는 것(숫자 둘레, 잘린 막대 표시)과
+   옅은 면(막대 자리, 고리 바탕)이 카드와 같은 색이 되어 사라지지 않게 */
+.bk-look-card > .bk-in {
+  --bg: var(--bk-s);
+  --surface: color-mix(in srgb, var(--ink) 7%, var(--bk-s));
 }
 
 .bk-look-card > .bk-in,
@@ -910,11 +920,14 @@
   line-height: 1.4;
 }
 
+/* 선 끝의 점(반지름 12px, 둘레 8px)이 칸 밖으로 나가지 않게 오른쪽을 띄운다.
+   나가면 fitBlocks가 넘친 것으로 보고 글자를 가장 작게 줄인다 */
 .bk-sp-chart {
   position: relative;
   flex: 1;
   min-height: 56px;
   margin-top: 22px;
+  margin-right: 20px;
 }
 
 .bk-sp-fill,
@@ -1203,7 +1216,7 @@
   display: grid;
   flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   border-top: 2px solid var(--ink);
 }
 
@@ -1283,10 +1296,11 @@
 
 /* ---------- 예상 질문 ---------- */
 
+/* 질문 사이는 칸 높이를 따라 고르게 좁힌다 (질문 넷을 한 줄씩 쌓으면 장 높이의 반을 넘는다) */
 .bk-qa-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 32px 64px;
+  gap: clamp(16px, 3.6cqh, 32px) 64px;
 }
 
 .bk-qa-item {
@@ -1294,8 +1308,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-content: start;
-  gap: 12px 20px;
-  padding-top: 26px;
+  gap: clamp(6px, 1.4cqh, 12px) 20px;
+  padding-top: clamp(14px, 3cqh, 26px);
   border-top: 2px solid var(--line);
 }
 
@@ -1787,35 +1801,195 @@
    레이아웃은 장 하나를 다 쓰는 크기로 짜여 있어서, 칸이 낮거나 좁으면 줄 사이와 고정 너비를 줄인다.
    원래 규칙보다 앞서도록 [data-n]을 붙여 구체성을 맞춘다 */
 
+/* 깔때기는 칸 높이를 따라 막대와 사이를 고르게 줄인다. 620px에서 장 크기(88, 48)로 한 번에 바뀌면
+   그 바로 위 높이(630 남짓)에서는 아직 자리가 모자라 카드 여백을 먹는다 */
+.bk-in .fn:is([data-n]) {
+  --fn-h: clamp(56px, 12cqh, 88px);
+  --fn-gap: clamp(24px, 5cqh, 48px);
+}
+
+.bk-in .fn:is([data-n='5'], [data-n='6']) {
+  --fn-h: clamp(48px, 8cqh, 56px);
+  --fn-gap: clamp(20px, 3.5cqh, 30px);
+}
+
+/* 증감 요인: 칸이 좁으면 처음과 끝 값의 단위가 숫자 아래로 내려가 값이 두 줄이 된다. 막대 위에 그만큼 자리를 더 둔다 (장에서는 96px) */
+@container bk (max-width: 1300px) {
+  .bk-in .wf-bar,
+  .bk-in .wf-val,
+  .bk-in .wf-plot::after {
+    --area: calc(100% - 136px);
+  }
+}
+
+/* 가로 막대의 두께도 칸 높이를 따라 (장에서는 64px) */
+.bk-in .br:not(.va-columns *) .br-track {
+  height: clamp(28px, 6cqh, 64px);
+}
+
+/* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
+.bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
+  padding-block: clamp(12px, 2.4cqh, 30px);
+}
+
+.bk-in .ps:is([data-n='5']) .ps-row:not(.ps-headrow) {
+  padding-block: clamp(12px, 1.6cqh, 20px);
+}
+
+.bk-in .ps:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
+  padding-block: 8px;
+}
+
+.bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
+  padding-block: clamp(16px, 2.6cqh, 36px);
+}
+
+.bk-in .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
+  padding-block: clamp(12px, 2cqh, 20px);
+}
+
+.bk-in .pr-plan {
+  padding: clamp(34px, 5.5cqh, 52px) clamp(40px, 6cqh, 56px);
+}
+
+.bk-in .tl {
+  gap: clamp(32px, 5.2cqh, 56px);
+  padding-bottom: clamp(16px, calc(9cqh - 40px), 56px);
+}
+
 @container bk (max-height: 620px) {
-  .bk-in .fn {
-    --fn-gap: 24px;
-    --fn-h: 56px;
-  }
-
-  .bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
-    padding-block: 12px;
-  }
-
-  .bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
-    padding-block: 16px;
-  }
-
-  .bk-in .pr-plan {
-    padding: 34px 40px;
-  }
-
-  .bk-in .tl {
-    gap: 32px;
-    padding-bottom: 16px;
-  }
-
   .bk-in .sk:is([data-n]) .sk-row:not(.sk-headrow) {
     padding-block: 12px;
   }
 
   .bk-in .sm:is([data-n]) .sm-row {
     padding-block: 18px;
+  }
+}
+
+/* 큰 숫자 묶음의 숫자 하나: 장에서는 숫자 옆에 이름과 설명을 두지만, 장보다 좁은 칸에서는 숫자가 너비를 거의 다 써서
+   옆의 이름이 글자마다 줄이 바뀌고 칸 밖으로 밀린다. 그래서 숫자 아래로 내린다 */
+@container bk (max-width: 1300px) {
+  .bk-in .kp[data-n='1'] .kp-item {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    align-content: center;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-value {
+    --fs: 260px;
+    grid-row: auto;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-label,
+  .bk-in .kp[data-n='1'] .kp-item:not(:has(.kp-body)) .kp-label {
+    grid-row: auto;
+    grid-column: 1;
+    margin-top: 44px;
+    padding-top: 28px;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-body {
+    grid-column: 1;
+  }
+}
+
+/* 장보다 좁은 칸: 장 크기로 정한 고정 너비(px)를 칸 너비의 비율로 바꾼다.
+   그대로 두면 이름 칸이 글자마다 줄이 바뀌거나, 숫자가 칸 밖으로 나가거나, 줄끼리 겹친다 */
+@container bk (max-width: 1300px) {
+  /* 하나 크게: 큰 숫자 하나를 위에, 나머지는 그 아래 한 줄에 나란히. 숫자는 저마다의 칸 너비에 맞춰 줄어든다 */
+  .bk-in .kp:is([data-n='2'], [data-n='3'], [data-n='4']) {
+    --kp-rest: 1;
+  }
+
+  .bk-in .kp[data-n='3'] {
+    --kp-rest: 2;
+  }
+
+  .bk-in .kp[data-n='4'] {
+    --kp-rest: 3;
+  }
+
+  .va-focus > .bk-in .kp:not([data-n='1']) {
+    grid-template-columns: repeat(var(--kp-rest), minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-auto-rows: auto;
+    column-gap: 40px;
+    row-gap: 28px;
+  }
+
+  .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:first-child {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+
+  .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:first-child .kp-value {
+    --fs: 200px;
+    margin-bottom: 24px;
+  }
+
+  .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:not(:first-child) {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 24px;
+  }
+
+  .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
+    --fs: 72px;
+    order: -1;
+    margin: 0 0 12px;
+  }
+
+  /* 목표 대비 실적: 다섯 칸의 고정 너비가 지표 이름 칸을 다 먹는다 */
+  .bk-in .sk-row {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
+    column-gap: 28px;
+  }
+
+  /* 막대 비교(가로): 이름 400px와 숫자 280px가 막대 자리를 없앤다 */
+  .va-base > .bk-in .br-row {
+    grid-template-columns: minmax(0, 34%) minmax(0, 1fr) minmax(0, 24%);
+    gap: 28px;
+  }
+
+  /* 비중 도넛: 540px 고리 대신 칸의 반, 칸 높이보다 크지 않게 */
+  .va-donut > .bk-in .sh {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 48px;
+  }
+
+  .va-donut > .bk-in .sh-ring {
+    width: min(100%, 540px, 100cqh - 96px);
+    justify-self: center;
+  }
+
+  /* 비율 칸은 그 숫자 글자 크기로 정한다: 120px로 두면 '9.9%', '100%'가 칸을 넘어 이름에 닿는다.
+     보통의 비율(두세 자리와 %)은 2.9em 안이라 항목끼리 이름이 같은 자리에서 시작한다 */
+  .va-donut > .bk-in .sh-item {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 20px;
+    padding-left: 28px;
+  }
+
+  .va-donut > .bk-in .sh-pct {
+    min-width: 2.9em;
+  }
+
+  .va-base > .bk-in .sh-legend {
+    gap: 24px;
+  }
+
+  .va-base > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-pct {
+    --fs: 56px;
+  }
+
+  /* 안 비교 표: 이름 360px, 비용 420px를 빼면 내용 칸이 한두 글자 너비만 남는다 */
+  .va-rows > .bk-in .pr-plan,
+  .va-rows > .bk-in .pr-plan.is-hl {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.3fr);
+    column-gap: 40px;
+    padding: 0 32px;
   }
 }
 

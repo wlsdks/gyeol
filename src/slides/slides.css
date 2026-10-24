@@ -98,9 +98,9 @@
     .s-title, .s-lead, .cv-title, .cv-lead, .cv-ask-text, .sc-title, .sc-lead, .ag-t,
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
-    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .cl-title, .cl-step-t, .cl-step-b,
-    .sk-title, .sk-body, .sk-target, .sk-value, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
-    .tn-num, .tn-name, .tn-unit, .tn-target-label, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
+    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .cl-title, .cl-step-t, .cl-step-b,
+    .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
+    .tn-num, .tn-name, .tn-unit, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
     .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total,
     .bk-msg-t, .bk-msg-s, .bk-label, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-q-t, .bk-q-by, .bk-call-l, .bk-call-t,
@@ -571,9 +571,11 @@
   --fs: var(--t-title);
 }
 
+/* 글 줄이 쌓이는 목록의 줄은 내용보다 낮아지지 않는다(min-content). 0까지 줄면 자리가 모자랄 때 줄끼리 올라타는데
+   넘친 것으로 보이지 않아서 부품 장의 글자 맞추기(slides/fitBlocks.ts)가 알아채지 못한다. 그림이 든 줄(로고)은 빼고 */
 .ag-list {
   display: grid;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   min-height: 0;
   max-height: 100%;
   border-top: 3px solid var(--ink);
@@ -581,7 +583,7 @@
 
 /* 항목이 적으면 줄을 너무 높이지 않고 위에서부터 */
 .ag-list:is([data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(0, 236px);
+  grid-auto-rows: minmax(min-content, 236px);
 }
 
 .ag-item {
@@ -614,7 +616,7 @@
 .va-columns .ag-list:is([data-n='2'], [data-n='3']) {
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   border-top: 0;
 }
 
@@ -636,7 +638,7 @@
 
 .va-columns .ag-n {
   font-size: 200px;
-  line-height: 0.8;
+  line-height: calc(0.8 * var(--tall, 1));
   letter-spacing: -0.04em;
 }
 
@@ -705,12 +707,13 @@
   line-height: 1.3;
 }
 
+/* 큰 숫자는 줄 높이를 1보다 낮게 잡아 위아래를 붙인다. 명조(한글과 숫자의 키가 크다)는 --tall만큼 늘려 이름, 설명과 겹치지 않게 (themes.ts) */
 .kp-value {
   --fs: 176px;
   margin-top: 28px;
   color: var(--accent);
   font-weight: 700;
-  line-height: 0.95;
+  line-height: calc(0.95 * var(--tall, 1));
   letter-spacing: -0.035em;
 }
 
@@ -749,7 +752,7 @@
   grid-row: 1 / span 2;
   align-self: end;
   margin: 0;
-  line-height: 0.8;
+  line-height: calc(0.8 * var(--tall, 1));
 }
 
 .kp[data-n='1'] .kp-label {
@@ -809,7 +812,7 @@
 .va-focus .kp:not([data-n='1']) {
   grid-auto-flow: row;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   column-gap: 96px;
   align-content: stretch;
   padding-bottom: 0;
@@ -881,13 +884,13 @@
 
 .sm {
   display: grid;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
   border-top: 3px solid var(--ink);
 }
 
 .sm:is([data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(0, 220px);
+  grid-auto-rows: minmax(min-content, 220px);
 }
 
 .sm-row {
@@ -922,7 +925,7 @@
 /* 모양: 네 칸. 줄 대신 칸마다 이름과 요점 */
 .va-grid .sm {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: var(--gap);
   border-top: 0;
 }
@@ -954,13 +957,13 @@
 
 .pt {
   display: grid;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
   border-top: 3px solid var(--ink);
 }
 
 .pt:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(0, 240px);
+  grid-auto-rows: minmax(min-content, 240px);
 }
 
 .pt-item {
@@ -1024,7 +1027,7 @@
 /* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
 .va-tiles .pt {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: var(--gap);
   border-top: 0;
 }
@@ -1034,7 +1037,7 @@
 }
 
 .va-tiles .pt:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
 }
 
 .va-tiles .pt-item {
@@ -1063,14 +1066,14 @@
   position: relative;
   display: grid;
   grid-template-rows: auto;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
   padding-bottom: 20px;
 }
 
 .cp[data-n='1'],
 .cp[data-n='2'] {
-  grid-auto-rows: minmax(0, 220px);
+  grid-auto-rows: minmax(min-content, 220px);
 }
 
 .cp::before,
@@ -1312,14 +1315,14 @@
 .va-steps .tl {
   grid-auto-flow: row;
   grid-auto-columns: auto;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: 0;
   align-content: stretch;
   padding-bottom: 0;
 }
 
 .va-steps .tl:is([data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(0, 220px);
+  grid-auto-rows: minmax(min-content, 220px);
   align-content: start;
 }
 
@@ -1629,13 +1632,13 @@
 .va-rows .pr[data-n='1'] {
   grid-auto-flow: row;
   grid-auto-columns: auto;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   gap: 0;
   border-top: 3px solid var(--ink);
 }
 
 .va-rows .pr:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(0, 260px);
+  grid-auto-rows: minmax(min-content, 260px);
 }
 
 .va-rows .pr-plan,
@@ -1864,12 +1867,12 @@
 .sk {
   display: grid;
   grid-template-rows: auto;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
 }
 
 .sk:is([data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(0, 190px);
+  grid-auto-rows: minmax(min-content, 190px);
 }
 
 .sk-row {
@@ -1951,9 +1954,10 @@
 }
 
 .sk-rate {
+  --fs: 52px;
   color: var(--ink);
   font-family: var(--font-head);
-  font-size: 52px;
+  white-space: nowrap;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -1972,7 +1976,7 @@
 }
 
 .sk:is([data-n='5'], [data-n='6']) .sk-rate {
-  font-size: 44px;
+  --fs: 44px;
 }
 
 /* ---------- 증감 요인 (폭포) ----------
@@ -2065,19 +2069,26 @@
   content: '';
 }
 
+/* 값 자리는 막대 칸 너비라서, 한 줄로 줄이는 숫자(.one-line의 100cqi)의 기준으로 쓴다: 숫자가 칸보다 넓으면 칸에 맞게 작아진다.
+   (칸 .wf-col에 두면 container가 겹쳐 쓰는 layout containment 때문에 subgrid가 풀려 막대 높이가 어긋난다) */
 .wf-val {
   position: absolute;
   right: 0;
   bottom: calc(var(--area) * var(--hi) / 100 + 18px);
   left: 0;
+  container-type: inline-size;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 8px;
+  gap: 0 8px;
   color: var(--ink);
   text-align: center;
   white-space: nowrap;
 }
+
+/* 처음과 끝 값(숫자와 단위)이 막대 칸보다 넓으면 옆 칸으로 넘치지 않고 단위가 숫자 아래로 내려간다.
+   옆으로 넘치면 좁은 칸(부품 장)에서 옆 막대와 그 값을 덮는다 */
 
 .wf-num {
   --fs: 48px;
@@ -2164,6 +2175,8 @@
 .tn-canvas {
   position: absolute;
   inset: 104px 0 0;
+  /* 점 숫자의 자리를 그림 너비(cqi)로 재서 양끝에서 밖으로 나가지 않게 한다 */
+  container-type: inline-size;
 }
 
 .tn-meta {
@@ -2245,7 +2258,8 @@
   position: absolute;
   bottom: 24px;
   left: 0;
-  translate: -50% 0;
+  /* 점 가운데에 두되, 양끝 점에서는 그림 안쪽으로 민다 */
+  translate: clamp(calc(var(--x) * -1cqi), -50%, calc((100 - var(--x)) * 1cqi - 100%)) 0;
   white-space: nowrap;
 }
 
@@ -2294,15 +2308,16 @@
   border-top: 2px solid var(--line);
 }
 
-.tn-target-label {
-  --fs: 24px;
-  position: absolute;
-  right: 0;
-  bottom: 10px;
-  padding-left: 12px;
-  background: var(--bg);
-  color: var(--ink-3);
-  white-space: nowrap;
+.tn-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 그래프의 목표선과 같은 점선 */
+.tn-legend-line {
+  width: 40px;
+  border-top: 2px dashed var(--ink-3);
 }
 
 .tn-x {
@@ -3157,6 +3172,22 @@
   background: var(--accent-soft);
 }
 
+/* 합계 줄: 위에 굵은 줄, 글은 모두 진하고 굵게 */
+.tb-row.is-total {
+  border-top: 3px solid var(--ink);
+  border-bottom: 0;
+}
+
+.tb-row.is-total .tb-cell {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 합계 바로 위 줄의 가는 줄은 굵은 줄과 겹치므로 뺀다 */
+.tb-row:has(+ .tb-row.is-total) {
+  border-bottom: 0;
+}
+
 .tb-row.is-hl .tb-first {
   color: var(--accent);
 }
@@ -3252,9 +3283,30 @@
 
 /* ---------- 막대 비교 ---------- */
 
+.br-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 단위는 막대마다 되풀이하지 않고 숫자 줄 위 오른쪽에 한 번 */
+.br-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 14px;
+}
+
+.br-unit {
+  --fs: 24px;
+  color: var(--ink-3);
+}
+
+/* 줄은 내용(이름과 설명)보다 낮아지지 않는다. 0까지 줄면 자리가 모자랄 때 줄끼리 올라타는데 넘친 것으로 보이지 않아서
+   부품 장의 글자 맞추기(fitBlocks)가 알아채지 못한다 */
 .br {
   display: grid;
-  grid-auto-rows: minmax(0, 168px);
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(min-content, 168px);
   align-content: center;
   padding-bottom: 24px;
 }
@@ -3369,6 +3421,15 @@
   --fs: 32px;
 }
 
+.br-meta.is-pad {
+  display: none;
+}
+
+.va-columns .br-meta.is-pad {
+  display: block;
+  visibility: hidden;
+}
+
 .va-columns .br:is([data-n='5'], [data-n='6']) .br-value {
   --fs: 48px;
 }
@@ -3410,13 +3471,13 @@
 
 .cl-steps {
   display: grid;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
   min-height: 0;
   border-top: 2px solid var(--bold-line);
 }
 
 .cl-steps:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(0, 260px);
+  grid-auto-rows: minmax(min-content, 260px);
 }
 
 .cl-step {
