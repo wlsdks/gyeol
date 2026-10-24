@@ -7,7 +7,7 @@ import { knownOnly, unknownParts } from './compat'
 import { createDeck, makeSlide } from './generate'
 import { createSampleDeck } from './sample'
 import { showcaseSlides } from './showcase'
-import type { Block, Deck, Slide } from './types'
+import type { Block, BlockRow, Deck, Slide } from './types'
 
 const compose = (...blocks: Block[]): Slide => ({ ...makeSlide('compose'), rows: [{ id: 'r1', blocks }] })
 const withSlides = (...slides: Slide[]): Deck => ({ ...createSampleDeck(), slides })
@@ -43,6 +43,12 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     expect(unknownParts({ ...createSampleDeck(), theme: { id: 'forest' as 'white' } })).toBe(1)
     // 정한 개수(한 줄에 셋)를 넘는 부품: 예전 버전이면 빼고 저장한다
     expect(unknownParts(withSlides(compose(...[1, 2, 3, 4].map((n) => ({ ...text, id: `t${n}` })))))).toBe(1)
+    // 줄과 부품에 새로 더한 값: 예전 버전이 고치면 빼고 저장하게 된다. 줄 높이 비중은 이 버전이 아는 범위만
+    const rowsOf = (...rows: Record<string, unknown>[]) => withSlides({ ...makeSlide('compose'), rows: rows as unknown as BlockRow[] })
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], tilt: 3 }))).toBe(1)
+    expect(unknownParts(withSlides(compose(raw({ ...text, glow: true }))))).toBe(1)
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 40 }, { id: 'r2', blocks: [{ ...text, id: 't2' }], grow: 60 }))).toBe(0)
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 250 }))).toBe(1)
     // 꼴이 망가진 값은 사람이 넣은 것이 아니라 세지 않는다
     expect(unknownParts(withSlides(compose(raw({ ...text, fields: { body: '글', bad: 3 } }))))).toBe(0)
   })

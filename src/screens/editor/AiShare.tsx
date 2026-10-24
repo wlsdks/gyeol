@@ -375,6 +375,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     }
     case 'set_spans':
       return { text: `${name(op.slide)}의 칸 너비 바꾸기`, detail: `${blockName(op.block)}이 있는 줄을 ${op.spans.join(' : ')}로` }
+    case 'set_row_grow':
+      return { text: `${name(op.slide)}의 줄 높이 바꾸기`, detail: op.grow.length ? `위에서부터 ${op.grow.join(' : ')}로` : '줄 높이를 똑같이' }
     case 'set_hint': {
       if (op.block) return { text: `${name(op.slide)}의 ${blockName(op.block)} 안내 문구`, detail: op.text }
       const spec = slide && LAYOUTS[slide.layout]

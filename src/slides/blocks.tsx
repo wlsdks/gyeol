@@ -762,6 +762,29 @@ function Gutters({ boxes, live }: { boxes: CellBox[]; live: BlockEdit }) {
   )
 }
 
+/** 줄 사이마다 높이를 나누는 손잡이. 끌면 위아래 줄이 높이를 나눠 갖고(24분의 1에 붙는다), 두 번 누르면 똑같이 */
+function RowGaps({ rows, live }: { rows: number; live: BlockEdit }) {
+  return (
+    <>
+      {Array.from({ length: rows - 1 }, (_, i) => (
+        <div
+          key={i}
+          className="bk-rowgap"
+          style={{ gridRow: String(i + 2), gridColumn: '1 / -1' }}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="줄 높이 바꾸기"
+          title="끌어서 줄 높이 바꾸기 (두 번 누르면 똑같이)"
+          onPointerDown={(e) => live.onRowGapPointerDown(e, i)}
+          onDoubleClick={() => live.onRowGapReset()}
+        >
+          <span className="bk-rowgap-grip" />
+        </div>
+      ))}
+    </>
+  )
+}
+
 type Box = { x: number; y: number; w: number; h: number }
 
 /** 칸들이 지금 화면에 보이는 자리 (움직이는 중이면 움직이는 중의 자리). 캔버스 px, 본문 상자 기준 */
@@ -868,6 +891,7 @@ export function BlockArea() {
         <BlockCell key={box.block.id} box={box} live={live} />
       ))}
       {live && !live.dragId && <Gutters boxes={boxes} live={live} />}
+      {live && !live.dragId && rows.length > 1 && <RowGaps rows={rows.length} live={live} />}
       {live?.incoming && <div className="bk-incoming" aria-hidden="true" />}
     </div>
   )

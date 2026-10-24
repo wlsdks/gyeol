@@ -4,7 +4,7 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
+import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, isGrow, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock, weighted } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
@@ -34,6 +34,8 @@ export interface ShapeSlide {
   variant: string
   /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
   blocks?: ShapeBlock[][]
+  /** 부품 장에서 사람이 줄 높이를 정했으면 줄마다의 비중(1~100, 위에서부터). 없으면 똑같이 나눈다 */
+  rowGrow?: number[]
 }
 
 export interface ShapeBlock {
@@ -278,11 +280,12 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   }
   if (slide.layout === 'compose') {
     // 가져온 파일일 수 있어서 꼴부터 맞춘다 (모르는 부품, 넘치는 개수는 뺀다)
-    out.blocks = cleanRows(slide.rows)
-      .map((r) => {
-        const spans = spansOf(r)
-        return r.blocks.map((b, i) => shapeBlock(b, spans[i]))
-      })
+    const rows = cleanRows(slide.rows)
+    out.blocks = rows.map((r) => {
+      const spans = spansOf(r)
+      return r.blocks.map((b, i) => shapeBlock(b, spans[i]))
+    })
+    if (weighted(rows)) out.rowGrow = rows.map((r) => r.grow!)
   }
   return out
 }
@@ -331,10 +334,13 @@ function checkBlock(v: unknown): boolean {
 
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks'])) return false
+  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks', 'rowGrow'])) return false
   if (v.blocks !== undefined) {
     if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_ROWS) return false
     if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_IN_ROW && r.every(checkBlock))) return false
+  }
+  if (v.rowGrow !== undefined) {
+    if (!Array.isArray(v.blocks) || !Array.isArray(v.rowGrow) || v.rowGrow.length !== v.blocks.length || v.rowGrow.length < 2 || !v.rowGrow.every(isGrow)) return false
   }
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
   if (typeof v.layout !== 'string' || !(v.layout in LAYOUTS)) return false

@@ -16,6 +16,7 @@ import {
   dropTarget,
   effectOf,
   foldableFields,
+  growAt,
   insertAt,
   lookIssue,
   shownLook,
@@ -27,7 +28,9 @@ import {
   shiftBlock,
   spansAt,
   targetOf,
+  unweighted,
   variantOfBlock,
+  weighted,
   whyNot,
   withItem,
   withLook,
@@ -244,13 +247,21 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const dy = (gr.top + gr.height / 2 - (r.top + r.height / 2)) / vs
     // FLIP으로 이미 움직이기 시작한 칸은 멈추고 여기서 다시
     cell.getAnimations().forEach((a) => a.cancel())
-    cell.animate(
+    const spring = cell.animate(
       [
         { transformOrigin: '50% 50%', transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: 0.35 },
         { transformOrigin: '50% 50%', transform: 'none', opacity: 1 },
       ],
       { duration: 520, easing: SPRING },
     )
+    // 새로 넣은 부품: 자리에 맞춰지면 발표할 때의 움직임을 한 번 (숫자가 오르고 막대가 자라는 것을 넣자마자 보게)
+    const level = motionOf(deck, slideRef.current)
+    if (landing.ghost.kind === 'new' && level !== 'none') {
+      spring.finished.then(
+        () => cell.isConnected && engine.play(cell, level),
+        () => {},
+      )
+    }
     const end = { x: r.left + r.width / 2 - gr.width / 2, y: r.top + r.height / 2 - gr.height / 2 }
     g.style.transformOrigin = '50% 50%'
     const fly = g.animate(
@@ -540,6 +551,50 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     [store],
   )
 
+  // ---------- 줄 높이 ----------
+
+  const onRowGapPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, between: number) => {
+      const el = areaEl.current
+      if (e.button !== 0 || !el) return
+      e.preventDefault()
+      e.stopPropagation()
+      // 지금 그려진 줄 높이와 줄 사이(격자가 나눈 값, 캔버스 px). 끄는 동안은 이 값을 기준으로 위아래 두 줄만 나눈다
+      const css = getComputedStyle(el)
+      const heights = css.gridTemplateRows.split(' ').map(parseFloat)
+      const gap = parseFloat(css.rowGap) || 0
+      const top = heights.slice(0, between).reduce((a, h) => a + h + gap, 0)
+      const pair = heights[between] + heights[between + 1]
+      const startY = e.clientY
+      let moved = false
+      document.body.classList.add('is-row-resizing')
+      const onMove = (ev: PointerEvent) => {
+        if (!moved && Math.abs(ev.clientY - startY) < 3) return
+        moved = true
+        const cur = slideRef.current
+        const rows = cur.rows ?? []
+        const rect = el.getBoundingClientRect()
+        const k = el.offsetHeight ? rect.height / el.offsetHeight : 1
+        const y = (ev.clientY - rect.top) / k
+        const grow = growAt(rows, heights, between, (y - top - gap / 2) / pair)
+        if (rows.every((r, i) => r.grow === grow[i])) return
+        store.setRows(cur.id, rows.map((r, i) => ({ ...r, grow: grow[i] })), `${cur.id}.grow`)
+      }
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        document.body.classList.remove('is-row-resizing')
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+    },
+    [store],
+  )
+  const onRowGapReset = useCallback(() => {
+    const s = slideRef.current
+    if (weighted(s.rows ?? [])) store.setRows(s.id, unweighted(s.rows ?? []))
+  }, [store])
+
   // ---------- 고른 부품의 도구 ----------
 
   const update = (id: string, fn: (b: Block) => Block) => store.updateBlock(slideRef.current.id, id, fn)
@@ -671,6 +726,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       press(e, (x, y) => startMove(b, x, y))
     },
     onGutterPointerDown,
+    onRowGapPointerDown,
+    onRowGapReset,
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>

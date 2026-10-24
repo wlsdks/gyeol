@@ -47,7 +47,7 @@ const PROTOCOL_WORDS = [
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
   // 부품 장
-  'blocks', 'span', 'look', 'effect',
+  'blocks', 'span', 'look', 'effect', 'rowGrow',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
   'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash',
@@ -174,6 +174,7 @@ const TOOLS = [
       '- move_block {slide, block, 자리} 부품을 옮긴다. 글은 부품과 함께 간다. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다.',
       '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
       '- set_spans {slide, block, spans} 그 부품이 있는 줄의 칸 너비. blockRules.spans에서 그 줄의 부품 수에 맞는 것을 고른다.',
+      '- set_row_grow {slide, grow} 부품 장의 줄 높이 비중(1~100의 정수, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다. 지금 비중은 모양의 rowGrow(없으면 똑같이). 비중대로면 잘리는 줄은 잘리지 않을 높이로 묶인다.',
     ].join('\n'),
     inputSchema: {
       type: 'object',

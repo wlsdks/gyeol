@@ -158,6 +158,11 @@ export interface BlockRow {
   id: string
   blocks: Block[]
   spans?: number[]
+  /**
+   * 줄 높이의 비중(1~100). 사람이 줄 사이를 끌어 정한다. 모든 줄에 있을 때만 이 비중으로 나누고,
+   * 줄이 늘거나 줄어 하나라도 없으면 예전처럼 잘리지 않을 높이에 남는 높이를 똑같이 나눈다
+   */
+  grow?: number
 }
 
 export interface Slide {

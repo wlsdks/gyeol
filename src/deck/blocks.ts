@@ -892,10 +892,21 @@ export function blockMinH(block: Block, span: number): number {
 /** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */
 export const blockPrefH = (block: Block) => blockMinH(block, BLOCKS[block.type].prefSpan)
 
-const rowMinH = (row: BlockRow) => {
+export const rowMinH = (row: BlockRow) => {
   const spans = spansOf(row)
   return Math.max(0, ...row.blocks.map((b, i) => blockMinH(b, spans[i])))
 }
+
+/** 줄 높이 비중의 범위 (BlockRow.grow) */
+export const GROW_MIN = 1
+export const GROW_MAX = 100
+export const isGrow = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= GROW_MIN && (v as number) <= GROW_MAX
+
+/** 사람이 줄 높이를 정했는지: 줄이 둘 이상이고 모든 줄에 비중이 있을 때 */
+export const weighted = (rows: BlockRow[]) => rows.length > 1 && rows.every((r) => isGrow(r.grow))
+
+/** 줄 높이를 똑같이 나누던 대로 되돌린 줄들 */
+export const unweighted = (rows: BlockRow[]): BlockRow[] => rows.map(({ grow: _, ...r }) => r)
 
 /** 한 칸의 자리: 몇째 줄, 12칸 격자의 어디서부터 몇 칸 */
 export interface CellBox {
@@ -931,9 +942,11 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
   // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다.
-  // --bk-r1..: 그래도 글이 넘치는 줄은 fitBlocks가 남는 높이를 가져다 이 줄의 바닥을 올린다
+  // --bk-r1..: 그래도 글이 넘치는 줄은 fitBlocks가 남는 높이를 가져다 이 줄의 바닥을 올린다.
+  // 사람이 줄 높이를 정했으면(weighted) 그 비중으로 나눈다(fr). 비중대로면 잘리는 줄은 격자가 잘리지 않을 높이로 묶고 나머지를 나눈다
+  const w = weighted(rows)
   return {
-    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), auto)`).join(' '),
+    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), ${w ? `${r.grow}fr` : 'auto'})`).join(' '),
   }
 }
 
@@ -951,8 +964,36 @@ export function cellStyle(b: CellBox): Record<string, string> {
 export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): number[] {
   const free = areaH - Math.max(0, rows.length - 1) * gap
   const mins = rows.map(rowMinH)
+  if (weighted(rows)) {
+    // 격자의 fr 나누기와 같게: 비중대로 나누다 잘리지 않을 높이보다 낮아지는 줄은 그 높이로 묶고, 남은 줄끼리 다시 나눈다
+    const fixed = new Set<number>()
+    for (;;) {
+      const left = free - [...fixed].reduce((a, i) => a + mins[i], 0)
+      const g = rows.reduce((a, r, i) => a + (fixed.has(i) ? 0 : r.grow!), 0)
+      const unit = g ? Math.max(0, left) / g : 0
+      const low = rows.map((_, i) => i).filter((i) => !fixed.has(i) && mins[i] > rows[i].grow! * unit)
+      if (!low.length) return rows.map((r, i) => (fixed.has(i) ? mins[i] : r.grow! * unit))
+      low.forEach((i) => fixed.add(i))
+    }
+  }
   const spare = Math.max(0, free - mins.reduce((a, m) => a + m, 0))
   return mins.map((m) => m + (rows.length ? spare / rows.length : 0))
+}
+
+/**
+ * 줄 사이(between째 줄과 그 아래 줄)를 끌어 둘의 높이를 나눈 비중. 두 줄 높이의 합은 그대로 두고,
+ * 위 줄이 차지하는 몫(part, 0~1)을 24분의 1에 붙인 뒤 잘리지 않을 높이 안으로 줄인다.
+ * heights는 지금 그려진 줄 높이(px). 모든 줄의 비중을 높이의 백분율로 돌려준다
+ */
+export function growAt(rows: BlockRow[], heights: number[], between: number, part: number): number[] {
+  const pair = heights[between] + heights[between + 1]
+  const lo = rowMinH(rows[between]) / pair
+  const hi = 1 - rowMinH(rows[between + 1]) / pair
+  const snapped = Math.round(part * 24) / 24
+  const f = lo > hi ? heights[between] / pair : Math.min(hi, Math.max(lo, snapped))
+  const hs = heights.map((h, i) => (i === between ? pair * f : i === between + 1 ? pair * (1 - f) : h))
+  const total = hs.reduce((a, h) => a + h, 0) || 1
+  return hs.map((h) => Math.min(GROW_MAX, Math.max(GROW_MIN, Math.round((h / total) * 100))))
 }
 
 /** 줄들을 잘리지 않게 놓는 데 드는 높이: 줄마다 가장 낮은 높이와 줄 사이 */
@@ -1298,6 +1339,10 @@ const strings = (v: unknown): Record<string, string> =>
  * lost를 주면 버린 것 중 사람이 넣었을 것(이 버전이 모르는 부품, 모양, 움직임, 칸과 정한 개수를 넘는 부품)을 센다.
  * 새 버전에서 만든 발표를 이 버전이 알아보는 데 쓴다 (compat.ts)
  */
+/** 이 버전이 아는 줄과 부품의 값. 이 밖의 값은 새 버전에서 더한 것이라, 예전 버전이 고치면 빠진다 */
+const ROW_KEYS = ['id', 'blocks', 'spans', 'grow']
+const BLOCK_KEYS = ['id', 'type', 'fields', 'items', 'hints', 'look', 'effect', 'variant', 'highlight']
+
 export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
   if (!Array.isArray(rows)) return []
   const drop = (n = 1) => lost && (lost.n += n)
@@ -1334,6 +1379,7 @@ export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
       if (typeof b.variant === 'string' && BLOCKS[type].variants?.some((v) => v.id === b.variant)) block.variant = b.variant
       else if (b.variant !== undefined) drop()
       if (Number.isInteger(b.highlight)) block.highlight = b.highlight as number
+      drop(Object.keys(b).filter((k) => !BLOCK_KEYS.includes(k)).length)
       blocks.push(block)
       left--
     }
@@ -1343,6 +1389,9 @@ export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
       // 정해진 비율이 아니면 버리고 기본 비율로
       if (spanChoices(row).some((c) => c.join() === (r.spans as number[]).join())) row.spans = r.spans as number[]
     }
+    if (isGrow(r.grow)) row.grow = r.grow
+    else if (typeof r.grow === 'number') drop()
+    drop(Object.keys(r).filter((k) => !ROW_KEYS.includes(k)).length)
     out.push(row)
   }
   return out

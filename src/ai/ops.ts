@@ -20,17 +20,21 @@ import {
   effectOf,
   fitsHeight,
   insertAt,
+  isGrow,
   lookIssue,
   lookOf,
   makeBlock,
+  MAX_ROWS,
   needH,
   removeBlock,
   sameTarget,
   spanChoices,
   spansOf,
   targetOf,
+  unweighted,
   unwrapCompose,
   variantOfBlock,
+  weighted,
   whyNot,
   withLook,
   type DropTarget,
@@ -97,6 +101,8 @@ export type Op =
   | { op: 'set_block'; slide: SlideRef; block: BlockRef; variant?: string; look?: BlockLook; effect?: BlockEffect; count?: number; highlight?: number }
   /** 그 부품이 있는 줄의 칸 너비 (12 기준, 카탈로그 blockRules.spans 중 하나) */
   | { op: 'set_spans'; slide: SlideRef; block: BlockRef; spans: number[] }
+  /** 부품 장의 줄 높이 비중 (1~100, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다 */
+  | { op: 'set_row_grow'; slide: SlideRef; grow: number[] }
 
 export type OpName = Op['op']
 export const OP_NAMES: OpName[] = [
@@ -115,6 +121,7 @@ export const OP_NAMES: OpName[] = [
   'move_block',
   'set_block',
   'set_spans',
+  'set_row_grow',
 ]
 
 export interface ChangeRequest {
@@ -264,6 +271,12 @@ export function parseOp(v: unknown): Op | null {
     case 'set_block':
     case 'set_spans':
       return parseBlockOp(v)
+    case 'set_row_grow': {
+      const slide = refOrNull(v.slide)
+      if (!only(v, ['op', 'slide', 'grow']) || !slide) return null
+      if (!Array.isArray(v.grow) || v.grow.length > MAX_ROWS || !v.grow.every(isGrow)) return null
+      return { op: 'set_row_grow', slide, grow: v.grow as number[] }
+    }
     case 'add_slide': {
       if (!only(v, ['op', 'after', 'layout', 'role', 'as'])) return null
       const after = refOrNull(v.after ?? null)
@@ -687,6 +700,20 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         const after = rows.map((x, j) => (j === r ? { ...x, spans: op.spans } : x))
         if (grows(rows, after, areaOf(s))) return fail('no_room')
         put(i, { ...s, rows: after })
+        return done
+      }
+      case 'set_row_grow': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const rows = s.rows ?? []
+        if (!op.grow.length) {
+          if (!weighted(rows)) return fail('no_change')
+          put(i, { ...s, rows: unweighted(rows) })
+          return done
+        }
+        if (rows.length < 2 || op.grow.length !== rows.length) return fail('out_of_range')
+        if (weighted(rows) && rows.every((r, j) => r.grow === op.grow[j])) return fail('no_change')
+        // 비중대로면 잘리는 줄은 격자가 잘리지 않을 높이로 묶는다. 그래서 글이 잘리지 않는다
+        put(i, { ...s, rows: rows.map((r, j) => ({ ...r, grow: op.grow[j] })) })
         return done
       }
       case 'set_hint': {

@@ -383,8 +383,41 @@
   transition: opacity 0.12s;
 }
 
+/* 줄 사이 손잡이: 줄 사이 틈에 놓이고, 끌면 위아래 줄이 높이를 나눠 갖는다 */
+.bk-rowgap {
+  position: relative;
+  z-index: 5;
+  align-self: start;
+  height: var(--bk-gap);
+  margin-top: calc(var(--bk-gap) * -1);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.bk-rowgap-grip {
+  position: absolute;
+  top: 50%;
+  right: 30%;
+  left: 30%;
+  height: 4px;
+  border-radius: 2px;
+  background: #3a6ff8;
+  opacity: 0;
+  translate: 0 -50%;
+  scale: 1 calc(1 / var(--vs, 1));
+  transition: opacity 0.12s;
+}
+
+/* 본문 위에 손을 올리면 칸 사이, 줄 사이 손잡이가 옅게 보여 끌 수 있는 곳을 알린다. 손잡이 위에서는 진하게 */
+.bk-area.is-live:hover .bk-gutter-grip,
+.bk-area.is-live:hover .bk-rowgap-grip {
+  opacity: 0.22;
+}
+
 .bk-gutter:hover .bk-gutter-grip,
-body.is-block-resizing .bk-gutter-grip {
+.bk-rowgap:hover .bk-rowgap-grip,
+body.is-block-resizing .bk-gutter-grip,
+body.is-row-resizing .bk-rowgap-grip {
   opacity: 1;
 }
 

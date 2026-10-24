@@ -17,6 +17,9 @@ export interface BlockEdit {
   incoming: boolean
   onCellPointerDown(e: PointerEvent<HTMLElement>, block: Block): void
   onGutterPointerDown(e: PointerEvent<HTMLElement>, rowId: string, gutter: number): void
+  /** between째 줄과 그 아래 줄 사이를 끌어 두 줄의 높이를 나눈다. 두 번 누르면 똑같이 되돌린다 */
+  onRowGapPointerDown(e: PointerEvent<HTMLElement>, between: number): void
+  onRowGapReset(): void
   /** 부품이 하나도 없을 때 가운데에 보이는 것 */
   empty(): ReactNode
   areaRef(el: HTMLDivElement | null): void

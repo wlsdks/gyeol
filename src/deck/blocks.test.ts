@@ -1,6 +1,7 @@
 import { BLOCK_HEIGHTS } from './blockHeights'
 import { describe, expect, it } from 'vitest'
 import {
+  BLOCK_GAP,
   allBlocks,
   autoTarget,
   BLOCK_GROUPS,
@@ -28,6 +29,9 @@ import {
   MAX_ROWS,
   removeBlock,
   rowHeights,
+  growAt,
+  unweighted,
+  weighted,
   shownLook,
   spansAt,
   spansOf,
@@ -249,6 +253,34 @@ describe('자리 정하기', () => {
     const mins = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 0)
     const extra = three.map((h, i) => h - mins[i])
     expect(Math.max(...extra) - Math.min(...extra)).toBeLessThan(1)
+  })
+
+  it('사람이 줄 높이를 정하면 그 비중으로 나누되, 줄마다 잘리지 않을 높이는 지킨다', () => {
+    const two = [row(block('message', 'm')), row(block('bars', 'b'))]
+    const [lowM, lowB] = rowHeights(two, 0)
+    const areaH = 1080 - FRAME.y - FRAME.bottom
+    const free = areaH - BLOCK_GAP
+    // 비중이 하나라도 빠지면 예전처럼 똑같이 나눈다
+    expect(weighted([{ ...two[0], grow: 30 }, two[1]])).toBe(false)
+    const even = rowHeights([{ ...two[0], grow: 50 }, { ...two[1], grow: 50 }], areaH)
+    expect(even[0]).toBeCloseTo(free / 2, 0)
+    // 위 줄을 아주 작게 해도 잘리지 않을 높이 아래로는 내려가지 않는다
+    const squeezed = rowHeights([{ ...two[0], grow: 1 }, { ...two[1], grow: 99 }], areaH)
+    expect(squeezed[0]).toBeCloseTo(lowM, 0)
+    expect(squeezed[0] + squeezed[1]).toBeCloseTo(free, 0)
+    // 줄 사이를 끌면 위아래 두 줄이 나눠 갖고 24분의 1에 붙는다. 잘리지 않을 높이 밖으로는 못 끈다
+    const heights = rowHeights(two, areaH)
+    const mid = Math.round(((lowM / free + 1 - lowB / free) / 2) * 24) / 24
+    const g = growAt(two, heights, 0, mid + 0.01)
+    expect(g[0] / (g[0] + g[1])).toBeCloseTo(mid, 1)
+    const g2 = growAt(two, heights, 0, 0)
+    expect(g2[0] / (g2[0] + g2[1])).toBeCloseTo(lowM / free, 1)
+    expect(lowB).toBeGreaterThan(0)
+    // 파일에서 읽을 때 범위 밖의 비중은 버린다
+    const read = cleanRows([{ id: 'a', blocks: [block('message')], grow: 40 }, { id: 'b', blocks: [block('bars')], grow: 400 }])
+    expect(read.map((r) => r.grow)).toEqual([40, undefined])
+    expect(weighted(read)).toBe(false)
+    expect(unweighted([{ ...two[0], grow: 40 }]).every((r) => r.grow === undefined)).toBe(true)
   })
 
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {

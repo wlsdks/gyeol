@@ -196,6 +196,27 @@ describe('부품 장', () => {
     expect(allText(moved.deck)).toEqual(allText(composed))
   })
 
+  it('줄 높이 비중을 바꾸고 되돌린다. 글은 그대로', () => {
+    const two = applyOps(composed, [{ op: 'add_block', slide: cshape().id, type: 'callout', row: 1 }]).deck
+    const sh = toShape(two).slides[at]
+    expect(sh.rowGrow).toBeUndefined()
+    const { deck: next, results } = applyOps(two, [
+      { op: 'set_row_grow', slide: sh.id, grow: [70, 30] },
+      { op: 'set_row_grow', slide: sh.id, grow: [70, 30] },
+      { op: 'set_row_grow', slide: sh.id, grow: [50, 30, 20] },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'no_change', 'out_of_range'])
+    expect(next.slides[at].rows!.map((r) => r.grow)).toEqual([70, 30])
+    expect(toShape(next).slides[at].rowGrow).toEqual([70, 30])
+    expect(allText(next)).toEqual(allText(two))
+    const back = applyOps(next, [{ op: 'set_row_grow', slide: sh.id, grow: [] }])
+    expect(back.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(toShape(back.deck).slides[at].rowGrow).toBeUndefined()
+    // 범위 밖의 값은 제안으로 받지 않는다
+    expect(parseOp({ op: 'set_row_grow', slide: sh.id, grow: [0, 100] })).toBeNull()
+    expect(parseOp({ op: 'set_row_grow', slide: sh.id, grow: [50, 50], note: 'x' })).toBeNull()
+  })
+
   it('빈 부품만 빼고, 글이 있는 부품은 빼지 않는다', () => {
     const sh = cshape()
     const { deck: next, results } = applyOps(composed, [
