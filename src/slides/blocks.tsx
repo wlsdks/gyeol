@@ -660,7 +660,7 @@ function foldsOf(type: BlockType): ReadonlySet<string> {
   return m
 }
 
-function BlockBody({ block }: { block: Block }) {
+function BlockBody({ block, span }: { block: Block; span: number }) {
   const ctx = useSlide()
   const opened = useContext(BlockEditContext)?.opened
   // 편집기에서 '칸 더하기'로 연 칸은 비어 있어도 그린다
@@ -691,6 +691,7 @@ function BlockBody({ block }: { block: Block }) {
         canRemoveItem: !!spec.items && blockItems(block).length > spec.items.min,
         fieldPrefix: blockFieldPrefix(block.id),
         folds,
+        span,
       }}
     >
       <div className="bk-in">
@@ -724,7 +725,7 @@ function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
       data-row={box.row}
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
     >
-      {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} />}
+      {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} span={box.span} />}
       {/* 끌어서 옮기는 손잡이: 칸 왼쪽 위에 붙는 이름표. 글 칸이 부품을 거의 덮어도 잡을 데가 있게 */}
       {live && !slot && (
         <span className="bk-handle" title="끌어서 옮기기" aria-hidden="true">

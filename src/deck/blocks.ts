@@ -462,6 +462,7 @@ const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; 
   timeline: { minSpan: 8, prefSpan: 12, weight: 1.2, motion: '선을 따라 차례로 나타나요' },
   compare: { minSpan: 8, prefSpan: 12, weight: 1.5, motion: '두 면이 차례로 들어와요' },
   matrix: { minSpan: 6, prefSpan: 8, weight: 1.8, motion: '네 칸이 차례로 나타나요' },
+  position: { minSpan: 8, prefSpan: 12, weight: 1.8, motion: '점이 하나씩 제자리에 내려앉아요' },
   pricing: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '안마다 차례로 올라와요' },
   table: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '줄마다 차례로 들어와요' },
   logos: { minSpan: 6, prefSpan: 12, weight: 1.2, motion: '로고가 차례로 나타나요' },
@@ -500,7 +501,7 @@ export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
   { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
   { name: '차트', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel'] },
   { name: '흐름과 일정', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
-  { name: '비교와 표', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'pricing', 'table'] },
+  { name: '비교와 표', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'position', 'pricing', 'table'] },
   { name: '그림과 사람', types: ['image', 'people', 'logos'] },
 ]
 
@@ -801,6 +802,8 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   ratio: () => 220,
   spark: () => 240,
   matrix: () => 380,
+  // 점과 이름표가 판 위에 흩어져서, 낮으면 이름표끼리 비킬 자리가 없다 (편집할 때는 점수 줄까지 붙는다)
+  position: () => 460,
   swot: () => 420,
   image: () => 200,
 }

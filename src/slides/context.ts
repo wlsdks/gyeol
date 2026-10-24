@@ -32,6 +32,8 @@ export interface SlideCtx {
    * 부품 칸은 발표할 때의 높이에 맞춰 놓으므로, 빈 안내를 다 펼치면 이웃 부품을 덮는다. 고른 부품의 '칸 더하기'로 연다
    */
   folds?: ReadonlySet<string>
+  /** 부품 장의 부품 안: 칸 너비 (12 기준). 자리를 어림해야 하는 그림(위치 비교의 이름표)이 쓴다 */
+  span?: number
 }
 
 export const SlideContext = createContext<SlideCtx | null>(null)

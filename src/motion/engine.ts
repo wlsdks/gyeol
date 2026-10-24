@@ -538,6 +538,26 @@ export function motionEngine(): MotionEngine {
             pop(el.querySelector('.vs-change'), reach('b', ((i + 0.5) / all.length) * 100) + 120)
           })
           end = from.b + draw / L.speed
+        } else if (variant === 'dots') {
+          // 점 두 개: 앞 값 점이 맺히고, 뒤 값 점이 앞 값 자리에서 제 자리까지 미끄러진다. 잇는 길은 점을 따라 늘어난다
+          end = items('.vs-row', t, (el, at) => {
+            fade(el.querySelector('.vs-label'), at, 400)
+            pop(el.querySelector('.vs-d.is-a'), at + 60)
+            fade(el.querySelector('.vs-num.is-a'), at + 60, 400)
+            const a = el.style.getPropertyValue('--a')
+            const b = el.style.getPropertyValue('--b')
+            const dot = el.querySelector('.vs-d.is-b')
+            if (dot && a && b) {
+              run(anims, dot, [{ left: `${a}%`, opacity: 0 }, { left: `${a}%`, opacity: 1, offset: 0.12 }, { left: `${b}%`, opacity: 1 }], s(at + 160), L.grow)
+              const span = el.querySelector('.vs-span')
+              // 줄어든 줄은 오른쪽(앞 값)에서 왼쪽으로, 늘어난 줄은 왼쪽에서 오른쪽으로 늘어난다
+              const origin = el.classList.contains('is-down') ? 'right center' : 'left center'
+              if (span) run(anims, span, [{ scale: '0 1', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at + 160), L.grow)
+            } else pop(dot, at + 160)
+            rise(el.querySelector('.vs-num.is-b'), at + 240, L.y * 0.4)
+            count(el.querySelector('.vs-num.is-b'), at + 240)
+            pop(el.querySelector('.vs-change'), at + 520)
+          }, L.step * 1.2)
         } else {
           // 항목마다 앞 값 막대가 서고, 바로 옆에서 뒤 값 막대가 더 높이(또는 낮게) 따라 선다. 바뀐 비율은 둘이 다 선 뒤에
           end = items('.vs-col', t, (el, at) => {
@@ -714,6 +734,26 @@ export function motionEngine(): MotionEngine {
         })
         const hl = one('.mx-cell.is-hl')
         if (hl) run(anims, hl, [{ backgroundColor: 'transparent' }], s(t + 260 + L.step * 4), { easing: OUT, duration: d(700) })
+        break
+      }
+      case 'position': {
+        const t = head()
+        // 축이 왼쪽 아래에서 펼쳐지고, 점이 하나씩 위에서 제자리로 내려앉는다(살짝 튀며). 강조할 점은 맨 나중에, 내려앉은 뒤 고리
+        const plot = one('.pm-plot')
+        if (plot) run(anims, plot, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(-40px -40px -40px -40px)' }], s(t), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(700) })
+        fade(one('.pm-y'), t + 200, 500)
+        fade(one('.pm-x'), t + 200, 500)
+        const pts = $('.pm-pt')
+        const ordered = pts.filter((el) => !el.classList.contains('is-hl')).concat(pts.filter((el) => el.classList.contains('is-hl')))
+        let at = t + 420
+        for (const el of ordered) {
+          const hl = el.classList.contains('is-hl')
+          run(anims, el.querySelector('.pm-dot') || el, [{ opacity: 0, translate: `0 ${-L.y * 1.4}px` }, { opacity: 1, offset: 0.25 }, { translate: '0 0' }], s(at), L.pop)
+          fade(el.querySelector('.pm-label'), at + 160, 500)
+          if (hl) pulse(el.querySelector('.pm-dot'), at + 380)
+          at += L.step * (hl ? 2 : 1.4)
+        }
+        fade(one('.s-source'), at + 200)
         break
       }
       case 'closing': {

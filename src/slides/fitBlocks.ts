@@ -6,6 +6,8 @@
  * 2. 그래도 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
  *
+ * 3. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
+ *
  * 앱과 내보낸 HTML(export/viewer.ts가 blockFitter의 소스를 그대로 넣는다)이 같이 쓴다. 그래서 안에서 바깥의 이름을 쓰지 않는다.
  * 부품의 잘리지 않는 높이를 잴 때(screens/measureBlocks.ts)도 이것으로 맞추고, 글 줄의 자리도 이것으로 본다.
  */
@@ -103,6 +105,57 @@ export function blockFitter() {
     return false
   }
 
+  /**
+   * 위치 비교의 이름표 자리를 그려진 크기로 다시 고른다. 그리기 전에 글 길이로 어림한 자리(layouts.tsx의 labelSides)를 먼저 보고,
+   * 앞의 점의 이름표나 다른 점을 덮거나 판 밖으로 나가면 오른쪽, 왼쪽, 위, 아래 차례로 겹치지 않는 자리를 찾는다. 없으면 어림한 자리
+   */
+  function labels(scope: ParentNode): void {
+    const plots = scope instanceof HTMLElement && scope.classList.contains('pm-plot') ? [scope] : Array.from(scope.querySelectorAll<HTMLElement>('.pm-plot'))
+    const SIDES = ['is-left', 'is-up', 'is-down']
+    const tries = [[], ['is-left'], ['is-up'], ['is-down'], ['is-left', 'is-up'], ['is-left', 'is-down']]
+    const set = (el: HTMLElement, on: string[]) => SIDES.forEach((c) => el.classList.toggle(c, on.indexOf(c) >= 0))
+    for (const plot of plots) {
+      if (!plot.clientWidth) continue
+      const pts = Array.from(plot.children).filter((c) => c instanceof HTMLElement && c.classList.contains('pm-pt') && !c.classList.contains('is-blank')) as HTMLElement[]
+      const P = plot.getBoundingClientRect()
+      const k = plot.offsetWidth ? P.width / plot.offsetWidth : 1
+      const gap = 6 * k
+      // 겹친 넓이 (떨어져야 할 틈까지 넣어서). 0이면 안 겹친다
+      const meet = (a: DOMRect, b: DOMRect) =>
+        Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left) + gap) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + gap)
+      // 판의 축(왼쪽, 아래 굵은 줄)은 넘지 않고, 위와 오른쪽은 판 둘레의 여백만큼 나가도 된다
+      const outside = (r: DOMRect) =>
+        Math.max(0, P.left + 4 * k - r.left) + Math.max(0, r.bottom - (P.bottom - 4 * k)) + Math.max(0, r.right - (P.right + 24 * k)) + Math.max(0, P.top - 24 * k - r.top)
+      const dots = pts.map((p) => p.querySelector<HTMLElement>('.pm-dot')?.getBoundingClientRect() ?? null)
+      const taken: DOMRect[] = []
+      pts.forEach((p, i) => {
+        const label = p.querySelector<HTMLElement>('.pm-label')
+        if (!label) return
+        // 어림한 자리는 그릴 때 data-pm-side에 적어 둔다: 다시 맞출 때(글꼴이 오거나 글자가 줄 때) 거기서부터 다시 고른다
+        const first = (p.dataset.pmSide ?? '').split(' ').filter(Boolean)
+        // 겹치지 않는 첫 자리. 어디에 두어도 겹치면 가장 덜 겹치는 자리 (판 밖으로 나간 것은 크게 친다)
+        let pick = first
+        let best = Infinity
+        for (const o of [first, ...tries]) {
+          set(p, o)
+          const r = label.getBoundingClientRect()
+          let cost = outside(r) * r.height * 4
+          for (const t of taken) cost += meet(r, t)
+          dots.forEach((d, j) => {
+            if (j !== i && d) cost += meet(r, d) * 2
+          })
+          if (cost < best) {
+            best = cost
+            pick = o
+          }
+          if (cost === 0) break
+        }
+        set(p, pick)
+        taken.push(label.getBoundingClientRect())
+      })
+    }
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -124,15 +177,19 @@ export function blockFitter() {
       for (const c of cells) {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (!inner) continue
+        labels(inner)
         for (const k of steps) {
           if (!over(inner)) break
           c.style.setProperty('--bk-fit', String(k))
+          labels(inner)
         }
       }
     }
+    // 부품 장 밖(한 장을 다 쓰는 위치 비교)도
+    for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot'))) if (!plot.closest('.bk-area')) labels(plot)
   }
 
-  return { fit, lines, over }
+  return { fit, lines, over, labels }
 }
 
 let fitter: ReturnType<typeof blockFitter> | null = null
@@ -142,5 +199,7 @@ const shared = () => (fitter ??= blockFitter())
 export const fitBlocks = (root: ParentNode) => shared().fit(root)
 /** 칸 안쪽의 글 줄마다 글자가 그려지는 자리 (부품 높이 재기에서 겹침과 잘림을 볼 때) */
 export const blockTextLines = (inner: HTMLElement) => shared().lines(inner)
+/** 위치 비교의 이름표 자리를 그려진 크기로 다시 고른다 (scope 안의 판 모두, scope가 판이면 그것만) */
+export const placeLabels = (scope: ParentNode) => shared().labels(scope)
 /** 칸 안쪽이 넘치거나 글이 겹치는지 (fitBlocks가 글자를 줄이는 기준. 진단용) */
 export const blockOverflows = (inner: HTMLElement) => shared().over(inner)

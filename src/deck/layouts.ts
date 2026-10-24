@@ -429,6 +429,30 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  position: {
+    id: 'position',
+    name: '위치 비교',
+    description: '우리와 경쟁사가 두 기준에서 어디쯤인지 점으로 (포지셔닝 맵)',
+    highlight: { label: '강조할 점', fallback: 0 },
+    fields: [
+      title('위치가 말해 주는 결론'),
+      { key: 'xAxis', label: '가로 기준', hint: '오른쪽으로 갈수록 (예: 기능이 많음)' },
+      { key: 'yAxis', label: '세로 기준', hint: '위로 갈수록 (예: 구축이 빠름)' },
+      source,
+    ],
+    items: {
+      label: '점',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '이름', hint: '회사나 안 이름', hints: ['우리', 'A사', 'B사', 'C사', 'D사', 'E사'] },
+        { key: 'value', label: '가로 점수', hint: '0~10', hints: ['8', '4', '7', '3', '5', '6'] },
+        { key: 'meta', label: '세로 점수', hint: '0~10', hints: ['8', '6', '3', '4', '7', '2'] },
+        { key: 'body', label: '한 줄', hint: '짧은 설명', optional: true },
+      ],
+    },
+  },
   timeline: {
     id: 'timeline',
     name: '일정',
@@ -553,6 +577,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     variants: [
       { id: 'base', name: '묶은 막대' },
       { id: 'lines', name: '두 선' },
+      { id: 'dots', name: '점 두 개' },
     ],
     highlight: { label: '강조할 항목', fallback: -1 },
     fields: [
@@ -630,6 +655,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'table',
   'compare',
   'matrix',
+  'position',
   'pricing',
   'bars',
   'versus',
@@ -652,7 +678,7 @@ export const LAYOUT_GROUPS: { name: string; description: string; layouts: Layout
   { name: '결론과 메시지', description: '하고 싶은 말을 먼저', layouts: ['summary', 'statement', 'points'] },
   { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'versus', 'bridge', 'trend', 'share', 'funnel'] },
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
-  { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'pricing', 'table'] },
+  { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'position', 'pricing', 'table'] },
   { name: '자료와 사례', description: '화면, 사례, 고객사', layouts: ['imageText', 'case', 'logos'] },
   { name: '시작과 끝', description: '표지, 목차, 단락, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
 ]

@@ -139,6 +139,16 @@ export function extraSlides(): Slide[] {
       { title: '수도권이 전체 성장을 이끌었어요', h1: '권역', h2: '3분기 매출', h3: '지난해보다', h4: '비고', source: '영업관리 시스템, 9월 말 기준' },
     ),
     withItems(
+      makeSlide('position'),
+      [
+        { title: '우리', value: '8', meta: '8', body: '3개월, 원인 분석까지' },
+        { title: '대명시스템', value: '5', meta: '3', body: '6개월, 검사만' },
+        { title: '한결솔루션', value: '7', meta: '4' },
+        { title: '누리테크', value: '3', meta: '6' },
+      ],
+      { title: '기능과 구축 속도 모두 앞서는 곳은 우리뿐이에요', xAxis: '기능이 많음', yAxis: '구축이 빠름', source: '각 사 제안서와 공개 자료, 10월 기준' },
+    ),
+    withItems(
       makeSlide('matrix'),
       [
         { title: '틈틈이 하기', body: '견적 양식 통일, 단가표 공유 폴더' },

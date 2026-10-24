@@ -76,6 +76,34 @@
   position: relative;
 }
 
+/* 판 위에 자리로 찍는 항목(위치 비교의 점)은 편집할 때도 제자리에 */
+.slide.m-edit .pm-pt.it {
+  position: absolute;
+}
+
+/* 축 이름 칸(2×2 우선순위, 위치 비교): 칸은 격자라 화살표(::before, ::after)가 다음 줄로 밀린다. 글 옆 칸에 둔다 */
+.slide.m-edit :is(.mx-y, .pm-y).ed {
+  grid-template-columns: auto minmax(0, max-content);
+  justify-content: start;
+  justify-self: start;
+}
+
+.slide.m-edit :is(.mx-y, .pm-y).ed > * {
+  grid-area: 1 / 2;
+}
+
+.slide.m-edit :is(.mx-y, .pm-y).ed::before {
+  grid-area: 1 / 1;
+}
+
+.slide.m-edit :is(.mx-x, .pm-x).ed {
+  grid-template-columns: minmax(0, max-content) auto;
+}
+
+.slide.m-edit :is(.mx-x, .pm-x).ed::after {
+  grid-area: 1 / 2;
+}
+
 .it-remove {
   position: absolute;
   z-index: 5;
