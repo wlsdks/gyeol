@@ -1780,6 +1780,17 @@ select {
   grid-template-columns: 224px minmax(0, 1fr) 340px;
 }
 
+/* 화면에는 보이지 않고 화면 읽기 프로그램만 읽는 글 (장을 옮겼다는 알림 등) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* 슬라이드 목록 */
 .sl {
   display: flex;
