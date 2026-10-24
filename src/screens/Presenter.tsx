@@ -209,7 +209,8 @@ export function Presenter({ id }: { id: string }) {
               }
             }}
           >
-            {paused === null ? '멈춤' : '이어서'}
+            {/* 단추에는 지금 상태가 아니라 누르면 할 일을 쓴다 */}
+            {paused === null ? '시간 멈추기' : '이어 재기'}
           </button>
           <button
             type="button"
@@ -219,7 +220,8 @@ export function Presenter({ id }: { id: string }) {
               setPaused(paused === null ? null : Date.now())
             }}
           >
-            처음부터
+            {/* 장은 그대로 두고 지난 시간만 0부터 (장을 처음으로 돌리는 것으로 읽히지 않게) */}
+            시간 다시 재기
           </button>
         </div>
         <span className="pv-clock">{new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' }).format(tick)}</span>
