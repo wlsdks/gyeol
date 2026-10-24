@@ -203,7 +203,7 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
         </div>
         <Popover
           button={({ toggle, open }) => (
-            <button type="button" className="icon-btn" aria-label="더 보기" aria-expanded={open} onClick={toggle}>
+            <button type="button" className="icon-btn" aria-label={`${deck.title} 더 보기`} aria-expanded={open} onClick={toggle}>
               <MoreIcon />
             </button>
           )}
