@@ -1007,9 +1007,15 @@
 
 .bk-sp-sw {
   display: flex;
+  flex: none;
   align-items: baseline;
   gap: 16px;
-  margin-top: 18px;
+  margin-top: 10px;
+}
+
+/* 흐름 칸은 편집할 때만 보인다. 그만큼 선 그림이 줄어들게 해서, 잰 높이(발표 화면)의 칸에서도 부품 밖으로 나가지 않게 */
+.slide.m-edit .bk-sp-chart {
+  min-height: 14px;
 }
 
 .bk-sp-sk,
@@ -1041,7 +1047,9 @@
     column-gap: 72px;
   }
 
+  /* 글은 두 줄을 다 쓴다. 편집할 때만 보이는 흐름 칸은 선 아래에 두어, 낮은 칸에서 글과 겹치지 않게 */
   .bk-sp-text {
+    grid-row: 1 / -1;
     align-self: center;
   }
 
@@ -1052,7 +1060,7 @@
   }
 
   .bk-sp-sw {
-    grid-column: 1 / -1;
+    grid-column: 2;
   }
 }
 

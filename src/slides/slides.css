@@ -2205,8 +2205,8 @@
 .tn-canvas {
   position: absolute;
   inset: 104px 0 0;
-  /* 점 숫자의 자리를 그림 너비(cqi)로 재서 양끝에서 밖으로 나가지 않게 한다 */
-  container-type: inline-size;
+  /* 점 숫자의 자리를 그림 너비(cqi)로 재서 양끝에서 밖으로 나가지 않게 한다. 높이는 골짜기 숫자의 자리를 정할 때 본다 */
+  container-type: size;
 }
 
 .tn-meta {
@@ -2296,6 +2296,14 @@
 .tn-pt.is-below .tn-val {
   top: 24px;
   bottom: auto;
+}
+
+/* 그림이 낮으면 골짜기 아래에 숫자를 둘 자리가 없다(아래 시기 이름과 부딪힌다). 다른 점처럼 위에 */
+@container (max-height: 200px) {
+  .tn-pt.is-below .tn-val {
+    top: auto;
+    bottom: 24px;
+  }
 }
 
 .tn-num {
@@ -3337,7 +3345,8 @@
   flex: 1;
   min-height: 0;
   grid-auto-rows: minmax(min-content, 168px);
-  align-content: center;
+  /* 줄이 모자라면 아래로만 넘친다: 위로 넘치면 단위 줄을 덮는데 넘친 것으로 세지 않아서 글자 맞추기가 놓친다 */
+  align-content: safe center;
   padding-bottom: 24px;
 }
 

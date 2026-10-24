@@ -707,9 +707,10 @@ function Trend() {
   const drawn = pts.filter((p): p is { x: number; y: number } => p !== null)
   const line = drawn.map((p) => `${p.x.toFixed(2)},${(100 - p.y).toFixed(2)}`).join(' ')
   const area = drawn.length > 1 ? `${drawn[0].x.toFixed(2)},100 ${line} ${drawn[drawn.length - 1].x.toFixed(2)},100` : ''
+  // 골짜기의 숫자는 점 아래에. 바닥에 붙은 골짜기는 아래 시기 이름과 부딪혀서 위에 둔다
   const dip = (i: number) => {
     const [a, v, b] = [values[i - 1], values[i], values[i + 1]]
-    return i !== highlight && v !== null && a != null && b != null && v < a && v < b
+    return i !== highlight && v !== null && a != null && b != null && v < a && v < b && y(v) > 30
   }
   const at = (p: { x: number; y: number }) => ({ '--x': p.x.toFixed(2), '--y': p.y.toFixed(2) }) as CSSProperties
   return (

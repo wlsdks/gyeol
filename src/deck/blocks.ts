@@ -792,9 +792,10 @@ const NO_FIT = 999
 const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   // 세로 막대는 숫자와 이름 자리를 빼고 남는 높이가 막대라서, 낮으면 글은 멀쩡해도 막대가 거의 사라진다
   bars: (v) => (v === 'columns' ? 340 : 0),
-  versus: () => 360,
+  // 선 차트는 낮으면 선이 납작한 띠가 되고, 점 위아래의 숫자가 이름 줄로 내려앉는다
+  versus: (v) => (v === 'lines' ? 420 : 360),
   bridge: () => 380,
-  trend: () => 300,
+  trend: () => 380,
   share: (v) => (v === 'donut' ? 380 : 320),
   ring: () => 220,
   ratio: () => 220,
