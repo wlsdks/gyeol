@@ -1944,13 +1944,14 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  padding: 32px;
+  padding: 32px 24px;
   border-radius: 28px;
   background: var(--surface);
 }
 
+/* 로고는 글자가 든 가로로 긴 그림이 많아 너비가 크기를 정한다. 좁은 칸에서도 알아볼 수 있게 판의 옆 여백은 좁게 */
 .lg-img {
-  width: 78%;
+  width: 86%;
   height: 112px;
 }
 
