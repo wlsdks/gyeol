@@ -605,6 +605,32 @@ select {
   text-align: center;
 }
 
+/* 새 버전에서 만든 발표: 열지 않고 알린다 */
+.newer-deck {
+  gap: 12px;
+}
+
+.newer-deck p {
+  max-width: 34em;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.newer-h {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.newer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 /* ---------- 슬라이드 축소 표시 ---------- */
 
 .slide-frame {

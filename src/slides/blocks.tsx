@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCKS, blockFieldPrefix, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
+import { areaStyle, BLOCKS, blockFieldPrefix, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { Block, NativeBlockType } from '../deck/types'
@@ -766,7 +766,7 @@ export function BlockArea() {
   const { slide, mode } = useSlide()
   const edit = useContext(BlockEditContext)
   const live = mode === 'edit' && edit ? edit : null
-  const rows = live?.rows ?? slide.rows ?? []
+  const rows = live?.rows ?? knownRows(slide.rows ?? [])
   const boxes = cellBoxes(rows)
   const ref = useRef<HTMLDivElement | null>(null)
   // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비

@@ -1,0 +1,76 @@
+import { describe, expect, it } from 'vitest'
+import { useDeck } from '../store/deckStore'
+import { BLOCK_EFFECT_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS } from './blocks'
+import { sampleBlock } from './blockSamples'
+import { DECK_TYPES } from './blueprints'
+import { knownOnly, unknownParts } from './compat'
+import { createDeck, makeSlide } from './generate'
+import { createSampleDeck } from './sample'
+import { showcaseSlides } from './showcase'
+import type { Block, Deck, Slide } from './types'
+
+const compose = (...blocks: Block[]): Slide => ({ ...makeSlide('compose'), rows: [{ id: 'r1', blocks }] })
+const withSlides = (...slides: Slide[]): Deck => ({ ...createSampleDeck(), slides })
+
+describe('새 버전에서 만든 발표 알아보기', () => {
+  it('이 버전이 만드는 발표는 모두 그대로 연다', () => {
+    expect(unknownParts(createSampleDeck())).toBe(0)
+    expect(unknownParts(withSlides(...showcaseSlides()))).toBe(0)
+    for (const type of DECK_TYPES) {
+      const deck = createDeck({ type, audience: 'mixed', minutes: 30, method: 'live', title: '', org: '', presenter: '', theme: 'white' })
+      expect(unknownParts(deck), type).toBe(0)
+    }
+    // 모든 부품의 모든 모양, 바탕, 움직임
+    for (const type of BLOCK_TYPES) {
+      const b = sampleBlock(type)
+      for (const variant of BLOCKS[type].variants?.map((v) => v.id) ?? [undefined]) {
+        for (const look of BLOCK_LOOK_IDS) {
+          for (const effect of BLOCK_EFFECT_IDS) expect(unknownParts(withSlides(compose({ ...b, variant, look, effect }))), type).toBe(0)
+        }
+      }
+    }
+  })
+
+  it('모르는 부품, 모양, 움직임, 장, 저장 형식을 센다', () => {
+    const text = sampleBlock('text')
+    const raw = (b: Record<string, unknown>) => b as unknown as Block
+    expect(unknownParts(withSlides(compose(text, raw({ id: 'x', type: 'hologram', fields: { body: '글' }, items: [] }))))).toBe(1)
+    expect(unknownParts(withSlides(compose(raw({ ...text, effect: 'spiral', look: 'glass' }))))).toBe(2)
+    expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), variant: 'cards3d' }))))).toBe(1)
+    expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), items: [{ id: 'i', title: '하나', color: 'red' }] }))))).toBe(1)
+    expect(unknownParts(withSlides({ ...makeSlide('kpi'), layout: 'roadmap' as Slide['layout'] }))).toBe(1)
+    expect(unknownParts({ ...createSampleDeck(), version: 2 as 1 })).toBe(1)
+    expect(unknownParts({ ...createSampleDeck(), theme: { id: 'forest' as 'white' } })).toBe(1)
+    // 정한 개수(한 줄에 셋)를 넘는 부품: 예전 버전이면 빼고 저장한다
+    expect(unknownParts(withSlides(compose(...[1, 2, 3, 4].map((n) => ({ ...text, id: `t${n}` })))))).toBe(1)
+    // 꼴이 망가진 값은 사람이 넣은 것이 아니라 세지 않는다
+    expect(unknownParts(withSlides(compose(raw({ ...text, fields: { body: '글', bad: 3 } }))))).toBe(0)
+  })
+
+  it('아는 것만 남긴 사본은 그대로 열리고, 아는 부품의 글은 다 남는다', () => {
+    const text = { ...sampleBlock('text'), fields: { body: '남을 글' } }
+    const deck = withSlides(
+      makeSlide('cover'),
+      compose(text, { id: 'x', type: 'hologram', fields: { body: '새 부품' }, items: [] } as unknown as Block),
+      { ...makeSlide('kpi'), layout: 'roadmap' as Slide['layout'] },
+    )
+    const before = structuredClone(deck)
+    const known = knownOnly(deck)
+    expect(unknownParts(known)).toBe(0)
+    expect(known.slides.map((s) => s.layout)).toEqual(['cover', 'compose'])
+    expect(known.slides[1].rows?.[0].blocks).toEqual([text])
+    expect(deck).toEqual(before)
+  })
+
+  it('편집기는 그런 발표를 열지 않고 들고만 있다', () => {
+    const newer = withSlides(compose({ id: 'x', type: 'hologram', fields: { body: '새 부품' }, items: [] } as unknown as Block))
+    useDeck.getState().open(newer)
+    expect(useDeck.getState().deck).toBeNull()
+    expect(useDeck.getState().newer).toBe(newer)
+    const sample = createSampleDeck()
+    useDeck.getState().open(sample)
+    expect(useDeck.getState().deck?.id).toBe(sample.id)
+    expect(useDeck.getState().newer).toBeNull()
+    useDeck.getState().close()
+  })
+})

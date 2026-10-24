@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { canCompose, cleanDeckRows, composeFrom, copyBlock, unwrapCompose } from '../deck/blocks'
+import { unknownParts } from '../deck/compat'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
 import { isMetaKey } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
@@ -11,6 +12,8 @@ const COALESCE_MS = 1200
 
 interface DeckState {
   deck: Deck | null
+  /** 새 버전에서 만든 발표라 열지 않고 들고만 있는 것 (compat.ts). 편집기가 알림을 보인다 */
+  newer: Deck | null
   selectedId: string | null
   past: Deck[]
   future: Deck[]
@@ -86,6 +89,7 @@ export const useDeck = create<DeckState>((set, get) => {
 
   return {
     deck: null,
+    newer: null,
     selectedId: null,
     past: [],
     future: [],
@@ -93,12 +97,17 @@ export const useDeck = create<DeckState>((set, get) => {
     lastTime: 0,
 
     open(raw) {
+      // 새 버전에서 만든 발표: 이 버전이 모르는 부품이 있어서, 열어 고치면 그 부품과 안의 글을 빼고 저장하게 된다. 열지 않는다
+      if (unknownParts(raw)) {
+        set({ deck: null, newer: raw, selectedId: null, past: [], future: [], lastKey: null })
+        return
+      }
       // 가져온 파일이나 예전 저장본: 부품 장의 줄을 정해진 꼴로 맞춘다
       const deck = cleanDeckRows(raw)
-      set({ deck, selectedId: deck.slides[0]?.id ?? null, past: [], future: [], lastKey: null })
+      set({ deck, newer: null, selectedId: deck.slides[0]?.id ?? null, past: [], future: [], lastKey: null })
     },
     close() {
-      set({ deck: null, selectedId: null, past: [], future: [] })
+      set({ deck: null, newer: null, selectedId: null, past: [], future: [] })
     },
     select(id) {
       set({ selectedId: id, lastKey: null })

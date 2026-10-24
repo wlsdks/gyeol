@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { blockFieldPrefix } from '../../deck/blocks'
+import { knownOnly, unknownParts } from '../../deck/compat'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
 import { LAYOUTS, variantOf } from '../../deck/layouts'
 import { motionOf } from '../../deck/themes'
@@ -16,7 +17,8 @@ import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, p
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
-import { loadBestDeck, saveToBrowser, saveToFolder } from '../../store/persist'
+import { uid } from '../../deck/generate'
+import { loadBestDeck, persistNow, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
 import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
@@ -35,11 +37,13 @@ import { VersionPanel } from './Versions'
 
 export function Editor({ id }: { id: string }) {
   const deck = useDeck((s) => s.deck)
+  const newer = useDeck((s) => s.newer)
   const open = useDeck((s) => s.open)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (useDeck.getState().deck?.id === id) return
+    const now = useDeck.getState()
+    if (now.deck?.id === id || now.newer?.id === id) return
     loadBestDeck(id).then((d) => (d ? open(d) : setNotFound(true)))
   }, [id, open])
 
@@ -53,8 +57,44 @@ export function Editor({ id }: { id: string }) {
       </div>
     )
   }
+  if (newer?.id === id) return <NewerDeck deck={newer} />
   if (!deck || deck.id !== id) return <div className="center-msg">불러오는 중</div>
   return <EditorBody deck={deck} />
+}
+
+/**
+ * 새 버전에서 만든 발표. 여기서 고치면 이 버전이 모르는 부품과 그 안의 글이 빠지므로 열지 않는다.
+ * 원래 발표는 건드리지 않고, 급하면 아는 것만 남긴 사본을 만들어 고친다.
+ */
+function NewerDeck({ deck }: { deck: Deck }) {
+  const count = unknownParts(deck)
+  const known = knownOnly(deck)
+  const openCopy = async () => {
+    const now = Date.now()
+    const copy: Deck = { ...structuredClone(known), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
+    await persistNow(copy)
+    go({ name: 'edit', id: copy.id })
+  }
+  return (
+    <div className="center-msg newer-deck">
+      <h1 className="newer-h">새 버전에서 만든 발표예요</h1>
+      <p>
+        이 html-maker에는 없는 부품이나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
+        있어요.
+      </p>
+      <p>html-maker를 새 버전으로 바꾼 뒤 열어 주세요. 지금 꼭 고쳐야 하면, 없는 것만 뺀 사본을 만들어 고칠 수 있어요.</p>
+      <div className="newer-actions">
+        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'home' })}>
+          내 발표로 가기
+        </button>
+        {known.slides.length > 0 && (
+          <button type="button" className="btn btn-ghost" onClick={openCopy}>
+            빼고 사본 만들기
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -69,6 +109,8 @@ function useAutosave(deck: Deck) {
 
   const flush = useCallback(() => {
     const d = latest.current
+    // 폴더에서 새 버전의 발표가 들어와 편집기가 닫히는 중: 들고 있던 것으로 덮어쓰지 않는다 (고친 것은 버전으로 남겨 두었다)
+    if (useDeck.getState().newer?.id === d.id) return
     if (dirty.current.browser) {
       dirty.current.browser = false
       void saveToBrowser(d)

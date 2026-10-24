@@ -1102,30 +1102,45 @@ const strings = (v: unknown): Record<string, string> =>
 
 /**
  * 가져온 파일이나 예전 저장본의 줄과 부품을 정해진 꼴로 맞춘다. 모르는 부품은 빼고, 개수는 정한 만큼만.
- * 글은 지우지 않는다: 꼴이 맞지 않는 값만 버린다. 그래서 몇 번을 거쳐도 결과가 같다
+ * 글은 지우지 않는다: 꼴이 맞지 않는 값만 버린다. 그래서 몇 번을 거쳐도 결과가 같다.
+ * lost를 주면 버린 것 중 사람이 넣었을 것(이 버전이 모르는 부품, 모양, 움직임, 칸과 정한 개수를 넘는 부품)을 센다.
+ * 새 버전에서 만든 발표를 이 버전이 알아보는 데 쓴다 (compat.ts)
  */
-export function cleanRows(rows: unknown): BlockRow[] {
+export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
   if (!Array.isArray(rows)) return []
+  const drop = (n = 1) => lost && (lost.n += n)
   let left = MAX_BLOCKS
   const out: BlockRow[] = []
   for (const r of rows) {
-    if (out.length >= MAX_ROWS || !isRecord(r) || !Array.isArray(r.blocks)) continue
+    if (!isRecord(r) || !Array.isArray(r.blocks)) continue
+    if (out.length >= MAX_ROWS) {
+      drop(r.blocks.length)
+      continue
+    }
     const blocks: Block[] = []
     for (const b of r.blocks) {
-      if (blocks.length >= MAX_IN_ROW || left <= 0 || !isRecord(b) || typeof b.id !== 'string' || !(BLOCK_TYPES as unknown[]).includes(b.type)) continue
+      if (!isRecord(b) || typeof b.id !== 'string') continue
+      if (blocks.length >= MAX_IN_ROW || left <= 0 || !(BLOCK_TYPES as unknown[]).includes(b.type)) {
+        drop()
+        continue
+      }
       const type = b.type as BlockType
       const items = Array.isArray(b.items)
         ? b.items.filter(isRecord).map((it) => {
             const item = { id: typeof it.id === 'string' ? it.id : uid() } as Item
             for (const k of ITEM_KEYS) item[k] = typeof it[k] === 'string' ? (it[k] as string) : ''
+            drop(Object.keys(it).filter((k) => k !== 'id' && !(ITEM_KEYS as readonly string[]).includes(k)).length)
             return item
           })
         : []
       const block: Block = { id: b.id, type, fields: strings(b.fields), items }
       if (isRecord(b.hints)) block.hints = strings(b.hints)
       if ((BLOCK_LOOK_IDS as unknown[]).includes(b.look)) block.look = b.look as BlockLook
+      else if (b.look !== undefined) drop()
       if ((BLOCK_EFFECT_IDS as unknown[]).includes(b.effect)) block.effect = b.effect as BlockEffect
+      else if (b.effect !== undefined) drop()
       if (typeof b.variant === 'string' && BLOCKS[type].variants?.some((v) => v.id === b.variant)) block.variant = b.variant
+      else if (b.variant !== undefined) drop()
       if (Number.isInteger(b.highlight)) block.highlight = b.highlight as number
       blocks.push(block)
       left--
@@ -1148,4 +1163,14 @@ export function cleanRows(rows: unknown): BlockRow[] {
 export function cleanDeckRows<T extends { slides: Slide[] }>(deck: T): T {
   if (!deck.slides.some((s) => s.layout === 'compose' || s.rows !== undefined)) return deck
   return { ...deck, slides: deck.slides.map((s) => (s.layout === 'compose' || s.rows !== undefined ? { ...s, rows: cleanRows(s.rows) } : s)) }
+}
+
+/**
+ * 그릴 수 있는 부품만. 새 버전에서 만든 발표의 모르는 부품은 그리지 않는다
+ * (그런 발표는 편집기가 열지 않지만, 내 발표 목록의 작은 그림은 그린다)
+ */
+export function knownRows(rows: BlockRow[]): BlockRow[] {
+  const known = (b: Block) => BLOCK_TYPES.includes(b.type)
+  if (rows.every((r) => r.blocks.every(known))) return rows
+  return rows.map((r) => ({ ...r, blocks: r.blocks.filter(known), spans: undefined })).filter((r) => r.blocks.length)
 }

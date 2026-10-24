@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BLUEPRINTS } from '../deck/blueprints'
+import { knownOnly, unknownParts } from '../deck/compat'
 import { uid } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
 import type { Deck } from '../deck/types'
@@ -164,13 +165,15 @@ export function Home() {
 }
 
 function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: () => void; onDelete: () => void }) {
-  const first = deck.slides.find((s) => !s.hidden) ?? deck.slides[0]
+  // 새 버전에서 만든 발표면 이 버전이 그릴 수 있는 것만으로 작은 그림을 그린다
+  const shown = unknownParts(deck) ? knownOnly(deck) : deck
+  const first = shown.slides.find((s) => !s.hidden) ?? shown.slides[0]
   const typeName = BLUEPRINTS[deck.meta.type]?.name ?? ''
   return (
     <article className="card">
       <a className="card-link" href={`#/edit/${deck.id}`} aria-label={`${deck.title} 열기`}>
         <div className="card-thumb">
-          <FitSlide>{first && <SlideCanvas deck={deck} slide={first} mode="final" />}</FitSlide>
+          <FitSlide>{first && <SlideCanvas deck={shown} slide={first} mode="final" />}</FitSlide>
         </div>
       </a>
       <div className="card-info">
