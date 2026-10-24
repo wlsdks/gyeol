@@ -197,8 +197,9 @@ function Summary() {
 function Arrow() {
   return (
     <span className="cp-arrow" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M5 12h13M13 6l6 6-6 6" />
+      {/* 컴포넌트 사이의 화살표 이음표(blocks.tsx의 LinkGlyph)와 같은 모양 */}
+      <svg viewBox="0 0 48 48">
+        <path d="M9 24h28M27 13l11 11-11 11" />
       </svg>
     </span>
   )

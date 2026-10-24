@@ -1167,7 +1167,9 @@
 
 /* ---------- 비교 ---------- */
 
+/* 두 면 사이는 화살표가 혼자 쓰는 자리(--cp-mid). 화살표가 면의 가장자리에 걸치면 한쪽 면에 가려 깨져 보인다 */
 .cp {
+  --cp-mid: 96px;
   position: relative;
   display: grid;
   grid-template-rows: auto;
@@ -1186,7 +1188,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: calc(50% - var(--gap) / 2);
+  width: calc(50% - var(--cp-mid) / 2);
   border-radius: var(--r-panel);
   content: '';
 }
@@ -1206,7 +1208,7 @@
   z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: var(--gap);
+  column-gap: var(--cp-mid);
 }
 
 .cp-h {
@@ -1256,11 +1258,10 @@
   left: 50%;
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-ink);
+  width: 48px;
+  height: 48px;
+  /* 컴포넌트 사이의 이음표(blocks.css의 .bk-link)와 같은 색과 굵기 */
+  color: color-mix(in srgb, var(--ink) 50%, var(--bg));
   transform: translate(-50%, -50%);
 }
 
@@ -1270,30 +1271,32 @@
 }
 
 .cp-arrow svg {
-  width: 30px;
-  height: 30px;
+  width: 48px;
+  height: 48px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
+  stroke-width: 3;
 }
 
-/* 모양: 표. 면 없이 줄로만. 바뀐 뒤 쪽만 굵게, 머리에 강조색 줄 */
+/* 모양: 표. 면 없이 줄로만. 머리 위의 선은 앞은 옅게, 바뀐 뒤는 글자색으로 (넓은 강조색 막대는 장식이라 쓰지 않는다) */
 .va-table .cp {
+  --cp-mid: var(--gap);
   padding-bottom: 0;
 }
 
-.va-table .cp::before {
-  display: none;
-}
-
+.va-table .cp::before,
 .va-table .cp::after {
   top: 0;
   bottom: auto;
-  height: 6px;
+  height: 2px;
   border-radius: 0;
-  background: var(--accent);
+  background: var(--line);
+}
+
+.va-table .cp::after {
+  background: var(--ink);
 }
 
 .va-table .cp-h {
@@ -1320,12 +1323,13 @@
 }
 
 .va-table .cp-arrow {
-  left: calc(50% + var(--gap) / 2);
-  width: 48px;
-  height: 48px;
-  background: none;
-  color: var(--accent);
+  left: calc(50% + var(--cp-mid) / 2);
   transform: translate(0, -50%);
+}
+
+.va-table .cp-arrow svg {
+  width: 30px;
+  height: 30px;
 }
 
 /* ---------- 일정 ---------- */
