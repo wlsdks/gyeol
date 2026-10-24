@@ -224,6 +224,32 @@
   color: var(--ink);
 }
 
+/* 카드 안쪽 여백은 칸 너비를 따라: 장 한 장의 52px·56px를 반 칸에 셋 나란히 두면 카드 안 글 너비가 150px 남짓이라
+   설명이 서너 글자마다 꺾였다 */
+/* (쌓은 줄, 둘씩 두 줄은 각자 여백을 정한다: 낮은 자리수로 두어 그쪽이 이긴다) */
+.bk-kpi.va-cards :where(.kp:not([data-n='1'])) > .kp-item {
+  padding: clamp(28px, 3.4cqi, 52px) clamp(28px, 3.6cqi, 56px) clamp(28px, 3.6cqi, 56px);
+}
+
+/* 카드 모양(숫자마다 면)에 면을 고르면 면이 카드마다 갈라진다: 바깥 면 위에 카드 면을 또 깔면 상자 안에 상자가 들어 있고,
+   카드 안 여백과 바깥 면의 여백이 겹쳐 글이 좁은 띠에 끼었다. 옅은 면은 카드가 그 면 색, 진한 면은 카드마다 짙은 면.
+   숫자가 하나면 카드 모양도 면 없이 그리므로 바깥 면을 그대로 둔다 */
+.bk-kpi.va-cards:is(.bk-look-card, .bk-look-bold):has(.kp:not([data-n='1'])) {
+  background: none;
+}
+
+.bk-kpi.va-cards:is(.bk-look-card, .bk-look-bold):has(.kp:not([data-n='1'])) > .bk-in {
+  padding: 0;
+}
+
+.bk-kpi.va-cards.bk-look-card > .bk-in:has(> .kp:not([data-n='1'])) {
+  --surface: var(--bk-s);
+}
+
+.bk-kpi.va-cards.bk-look-bold > .bk-in:has(> .kp:not([data-n='1'])) {
+  --surface: var(--bk-a);
+}
+
 /* ---------- 레이아웃 부품: 그 레이아웃의 본문만, 칸을 꽉 채워 ---------- */
 
 .bk-layout > .bk-in {
@@ -2697,6 +2723,12 @@
   --kp-h: 1000px;
 }
 
+/* 숫자 사이(와 나누는 줄 둘레)는 칸 너비를 따라: 장 한 장의 112px를 반 칸(816px)에 그대로 두면 넷이 간격으로만 336px를 써서
+   숫자마다 120px 남짓이 남았다(이름과 설명이 서너 글자마다 꺾였다) */
+.va-base > .bk-in > .kp {
+  --kp-gap: clamp(48px, 6.5cqi, 112px);
+}
+
 .bk-in .kp-value.one-line {
   --kp-a: min(
     var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1),
@@ -2728,19 +2760,19 @@
    줄마다 150px(설명이 있으면 200px)을 넘으면 이름을 숫자 위에 두고 숫자가 칸 너비를 다 쓴다(--kp-tall).
    바꾸는 높이가 숫자 수와 설명마다 달라서, 칸 높이로 표시(--kp-stack, --kp-tall)만 붙이고 짜임은 그 표시를 물어 한 번만 쓴다(@container style) */
 @container bk (max-width: 1200px) and (min-height: 200px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+  .va-base > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
     --kp-stack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 240px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+  .va-base > .bk-in:has(> .kp[data-n='2'] .kp-body) {
     --kp-stack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 300px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+  .va-base > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
     --kp-stack: 1;
   }
 
@@ -2750,16 +2782,12 @@
 }
 
 @container bk (max-width: 1200px) and (min-height: 360px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+  .va-base > .bk-in:has(> .kp[data-n='3'] .kp-body) {
     --kp-stack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 400px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
-    --kp-stack: 1;
-  }
-
   :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
     --kp-tall: 1;
   }
@@ -2771,22 +2799,70 @@
   }
 }
 
-@container bk (max-width: 1200px) and (min-height: 480px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
-    --kp-stack: 1;
-  }
-}
-
 @container bk (max-width: 1200px) and (min-height: 600px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)),
   :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
     --kp-tall: 1;
   }
 }
 
-@container bk (max-width: 1200px) and (min-height: 800px) {
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
-    --kp-tall: 1;
+/* 카드 모양은 쌓는 높이가 80px 더 높다: 카드 면의 안쪽 여백(위아래 48px)과 카드 사이(16px)만큼 줄이 높아야
+   숫자 옆 이름과 설명 두 줄이 면 끝에 붙지 않는다 */
+@container bk (max-width: 1200px) and (min-height: 280px) {
+  .va-cards > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 320px) {
+  .va-cards > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 380px) {
+  .va-cards > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 440px) {
+  .va-cards > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-stack: 1;
+  }
+}
+
+/* 넷은 반 칸에서는 늘, 3분의 2 칸에서는 줄이 넉넉하면 둘씩 두 줄(2×2)로. 한 줄에 넷이면 반 칸에서 숫자마다 170px 남짓이라
+   이름과 설명이 꺾이고 숫자가 44px까지 작아졌다. 네 줄로 쌓으면 줄마다 숫자 옆에 두 줄 글이 빠듯하게 끼어 위아래가 붙었다.
+   둘씩 두면 숫자 칸이 두 배로 넓어져 이름은 한 줄, 숫자는 두 단계쯤 크다 */
+@container bk (max-width: 900px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4']) {
+    --kp-pair: 1;
+  }
+}
+
+/* 3분의 2 칸은 둘씩 두 줄이 들어가는 높이부터 (그보다 낮으면 한 줄에 넷, 칸마다 270px 남짓). 바꾸는 높이를 들어가는 높이보다
+   낮게 잡으면 그 사이 높이에서는 어느 쪽으로도 들어가지 않는다 */
+@container bk (max-width: 1200px) and (min-height: 400px) {
+  .va-base > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+    --kp-pair: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 460px) {
+  .va-cards > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+    --kp-pair: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 520px) {
+  .va-base > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-pair: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 580px) {
+  .va-cards > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-pair: 1;
   }
 }
 
@@ -2867,6 +2943,109 @@
     --kp-gy: 16px;
     --kp-iy: 48px;
     --kp-px: 80px;
+  }
+}
+
+/* 둘씩 두 줄: 칸마다 이름, 숫자, 설명을 위에서 아래로. 한 줄의 두 칸은 이름, 숫자, 설명 줄을 같이 써서(subgrid) 설명이 한 칸에만
+   있어도 이름과 숫자가 나란하고, 묶음은 줄 높이 가운데에(위아래 빈 줄이 남는 높이를 나눈다). 나누는 줄은 가운데에서 만나는 십자.
+   숫자 크기는 칸 너비와 줄 높이에서 이름과 설명의 자리(--kp-txt)를 뺀 것 가운데 작은 쪽 */
+@container style(--kp-pair: 1) {
+  /* 숫자는 62px 밑으로 내리지 않는다: 그보다 작으면 이름(30px)과 크기 차이가 없어 숫자 묶음으로 읽히지 않는다.
+     줄이 그만큼 높지 않으면 넘쳐서, 잰 높이(blockHeights.ts)가 그 높이를 가장 낮은 높이로 삼는다 (편집기가 더 낮게 두지 않는다) */
+  .bk-in > .kp[data-n='4'] {
+    --kp-iy: 56px;
+    --kp-px: 0px;
+    --kp-rg: 0px;
+    --kp-txt: calc(30px * 1.3 * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--scale, 1) + 20px);
+    --kp-w: calc((100cqi - var(--kp-gap)) / 2 - var(--kp-px));
+    --kp-h: max(62px, ((100cqh - var(--kp-rg)) / 2 - var(--kp-iy) - var(--kp-txt)) / (0.95 * var(--tall, 1)));
+    container: kp / size;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* 위아래 여백은 칸의 안쪽 여백이 아니라 빈 줄의 바닥으로: 칸(subgrid)의 안쪽 여백은 남는 높이가 모자라면 빈 줄(1fr)에 먹혀
+       이름이 나누는 줄에 붙었다. 바닥이 있으면 모자란 만큼 글이 칸 밖으로 밀려 넘침으로 잡힌다 */
+    --kp-pad: calc(var(--kp-iy) / 2);
+    grid-template-rows:
+      minmax(var(--kp-pad), 1fr) auto auto auto minmax(var(--kp-pad), 1fr) var(--kp-rg)
+      minmax(var(--kp-pad), 1fr) auto auto auto minmax(var(--kp-pad), 1fr);
+    align-content: stretch;
+    gap: 0 var(--kp-gap);
+    padding-bottom: 0;
+  }
+
+  /* 설명은 3분의 2 칸(칸마다 500px 남짓)에서 한 줄, 반 칸(380px 남짓)에서 두 줄로 잡는다. 늘 두 줄로 잡으면 넓은 칸에서 숫자가
+     괜히 작고, 늘 한 줄로 잡으면 반 칸에서 설명이 꺾이는 만큼 넘쳐 칸 전체 글자가 한 단계 줄었다 */
+  .bk-in > .kp[data-n='4']:has(.kp-body) {
+    --kp-line: calc(30px * 1.5 * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--scale, 1));
+    --kp-txt: calc(30px * 1.3 * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--scale, 1) + var(--kp-line) + clamp(0px, (900px - 100cqi) * 999, var(--kp-line)) + 40px);
+  }
+
+  .bk-in > .kp[data-n='4'] > .kp-item {
+    display: grid;
+    grid-row: 1 / span 5;
+    grid-template-rows: subgrid;
+    min-height: 0;
+    padding: 0 calc(var(--kp-px) / 2);
+    container-type: normal;
+  }
+
+  .bk-in > .kp[data-n='4'] > .kp-item:nth-child(n + 3) {
+    grid-row: 7 / span 5;
+  }
+
+  .bk-in > .kp[data-n='4'] > .kp-item > .kp-label {
+    grid-row: 2;
+  }
+
+  .bk-in > .kp[data-n='4'] > .kp-item > .kp-value {
+    grid-row: 3;
+    margin-top: 20px;
+    padding-top: 0;
+  }
+
+  .bk-in > .kp[data-n='4'] > .kp-item > .kp-body {
+    grid-row: 4;
+    margin-top: 20px;
+  }
+
+  /* 십자로 나누는 줄: 세로 줄은 오른쪽 칸 왼쪽에, 가로 줄은 아래 칸 위에. 줄 사이 반만큼 늘여 가운데에서 잇는다 */
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(3)::before {
+    content: none;
+  }
+
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(2)::before {
+    top: 0;
+    bottom: 0;
+  }
+
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(4)::before {
+    top: 0;
+    bottom: 0;
+  }
+
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(n + 3)::after {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--rule);
+    background: var(--line);
+    content: '';
+  }
+
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(3)::after {
+    right: calc(var(--kp-gap) / -2);
+  }
+
+  .va-base > .bk-in > .kp[data-n='4'] > .kp-item:nth-child(4)::after {
+    left: calc(var(--kp-gap) / -2);
+  }
+
+  /* 카드는 칸마다 면 하나 (줄 사이도 카드 사이만큼) */
+  .va-cards > .bk-in > .kp[data-n='4'] {
+    --kp-iy: 64px;
+    --kp-px: 72px;
+    --kp-rg: var(--kp-gap);
   }
 }
 

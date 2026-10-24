@@ -357,10 +357,17 @@ function demoBars(slide: Slide, n: number): number[] {
   return Array.from({ length: n }, (_, i) => DEMO_BARS[i % DEMO_BARS.length])
 }
 
+/** '단위:' 줄을 그릴지: 적었으면 늘, 비었으면 편집할 때만. 부품에서 비어 접힌 단위 칸이면 '단위:'만 남지 않게 뺀다 ('칸 더하기'로 열면 보인다) */
+function useUnitOpen(unit: string): boolean {
+  const { mode, folds } = useSlide()
+  return !!unit || (mode !== 'final' && !folds?.has('unit'))
+}
+
 function Bars() {
   const { slide, meta, mode } = useSlide()
   const items = useItems()
   const unit = readField(slide, meta, 'unit').trim()
+  const unitOpen = useUnitOpen(unit)
   // 세로 막대에서 보충 설명이 있는 막대만 바닥 줄이 올라가지 않게, 없는 막대에도 그만큼 자리를 둔다
   const anyMeta = items.some((it) => it.meta.trim())
   const values = items.map((it) => parseNumber(it.value))
@@ -372,7 +379,7 @@ function Bars() {
     <>
       <Head lead />
       <div className="s-body br-wrap">
-        {(mode !== 'final' || unit) && (
+        {unitOpen && (
           <p className="br-top">
             <span className="br-unit">
               단위: <T k="unit" as="span" oneLine />
@@ -440,6 +447,7 @@ function Versus() {
   const a = items.map((_, i) => read('meta', i))
   const b = items.map((_, i) => read('value', i))
   const unit = readField(slide, meta, 'unit').trim()
+  const unitOpen = useUnitOpen(unit)
   const known = [...a, ...b].filter((v): v is number => v !== null)
   // 막대: 0부터 가장 큰 값까지. 0보다 작은 값은 바닥에 붙인다
   const top = Math.max(0, ...known)
@@ -472,7 +480,7 @@ function Versus() {
             <i aria-hidden="true" />
             <Label k="valueTitle" fallback="올해" className="vs-key-t" />
           </span>
-          {(!final || unit) && (
+          {unitOpen && (
             <span className="vs-unit">
               단위: <T k="unit" as="span" oneLine />
             </span>
@@ -741,6 +749,7 @@ function Trend() {
   const values = items.map((it, i) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
   // 목표를 비워 두면 선을 긋지 않는다. 예시로 그릴 때만 예시 목표값에 흐리게
   const unit = readField(slide, meta, 'unit').trim()
+  const unitOpen = useUnitOpen(unit)
   const target = numberOrNull(readField(slide, meta, 'target')) ?? (demo ? numberOrNull(hintFor(slide.layout, slide.hints, 'target')) : null)
   const known = values.filter((v): v is number => v !== null)
   const all = target === null ? known : [...known, target]
@@ -766,10 +775,10 @@ function Trend() {
       <Head lead />
       <div className={cx('s-body tn', demo && 'is-demo')} style={{ '--n': items.length } as CSSProperties}>
         {/* 단위와 목표는 그래프 위 따로 둔 줄에. 선 끝에 이름표를 달면 최근 시기의 점(대개 강조한 점)과 부딪힌다 */}
-        {(!final || unit || target !== null) && (
+        {(unitOpen || target !== null) && (
           <div className="tn-meta">
             <span className="tn-unit">
-              {(!final || unit) && (
+              {unitOpen && (
                 <>
                   단위: <T k="unit" as="span" oneLine />
                 </>
@@ -924,6 +933,7 @@ function Share() {
   const pcts = values.map((v) => (sum > 0 ? (v / sum) * 100 : 0))
   const typedPct = texts.every((t) => !t || t.includes('%'))
   const unit = readField(slide, meta, 'unit').trim()
+  const unitOpen = useUnitOpen(unit)
   const pctText = (p: number) => (p > 0 && p < 1 ? '1% 미만' : `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`)
   let grey = 0
   const colors = items.map((_, i) => {
@@ -946,10 +956,10 @@ function Share() {
       <div className={cx('s-body sh', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
         {/* 띠는 합계를 위에, 도넛은 고리 가운데에. 단위 칸은 편집할 때만: 띠는 오른쪽 위에, 도넛은 고리 가운데 합계 아래에
             (도넛의 오른쪽 위는 이름표 목록이 차지해서 덮는다) */}
-        {!donut && (totalText || !final) && (
+        {!donut && (totalText || (!final && unitOpen)) && (
           <div className="sh-top">
             <span className="sh-sum">{totalText && `합계 ${totalText}`}</span>
-            {!final && (
+            {!final && unitOpen && (
               <span className="sh-unit">
                 단위: <T k="unit" as="span" oneLine />
               </span>
@@ -977,11 +987,11 @@ function Share() {
                 ) : null,
               )}
             </svg>
-            {(totalText || !final) && (
+            {(totalText || (!final && unitOpen)) && (
               <div className="sh-total">
                 {totalText && <span className="sh-total-k">합계</span>}
                 {totalText && <span className="sh-total-v">{totalText}</span>}
-                {!final && (
+                {!final && unitOpen && (
                   <span className="sh-unit">
                     단위: <T k="unit" as="span" oneLine />
                   </span>
