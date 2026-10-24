@@ -18,7 +18,7 @@ import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, merg
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
-// &fill=max 는 항목을 가장 많이, &fill=3 처럼 숫자면 그만큼(정한 범위 안에서). &bl=plain|card 는 부품의 바탕을 모두 그것으로 (잘리지 않는 높이를 잴 때, measureBlocks.ts)
+// &fill=max 는 항목을 가장 많이, &fill=default 는 새로 넣을 때의 수, &fill=3 처럼 숫자면 그만큼(정한 범위 안에서). &bl=plain|card 는 부품의 바탕을 모두 그것으로 (잘리지 않는 높이를 잴 때, measureBlocks.ts)
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
@@ -105,8 +105,14 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
     if (only && !only.includes(type)) return []
     const spec = BLOCKS[type]
     const sample = sampleBlock(type)
-    // &fill=max: 항목을 가장 많이 넣었을 때, &fill=3: 세 개. 예시 항목을 되풀이해 채운다
-    const count = !spec.items ? 0 : fill === 'max' ? spec.items.max : Math.min(spec.items.max, Math.max(spec.items.min, Number(fill) || 0))
+    // &fill=max: 항목을 가장 많이 넣었을 때, &fill=default: 새로 넣을 때의 수, &fill=3: 세 개. 예시 항목을 되풀이해 채운다
+    const count = !spec.items
+      ? 0
+      : fill === 'max'
+        ? spec.items.max
+        : fill === 'default'
+          ? spec.items.default
+          : Math.min(spec.items.max, Math.max(spec.items.min, Number(fill) || 0))
     const items =
       count && sample.items.length
         ? Array.from({ length: count }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))

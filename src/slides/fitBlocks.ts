@@ -9,6 +9,9 @@
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
  * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
  *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
+ * 3-2. 키운 뒤에도 칸에 높이가 남으면 줄이 쌓이는 부품(목록, 표, 일정 막대)은 줄 사이를 단계로 넓힌다(--bk-air, 캔버스 px).
+ *    글자를 더 키우면 장마다 글자 크기가 들쭉날쭉해지고, 가운데에 작게 모아 두면 위아래가 빈다. 줄 사이만 넓히면 칸을 채운다.
+ *    칸마다 따로 고른다: 항목 수가 다른 두 목록이 한 줄에 있어도 둘 다 칸 아래까지 닿는다. 이 값을 쓰지 않는 부품은 그대로다
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
@@ -19,6 +22,8 @@ export function blockFitter() {
   const steps = [0.92, 0.84, 0.76, 0.68]
   // 키울 때는 큰 것부터: 넘치지 않는 가장 큰 단계를 쓴다
   const ups = [1.24, 1.16, 1.08]
+  // 줄 사이를 넓히는 단계 (줄의 위아래에 더하는 캔버스 px). 넘게 벌리면 줄끼리 따로 떨어져 보여서 이만큼까지만
+  const airs = [24, 18, 12, 6]
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
@@ -202,6 +207,23 @@ export function blockFitter() {
     for (const inner of inners) labels(inner)
   }
 
+  /** 칸마다 줄 사이를 넘치지 않는 가장 넓은 단계로. 키우기(enlarge)가 끝난 뒤 */
+  function spread(cells: HTMLElement[]): void {
+    for (const c of cells) {
+      const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+      if (!inner) continue
+      let ok = false
+      for (const a of airs) {
+        c.style.setProperty('--bk-air', a + 'px')
+        if (!over(inner)) {
+          ok = true
+          break
+        }
+      }
+      if (!ok) c.style.removeProperty('--bk-air')
+    }
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -210,7 +232,10 @@ export function blockFitter() {
       const cells = Array.from(area.children).filter((c) => c instanceof HTMLElement && c.classList.contains('bk')) as HTMLElement[]
       area.style.removeProperty('--bk-sq')
       for (let i = 1; i <= 3; i++) area.style.removeProperty('--bk-r' + i)
-      for (const c of cells) c.style.removeProperty('--bk-fit')
+      for (const c of cells) {
+        c.style.removeProperty('--bk-fit')
+        c.style.removeProperty('--bk-air')
+      }
       // 안 보이는 장(자리를 재지 못한다)은 건너뛴다
       if (!cells.length || !area.clientHeight) continue
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
@@ -244,7 +269,10 @@ export function blockFitter() {
       }
       if (!squeezed) grow(area, cells, room)
       for (const c of cells) shrink(c, 0)
-      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) enlarge(cells)
+      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) {
+        enlarge(cells)
+        spread(cells)
+      }
       area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도

@@ -242,15 +242,16 @@
   margin-bottom: 32px;
 }
 
+/* 항목 사이는 칸에 높이가 남으면 넓힌다 (--bk-air, slides/fitBlocks.ts). 목록, 표, 일정 막대가 같이 쓴다 */
 .bk-list {
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: calc(26px + var(--bk-air, 0px) * 2);
 }
 
 .bk-list[data-n='5'],
 .bk-list[data-n='6'] {
-  gap: 18px;
+  gap: calc(18px + var(--bk-air, 0px) * 2);
 }
 
 .bk-li {
@@ -1126,7 +1127,7 @@
   grid-template-columns: minmax(110px, 0.32fr) minmax(0, 1fr);
   align-items: baseline;
   gap: 32px;
-  padding: calc(24px * var(--bk-fit, 1)) 0;
+  padding: calc(24px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 /* 줄 사이 선. 발표할 때 왼쪽에서부터 그어진다 */
@@ -1200,12 +1201,12 @@
 }
 
 .bk-rk-row {
-  padding: calc(26px * var(--bk-fit, 1)) 0;
+  padding: calc(26px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-bottom: 2px solid var(--line);
 }
 
 .bk-rk-list[data-n='4'] .bk-rk-row {
-  padding: calc(18px * var(--bk-fit, 1)) 0;
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 .bk-rk-t {
@@ -1456,7 +1457,7 @@
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  padding: calc(18px * var(--bk-fit, 1)) 0;
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-top: 2px solid var(--line);
 }
 
@@ -1622,7 +1623,7 @@
 
 .bk-gt-row {
   align-items: center;
-  padding: calc(16px * var(--bk-fit, 1)) 0;
+  padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-top: 2px solid var(--line);
 }
 
@@ -1632,7 +1633,7 @@
 
 .bk-gt-list[data-n='5'] .bk-gt-row,
 .bk-gt-list[data-n='6'] .bk-gt-row {
-  padding: calc(11px * var(--bk-fit, 1)) 0;
+  padding: calc(11px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 .bk-gt-t {
@@ -1774,7 +1775,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
-  padding: 18px 0;
+  padding: calc(18px + var(--bk-air, 0px)) 0;
   border-top: 2px solid var(--line);
 }
 
@@ -1921,11 +1922,11 @@
 }
 
 .bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
-  padding-block: clamp(16px, 2.6cqh, 36px);
+  padding-block: calc(clamp(16px, 2.6cqh, 36px) + var(--bk-air, 0px));
 }
 
 .bk-in .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
-  padding-block: clamp(12px, 2cqh, 20px);
+  padding-block: calc(clamp(12px, 2cqh, 20px) + var(--bk-air, 0px));
 }
 
 .bk-in .pr-plan {
