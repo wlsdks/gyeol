@@ -19,9 +19,10 @@
  * 부품의 잘리지 않는 높이를 잴 때(screens/measureBlocks.ts)도 이것으로 맞추고, 글 줄의 자리도 이것으로 본다.
  */
 export function blockFitter() {
-  const steps = [0.92, 0.84, 0.76, 0.68]
-  // 키울 때는 큰 것부터: 넘치지 않는 가장 큰 단계를 쓴다
-  const ups = [1.24, 1.16, 1.08]
+  // 글자 크기 비율(1.2)의 단계: 한 단계, 두 단계. 칸 크기로 정한 단계(--bk-w, --bk-h)와 같은 값이라 줄여도 크기가 단계 위에 있다
+  const steps = [0.84, 0.7]
+  // 키울 때도 한 단계만: 더 키우면 내용이 적은 장의 글자가 장 제목보다 커진다
+  const ups = [1.2]
   // 줄 사이를 넓히는 단계 (줄의 위아래에 더하는 캔버스 px). 넘게 벌리면 줄끼리 따로 떨어져 보여서 이만큼까지만
   const airs = [24, 18, 12, 6]
   let range: Range | null = null
@@ -62,9 +63,29 @@ export function blockFitter() {
       const [up, down] = ink(el, text.slice(0, 60))
       range.selectNodeContents(n)
       const rects = range.getClientRects()
+      // 편집 칸은 띄어쓰기를 그대로 두는 pre-wrap이라 줄 끝의 띄어쓰기가 칸 밖으로 걸려 있고 줄 상자도 그만큼 넓다.
+      // 그것까지 글로 세면 편집 화면에서만 넘친 것으로 보여 글자가 한 단계 작아진다. 그래서 줄 끝의 띄어쓰기 자리를 뺀다
+      const spaces: DOMRect[] = []
+      const ws = getComputedStyle(el).whiteSpace
+      if (ws === 'pre-wrap' || ws === 'break-spaces') {
+        const raw = n.textContent || ''
+        for (let i = 0; i < raw.length; i++) {
+          if (raw[i] !== ' ') continue
+          range.setStart(n, i)
+          range.setEnd(n, i + 1)
+          spaces.push(range.getBoundingClientRect())
+        }
+      }
       for (let i = 0; i < rects.length; i++) {
         const q = rects[i]
-        if (q.width && q.height) out.push({ n, t: q.top + q.height * up, b: q.bottom - q.height * down, l: q.left, r: q.right })
+        if (!q.width || !q.height) continue
+        // 뒤에서부터 보면 줄 끝에 띄어쓰기가 여럿 있어도 한 번에 뺀다
+        let right = q.right
+        for (let j = spaces.length - 1; j >= 0; j--) {
+          const sp = spaces[j]
+          if (sp.width && Math.abs(sp.right - right) < 1 && sp.top < q.bottom && sp.bottom > q.top) right = sp.left
+        }
+        out.push({ n, t: q.top + q.height * up, b: q.bottom - q.height * down, l: q.left, r: right })
       }
     }
     return out
@@ -262,9 +283,9 @@ export function blockFitter() {
       const room = area.clientHeight - gaps
       const squeezed = need > room + 1
       if (squeezed) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
-      // 글자는 먼저 늘 줄여도 되는 데까지만(보통 한 단계, 크게는 두 단계: 보통을 한 단계 줄인 것과 같은 크기) 줄인다.
-      // 그래도 넘치는 줄만 다른 줄의 남는 높이를 가져온다. 거꾸로 하면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다
-      const least = area.closest('.sz-large') ? 0.84 : 0.92
+      // 보통 크기는 글자를 줄이기 전에 넘치는 줄이 다른 줄의 남는 높이를 먼저 가져온다(잰 높이는 줄이지 않고 들어가는 높이다).
+      // 크게(1.08배)는 먼저 한 단계 줄인다: 줄여도 보통보다 조금 작을 뿐이고, 줄 높이를 먼저 바꾸면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다
+      const least = area.closest('.sz-large') ? 0.84 : 1
       const shrink = (c: HTMLElement, last: number) => {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (!inner) return

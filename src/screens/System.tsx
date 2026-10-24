@@ -40,11 +40,11 @@ const TOKENS: { v: string; name: string; use: string }[] = [
 
 // 크기는 1920×1080 장 기준 px. slides.css의 값과 같게 둔다.
 const TYPE: { name: string; px: number; text: string; head?: boolean; tone?: 'accent' | 'ink-2' | 'ink-3' }[] = [
-  { name: '큰 숫자', px: 176, text: '4.8억 원', head: true, tone: 'accent' },
-  { name: '표지 제목', px: 116, text: '품질 관리 제안 계획', head: true },
-  { name: '장 제목', px: 72, text: '추천 가격은 B안 4.8억 원이에요', head: true },
+  { name: '큰 숫자', px: 154, text: '4.8억 원', head: true, tone: 'accent' },
+  { name: '표지 제목', px: 90, text: '품질 관리 제안 계획', head: true },
+  { name: '장 제목', px: 62, text: '추천 가격은 B안 4.8억 원이에요', head: true },
   { name: '이끄는 말', px: 36, text: '지금 시스템의 유지보수가 내년 3월에 끝나요', tone: 'ink-2' },
-  { name: '본문', px: 34, text: '불량이 가장 많은 3개 라인에 먼저 구축해요' },
+  { name: '본문', px: 30, text: '불량이 가장 많은 3개 라인에 먼저 구축해요' },
   { name: '보충', px: 26, text: '첫해 구축비, 3개 라인 기준', tone: 'ink-3' },
   { name: '출처', px: 22, text: '영업관리 시스템, 9월 말 기준', tone: 'ink-3' },
 ]

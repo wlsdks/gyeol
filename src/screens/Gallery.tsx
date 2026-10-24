@@ -1,4 +1,4 @@
-import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES } from '../deck/blocks'
+import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, composeAreaH, fitsHeight } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { pageInfo } from '../deck/fields'
 import { createDeck, makeSlide } from '../deck/generate'
@@ -97,8 +97,12 @@ function edgeSlides(): Slide[] {
 }
 
 /**
- * 부품마다 두 장: 혼자 한 줄을 다 쓸 때와, 가장 좁은 칸에 다른 부품과 함께 낮은 줄에 들어갈 때.
- * 무너지기 쉬운 것은 좁고 낮은 칸이다.
+ * 부품마다 편집기에서 실제로 나올 수 있는 크기로: 혼자 한 줄을 다 쓸 때, 가장 좁은 칸에 줄을 가장 낮게 끌어내렸을 때,
+ * 한 줄을 다 쓰면서 가장 낮을 때, 셋이 나란히. 낮은 줄은 사람이 줄 사이를 끌어 정한 비중(grow)으로 만든다:
+ * 다른 줄이 남는 높이를 다 가져가서 그 줄은 편집기가 허락하는 가장 낮은 높이(blockMinH)가 된다.
+ * 편집기가 넣지 않는 자리(더 좁거나 더 낮은 칸)는 그리지 않는다. 그런 칸은 쓰는 사람도 볼 일이 없다.
+ * 핵심 한 줄과 같이 들어가지 않는 부품은 혼자 둔다(편집기도 그 장에는 넣지 않는다).
+ * 함께 놓는 부품(fill-)은 높이를 잴 때(measureBlocks) 건너뛴다.
  */
 function blockSlides(fill: string | null, only?: string[], variant?: string | null, look?: string | null): Slide[] {
   return BLOCK_TYPES.flatMap((type, n) => {
@@ -121,33 +125,34 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
     const v = variant && spec.variants?.some((x) => x.id === variant) ? { variant } : {}
     const lk = BLOCK_LOOK_IDS.find((x) => x === look) ? { look: look as BlockLook } : {}
     const b = (id: string) => ({ ...sample, ...v, ...lk, items, id: `${type}-${id}` })
-    const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), id: `${type}-${id}` })
+    const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), look: 'plain' as BlockLook, id: `${type}-fill-${id}` })
     const narrow = 12 - spec.minSpan
-    const partner: BlockType = narrow >= 6 ? 'bullets' : narrow >= 4 ? 'callout' : 'number'
+    const slide = (id: string, title: string, rows: NonNullable<Slide['rows']>): Slide => {
+      const s: Slide = { ...makeSlide('compose'), id: `bk-${n}-${id}`, fields: { title: `${spec.name}: ${title}` }, rows }
+      return fitsHeight(rows, composeAreaH(s)) ? s : { ...s, rows: rows.filter((r) => !r.blocks.every((x) => x.id.includes('-fill-m'))).map(({ grow: _, ...r }) => r) }
+    }
     return [
-      { ...makeSlide('compose'), id: `bk-${n}-a`, fields: { title: `${spec.name}: 한 줄을 다 쓸 때` }, rows: [{ id: 'r1', blocks: [b('a')] }] },
-      {
-        ...makeSlide('compose'),
-        id: `bk-${n}-b`,
-        fields: { title: `${spec.name}: 좁은 칸, 낮은 줄` },
-        rows: [
-          { id: 'r1', blocks: [filler('m', 'message')] },
-          { id: 'r2', blocks: narrow > 0 ? [b('b'), filler('p', partner)] : [b('b')], spans: narrow > 0 ? [spec.minSpan, narrow] : [12] },
-          ...(narrow > 0 ? [] : [{ id: 'r3', blocks: [filler('n1', 'number'), filler('n2', 'number'), filler('n3', 'callout')] }]),
-        ],
-      },
+      slide('a', '한 줄을 다 쓸 때', [{ id: 'r1', blocks: [b('a')] }]),
+      // 가장 좁은 칸, 가장 낮은 줄: 옆 칸은 낮게 들어가는 글 칸
+      ...(narrow > 0
+        ? [
+            slide('b', '가장 좁은 칸, 가장 낮은 줄', [
+              { id: 'r1', blocks: [filler('m', 'message')], grow: 99 },
+              { id: 'r2', blocks: [b('b'), filler('p', 'text')], spans: [spec.minSpan, narrow], grow: 1 },
+            ]),
+          ]
+        : []),
+      slide('w', '한 줄을 다 쓰고 가장 낮은 줄', [
+        { id: 'r1', blocks: [filler('m', 'message')], grow: 99 },
+        { id: 'r2', blocks: [b('w')], grow: 1 },
+      ]),
       // 4칸까지 좁아지는 부품은 셋이 나란히 들어갈 때도
       ...(spec.minSpan <= 4
         ? [
-            {
-              ...makeSlide('compose'),
-              id: `bk-${n}-c`,
-              fields: { title: `${spec.name}: 셋이 나란히` },
-              rows: [
-                { id: 'r1', blocks: [filler('m', 'message')] },
-                { id: 'r2', blocks: [b('c1'), b('c2'), b('c3')], spans: [4, 4, 4] },
-              ],
-            },
+            slide('c', '셋이 나란히', [
+              { id: 'r1', blocks: [filler('m', 'message')] },
+              { id: 'r2', blocks: [b('c1'), b('c2'), b('c3')], spans: [4, 4, 4] },
+            ]),
           ]
         : []),
     ]

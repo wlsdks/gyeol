@@ -49,46 +49,31 @@
   height: 100%;
 }
 
-/* 칸이 좁거나 낮으면 글자를 단계로 줄인다 */
+/* 칸이 좁거나 낮으면 글자를 글자 크기 비율(1.2)의 단계로 작게: 반 칸, 3분의 1 칸이나 300px 밑은 한 단계(0.84),
+   4분의 1 칸은 두 단계(0.7). 높이로는 한 단계까지만: 낮은 칸은 글자를 줄이기보다 옆으로 눕힌다.
+   좁고 낮아도 곱하지 않고 작은 쪽 하나만 쓴다(min). 곱하면 좁고 낮은 칸에서
+   제목, 숫자, 본문이 모두 바닥(22px)까지 내려가 크기 차이가 없어진다. 그보다 작은 칸에서는 글자를 더 줄이지 않고
+   부품이 짜임을 바꾼다(부품마다의 좁은 칸, 낮은 줄 규칙). 그래도 안 되면 편집기가 그 자리에 넣지 않는다(blockHeights.ts) */
 @container bk (max-width: 1100px) {
-  .bk-in {
-    --bk-w: 0.92;
-  }
-}
-
-@container bk (max-width: 820px) {
   .bk-in {
     --bk-w: 0.84;
   }
 }
 
-@container bk (max-width: 560px) {
-  .bk-in {
-    --bk-w: 0.74;
+/* 한 줄에 부품이 둘 이상이면 넓은 칸(8칸)도 옆 칸과 같은 단계로: 칸마다 단계가 다르면 나란한 소제목과 글의 크기가 어긋나 줄이 비뚤어 보인다 */
+.bk.is-shared > .bk-in {
+  --bk-w: 0.84;
+}
+
+@container bk (max-width: 450px) {
+  .bk > .bk-in {
+    --bk-w: 0.7;
   }
 }
 
-@container bk (max-width: 420px) {
+@container bk (max-height: 300px) {
   .bk-in {
-    --bk-w: 0.66;
-  }
-}
-
-@container bk (max-height: 440px) {
-  .bk-in {
-    --bk-h: 0.9;
-  }
-}
-
-@container bk (max-height: 320px) {
-  .bk-in {
-    --bk-h: 0.8;
-  }
-}
-
-@container bk (max-height: 230px) {
-  .bk-in {
-    --bk-h: 0.68;
+    --bk-h: 0.84;
   }
 }
 
@@ -356,7 +341,7 @@
   width: 14px;
   height: 14px;
   /* 첫 줄 가운데: 글자 크기를 바꾸는 배율(--scale, --fit)까지 글자와 같이 곱한다 */
-  margin-top: calc(var(--t-body) * var(--scale, 1) * var(--fit, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.55);
+  margin-top: calc(var(--t-body) * var(--scale, 1) * var(--fit, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1) * 0.55);
   border-radius: 50%;
   background: var(--accent);
 }
@@ -391,7 +376,7 @@
   /* 따옴표는 장식이라 강조색 대신 옅은 글자색으로, 크기도 글보다 조금 큰 정도로 */
   color: color-mix(in srgb, var(--ink) 28%, var(--bg));
   font-family: var(--font-head);
-  font-size: calc(90px * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1));
+  font-size: calc(90px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
   font-weight: 700;
   line-height: 1;
 }
@@ -470,6 +455,37 @@
   margin-top: 18px;
   color: var(--ink-2);
   line-height: 1.45;
+}
+
+/* 넓고 낮은 칸: 숫자를 왼쪽에, 이름과 설명을 그 오른쪽에 위아래로. 셋을 쌓으면 낮은 줄에서 숫자가 작아진다 */
+@container bk (min-aspect-ratio: 3 / 1) and (min-width: 1000px) {
+  .bk-num {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 48px;
+  }
+
+  .bk-num-v {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    align-self: center;
+    margin-top: 0;
+  }
+
+  .bk-num-l {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: end;
+  }
+
+  .bk-num-n {
+    grid-row: 2;
+    grid-column: 2;
+    align-self: start;
+    margin-top: 8px;
+  }
 }
 
 /* ---------- 전과 후 ---------- */
@@ -644,6 +660,35 @@
   .bk-dl-chip,
   .bk-dl-n {
     --fs: var(--t-body);
+  }
+}
+
+/* 넓고 낮은 칸: 이름, 전과 후, 바뀐 만큼을 한 줄로. 위아래로 쌓으면 낮은 줄에 들어가지 않는다.
+   왼쪽부터 붙여 한 덩어리로 둔다: 칸 너비로 나누면 셋이 칸 끝까지 흩어진다 */
+@container bk (min-aspect-ratio: 3 / 1) and (min-width: 1000px) and (max-height: 589px) {
+  .bk-dl {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, max-content) minmax(0, 1fr);
+    align-content: center;
+    align-items: end;
+    column-gap: 72px;
+  }
+
+  .bk-dl-l {
+    align-self: center;
+    max-width: 320px;
+  }
+
+  .bk-dl-row {
+    min-width: 560px;
+    margin-top: 0;
+  }
+
+  .bk-dl-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 0;
+    margin-bottom: 12px;
   }
 }
 
@@ -1176,6 +1221,24 @@
   }
 }
 
+/* 반 칸(816)처럼 넓지 않아도 낮으면 옆으로: 숫자 아래에 선을 두면 선이 납작하게 눌린다 */
+@container bk (min-aspect-ratio: 12 / 5) and (min-width: 700px) and (max-width: 899px) {
+  .bk-sp {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: 48px;
+  }
+
+  .bk-sp-text {
+    align-self: center;
+  }
+
+  .bk-sp-chart {
+    margin-top: 0;
+  }
+}
+
 /* ---------- 목록형 부품의 틀: 개요, 걱정과 대책, 예상 질문, 준비 상황, 맡은 사람 ----------
    부품 안의 세로 가운데 맞춤은 모두 safe center: 예전 파일처럼 칸보다 내용이 많아도 위(장 제목)로 넘치지 않고 아래로만.
    줄 사이 여백은 글자를 줄일 때(--bk-fit) 같이 줄인다 */
@@ -1350,7 +1413,7 @@
   .bk-rk-arrow svg {
     width: 32px;
     height: 32px;
-    margin-top: calc(var(--t-body) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.2);
+    margin-top: calc(var(--t-body) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1) * 0.2);
   }
 }
 
@@ -1437,6 +1500,29 @@
 
   .bk-sw-top {
     gap: 12px;
+  }
+}
+
+/* 넓고 낮은 칸: 네 칸을 한 줄로 늘어놓는다(S W O T). 2×2로 두면 칸마다 두세 줄인 글에 장 높이의 절반을 쓴다 */
+@container bk (min-aspect-ratio: 4 / 1) and (min-width: 1300px) {
+  .bk-sw-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bk-sw-q,
+  .bk-sw-q:nth-child(even) {
+    padding: calc(26px * var(--bk-fit, 1)) 32px 0;
+    border-bottom: 0;
+    border-left: var(--rule) solid var(--line);
+  }
+
+  .bk-sw-q:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .bk-sw-q:last-child {
+    padding-right: 0;
   }
 }
 
@@ -1610,6 +1696,24 @@
 
 .bk-ck-row:not(.is-done, .is-doing, .is-late) .bk-ck-s {
   color: var(--ink-3);
+}
+
+/* 넓은 칸에서 넷 이상이면 두 단으로 흘린다(개요와 같이): 한 단이면 이름과 상태 사이가 칸 너비만큼 비고,
+   넷만 쌓아도 장 높이의 4분의 3을 써서 한 장에 다른 부품을 둘 수 없다. 두 단의 첫 줄 선은 둘 다 진하게, 단마다 끝줄 아래에 선 */
+@container bk (min-width: 1300px) {
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 72px;
+  }
+
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-child(2) {
+    border-top-color: var(--ink);
+  }
+
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-last-child(2) {
+    border-bottom: var(--rule) solid var(--line);
+  }
 }
 
 /* ---------- 추진 일정 ---------- */
@@ -2233,7 +2337,7 @@
 }
 
 .bk-pp-av {
-  --av: calc(116px * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1));
+  --av: calc(116px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
   display: grid;
   place-items: center;
   width: var(--av);
@@ -2302,7 +2406,7 @@
 }
 
 .va-list .bk-pp-av {
-  --av: calc(80px * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1));
+  --av: calc(80px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
 }
 
 .va-list .bk-pp-text {
@@ -2321,6 +2425,36 @@
   margin-top: 6px;
 }
 
+/* 넓은 칸의 목록은 사람 수만큼 단으로(넷은 둘씩 두 줄): 한 단이면 이름 옆이 칸 끝까지 비고 사람 수만큼 높아진다.
+   셋을 두 단에 두면 마지막 줄에 하나만 남아서 셋은 세 단 */
+@container bk (min-width: 1300px) {
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='4']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 72px;
+  }
+
+  .va-list .bk-pp-list[data-n='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 56px;
+  }
+
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card:nth-child(-n + 3) {
+    border-top-color: var(--ink);
+  }
+
+  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(3) {
+    border-top-color: var(--line);
+  }
+
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card {
+    border-bottom: var(--rule) solid var(--line);
+  }
+
+  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+
 /*
  * 큰 칸에 혼자 있는 숫자, 강조 상자, 인용, 예상 질문, 맡은 사람은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게).
  * 키운 뒤에도 잘리지 않아야 한다: 높이 기준은 가장 키 큰 '전과 후'가 키운 크기로 들어가는 410부터.
@@ -2328,13 +2462,7 @@
  */
 @container bk (min-width: 1100px) and (min-height: 410px) {
   :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list)) > .bk-in {
-    --bk-w: 1.2;
-  }
-}
-
-@container bk (min-width: 1300px) and (min-height: 500px) {
-  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list)) > .bk-in {
-    --bk-w: 1.36;
+    --bk-up: 1.2;
   }
 }
 
@@ -2425,6 +2553,50 @@
 /* 가로 막대의 두께도 칸 높이를 따라 (장에서는 64px) */
 .bk-in .br:not(.va-columns *) .br-track {
   height: clamp(28px, 6cqh, 64px);
+}
+
+/* 막대 줄, 목차 줄, 비교 줄의 위아래 여백: 장에서는 줄이 높아 여백이 저절로 생기지만, 낮은 칸에서는 글자 높이까지 줄어
+   숫자와 선이 붙는다. 여백을 줄 안에 두면 가장 낮은 높이(blockHeights.ts)도 이 여백까지 잰다 */
+.bk-in .br:not(.va-columns *) .br-row {
+  padding-block: clamp(10px, 1.8cqh, 20px);
+}
+
+.bk-agenda:not(.va-columns) .ag-item {
+  padding-block: clamp(10px, 2cqh, 24px);
+}
+
+.bk-in :is(.cp-l, .cp-r) {
+  padding-block: clamp(8px, 1.6cqh, 18px);
+}
+
+/* 넓고 낮은 칸에서 넷 이상이면 두 단으로(위에서 아래로 읽고 다음 단): 한 단이면 줄마다 이름 옆이 칸 끝까지 비고 줄이 붙는다.
+   바꾸는 높이는 항목 수마다 한 단으로 들어가는 가장 낮은 높이 바로 위: 그보다 낮게 잡으면 그 사이 높이에서는 어느 쪽으로도 들어가지 않는다 */
+.bk-agenda:not(.va-columns) .ag-list {
+  column-gap: 72px;
+}
+
+@container bk (min-width: 1300px) and (max-height: 420px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
+}
+
+@container bk (min-width: 1300px) and (max-height: 470px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='5'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
+}
+
+@container bk (min-width: 1300px) and (max-height: 560px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='6'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
 }
 
 /* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
@@ -2593,3 +2765,47 @@
   }
 }
 
+
+/* 비중 도넛이 한 줄을 다 쓸 때: 고리는 칸 높이 안에서(540px 그대로면 낮은 줄에 들어가지 않는다).
+   낮고 넓으면 비율 목록을 두 단으로 흘린다: 한 단이면 목록 높이가 줄 높이를 정한다 */
+@container bk (min-width: 1301px) {
+  .va-donut > .bk-in .sh {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 96px;
+  }
+
+  .va-donut > .bk-in .sh-ring {
+    width: min(540px, 100cqh - 24px);
+  }
+}
+
+/* 구성비 띠의 비율 목록: 반 칸에서 다섯, 여섯을 한 줄에 두면 비율 숫자끼리 붙는다('9.2%5.7%'). 셋씩 두 줄로 */
+@container bk (max-width: 900px) {
+  .va-base > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 32px;
+  }
+}
+
+/* 두 단으로 바꾸는 높이는 항목 수마다 한 단으로 들어가는 가장 낮은 높이 바로 위(목차와 같은 까닭) */
+.va-donut > .bk-in .sh-legend {
+  column-gap: 56px;
+}
+
+@container bk (min-width: 1301px) and (max-height: 560px) {
+  .va-donut > .bk-in .sh[data-n='4'] .sh-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container bk (min-width: 1301px) and (max-height: 640px) {
+  .va-donut > .bk-in .sh[data-n='5'] .sh-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container bk (min-width: 1301px) and (max-height: 740px) {
+  .va-donut > .bk-in .sh[data-n='6'] .sh-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

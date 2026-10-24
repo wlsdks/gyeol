@@ -1,4 +1,4 @@
-import { BLOCKS, BLOCK_GAP, BLOCK_TYPES } from '../deck/blocks'
+import { BLOCKS, BLOCK_GAP, BLOCK_TYPES, LINK_PAD } from '../deck/blocks'
 import type { BlockType } from '../deck/types'
 import { blockOverflows, blockTextLines, fitBlocks } from '../slides/fitBlocks'
 
@@ -21,10 +21,10 @@ export const SPANS = [3, 4, 6, 8, 12]
 const TOP = 860
 const STEP = 10
 /**
- * 잴 높이들: 10px마다, 그리고 글자 크기 단계(blocks.css의 --bk-h: 440, 320, 230)가 바뀌는 바로 위.
- * 단계 바로 위(321)는 글자가 한 단계 큰데 자리는 가장 적어서, 10px마다만 재면 330은 되는데 325는 안 되는 것을 놓친다
+ * 잴 높이들: 10px마다, 그리고 글자 크기 단계(blocks.css의 --bk-h: 300)가 바뀌는 바로 위.
+ * 단계 바로 위(301)는 글자가 한 단계 큰데 자리는 가장 적어서, 10px마다만 재면 310은 되는데 305는 안 되는 것을 놓친다
  */
-const HEIGHTS = [...new Set([...Array.from({ length: (TOP - 100) / STEP + 1 }, (_, i) => TOP - i * STEP), 441, 321, 231])].sort((a, b) => b - a)
+const HEIGHTS = [...new Set([...Array.from({ length: (TOP - 100) / STEP + 1 }, (_, i) => TOP - i * STEP), 301])].sort((a, b) => b - a)
 
 type Box = { left: number; right: number; top: number; bottom: number }
 
@@ -115,14 +115,14 @@ export function clashes(cell: HTMLElement): string[] {
 }
 
 /**
- * 이 크기에서 괜찮은지: 화면처럼 fitBlocks로 맞춘 뒤, 글자를 한 단계(0.92)보다 더 줄이지 않았고
+ * 이 크기에서 괜찮은지: 화면처럼 fitBlocks로 맞춘 뒤, 글자를 줄이지 않았고(칸 크기로 정한 단계 그대로)
  * 넘치거나 잘리거나 겹친 글이 없어야 한다 (fitBlocks가 보지 않는 '잘림'도 여기서 본다)
  */
 function fine(cell: HTMLElement, el: HTMLElement): boolean {
   const area = cell.closest<HTMLElement>('.bk-area')
   if (area) fitBlocks(area)
   const k = Number(cell.style.getPropertyValue('--bk-fit') || 1)
-  return k >= 0.92 && !scrollOver(el) && clashList(cell, false).length === 0
+  return k >= 1 && !scrollOver(el) && clashList(cell, false).length === 0
 }
 
 /** 진단용: 이 너비에서 860부터 100까지 10px마다 재어 안 되는 높이를 모두 (위에서 끊기지 않고). 높이 사이에 구멍이 있는지 볼 때 */
@@ -132,7 +132,7 @@ export function failingHeights(cell: HTMLElement, span: number): number[] {
   const saved = cell.getAttribute('style')
   cell.style.alignSelf = 'start'
   cell.style.justifySelf = 'start'
-  cell.style.width = `${spanWidth(span)}px`
+  cell.style.width = `${measuredWidth(span)}px`
   const out: number[] = []
   for (const h of HEIGHTS) {
     cell.style.height = `${h}px`
@@ -142,9 +142,14 @@ export function failingHeights(cell: HTMLElement, span: number): number[] {
   return out
 }
 
+/** 재는 칸 너비: 한 줄을 다 쓰지 않는 칸은 옆 칸과의 사이에 이음표가 설 수 있어서, 한쪽이 비켜 준 너비(LINK_PAD만큼 좁게)로 잰다 */
+export const measuredWidth = (span: number) => spanWidth(span) - (span < 12 ? LINK_PAD : 0)
+
 /** 이 너비에서 이 높이부터 위로는 늘 괜찮은 가장 낮은 높이. 맨 위(860)도 안 되면 Infinity */
 function lowest(cell: HTMLElement, el: HTMLElement, span: number): number {
-  cell.style.width = `${spanWidth(span)}px`
+  cell.style.width = `${measuredWidth(span)}px`
+  // 한 줄을 다 쓰지 않는 칸은 늘 다른 부품과 한 줄에 있다(blocks.css의 .is-shared: 글자 단계가 다르다)
+  cell.classList.toggle('is-shared', span < 12)
   let ok = Infinity
   for (const h of HEIGHTS) {
     cell.style.height = `${h}px`
@@ -163,7 +168,8 @@ export async function measureBlocks(look?: 'plain' | 'card'): Promise<Partial<Re
   await document.fonts.ready
   const out: Partial<Record<BlockType, Record<number, number>>> = {}
   for (const area of document.querySelectorAll<HTMLElement>('.bk-area')) area.style.removeProperty('--bk-sq')
-  const all = Array.from(document.querySelectorAll<HTMLElement>('.bk'))
+  // 다른 부품의 장에 함께 놓은 부품(갤러리의 fill-)은 예시 그대로라 항목 수가 다르다
+  const all = Array.from(document.querySelectorAll<HTMLElement>('.bk')).filter((c) => !c.dataset.block?.includes('-fill-'))
   const cells = look ? [...all.filter((c) => c.classList.contains(`bk-look-${look}`)), ...all] : all
   for (const cell of cells) {
     const type = BLOCK_TYPES.find((t) => cell.classList.contains(`bk-${t}`))
@@ -174,8 +180,10 @@ export async function measureBlocks(look?: 'plain' | 'card'): Promise<Partial<Re
     cell.style.alignSelf = 'start'
     cell.style.justifySelf = 'start'
     const result: Record<number, number> = {}
+    const shared = cell.classList.contains('is-shared')
     for (const span of SPANS) if (span >= BLOCKS[type].minSpan) result[span] = lowest(cell, el, span)
     out[type] = result
+    cell.classList.toggle('is-shared', shared)
     cell.setAttribute('style', saved ?? '')
   }
   return out
@@ -281,6 +289,7 @@ const HEIGHTS_HEAD = `/*
  *
  * 열쇠는 '부품.모양.바탕'(plain: 그대로, card: 카드와 강조색 면), 값은 { 칸 너비(12칸 중): [항목 수마다의 높이] }.
  * 항목이 없는 부품은 [0]에. 999는 그 너비에서 860px로도 안 되는 것 (그런 너비에는 놓지 않는다).
- * 넘치면 글자를 한 단계(0.92) 줄인 뒤에도 잘리거나 겹치지 않는 높이다 (slides/fitBlocks.ts가 그만큼은 줄인다).
+ * 칸 크기로 정한 글자 단계(--bk-w, --bk-h) 그대로, 더 줄이지 않고 잘리거나 겹치지 않는 높이다.
+ * 한 줄을 다 쓰지 않는 칸은 한쪽에 이음표가 선 너비(LINK_PAD만큼 좁게)로 잰다.
  */
 `

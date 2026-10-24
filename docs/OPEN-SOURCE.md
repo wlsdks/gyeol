@@ -51,6 +51,12 @@ html-maker는 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI �
 |---|---|---|
 | [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/composing-a-palette) | MIT | 강조색과 같은 계열의 회색을 짝짓는 원칙. 색 값은 우리가 따로 골랐음 |
 | [Datawrapper 블로그: 색으로 강조하기](https://www.datawrapper.de/blog/emphasize-with-color-in-data-visualizations) | 공개 글 | 맥락은 회색, 말하려는 곳만 색 |
+| [Android Developers: Adapt layout](https://developer.android.com/design/ui/mobile/guides/layout-and-content/adapt-layout) | 문서 Apache-2.0 | 자리가 바뀌면 글자를 줄이기 전에 짜임을 바꾼다(여러 단으로 흘리기, 모양 바꾸기). 너비로 먼저, 그다음 높이로 고른다 |
+| [GOV.UK Design System: Summary list](https://design-system.service.gov.uk/components/summary-list/) | OGL v3.0 | 좁으면 이름을 값 위로 쌓는다 |
+| [U.S. Web Design System: Table](https://designsystem.digital.gov/components/table/) | 퍼블릭 도메인, CC0 1.0 | 좁은 자리의 표 쌓기, 숫자 표는 쌓지 않는다 |
+| [IBM Carbon: Data table, Legends](https://carbondesignsystem.com/components/data-table/style/) | Apache-2.0 | 줄 높이를 정한 단계로만 줄인다, 범례는 줄 수를 정해 둔다 |
+| [Apache ECharts 문서: Media query](https://apache.googlesource.com/echarts-doc/+/refs/heads/v4/en/tutorial/media-query.md) | Apache-2.0 | 차트 자리의 너비, 높이, 가로세로비로 조건을 나눠 범례 자리와 방향을 바꾼다 |
+| [ONS Service Manual: Data visualisation](https://service-manual.ons.gov.uk/data-visualisation/guidance/chart-text) | OGL v3.0 | 제목은 요점을 먼저, 범례는 차트 위 한 줄 |
 
 ## 나눠 줄 때 지킬 것
 
