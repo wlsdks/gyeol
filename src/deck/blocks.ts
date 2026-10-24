@@ -418,6 +418,71 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 6,
     sample: { fields: { caption: '시범 라인에 단 검사 카메라' } },
   },
+  rating: {
+    name: '평가표',
+    description: '기준마다 여러 안을 좋음, 보통, 나쁨으로 견주어 (대안 평가)',
+    motion: '기준마다 표시가 차례로 찍혀요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 세 안 견주기', optional: true },
+      { key: 'opts', label: '안', hint: 'A안 B안 C안' },
+      { key: 'pick', label: '추천', hint: '추천하는 안 (예: B안)', optional: true },
+    ],
+    items: {
+      label: '기준',
+      // 기준이 하나면 표가 아니라 한 줄 글이다
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '기준', hint: '견주는 기준', hints: ['첫해 비용', '불량 줄이는 효과', '구축 기간', '현장 부담', '다른 공장으로 넓히기', '업체 지원'] },
+        {
+          key: 'body',
+          label: '평가',
+          hint: '안마다 좋음, 보통, 나쁨 (○ △ ×도 돼요)',
+          hints: ['좋음 보통 나쁨', '나쁨 좋음 좋음', '좋음 좋음 나쁨', '보통 좋음 나쁨', '나쁨 좋음 보통', '보통 보통 좋음'],
+        },
+        { key: 'meta', label: '설명', hint: '기준 설명 한 줄', optional: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '세 안 견주기', opts: 'A안 B안 C안', pick: 'B안' },
+      items: [
+        { title: '첫해 비용', body: '좋음 보통 나쁨', meta: '1.9억, 2.4억, 3.1억 원' },
+        { title: '불량 줄이는 효과', body: '나쁨 좋음 좋음' },
+        { title: '구축 기간', body: '좋음 좋음 나쁨', meta: '2개월, 3개월, 6개월' },
+        { title: '다른 공장으로 넓히기', body: '나쁨 좋음 보통' },
+      ],
+    },
+  },
+  market: {
+    name: '시장 규모',
+    description: '전체 시장, 공략할 시장, 목표를 겹친 원으로 (TAM, SAM, SOM)',
+    motion: '큰 원부터 차례로 겹쳐져요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 시장 규모', optional: true }],
+    items: {
+      label: '단계',
+      min: 2,
+      max: 3,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '시장 이름', hints: ['전체 시장', '공략할 시장', '3년 안 목표'] },
+        { key: 'value', label: '규모', hint: '규모 (예: 2.4조 원)', hints: ['2.4조 원', '3,200억 원', '180억 원'] },
+        { key: 'body', label: '설명', hint: '어떤 시장인지 한 줄', optional: true, multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '시장 규모' },
+      items: [
+        { title: '전체 시장', value: '2.4조 원', body: '국내 제조 품질 검사 전체' },
+        { title: '공략할 시장', value: '3,200억 원', body: '중견 전자·자동차 부품 공장' },
+        { title: '3년 안 목표', value: '180억 원', body: '공략할 시장의 5.6%' },
+      ],
+    },
+  },
 }
 
 /** 레이아웃 부품의 칸 크기와 움직임. 칸은 그 레이아웃의 것에서 머리(제목, 부제, 출처)만 뺀다 */
@@ -475,9 +540,9 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 export const BLOCK_GROUPS: { name: string; short: string; description: string; types: BlockType[] }[] = [
   { name: '글과 메시지', short: '글', description: '결론 한 줄, 설명, 목록, 인용, 예상 질문', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
   { name: '숫자', short: '숫자', description: '큰 숫자, 전과 후, 목표 대비, 비율', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
-  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 깔때기', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel'] },
+  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 깔때기, 시장 규모', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel', 'market'] },
   { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
-  { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'position', 'pricing', 'table'] },
+  { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 평가표, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'rating', 'matrix', 'position', 'pricing', 'table'] },
   { name: '그림과 사람', short: '그림', description: '사진, 화면, 담당자, 고객사 로고', types: ['image', 'people', 'logos'] },
 ]
 
@@ -877,6 +942,8 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   position: () => 460,
   swot: () => 420,
   image: () => 200,
+  // 겹친 원은 낮으면 안쪽 원(목표)이 점처럼 작아진다
+  market: () => 340,
 }
 /** 항목이 셋 이상인 부품: 칸이 230px 밑이면 글자가 가장 작은 단계(--bk-h 0.68)로 떨어져 빽빽해진다. 로고는 그림이라 빼고 */
 const LIST_FLOOR = 240

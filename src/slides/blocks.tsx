@@ -9,7 +9,7 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, T } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { colsOf, formatNumber, parseDelta, spanIn, statusOf, type Status } from './numbers'
+import { colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -616,6 +616,146 @@ function People() {
   )
 }
 
+/** 평가표의 표시: 꽉 찬 원(좋음), 반 찬 원(보통), 빈 원(나쁨). 보고서에서 흔히 쓰는 하비 볼 */
+function GradeMark({ grade, className = 'bk-ev-mk' }: { grade: Grade; className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 32 32" aria-hidden="true">
+      {grade === 'good' ? (
+        <circle className="bk-ev-fill" cx="16" cy="16" r="14" />
+      ) : (
+        <>
+          <circle className="bk-ev-ring" cx="16" cy="16" r="12.75" />
+          {grade === 'mid' && <path className="bk-ev-fill" d="M16 3.25a12.75 12.75 0 0 1 0 25.5z" />}
+        </>
+      )}
+    </svg>
+  )
+}
+
+const GRADE_NAMES: [Grade, string][] = [
+  ['good', '좋음'],
+  ['mid', '보통'],
+  ['bad', '나쁨'],
+]
+
+/**
+ * 평가표: 기준마다 여러 안을 좋음, 보통, 나쁨으로. 안 이름을 위에 늘어놓고 기준마다 평가 글을 안 차례로 읽는다.
+ * 추천하는 안을 적으면 그 안의 세로 띠와 표시만 강조색 (추진 일정의 지금 칸처럼)
+ */
+function Rating() {
+  const { slide, mode } = useSlide()
+  const { demo, read } = useDemo(['opts', 'pick'])
+  const opts = colsOf(read('opts')).slice(0, 5)
+  const pick = spanIn(read('pick'), opts)?.[0] ?? -1
+  const items = slide.items.slice(0, BLOCKS.rating.items!.max)
+  // 평가가 비어 있으면 편집할 때만 안내 평가로 흐린 표시를 보인다
+  const marksOf = (i: number) => gradesOf(items[i].body.trim() || (mode === 'final' ? '' : hintFor(slide.layout, slide.hints, 'body', 'body', i)))
+  const graded = items.some((_, i) => marksOf(i).some((g) => gradeOf(g)))
+  return (
+    <div className={cx('bk-ev', demo && 'is-demo')} style={{ '--n': Math.max(1, opts.length), '--pick': pick } as CSSProperties}>
+      <div className="bk-ev-top">
+        <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+        {graded && (
+          <p className="bk-ev-lg">
+            {GRADE_NAMES.map(([g, name]) => (
+              <span key={g} className="bk-ev-lk">
+                <GradeMark grade={g} className="bk-ev-lm" />
+                {name}
+              </span>
+            ))}
+          </p>
+        )}
+      </div>
+      <div className="bk-ev-grid">
+        {pick >= 0 && <span className="bk-ev-band" aria-hidden="true" />}
+        <div className="bk-ev-head">
+          {mode === 'edit' ? (
+            <div className="bk-ev-pickset">
+              <span className="bk-ev-sk">추천</span>
+              <T k="pick" as="span" className="bk-ev-sv" />
+            </div>
+          ) : (
+            <span />
+          )}
+          <div className="bk-ev-colwrap">
+            <div className="bk-ev-cols">
+              {opts.map((o, j) => (
+                <span key={j} className={cx('bk-ev-c', j === pick && 'is-pick')}>
+                  {j === pick && <span className="bk-ev-pk">추천</span>}
+                  <span className="bk-ev-cn">{o}</span>
+                </span>
+              ))}
+            </div>
+            {mode === 'edit' && <T k="opts" className="bk-ev-sv bk-ev-optsed on-chart" oneLine />}
+          </div>
+        </div>
+        <ul className="bk-ev-list" data-n={items.length}>
+          {items.map((it, i) => {
+            const marks = marksOf(i)
+            return (
+              <li key={it.id} className={cx('it bk-ev-row', !it.body.trim() && 'is-hint')}>
+                <div className="bk-ev-label">
+                  <IT i={i} k="title" className="bk-ev-t" />
+                  <IT i={i} k="meta" className="bk-ev-m" />
+                </div>
+                {/* 편집할 때 평가 글은 표시 자리에서 고친다 (위의 안 이름과 같이) */}
+                <div className="bk-ev-track">
+                  {opts.map((_, j) => {
+                    const g = marks[j] ? gradeOf(marks[j]) : null
+                    return (
+                      <span key={j} className={cx('bk-ev-cell', j === pick && 'is-pick')}>
+                        {g ? <GradeMark grade={g} /> : marks[j] ? <span className="bk-ev-x">{marks[j]}</span> : null}
+                      </span>
+                    )
+                  })}
+                  {mode === 'edit' && <IT i={i} k="body" className="bk-ev-p on-chart" oneLine />}
+                </div>
+                <ItemTools i={i} />
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 시장 규모: 전체 시장, 공략할 시장, 목표를 바닥에 맞춰 겹친 원으로. 원의 크기는 규모에 비례하지 않는다
+ * (전체 시장은 목표의 백 배가 넘기 일쑤라 비례하면 목표가 점이 된다). 규모는 옆 목록의 큰 숫자로 읽는다
+ */
+function Market() {
+  const { slide } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.market.items!.max)
+  return (
+    <div className="bk-mk" data-n={items.length}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <div className="bk-mk-body">
+        <div className="bk-mk-box" aria-hidden="true">
+          <div className="bk-mk-fig">
+            {items.map((it, i) => (
+              <span key={it.id} className="bk-mk-c" style={{ '--i': i } as CSSProperties} />
+            ))}
+          </div>
+        </div>
+        <ol className="bk-mk-list">
+          {items.map((it, i) => (
+            <li key={it.id} className="it bk-mk-row" style={{ '--i': i } as CSSProperties}>
+              <span className="bk-mk-sw" aria-hidden="true" />
+              <div className="bk-mk-text">
+                <IT i={i} k="title" className="bk-mk-t" />
+                <IT i={i} k="value" className="bk-mk-v" />
+                <IT i={i} k="body" className="bk-mk-b" multiline />
+              </div>
+              <ItemTools i={i} />
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
 function Picture() {
   const { slide } = useSlide()
   return (
@@ -646,6 +786,8 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   gantt: Gantt,
   people: People,
   image: Picture,
+  rating: Rating,
+  market: Market,
 }
 
 // ---------- 부품 하나 ----------

@@ -52,6 +52,25 @@ export function statusOf(text: string, pct: number | null): Status | null {
   return pct >= 100 ? 'done' : pct <= 0 ? 'todo' : 'doing'
 }
 
+export type Grade = 'good' | 'mid' | 'bad'
+
+/**
+ * 평가표의 한 칸. 보고서에서 흔히 쓰는 말과 기호(좋음 보통 나쁨, 상 중 하, ○ △ ×)를 읽는다.
+ * 읽을 수 없는 글('1.9억' 같은)은 null이라 표시 없이 그 글 그대로 보인다
+ */
+export function gradeOf(text: string): Grade | null {
+  const t = text.trim()
+  if (/^(좋음|좋다|좋아요|우수|상|높음|유리|가능|[◎○●Oo])$/.test(t)) return 'good'
+  if (/^(보통|중|중간|[△◐])$/.test(t)) return 'mid'
+  if (/^(나쁨|나쁘다|미흡|하|낮음|불리|불가|[×✕xX])$/.test(t)) return 'bad'
+  return null
+}
+
+/** 평가표의 한 줄('좋음 보통 나쁨')을 안마다 나눈다. 띄어 쓰기나 쉼표로 */
+export function gradesOf(text: string): string[] {
+  return text.split(/[\s,·/|]+/).filter(Boolean)
+}
+
 /** 추진 일정의 기간 칸 이름. 띄어 쓰기나 쉼표로 나눈다. 너무 많으면 막대가 가늘어져서 열둘까지 */
 export function colsOf(text: string): string[] {
   return text

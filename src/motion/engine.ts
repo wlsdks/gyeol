@@ -950,6 +950,30 @@ export function motionEngine(): MotionEngine {
             rise(el.querySelector('.bk-pp-text'), at + 100, L.y * 0.4)
           }, L.step * 1.5)
           break
+        case 'rating':
+          // 안 이름과 추천 띠가 먼저 깔리고, 기준마다 줄이 올라오며 표시가 안 차례로 찍힌다.
+          // 줄은 선까지 통째로: 선만 먼저 보이면 빈 표가 깔려 있다가 채워지는 것처럼 보인다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-ev-lg'), 120, 500)
+          fade(one('.bk-ev-cols'), 120, 500)
+          fade(one('.bk-ev-band'), 160, 800)
+          items('.bk-ev-row', 240, (el, at) => {
+            rise(el, at, L.y * 0.4)
+            el.querySelectorAll('.bk-ev-cell > *').forEach((m, j) => pop(m, at + 120 + j * 70))
+          })
+          break
+        case 'market':
+          // 큰 원부터 바닥에서 부풀어 겹치고, 원마다 그 이름과 규모가 함께 들어온다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          $('.bk-mk-c').forEach((c, i) =>
+            run(anims, c, [{ scale: '0', transformOrigin: '50% 100%' }, { scale: '1', transformOrigin: '50% 100%' }], s(120 + i * 220), L.grow),
+          )
+          items('.bk-mk-row', 160, (el, at) => {
+            rise(el, at, L.y * 0.4)
+            pop(el.querySelector('.bk-mk-sw'), at)
+            count(el.querySelector('.bk-mk-v'), at + 120)
+          }, 220)
+          break
         case 'image': {
           wipe(one('.bk-img-i'), 0, 'left', 1000)
           const img = one('.bk-img-i img')

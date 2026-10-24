@@ -198,22 +198,23 @@ async function show(query: string, types: BlockType[]) {
 export type HeightTable = Record<string, Record<number, number[]>>
 
 /**
- * 모든 부품 × 모양 × 바탕 × 항목 수 × 칸 너비. 열쇠는 '부품.모양.바탕'(바탕: plain, card — 강조색 면은 카드와 안쪽 여백이 같다),
+ * 모든 부품(only를 주면 그 부품만, 새 부품 하나를 더했을 때) × 모양 × 바탕 × 항목 수 × 칸 너비. 열쇠는 '부품.모양.바탕'(바탕: plain, card — 강조색 면은 카드와 안쪽 여백이 같다),
  * 값은 { 칸 너비: [항목 수마다의 높이] } (항목이 없는 부품은 [0]에). source는 blockHeights.ts에 그대로 붙여 넣을 글
  */
 export async function measureAll(
   log: (s: string) => void = console.info,
   extra = '',
   looks: readonly ('plain' | 'card')[] = ['plain', 'card'],
+  only: readonly BlockType[] = BLOCK_TYPES,
 ): Promise<{ table: HeightTable; fails: string[]; source: string }> {
   const table: HeightTable = {}
   const fails: string[] = []
   const t0 = performance.now()
   for (const look of looks) {
     // 모양마다: 기본 모양(첫째)은 모든 부품을 한 번에, 다른 모양은 그 모양이 있는 부품만
-    const variantIds = [null, ...new Set(BLOCK_TYPES.flatMap((t) => (BLOCKS[t].variants ?? []).slice(1).map((v) => v.id)))]
+    const variantIds = [null, ...new Set(only.flatMap((t) => (BLOCKS[t].variants ?? []).slice(1).map((v) => v.id)))]
     for (const bv of variantIds) {
-      const withV = BLOCK_TYPES.filter((t) => (bv === null ? true : BLOCKS[t].variants?.slice(1).some((v) => v.id === bv)))
+      const withV = only.filter((t) => (bv === null ? true : BLOCKS[t].variants?.slice(1).some((v) => v.id === bv)))
       const most = Math.max(1, ...withV.map((t) => BLOCKS[t].items?.max ?? 1))
       for (let n = 1; n <= most; n++) {
         // 항목 수가 n일 수 있는 부품만 (항목이 없는 부품은 한 번만)

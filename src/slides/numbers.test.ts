@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colsOf, formatNumber, isNumericCell, parseDelta, parseNumber, spanIn, statusOf } from './numbers'
+import { colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, parseDelta, parseNumber, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 숫자만 읽는다', () => {
@@ -71,5 +71,15 @@ describe('추진 일정의 기간', () => {
     expect(spanIn('내년 상반기', cols)).toBe(null)
     expect(spanIn('', cols)).toBe(null)
     expect(spanIn('11월', [])).toBe(null)
+  })
+})
+
+describe('평가표 읽기', () => {
+  it('좋음 보통 나쁨과 기호를 읽고, 모르는 글은 그대로 둔다', () => {
+    expect(gradesOf('좋음 보통, 나쁨').map(gradeOf)).toEqual(['good', 'mid', 'bad'])
+    expect(gradesOf('○ △ ×').map(gradeOf)).toEqual(['good', 'mid', 'bad'])
+    expect(gradesOf('상 중 하').map(gradeOf)).toEqual(['good', 'mid', 'bad'])
+    expect(gradeOf('1.9억')).toBeNull()
+    expect(gradesOf('')).toEqual([])
   })
 })

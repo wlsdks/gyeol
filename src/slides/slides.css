@@ -139,7 +139,8 @@
     .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s,
     .bk-rg-l, .bk-rg-v, .bk-rg-n, .bk-rt-l, .bk-rt-t, .bk-rt-u, .bk-rt-sep, .bk-rt-v, .bk-rt-vu, .bk-rt-n,
     .bk-sp-l, .bk-sp-v, .bk-sp-n, .bk-sp-s, .bk-fc-k, .bk-fc-v, .bk-rk-hk, .bk-rk-t, .bk-rk-b, .bk-sw-k, .bk-sw-t, .bk-sw-b,
-    .bk-qa-k, .bk-qa-qt, .bk-qa-at, .bk-ck-sum, .bk-ck-t, .bk-ck-m, .bk-ck-s, .bk-gt-sk, .bk-gt-sv, .bk-gt-c, .bk-gt-t, .bk-gt-m, .bk-gt-p, .bk-pp-name, .bk-pp-role, .bk-pp-b
+    .bk-qa-k, .bk-qa-qt, .bk-qa-at, .bk-ck-sum, .bk-ck-t, .bk-ck-m, .bk-ck-s, .bk-gt-sk, .bk-gt-sv, .bk-gt-c, .bk-gt-t, .bk-gt-m, .bk-gt-p, .bk-pp-name, .bk-pp-role, .bk-pp-b,
+    .bk-ev-lg, .bk-ev-sk, .bk-ev-sv, .bk-ev-cn, .bk-ev-pk, .bk-ev-t, .bk-ev-m, .bk-ev-x, .bk-ev-p, .bk-mk-t, .bk-mk-v, .bk-mk-b
   ) {
   /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 함께 줄인다. 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css)
      --bk-fit: 놓은 뒤 내용이 늘어 칸을 넘치면 slides/fitBlocks.ts가 단계로 줄인다 */
