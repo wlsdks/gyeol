@@ -97,12 +97,12 @@ function measureArea(el: HTMLElement | null) {
 
 /**
  * 부품 장이 아닌 장을 부품 장으로 바꿨을 때의 본문 상자 어림: 장의 틀(위, 본문 아래의 띠, 옆),
- * 지금 장의 제목 높이와 제목 아래 간격(64)을 뺀다. 바뀐 모습이 그려지면 그때부터는 실제로 잰다
+ * 지금 장의 제목 높이와 제목 아래 간격(FRAME.gap)을 뺀다. 바뀐 모습이 그려지면 그때부터는 실제로 잰다
  */
 function guessArea(frame: DOMRect) {
   const head = document.querySelector<HTMLElement>('.ed-canvas .slide .s-head')
   const k = frame.width / 1920
-  const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + 64 : 0)
+  const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + FRAME.gap : 0)
   const size = { w: 1920 - FRAME.x * 2, h: 1080 - top - FRAME.bottom }
   return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
 }

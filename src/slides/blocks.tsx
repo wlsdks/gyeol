@@ -333,9 +333,6 @@ function Spark() {
       <div className="bk-sp-chart">
         {pts.length >= 2 && (
           <>
-            <svg className="bk-sp-fill" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <path d={`${line} L100 100 L0 100 Z`} />
-            </svg>
             <svg className="bk-sp-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <path d={line} />
             </svg>
@@ -407,7 +404,7 @@ function Risks() {
 
 const SWOT = ['S', 'W', 'O', 'T']
 
-/** 강점과 약점(SWOT): 위는 안(강점, 약점), 아래는 밖(기회, 위협). 왼쪽 칸(강점, 기회)의 글자만 강조색 */
+/** 강점과 약점(SWOT): 위는 안(강점, 약점), 아래는 밖(기회, 위협). 칸 이름 글자(S, W, O, T)는 옅게 */
 function Swot() {
   const { slide } = useSlide()
   const items = slide.items.slice(0, BLOCKS.swot.items!.max)
@@ -416,7 +413,7 @@ function Swot() {
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ul className="bk-sw-grid">
         {items.map((it, i) => (
-          <li key={it.id} className={cx('it bk-sw-q', i % 2 === 0 ? 'is-plus' : 'is-minus')}>
+          <li key={it.id} className="it bk-sw-q">
             <div className="bk-sw-top">
               <span className="bk-sw-k" aria-hidden="true">
                 {SWOT[i]}

@@ -10,6 +10,7 @@ describe('장의 틀', () => {
   it('옆과 위아래 여백이 CSS와 같다', () => {
     expect(px('pad-x')).toBe(FRAME.x)
     expect(px('pad-y')).toBe(FRAME.y)
+    expect(px('body-gap')).toBe(FRAME.gap)
   })
 
   it('본문 상자 아래의 띠가 CSS와 같다', () => {

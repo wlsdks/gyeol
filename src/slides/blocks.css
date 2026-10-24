@@ -4,11 +4,14 @@
  *
  * - 칸마다 크기가 달라서 칸 안의 글자는 칸 너비와 높이에 맞춰 단계로 줄인다(--bk-w, --bk-h).
  *   연속으로 줄이지 않고 단계로 줄여서, 같은 장의 비슷한 칸끼리는 글자 크기가 같다.
- * - 바탕은 세 가지: 없음(plain), 옅은 면(card), 강조색 면(bold). 면은 꼭 필요한 부품에만.
+ * - 바탕은 세 가지: 없음(plain), 옅은 면(card), 짙은 면(bold, --bold-bg). 면은 꼭 필요한 부품에만.
+ * - 줄이 쌓이는 부품(개요, 준비 상황, 일정, 평가표, 시장 규모, 맡은 사람)은 같은 꼴: 소제목 아래 --bk-h-gap,
+ *   첫 줄 위 선은 글자색(--ink), 줄 사이와 마지막 줄 아래는 옅은 선(--line). 선 굵기는 --rule(slides.css).
  */
 
 .slide.l-compose {
   --bk-gap: 48px;
+  --bk-h-gap: 28px;
 }
 
 .bk-area {
@@ -18,7 +21,7 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--bk-gap);
   min-height: 0;
-  margin-top: 64px;
+  margin-top: var(--body-gap);
 }
 
 /* 제목과 부제를 비우면 부품이 장 위쪽부터 */
@@ -270,7 +273,7 @@
 }
 
 .bk-msg-t {
-  --fs: 66px;
+  --fs: 52px;
   max-width: 1500px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
@@ -301,7 +304,7 @@
 .bk-label {
   --fs: var(--t-label);
   margin-bottom: 16px;
-  color: var(--accent);
+  color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
 }
@@ -327,7 +330,7 @@
 }
 
 .bk-bl .bk-h {
-  margin-bottom: 32px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 /* 항목 사이는 칸에 높이가 남으면 넓힌다 (--bk-air, slides/fitBlocks.ts). 목록, 표, 일정 막대가 같이 쓴다 */
@@ -352,7 +355,8 @@
 .bk-dot {
   width: 14px;
   height: 14px;
-  margin-top: calc(var(--t-body) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.55);
+  /* 첫 줄 가운데: 글자 크기를 바꾸는 배율(--scale, --fit)까지 글자와 같이 곱한다 */
+  margin-top: calc(var(--t-body) * var(--scale, 1) * var(--fit, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.55);
   border-radius: 50%;
   background: var(--accent);
 }
@@ -384,15 +388,16 @@
   display: block;
   height: 0.5em;
   margin-bottom: 28px;
-  color: var(--accent);
+  /* 따옴표는 장식이라 강조색 대신 옅은 글자색으로, 크기도 글보다 조금 큰 정도로 */
+  color: color-mix(in srgb, var(--ink) 28%, var(--bg));
   font-family: var(--font-head);
-  font-size: calc(170px * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1));
+  font-size: calc(90px * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1));
   font-weight: 700;
   line-height: 1;
 }
 
 .bk-q-t {
-  --fs: 46px;
+  --fs: 44px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
@@ -425,7 +430,7 @@
 }
 
 .bk-call-t {
-  --fs: 44px;
+  --fs: 36px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
@@ -450,7 +455,7 @@
 }
 
 .bk-num-v {
-  --fs: 132px;
+  --fs: 108px;
   margin-top: 14px;
   color: var(--accent);
   font-family: var(--font-head);
@@ -517,7 +522,7 @@
 }
 
 .bk-dl-v {
-  --fs: 104px;
+  --fs: 90px;
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
   font-weight: var(--display-weight);
@@ -534,7 +539,7 @@
 }
 
 .bk-dl-from .bk-dl-v {
-  --fs: 76px;
+  --fs: 62px;
   color: var(--ink-3);
 }
 
@@ -614,11 +619,11 @@
   }
 
   .bk-dl-v {
-    --fs: 220px;
+    --fs: 184px;
   }
 
   .bk-dl-from .bk-dl-v {
-    --fs: 150px;
+    --fs: 128px;
   }
 
   .bk-dl-arrow {
@@ -668,7 +673,7 @@
 }
 
 .bk-gl-pct {
-  --fs: 96px;
+  --fs: 74px;
   flex: none;
   color: var(--accent);
   font-family: var(--font-head);
@@ -709,10 +714,6 @@
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
-}
-
-.bk-gl-of > * {
-  --fs: var(--t-small);
 }
 
 .bk-gl-v,
@@ -813,7 +814,7 @@
 }
 
 .bk-rg-v {
-  --fs: 150px;
+  --fs: 128px;
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
   font-weight: var(--display-weight);
@@ -906,7 +907,7 @@
    낮은 줄에서는 커진 글이 원보다 높아져서, 원이 충분히 클 때만 */
 @container bk (min-aspect-ratio: 3 / 2) and (min-width: 1200px) and (min-height: 440px) {
   .bk-rg-l {
-    --fs: 64px;
+    --fs: 52px;
   }
 
   .bk-rg-n {
@@ -974,11 +975,11 @@
 }
 
 .bk-rt-v {
-  --fs: 120px;
+  --fs: 108px;
 }
 
 .bk-rt-vu {
-  --fs: 60px;
+  --fs: 52px;
   margin-left: 4px;
   letter-spacing: -0.01em;
 }
@@ -1087,7 +1088,7 @@
 }
 
 .bk-sp-v {
-  --fs: 116px;
+  --fs: 90px;
   margin-top: 12px;
   color: var(--accent);
   font-family: var(--font-head);
@@ -1124,14 +1125,6 @@
 }
 
 /* 선 아래 면은 아래로 갈수록 옅게 */
-.bk-sp-fill {
-  mask-image: linear-gradient(to bottom, #000 10%, transparent);
-}
-
-.bk-sp-fill path {
-  fill: color-mix(in srgb, var(--accent) 18%, transparent);
-}
-
 .bk-sp-svg path {
   fill: none;
   stroke: var(--accent);
@@ -1150,7 +1143,8 @@
   margin: -12px 0 0 -12px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 20%, transparent);
+  /* 빛무리 대신 바탕색 둘레: 선 끝에서 점을 떼어 보이게만 */
+  box-shadow: 0 0 0 6px var(--bg);
 }
 
 /* 흐름 숫자(편집할 때만): 그림 위에서 고친다 (.on-chart, edit.css) */
@@ -1198,7 +1192,7 @@
 }
 
 :is(.bk-fc, .bk-rk, .bk-qa, .bk-pp) > .bk-h {
-  margin-bottom: 30px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 /* ---------- 개요 ---------- */
@@ -1233,7 +1227,7 @@
 
 .bk-fc-list[data-n='5'] .bk-fc-row,
 .bk-fc-list[data-n='6'] .bk-fc-row {
-  padding: calc(16px * var(--bk-fit, 1)) 0;
+  padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 .bk-fc-k {
@@ -1285,12 +1279,11 @@
 
 .bk-rk-hk.is-fix {
   grid-column: 3;
-  color: var(--accent);
 }
 
 .bk-rk-row {
   padding: calc(26px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .bk-rk-list[data-n='4'] .bk-rk-row {
@@ -1314,7 +1307,7 @@
 .bk-rk-arrow {
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--ink-3);
 }
 
 .bk-rk-arrow svg {
@@ -1338,11 +1331,11 @@
     row-gap: 8px;
     column-gap: 16px;
     border-bottom: 0;
-    border-top: 2px solid var(--line);
+    border-top: var(--rule) solid var(--line);
   }
 
   .bk-rk-row:last-child {
-    border-bottom: 2px solid var(--line);
+    border-bottom: var(--rule) solid var(--line);
   }
 
   .bk-rk-t {
@@ -1357,7 +1350,7 @@
   .bk-rk-arrow svg {
     width: 32px;
     height: 32px;
-    margin-top: calc(var(--t-body) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.2);
+    margin-top: calc(var(--t-body) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1) * 0.2);
   }
 }
 
@@ -1371,7 +1364,7 @@
 }
 
 .bk-sw > .bk-h {
-  margin-bottom: 22px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 .bk-sw-grid {
@@ -1392,11 +1385,11 @@
 .bk-sw-q:nth-child(even) {
   padding-right: 0;
   padding-left: 40px;
-  border-left: 2px solid var(--line);
+  border-left: var(--rule) solid var(--line);
 }
 
 .bk-sw-q:nth-child(-n + 2) {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .bk-sw-top {
@@ -1406,17 +1399,13 @@
 }
 
 .bk-sw-k {
-  --fs: 64px;
+  --fs: 44px;
   flex: none;
-  color: var(--accent);
+  color: var(--ink-3);
   font-family: var(--font-head);
   font-weight: var(--display-weight);
   letter-spacing: -0.02em;
   line-height: 1;
-}
-
-.bk-sw-q.is-minus .bk-sw-k {
-  color: var(--ink-3);
 }
 
 .bk-sw-t {
@@ -1443,7 +1432,7 @@
   }
 
   .bk-sw-k {
-    --fs: 48px;
+    --fs: 44px;
   }
 
   .bk-sw-top {
@@ -1457,7 +1446,7 @@
 .bk-qa-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: clamp(16px, 3.6cqh, 32px) 64px;
+  gap: calc(clamp(16px, 3.6cqh, 32px) + var(--bk-air, 0px) * 2) 64px;
 }
 
 .bk-qa-item {
@@ -1467,7 +1456,7 @@
   align-content: start;
   gap: clamp(6px, 1.4cqh, 12px) 20px;
   padding-top: clamp(14px, 3cqh, 26px);
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .bk-qa-q {
@@ -1475,15 +1464,15 @@
 }
 
 .bk-qa-k {
-  --fs: 40px;
-  color: var(--accent);
+  --fs: 36px;
+  color: var(--ink-3);
   font-family: var(--font-head);
   font-weight: 800;
   line-height: 1.3;
 }
 
 .bk-qa-qt {
-  --fs: 38px;
+  --fs: 36px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
@@ -1519,7 +1508,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 26px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 .bk-ck-top:not(:has(.bk-h)) {
@@ -1546,16 +1535,20 @@
   align-items: center;
   gap: 24px;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-ck-row:first-child {
+  border-top-color: var(--ink);
 }
 
 .bk-ck-row:last-child {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .bk-ck-list[data-n='5'] .bk-ck-row,
 .bk-ck-list[data-n='6'] .bk-ck-row {
-  padding: calc(12px * var(--bk-fit, 1)) 0;
+  padding: calc(12px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 .bk-ck-row.is-done {
@@ -1624,11 +1617,12 @@
 /* 왼쪽은 할 일 이름, 오른쪽은 기간 칸. 막대와 지금 칸은 기간 칸의 몇째인지(--s, --e, --now)로 놓는다 */
 .bk-gt {
   --lw: clamp(240px, 30%, 440px);
-  --gt-c: var(--accent);
+  /* 지금 칸이 없으면 막대는 모두 같은 옅은 글자색. 강조색은 지금 하는 일(is-now)에만 */
+  --gt-c: color-mix(in srgb, var(--ink) 30%, var(--bg));
 }
 
 .bk-gt > .bk-h {
-  margin-bottom: 22px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 .bk-gt-nowset {
@@ -1712,11 +1706,15 @@
 .bk-gt-row {
   align-items: center;
   padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-gt-row:first-child {
+  border-top-color: var(--ink);
 }
 
 .bk-gt-row:last-child {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .bk-gt-list[data-n='5'] .bk-gt-row,
@@ -1781,6 +1779,10 @@
   --gt-c: color-mix(in srgb, var(--ink) 24%, transparent);
 }
 
+.bk-gt-row.is-now {
+  --gt-c: var(--accent);
+}
+
 .bk-gt-row.is-later {
   --gt-c: var(--accent-line);
 }
@@ -1806,7 +1808,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 22px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 .bk-ev-top:not(:has(.bk-h)) {
@@ -1922,10 +1924,7 @@
 
 .bk-ev-pk {
   --fs: var(--t-source);
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  color: var(--accent);
   font-weight: 700;
   line-height: 1.4;
 }
@@ -1944,11 +1943,15 @@
 .bk-ev-row {
   align-items: center;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-ev-row:first-child {
+  border-top-color: var(--ink);
 }
 
 .bk-ev-row:last-child {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .bk-ev-list[data-n='5'] .bk-ev-row,
@@ -2049,7 +2052,7 @@
 }
 
 .bk-mk > .bk-h {
-  margin-bottom: 26px;
+  margin-bottom: var(--bk-h-gap);
 }
 
 /* 가운데 맞춤은 safe: 목록이 남는 높이보다 길면 위(소제목)로 넘치지 않고 아래로만 넘쳐 fitBlocks가 알아챈다 */
@@ -2127,11 +2130,15 @@
   align-items: center;
   gap: 22px;
   padding: calc(20px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-mk-row:first-child {
+  border-top-color: var(--ink);
 }
 
 .bk-mk-row:last-child {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 /* 원의 색 표시 */
@@ -2157,7 +2164,7 @@
 }
 
 .bk-mk-v {
-  --fs: 60px;
+  --fs: 52px;
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
   font-weight: var(--display-weight);
@@ -2232,8 +2239,8 @@
   width: var(--av);
   height: var(--av);
   border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface);
+  color: var(--ink-2);
   font-family: var(--font-head);
   font-size: calc(var(--av) * 0.42);
   font-weight: 700;
@@ -2248,7 +2255,7 @@
 }
 
 .bk-pp-name {
-  --fs: 38px;
+  --fs: 36px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
@@ -2258,7 +2265,7 @@
 .bk-pp-role {
   --fs: var(--t-small);
   margin-top: 6px;
-  color: var(--accent);
+  color: var(--ink-2);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -2282,12 +2289,16 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
-  padding: calc(18px + var(--bk-air, 0px)) 0;
-  border-top: 2px solid var(--line);
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.va-list .bk-pp-card:first-child {
+  border-top-color: var(--ink);
 }
 
 .va-list .bk-pp-card:last-child {
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .va-list .bk-pp-av {
@@ -2373,6 +2384,7 @@
 
 /* ---------- 부품 하나만 (부품 고르기 카드, 끌고 있는 부품) ---------- */
 
+/* 장의 틀(--pad-x, --pad-y)이 아니라 카드 안에서 부품 하나를 크게 보이려는 좁은 여백이다 */
 .slide.is-solo {
   padding: 40px;
 }
@@ -2417,15 +2429,15 @@
 
 /* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
 .bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
-  padding-block: clamp(12px, 2.4cqh, 30px);
+  padding-block: calc(clamp(12px, 2.4cqh, 30px) + var(--bk-air, 0px));
 }
 
 .bk-in .ps:is([data-n='5']) .ps-row:not(.ps-headrow) {
-  padding-block: clamp(12px, 1.6cqh, 20px);
+  padding-block: calc(clamp(12px, 1.6cqh, 20px) + var(--bk-air, 0px));
 }
 
 .bk-in .ps:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
-  padding-block: 8px;
+  padding-block: calc(8px + var(--bk-air, 0px));
 }
 
 .bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
@@ -2447,11 +2459,11 @@
 
 @container bk (max-height: 620px) {
   .bk-in .sk:is([data-n]) .sk-row:not(.sk-headrow) {
-    padding-block: 12px;
+    padding-block: calc(12px + var(--bk-air, 0px));
   }
 
   .bk-in .sm:is([data-n]) .sm-row {
-    padding-block: 18px;
+    padding-block: calc(18px + var(--bk-air, 0px));
   }
 }
 
@@ -2465,7 +2477,7 @@
   }
 
   .bk-in .kp[data-n='1'] .kp-value {
-    --fs: 260px;
+    --fs: 220px;
     grid-row: auto;
   }
 
@@ -2512,7 +2524,7 @@
   }
 
   .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:first-child .kp-value {
-    --fs: 200px;
+    --fs: 184px;
     margin-bottom: 24px;
   }
 
@@ -2524,7 +2536,7 @@
   }
 
   .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
-    --fs: 72px;
+    --fs: 62px;
     order: -1;
     margin: 0 0 12px;
   }
@@ -2569,7 +2581,7 @@
   }
 
   .va-base > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-pct {
-    --fs: 56px;
+    --fs: 52px;
   }
 
   /* 안 비교 표: 이름 360px, 비용 420px를 빼면 내용 칸이 한두 글자 너비만 남는다 */

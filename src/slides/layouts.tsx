@@ -487,16 +487,17 @@ function Versus() {
                 <div key={it.id} className={cx('it vs-row', i === highlight && 'is-hl', pa !== null && pb !== null && pb < pa && 'is-down')} style={style}>
                   <div className="vs-label">
                     <IT i={i} k="title" className="vs-name" />
-                    {changeText(va, vb) && <span className="vs-change">{changeText(va, vb)}</span>}
                   </div>
                   <div className="vs-track" aria-hidden="true">
                     {pa !== null && pb !== null && <span className="vs-span" />}
                     {pa !== null && <span className="vs-d is-a" />}
                     {pb !== null && <span className="vs-d is-b" />}
                   </div>
+                  {/* 읽는 차례대로 앞 값, 뒤 값, 바뀐 비율. 비율은 계산한 표시라 칸이 아니다 */}
                   <div className="vs-nums">
                     <IT i={i} k="meta" as="span" className="vs-num is-a" oneLine />
                     <IT i={i} k="value" as="span" className="vs-num is-b" oneLine />
+                    <span className="vs-change">{changeText(va, vb) ?? ''}</span>
                   </div>
                   <ItemTools i={i} />
                 </div>

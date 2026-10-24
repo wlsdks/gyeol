@@ -12,13 +12,16 @@
  * - 같은 레이아웃 안의 모양(va-*)은 같은 칸을 다르게 놓을 뿐, 칸은 늘거나 줄지 않는다.
  */
 
+/* 글자 크기는 한 비율(1.2)의 단계에서만 고른다: 22 · 26 · 30 · 36 · 44 · 52 · 62 · 74 · 90 · 108 · 128 · 154 · 184 · 220 · 264.
+   단계 밖의 크기(34, 38 같은)를 섞으면 비슷한 글끼리 크기가 조금씩 달라 위계가 흐려진다. 22는 회의실 뒷자리에서 읽히는 바닥.
+   본문 30(1920 캔버스에서 15pt), 제목 62(31pt). 숫자처럼 크게 보일 글도 같은 단계에서 */
 .slide {
-  --t-title: 72px;
+  --t-title: 62px;
   --t-lead: 36px;
-  --t-h: 44px;
-  --t-body: 34px;
+  --t-h: 36px;
+  --t-body: 30px;
   --t-small: 26px;
-  --t-label: 28px;
+  --t-label: 26px;
   --t-source: 22px;
   /* 장의 틀. 글과 그림은 옆으로 --pad-x, 위아래로 --pad-y 안에만 그린다: 왼쪽과 오른쪽, 위와 아래가 각각 같다.
      위아래는 글자가 실제로 그려진 선으로 맞춘다. 줄 높이의 빈 위아래를 빼지 않으면 위(큰 제목)는 넓고
@@ -26,6 +29,14 @@
      레이아웃은 이 값으로만 여백을 잡는다. 갤러리 콘솔의 checkFrame()이 모든 장을 잰다 */
   --pad-x: 120px;
   --pad-y: 72px;
+  /* 제목(과 부제) 아래에서 본문까지. 레이아웃 장(.s-body)과 컴포넌트 장(.bk-area)이 같은 값을 써서 장을 넘겨도 본문 윗선이 같다 */
+  --body-gap: 72px;
+  /* 면 위 글자의 옅은 단계 둘: 버금 글(부제, 설명)과 이름표(라벨, 메타). 글자색을 물려받는 면(짙은 면, 강조 칸)에서
+     색을 따로 정하지 않고 옅게만 할 때. 값이 장마다 제각각이면 같은 쓰임의 글이 장을 넘길 때 다른 회색으로 보인다 */
+  --o-sub: 0.8;
+  --o-mute: 0.64;
+  /* 줄 선(표, 목록, 일정의 칸 나눔)의 굵기 하나. 레이아웃과 컴포넌트가 같이 써서 한 장 안에서 선 굵기가 섞이지 않는다 */
+  --rule: 2px;
   /* 아래 띠: 하단 표시(글 21 + 단락 밑줄 13), 그 위에 14 띄우고 출처 한 줄, 본문과는 38.
      출처와 하단 표시는 한 띠로 붙이고 본문과는 그 두 배 넘게 띄운다: 가까운 것끼리 한 무리로 읽힌다 */
   --foot-h: 34px;
@@ -96,14 +107,14 @@
   --accent-ink: var(--bold-bg);
 }
 
-/* 보내는 자료: 혼자 읽으니 글이 조금 많아도 되게 한 단계 작게 */
+/* 보내는 자료: 혼자 읽으니 글이 조금 많아도 되게 한 단계 작게 (같은 단계에서) */
 .slide.d-read {
-  --t-title: 64px;
-  --t-lead: 32px;
-  --t-h: 40px;
-  --t-body: 30px;
-  --t-small: 24px;
-  --t-label: 26px;
+  --t-title: 52px;
+  --t-lead: 30px;
+  --t-h: 30px;
+  --t-body: 26px;
+  --t-small: 22px;
+  --t-label: 22px;
 }
 
 .slide *,
@@ -127,13 +138,13 @@
 .slide
   :where(
     .s-title, .s-lead, .cv-title, .cv-lead, .cv-ask-text, .sc-title, .sc-lead, .ag-t,
-    .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-l, .cp-r,
-    .tl-title, .tl-body, .tl-meta, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label,
-    .pr-name, .pr-price, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .cl-title, .cl-step-t, .cl-step-b,
-    .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .wf-num, .wf-title, .wf-meta, .tb-cell,
+    .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-h, .cp-l, .cp-r,
+    .tl-title, .tl-body, .tl-meta, .cs-client, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label, .lg-name,
+    .pr-name, .pr-price, .pr-meta, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .br-meta, .cl-title, .cl-step-t, .cl-step-b,
+    .sk-h, .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .mx-x, .mx-y, .wf-num, .wf-title, .wf-meta, .wf-unit, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .vs-key-t, .vs-unit, .vs-num, .vs-name, .vs-change, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
-    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total, .pm-name, .pm-body, .pm-nums,
+    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total, .pm-name, .pm-body, .pm-nums, .pm-x, .pm-y,
     .bk-msg-t, .bk-msg-s, .bk-label, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-q-t, .bk-q-by, .bk-call-l, .bk-call-t,
     .bk-num-l, .bk-num-v, .bk-num-n, .bk-dl-l, .bk-dl-k, .bk-dl-v, .bk-dl-chip, .bk-dl-n,
     .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s,
@@ -156,8 +167,10 @@
   --scale: 1.08;
 }
 
+/* 한 줄로 줄이는 글: 칸 너비(100cqi)에 맞게 줄이되, 칸 크기로 줄일 때는 다른 글자 칸처럼 --fs-min 밑으로 가지 않는다.
+   바닥이 없으면 같은 줄의 다른 글자(바닥에서 멈춘다)보다 이 글만 작아진다 ('단위: 억 원'의 '억 원') */
 .slide .one-line {
-  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1)), calc(100cqi / (var(--units, 1) * var(--glyph-k, 1))));
+  font-size: min(max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * var(--bk-w, 1) * var(--bk-h, 1) * var(--bk-fit, 1))), calc(100cqi / (var(--units, 1) * var(--glyph-k, 1))));
   white-space: nowrap;
 }
 
@@ -211,7 +224,7 @@
 .s-body {
   flex: 1;
   min-height: 0;
-  margin-top: 72px;
+  margin-top: var(--body-gap);
 }
 
 /* 숫자 장의 출처·기준: 가장 작고 흐리게, 쪽 번호 바로 위에 */
@@ -296,7 +309,7 @@
 
 .meta-row dt {
   font-size: 22px;
-  opacity: 0.66;
+  opacity: var(--o-mute);
 }
 
 .meta-row dd {
@@ -367,7 +380,7 @@
 }
 
 .cv-title {
-  --fs: 116px;
+  --fs: 90px;
   max-width: 1120px;
   font-weight: var(--display-weight);
   line-height: 1.12;
@@ -398,8 +411,8 @@
 .cv-label {
   display: block;
   margin-bottom: 20px;
-  font-size: 24px;
-  opacity: 0.72;
+  font-size: 22px;
+  opacity: var(--o-mute);
 }
 
 .cv-side > .cv-ask:first-child > .cv-label:first-child {
@@ -412,7 +425,7 @@
 }
 
 .cv-ask-text {
-  --fs: 56px;
+  --fs: 52px;
   font-family: var(--font-head);
   font-weight: var(--display-weight);
   line-height: 1.24;
@@ -482,7 +495,7 @@
 
 .l-cover.va-full .cv-lead {
   color: inherit;
-  opacity: 0.82;
+  opacity: var(--o-sub);
 }
 
 .l-cover.va-full .cv-side {
@@ -497,7 +510,8 @@
   max-width: 380px;
   padding: 16px 24px;
   border-radius: 16px;
-  background: #edf0f5;
+  /* 어두운 면 위의 밝은 판: 박힌 색 대신 지금 면의 글자색(밝은 색)에 바탕을 조금 섞어 눈부시지 않게 */
+  background: color-mix(in srgb, var(--ink) 92%, var(--bg));
 }
 
 .l-cover.va-full .cv-logo:not(.img-empty) img {
@@ -564,17 +578,17 @@
 }
 
 .sc-title {
-  --fs: 136px;
+  --fs: 108px;
   font-weight: var(--display-weight);
   line-height: 1.08;
   letter-spacing: calc(var(--head-tracking) - 0.015em);
 }
 
 .sc-lead {
-  --fs: 38px;
+  --fs: 36px;
   margin-top: 32px;
   line-height: 1.4;
-  opacity: 0.82;
+  opacity: var(--o-sub);
 }
 
 .sc-map {
@@ -592,7 +606,7 @@
   display: flex;
   gap: 14px;
   margin-bottom: calc(-1em * ((1.2 - 1.19) / 2 + 0.155));
-  opacity: 0.55;
+  opacity: var(--o-mute);
 }
 
 .sc-map li.is-on {
@@ -679,17 +693,17 @@
   display: grid;
   grid-template-columns: 128px 1fr;
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .ag-n {
   color: var(--accent);
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 700;
 }
 
 .ag-t {
-  --fs: 60px;
+  --fs: 52px;
   line-height: 1.25;
 }
 
@@ -733,7 +747,7 @@
   top: 0;
   bottom: 0;
   left: -32px;
-  border-left: 2px solid var(--line);
+  border-left: var(--rule) solid var(--line);
   content: '';
 }
 
@@ -761,17 +775,17 @@
 }
 
 .st-title {
-  --fs: 104px;
+  --fs: 90px;
   line-height: 1.24;
   letter-spacing: calc(var(--head-tracking) - 0.01em);
 }
 
 .st-lead {
-  --fs: 38px;
+  --fs: 36px;
   max-width: 1280px;
   margin-top: 56px;
   padding-top: 40px;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;
@@ -795,7 +809,7 @@
   flex-direction: column;
   min-height: 0;
   padding: 8px 56px 12px;
-  border-left: 2px solid var(--line);
+  border-left: var(--rule) solid var(--line);
 }
 
 .kp-item:first-child {
@@ -804,7 +818,7 @@
 }
 
 .kp-label {
-  --fs: 32px;
+  --fs: 30px;
   color: var(--ink-2);
   font-weight: 600;
   line-height: 1.3;
@@ -812,7 +826,7 @@
 
 /* 큰 숫자는 줄 높이를 1보다 낮게 잡아 위아래를 붙인다. 명조(한글과 숫자의 키가 크다)는 --tall만큼 늘려 이름, 설명과 겹치지 않게 (themes.ts) */
 .kp-value {
-  --fs: 176px;
+  --fs: 154px;
   margin-top: 28px;
   color: var(--accent);
   font-weight: 700;
@@ -821,11 +835,11 @@
 }
 
 .kp[data-n='2'] .kp-value {
-  --fs: 220px;
+  --fs: 184px;
 }
 
 .kp[data-n='4'] .kp-value {
-  --fs: 136px;
+  --fs: 108px;
 }
 
 .kp-body {
@@ -851,7 +865,7 @@
 }
 
 .kp[data-n='1'] .kp-value {
-  --fs: 340px;
+  --fs: 264px;
   grid-row: 1 / span 2;
   align-self: end;
   margin: 0;
@@ -859,7 +873,7 @@
 }
 
 .kp[data-n='1'] .kp-label {
-  --fs: 52px;
+  --fs: 44px;
   grid-column: 2;
   align-self: end;
   padding-top: 40px;
@@ -869,7 +883,7 @@
 }
 
 .kp[data-n='1'] .kp-body {
-  --fs: 34px;
+  --fs: 30px;
   grid-column: 2;
   align-self: end;
   max-width: 720px;
@@ -925,7 +939,7 @@
   justify-content: center;
   padding: 0 0 0 0;
   border-left: 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .va-focus .kp:not([data-n='1']) .kp-item:first-child {
@@ -946,13 +960,13 @@
 }
 
 .va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-value {
-  --fs: 260px;
+  --fs: 220px;
   order: -1;
   margin: 0 0 40px;
 }
 
 .va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-label {
-  --fs: 44px;
+  --fs: 36px;
   color: var(--ink);
   font-weight: 700;
 }
@@ -966,7 +980,7 @@
 }
 
 .va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
-  --fs: 96px;
+  --fs: 74px;
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
@@ -1002,19 +1016,19 @@
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 48px;
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .sm-label {
   --fs: 30px;
   align-self: center;
-  color: var(--accent);
+  color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
 }
 
 .sm-body {
-  --fs: 40px;
+  --fs: 36px;
   max-width: 1300px;
   font-weight: 500;
   line-height: 1.42;
@@ -1022,7 +1036,7 @@
 }
 
 .sm[data-n='5'] .sm-body {
-  --fs: 34px;
+  --fs: 30px;
 }
 
 /* 모양: 네 칸. 줄 대신 칸마다 이름과 요점 */
@@ -1049,11 +1063,11 @@
 }
 
 .va-grid .sm-body {
-  --fs: 38px;
+  --fs: 36px;
 }
 
 .va-grid .sm[data-n='5'] .sm-body {
-  --fs: 32px;
+  --fs: 30px;
 }
 
 /* ---------- 핵심 포인트: 이름과 설명을 줄마다 나란히 ---------- */
@@ -1076,7 +1090,7 @@
   grid-template-columns: minmax(0, min(560px, 36%)) minmax(0, 1fr);
   gap: min(64px, 4%);
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .pt-title {
@@ -1093,11 +1107,11 @@
 }
 
 .pt:is([data-n='5'], [data-n='6']) .pt-title {
-  --fs: 38px;
+  --fs: 36px;
 }
 
 .pt:is([data-n='5'], [data-n='6']) .pt-body {
-  --fs: 27px;
+  --fs: 26px;
 }
 
 /* 모양: 세로 칸. 포인트를 왼쪽에서 오른쪽으로 나란히 */
@@ -1122,11 +1136,11 @@
 }
 
 .va-columns .pt-title {
-  --fs: 52px;
+  --fs: 44px;
 }
 
 .va-columns .pt-body {
-  --fs: 34px;
+  --fs: 30px;
 }
 
 /* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
@@ -1158,11 +1172,11 @@
 }
 
 .va-tiles .pt-title {
-  --fs: 52px;
+  --fs: 44px;
 }
 
 .va-tiles .pt-body {
-  --fs: 32px;
+  --fs: 30px;
 }
 
 /* ---------- 비교 ---------- */
@@ -1212,8 +1226,8 @@
 }
 
 .cp-h {
+  --fs: 26px;
   padding: 48px 64px 28px;
-  font-size: 26px;
   font-weight: 700;
 }
 
@@ -1230,17 +1244,17 @@
   display: flex;
   align-items: center;
   margin: 0 64px;
-  border-top: 1px solid var(--line);
+  border-top: var(--rule) solid var(--line);
   line-height: 1.42;
 }
 
 .cp-l {
-  --fs: 32px;
+  --fs: 30px;
   color: var(--ink-2);
 }
 
 .cp-r {
-  --fs: 34px;
+  --fs: 30px;
   border-color: var(--accent-line);
   color: var(--ink);
   font-weight: 600;
@@ -1300,8 +1314,8 @@
 }
 
 .va-table .cp-h {
+  --fs: 26px;
   padding: 40px 0 24px;
-  font-size: 28px;
 }
 
 .va-table :is(.cp-l, .cp-r) {
@@ -1364,9 +1378,9 @@
 }
 
 .tl-meta {
-  --fs: 34px;
+  --fs: 30px;
   height: 56px;
-  color: var(--accent);
+  color: var(--ink);
   font-weight: 700;
   line-height: 56px;
   white-space: nowrap;
@@ -1408,8 +1422,13 @@
   color: var(--ink-3);
 }
 
+/* 날짜의 강조색은 지금 단계에만 */
+.tl-item.is-now .tl-meta {
+  color: var(--accent);
+}
+
 .tl-title {
-  --fs: 48px;
+  --fs: 44px;
   line-height: 1.25;
 }
 
@@ -1426,7 +1445,7 @@
 }
 
 .tl:is([data-n='5'], [data-n='6']) .tl-title {
-  --fs: 40px;
+  --fs: 36px;
 }
 
 .tl:is([data-n='5'], [data-n='6']) .tl-body {
@@ -1455,11 +1474,11 @@
   column-gap: 32px;
   align-content: center;
   padding: 0;
-  border-top: 1px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .va-steps .tl-item:last-child {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 /* 세로 선: 점을 잇는다 */
@@ -1511,7 +1530,7 @@
 .va-steps .tl-title {
   grid-column: 3;
   align-self: end;
-  --fs: 44px;
+  --fs: 36px;
 }
 
 .va-steps .tl-body {
@@ -1542,8 +1561,8 @@
 }
 
 .cs-client {
-  color: var(--accent);
-  font-size: 28px;
+  --fs: 26px;
+  color: var(--ink-2);
   font-weight: 700;
 }
 
@@ -1552,7 +1571,7 @@
 }
 
 .cs-title {
-  --fs: 68px;
+  --fs: 62px;
   margin-top: 24px;
   line-height: 1.2;
 }
@@ -1568,7 +1587,7 @@
 
 /* 한마디는 본문 바로 뒤에 잇는다. 맨 아래에 붙이면 본문과 사이가 비어 보인다 */
 .cs-quote {
-  --fs: 38px;
+  --fs: 36px;
   position: relative;
   max-width: 1020px;
   margin-top: 72px;
@@ -1580,11 +1599,12 @@
 
 .cs-quote::before {
   position: absolute;
-  top: -10px;
+  top: -4px;
   left: 0;
-  color: var(--accent);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 120px;
+  /* 따옴표는 장식이라 옅은 글자색, 테마의 제목 글꼴로 */
+  color: color-mix(in srgb, var(--ink) 28%, var(--bg));
+  font-family: var(--font-head);
+  font-size: 88px;
   font-weight: 700;
   line-height: 1;
   content: '\201C';
@@ -1621,7 +1641,7 @@
 }
 
 .cs-value {
-  --fs: 128px;
+  --fs: 108px;
   color: var(--accent);
   font-weight: 700;
   line-height: 1;
@@ -1700,7 +1720,7 @@
 }
 
 .pr-name {
-  --fs: 34px;
+  --fs: 30px;
   font-weight: 700;
 }
 
@@ -1716,7 +1736,7 @@
 }
 
 .pr-price {
-  --fs: 80px;
+  --fs: 62px;
   margin-top: 36px;
   font-weight: 700;
   line-height: 1.08;
@@ -1724,16 +1744,16 @@
 }
 
 .pr-meta {
+  --fs: 26px;
   margin-top: 14px;
   color: var(--ink-3);
-  font-size: 25px;
 }
 
 .pr-body {
-  --fs: 28px;
+  --fs: 26px;
   margin-top: 40px;
   padding-top: 36px;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
   color: var(--ink-2);
   line-height: 1.85;
 }
@@ -1743,12 +1763,12 @@
 }
 
 .pr-plan.is-hl .pr-meta {
-  opacity: 0.72;
+  opacity: var(--o-mute);
 }
 
 .pr-plan.is-hl .pr-body {
   border-color: var(--bold-line);
-  opacity: 0.92;
+  opacity: var(--o-sub);
 }
 
 /* 밝은 강조색을 바탕으로 깐 장은 강조색이 글자색(어두운 색)이 되어 색 면과 겹친다. 표를 색 면의 반대로 */
@@ -1780,7 +1800,7 @@
   column-gap: 56px;
   align-content: center;
   padding: 0 40px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
   border-radius: 0;
   background: none;
   box-shadow: none;
@@ -1875,7 +1895,7 @@
 }
 
 .ix-img.is-contain img {
-  filter: drop-shadow(0 24px 48px rgb(16 22 38 / 0.14));
+  filter: drop-shadow(0 24px 48px color-mix(in srgb, var(--ink) 14%, transparent));
 }
 
 .ix-text {
@@ -1891,7 +1911,7 @@
 }
 
 .ix-title {
-  --fs: 64px;
+  --fs: 52px;
 }
 
 .ix-body {
@@ -1970,8 +1990,8 @@
 }
 
 .lg-name {
+  --fs: 22px;
   color: var(--ink-3);
-  font-size: 22px;
   text-align: center;
 }
 
@@ -1989,7 +2009,8 @@
   max-width: 380px;
   padding: 16px 24px;
   border-radius: 16px;
-  background: #edf0f5;
+  /* 어두운 면 위의 밝은 판: 박힌 색 대신 지금 면의 글자색(밝은 색)에 바탕을 조금 섞어 눈부시지 않게 */
+  background: color-mix(in srgb, var(--ink) 92%, var(--bg));
 }
 
 .is-dark :is(.cv-logo, .cs-logo):not(.img-empty) img {
@@ -2018,7 +2039,7 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px 250px 210px;
   column-gap: 48px;
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .sk-headrow {
@@ -2027,8 +2048,8 @@
 }
 
 .sk-h {
+  --fs: var(--t-source);
   color: var(--ink-3);
-  font-size: var(--t-source);
   font-weight: 600;
 }
 
@@ -2044,7 +2065,7 @@
 }
 
 .sk-body {
-  --fs: 24px;
+  --fs: 22px;
   margin-top: 8px;
   color: var(--ink-3);
   line-height: 1.35;
@@ -2107,19 +2128,19 @@
 }
 
 .sk-target {
-  --fs: 32px;
+  --fs: 30px;
   color: var(--ink-2);
 }
 
 .sk-value {
-  --fs: 40px;
+  --fs: 36px;
   font-family: var(--font-head);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .sk-rate {
-  --fs: 52px;
+  --fs: 44px;
   color: var(--ink);
   font-family: var(--font-head);
   white-space: nowrap;
@@ -2137,11 +2158,11 @@
 }
 
 .sk:is([data-n='5'], [data-n='6']) .sk-title {
-  --fs: 32px;
+  --fs: 30px;
 }
 
 .sk:is([data-n='5'], [data-n='6']) .sk-rate {
-  --fs: 44px;
+  --fs: 36px;
 }
 
 /* ---------- 증감 요인 (폭포) ----------
@@ -2174,7 +2195,7 @@
 
 .wf-plot {
   position: relative;
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 /* 바닥줄은 칸 사이 틈까지 이어지게 */
@@ -2183,7 +2204,7 @@
   right: calc(var(--wf-gap) * -1);
   bottom: -2px;
   width: var(--wf-gap);
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
   content: '';
 }
 
@@ -2269,7 +2290,7 @@
    옆으로 넘치면 좁은 칸(부품 장)에서 옆 막대와 그 값을 덮는다 */
 
 .wf-num {
-  --fs: 48px;
+  --fs: 44px;
   font-family: var(--font-head);
   font-weight: 700;
   line-height: 1;
@@ -2278,7 +2299,7 @@
 }
 
 .wf-total .wf-num {
-  --fs: 56px;
+  --fs: 52px;
 }
 
 .wf-up .wf-num {
@@ -2290,8 +2311,8 @@
 }
 
 .wf-unit {
+  --fs: 26px;
   color: var(--ink-2);
-  font-size: calc(26px * var(--scale, 1));
   font-weight: 600;
 }
 
@@ -2347,7 +2368,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .tn-canvas {
@@ -2364,7 +2385,7 @@
 }
 
 .tn-unit {
-  --fs: 24px;
+  --fs: 22px;
   color: var(--ink-3);
 }
 
@@ -2473,7 +2494,7 @@
 }
 
 .tn-pt.is-hl .tn-num {
-  --fs: 60px;
+  --fs: 52px;
   color: var(--accent);
   font-family: var(--font-head);
   font-weight: var(--display-weight);
@@ -2494,7 +2515,7 @@
 }
 
 .tn-zero {
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .tn-legend {
@@ -2597,7 +2618,7 @@
   align-items: center;
   gap: 40px;
   padding: 26px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .ps-headrow {
@@ -2638,13 +2659,13 @@
 }
 
 .ps-title {
-  --fs: 32px;
+  --fs: 30px;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .ps-meta {
-  --fs: 23px;
+  --fs: 22px;
   margin-top: 4px;
   color: var(--ink-3);
   line-height: 1.3;
@@ -2760,13 +2781,13 @@
 }
 
 .sh-sum {
-  --fs: 28px;
+  --fs: 26px;
   color: var(--ink-2);
   font-weight: 600;
 }
 
 .sh-unit {
-  --fs: 24px;
+  --fs: 22px;
   color: var(--ink-3);
 }
 
@@ -2797,7 +2818,7 @@
 }
 
 .sh-pct {
-  --fs: 72px;
+  --fs: 62px;
   display: block;
   font-family: var(--font-head);
   font-weight: var(--display-weight);
@@ -2830,7 +2851,7 @@
 }
 
 .sh-meta {
-  --fs: 24px;
+  --fs: 22px;
   margin-top: 4px;
   color: var(--ink-3);
   line-height: 1.35;
@@ -2884,7 +2905,7 @@
 }
 
 .sh-total-v {
-  --fs: 52px;
+  --fs: 44px;
   margin-top: 6px;
   font-family: var(--font-head);
   font-weight: var(--display-weight);
@@ -2910,12 +2931,12 @@
   gap: 32px;
   padding: 19px 0 19px 36px;
   border-top: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
   box-shadow: inset 8px 0 0 var(--c);
 }
 
 .va-donut .sh-pct {
-  --fs: 56px;
+  --fs: 52px;
 }
 
 .va-donut .sh-text {
@@ -2927,7 +2948,7 @@
 }
 
 .va-donut .sh:is([data-n='5'], [data-n='6']) .sh-pct {
-  --fs: 46px;
+  --fs: 44px;
 }
 
 .sh.is-demo :is(.sh-band, .sh-ring svg) {
@@ -3015,8 +3036,8 @@
 }
 
 .pc-meta {
-  --fs: 24px;
-  color: var(--accent);
+  --fs: 22px;
+  color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
 }
@@ -3055,11 +3076,11 @@
 }
 
 .va-cards .pc-title {
-  --fs: 34px;
+  --fs: 30px;
 }
 
 .va-cards .pc:is([data-n='5'], [data-n='6']) .pc-title {
-  --fs: 28px;
+  --fs: 26px;
 }
 
 .va-cards .pc:is([data-n='5'], [data-n='6']) {
@@ -3113,7 +3134,7 @@
 }
 
 .va-cards .pc-step.is-hl .pc-body {
-  opacity: 0.85;
+  opacity: var(--o-sub);
 }
 
 /* 어두운 바탕에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 (안 비교와 같은 방식) */
@@ -3177,13 +3198,13 @@
 }
 
 .fn-name {
-  --fs: 32px;
+  --fs: 30px;
   font-weight: 700;
   line-height: 1.25;
 }
 
 .fn-meta {
-  --fs: 23px;
+  --fs: 22px;
   margin-top: 4px;
   color: var(--ink-3);
   line-height: 1.3;
@@ -3267,7 +3288,7 @@
 }
 
 .fn-num {
-  --fs: 48px;
+  --fs: 44px;
   font-family: var(--font-head);
   font-weight: var(--display-weight);
   line-height: 1;
@@ -3359,7 +3380,7 @@
   column-gap: 48px;
   align-items: baseline;
   padding: 30px 24px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .tb-headrow {
@@ -3375,7 +3396,7 @@
 }
 
 .tb-cell {
-  --fs: 34px;
+  --fs: 30px;
   color: var(--ink-2);
   line-height: 1.4;
 }
@@ -3443,8 +3464,8 @@
 
 .mx-y,
 .mx-x {
+  --fs: var(--t-label);
   color: var(--ink-2);
-  font-size: var(--t-label);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -3483,11 +3504,11 @@
 }
 
 .mx-cell:nth-child(odd) {
-  border-right: 1px solid var(--line);
+  border-right: var(--rule) solid var(--line);
 }
 
 .mx-cell:nth-child(-n + 2) {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .mx-cell.is-hl {
@@ -3495,7 +3516,7 @@
 }
 
 .mx-title {
-  --fs: 42px;
+  --fs: 36px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
@@ -3526,8 +3547,8 @@
 
 .pm-y,
 .pm-x {
+  --fs: var(--t-label);
   color: var(--ink-2);
-  font-size: var(--t-label);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -3641,21 +3662,21 @@
 }
 
 .pm-name {
-  --fs: 32px;
+  --fs: 30px;
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.2;
 }
 
 .pm-pt.is-hl .pm-name {
-  --fs: 40px;
+  --fs: 36px;
   color: var(--accent);
   font-family: var(--font-head);
   letter-spacing: -0.01em;
 }
 
 .pm-body {
-  --fs: 24px;
+  --fs: 22px;
   margin-top: 4px;
   color: var(--ink-3);
   line-height: 1.3;
@@ -3677,7 +3698,7 @@
 }
 
 .pm-num {
-  --fs: 24px;
+  --fs: 22px;
   min-width: 1.6em;
   color: var(--ink);
   font-weight: 700;
@@ -3710,7 +3731,7 @@
 }
 
 .br-unit {
-  --fs: 24px;
+  --fs: 22px;
   color: var(--ink-3);
 }
 
@@ -3732,23 +3753,23 @@
   grid-template-columns: 400px 1fr 280px;
   align-items: center;
   gap: 48px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .br-row:first-child {
-  border-top: 1px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .br-name {
-  --fs: 34px;
+  --fs: 30px;
   font-weight: 700;
   line-height: 1.25;
 }
 
 .br-meta {
+  --fs: 22px;
   margin-top: 8px;
   color: var(--ink-3);
-  font-size: 24px;
 }
 
 .br-track {
@@ -3770,7 +3791,7 @@
 }
 
 .br-value {
-  --fs: 60px;
+  --fs: 52px;
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1;
@@ -3803,7 +3824,7 @@
 }
 
 .va-columns .br-value {
-  --fs: 56px;
+  --fs: 52px;
   order: 1;
   margin-bottom: 20px;
   text-align: center;
@@ -3833,7 +3854,7 @@
 }
 
 .va-columns .br-name {
-  --fs: 32px;
+  --fs: 30px;
 }
 
 .br-meta.is-pad {
@@ -3846,7 +3867,7 @@
 }
 
 .va-columns .br:is([data-n='5'], [data-n='6']) .br-value {
-  --fs: 48px;
+  --fs: 44px;
 }
 
 /* ---------- 두 값 비교 ----------
@@ -3899,7 +3920,7 @@
 
 /* 줄의 남는 자리로 줄어들면 '단위:'와 칸이 두 줄로 갈라진다 */
 .vs-unit {
-  --fs: 24px;
+  --fs: 22px;
   flex: none;
   margin-left: auto;
   color: var(--ink-3);
@@ -3972,7 +3993,7 @@
 
 .vs-bar.is-b .vs-num,
 .vs-pt.is-b .vs-num {
-  --fs: 40px;
+  --fs: 36px;
   color: var(--ink);
   font-family: var(--font-head);
   font-weight: 700;
@@ -4012,7 +4033,7 @@
 
 /* 앞 값에서 몇 % 바뀌었는지. 계산한 값이라 칸이 아니라 표시 */
 .vs-change {
-  --fs: 24px;
+  --fs: 22px;
   padding: 4px 14px;
   border-radius: 999px;
   background: var(--surface);
@@ -4040,7 +4061,7 @@
   grid-row: 1;
   grid-column: 1 / -1;
   min-height: 0;
-  border-bottom: 2px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
   container-type: inline-size;
 }
 
@@ -4066,6 +4087,10 @@
   stroke-width: 4px;
 }
 
+.va-dots .vs-key i {
+  border-radius: 50%;
+}
+
 .va-lines .vs-key i {
   height: 6px;
   border-radius: 3px;
@@ -4084,7 +4109,7 @@
 .vs-zero {
   right: 0;
   left: 0;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
 .vs-pt {
@@ -4146,7 +4171,7 @@
 }
 
 .vs-pt.is-b .vs-num {
-  --fs: 34px;
+  --fs: 30px;
 }
 
 .vs-pt.is-b.is-hl .vs-val {
@@ -4158,44 +4183,52 @@
 }
 
 .vs-pt.is-b.is-hl .vs-num {
-  --fs: 56px;
+  --fs: 52px;
   color: var(--accent);
   font-weight: var(--display-weight);
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) :is(.vs-bar.is-b, .vs-pt.is-b:not(.is-hl)) .vs-num {
-  --fs: 32px;
+  --fs: 30px;
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) .vs-name {
   --fs: 26px;
 }
 
-/* 모양: 점 두 개. 줄마다 이름, 점을 잇는 길, 두 숫자. 점 자리는 --a, --b(0~100), 잇는 길은 --lo, --hi.
+/* 모양: 점 두 개. 줄마다 이름, 점을 잇는 길, 숫자(앞 값, 뒤 값, 바뀐 비율). 점 자리는 --a, --b(0~100), 잇는 길은 --lo, --hi.
    줄은 subgrid로 칸 너비를 나눠 써서 이름 칸이 가장 긴 이름만큼만 차지하고 길이 모든 줄에서 같은 자리에 선다.
-   줄 높이는 자리가 있으면 140px까지 늘어난다. 길 양옆은 점 반지름만큼 비워 끝 점이 잘리지 않게 */
+   줄 높이는 자리가 있으면 140px까지 늘어난다. 길 양옆은 점 반지름만큼 비워 끝 점이 잘리지 않게.
+   가운데 맞춤은 safe: 칸보다 길어지면 위로도 넘쳐 범례를 덮지 않고 아래로만 넘친다(그때는 글자를 줄인다, fitBlocks) */
 .vs-rows {
   display: grid;
   flex: 1;
   grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
   grid-auto-rows: minmax(min-content, 140px);
-  align-content: center;
+  align-content: safe center;
   column-gap: 56px;
   min-height: 0;
 }
 
+/* 점과 줄 위아래는 글자와 함께 줄어든다: 칸이 낮아 글자를 줄였는데 점과 여백이 그대로면 줄이 칸을 넘친다 */
 .vs-row {
+  --vs-k: calc(var(--bk-h, 1) * var(--bk-fit, 1));
   position: relative;
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
-  padding: 20px 0;
-  border-top: 1px solid var(--line);
+  padding: calc(20px * var(--vs-k)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+/* 맨 윗줄은 표처럼 글자색 선으로 범례와 나눈다 */
+.vs-row:first-child {
+  border-top-color: var(--ink);
 }
 
 .vs-row:last-child {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .vs-row .vs-label {
@@ -4211,26 +4244,15 @@
 }
 
 .vs-row .vs-name {
-  --fs: 32px;
+  --fs: 30px;
 }
 
+/* 바닥길은 긋지 않는다: 줄 사이 선과 번갈아 가로줄이 두 겹으로 보인다. 길은 모든 줄에서 같은 자리라 점만으로 견줘진다 */
 .vs-track {
-  --r: 16px;
+  --r: calc(16px * var(--vs-k));
   position: relative;
-  height: 44px;
+  height: calc(var(--r) * 2 + 12px);
   margin: 0 var(--r);
-}
-
-/* 눈금 대신 가는 바닥길 하나 */
-.vs-track::before {
-  position: absolute;
-  top: 50%;
-  right: calc(var(--r) * -1);
-  left: calc(var(--r) * -1);
-  height: 2px;
-  background: var(--line);
-  translate: 0 -50%;
-  content: '';
 }
 
 .vs-span {
@@ -4239,8 +4261,8 @@
   top: 50%;
   left: calc(var(--lo) * 1%);
   width: calc((var(--hi) - var(--lo)) * 1%);
-  height: 10px;
-  border-radius: 5px;
+  height: calc(var(--r) * 0.6);
+  border-radius: 999px;
   background: var(--vs-span);
   translate: 0 -50%;
 }
@@ -4275,12 +4297,25 @@
   min-width: 0;
 }
 
+/* 앞 값과 바뀐 비율은 자리 너비를 정해 두어 줄마다 같은 자리에 선다 (숫자는 고정폭 숫자) */
 .vs-row .vs-num.is-a {
   --fs: 30px;
+  min-width: 2.2em;
+  text-align: right;
+}
+
+.vs-row .vs-change {
+  --fs: 22px;
+  min-width: 4.6em;
+  padding: 0;
+  background: none;
+  color: var(--ink-2);
+  font-weight: 600;
+  text-align: right;
 }
 
 .vs-row .vs-num.is-b {
-  --fs: 46px;
+  --fs: 44px;
   min-width: 2.2em;
   color: var(--ink);
   font-family: var(--font-head);
@@ -4306,16 +4341,16 @@
 }
 
 .vs-row.is-hl .vs-change {
-  background: var(--accent-soft);
+  background: none;
   color: var(--accent);
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) .vs-row {
-  padding: 12px 0;
+  padding: calc(12px * var(--vs-k)) 0;
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) .vs-row .vs-name {
-  --fs: 28px;
+  --fs: 26px;
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) .vs-row .vs-num.is-b {
@@ -4354,7 +4389,7 @@
 }
 
 .cl-title {
-  --fs: 124px;
+  --fs: 108px;
   font-weight: var(--display-weight);
   line-height: 1.08;
   letter-spacing: calc(var(--head-tracking) - 0.015em);
@@ -4400,21 +4435,21 @@
   height: 60px;
   border: 2px solid currentColor;
   border-radius: 50%;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1;
 }
 
 .cl-step-t {
-  --fs: 44px;
+  --fs: 36px;
   line-height: 1.25;
 }
 
 .cl-step-b {
-  --fs: 28px;
+  --fs: 26px;
   margin-top: 12px;
   line-height: 1.45;
-  opacity: 0.78;
+  opacity: var(--o-sub);
 }
 
 .l-closing .meta-row :is(dt, dd) {
