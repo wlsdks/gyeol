@@ -12,6 +12,7 @@ import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
 import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
+import { particle } from './editor/noRoom'
 import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
 
 const SAMPLE_ID = 'sample'
@@ -170,8 +171,8 @@ export function Home() {
         >
           <p>
             {folder?.kind === 'ready'
-              ? `‘${toDelete.title}’을 목록에서 지워요. 보관 폴더의 작업 파일은 ‘지운 발표’ 폴더로 옮겨 두니, 필요하면 파일 열기로 다시 불러올 수 있어요.`
-              : `‘${toDelete.title}’을 지우면 되돌릴 수 없어요. 버전 기록도 함께 지워지고, 내보낸 파일은 그대로 남아요.`}
+              ? `‘${toDelete.title}’${particle(toDelete.title, '을', '를')} 목록에서 지워요. 보관 폴더의 작업 파일은 ‘지운 발표’ 폴더로 옮겨 두니, 필요하면 파일 열기로 다시 불러올 수 있어요.`
+              : `‘${toDelete.title}’${particle(toDelete.title, '을', '를')} 지우면 되돌릴 수 없어요. 버전 기록도 함께 지워지고, 내보낸 파일은 그대로 남아요.`}
           </p>
         </Modal>
       )}

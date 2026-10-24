@@ -789,7 +789,14 @@ function SlideStage({
                   </button>
                 )}
                 {spec.items && (
-                  <button type="button" className="btn btn-ghost btn-sm" title={`${spec.items.label} 추가`} disabled={!canAddItem} onClick={() => store.addItem(slide.id)}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    // 막아 둔 단추는 왜 안 되는지를 말한다
+                    title={canAddItem ? `${spec.items.label} 추가` : `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요`}
+                    disabled={!canAddItem}
+                    onClick={() => store.addItem(slide.id)}
+                  >
                     <PlusIcon />
                     <span className="btn-t">{spec.items.label} 추가</span>
                   </button>
@@ -809,15 +816,15 @@ function SlideStage({
                   type="button"
                   className={cx('btn btn-ghost btn-sm', peek && 'is-on')}
                   aria-pressed={peek}
-                  title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리보기'}
+                  title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리 보기'}
                   onClick={() => (peek ? setPeek(false) : startPeek())}
                 >
                   <ScreenIcon />
-                  <span className="btn-t">{peek ? '편집으로' : '미리보기'}</span>
+                  <span className="btn-t">{peek ? '편집으로' : '미리 보기'}</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" title="여기서부터 발표" onClick={onPresentHere}>
+                <button type="button" className="btn btn-ghost btn-sm" title={`지금 장부터 발표 (${keys('shift+F5')})`} onClick={onPresentHere}>
                   <PlayIcon />
-                  <span className="btn-t">여기서부터 발표</span>
+                  <span className="btn-t">지금 장부터 발표</span>
                 </button>
                 <button type="button" className="btn btn-ghost btn-sm" title="복제" onClick={() => store.duplicateSlide(slide.id)}>
                   <CopyIcon />
@@ -832,7 +839,13 @@ function SlideStage({
                   {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
                   <span className="btn-t">{slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" title="지우기" disabled={deck.slides.length <= 1} onClick={() => onRemove(slide)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  title={deck.slides.length <= 1 ? '장이 하나뿐이라 지울 수 없어요' : '지우기'}
+                  disabled={deck.slides.length <= 1}
+                  onClick={() => onRemove(slide)}
+                >
                   <TrashIcon />
                   <span className="btn-t">지우기</span>
                 </button>

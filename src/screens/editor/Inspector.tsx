@@ -174,7 +174,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
       </section>
 
       <section className="ins-sec">
-        <Toggle label="발표할 때 이 장 건너뛰기" on={!!slide.hidden} onChange={(v) => setHidden(slide.id, v)} />
+        <Toggle label="발표에서 빼기" on={!!slide.hidden} onChange={(v) => setHidden(slide.id, v)} />
       </section>
     </div>
   )

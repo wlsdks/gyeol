@@ -4457,6 +4457,29 @@ body.is-block-resizing * {
   white-space: nowrap;
 }
 
+/* 복사하지 못했을 때: 글 전체가 보이고, 한 번 누르면 다 골라진다 */
+.ai-cmd-text.is-open,
+.ask-fail {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  user-select: all;
+}
+
+.ask-fail {
+  margin: 0 10px 8px;
+}
+
+.copy-fail {
+  margin: 6px 0 0;
+  color: var(--warn-ink);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ask-note.copy-fail {
+  margin: 4px 10px 6px;
+}
+
 .icon-btn-sm {
   width: 28px;
   height: 28px;

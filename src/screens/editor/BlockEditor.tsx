@@ -896,7 +896,7 @@ function RoomZone({ fits, onOpen }: { fits(h: number): boolean; onOpen(): void }
 const LOOK_NOTES: Record<Block['look'] & string, string> = {
   plain: '장 바탕 위에 바로 놓여요. 가장 가벼워요.',
   card: '옅은 면 위에 놓여 한 묶음으로 보여요.',
-  bold: '짙은 면 위에 놓여 가장 눈에 띄어요. 한 장에 하나만 써요.',
+  bold: '진한 면 위에 놓여 가장 눈에 띄어요. 한 장에 하나만 써요.',
 }
 
 function BlockTools({

@@ -19,6 +19,7 @@ import {
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
+import { particle } from './noRoom'
 import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
@@ -297,7 +298,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
           }
         >
           <p>
-            {fullFmt.format(restoring.createdAt)}에 남긴 ‘{versionTitle(restoring)}’로 되돌려요. 지금 상태는 버전 기록에 남겨 두니 언제든 다시 돌아올 수 있어요.
+            {fullFmt.format(restoring.createdAt)}에 남긴 ‘{versionTitle(restoring)}’{particle(versionTitle(restoring), '으로', '로')} 되돌려요. 지금 상태는 버전 기록에 남겨 두니 언제든 다시 돌아올 수 있어요.
           </p>
         </Modal>
       )}

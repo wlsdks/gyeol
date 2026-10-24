@@ -97,7 +97,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
             ))}
             {/* 편집하던 화면은 그대로 두고 새 탭에서 모든 장을 크게 본다 */}
             <a className="menu-foot" href={hashOf({ name: 'system' })} target="_blank" rel="noopener">
-              모든 장을 그림으로 보기
+              장 모음 보기
             </a>
           </div>
         )}

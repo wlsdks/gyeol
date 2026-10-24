@@ -115,7 +115,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
           <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
             <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 칸마다 컴포넌트로 나뉘어 옮길 수 있게 돼요" onClick={blocks.convert}>
-              지금 바꾸기
+              컴포넌트 장으로 바꾸기
             </button>
           )}
         </div>
@@ -182,7 +182,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
       </div>
 
       {shownWhy && (
-        <div className="lib-why" role="dialog" aria-label={`${BLOCKS[shownWhy.type].name}을 넣을 수 없는 까닭`}>
+        <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 까닭`}>
           <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 넣을 수 없어요</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
