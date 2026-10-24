@@ -3512,8 +3512,10 @@
   background: var(--vs-b);
 }
 
+/* 줄의 남는 자리로 줄어들면 '단위:'와 칸이 두 줄로 갈라진다 */
 .vs-unit {
   --fs: 24px;
+  flex: none;
   margin-left: auto;
   color: var(--ink-3);
 }
