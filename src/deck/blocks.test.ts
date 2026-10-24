@@ -1,3 +1,4 @@
+import { BLOCK_HEIGHTS } from './blockHeights'
 import { describe, expect, it } from 'vitest'
 import {
   allBlocks,
@@ -61,7 +62,25 @@ describe('부품 목록', () => {
       expect(sampleBlock(type).type).toBe(type)
       expect(spec.minSpan).toBeLessThanOrEqual(spec.prefSpan)
       expect(spec.prefSpan).toBeLessThanOrEqual(12)
-      expect(blockMinH(makeBlock(type))).toBeGreaterThan(0)
+      expect(blockMinH(makeBlock(type), spec.prefSpan)).toBeGreaterThan(0)
+    }
+  })
+
+  it('모든 부품의 모든 모양, 바탕, 항목 수, 너비를 쟀다 (blockHeights.ts)', () => {
+    // 새 부품이나 모양을 만들면 갤러리에서 measureAll()로 다시 재야 한다
+    for (const type of BLOCK_TYPES) {
+      const spec = BLOCKS[type]
+      for (const v of spec.variants?.map((x) => x.id) ?? ['base']) {
+        for (const look of ['plain', 'card']) {
+          const t = BLOCK_HEIGHTS[`${type}.${v}.${look}`]
+          expect(t, `${type}.${v}.${look}`).toBeDefined()
+          for (const span of [3, 4, 6, 8, 12].filter((x) => x >= spec.minSpan)) {
+            expect(t?.[span]?.length, `${type}.${v}.${look} 너비 ${span}`).toBe((spec.items?.max ?? 0) + 1)
+          }
+        }
+      }
+      // 어느 부품이든 가장 넓게 놓으면 들어간다
+      expect(blockMinH(makeBlock(type), 12), type).toBeLessThan(700)
     }
   })
 })
@@ -125,7 +144,8 @@ describe('자리 정하기', () => {
   })
 
   it('눌러서 넣으면 새 줄이 들어가지 않을 때 마지막 줄 끝에 붙는다', () => {
-    const areaH = 1080 - 100 - 140 - 200
+    // 원 두 개 줄(250) + 간격 + 새 줄(240)이 넘치는 낮은 본문
+    const areaH = 450
     const rows = [row(block('ring', 'r'), block('ratio', 'q'))]
     const t = autoTarget(rows, block('spark', 's'), areaH)
     expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
@@ -156,7 +176,9 @@ describe('자리 정하기', () => {
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {
     const slide = { fields: { title: '제목' } } as unknown as Slide
     const areaH = composeAreaH(slide)
-    let rows = [row(block('message', 'm')), row(block('bullets', 'p'), block('callout', 'c'))]
+    // 점검 목록은 항목이 늘면 장보다 높아진다 (blockHeights.ts). 둘에서 시작한다
+    const checks = block('checks', 'p')
+    let rows = [row(block('message', 'm')), row({ ...checks, items: checks.items.slice(0, 2) }, block('callout', 'c'))]
     expect(fitsHeight(rows, areaH)).toBe(true)
     // 더할 수 있는 동안 더하면, 마지막까지 잘리지 않는 높이 안에 있다
     for (let i = 0; i < 20 && fitsWith(rows, 'p', withItem, areaH); i++) {

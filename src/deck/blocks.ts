@@ -7,6 +7,7 @@
 // 칸의 자리는 측정하지 않고 계산한다. 같은 계산을 CSS calc()로 써서 편집 화면, 발표, 내보낸 HTML이
 // 똑같이 그리고, 끌어다 놓는 동안 놓일 자리를 찾을 때도 이 계산을 쓴다(움직이는 중인 화면을 재지 않는다).
 
+import { BLOCK_HEIGHTS } from './blockHeights'
 import { emptyItem, uid, withDefaultOptions } from './generate'
 import { LAYOUTS, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
 import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
@@ -723,7 +724,8 @@ export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
   }
 }
 
-const fits = (blocks: Block[], combo: number[]) => combo.every((s, i) => s >= BLOCKS[blocks[i].type].minSpan)
+// 그 너비로는 높이가 아무리 높아도 잘리는 부품(blockHeights.ts의 999)도 그 너비에 넣지 않는다
+const fits = (blocks: Block[], combo: number[]) => combo.every((s, i) => s >= BLOCKS[blocks[i].type].minSpan && blockMinH(blocks[i], s) < NO_FIT)
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
 /**
@@ -760,59 +762,57 @@ export function spanChoices(row: BlockRow): number[][] {
 
 // ---------- 자리 계산 ----------
 
+/** 부품 장에서 나올 수 있는 칸 너비 (COMBOS에 있는 것) */
+const SPANS = [3, 4, 6, 8, 12]
+/** blockHeights.ts에서 그 너비로는 860px로도 안 되는 것 */
+const NO_FIT = 999
+
 /**
- * 부품이 잘리지 않고 들어갈 칸 높이(캔버스 px): 바탕 높이 + 항목 하나마다. 칸이 좁아 글자가 줄어든 상태로 잰 값이다.
- * 줄 높이는 이보다 낮아지지 않고, 모두 합쳐 장에 들어가지 않으면 그 자리에는 넣지 않는다.
+ * 잘리지는 않아도 너무 낮으면 보기 나쁜 부품의 바닥 높이. 차트는 막대와 선이 납작해지고, 원과 그림은 띠처럼 작아진다.
+ * 잰 높이(blockHeights.ts)는 '잘리지 않는' 높이라서 이것과 견줘 큰 쪽을 쓴다
  */
-const MIN_H: Record<BlockType, (n: number, variant: string) => number> = {
-  message: () => 190,
-  text: () => 190,
-  bullets: (n) => 90 + 64 * n,
-  quote: () => 220,
-  callout: () => 170,
-  number: () => 220,
-  delta: () => 250,
-  goal: () => 200,
-  // 원은 글 사이에서 너무 작아지지 않게
-  ring: () => 330,
-  ratio: () => 340,
-  spark: () => 330,
-  facts: (n) => 220 + 45 * n,
-  risks: (n) => 120 + 100 * n,
-  swot: () => 490,
-  faq: (n) => 90 + 120 * n,
-  checks: (n) => 220 + 70 * n,
-  gantt: (n) => 130 + 75 * n,
-  people: (n, v) => (v === 'list' ? 140 + 100 * n : 260),
-  image: () => 200,
-  summary: (n) => (n <= 4 ? 280 : 560),
-  points: (n, v) => (v !== 'base' ? 320 : n <= 3 ? 260 : 620),
-  kpi: () => 260,
-  scorecard: (n) => Math.max(220, 80 * n),
-  bars: (n, v) => (v === 'columns' ? 360 : 60 + 50 * n),
-  // 차트는 잘리지 않아도 너무 낮으면 읽기 어려워서 보기 좋은 높이를 따로 둔다
+const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   bridge: () => 380,
-  trend: () => 340,
-  share: (_, v) => (v === 'donut' ? 420 : 340),
-  funnel: (n) => 40 + 86 * n,
-  progress: (n) => 400 + 32 * n,
-  process: (n) => Math.max(300, 86 * n),
-  timeline: (n, v) => (v === 'steps' ? 40 + 90 * n : 380),
-  compare: (n) => (n <= 3 ? 280 : 60 + 92 * n),
-  matrix: () => 460,
-  pricing: (n, v) => (v === 'rows' ? 60 + 120 * n : 600),
-  table: (n) => 40 + 92 * n,
-  logos: (n) => (n <= 4 ? 220 : n <= 8 ? 360 : 460),
-  agenda: (n, v) => (v === 'columns' ? 280 : 40 + 58 * n),
+  trend: () => 300,
+  share: (v) => (v === 'donut' ? 380 : 320),
+  ring: () => 220,
+  ratio: () => 220,
+  spark: () => 240,
+  matrix: () => 380,
+  swot: () => 420,
+  image: () => 200,
+}
+/** 항목이 셋 이상인 부품: 칸이 230px 밑이면 글자가 가장 작은 단계(--bk-h 0.68)로 떨어져 빽빽해진다. 로고는 그림이라 빼고 */
+const LIST_FLOOR = 240
+
+/**
+ * 부품을 이 너비(12칸 중 몇 칸)에 놓을 때 잘리지 않는 가장 낮은 칸 높이(캔버스 px).
+ * 모양, 바탕(그대로 / 카드와 강조색 면), 항목 수, 너비마다 갤러리에서 잰 값(blockHeights.ts)에 보기 좋은 바닥을 더한다.
+ * 줄 높이는 이보다 낮아지지 않고, 모두 합쳐 장에 들어가지 않으면 그 자리에는 넣지 않는다. 그 너비로 안 되면 NO_FIT 이상.
+ */
+export function blockMinH(block: Block, span: number): number {
+  const spec = BLOCKS[block.type]
+  const variant = variantOfBlock(block)
+  const n = spec.items ? blockItems(block).length : 0
+  const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${lookOf(block) === 'plain' ? 'plain' : 'card'}`]
+  // 잰 너비가 아니면 그보다 넓은 것 가운데 가장 가까운 것 (없으면 가장 넓은 것)
+  const at = SPANS.find((x) => x >= span && table?.[x]) ?? [...SPANS].reverse().find((x) => table?.[x])
+  const hs = at !== undefined ? table?.[at] : undefined
+  // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
+  const measured = hs?.length ? hs[Math.min(n, hs.length - 1)] : 400
+  if (measured >= NO_FIT) return measured
+  return Math.max(measured, FLOOR[block.type]?.(variant) ?? 0, n >= 3 && block.type !== 'logos' ? LIST_FLOOR : 0)
 }
 
-export function blockMinH(block: Block): number {
-  return MIN_H[block.type](blockItems(block).length, variantOfBlock(block))
-}
+/** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */
+export const blockPrefH = (block: Block) => blockMinH(block, BLOCKS[block.type].prefSpan)
 
 /** 줄 높이를 나누는 비중. CSS의 fr은 합이 1보다 작으면 남는 자리를 다 쓰지 않아서 10을 곱해 쓴다 */
 const rowWeight = (row: BlockRow) => Math.round(Math.max(...row.blocks.map((b) => BLOCKS[b.type].weight), 0.5) * 10)
-const rowMinH = (row: BlockRow) => Math.max(0, ...row.blocks.map(blockMinH))
+const rowMinH = (row: BlockRow) => {
+  const spans = spansOf(row)
+  return Math.max(0, ...row.blocks.map((b, i) => blockMinH(b, spans[i])))
+}
 
 /** 한 칸의 자리: 몇째 줄, 12칸 격자의 어디서부터 몇 칸 */
 export interface CellBox {
@@ -872,31 +872,63 @@ export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): nu
   }
 }
 
+/** 줄들을 잘리지 않게 놓는 데 드는 높이: 줄마다 가장 낮은 높이와 줄 사이 */
+export function needH(rows: BlockRow[], gap = BLOCK_GAP): number {
+  return rows.reduce((a, r) => a + rowMinH(r), 0) + Math.max(0, rows.length - 1) * gap
+}
+
 /** 모든 줄이 잘리지 않고 장에 들어가는지 */
 export function fitsHeight(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): boolean {
-  return rows.reduce((a, r) => a + rowMinH(r), 0) + Math.max(0, rows.length - 1) * gap <= areaH + 1
+  return needH(rows, gap) <= areaH + 1
+}
+
+/** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
+export function changeIssue(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): NoRoom | null {
+  const next = rows.map((r) => {
+    if (!r.blocks.some((b) => b.id === blockId)) return r
+    const blocks = r.blocks.map((b) => (b.id === blockId ? fn(b) : b))
+    // 바뀐 부품이 지금 너비에 들어가지 않으면 그 줄의 너비를 다시 고른다 (놓을 때와 같은 규칙)
+    return { ...r, blocks, spans: fitSpans(blocks, r.spans) ?? r.spans }
+  })
+  return fitsHeight(next, areaH) ? null : { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
 }
 
 /** 부품 하나를 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 장에 들어가는지 */
 export function fitsWith(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): boolean {
-  return fitsHeight(
-    rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id === blockId ? fn(b) : b)) })),
-    areaH,
-  )
+  return !changeIssue(rows, blockId, fn, areaH)
 }
 
 /** 자리가 모자라 항목을 더하거나 모양을 바꿀 수 없을 때의 안내 */
 export const NO_ROOM = '장에 자리가 모자라요. 다른 부품을 빼거나 다음 장으로 나눠 보세요'
 
+/** 제목, 부제 한 줄의 높이와 한 줄에 드는 너비 (slides.css의 .s-title, .s-lead). 보내는 자료(d-read)는 한 단계 작다 */
+const HEAD_TYPE = {
+  present: { title: 72, lead: 36 },
+  read: { title: 64, lead: 32 },
+}
+/** 글자 하나의 평균 너비(글자 크기의 몫). 한글과 띄어쓰기를 섞은 제목을 재어 정한 값이다 */
+const EM_PER_CHAR = 0.67
+
+/** 이 크기의 글이 이 너비에서 몇 줄인지 */
+const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.ceil(([...text].length * EM_PER_CHAR * fs) / width))
+
 /**
  * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다).
- * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기) 쓴다. 제목 73, 부제 53, 그 사이 28, 제목 아래 64를 잰 값이다
+ * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기, 시험) 쓴다. 제목은 길이에 따라 글자가 작아지고(fields.tsx의 fit, 24자와 40자)
+ * 1560px을 넘으면 줄이 바뀐다. 부제는 1320px, 제목과 부제 사이 28, 머리 아래 64. 발표 설정(글자 크기, 보내는 자료)도 본다
  */
-export function composeAreaH(slide: Slide): number {
-  const title = !!slide.fields.title?.trim()
-  const lead = !!slide.fields.lead?.trim()
-  const head = (title ? 73 : 0) + (lead ? 53 : 0) + (title && lead ? 28 : 0)
-  return 1080 - 100 - 140 - (head ? head + 64 : 0)
+export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }): number {
+  const title = slide.fields.title?.trim() ?? ''
+  const lead = slide.fields.lead?.trim() ?? ''
+  const type = look?.meta?.method === 'send' ? HEAD_TYPE.read : HEAD_TYPE.present
+  const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.08 : 1
+  const n = [...title].length
+  const tfs = type.title * scale * (n > 40 ? 0.7 : n > 24 ? 0.84 : 1)
+  const lfs = type.lead * scale
+  const titleH = title ? lineCount(title, tfs, 1560) * tfs * 1.2 : 0
+  const leadH = lead ? lineCount(lead, lfs, 1320) * lfs * 1.48 : 0
+  const head = titleH + leadH + (title && lead ? 28 : 0)
+  return Math.floor(1080 - 100 - 140 - (head ? head + 64 : 0))
 }
 
 /** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
@@ -970,21 +1002,55 @@ export function targetOf(rows: BlockRow[], blockId: string): DropTarget | null {
   return null
 }
 
-/** 넣을 수 있는 모든 자리 (읽는 차례대로). 본문 높이를 주면 넣고 나서도 잘리지 않는 자리만 */
-export function validTargets(rows: BlockRow[], block: Block, areaH?: number): DropTarget[] {
+/** 놓을 수 있을지 따져 볼 모든 자리 (읽는 차례대로): 줄 사이마다 새 줄, 줄마다 부품 사이 */
+function allTargets(rows: BlockRow[]): DropTarget[] {
   const out: DropTarget[] = []
-  const ok = (t: DropTarget) => {
-    const next = insertAt(rows, t, block, 'x')
-    return !!next && (areaH === undefined || fitsHeight(next, areaH))
-  }
   for (let r = 0; r <= rows.length; r++) {
-    if (ok({ kind: 'row', index: r })) out.push({ kind: 'row', index: r })
+    out.push({ kind: 'row', index: r })
     if (r === rows.length) break
-    for (let c = 0; c <= rows[r].blocks.length; c++) {
-      if (ok({ kind: 'cell', row: r, index: c })) out.push({ kind: 'cell', row: r, index: c })
-    }
+    for (let c = 0; c <= rows[r].blocks.length; c++) out.push({ kind: 'cell', row: r, index: c })
   }
   return out
+}
+
+/**
+ * 그 자리에 넣을 수 없는 까닭. 화면에 보이는 문구는 편집기가 이것으로 만든다 (screens/editor/noRoom.ts).
+ * full: 한 장의 부품 수, rows: 줄 수, row-full: 한 줄의 부품 수, narrow: 그 줄에 끼우면 칸이 너무 좁아진다,
+ * height: 넣으면 줄들이 장보다 높아진다 (need: 잘리지 않는 데 드는 높이, room: 본문 높이)
+ */
+export type NoRoom =
+  | { kind: 'full' }
+  | { kind: 'rows' }
+  | { kind: 'row-full' }
+  | { kind: 'narrow'; span: number }
+  | { kind: 'height'; need: number; room: number }
+
+/** 그 자리에 넣을 수 없는 까닭. 넣을 수 있으면 null */
+export function whyNot(rows: BlockRow[], target: DropTarget, block: Block, areaH?: number): NoRoom | null {
+  if (blockCount(rows) >= MAX_BLOCKS) return { kind: 'full' }
+  if (target.kind === 'row' && rows.length >= MAX_ROWS) return { kind: 'rows' }
+  if (target.kind === 'cell' && (rows[target.row]?.blocks.length ?? 0) >= MAX_IN_ROW) return { kind: 'row-full' }
+  const next = insertAt(rows, target, block, 'x')
+  if (!next) return { kind: 'narrow', span: BLOCKS[block.type].minSpan }
+  if (areaH !== undefined && !fitsHeight(next, areaH)) return { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
+  return null
+}
+
+/** 넣을 수 있는 모든 자리 (읽는 차례대로). 본문 높이를 주면 넣고 나서도 잘리지 않는 자리만 */
+export function validTargets(rows: BlockRow[], block: Block, areaH?: number): DropTarget[] {
+  return allTargets(rows).filter((t) => !whyNot(rows, t, block, areaH))
+}
+
+/**
+ * 이 장 어디에도 넣을 수 없을 때 그 까닭 하나. 넣을 수 있으면 null.
+ * 높이만 모자란 자리가 있으면 그 가운데 가장 덜 모자란 것(무엇을 줄이면 되는지 알려 줄 수 있어서), 아니면 칸 수
+ */
+export function placeIssue(rows: BlockRow[], block: Block, areaH?: number): NoRoom | null {
+  const why = allTargets(rows).map((t) => whyNot(rows, t, block, areaH))
+  if (why.some((w) => !w)) return null
+  const all = why.filter((w): w is NoRoom => !!w)
+  const tall = all.filter((w) => w.kind === 'height').sort((a, b) => a.need - b.need)[0]
+  return all.find((w) => w.kind === 'full') ?? tall ?? all.find((w) => w.kind === 'narrow') ?? { kind: 'rows' }
 }
 
 /**
@@ -1020,7 +1086,29 @@ export function dropTarget(base: BlockRow[], block: Block, p: { x: number; y: nu
   if (!valid.length) return null
   const ok = (t: DropTarget) => valid.some((v) => sameTarget(v, t))
   if (!base.length) return valid[0]
+  for (const t of wantedTargets(base, p, size, gap)) if (ok(t)) return t
 
+  // 그 둘레에 자리가 없으면 넣을 수 있는 자리 가운데 놓일 칸이 가장 가까운 곳
+  let best: DropTarget | null = null
+  let bestD = Infinity
+  for (const t of valid) {
+    const pr = cellRects(insertAt(base, t, block, 'x')!, size, gap).get(block.id)!
+    const d = Math.hypot(p.x - (pr.x + pr.w / 2), p.y - (pr.y + pr.h / 2))
+    if (d < bestD) {
+      best = t
+      bestD = d
+    }
+  }
+  return best
+}
+
+/** 손 아래의 자리 (넣을 수 있는지와 상관없이). 끄는 동안 '여기는 왜 안 되는지'를 알려 줄 때 */
+export function pointerTarget(base: BlockRow[], p: { x: number; y: number }, size: { w: number; h: number }, gap = BLOCK_GAP): DropTarget {
+  return base.length ? wantedTargets(base, p, size, gap)[0] : { kind: 'row', index: 0 }
+}
+
+/** 손 아래에서 바라는 자리들 (먼저 바라는 차례대로) */
+function wantedTargets(base: BlockRow[], p: { x: number; y: number }, size: { w: number; h: number }, gap: number): DropTarget[] {
   // 가장 가까운 칸과 그 안에서의 위치(0~1)
   const rects = cellRects(base, size, gap)
   let near: { box: CellBox; r: Rect; d: number } | null = null
@@ -1038,22 +1126,7 @@ export function dropTarget(base: BlockRow[], block: Block, p: { x: number; y: nu
   const below: DropTarget = { kind: 'row', index: box.row + 1 }
   const left: DropTarget = { kind: 'cell', row: box.row, index: box.col }
   const right: DropTarget = { kind: 'cell', row: box.row, index: box.col + 1 }
-  const order =
-    v < 0.28 ? [above, u < 0.5 ? left : right, below] : v > 0.72 ? [below, u < 0.5 ? left : right, above] : u < 0.5 ? [left, v < 0.5 ? above : below, right] : [right, v < 0.5 ? above : below, left]
-  for (const t of order) if (ok(t)) return t
-
-  // 그 둘레에 자리가 없으면 넣을 수 있는 자리 가운데 놓일 칸이 가장 가까운 곳
-  let best: DropTarget | null = null
-  let bestD = Infinity
-  for (const t of valid) {
-    const pr = cellRects(insertAt(base, t, block, 'x')!, size, gap).get(block.id)!
-    const d = Math.hypot(p.x - (pr.x + pr.w / 2), p.y - (pr.y + pr.h / 2))
-    if (d < bestD) {
-      best = t
-      bestD = d
-    }
-  }
-  return best
+  return v < 0.28 ? [above, u < 0.5 ? left : right, below] : v > 0.72 ? [below, u < 0.5 ? left : right, above] : u < 0.5 ? [left, v < 0.5 ? above : below, right] : [right, v < 0.5 ? above : below, left]
 }
 
 /** 칸 사이를 끌어 놓은 곳(줄 너비에 대한 몫)에 가장 가까운 비율 */

@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { blockCount, blockMinH, BLOCK_GAP, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
+import { blockCount, blockPrefH, BLOCK_GAP, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
@@ -10,6 +10,7 @@ import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { CloseIcon } from '../ui'
 import { soloSlide, type BlockEditing } from './BlockEditor'
+import { josa, noRoomText } from './noRoom'
 
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
@@ -32,7 +33,7 @@ export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = '
   const slide = useMemo(() => soloSlide(block), [block])
   // 부품이 들어갈 수 있는 가장 좁은 칸보다 좁게 그리지 않는다 (표나 차트가 찌그러져 보이지 않게)
   const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80
-  const h = Math.max(480, blockMinH(block) + 80, Math.round(minW / THUMB_RATIO))
+  const h = Math.max(480, blockPrefH(block) + 80, Math.round(minW / THUMB_RATIO))
   const canvas = { w: Math.round(h * THUMB_RATIO), h }
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
@@ -56,6 +57,8 @@ export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = '
 
 export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: BlockEditing }) {
   const [group, setGroup] = useState<string | null>(null)
+  // 이 장에 넣을 수 없는 카드를 눌렀을 때 그 까닭을 보여 줄 부품
+  const [why, setWhy] = useState<{ type: BlockType; card: HTMLElement } | null>(null)
   const look = useMemo<Look>(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
   const engine = useMemo(() => motionEngine(), [])
   const playing = useRef(new WeakMap<Element, number>())
@@ -66,11 +69,13 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || document.body.classList.contains('is-block-dragging')) return
       if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
-      blocks.setLibraryOpen(false)
+      // 까닭을 펼쳐 두었으면 그것만 닫는다
+      if (why) setWhy(null)
+      else blocks.setLibraryOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [blocks])
+  }, [blocks, why])
 
   /** 마우스를 올리면 그 부품의 움직임을 한 번. 움직이는 중에 다시 올려도 처음부터 다시 하지 않는다 */
   const preview = (card: HTMLElement) => {
@@ -92,6 +97,9 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         ? '부품을 넣으면 이 장이 부품 장으로 바뀌어요. 지금 내용은 그대로 남고, 부품으로 나뉘어 옮길 수 있게 돼요.'
         : '표지와 단락 장에는 부품을 넣지 않아요. 넣으면 이 장 다음에 부품 장을 새로 만들어요.'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
+  // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
+  const issues = new Map(BLOCK_GROUPS.flatMap((g) => g.types).map((t) => [t, full ? null : blocks.issueFor(t)]))
+  const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (
     <aside className="lib" aria-label="부품 고르기">
@@ -134,19 +142,26 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
             <div className="lib-grid">
               {g.types.map((type) => {
                 const spec = BLOCKS[type]
+                const issue = issues.get(type)
+                // 이 장에 넣을 수 없는 부품: 눌러도 바로 넣지 않고 까닭을 보여 준다 (끌어서 놓으면 다음 장에 들어간다)
+                const tap = (card: HTMLElement) => (issue ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
                 return (
                   <button
                     key={type}
                     type="button"
-                    className="lib-card"
-                    title={`${spec.name}: ${spec.motion}`}
-                    onPointerDown={(e) => blocks.pressCard(e, type)}
+                    className={cx('lib-card', issue && 'is-blocked', why?.type === type && 'is-why')}
+                    title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요` : `${spec.name}: ${spec.motion}`}
+                    onPointerDown={(e) => {
+                      const card = e.currentTarget
+                      blocks.pressCard(e, type, () => tap(card))
+                    }}
                     // 키보드로 누를 때만 (마우스는 위의 누르기에서 끌기와 나눠 다룬다)
-                    onClick={(e) => e.detail === 0 && blocks.insert(type, e.currentTarget)}
+                    onClick={(e) => e.detail === 0 && tap(e.currentTarget)}
                     onPointerEnter={(e) => preview(e.currentTarget)}
                     onFocus={(e) => preview(e.currentTarget)}
                   >
                     <BlockThumb deck={look} type={type} />
+                    {issue && <span className="lib-badge">이 장엔 자리 없음</span>}
                     <span className="lib-name">{spec.name}</span>
                     <span className="lib-desc">{spec.description}</span>
                   </button>
@@ -156,6 +171,29 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
           </section>
         ))}
       </div>
+
+      {shownWhy && (
+        <div className="lib-why" role="dialog" aria-label={`${BLOCKS[shownWhy.type].name}을 넣을 수 없는 까닭`}>
+          <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 넣을 수 없어요</p>
+          <p className="lib-why-p">{shownWhy.text.why}</p>
+          <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
+          <div className="lib-why-actions">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                blocks.insert(shownWhy.type, shownWhy.card)
+                setWhy(null)
+              }}
+            >
+              다음 장에 새로 넣기
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWhy(null)}>
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

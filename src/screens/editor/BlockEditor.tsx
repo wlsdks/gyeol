@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import {
   autoTarget,
   blockItems,
-  blockMinH,
+  blockPrefH,
+  changeIssue,
   BLOCK_EFFECTS,
   BLOCK_GAP,
   BLOCK_LOOKS,
@@ -13,19 +14,21 @@ import {
   copyBlock,
   dropTarget,
   effectOf,
-  fitsWith,
   insertAt,
   lookOf,
   makeBlock,
-  NO_ROOM,
+  placeIssue,
+  pointerTarget,
   removeBlock,
   sameTarget,
   shiftBlock,
   spansAt,
   targetOf,
   variantOfBlock,
+  whyNot,
   withItem,
   type DropTarget,
+  type NoRoom,
 } from '../../deck/blocks'
 import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
@@ -36,6 +39,7 @@ import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
 //
@@ -53,6 +57,8 @@ interface Drag {
   /** 부품 장이 아닌 장에 놓을 때: 같은 내용으로 바꾼 부품 장 */
   composed: Slide | null
   target: DropTarget | null
+  /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
+  blocked: NoRoom | null
   /** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 다음 장에 새로 만들기 */
   plan: 'place' | 'convert' | 'next' | null
   /** 끌고 있는 부품 그림의 크기 (캔버스 px)와 화면 크기 */
@@ -103,9 +109,11 @@ export interface BlockEditing {
   toolbar: ReactNode
   libraryOpen: boolean
   setLibraryOpen(open: boolean): void
-  /** 부품 고르기 카드를 누르기 시작할 때. 끌면 끌어다 놓기, 그냥 떼면 알아서 넣기 */
-  pressCard(e: ReactPointerEvent<HTMLElement>, type: BlockType): void
+  /** 부품 고르기 카드를 누르기 시작할 때. 끌면 끌어다 놓기, 그냥 떼면 알아서 넣기 (onTap을 주면 그것을) */
+  pressCard(e: ReactPointerEvent<HTMLElement>, type: BlockType, onTap?: () => void): void
   insert(type: BlockType, from?: HTMLElement | null): void
+  /** 이 부품을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
+  issueFor(type: BlockType): NoRoom | null
   selected: string | null
   select(id: string | null): void
   convert(): void
@@ -167,7 +175,12 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         toast.show('이 장을 부품 장으로 바꿔 넣었어요', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
       } else {
         store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
-        toast.show(canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 부품 장을 새로 만들어 넣었어요', undefined, 5000)
+        const why = d.blocked && (canCompose(s.layout) || s.layout === 'compose') ? noRoomText(d.blocked, block.type, 'slide').why : null
+        toast.show(
+          why ? `${why} 그래서 다음 장에 새로 넣었어요` : canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 부품 장을 새로 만들어 넣었어요',
+          undefined,
+          6000,
+        )
       }
       land(d)
     },
@@ -250,6 +263,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const over = !!fr && x >= fr.left - 24 && x <= fr.right + 24 && y >= fr.top - 24 && y <= fr.bottom + 24
     let plan: Drag['plan'] = null
     let target: DropTarget | null = null
+    let blocked: NoRoom | null = null
     let composed = d.composed
     if (over) {
       if (s.layout === 'compose' || (d.kind === 'new' && canCompose(s.layout))) {
@@ -265,14 +279,17 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
             const near = [-30, 30].flatMap((o) => [dropTarget(base, d.block, { x: p.x + o, y: p.y }, area.size), dropTarget(base, d.block, { x: p.x, y: p.y + o }, area.size)])
             if (near.some((t) => sameTarget(t, d.target))) target = d.target
           }
+          // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
+          const wanted = pointerTarget(base, p, area.size)
+          blocked = !target ? placeIssue(base, d.block, area.size.h) : sameTarget(wanted, target) ? null : whyNot(base, wanted, d.block, area.size.h)
         }
         plan = target ? (s.layout === 'compose' ? 'place' : 'convert') : d.kind === 'new' ? 'next' : null
         if (d.kind === 'move' && !target) plan = null
       } else if (d.kind === 'new') plan = 'next'
     }
     const base = s.layout === 'compose' ? d.base : (composed?.rows ?? d.base)
-    if (plan !== d.plan || !sameTarget(target, d.target) || composed !== d.composed) {
-      const next = { ...d, plan, target, composed, base }
+    if (plan !== d.plan || !sameTarget(target, d.target) || composed !== d.composed || JSON.stringify(blocked) !== JSON.stringify(d.blocked)) {
+      const next = { ...d, plan, target, blocked, composed, base }
       // 놓는 순간에도 바로 읽을 수 있게 그리기를 기다리지 않고 맞춘다
       dragRef.current = next
       setDrag(next)
@@ -323,7 +340,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         document.body.classList.remove('is-block-dragging')
         const cur = dragRef.current
         if (!cur) return
-        finish(cancel ? { ...cur, plan: null, target: null } : cur)
+        finish(cancel ? { ...cur, plan: null, target: null, blocked: null } : cur)
       }
       const onUp = (e: PointerEvent) => {
         track(e.clientX, e.clientY)
@@ -385,7 +402,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const ghost = ghostSize(canvas, area.k)
       const grab = { x: Math.min(1, Math.max(0, (x - r.left) / r.width)), y: Math.min(1, Math.max(0, (y - r.top) / r.height)) }
       begin(
-        { kind: 'move', block, base: removeBlock(s.rows ?? [], block.id), composed: null, target: targetOf(s.rows ?? [], block.id), plan: 'place', canvas, ghost, grab, source: r },
+        { kind: 'move', block, base: removeBlock(s.rows ?? [], block.id), composed: null, target: targetOf(s.rows ?? [], block.id), blocked: null, plan: 'place', canvas, ghost, grab, source: r },
         x,
         y,
         r,
@@ -401,14 +418,14 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const area = measureArea(areaEl.current)
     const k = area?.k ?? (document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect().width ?? 960) / 1920
     const colW = (1680 - 11 * BLOCK_GAP) / 12
-    const canvas = { w: spec.prefSpan * (colW + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockMinH(block), 300) + 80 }
+    const canvas = { w: spec.prefSpan * (colW + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
     const ghost = ghostSize(canvas, k)
     const grab = from ? { x: Math.min(1, Math.max(0, (x - from.left) / from.width)), y: Math.min(1, Math.max(0, (y - from.top) / from.height)) } : { x: 0.5, y: 0.5 }
-    return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, plan: null, canvas, ghost, grab, source: from }
+    return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from }
   }
 
   const pressCard = useCallback(
-    (e: ReactPointerEvent<HTMLElement>, type: BlockType) => {
+    (e: ReactPointerEvent<HTMLElement>, type: BlockType, onTap?: () => void) => {
       const card = e.currentTarget
       press(
         e,
@@ -416,7 +433,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
           const from = card.getBoundingClientRect()
           begin(newDrag(type, from, x, y), x, y, from)
         },
-        () => insert(type, card),
+        onTap ?? (() => insert(type, card)),
       )
     },
     // eslint 없음: newDrag와 insert는 그릴 때마다 새로 만들어지지만 slideRef로 지금 장을 읽는다
@@ -433,17 +450,21 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     let target: DropTarget | null = null
     let composed: Slide | null = null
     let base = d.base
+    let blocked: NoRoom | null = null
     if (s.layout === 'compose') {
       target = autoTarget(base, d.block, area?.size.h)
       plan = target ? 'place' : 'next'
+      if (!target) blocked = placeIssue(base, d.block, area?.size.h)
     } else if (canCompose(s.layout)) {
       composed = composeFrom(s)
       base = composed.rows ?? []
       const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
-      target = autoTarget(base, d.block, fr ? guessArea(fr).size.h : undefined)
+      const h = fr ? guessArea(fr).size.h : undefined
+      target = autoTarget(base, d.block, h)
       plan = target ? 'convert' : 'next'
+      if (!target) blocked = placeIssue(base, d.block, h)
     }
-    const full = { ...d, plan, target, composed, base }
+    const full = { ...d, plan, target, blocked, composed, base }
     if (!r) {
       finish(full)
       return
@@ -459,6 +480,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       }
       requestAnimationFrame(() => finish(full))
     })
+  }
+
+  /** 부품 고르기 카드마다: 지금 장 어디에도 넣을 수 없으면 그 까닭. 부품 장이 아닌 장은 부품 장으로 바꾼 모습으로 본다 */
+  function issueFor(type: BlockType): NoRoom | null {
+    const s = slideRef.current
+    const block = makeBlock(type)
+    if (s.layout === 'compose') return placeIssue(s.rows ?? [], block, measureArea(areaEl.current)?.size.h)
+    if (!canCompose(s.layout)) return null
+    const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
+    return placeIssue(composeFrom(s).rows ?? [], block, fr ? guessArea(fr).size.h : undefined)
   }
 
   // ---------- 칸 너비 ----------
@@ -525,16 +556,21 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   const selectedBlock = selected ? (slide.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected) : undefined
-  /** 부품을 바꿔도(항목 더하기, 모양 바꾸기) 모든 줄이 잘리지 않고 장에 들어가는지. 본문 상자는 화면에서 잰다 */
-  const room = (b: Block, fn: (x: Block) => Block) => {
+  /** 부품을 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 본문 상자는 화면에서 잰다 */
+  const issue = (b: Block, fn: (x: Block) => Block) => {
     const area = measureArea(areaEl.current)
-    return !area || fitsWith(slide.rows ?? [], b.id, fn, area.size.h)
+    return area ? changeIssue(slide.rows ?? [], b.id, fn, area.size.h) : null
   }
   const tools = (b: Block) => (
     <BlockTools
       block={b}
-      roomForItem={room(b, withItem)}
-      roomForVariant={(v) => room(b, (x) => ({ ...x, variant: v }))}
+      itemIssue={issue(b, withItem)}
+      variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}
+      lookIssue={(lk) => issue(b, (x) => ({ ...x, look: lk }))}
+      onBlocked={(r) => {
+        const t = noRoomText(r, b.type, 'change')
+        toast.show(`${t.why} ${t.fix}`, undefined, 6000)
+      }}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setRows(slideRef.current.id, shiftBlock(slideRef.current.rows ?? [], b.id, dir))}
       onLook={(lk) => update(b.id, (x) => ({ ...x, look: lk }))}
@@ -623,7 +659,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       ? '놓으면 이 장을 부품 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
         ? compose || canCompose(slide.layout)
-          ? '이 장에는 자리가 없어요. 놓으면 다음 장에 새로 만들어 넣어요.'
+          ? `${drag.blocked ? noRoomText(drag.blocked, drag.block.type, 'slide').why : '이 장에는 자리가 없어요.'} 놓으면 다음 장에 새로 만들어 넣어요.`
           : '표지와 단락 장에는 넣을 수 없어요. 놓으면 다음 장에 부품 장을 새로 만들어요.'
         : drag.kind === 'new' && !drag.plan
           ? '슬라이드 위로 끌어 오세요'
@@ -638,9 +674,18 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
           style={{ width: shown.ghost.w, height: shown.ghost.h }}
           aria-hidden="true"
         >
-          <div className="bk-ghost-scale" style={{ width: shown.canvas.w, height: shown.canvas.h, transform: `scale(${shown.ghost.w / shown.canvas.w})` }}>
-            <SlideCanvas deck={look} slide={soloSlide(shown.block)} mode="preview" solo={shown.canvas} />
+          <div className="bk-ghost-clip">
+            <div className="bk-ghost-scale" style={{ width: shown.canvas.w, height: shown.canvas.h, transform: `scale(${shown.ghost.w / shown.canvas.w})` }}>
+              <SlideCanvas deck={look} slide={soloSlide(shown.block)} mode="preview" solo={shown.canvas} />
+            </div>
           </div>
+          {/* 손 아래 자리에 놓을 수 없을 때: 왜 안 되는지와 대신 어디에 놓이는지 */}
+          {drag?.blocked && drag.target && (
+            <p className="bk-ghost-why">
+              <b>여기에는 못 놓아요</b>
+              {noRoomText(drag.blocked, drag.block.type, 'here').why} 가장 가까운 자리에 놓을게요.
+            </p>
+          )}
         </div>,
         document.body,
       )
@@ -662,6 +707,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     setLibraryOpen,
     pressCard,
     insert,
+    issueFor,
     selected,
     select: setSelected,
     convert: () => {
@@ -706,8 +752,10 @@ function Floating({ anchor, children }: { anchor: string; children: ReactNode })
 
 function BlockTools({
   block,
-  roomForItem,
-  roomForVariant,
+  itemIssue,
+  variantIssue,
+  lookIssue,
+  onBlocked,
   onGrip,
   onShift,
   onLook,
@@ -719,9 +767,12 @@ function BlockTools({
   onRemove,
 }: {
   block: Block
-  /** 항목을 더해도 잘리지 않는지 */
-  roomForItem: boolean
-  roomForVariant(variant: string): boolean
+  /** 항목을 더하거나 모양, 바탕을 바꾸면 장에 들어가지 않을 때 그 까닭 */
+  itemIssue: NoRoom | null
+  variantIssue(variant: string): NoRoom | null
+  lookIssue(look: Block['look']): NoRoom | null
+  /** 그런 단추를 눌렀을 때 (막아 두되, 누르면 까닭을 보여 준다) */
+  onBlocked(r: NoRoom): void
   onGrip(e: ReactPointerEvent<HTMLElement>): void
   onShift(dir: -1 | 1): void
   onLook(look: Block['look']): void
@@ -747,7 +798,8 @@ function BlockTools({
   const variant = variantOfBlock(block)
   const canAdd = !!spec.items && blockItems(block).length < spec.items.max
   const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variant) + 1) % variants.length] : null
-  const variantRoom = !nextVariant || roomForVariant(nextVariant.id)
+  const nextIssue = nextVariant ? variantIssue(nextVariant.id) : null
+  const tip = (r: NoRoom | null, ok: string) => (r ? noRoomText(r, block.type, 'change').why : ok)
   return (
     <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
       <button
@@ -771,17 +823,22 @@ function BlockTools({
       </button>
       <span className="bk-tool-sep" />
       <div className="bk-looks" role="group" aria-label="바탕">
-        {BLOCK_LOOKS.map((l) => (
-          <button
-            key={l.id}
-            type="button"
-            className={cx('bk-look', `is-${l.id}`, look === l.id && 'is-on')}
-            title={l.name}
-            aria-label={l.name}
-            aria-pressed={look === l.id}
-            onClick={() => onLook(l.id)}
-          />
-        ))}
+        {BLOCK_LOOKS.map((l) => {
+          // 카드와 강조색 면은 안쪽 여백만큼 높아져서, 장이 꽉 찼으면 바꿀 수 없다
+          const r = look === l.id ? null : lookIssue(l.id)
+          return (
+            <button
+              key={l.id}
+              type="button"
+              className={cx('bk-look', `is-${l.id}`, look === l.id && 'is-on', r && 'is-blocked')}
+              title={tip(r, l.name)}
+              aria-label={l.name}
+              aria-pressed={look === l.id}
+              aria-disabled={!!r}
+              onClick={() => (r ? onBlocked(r) : onLook(l.id))}
+            />
+          )
+        })}
       </div>
       <span className="bk-tool-sep" />
       <div className="bk-tool-menu">
@@ -820,7 +877,13 @@ function BlockTools({
         )}
       </div>
       {nextVariant && (
-        <button type="button" className="bk-tool" disabled={!variantRoom} title={variantRoom ? `다음 모양: ${nextVariant.name}` : NO_ROOM} onClick={() => onVariant(nextVariant.id)}>
+        <button
+          type="button"
+          className={cx('bk-tool', nextIssue && 'is-blocked')}
+          aria-disabled={!!nextIssue}
+          title={tip(nextIssue, `다음 모양: ${nextVariant.name}`)}
+          onClick={() => (nextIssue ? onBlocked(nextIssue) : onVariant(nextVariant.id))}
+        >
           <ShapesIcon />
           <span>{variants.find((v) => v.id === variant)?.name}</span>
         </button>
@@ -828,10 +891,11 @@ function BlockTools({
       {spec.items && (
         <button
           type="button"
-          className="bk-tool"
-          disabled={!canAdd || !roomForItem}
-          title={!canAdd ? `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요` : roomForItem ? `${spec.items.label} 추가` : NO_ROOM}
-          onClick={onAddItem}
+          className={cx('bk-tool', canAdd && itemIssue && 'is-blocked')}
+          disabled={!canAdd}
+          aria-disabled={!canAdd || !!itemIssue}
+          title={!canAdd ? `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요` : tip(itemIssue, `${spec.items.label} 추가`)}
+          onClick={() => (itemIssue ? onBlocked(itemIssue) : onAddItem())}
         >
           <PlusIcon />
           <span>{spec.items.label}</span>

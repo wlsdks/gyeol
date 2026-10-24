@@ -1,0 +1,269 @@
+import { BLOCKS, BLOCK_GAP, BLOCK_TYPES } from '../deck/blocks'
+import type { BlockType } from '../deck/types'
+import { blockOverflows, blockTextLines, fitBlocks } from '../slides/fitBlocks'
+
+/*
+ * 부품의 잘리지 않는 높이(deck/blockHeights.ts)를 재는 개발용 도구. 갤러리에서 브라우저 콘솔로 부른다:
+ *   #/gallery?set=blocks   →   copy(heightsSource(mergeHeights((await measureAll()).table, (await measureAll(undefined, 'font=serif')).table)))
+ *   →   deck/blockHeights.ts에 붙여 넣기 (고딕과 명조 제목 글꼴 가운데 높은 쪽)
+ * 부품마다, 모양마다, 바탕(그대로, 카드)마다, 항목 수마다, 들어갈 수 있는 칸 너비마다 잰다.
+ * 글자는 칸 크기에 따라 단계로 줄고(--bk-w, --bk-h) 칸 모양에 따라 배치가 바뀌어서, 가장 좁은 칸에서만 재거나
+ * 넘치지 않는 첫 높이만 찾으면 그보다 넓거나 높은 칸에서 넘치는 것을 놓친다. 그래서 위에서부터 내려오며
+ * '이 높이부터 위로는 어디서도 괜찮은' 가장 낮은 높이를 찾는다.
+ */
+
+const AREA_W = 1920 - 120 * 2
+const COL = (AREA_W - 11 * BLOCK_GAP) / 12
+/** 12칸 격자에서 span칸을 쓰는 부품의 너비 */
+export const spanWidth = (span: number) => span * COL + (span - 1) * BLOCK_GAP
+/** 부품 장에서 나올 수 있는 칸 너비 (blocks.ts의 COMBOS) */
+export const SPANS = [3, 4, 6, 8, 12]
+const TOP = 860
+const STEP = 10
+/**
+ * 잴 높이들: 10px마다, 그리고 글자 크기 단계(blocks.css의 --bk-h: 440, 320, 230)가 바뀌는 바로 위.
+ * 단계 바로 위(321)는 글자가 한 단계 큰데 자리는 가장 적어서, 10px마다만 재면 330은 되는데 325는 안 되는 것을 놓친다
+ */
+const HEIGHTS = [...new Set([...Array.from({ length: (TOP - 100) / STEP + 1 }, (_, i) => TOP - i * STEP), 441, 321, 231])].sort((a, b) => b - a)
+
+type Box = { left: number; right: number; top: number; bottom: number }
+
+/** 칸 안의 글 줄마다 글자가 그려지는 자리. 화면에서 맞출 때(fitBlocks)와 같은 것으로 본다 */
+function textLines(cell: HTMLElement): { r: Box; n: Node }[] {
+  const el = inner(cell)
+  return el ? blockTextLines(el).map((q) => ({ n: q.n, r: { left: q.l, right: q.r, top: q.t, bottom: q.b } })) : []
+}
+
+const name = (n: Node) => `${(n.parentElement?.className ?? '').split(' ')[0]}「${n.textContent?.trim().slice(0, 10)}」`
+
+/** 카드와 강조색 면의 안쪽 여백까지 글이 들어가도 되는 깊이 (캔버스 px). 이보다 깊으면 여백이 무너져 보인다 */
+const PAD_SLACK = 8
+
+/** 글이 들어가야 하는 상자: 안쪽(.bk-in)의 여백을 뺀 자리. 갤러리는 장을 줄여 그려서 화면 px로 바꾼다 */
+function contentBox(cell: HTMLElement): Box {
+  const el = inner(cell) ?? cell
+  const r = el.getBoundingClientRect()
+  const k = el.offsetWidth ? r.width / el.offsetWidth : 1
+  const cs = getComputedStyle(el)
+  const pad = (v: string) => Math.max(0, parseFloat(v) - PAD_SLACK) * k
+  return { left: r.left + pad(cs.paddingLeft), right: r.right - pad(cs.paddingRight), top: r.top + pad(cs.paddingTop), bottom: r.bottom - pad(cs.paddingBottom) }
+}
+
+/** 글을 잘라 내는 조상(overflow가 보이지 않는 상자)에 잘린 줄. 안쪽 목록이 넘침을 숨기면 칸 전체로는 넘치지 않아 보인다 */
+function clippedBy(n: Node, r: Box, cell: HTMLElement, cache: Map<Element, Box | null>): boolean {
+  for (let el = n.parentElement; el && el !== cell; el = el.parentElement) {
+    let box = cache.get(el)
+    if (box === undefined) {
+      const cs = getComputedStyle(el)
+      const clips = cs.overflowX !== 'visible' || cs.overflowY !== 'visible'
+      box = clips ? el.getBoundingClientRect() : null
+      cache.set(el, box)
+    }
+    if (box && (r.top < box.top - 1 || r.bottom > box.bottom + 1 || r.left < box.left - 1 || r.right > box.right + 1)) return true
+  }
+  return false
+}
+
+/**
+ * 글이 칸 밖(카드면 안쪽 여백 안)으로 나가거나, 잘리거나, 다른 글과 겹치는 곳. 줄 사이가 모자라 다음 줄에 올라타는 것은
+ * 칸 전체 높이(scrollHeight)로는 보이지 않아서, 글 줄마다의 상자로 본다
+ */
+function clashList(cell: HTMLElement, all: boolean): string[] {
+  const box = contentBox(cell)
+  const lines = textLines(cell)
+  const cache = new Map<Element, Box | null>()
+  const out: string[] = []
+  for (const { r, n } of lines) {
+    if (r.left < box.left - 1 || r.right > box.right + 1 || r.top < box.top - 1 || r.bottom > box.bottom + 1) {
+      out.push(`칸 밖: ${name(n)}`)
+      if (!all) return out
+    } else if (clippedBy(n, r, cell, cache)) {
+      out.push(`잘림: ${name(n)}`)
+      if (!all) return out
+    }
+  }
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      if (lines[i].n === lines[j].n) continue
+      const [a, b] = [lines[i].r, lines[j].r]
+      if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) {
+        out.push(`겹침: ${name(lines[i].n)} / ${name(lines[j].n)}`)
+        if (!all) return out
+      }
+    }
+  }
+  return out
+}
+
+const inner = (cell: HTMLElement) => cell.querySelector<HTMLElement>(':scope > .bk-in')
+const scrollOver = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2
+
+/** 한 칸에서 넘치거나 겹친 글 (진단용). 칸 크기를 바꾼 뒤 부른다 */
+export function clashes(cell: HTMLElement): string[] {
+  const el = inner(cell)
+  const out: string[] = []
+  if (el && el.scrollHeight > el.clientHeight + 2) out.push(`세로로 ${el.scrollHeight - el.clientHeight}px 넘침`)
+  if (el && el.scrollWidth > el.clientWidth + 2) out.push(`가로로 ${el.scrollWidth - el.clientWidth}px 넘침`)
+  if (el && !out.length && blockOverflows(el)) out.push('글자를 줄여야 함 (여백, 겹침, 옆 항목)')
+  return [...out, ...new Set(clashList(cell, true))]
+}
+
+/**
+ * 이 크기에서 괜찮은지: 화면처럼 fitBlocks로 맞춘 뒤, 글자를 한 단계(0.92)보다 더 줄이지 않았고
+ * 넘치거나 잘리거나 겹친 글이 없어야 한다 (fitBlocks가 보지 않는 '잘림'도 여기서 본다)
+ */
+function fine(cell: HTMLElement, el: HTMLElement): boolean {
+  const area = cell.closest<HTMLElement>('.bk-area')
+  if (area) fitBlocks(area)
+  const k = Number(cell.style.getPropertyValue('--bk-fit') || 1)
+  return k >= 0.92 && !scrollOver(el) && clashList(cell, false).length === 0
+}
+
+/** 진단용: 이 너비에서 860부터 100까지 10px마다 재어 안 되는 높이를 모두 (위에서 끊기지 않고). 높이 사이에 구멍이 있는지 볼 때 */
+export function failingHeights(cell: HTMLElement, span: number): number[] {
+  const el = inner(cell)
+  if (!el) return []
+  const saved = cell.getAttribute('style')
+  cell.style.alignSelf = 'start'
+  cell.style.justifySelf = 'start'
+  cell.style.width = `${spanWidth(span)}px`
+  const out: number[] = []
+  for (const h of HEIGHTS) {
+    cell.style.height = `${h}px`
+    if (!fine(cell, el)) out.push(h)
+  }
+  cell.setAttribute('style', saved ?? '')
+  return out
+}
+
+/** 이 너비에서 이 높이부터 위로는 늘 괜찮은 가장 낮은 높이. 맨 위(860)도 안 되면 Infinity */
+function lowest(cell: HTMLElement, el: HTMLElement, span: number): number {
+  cell.style.width = `${spanWidth(span)}px`
+  let ok = Infinity
+  for (const h of HEIGHTS) {
+    cell.style.height = `${h}px`
+    if (!fine(cell, el)) break
+    ok = h
+  }
+  return ok
+}
+
+/** 갤러리에 그려진 부품마다 칸 너비별로 잰다: { 부품: { 너비: 높이 } } */
+export async function measureBlocks(): Promise<Partial<Record<BlockType, Record<number, number>>>> {
+  await document.fonts.ready
+  const out: Partial<Record<BlockType, Record<number, number>>> = {}
+  for (const area of document.querySelectorAll<HTMLElement>('.bk-area')) area.style.removeProperty('--bk-sq')
+  for (const cell of document.querySelectorAll<HTMLElement>('.bk')) {
+    const type = BLOCK_TYPES.find((t) => cell.classList.contains(`bk-${t}`))
+    const el = inner(cell)
+    if (!type || !el || out[type]) continue
+    const saved = cell.getAttribute('style')
+    // 칸 높이에 맞춰 커지는 부품(큰 숫자)이 있어서, 안쪽 높이를 auto로 풀어 재면 안 된다
+    cell.style.alignSelf = 'start'
+    cell.style.justifySelf = 'start'
+    const result: Record<number, number> = {}
+    for (const span of SPANS) if (span >= BLOCKS[type].minSpan) result[span] = lowest(cell, el, span)
+    out[type] = result
+    cell.setAttribute('style', saved ?? '')
+  }
+  return out
+}
+
+const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)))
+
+/** 갤러리 주소를 바꾸고 그 부품들이 다 그려질 때까지 기다린다 */
+async function show(query: string, types: BlockType[]) {
+  location.hash = `#/gallery?${query}`
+  for (let i = 0; i < 200; i++) {
+    await frame()
+    if (location.hash.endsWith(query) && types.every((t) => document.querySelector(`.bk.bk-${t}`))) break
+  }
+  await document.fonts.ready
+  // 그린 뒤 fitBlocks가 한 번 돌고 나서 잰다
+  await new Promise((r) => setTimeout(r, 120))
+}
+
+export type HeightTable = Record<string, Record<number, number[]>>
+
+/**
+ * 모든 부품 × 모양 × 바탕 × 항목 수 × 칸 너비. 열쇠는 '부품.모양.바탕'(바탕: plain, card — 강조색 면은 카드와 안쪽 여백이 같다),
+ * 값은 { 칸 너비: [항목 수마다의 높이] } (항목이 없는 부품은 [0]에). source는 blockHeights.ts에 그대로 붙여 넣을 글
+ */
+export async function measureAll(log: (s: string) => void = console.info, extra = ''): Promise<{ table: HeightTable; fails: string[]; source: string }> {
+  const table: HeightTable = {}
+  const fails: string[] = []
+  const t0 = performance.now()
+  for (const look of ['plain', 'card'] as const) {
+    // 모양마다: 기본 모양(첫째)은 모든 부품을 한 번에, 다른 모양은 그 모양이 있는 부품만
+    const variantIds = [null, ...new Set(BLOCK_TYPES.flatMap((t) => (BLOCKS[t].variants ?? []).slice(1).map((v) => v.id)))]
+    for (const bv of variantIds) {
+      const withV = BLOCK_TYPES.filter((t) => (bv === null ? true : BLOCKS[t].variants?.slice(1).some((v) => v.id === bv)))
+      const most = Math.max(1, ...withV.map((t) => BLOCKS[t].items?.max ?? 1))
+      for (let n = 1; n <= most; n++) {
+        // 항목 수가 n일 수 있는 부품만 (항목이 없는 부품은 한 번만)
+        const types = withV.filter((t) => {
+          const it = BLOCKS[t].items
+          return it ? n >= it.min && n <= it.max : n === 1
+        })
+        if (!types.length) continue
+        await show(`set=blocks&mode=final&bl=${look}&fill=${n}${bv ? `&bv=${bv}` : ''}${extra ? `&${extra}` : ''}&types=${types.join(',')}`, types)
+        const m = await measureBlocks()
+        for (const t of types) {
+          const v = bv ?? BLOCKS[t].variants?.[0].id ?? 'base'
+          const key = `${t}.${v}.${look}`
+          const idx = BLOCKS[t].items ? n : 0
+          for (const [span, h] of Object.entries(m[t] ?? {})) {
+            const row = ((table[key] ??= {})[Number(span)] ??= [])
+            row[idx] = h
+            if (!Number.isFinite(h)) fails.push(`${key} 항목 ${idx} 너비 ${span}`)
+          }
+        }
+      }
+      log(`${look} ${bv ?? '기본 모양'} ${Math.round((performance.now() - t0) / 1000)}초`)
+    }
+  }
+  return { table, fails, source: heightsSource(table) }
+}
+
+/** 두 번 잰 것(고딕과 명조 글꼴)에서 자리마다 높은 쪽. 제목 글꼴을 명조로 바꿔도 잘리지 않게 */
+export function mergeHeights(a: HeightTable, b: HeightTable): HeightTable {
+  const out: HeightTable = structuredClone(a)
+  for (const [key, spans] of Object.entries(b)) {
+    for (const [span, hs] of Object.entries(spans)) {
+      const row = ((out[key] ??= {})[Number(span)] ??= [])
+      hs.forEach((h, i) => {
+        if (h !== undefined) row[i] = Math.max(row[i] ?? 0, h)
+      })
+    }
+  }
+  return out
+}
+
+/** 잰 값을 blockHeights.ts의 글로. 항목 수가 최소보다 적은 자리는 최소의 값으로 채워 둔다 (배열 자리 = 항목 수) */
+export function heightsSource(table: HeightTable): string {
+  const lines = Object.keys(table)
+    .sort()
+    .map((key) => {
+      const spans = Object.entries(table[key])
+        .map(([span, hs]) => {
+          const first = hs.findIndex((h) => h !== undefined)
+          const full = Array.from(hs, (h, i) => (i < first ? hs[first] : h))
+          return `${span}: [${full.map((h) => (h !== undefined && Number.isFinite(h) ? h : 999)).join(', ')}]`
+        })
+        .join(', ')
+      return `  '${key}': { ${spans} },`
+    })
+  return `${HEIGHTS_HEAD}export const BLOCK_HEIGHTS: Record<string, Partial<Record<number, number[]>>> = {\n${lines.join('\n')}\n}\n`
+}
+
+const HEIGHTS_HEAD = `/*
+ * 부품이 잘리지 않는 가장 낮은 칸 높이(캔버스 px). 갤러리에서 잰 값이라 손으로 고치지 않는다.
+ * 다시 재기: npm run dev → #/gallery?set=blocks 에서 브라우저 콘솔에 (screens/measureBlocks.ts)
+ *   copy(heightsSource(mergeHeights((await measureAll()).table, (await measureAll(undefined, 'font=serif')).table)))
+ * 고딕과 명조 제목 글꼴로 한 번씩 재어 높은 쪽을 쓴다.
+ *
+ * 열쇠는 '부품.모양.바탕'(plain: 그대로, card: 카드와 강조색 면), 값은 { 칸 너비(12칸 중): [항목 수마다의 높이] }.
+ * 항목이 없는 부품은 [0]에. 999는 그 너비에서 860px로도 안 되는 것 (그런 너비에는 놓지 않는다).
+ * 넘치면 글자를 한 단계(0.92) 줄인 뒤에도 잘리거나 겹치지 않는 높이다 (slides/fitBlocks.ts가 그만큼은 줄인다).
+ */
+`

@@ -142,7 +142,9 @@ function BlockFields({ slide, block }: { slide: Slide; block: Block }) {
   const prefix = `${slide.id}:${blockFieldPrefix(block.id)}`
   const update = (fn: (b: Block) => Block, key?: string) => updateBlock(slide.id, block.id, fn, key)
   // 문서 보기에서는 슬라이드를 재지 못해서 본문 상자 높이를 어림한다
-  const room = fitsWith(slide.rows ?? [], block.id, withItem, composeAreaH(slide))
+  const look = useDeck((s) => s.deck?.theme)
+  const meta = useDeck((s) => s.deck?.meta)
+  const room = fitsWith(slide.rows ?? [], block.id, withItem, composeAreaH(slide, { meta, theme: look }))
   return (
     <div className="ol-block">
       <p className="ol-block-name">{spec.name}</p>

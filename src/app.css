@@ -3361,7 +3361,6 @@ select {
   z-index: 1000;
   top: 0;
   left: 0;
-  overflow: hidden;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgb(16 20 31 / 0.12), 0 18px 44px rgb(16 20 31 / 0.24);
   pointer-events: none;
@@ -3377,8 +3376,45 @@ select {
   opacity: 0.88;
 }
 
+.bk-ghost-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
 .bk-ghost-scale {
   transform-origin: 0 0;
+}
+
+/* 손 아래 자리에 놓을 수 없을 때 그림 밑에 붙어 다니는 까닭 */
+.bk-ghost-why {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: max(100%, 300px);
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  box-shadow: 0 10px 28px rgb(16 20 31 / 0.28);
+  color: var(--panel);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: bk-why-in 0.18s ease-out;
+}
+
+.bk-ghost-why b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+@keyframes bk-why-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
 }
 
 body.is-block-dragging,
@@ -3444,6 +3480,13 @@ body.is-block-resizing * {
 .bk-tool:disabled {
   cursor: not-allowed;
   opacity: 0.4;
+}
+
+/* 자리가 모자라 막아 둔 단추: 누르면 까닭을 알려 준다 */
+.bk-tool.is-blocked,
+.bk-look.is-blocked {
+  cursor: help;
+  opacity: 0.42;
 }
 
 .bk-tool.is-icon {
@@ -3891,6 +3934,95 @@ body.is-block-resizing * {
 
 .lib-card:active {
   translate: 0 0;
+}
+
+/* 이 장에는 자리가 없는 부품: 그림을 흐리게 하고 표를 붙인다. 누르면 아래에 까닭이 나온다 */
+.lib-card.is-blocked {
+  position: relative;
+  cursor: help;
+}
+
+.lib-card.is-blocked .lib-thumb {
+  opacity: 0.45;
+}
+
+.lib-card.is-why {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.lib-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.lib-why {
+  margin: 0 12px 12px 20px;
+  padding: 14px 16px;
+  border-radius: var(--r);
+  background: var(--ink);
+  box-shadow: 0 -8px 28px rgb(16 20 31 / 0.16);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.55;
+  animation: lib-why-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lib-why-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+.lib-why-t {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lib-why-p {
+  margin: 0;
+  color: rgb(255 255 255 / 0.86);
+}
+
+.lib-why-p.is-fix {
+  margin-top: 4px;
+  color: rgb(255 255 255 / 0.66);
+}
+
+.lib-why-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 어두운 판 위라서 단추 색을 뒤집는다: 하는 일은 흰 단추, 닫기는 테두리만 */
+.lib-why .btn-primary {
+  background: #fff;
+  color: var(--ink);
+}
+
+.lib-why .btn-primary:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.88);
+}
+
+.lib-why .btn-ghost {
+  border-color: rgb(255 255 255 / 0.28);
+  background: transparent;
+  color: #fff;
+}
+
+.lib-why .btn-ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
 }
 
 .lib-thumb {

@@ -770,16 +770,27 @@ export function BlockArea() {
   const boxes = cellBoxes(rows)
   const ref = useRef<HTMLDivElement | null>(null)
   // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비
-  const key = rows.map((r) => `${r.blocks.map((b) => `${b.id}:${blockMinH(b)}`).join(',')}|${spansOf(r).join(',')}`).join('/')
+  const key = rows
+    .map((r) => {
+      const spans = spansOf(r)
+      return `${r.blocks.map((b, i) => `${b.id}:${blockMinH(b, spans[i])}`).join(',')}|${spans.join(',')}`
+    })
+    .join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
   useLayoutEffect(() => {
     if (ref.current) fitBlocks(ref.current)
   })
   useEffect(() => {
     let on = true
-    document.fonts?.ready.then(() => on && ref.current && fitBlocks(ref.current))
+    const fit = () => on && ref.current && fitBlocks(ref.current)
+    document.fonts?.ready.then(fit)
+    // 그릴 때 안 보이던 장이 보이게 되거나, 제목이 두 줄이 되어 본문 상자가 낮아지면 다시 맞춘다.
+    // 맞추기는 칸 안만 바꾸고 본문 상자의 크기는 바꾸지 않아서 되풀이되지 않는다
+    const ro = typeof ResizeObserver === 'undefined' || !ref.current ? null : new ResizeObserver(fit)
+    if (ref.current) ro?.observe(ref.current)
     return () => {
       on = false
+      ro?.disconnect()
     }
   }, [])
   useFlip(ref, !!live, key)

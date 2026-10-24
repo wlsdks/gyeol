@@ -1,20 +1,25 @@
-import { BLOCKS, BLOCK_TYPES } from '../deck/blocks'
+import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { pageInfo } from '../deck/fields'
 import { createDeck, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { extraSlides, withItems, withOptions } from '../deck/showcase'
-import type { BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
+import type { BlockLook, BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { fitBlocks } from '../slides/fitBlocks'
+import { checkCombos, comboSlides } from './combos'
+import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
+// &fill=max 는 항목을 가장 많이, &fill=3 처럼 숫자면 그만큼(정한 범위 안에서). &bl=plain|card 는 부품의 바탕을 모두 그것으로 (잘리지 않는 높이를 잴 때, measureBlocks.ts)
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=C2410C 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
+// set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
 
 /** set=edge: 차트 장이 무너지기 쉬운 값들 (음수, 빈 값, 많은 항목, 모두 같은 값, 긴 이름) */
 function edgeSlides(): Slide[] {
@@ -91,19 +96,21 @@ function edgeSlides(): Slide[] {
  * 부품마다 두 장: 혼자 한 줄을 다 쓸 때와, 가장 좁은 칸에 다른 부품과 함께 낮은 줄에 들어갈 때.
  * 무너지기 쉬운 것은 좁고 낮은 칸이다.
  */
-function blockSlides(fill: string | null, only?: string[], variant?: string | null): Slide[] {
+function blockSlides(fill: string | null, only?: string[], variant?: string | null, look?: string | null): Slide[] {
   return BLOCK_TYPES.flatMap((type, n) => {
     if (only && !only.includes(type)) return []
     const spec = BLOCKS[type]
     const sample = sampleBlock(type)
-    // &fill=max: 항목을 가장 많이 넣었을 때. 예시 항목을 되풀이해 채운다
+    // &fill=max: 항목을 가장 많이 넣었을 때, &fill=3: 세 개. 예시 항목을 되풀이해 채운다
+    const count = !spec.items ? 0 : fill === 'max' ? spec.items.max : Math.min(spec.items.max, Math.max(spec.items.min, Number(fill) || 0))
     const items =
-      fill === 'max' && spec.items && sample.items.length
-        ? Array.from({ length: spec.items.max }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))
+      count && sample.items.length
+        ? Array.from({ length: count }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))
         : sample.items
     // &bv=list: 그 모양이 있는 부품은 그 모양으로
     const v = variant && spec.variants?.some((x) => x.id === variant) ? { variant } : {}
-    const b = (id: string) => ({ ...sample, ...v, items, id: `${type}-${id}` })
+    const lk = BLOCK_LOOK_IDS.find((x) => x === look) ? { look: look as BlockLook } : {}
+    const b = (id: string) => ({ ...sample, ...v, ...lk, items, id: `${type}-${id}` })
     const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), id: `${type}-${id}` })
     const narrow = 12 - spec.minSpan
     const partner: BlockType = narrow >= 6 ? 'bullets' : narrow >= 4 ? 'callout' : 'number'
@@ -153,12 +160,17 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   }
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
-  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv')) }
+  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl')) }
+  if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }).map((c) => c.slide) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 
 export function Gallery() {
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '')
+  // 부품의 잘리지 않는 높이를 재는 도구 (measureBlocks.ts). 콘솔에서 await measureBlocks()
+  if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
+  // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
+  if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
   const theme = (params.get('theme') ?? 'white') as ThemeId
   const mode = (params.get('mode') ?? 'final') as SlideMode
   const base = galleryDeck(params.get('set') ?? 'sample', theme, params)
