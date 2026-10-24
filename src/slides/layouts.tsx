@@ -1066,9 +1066,9 @@ function Funnel() {
       <Head />
       <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length}>
         {items.map((it, i) => {
-          // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다
+          // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다. 앞 단계보다 늘어난 단계는 전환율이 아니라(1,333%) 적지 않는다
           const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
-          const rate = linked ? (values[i] / values[i - 1]) * 100 : null
+          const rate = linked && values[i] <= values[i - 1] ? (values[i] / values[i - 1]) * 100 : null
           // 단계의 농담: 첫 단계가 가장 옅고 갈수록 진하게 (강조할 단계는 강조색 그대로)
           const tint = items.length > 1 ? 24 + (46 * i) / (items.length - 1) : 46
           const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2), '--t': tint.toFixed(0) } as CSSProperties
@@ -1084,25 +1084,23 @@ function Funnel() {
                 <span className="fn-bar" />
                 <div className="fn-val">
                   <IT i={i} k="value" as="span" className="fn-num" oneLine />
-                  {unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>}
+                  {/* 단위는 편집할 때 첫 단계의 숫자 옆에서 고친다. 아래에 '단위' 줄을 따로 두면 편집 화면에서만 장이 높아진다 */}
+                  {mode === 'edit' && i === 0 ? (
+                    <T k="unit" as="span" className="fn-unit" oneLine />
+                  ) : (
+                    unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>
+                  )}
                 </div>
               </div>
               <ItemTools i={i} />
             </div>
           )
         })}
-        {(!final || (first > 0 && last > 0 && items.length > 2)) && (
+        {first > 0 && last > 0 && items.length > 2 && (
           <p className="fn-total">
-            {first > 0 && last > 0 && (
-              <span>
-                처음부터 끝까지 <b>{rateText((last / first) * 100)}</b>
-              </span>
-            )}
-            {!final && (
-              <span className="fn-unit-slot">
-                단위: <T k="unit" as="span" oneLine />
-              </span>
-            )}
+            <span>
+              처음부터 끝까지 <b>{rateText((last / first) * 100)}</b>
+            </span>
           </p>
         )}
       </div>

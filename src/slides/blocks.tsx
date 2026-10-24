@@ -330,26 +330,22 @@ function Spark() {
         <T k="value" className="bk-sp-v" oneLine />
         <T k="note" className="bk-sp-n" />
       </div>
-      <div className="bk-sp-chart" aria-hidden="true">
+      <div className="bk-sp-chart">
         {pts.length >= 2 && (
           <>
-            <svg className="bk-sp-fill" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg className="bk-sp-fill" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <path d={`${line} L100 100 L0 100 Z`} />
             </svg>
-            <svg className="bk-sp-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg className="bk-sp-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <path d={line} />
             </svg>
-            <span className="bk-sp-dot" style={{ '--x': last.x, '--y': last.y } as CSSProperties} />
+            <span className="bk-sp-dot" style={{ '--x': last.x, '--y': last.y } as CSSProperties} aria-hidden="true" />
           </>
         )}
+        {/* 흐름 숫자는 편집할 때 그림 자리에서 고친다(올리거나 누르면 숫자가 보인다). 발표 화면에는 선만.
+            그림 아래에 줄을 따로 두면 편집 화면에서만 부품이 높아져 글자가 작아진다 */}
+        {mode === 'edit' && <T k="series" className="bk-sp-s on-chart" />}
       </div>
-      {/* 흐름 숫자는 편집할 때만 보인다. 발표 화면에는 선만 */}
-      {mode === 'edit' && (
-        <div className="bk-sp-sw">
-          <span className="bk-sp-sk">흐름</span>
-          <T k="series" className="bk-sp-s" />
-        </div>
-      )}
     </div>
   )
 }
@@ -540,18 +536,18 @@ function Gantt() {
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <div className="bk-gt-grid">
         {now >= 0 && <span className="bk-gt-now" aria-hidden="true" />}
-        {/* 편집할 때는 기간 칸 이름 자리에서 바로 고쳐 쓰고, 비어 있는 왼쪽 위에 지금 칸을 적는다 (편집 때만 줄이 늘지 않게) */}
-        {mode === 'edit' ? (
-          <div className="bk-gt-head">
+        {/* 편집할 때는 비어 있는 왼쪽 위에 지금 칸을 적고, 기간 칸 이름은 그 자리 위에서 고친다(올리거나 누르면 글이 보인다).
+            편집 때만 줄이 늘면 발표 화면과 높이가 달라 글자가 작아진다 */}
+        <div className="bk-gt-head">
+          {mode === 'edit' ? (
             <div className="bk-gt-nowset">
               <span className="bk-gt-sk">지금</span>
               <T k="now" as="span" className="bk-gt-sv" />
             </div>
-            <T k="cols" className="bk-gt-sv bk-gt-colsed" />
-          </div>
-        ) : (
-          <div className="bk-gt-head">
+          ) : (
             <span />
+          )}
+          <div className="bk-gt-colwrap">
             <div className="bk-gt-cols">
               {cols.map((c, i) => (
                 <span key={i} className={cx('bk-gt-c', i === now && 'is-now')}>
@@ -559,8 +555,9 @@ function Gantt() {
                 </span>
               ))}
             </div>
+            {mode === 'edit' && <T k="cols" className="bk-gt-sv bk-gt-colsed on-chart" oneLine />}
           </div>
-        )}
+        </div>
         <ul className="bk-gt-list" data-n={items.length}>
           {items.map((it, i) => {
             const period = periodOf(i)
@@ -573,10 +570,12 @@ function Gantt() {
                 <div className="bk-gt-label">
                   <IT i={i} k="title" className="bk-gt-t" />
                   <IT i={i} k="meta" className="bk-gt-m" />
-                  {(mode === 'edit' || more) && <IT i={i} k="body" className="bk-gt-p" />}
+                  {more && (mode === 'edit' ? <span className="bk-gt-p">{period}</span> : <IT i={i} k="body" className="bk-gt-p" />)}
                 </div>
+                {/* 편집할 때 기간은 막대 자리에서 고친다 (위의 기간 칸 이름과 같이) */}
                 <div className="bk-gt-track">
                   {span && <span className="bk-gt-bar" style={{ '--s': span[0], '--e': span[1] + 1 } as CSSProperties} />}
+                  {mode === 'edit' && <IT i={i} k="body" className="bk-gt-p on-chart" oneLine />}
                 </div>
                 <ItemTools i={i} />
               </li>

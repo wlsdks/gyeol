@@ -616,23 +616,42 @@ export interface BlockMissing {
 }
 
 /** 이 부품에서 비어 있는 꼭 채울 칸 */
-export function blockMissing(block: Block): BlockMissing[] {
+/** name: 같은 장에 같은 부품이 둘 이상일 때 자리를 붙인 이름 (blockNames) */
+export function blockMissing(block: Block, name = BLOCKS[block.type].name): BlockMissing[] {
   const spec = BLOCKS[block.type]
   const out: BlockMissing[] = []
   for (const f of spec.fields) {
     if (f.optional || f.key.startsWith('$')) continue
-    if (!(block.fields[f.key] ?? '').trim()) out.push({ block: block.id, key: f.key, label: `${spec.name}의 ${f.label}` })
+    if (!(block.fields[f.key] ?? '').trim()) out.push({ block: block.id, key: f.key, label: `${name}의 ${f.label}` })
   }
   if (spec.items) {
     // '예상 질문 질문 1'처럼 부품 이름이 항목 이름으로 끝나면 항목 이름은 한 번만
     const label = spec.items.label
-    const itemName = (i: number) => (spec.name.endsWith(label) ? `${spec.name} ${i + 1}` : `${spec.name} ${label} ${i + 1}`)
+    const itemName = (i: number) => (name.endsWith(label) ? `${name} ${i + 1}` : `${name} ${label} ${i + 1}`)
     blockItems(block).forEach((item, i) => {
       for (const f of spec.items!.fields) {
         if (f.optional) continue
         if (!item[f.key].trim()) out.push({ block: block.id, key: f.key, item: i, label: `${itemName(i)}의 ${f.label}` })
       }
     })
+  }
+  return out
+}
+
+/**
+ * 부품마다 사람이 부를 이름. 같은 장에 같은 부품이 둘 이상이면 자리를 붙인다('왼쪽 예상 질문', '아래 숫자 강조').
+ * 빈칸 목록에 '예상 질문 1의 질문'이 두 번 나오면 어느 부품의 칸인지 알 수 없다
+ */
+export function blockNames(rows: BlockRow[]): Map<string, string> {
+  const boxes = cellBoxes(rows)
+  const ROW = (n: number) => (n === 2 ? ['위', '아래'] : ['위', '가운데 줄', '아래'])
+  const COL = (n: number) => (n === 2 ? ['왼쪽', '오른쪽'] : ['왼쪽', '가운데', '오른쪽'])
+  const out = new Map<string, string>()
+  for (const b of boxes) {
+    const name = BLOCKS[b.block.type].name
+    const same = boxes.filter((o) => o !== b && o.block.type === b.block.type)
+    const where = [same.some((o) => o.row !== b.row) && ROW(b.rows)[b.row], same.some((o) => o.row === b.row) && COL(b.cols)[b.col]].filter(Boolean)
+    out.set(b.block.id, where.length ? `${where.join(' ')} ${name}` : name)
   }
   return out
 }

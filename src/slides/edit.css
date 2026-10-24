@@ -30,8 +30,9 @@
 }
 
 /* 넘침을 재는 동안(Editor의 useOverflow, 부품 장을 맞추는 fitBlocks): 글 밖으로 나온 편집 표시는 넘침이 아니다.
-   빼지 않으면 칸 옆으로 나온 '이 항목 빼기' 단추나 그림 칸의 '바꾸기' 단추 때문에 부품의 글자를 줄인다 */
-:is(.slide.is-measuring, .bk-area.is-fitting) :is(.ed-halo, .it-remove, .img-tools) {
+   빼지 않으면 칸 옆으로 나온 '이 항목 빼기' 단추나 그림 칸의 '바꾸기' 단추 때문에 부품의 글자를 줄인다.
+   그림 위에 겹쳐 둔 칸(.on-chart)도 뺀다: 숨긴 글이 기간 칸 이름과 겹친 것으로 보인다 */
+:is(.slide.is-measuring, .bk-area.is-fitting) :is(.ed-halo, .it-remove, .img-tools, .on-chart) {
   display: none;
 }
 
@@ -76,9 +77,39 @@
 
 .ed-input {
   display: block;
-  min-width: 1em;
   white-space: pre-wrap;
   caret-color: #3a6ff8;
+}
+
+/* 빈칸에도 누를 자리를. 글이 있을 때까지 두면 '9'처럼 1em보다 좁은 글 옆에 빈자리가 생긴다('9  곳') */
+.ed.is-empty > .ed-input {
+  min-width: 1em;
+}
+
+/* 그림 위에서 고치는 칸(흐름 숫자, 추진 일정의 기간 칸 이름과 기간): 줄을 따로 차지하지 않게 그림 자리에 겹쳐 두고,
+   올리거나 누를 때만 글을 보이며 그동안 그림을 옅게 한다. 편집 때만 줄이 늘면 발표 화면과 높이가 달라
+   부품의 글자를 줄이게 된다. 비어 있으면 빈칸의 옅은 면이 그림 자리에 깔린다 */
+.slide.m-edit .on-chart {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+}
+
+/* 칸 줄은 칸 높이를 다 쓰고 글만 가운데에. 칸 줄을 가운데로 모으면 면(.ed-halo)도 그 줄에만 둘러진다 */
+.slide.m-edit .on-chart > :is(.ed-input, .ed-hint) {
+  align-self: center;
+}
+
+.slide.m-edit .on-chart:not(:hover, :focus-within) > :is(.ed-input, .ed-hint) {
+  opacity: 0;
+}
+
+.slide.m-edit :has(> .on-chart:is(:hover, :focus-within)) > :is(svg, .bk-sp-dot, .bk-gt-bar) {
+  opacity: 0.15;
+}
+
+.slide.m-edit .bk-gt-colwrap:has(> .on-chart:is(:hover, :focus-within)) > .bk-gt-cols {
+  visibility: hidden;
 }
 
 /* 항목 빼기 */

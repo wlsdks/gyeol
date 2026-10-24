@@ -137,7 +137,7 @@
     .bk-num-l, .bk-num-v, .bk-num-n, .bk-dl-l, .bk-dl-k, .bk-dl-v, .bk-dl-chip, .bk-dl-n,
     .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s,
     .bk-rg-l, .bk-rg-v, .bk-rg-n, .bk-rt-l, .bk-rt-t, .bk-rt-u, .bk-rt-sep, .bk-rt-v, .bk-rt-vu, .bk-rt-n,
-    .bk-sp-l, .bk-sp-v, .bk-sp-n, .bk-sp-sk, .bk-sp-s, .bk-fc-k, .bk-fc-v, .bk-rk-hk, .bk-rk-t, .bk-rk-b, .bk-sw-k, .bk-sw-t, .bk-sw-b,
+    .bk-sp-l, .bk-sp-v, .bk-sp-n, .bk-sp-s, .bk-fc-k, .bk-fc-v, .bk-rk-hk, .bk-rk-t, .bk-rk-b, .bk-sw-k, .bk-sw-t, .bk-sw-b,
     .bk-qa-k, .bk-qa-qt, .bk-qa-at, .bk-ck-sum, .bk-ck-t, .bk-ck-m, .bk-ck-s, .bk-gt-sk, .bk-gt-sv, .bk-gt-c, .bk-gt-t, .bk-gt-m, .bk-gt-p, .bk-pp-name, .bk-pp-role, .bk-pp-b
   ) {
   /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 함께 줄인다. 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css)
@@ -2392,6 +2392,9 @@
   position: absolute;
   bottom: 24px;
   left: 0;
+  /* 점 자리(.tn-pt)는 너비가 0이라 그대로 두면 숫자 상자가 가장 좁은 너비로 잡힌다. 그러면 아래 translate의
+     100%(상자 너비)가 글보다 작아 오른쪽 끝 점의 숫자가 그림 밖으로 나간다(편집 화면에서 글자를 줄이던 까닭) */
+  width: max-content;
   /* 점 가운데에 두되, 양끝 점에서는 그림 안쪽으로 민다 */
   translate: clamp(calc(var(--x) * -1cqi), -50%, calc((100 - var(--x)) * 1cqi - 100%)) 0;
   white-space: nowrap;
@@ -3253,16 +3256,47 @@
   font-weight: 800;
 }
 
-.fn-unit-slot {
-  color: var(--ink-3);
-}
-
 .fn.is-demo :is(.fn-bar, .fn-link) {
   opacity: 0.35;
 }
 
 .fn.is-demo .fn-val > :not(.ed) {
   opacity: 0.45;
+}
+
+/* 좁은 칸(부품 장의 반, 3분의 2): 가운데 막대의 양옆에 숫자 자리(260씩)를 두면 막대 둘 자리가 없어
+   막대가 사라지고 숫자만 계단처럼 남는다. 막대를 왼쪽부터 채우고 숫자는 막대 끝에 붙인다 */
+@container (max-width: 1200px) {
+  .fn-row {
+    grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .fn-zone {
+    --fn-side: calc(190px * var(--bk-w, 1));
+    --fn-full: calc(100% - var(--fn-side));
+  }
+
+  .fn-bar {
+    left: 0;
+    translate: none;
+  }
+
+  .fn-val {
+    left: calc(var(--fn-full) * var(--w) / 100 + 20px);
+    max-width: calc(var(--fn-side) - 20px);
+  }
+
+  .fn-link {
+    right: var(--fn-side);
+    left: 0;
+    clip-path: polygon(0 0, calc(var(--pw) * 1%) 0, calc(var(--w) * 1%) 100%, 0 100%);
+  }
+
+  /* 전환율은 아래 막대 가운데 위에 */
+  .fn-rate {
+    left: calc(var(--fn-full) * var(--w) / 200);
+  }
 }
 
 /* ---------- 표 ----------

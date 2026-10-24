@@ -802,18 +802,10 @@
   align-items: baseline;
 }
 
-/* 편집할 때 빈칸 상자는 둘레로 15px쯤 번져서, 붙어 있는 작은 칸끼리 겹치지 않게 띄운다 */
+/* 편집할 때 나란한 작은 칸끼리 빈칸 면이 맞닿지 않게 옆으로만 띄운다 (위아래로 띄우면 편집 화면에서만 부품이 높아진다) */
 .m-edit .bk-rt-num,
 .m-edit .bk-rt-of {
-  gap: 30px;
-}
-
-.m-edit .bk-rt-of {
-  margin-top: 26px;
-}
-
-.m-edit .bk-rt-big {
-  margin-top: 22px;
+  gap: 24px;
 }
 
 .bk-rt-big {
@@ -1007,37 +999,15 @@
   box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-.bk-sp-sw {
-  display: flex;
-  flex: none;
-  align-items: baseline;
-  gap: 16px;
-  margin-top: 10px;
-}
-
-/* 흐름 칸은 편집할 때만 보인다. 그만큼 선 그림이 줄어들게 해서, 잰 높이(발표 화면)의 칸에서도 부품 밖으로 나가지 않게 */
-.slide.m-edit .bk-sp-chart {
-  min-height: 14px;
-}
-
-.bk-sp-sk,
+/* 흐름 숫자(편집할 때만): 그림 위에서 고친다 (.on-chart, edit.css) */
 .bk-sp-s {
   --fs: var(--t-source);
-  color: var(--ink-3);
+  color: var(--ink-2);
+  font-weight: 600;
   line-height: 1.4;
 }
 
-.bk-sp-sk {
-  flex: none;
-  font-weight: 700;
-}
-
-.bk-sp-s {
-  flex: 1;
-  min-width: 0;
-}
-
-.bk-sp.is-demo :is(.bk-sp-chart) {
+.bk-sp.is-demo .bk-sp-chart > :not(.on-chart) {
   opacity: 0.4;
 }
 
@@ -1045,24 +1015,16 @@
   .bk-sp {
     display: grid;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
     column-gap: 72px;
   }
 
-  /* 글은 두 줄을 다 쓴다. 편집할 때만 보이는 흐름 칸은 선 아래에 두어, 낮은 칸에서 글과 겹치지 않게 */
   .bk-sp-text {
-    grid-row: 1 / -1;
     align-self: center;
   }
 
   .bk-sp-chart {
-    grid-row: 1;
-    grid-column: 2;
     margin-top: 0;
-  }
-
-  .bk-sp-sw {
-    grid-column: 2;
   }
 }
 
@@ -1317,11 +1279,6 @@
   text-wrap: pretty;
 }
 
-/* 편집할 때 빈칸 상자는 둘레로 번져서, 위아래 칸 사이를 띄운다 */
-.m-edit .bk-sw-b {
-  margin-top: 30px;
-}
-
 @container bk (max-width: 980px) {
   .bk-sw-q {
     padding-right: 24px;
@@ -1526,9 +1483,14 @@
   gap: 30px;
 }
 
-.bk-gt-colsed {
-  align-self: baseline;
-  margin-bottom: 14px;
+/* 기간 칸 이름 줄. 편집할 때는 그 위에 기간 칸을 겹쳐 둔다 (.on-chart, edit.css) */
+.bk-gt-colwrap {
+  position: relative;
+  min-width: 0;
+}
+
+.bk-gt-colwrap > .bk-gt-colsed {
+  bottom: 14px;
 }
 
 .bk-gt-sk,
@@ -1633,6 +1595,13 @@
   --fs: var(--t-source);
   color: var(--ink-3);
   line-height: 1.4;
+}
+
+/* 막대 자리에서 고치는 기간: 칸 줄 왼쪽에서 조금 띄워 */
+.bk-gt-track > .bk-gt-p {
+  padding: 0 12px;
+  color: var(--ink-2);
+  font-weight: 600;
 }
 
 /* 기간 칸의 세로 줄 위에 막대. 막대는 칸 안쪽으로 조금 들여 칸과 칸 사이가 보이게 */
@@ -2039,9 +2008,3 @@
   }
 }
 
-@container bk (max-width: 1150px) {
-  .bk-in .fn-row {
-    grid-template-columns: 230px minmax(0, 1fr) 170px;
-    gap: 28px;
-  }
-}

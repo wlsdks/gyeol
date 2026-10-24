@@ -102,10 +102,16 @@ const scrollOver = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 2 ||
 export function clashes(cell: HTMLElement): string[] {
   const el = inner(cell)
   const out: string[] = []
+  // 편집 화면에서도 fitBlocks처럼 편집 표시(빈칸의 면, 단추, 그림 위에 겹친 칸)는 빼고 잰다
+  const area = cell.closest<HTMLElement>('.bk-area')
+  const was = area?.classList.contains('is-fitting')
+  area?.classList.add('is-fitting')
   if (el && el.scrollHeight > el.clientHeight + 2) out.push(`세로로 ${el.scrollHeight - el.clientHeight}px 넘침`)
   if (el && el.scrollWidth > el.clientWidth + 2) out.push(`가로로 ${el.scrollWidth - el.clientWidth}px 넘침`)
   if (el && !out.length && blockOverflows(el)) out.push('글자를 줄여야 함 (여백, 겹침, 옆 항목)')
-  return [...out, ...new Set(clashList(cell, true))]
+  const list = clashList(cell, true)
+  if (!was) area?.classList.remove('is-fitting')
+  return [...out, ...new Set(list)]
 }
 
 /**

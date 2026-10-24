@@ -8,6 +8,8 @@ import {
   BLOCKS,
   blockCount,
   blockMinH,
+  blockMissing,
+  blockNames,
   canCompose,
   cleanRows,
   composeAreaH,
@@ -172,6 +174,21 @@ describe('자리 정하기', () => {
     for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'))!, areaH)).toBe(true)
     const hs = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], areaH)
     expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
+  })
+
+  it('같은 장에 같은 부품이 둘이면 빈칸 목록에서 자리로 부른다', () => {
+    const rows = [row(block('kpi', 'k')), row(block('faq', 'f1'), block('faq', 'f2'))]
+    const names = blockNames(rows)
+    expect(names.get('k')).toBe(BLOCKS.kpi.name)
+    expect(names.get('f1')).toBe(`왼쪽 ${BLOCKS.faq.name}`)
+    expect(names.get('f2')).toBe(`오른쪽 ${BLOCKS.faq.name}`)
+    // 줄이 다르면 위, 아래로
+    const stacked = blockNames([row(block('number', 'n1')), row(block('number', 'n2'), block('callout', 'c'))])
+    expect([stacked.get('n1'), stacked.get('n2'), stacked.get('c')]).toEqual([`위 ${BLOCKS.number.name}`, `아래 ${BLOCKS.number.name}`, BLOCKS.callout.name])
+    // 빈칸 이름에도 붙는다
+    const labels = blockMissing(rows[1].blocks[1], names.get('f2')).map((m) => m.label)
+    expect(labels.every((l) => l.startsWith('오른쪽 '))).toBe(true)
+    expect(blockMissing(rows[1].blocks[0], names.get('f1')).some((m) => labels.includes(m.label))).toBe(false)
   })
 
   it('줄 높이는 똑같이 나누고, 잘리지 않을 높이가 더 필요한 줄만 더 가져간다', () => {
