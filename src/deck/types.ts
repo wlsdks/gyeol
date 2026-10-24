@@ -22,6 +22,7 @@ export type LayoutId =
   | 'imageText'
   | 'logos'
   | 'bars'
+  | 'versus'
   | 'closing'
   /** 부품(블록)을 끌어다 놓아 꾸미는 장. 부품은 정해진 자리(줄과 칸)에만 들어간다 */
   | 'compose'
@@ -110,6 +111,7 @@ export type LayoutBlockType = Extract<
   | 'kpi'
   | 'scorecard'
   | 'bars'
+  | 'versus'
   | 'bridge'
   | 'trend'
   | 'share'

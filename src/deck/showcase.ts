@@ -29,6 +29,16 @@ export function extraSlides(): Slide[] {
       { title: '3분기 매출이 목표보다 12% 많았어요', lead: '영업 2팀, 수주 확정 기준', unit: '억 원', source: '영업관리 시스템, 9월 말 기준' },
     ), { highlight: 2 }),
     withItems(
+      makeSlide('versus'),
+      [
+        { title: '1분기', meta: '96', value: '104' },
+        { title: '2분기', meta: '101', value: '98' },
+        { title: '3분기', meta: '108', value: '131' },
+        { title: '4분기', meta: '117', value: '136' },
+      ],
+      { title: '3분기부터 작년보다 20% 넘게 늘었어요', lead: '영업 2팀, 수주 확정 기준', metaTitle: '작년', valueTitle: '올해', unit: '억 원', source: '영업관리 시스템, 9월 말 기준 (4분기는 수주 확정분)' },
+    ),
+    withItems(
       makeSlide('scorecard'),
       [
         { title: '매출', meta: '117억 원', value: '131억 원', body: '신규 고객 2곳 수주' },

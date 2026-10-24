@@ -452,6 +452,7 @@ const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; 
   kpi: { minSpan: 6, prefSpan: 12, weight: 1.1, motion: '0부터 숫자가 올라가요' },
   scorecard: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '실적 막대가 목표까지 자라요' },
   bars: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '막대가 차례로 자라요' },
+  versus: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '두 막대가 나란히 자라고, 선은 차례로 그려져요' },
   bridge: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '막대가 하나씩 쌓여요' },
   trend: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '선이 왼쪽부터 그려져요' },
   share: { minSpan: 6, prefSpan: 8, weight: 1.4, motion: '조각이 차례로 채워져요' },
@@ -497,7 +498,7 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 export const BLOCK_GROUPS: { name: string; types: BlockType[] }[] = [
   { name: '글과 메시지', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
   { name: '숫자', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
-  { name: '차트', types: ['bars', 'trend', 'share', 'bridge', 'funnel'] },
+  { name: '차트', types: ['bars', 'versus', 'trend', 'share', 'bridge', 'funnel'] },
   { name: '흐름과 일정', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   { name: '비교와 표', types: ['facts', 'risks', 'swot', 'compare', 'matrix', 'pricing', 'table'] },
   { name: '그림과 사람', types: ['image', 'people', 'logos'] },
@@ -776,6 +777,9 @@ const NO_FIT = 999
  * 잰 높이(blockHeights.ts)는 '잘리지 않는' 높이라서 이것과 견줘 큰 쪽을 쓴다
  */
 const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
+  // 세로 막대는 숫자와 이름 자리를 빼고 남는 높이가 막대라서, 낮으면 글은 멀쩡해도 막대가 거의 사라진다
+  bars: (v) => (v === 'columns' ? 340 : 0),
+  versus: () => 360,
   bridge: () => 380,
   trend: () => 300,
   share: (v) => (v === 'donut' ? 380 : 320),

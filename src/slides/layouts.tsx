@@ -406,6 +406,143 @@ function Bars() {
   )
 }
 
+/** 앞 값에서 뒤 값으로 몇 % 바뀌었는지. 앞 값이 0 이하이면 비율을 말할 수 없어서 null */
+function changeText(from: number | null, to: number | null): string | null {
+  if (from === null || to === null || from <= 0) return null
+  const pct = ((to - from) / from) * 100
+  const shown = Math.abs(pct) < 10 ? Math.round(Math.abs(pct) * 10) / 10 : Math.round(Math.abs(pct))
+  if (shown === 0) return '0%'
+  return `${pct > 0 ? '▲' : '▼'} ${formatNumber(shown)}%`
+}
+
+/**
+ * 두 값 비교: 항목마다 앞 값(작년, 계획)과 뒤 값(올해, 실적). 묶은 막대는 바닥(0)부터 세우고,
+ * 두 선은 흐름을 보는 모양이라 추이처럼 바닥을 올려 그린다. 항목 이름 아래에는 앞 값에서 몇 % 바뀌었는지 계산해 붙인다.
+ * 늘어난 것이 좋은지(매출) 나쁜지(비용)는 장마다 달라서 좋고 나쁨의 색은 쓰지 않는다.
+ */
+function Versus() {
+  const { slide, meta, mode } = useSlide()
+  const items = useItems()
+  const final = mode === 'final'
+  const highlight = highlightOf(slide)
+  const lines = slide.variant === 'lines'
+  // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
+  const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
+  const read = (k: 'meta' | 'value', i: number) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
+  const a = items.map((_, i) => read('meta', i))
+  const b = items.map((_, i) => read('value', i))
+  const unit = readField(slide, meta, 'unit').trim()
+  const known = [...a, ...b].filter((v): v is number => v !== null)
+  // 막대: 0부터 가장 큰 값까지. 0보다 작은 값은 바닥에 붙인다
+  const top = Math.max(0, ...known)
+  const bar = (v: number | null) => (v === null || top <= 0 ? 0 : Math.max(v > 0 ? 1.5 : 0, (Math.max(0, v) / top) * 100))
+  // 선: 추이와 같은 바닥과 천장
+  const lo = known.length ? Math.min(...known) : 0
+  const hi = known.length ? Math.max(...known) : 1
+  const span = hi - lo || Math.abs(hi) || 1
+  const floor = lo >= 0 ? (lo - span * 1.2 > 0 ? lo - span * 0.5 : 0) : lo - span * 0.12
+  const ceil = hi + span * 0.06
+  const y = (v: number) => ((v - floor) / (ceil - floor || 1)) * 100
+  const x = (i: number) => ((i + 0.5) / items.length) * 100
+  const path = (vs: (number | null)[]) =>
+    vs
+      .map((v, i) => (v === null ? null : `${x(i).toFixed(2)},${(100 - y(v)).toFixed(2)}`))
+      .filter(Boolean)
+      .join(' ')
+  const at = (v: number, i: number) => ({ '--x': x(i).toFixed(2), '--y': y(v).toFixed(2) }) as CSSProperties
+  return (
+    <>
+      <Head lead />
+      <div className={cx('s-body vs', demo && 'is-demo', highlight >= 0 && 'has-hl')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+        {/* 무엇과 무엇의 비교인지는 그래프 위에 한 번. 선과 막대의 색, 모양이 같은 표시로 */}
+        <div className="vs-top">
+          <span className="vs-key is-a">
+            <i aria-hidden="true" />
+            <Label k="metaTitle" fallback="작년" className="vs-key-t" />
+          </span>
+          <span className="vs-key is-b">
+            <i aria-hidden="true" />
+            <Label k="valueTitle" fallback="올해" className="vs-key-t" />
+          </span>
+          {(!final || unit) && (
+            <span className="vs-unit">
+              단위: <T k="unit" as="span" oneLine />
+            </span>
+          )}
+        </div>
+        <div className="vs-plot">
+          {lines && (
+            <div className="vs-canvas">
+              {floor < 0 && <span className="vs-zero" style={{ '--y': y(0).toFixed(2) } as CSSProperties} />}
+              <svg className="vs-svg is-a" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <polyline className="vs-line" points={path(a)} />
+              </svg>
+              <svg className="vs-svg is-b" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <polyline className="vs-line" points={path(b)} />
+              </svg>
+              {items.flatMap((it, i) => {
+                const [va, vb] = [a[i], b[i]]
+                // 앞 값의 숫자는 뒤 값과 겹치지 않게 늘 뒤 값의 반대쪽(뒤 값이 크면 아래)에
+                const below = va !== null && vb !== null && va <= vb
+                // 발표할 때 숫자가 없는 점은 찍지 않는다. 편집할 때는 바닥에 칸을 둬서 채울 수 있게
+                const base = Math.max(floor, Math.min(0, ceil))
+                return [
+                  (va !== null || !final) && (
+                    <div key={`${it.id}-a`} className={cx('vs-pt is-a', below && 'is-below', va === null && 'is-blank')} style={at(va ?? base, i)}>
+                      <span className="vs-dot" />
+                      <span className="vs-val">
+                        <IT i={i} k="meta" as="span" className="vs-num" oneLine />
+                      </span>
+                    </div>
+                  ),
+                  (vb !== null || !final) && (
+                    <div
+                      key={`${it.id}-b`}
+                      className={cx('vs-pt is-b', i === highlight && 'is-hl', !below && va !== null && vb !== null && 'is-below', vb === null && 'is-blank')}
+                      style={at(vb ?? base, i)}
+                    >
+                      <span className="vs-dot" />
+                      <span className="vs-val">
+                        <IT i={i} k="value" as="span" className="vs-num" oneLine />
+                      </span>
+                    </div>
+                  ),
+                ]
+              })}
+            </div>
+          )}
+          {items.map((it, i) => (
+            <div key={it.id} className={cx('it vs-col', i === highlight && 'is-hl')}>
+              {!lines && (
+                <div className="vs-bars">
+                  <div className="vs-bar is-a" style={{ '--p': bar(a[i]).toFixed(2) } as CSSProperties}>
+                    <span className="vs-val">
+                      <IT i={i} k="meta" as="span" className="vs-num" oneLine />
+                    </span>
+                    <span className="vs-fill" />
+                  </div>
+                  <div className="vs-bar is-b" style={{ '--p': bar(b[i]).toFixed(2) } as CSSProperties}>
+                    <span className="vs-val">
+                      <IT i={i} k="value" as="span" className="vs-num" oneLine />
+                    </span>
+                    <span className="vs-fill" />
+                  </div>
+                </div>
+              )}
+              <div className="vs-label">
+                <IT i={i} k="title" className="vs-name" />
+                {changeText(a[i], b[i]) && <span className="vs-change">{changeText(a[i], b[i])}</span>}
+              </div>
+              <ItemTools i={i} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <T k="source" className="s-source" />
+    </>
+  )
+}
+
 /** 목표 대비 실적: 지표마다 목표, 실적, 달성률. 막대에 목표 자리를 세로 줄로 표시한다. */
 function Scorecard() {
   const { slide, mode } = useSlide()
@@ -1060,6 +1197,7 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   imageText: ImageText,
   logos: Logos,
   bars: Bars,
+  versus: Versus,
   closing: Closing,
   compose: Compose,
 }

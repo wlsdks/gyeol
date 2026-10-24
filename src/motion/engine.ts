@@ -399,6 +399,50 @@ export function motionEngine(): MotionEngine {
         fade(one('.s-source'), t + 400)
         break
       }
+      case 'versus': {
+        const t = head()
+        items('.vs-key', t, (el, at) => fade(el, at, 400), 80)
+        fade(one('.vs-unit'), t, 400)
+        let end = t
+        if (variant === 'lines') {
+          // 앞 값(작년) 선이 먼저 그려지고, 뒤 값(올해) 선이 조금 늦게 그 위를 따라간다. 점은 선이 닿을 때 맺힌다
+          const draw = d(levelName === 'lively' ? 1400 : 1000)
+          const from = { a: t + 80, b: t + 420 }
+          for (const k of ['a', 'b'] as const) {
+            const svg = one(`.vs-svg.is-${k}`)
+            if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(from[k]), { easing: 'linear', duration: draw })
+          }
+          const reach = (k: 'a' | 'b', x: number) => from[k] + (x / 100) * (draw / L.speed)
+          $('.vs-pt').forEach((el) => {
+            const k = el.classList.contains('is-a') ? 'a' : 'b'
+            const at = reach(k, parseFloat(el.style.getPropertyValue('--x')) || 0)
+            pop(el.querySelector('.vs-dot'), at)
+            if (el.classList.contains('is-hl')) {
+              rise(el.querySelector('.vs-val'), at + 60, L.y * 0.5)
+              count(el.querySelector('.vs-num'), at + 60)
+            } else fade(el.querySelector('.vs-val'), at + 40, 400)
+          })
+          $('.vs-col').forEach((el, i, all) => {
+            fade(el.querySelector('.vs-name'), t + i * 30, 400)
+            pop(el.querySelector('.vs-change'), reach('b', ((i + 0.5) / all.length) * 100) + 120)
+          })
+          end = from.b + draw / L.speed
+        } else {
+          // 항목마다 앞 값 막대가 서고, 바로 옆에서 뒤 값 막대가 더 높이(또는 낮게) 따라 선다. 바뀐 비율은 둘이 다 선 뒤에
+          end = items('.vs-col', t, (el, at) => {
+            fade(el.querySelector('.vs-name'), at, 400)
+            grow(el.querySelector('.vs-bar.is-a .vs-fill'), at, 'up')
+            grow(el.querySelector('.vs-bar.is-b .vs-fill'), at + 120, 'up')
+            rise(el.querySelector('.vs-bar.is-a .vs-val'), at + 140, L.y * 0.4)
+            count(el.querySelector('.vs-bar.is-a .vs-num'), at + 140)
+            rise(el.querySelector('.vs-bar.is-b .vs-val'), at + 260, L.y * 0.4)
+            count(el.querySelector('.vs-bar.is-b .vs-num'), at + 260)
+            pop(el.querySelector('.vs-change'), at + 460)
+          }, L.step * 1.2)
+        }
+        fade(one('.s-source'), end + 200)
+        break
+      }
       case 'scorecard': {
         const t = head()
         fade(one('.sk-headrow'), t, 500)

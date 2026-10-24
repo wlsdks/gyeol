@@ -544,6 +544,35 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       ],
     },
   },
+  versus: {
+    id: 'versus',
+    name: '두 값 비교',
+    description: '작년과 올해, 계획과 실적처럼 두 값을 항목마다 나란히',
+    variants: [
+      { id: 'base', name: '묶은 막대' },
+      { id: 'lines', name: '두 선' },
+    ],
+    highlight: { label: '강조할 항목', fallback: -1 },
+    fields: [
+      title('비교가 말해 주는 결론'),
+      lead(),
+      { key: 'metaTitle', label: '앞 값 이름', hint: '작년', optional: true },
+      { key: 'valueTitle', label: '뒤 값 이름', hint: '올해', optional: true },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      source,
+    ],
+    items: {
+      label: '항목',
+      min: 2,
+      max: 8,
+      default: 4,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목 이름', hints: ['1분기', '2분기', '3분기', '4분기', '5월', '6월', '7월', '8월'] },
+        { key: 'meta', label: '앞 값', hint: '96', hints: ['96', '104', '118', '121', '110', '115', '120', '125'] },
+        { key: 'value', label: '뒤 값', hint: '112', hints: ['112', '109', '131', '138', '126', '130', '141', '150'] },
+      ],
+    },
+  },
   closing: {
     id: 'closing',
     name: '결정 요청',
@@ -601,6 +630,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
   'matrix',
   'pricing',
   'bars',
+  'versus',
   'timeline',
   'imageText',
   'case',
@@ -618,7 +648,7 @@ export const AI_LAYOUTS: LayoutId[] = LAYOUT_ORDER.filter((id) => id !== 'compos
 export const LAYOUT_GROUPS: { name: string; description: string; layouts: LayoutId[] }[] = [
   { name: '자유롭게 꾸미기', description: '부품을 골라 끌어다 놓아요', layouts: ['compose'] },
   { name: '결론과 메시지', description: '하고 싶은 말을 먼저', layouts: ['summary', 'statement', 'points'] },
-  { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'bridge', 'trend', 'share', 'funnel'] },
+  { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'versus', 'bridge', 'trend', 'share', 'funnel'] },
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
   { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'pricing', 'table'] },
   { name: '자료와 사례', description: '화면, 사례, 고객사', layouts: ['imageText', 'case', 'logos'] },

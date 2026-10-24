@@ -9,6 +9,7 @@ import type { BlockLook, BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, T
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { fitBlocks } from '../slides/fitBlocks'
+import { motionEngine } from '../motion/engine'
 import { checkCombos, comboSlides } from './combos'
 import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 
@@ -171,6 +172,8 @@ export function Gallery() {
   if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
   if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
+  // 움직임 보기: 콘솔에서 playSlide(0, 'lively')로 그 장을 발표할 때처럼 움직인다
+  Object.assign(window, { playSlide: (i: number, level: 'calm' | 'lively' = 'calm') => motionEngine().play(document.querySelectorAll('.slide')[i], level) })
   const theme = (params.get('theme') ?? 'white') as ThemeId
   const mode = (params.get('mode') ?? 'final') as SlideMode
   const base = galleryDeck(params.get('set') ?? 'sample', theme, params)
