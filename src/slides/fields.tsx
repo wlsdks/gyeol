@@ -52,6 +52,8 @@ interface FieldProps extends TextProps {
   hint: string
   fieldId: string
   onChange?: (value: string) => void
+  /** 비어 있으면 편집할 때도 그리지 않는 칸 (부품 안의 채우지 않아도 되는 칸) */
+  fold?: boolean
 }
 
 function clean(text: string, multiline?: boolean): string {
@@ -60,7 +62,7 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units }: FieldProps) {
+function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, fold }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
@@ -72,6 +74,8 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
       </Tag>
     )
   }
+  // 접어 둔 빈칸은 발표할 때처럼 자리를 차지하지 않는다. 고른 부품의 '칸 더하기'로 연다
+  if (fold && !value) return null
   const shown = value || hint
   const one = oneLineProps(shown, oneLine, units)
   if (mode === 'preview' || !onChange) {
@@ -155,13 +159,14 @@ function Editable({
 
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
-  const { slide, meta, actions, fieldPrefix = '' } = useSlide()
+  const { slide, meta, actions, fieldPrefix = '', folds } = useSlide()
   return (
     <Field
       value={readField(slide, meta, k)}
       hint={hintFor(slide.layout, slide.hints, k)}
       fieldId={fieldPrefix + k}
       onChange={actions && ((v) => actions.setField(k, v))}
+      fold={folds?.has(k)}
       {...props}
     />
   )
@@ -169,13 +174,14 @@ export function T({ k, ...props }: TextProps & { k: string }) {
 
 /** 항목 칸 */
 export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
-  const { slide, actions, fieldPrefix = '' } = useSlide()
+  const { slide, actions, fieldPrefix = '', folds } = useSlide()
   return (
     <Field
       value={slide.items[i]?.[k] ?? ''}
       hint={hintFor(slide.layout, slide.hints, k, k, i)}
       fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
+      fold={folds?.has(`items.${k}`)}
       {...props}
     />
   )

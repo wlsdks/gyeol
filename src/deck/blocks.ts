@@ -610,6 +610,19 @@ export function variantOfBlock(block: Block): string {
   return variants.some((v) => v.id === block.variant) ? block.variant! : variants[0].id
 }
 
+/**
+ * 부품에서 비어 있으면 편집할 때도 접어 두는 칸: 채우지 않아도 되는 칸. 항목 칸은 키가 'items.키'.
+ * 부품은 발표할 때의 높이에 맞춰 놓으므로, 편집할 때 빈 안내를 다 펼치면 이웃 부품을 덮는다.
+ * 고른 부품의 '칸 더하기'로 연다. 발표 전체의 값($소속 같은)은 부품 밖에서 적으므로 뺀다
+ */
+export function foldableFields(type: BlockType): { key: string; label: string; item: boolean }[] {
+  const spec = BLOCKS[type]
+  return [
+    ...spec.fields.filter((f) => f.optional && !f.named && !f.image && !f.key.startsWith('$')).map((f) => ({ key: f.key, label: f.label, item: false })),
+    ...(spec.items?.fields ?? []).filter((f) => f.optional && !f.image).map((f) => ({ key: `items.${f.key}`, label: f.label, item: true })),
+  ]
+}
+
 /** 칸에 붙이는 data-field 앞머리. 같은 장의 다른 부품과 칸 이름이 겹치지 않게 */
 export const blockFieldPrefix = (blockId: string) => `b.${blockId}.`
 

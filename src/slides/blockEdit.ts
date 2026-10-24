@@ -11,6 +11,8 @@ export interface BlockEdit {
   /** 끌고 있는 부품. 그 칸은 놓일 자리로 그린다 */
   dragId: string | null
   selected: string | null
+  /** '칸 더하기'로 연 칸: '부품id 칸키'. 비어 있어도 그린다 */
+  opened: ReadonlySet<string>
   /** 장 밖에서 끌어 온 부품이 장 위에 있을 때: 놓으면 이 장이 부품 장으로 바뀐다는 안내를 띄운다 */
   incoming: boolean
   onCellPointerDown(e: PointerEvent<HTMLElement>, block: Block): void

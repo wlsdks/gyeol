@@ -27,6 +27,11 @@ export interface SlideCtx {
   sectionIndex: number
   /** 부품 장의 부품 안: 칸 id(data-field) 앞머리. 같은 장의 다른 부품과 겹치지 않게 */
   fieldPrefix?: string
+  /**
+   * 부품 안에서 비어 있으면 편집할 때도 접어 두는 칸(채우지 않아도 되는 칸). 항목 칸은 'items.키'.
+   * 부품 칸은 발표할 때의 높이에 맞춰 놓으므로, 빈 안내를 다 펼치면 이웃 부품을 덮는다. 고른 부품의 '칸 더하기'로 연다
+   */
+  folds?: ReadonlySet<string>
 }
 
 export const SlideContext = createContext<SlideCtx | null>(null)

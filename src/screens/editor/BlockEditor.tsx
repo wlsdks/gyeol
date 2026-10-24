@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from 'react-dom'
 import {
   autoTarget,
+  blockFieldPrefix,
   blockItems,
   blockPrefH,
   changeIssue,
@@ -14,6 +15,7 @@ import {
   copyBlock,
   dropTarget,
   effectOf,
+  foldableFields,
   insertAt,
   lookOf,
   makeBlock,
@@ -136,7 +138,12 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const engine = useMemo(() => motionEngine(), [])
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
 
-  useEffect(() => setSelected(null), [slide.id])
+  // '칸 더하기'로 연 빈칸 ('부품id 칸키'). 다른 장으로 가면 다시 접는다
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set())
+  useEffect(() => {
+    setSelected(null)
+    setOpened(new Set())
+  }, [slide.id])
 
   const compose = slide.layout === 'compose'
 
@@ -543,6 +550,17 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid())!)
     setSelected(copy.id)
   }
+  /** 접어 둔 칸을 열고 그 칸(항목이면 처음 빈 항목)에 바로 쓰게 한다 */
+  const openField = (b: Block, key: string) => {
+    setOpened((o) => new Set(o).add(`${b.id} ${key}`))
+    requestAnimationFrame(() => {
+      const k = key.startsWith('items.') ? key.slice(6) : key
+      const prefix = blockFieldPrefix(b.id)
+      const sel = key.startsWith('items.') ? `[data-field^="${CSS.escape(prefix)}"][data-field$=".${CSS.escape(k)}"]` : `[data-field="${CSS.escape(prefix + k)}"]`
+      const el = [...document.querySelectorAll<HTMLElement>(`.ed-canvas ${sel}`)].find((x) => !x.innerText.trim())
+      el?.focus()
+    })
+  }
   const preview = (b: Block, effect: BlockEffect) => {
     const cell = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(b.id)}"]`)
     if (!cell || effect === 'none') return
@@ -581,6 +599,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       onPreview={(fx) => preview(b, fx)}
       onVariant={(v) => update(b.id, (x) => ({ ...x, variant: v }))}
       onAddItem={() => update(b.id, withItem)}
+      adds={foldableFields(b.type).filter((f) => !opened.has(`${b.id} ${f.key}`) && (f.item ? blockItems(b).some((it) => !it[f.key.slice(6) as keyof typeof it]?.trim()) : !b.fields[f.key]?.trim()))}
+      onOpenField={(key) => openField(b, key)}
       onDuplicate={() => duplicate(b)}
       onRemove={() => remove(b)}
     />
@@ -627,6 +647,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     rows: previewRows,
     dragId,
     selected: drag ? null : selected,
+    opened,
     incoming: !!drag && drag.plan === 'next',
     onCellPointerDown: (e, b) => {
       if (e.button !== 0) return
@@ -763,6 +784,8 @@ function BlockTools({
   onPreview,
   onVariant,
   onAddItem,
+  adds,
+  onOpenField,
   onDuplicate,
   onRemove,
 }: {
@@ -780,11 +803,14 @@ function BlockTools({
   onPreview(effect: BlockEffect): void
   onVariant(variant: string): void
   onAddItem(): void
+  /** 비어 있어서 접어 둔 칸. '칸 더하기'로 연다 */
+  adds: { key: string; label: string; item: boolean }[]
+  onOpenField(key: string): void
   onDuplicate(): void
   onRemove(): void
 }) {
   const spec = BLOCKS[block.type]
-  const [menu, setMenu] = useState<'motion' | null>(null)
+  const [menu, setMenu] = useState<'motion' | 'fields' | null>(null)
   const menuRef = useRef<HTMLUListElement>(null)
   // 메뉴는 도구 아래로 열린다. 창 아래까지 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
   useLayoutEffect(() => {
@@ -900,6 +926,40 @@ function BlockTools({
           <PlusIcon />
           <span>{spec.items.label}</span>
         </button>
+      )}
+      {adds.length > 0 && (
+        <div className="bk-tool-menu">
+          <button
+            type="button"
+            className={cx('bk-tool', menu === 'fields' && 'is-on')}
+            aria-expanded={menu === 'fields'}
+            title="비워 두어 숨긴 칸을 꺼내 써요"
+            onClick={() => setMenu(menu === 'fields' ? null : 'fields')}
+          >
+            <PlusIcon />
+            <span>칸 더하기</span>
+          </button>
+          {menu === 'fields' && (
+            <ul ref={menuRef} className="bk-menu is-fields" role="menu">
+              {adds.map((f) => (
+                <li key={f.key}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="bk-menu-item"
+                    onClick={() => {
+                      onOpenField(f.key)
+                      setMenu(null)
+                    }}
+                  >
+                    <b>{f.label}</b>
+                    <span className="bk-menu-d">{f.item ? `${spec.items?.label ?? '항목'}마다 한 칸씩` : '이 부품에 한 칸'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
       <span className="bk-tool-sep" />
       <button type="button" className="bk-tool is-icon" title="복제" aria-label="복제" onClick={onDuplicate}>

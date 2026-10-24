@@ -7,6 +7,8 @@ export interface FieldSpec {
   hint: string
   multiline?: boolean
   optional?: boolean
+  /** 비워 두면 정해진 이름(목표, 실적 같은)으로 보이는 칸. 부품 안에서도 접지 않는다 */
+  named?: boolean
   image?: boolean
 }
 
@@ -161,8 +163,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     highlight: { label: '강조할 지표', fallback: -1 },
     fields: [
       title('실적을 요약하는 한 문장'),
-      { key: 'metaTitle', label: '목표 머리말', hint: '목표', optional: true },
-      { key: 'valueTitle', label: '실적 머리말', hint: '실적', optional: true },
+      { key: 'metaTitle', label: '목표 머리말', hint: '목표', optional: true, named: true },
+      { key: 'valueTitle', label: '실적 머리말', hint: '실적', optional: true, named: true },
       source,
     ],
     items: {
@@ -184,9 +186,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     description: '처음 값에서 끝 값까지, 무엇이 얼마나 더하고 뺐는지',
     fields: [
       title('증감을 요약하는 한 문장'),
-      { key: 'startTitle', label: '처음 이름', hint: '목표', optional: true },
+      { key: 'startTitle', label: '처음 이름', hint: '목표', optional: true, named: true },
       { key: 'startValue', label: '처음 값', hint: '117' },
-      { key: 'endTitle', label: '끝 이름', hint: '실적', optional: true },
+      { key: 'endTitle', label: '끝 이름', hint: '실적', optional: true, named: true },
       { key: 'unit', label: '단위', hint: '억 원', optional: true },
       source,
     ],
@@ -556,8 +558,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     fields: [
       title('비교가 말해 주는 결론'),
       lead(),
-      { key: 'metaTitle', label: '앞 값 이름', hint: '작년', optional: true },
-      { key: 'valueTitle', label: '뒤 값 이름', hint: '올해', optional: true },
+      { key: 'metaTitle', label: '앞 값 이름', hint: '작년', optional: true, named: true },
+      { key: 'valueTitle', label: '뒤 값 이름', hint: '올해', optional: true, named: true },
       { key: 'unit', label: '단위', hint: '억 원', optional: true },
       source,
     ],

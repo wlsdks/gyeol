@@ -3588,6 +3588,20 @@ body.is-block-resizing * {
   font-size: 13.5px;
 }
 
+/* 칸 더하기 메뉴는 그림 없이 글만: 좁게, 그림 자리를 두지 않는다 */
+.bk-menu.is-fields {
+  width: 240px;
+}
+
+.bk-menu.is-fields .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bk-menu.is-fields .bk-menu-item b,
+.bk-menu.is-fields .bk-menu-d {
+  grid-column: 1;
+}
+
 .bk-menu-d {
   grid-column: 2;
   color: var(--ink-2);

@@ -1,8 +1,8 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCKS, blockFieldPrefix, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
+import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
-import type { Block, NativeBlockType } from '../deck/types'
+import type { Block, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
@@ -651,8 +651,23 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
 
 // ---------- 부품 하나 ----------
 
+const FOLDS = new Map<BlockType, ReadonlySet<string>>()
+
+/** 부품에서 비어 있으면 접어 두는 칸 (deck/blocks.ts의 foldableFields) */
+function foldsOf(type: BlockType): ReadonlySet<string> {
+  let m = FOLDS.get(type)
+  if (!m) FOLDS.set(type, (m = new Set(foldableFields(type).map((f) => f.key))))
+  return m
+}
+
 function BlockBody({ block }: { block: Block }) {
   const ctx = useSlide()
+  const opened = useContext(BlockEditContext)?.opened
+  // 편집기에서 '칸 더하기'로 연 칸은 비어 있어도 그린다
+  const folds = useMemo(() => {
+    const all = foldsOf(block.type)
+    return opened?.size ? new Set([...all].filter((k) => !opened.has(`${block.id} ${k}`))) : all
+  }, [block.type, block.id, opened])
   const spec = BLOCKS[block.type]
   const outer = ctx.actions
   const inner = useMemo(() => blockSlide(ctx.slide, block), [ctx.slide, block])
@@ -675,6 +690,7 @@ function BlockBody({ block }: { block: Block }) {
         actions,
         canRemoveItem: !!spec.items && blockItems(block).length > spec.items.min,
         fieldPrefix: blockFieldPrefix(block.id),
+        folds,
       }}
     >
       <div className="bk-in">
