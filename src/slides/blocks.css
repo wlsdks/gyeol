@@ -80,14 +80,14 @@
 /* 한 줄에 부품이 둘 이상이면 모두 위에서부터: 가운데에 두면 내용이 적은 부품이 옆 부품과 다른 높이에 떠서
    소제목의 윗선이 칸마다 어긋나 보인다. 대신 줄 안에서 가장 긴 내용을 기준으로 묶음째 가운데로 내린다(--bk-lift, fitBlocks.ts):
    윗선은 맞으면서 높은 줄의 아래 절반이 통째로 비지 않는다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에 */
-.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk) {
+.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
   box-sizing: border-box;
   justify-content: flex-start;
   padding-top: var(--bk-lift, 0px);
 }
 
 /* 칸 사이에 이음표가 선 줄은 이음표와 같이 가운데에: '앞 → 뒤'가 한 줄로 읽힌다 */
-.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk) {
+.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
   justify-content: center;
 }
 
@@ -3270,7 +3270,8 @@
   height: 100%;
 }
 
-/* 줄을 적어 둔다: 소제목은 비어 있으면 접혀서(편집할 때도) 없을 때가 있다. 차례로 채우면 그래프가 높이 없는 줄로 밀려 사라진다 */
+/* 줄을 적어 둔다: 소제목은 비어 있으면 접혀서(편집할 때도) 없을 때가 있다. 차례로 채우면 그래프가 높이 없는 줄로 밀려 사라진다.
+   소제목, 표시 줄, 그래프의 이 짜임은 색 표(.bk-hm-grid)도 같이 쓴다 */
 .bk-cc > * {
   grid-column: 1 / -1;
 }
@@ -3283,7 +3284,7 @@
   grid-row: 2;
 }
 
-.bk-cc > .bk-cc-plot {
+.bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
   grid-row: 3;
 }
 
@@ -3307,7 +3308,7 @@
     margin: 0 0 20px 32px;
   }
 
-  .bk-cc > .bk-cc-plot {
+  .bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
     grid-row: 2;
   }
 }
@@ -3765,4 +3766,344 @@
 
 .bk-dv-row.is-hl .bk-dv-num {
   color: var(--ink);
+}
+
+/* ---------- 색 표 ----------
+   줄 이름 한 칸과 값 칸(--c개)이 표 하나의 격자를 나눠 쓴다(subgrid): 이름이 길어도 모든 줄의 칸이 같은 자리에 선다.
+   칸은 강조색을 바탕색에 진하기(--t, 0~1)만큼 섞은 색 하나(옅은 색에서 강조색까지). 칸 사이는 바탕색 틈.
+   칸 숫자의 색은 진하기가 문턱(--hm-th)을 넘으면 강조색 위의 글자색으로 바꾼다. 문턱은 강조색 아홉과 두 테마, 카드에서
+   두 색 가운데 어느 쪽도 3:1(굵은 큰 글자의 기준) 밑으로 내려가지 않는 자리를 셈해 고른 값이다 */
+.bk-hm {
+  --hm-gap: 8px;
+  --hm-hi: var(--accent);
+  --hm-on: var(--accent-ink);
+  --hm-th: 0.78;
+}
+
+/* 검은 바탕: 칸이 진해질수록 밝아져서(검정에 강조색을 섞는다) 바탕의 글자색(흰색)이 더 오래 읽힌다 */
+.is-dark .bk-hm {
+  --hm-th: 0.86;
+}
+
+/* 강조색 바탕: 강조색 위에 강조색을 섞을 수 없어서 짙은 면(--bold-bg, 강조색을 깊게 한 색)까지 칠한다.
+   글자색(--ink)이 칠할수록 대비가 커지는 쪽이라 문턱은 하늘처럼 밝은 강조색(글자가 검정)만 쓴다 */
+.tone-accent .bk-hm {
+  --hm-hi: var(--bold-bg);
+  --hm-on: var(--bold-ink);
+  --hm-th: 0.3;
+}
+
+.bk-hm-grid {
+  display: grid;
+  grid-template-columns: fit-content(28%) repeat(var(--c), minmax(0, 1fr));
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--hm-gap);
+  min-height: 0;
+}
+
+.bk-hm-head,
+.bk-hm-list,
+.bk-hm-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  min-width: 0;
+}
+
+.bk-hm-head {
+  position: relative;
+  align-items: end;
+}
+
+/* 줄은 남는 높이를 똑같이 나눠 가진다. 숫자 한 줄보다 낮아지지는 않는다 (1fr의 바닥은 내용) */
+.bk-hm-list {
+  grid-auto-rows: 1fr;
+  row-gap: var(--hm-gap);
+}
+
+.bk-hm-name {
+  --fs: var(--t-small);
+  align-self: center;
+  padding-right: 16px;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* 칸 이름과 칸 숫자는 칸 너비(.one-line의 100cqi)에 맞춰 한 줄로: 열두 칸이면 칸이 좁다 */
+.bk-hm-cn,
+.bk-hm-cell {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.bk-hm-cn {
+  padding: 0 4px 4px;
+  text-align: center;
+}
+
+.bk-hm-ct {
+  --fs: var(--t-small);
+  display: block;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-hm-head.is-hint .bk-hm-ct {
+  opacity: 0.6;
+}
+
+.bk-hm-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: calc(12px * var(--bk-fit, 1)) 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--hm-hi) calc(6% + 94% * var(--t, 0)), var(--bg));
+  /* 문턱 밑은 바탕의 글자색, 넘으면 강조색 위의 글자색. clamp로 0과 1 둘 중 하나만 나오게 한다 */
+  color: color-mix(in srgb, var(--hm-on) calc(clamp(0, (var(--t, 0) - var(--hm-th)) * 1000, 1) * 100%), var(--ink));
+}
+
+/* 줄이 많으면 칸의 위아래 여백을 줄여 여덟 줄도 한 단계 낮은 줄에 들어가게 */
+.bk-hm-list:is([data-n='6'], [data-n='7'], [data-n='8']) .bk-hm-cell {
+  padding-block: calc(6px * var(--bk-fit, 1));
+}
+
+/* 값이 없는 칸('-', 비워 둔 칸): 색 없이 틀만. 옅은 칸(가장 낮은 값)과 헷갈리지 않게 */
+.bk-hm-cell.is-empty {
+  background: none;
+  box-shadow: inset 0 0 0 var(--rule) var(--line);
+}
+
+.bk-hm-v {
+  --fs: var(--t-body);
+  display: block;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-hm-cell:is(.is-max, .is-min) .bk-hm-v {
+  font-weight: 800;
+}
+
+/* 가장 높은 칸과 낮은 칸의 고리: 칸에서 조금 떼어 글자색으로. 진한 칸에 붙여 두르면 칸이 커진 것처럼 보인다.
+   테두리가 아니라 outline이라 표 가장자리의 칸에서 고리가 칸 밖으로 나가도 넘침(스크롤 넓이)으로 세지 않는다 */
+.bk-hm-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  pointer-events: none;
+}
+
+.bk-cc-sum .bk-hm-low {
+  margin-left: 28px;
+  font-weight: 600;
+}
+
+/* 편집할 때 칸 이름과 줄의 값은 칸들 위에서 고친다 (.on-chart, edit.css). 이름 칸은 비켜서 */
+.bk-hm-head > .bk-hm-colsed,
+.bk-hm-row > .bk-hm-in {
+  --fs: var(--t-source);
+  grid-row: 1;
+  grid-column: 2 / -1;
+  padding: 0 12px;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.bk-hm.is-demo :is(.bk-hm-cell, .bk-cc-sum) {
+  opacity: 0.4;
+}
+
+/* ---------- 지표 흐름표 ----------
+   이름, 흐름 선, 지금, 바뀐 만큼. 머리와 줄이 표 하나의 격자를 나눠 써서(subgrid) 이름이 길어도 칸이 같은 자리에 선다.
+   줄은 목록형 부품과 같은 꼴(첫 줄 위는 글자색, 줄 사이와 아래는 옅은 선) */
+.bk-sx {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-sx > .bk-h {
+  margin-bottom: var(--bk-h-gap);
+}
+
+.bk-sx-table {
+  display: grid;
+  grid-template-columns: fit-content(30%) minmax(0, 1fr) max-content max-content;
+  column-gap: 40px;
+}
+
+.bk-sx-head,
+.bk-sx-list,
+.bk-sx-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  min-width: 0;
+}
+
+.bk-sx-head {
+  align-items: end;
+  padding-bottom: 12px;
+}
+
+.bk-sx-hk {
+  --fs: var(--t-source);
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.bk-sx-hk:is(.is-now, .is-chg) {
+  text-align: right;
+}
+
+.bk-sx-row {
+  align-items: center;
+  padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-sx-row:first-child {
+  border-top-color: var(--ink);
+}
+
+.bk-sx-row:last-child {
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.bk-sx-name {
+  --fs: var(--t-small);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* 선 끝의 점(지름 16px, 둘레 4px)이 칸 밖으로 나가지 않게 오른쪽을 띄운다.
+   칸에 높이가 남아 줄 사이를 넓히면(--bk-air, fitBlocks.ts) 선도 그만큼 높게: 줄 사이만 벌어지면 선이 넓은 줄 가운데 납작하게 떠 있다 */
+.bk-sx-plot {
+  position: relative;
+  height: calc(52px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  margin-right: 12px;
+}
+
+.bk-sx-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bk-sx-svg path {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+
+.bk-sx-dot {
+  position: absolute;
+  top: calc(var(--y) * 1%);
+  left: calc(var(--x) * 1%);
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+.bk-sx-now {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.bk-sx-v {
+  --fs: var(--t-h);
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 단위는 숫자보다 두 단계 작게 (36 → 26, 숫자의 꼴) */
+.bk-sx-u {
+  --fs: var(--t-small);
+  margin-left: 4px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.bk-sx-chg {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 흐름 숫자(편집할 때만): 선 위에서 고친다 (.on-chart, edit.css) */
+.bk-sx-plot > .bk-sx-in {
+  --fs: var(--t-source);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.bk-sx.is-demo :is(.bk-sx-svg, .bk-sx-dot, .bk-sx-v, .bk-sx-u:not(.ed), .bk-sx-chg) {
+  opacity: 0.4;
+}
+
+/* 지표가 많으면 줄 사이와 선을 낮게: 여섯 줄이 한 단계 낮은 줄에도 들어가게 */
+.bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-row {
+  padding: calc(10px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-plot {
+  height: calc(44px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+}
+
+/* 좁은 칸(반 칸): 칸 사이를 좁혀 선 자리를 지킨다 */
+@container bk (max-width: 900px) {
+  .bk-sx-table {
+    column-gap: 28px;
+  }
+}
+
+/* 낮은 줄: 줄 사이와 선을 낮게. 흐름 선은 오르내림만 보이면 되어서 낮아도 읽히고, 글자를 줄이는 것보다 낫다 */
+@container bk (max-height: 460px) {
+  .bk-sx-row {
+    padding: calc(10px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  }
+
+  .bk-sx-plot {
+    height: calc(44px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  }
+
+  .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-row {
+    padding: calc(8px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  }
+
+  .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-plot {
+    height: calc(36px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  }
 }

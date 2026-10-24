@@ -618,6 +618,96 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  heat: {
+    name: '색 표',
+    description: '지점×월처럼 줄과 칸으로 놓인 값을 색의 진하기로. 가장 높은 칸과 낮은 칸을 짚어 줘요 (히트맵)',
+    motion: '칸이 왼쪽 위부터 차례로 물들고, 가장 높은 칸과 낮은 칸이 짚여요',
+    variants: [
+      { id: 'all', name: '표 전체에서 견주기' },
+      { id: 'rows', name: '줄마다 견주기' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 지점별 월 매출', optional: true },
+      { key: 'cols', label: '칸 이름', hint: '4월 5월 6월 7월 8월 9월' },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '줄',
+      // 한 줄이면 색으로 견줄 이웃이 없다
+      min: 2,
+      max: 8,
+      default: 4,
+      fields: [
+        { key: 'title', label: '이름', hint: '줄 이름', hints: ['서울', '경기', '부산', '대구', '광주', '대전', '울산', '강원'] },
+        {
+          key: 'value',
+          label: '값',
+          hint: '칸마다 쉼표로 (예: 42, 45, 48)',
+          hints: [
+            '42, 45, 48, 51, 55, 58',
+            '38, 40, 39, 44, 47, 49',
+            '21, 22, 20, 24, 26, 25',
+            '18, 17, 19, 18, 21, 23',
+            '12, 13, 11, 14, 15, 16',
+            '15, 14, 16, 17, 17, 19',
+            '9, 10, 9, 11, 12, 12',
+            '6, 7, 6, 8, 9, 9',
+          ],
+        },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: { heading: '지점별 월 매출', cols: '4월 5월 6월 7월 8월 9월', unit: '억 원' },
+      items: [
+        { title: '서울', value: '42, 45, 48, 51, 55, 58' },
+        { title: '경기', value: '38, 40, 39, 44, 47, 49' },
+        { title: '부산', value: '21, 22, 20, 24, 26, 25' },
+        { title: '대구', value: '18, 17, 19, 18, 21, 23' },
+      ],
+    },
+  },
+  sparks: {
+    name: '지표 흐름표',
+    description: '지표마다 그동안의 흐름을 작은 선으로, 지금 값과 바뀐 만큼을 나란히',
+    motion: '줄마다 선이 그려지고 지금 값이 올라가요',
+    variants: [
+      { id: 'prev', name: '바로 앞과 견주기' },
+      { id: 'first', name: '처음과 견주기' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 월간 핵심 지표', optional: true },
+      { key: 'period', label: '기간', hint: '예: 4월~9월', optional: true },
+    ],
+    items: {
+      label: '지표',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '불량률', '신규 고객', '재구매율', '처리 기간', '문의'] },
+        {
+          key: 'value',
+          label: '흐름',
+          hint: '앞에서부터 쉼표로 (예: 3.2, 2.8, 2.1)',
+          hints: ['42, 45, 48, 51, 55, 58', '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', '12, 15, 14, 18, 21, 24', '31, 33, 32, 35, 37, 38', '4.2, 4.0, 3.6, 3.1, 2.9, 2.6', '210, 240, 225, 260, 245, 230'],
+        },
+        { key: 'meta', label: '단위', hint: '단위', hints: ['억 원', '%', '곳', '%', '일', '건'], optional: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '월간 핵심 지표', period: '4월~9월' },
+      items: [
+        { title: '매출', value: '42, 45, 48, 51, 55, 58', meta: '억 원' },
+        { title: '불량률', value: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', meta: '%' },
+        { title: '신규 고객', value: '12, 15, 14, 18, 21, 24', meta: '곳' },
+        { title: '재구매율', value: '31, 33, 32, 35, 37, 38', meta: '%' },
+      ],
+    },
+  },
 }
 
 /** 레이아웃 부품의 칸 크기와 움직임. 칸은 그 레이아웃의 것에서 머리(제목, 부제, 출처)만 뺀다 */
@@ -675,7 +765,12 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 export const BLOCK_GROUPS: { name: string; short: string; description: string; types: BlockType[] }[] = [
   { name: '글과 메시지', short: '글', description: '결론 한 줄, 설명, 목록, 인용, 예상 질문', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
   { name: '숫자', short: '숫자', description: '큰 숫자, 전과 후, 목표 대비, 비율', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
-  { name: '차트', short: '차트', description: '막대, 두 값 비교, 추이, 비중, 증감, 달성, 원인 순위, 깔때기, 시장 규모', types: ['bars', 'versus', 'attain', 'stack', 'trend', 'share', 'bridge', 'diverge', 'pareto', 'funnel', 'market'] },
+  {
+    name: '차트',
+    short: '차트',
+    description: '막대, 두 값 비교, 추이, 지표 흐름, 비중, 증감, 달성, 원인 순위, 색 표, 깔때기, 시장 규모',
+    types: ['bars', 'versus', 'attain', 'stack', 'trend', 'sparks', 'share', 'bridge', 'diverge', 'pareto', 'heat', 'funnel', 'market'],
+  },
   { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 평가표, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'rating', 'matrix', 'position', 'pricing', 'table'] },
   { name: '그림과 사람', short: '그림', description: '사진, 화면, 담당자, 고객사 로고', types: ['image', 'people', 'logos'] },
@@ -1200,6 +1295,10 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   pareto: () => 380,
   attain: () => 380,
   stack: () => 380,
+  // 색 표는 낮으면 칸이 띠처럼 납작해져 색이 면으로 읽히지 않는다
+  heat: () => 300,
+  // 지표 흐름표는 낮으면 줄마다의 선이 납작한 줄이 되어 오르내림이 보이지 않는다
+  sparks: () => 280,
 }
 /** 항목이 셋 이상인 부품: 칸이 이보다 낮으면 줄 사이가 붙어 빽빽해진다. 로고는 그림이라 빼고 */
 const LIST_FLOOR = 240

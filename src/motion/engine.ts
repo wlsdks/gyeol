@@ -1040,6 +1040,38 @@ export function motionEngine(): MotionEngine {
             count(el.querySelector('.bk-dv-num'), at + 320)
           })
           break
+        case 'heat': {
+          // 칸이 왼쪽 위 모서리부터 비스듬한 물결로 물든다(줄 + 칸이 같은 칸이 함께). 칸이 많아도 1초 안에 다 물들게.
+          // 다 물든 뒤 가장 높은 칸과 낮은 칸에 고리가 맺힌다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-cc-key'), 120, 500)
+          fade(one('.bk-hm-head'), 120, 500)
+          const rows = $('.bk-hm-row')
+          const cols = Math.max(1, ...rows.map((r) => r.querySelectorAll('.bk-hm-cell').length))
+          const wave = Math.min(L.step * 0.6, 1000 / Math.max(1, rows.length + cols - 1))
+          rows.forEach((row, i) => {
+            fade(row.querySelector('.bk-hm-name'), 180 + i * wave, 400)
+            row.querySelectorAll('.bk-hm-cell').forEach((cell, j) => fade(cell, 200 + (i + j) * wave, 420))
+          })
+          const end = 200 + (rows.length + cols - 1) * wave + 320
+          $('.bk-hm-ring').forEach((r, k) => pop(r, end + k * 160))
+          break
+        }
+        case 'sparks':
+          // 줄마다 이름이 올라오고 흐름 선이 왼쪽부터 같은 빠르기로 그어진다. 선이 끝에 닿을 때 지금 점이 맺히고 지금 값이 굴러간다
+          rise(one('.bk-h'), 60, L.y * 0.5)
+          fade(one('.bk-sx-head'), 120, 500)
+          items('.bk-sx-row', 180, (el, at) => {
+            rise(el.querySelector('.bk-sx-name'), at, L.y * 0.4)
+            const draw = levelName === 'lively' ? 900 : 700
+            const svg = el.querySelector('.bk-sx-svg')
+            if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(at + 60), { easing: 'linear', duration: d(draw) })
+            pop(el.querySelector('.bk-sx-dot'), at + 60 + draw)
+            fade(el.querySelector('.bk-sx-now'), at + draw - 120, 300)
+            count(el.querySelector('.bk-sx-v'), at + draw - 120)
+            fade(el.querySelector('.bk-sx-chg'), at + draw + 120, 400)
+          })
+          break
         case 'image': {
           wipe(one('.bk-img-i'), 0, 'left', 1000)
           const img = one('.bk-img-i img')
