@@ -185,7 +185,8 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
             sectionIndex={sectionIndex}
           />
         </ScaledSlide>
-        <span className="thumb-label">
+        {/* 이 장에 무엇을 쓰면 되는지는 이름에 마우스를 올리면 (오른쪽 칸에 늘 펼쳐 두지 않는다) */}
+        <span className="thumb-label" title={slide.guide || undefined}>
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}
           {slide.purpose}
         </span>
