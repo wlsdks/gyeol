@@ -6,7 +6,7 @@ import { emptyItem } from '../deck/generate'
 import { LAYOUTS, LAYOUT_GROUPS, LAYOUT_ORDER } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { showcaseSlides } from '../deck/showcase'
-import { ACCENT_COMBOS, comboSwatch, THEMES, THEME_ORDER, TONES, isDarkLook, themeStyle } from '../deck/themes'
+import { ACCENT_COMBOS, comboSwatch, FONTS, fontPreview, THEMES, THEME_ORDER, TONES, isDarkLook, themeStyle } from '../deck/themes'
 import type { BlockType, Deck, DeckTheme, LayoutId, Slide, ThemeId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
@@ -48,6 +48,9 @@ const TYPE: { name: string; px: number; text: string; head?: boolean; tone?: 'ac
   { name: '보충', px: 26, text: '첫해 구축비, 3개 라인 기준', tone: 'ink-3' },
   { name: '출처', px: 22, text: '영업관리 시스템, 9월 말 기준', tone: 'ink-3' },
 ]
+
+/** 글꼴 견본으로 그리는 장: 제목, 큰 숫자, 이름표, 설명이 한 장에 다 있다 */
+const FONT_SAMPLE: LayoutId = 'kpi'
 
 const VARIANT_COUNT = LAYOUT_ORDER.reduce((n, id) => n + (LAYOUTS[id].variants?.length ?? 1), 0)
 
@@ -257,6 +260,27 @@ export function System() {
                     <span>회의실 뒷자리에서도 읽히는 크기예요. 가장 작은 출처도 22로 둬요.</span>
                   </figcaption>
                 </figure>
+              </div>
+            )}
+            <h3 className="sys-h3 sys-tones-h">글꼴</h3>
+            <p className="sys-group-desc">테마 메뉴에서 제목과 본문의 글꼴 짝 하나를 골라요. 모두 앱과 내보낸 파일에 들어 있어서 어느 PC에서 열어도 같아요.</p>
+            {/* 넷을 둘씩: 셋씩 놓으면 하나가 혼자 남고, 글꼴은 크게 봐야 차이가 보인다 */}
+            {width > 0 && examples.get(FONT_SAMPLE) && (
+              <div className="sys-thumbs" style={{ '--cols': 2, '--gap': `${gap}px` } as CSSProperties}>
+                {FONTS.map((f) => {
+                  const s = examples.get(FONT_SAMPLE)!
+                  return (
+                    <figure key={f.id} className="sys-thumb">
+                      <ScaledSlide width={Math.floor((width - gap) / 2)}>
+                        <SlideCanvas deck={{ ...deck, theme: { ...deckTheme, font: f.id } }} slide={s} mode={mode} {...pageProps(info, s.id)} />
+                      </ScaledSlide>
+                      <figcaption>
+                        <b style={fontPreview(f.id)}>{f.name}</b>
+                        <span>{f.description}</span>
+                      </figcaption>
+                    </figure>
+                  )
+                })}
               </div>
             )}
             <h3 className="sys-h3 sys-tones-h">장의 바탕</h3>

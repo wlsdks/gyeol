@@ -15,8 +15,14 @@ export interface Theme {
   colors: { bg: string; ink: string; ink2: string; ink3: string; line: string; surface: string; good: string; bad: string }
 }
 
+/*
+ * 글꼴은 모두 앱과 내보낸 파일에 들어 있다(SIL OFL 1.1, docs/OPEN-SOURCE.md). 윈도우에서도 맥과 같게 보이고, 바깥 주소로 받지 않는다.
+ * 프리텐다드를 늘 뒤에 둔다: 고른 글꼴에 없는 글자(SUIT의 드문 한글, ▲▼ 같은 기호)는 프리텐다드로 그린다
+ */
 const SANS = "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
 const SERIF = "'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif"
+const SUIT = `'SUIT', ${SANS}`
+const MYEONGJO = "'Noto Serif KR Variable', 'AppleMyungjo', 'Batang', serif"
 
 /*
  * 바탕은 흰색 아니면 검은색 두 가지뿐이다. 크림색처럼 색이 있는 바탕은 화면을 낡고 무겁게 만든다.
@@ -100,10 +106,16 @@ export const MOTIONS: { id: Motion; name: string; description: string }[] = [
   { id: 'lively', name: '생동감', description: '더 크게 움직이고, 숫자가 굴러가다 살짝 지나쳤다 맞춰져요. 발표가 길 때 좋아요.' },
 ]
 
-/** 고를 수 있는 것들. 이름과 설명은 테마 메뉴, 이 장 설정, AI 카탈로그에 함께 쓴다. */
+/**
+ * 고를 수 있는 것들. 이름과 설명은 테마 메뉴, 이 장 설정, AI 카탈로그에 함께 쓴다.
+ * 글꼴은 제목과 본문을 따로 고르지 않고 맞춰 본 짝 하나를 고른다. 아무렇게나 섞으면 비슷한 고딕 둘이 부딪치거나
+ * 본문까지 명조가 되어 화면에서 읽기 어렵다. id 'sans', 'serif'는 예전 '고딕', '명조'(제목 글꼴)와 같은 값이다
+ */
 export const FONTS: { id: FontId; name: string; description: string }[] = [
-  { id: 'sans', name: '고딕', description: '또렷하고 현대적이에요.' },
-  { id: 'serif', name: '명조', description: '제목이 차분하고 격식 있어 보여요.' },
+  { id: 'sans', name: '프리텐다드', description: '기본 글꼴이에요. 제목과 본문 모두 또렷하고 현대적이라 어느 보고에나 잘 맞아요.' },
+  { id: 'suit', name: 'SUIT', description: '제목과 본문 모두 SUIT예요. 글자가 반듯하고 둥글어서 숫자가 많은 장이 산뜻해 보여요.' },
+  { id: 'serif', name: '명조 제목', description: '제목은 굵은 명조, 본문은 프리텐다드예요. 큰 화면에서도 제목이 또렷하고 격식 있어 보여요.' },
+  { id: 'myeongjo', name: '본명조 제목', description: '제목은 가늘고 단정한 본명조, 본문은 프리텐다드예요. 보내 드리는 문서 같은 보고에 어울려요.' },
 ]
 
 export const TEXT_SIZES: { id: TextSize; name: string; description: string }[] = [
@@ -206,20 +218,31 @@ export function accentOf(deckTheme: Deck['theme']): string {
 }
 
 /**
+ * font: 제목과 큰 숫자, body: 본문. weight: 제목 굵기(큰 숫자는 한 단계 더). SUIT는 굵기마다 한 단계 굵은 파일을 잇는다(fonts/suit.css)
  * glyph: 한 줄로 줄이는 글(숫자 등)의 글자 폭이 고딕(textUnits의 기준)보다 얼마나 넓은지. 명조는 숫자와 %가 넓다.
  * tall: 큰 숫자의 줄 높이를 얼마나 늘리는지. 명조는 한글과 숫자의 키가 커서 줄 높이 0.8로는 위아래 글에 올라탄다
  * box, gap: 글꼴 높이(위아래 합)와 그 위에서 한글 윗선까지(글자 크기 배율, 캔버스로 잰 값). 장 맨 위의 제목을
  *   글자 윗선으로 틀에 맞출 때 쓴다(slides.css의 --pad-y)
+ * 본문 글꼴의 높이는 slides.css가 프리텐다드 값(1.19, 0.155)으로 셈한다. SUIT는 글꼴 높이(1.25)와 윗빈칸(0.18)이 함께 커서
+ * 줄 안에서 한글이 그려지는 자리는 프리텐다드와 같다(0.01em 안). 명조 제목 둘은 본문이 프리텐다드다
  */
-const FONT_LOOK: Record<FontId, { font: string; weight: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
-  sans: { font: SANS, weight: 700, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
-  serif: { font: SERIF, weight: 600, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
+const FONT_LOOK: Record<FontId, { font: string; body: string; weight: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
+  sans: { font: SANS, body: SANS, weight: 700, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
+  serif: { font: SERIF, body: SANS, weight: 600, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
+  suit: { font: SUIT, body: SUIT, weight: 700, tracking: '-0.022em', glyph: 1.06, tall: 1.03, box: 1.25, gap: 0.175 },
+  myeongjo: { font: MYEONGJO, body: SANS, weight: 700, tracking: '-0.03em', glyph: 1.08, tall: 1.18, box: 1.44, gap: 0.29 },
 }
 
 /** 테마가 원래 쓰는 글꼴 */
 export function fontOf(deckTheme: DeckTheme): FontId {
-  if (deckTheme.font && FONT_LOOK[deckTheme.font]) return deckTheme.font
+  // 새 버전에서 더한 글꼴처럼 모르는 값이면 테마의 글꼴로 그린다. 값은 그대로 두어 저장해도 잃지 않는다 (compat.ts)
+  if (deckTheme.font && Object.hasOwn(FONT_LOOK, deckTheme.font)) return deckTheme.font
   return deckTheme.id === 'serif' ? 'serif' : 'sans'
+}
+
+/** 글꼴 고르는 단추의 이름을 그 글꼴(제목 글꼴)로 써서 고르기 전에 모양을 보이게 */
+export function fontPreview(id: FontId): CSSProperties {
+  return { fontFamily: FONT_LOOK[id].font }
 }
 
 /**
@@ -349,7 +372,7 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--deep-accent': c.deepAccent,
     '--deep-mark': c.deepMark,
     '--font-head': f.font,
-    '--font-body': SANS,
+    '--font-body': f.body,
     '--head-weight': f.weight,
     '--display-weight': f.weight + 100,
     '--head-tracking': f.tracking,

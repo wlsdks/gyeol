@@ -35,8 +35,11 @@ export type Method = 'live' | 'remote' | 'send'
 export type ThemeId = 'white' | 'navy' | 'serif'
 /** 발표할 때의 움직임. 레이아웃마다 미리 짜 둔 순서로 움직이고, 사용자는 정도만 고른다. */
 export type Motion = 'none' | 'calm' | 'lively'
-/** 제목 글꼴. 없으면 테마의 글꼴 */
-export type FontId = 'sans' | 'serif'
+/**
+ * 글꼴 짝(제목과 본문). 없으면 테마의 글꼴. sans: 프리텐다드, serif: 명조(함렛) 제목과 프리텐다드 본문,
+ * suit: SUIT, myeongjo: 본명조(Noto Serif KR) 제목과 프리텐다드 본문 (deck/themes.ts의 FONTS)
+ */
+export type FontId = 'sans' | 'serif' | 'suit' | 'myeongjo'
 /** 발표 전체의 글자 크기 */
 export type TextSize = 'small' | 'normal' | 'large'
 /** 슬라이드 아래의 단락 지도와 쪽 번호 */
