@@ -3372,6 +3372,80 @@ select {
   transform-origin: 0 0;
 }
 
+/* 끌고 있는 이음표: 손 아래의 작은 동그라미. 놓일 자리가 잡히면 장 위에 흐리게 미리 서고, 손의 것은 옅어진다 */
+.lk-ghost {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 0 0 1.5px var(--sel), 0 10px 26px rgb(16 20 31 / 0.22);
+  color: var(--sel);
+  pointer-events: none;
+  transition: opacity 0.16s;
+  will-change: translate;
+}
+
+.lk-ghost.is-placed {
+  opacity: 0.5;
+}
+
+.lk-ghost-g,
+.lk-tool-g {
+  display: grid;
+  place-items: center;
+}
+
+.lk-ghost svg,
+.lk-tool-g svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.4;
+}
+
+.lk-tool-g svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 4;
+}
+
+.lk-ghost .bk-link-vs {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.lk-tool-g .bk-link-vs {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lk-ghost-why {
+  top: calc(100% + 10px);
+  left: 50%;
+  width: 260px;
+  translate: -50% 0;
+}
+
+.bk-tool.is-label {
+  color: var(--sel);
+  cursor: default;
+}
+
+.lk-tool-set {
+  display: flex;
+  gap: 2px;
+}
+
 /* 손 아래 자리에 놓을 수 없을 때 그림 밑에 붙어 다니는 까닭 */
 .bk-ghost-why {
   position: absolute;

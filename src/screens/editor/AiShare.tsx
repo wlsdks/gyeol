@@ -5,7 +5,7 @@ import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_LINKS, BLOCK_LOOKS, BLOCKS } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES } from '../../deck/themes'
@@ -374,7 +374,12 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 모양 바꾸기`, detail: parts.join(', ') }
     }
     case 'set_spans':
-      return { text: `${name(op.slide)}의 칸 너비 바꾸기`, detail: `${blockName(op.block)}이 있는 줄을 ${op.spans.join(' : ')}로` }
+      return { text: `${name(op.slide)}의 칸 너비 바꾸기`, detail: `${blockName(op.block)}가 있는 줄을 ${op.spans.join(' : ')}로` }
+    case 'set_link': {
+      const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}의 줄과 아래 줄 사이`
+      const kind = BLOCK_LINKS.find((l) => l.id === op.link)?.name
+      return op.link ? { text: `${name(op.slide)}에 이음표 ‘${kind}’ 넣기`, detail: where } : { text: `${name(op.slide)}에서 이음표 빼기`, detail: where }
+    }
     case 'set_row_grow':
       return { text: `${name(op.slide)}의 줄 높이 바꾸기`, detail: op.grow.length ? `위에서부터 ${op.grow.join(' : ')}로` : '줄 높이를 똑같이' }
     case 'set_hint': {

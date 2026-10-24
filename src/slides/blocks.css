@@ -91,8 +91,96 @@
 
 /* 한 줄에 부품이 둘 이상이면 모두 위에서부터: 가운데에 두면 내용이 적은 부품이 옆 부품과 다른 높이에 떠서
    소제목의 윗선이 칸마다 어긋나 보인다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에 */
-.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp) {
+.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk) {
   justify-content: flex-start;
+}
+
+/* 칸 사이에 이음표가 선 줄은 이음표와 같이 가운데에: '앞 → 뒤'가 한 줄로 읽힌다 */
+.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk) {
+  justify-content: center;
+}
+
+/* ---------- 이음표 ----------
+   칸 사이(또는 줄 사이)에 서는 화살표, 더하기, 결과, 견주기. 양쪽 칸이 --lk-pad만큼 비켜서 칸 사이가 넓어지고,
+   이음표는 그 가운데에 혼자 선다. 칸의 면이나 가장자리에 걸치면 한쪽 칸에 가려 깨져 보인다.
+   이음표의 자리 요소는 왼쪽(위) 칸의 격자 자리를 그대로 쓰고, 이음표는 그 바깥 간격의 가운데에 */
+.bk-area {
+  --lk-pad: 24px;
+}
+
+.bk.lk-r {
+  margin-right: var(--lk-pad);
+}
+
+.bk.lk-l {
+  margin-left: var(--lk-pad);
+}
+
+.bk.lk-b {
+  margin-bottom: var(--lk-pad);
+}
+
+.bk.lk-t {
+  margin-top: var(--lk-pad);
+}
+
+.bk-link {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  /* 이음표는 답이 아니라 둘 사이의 관계라서 강조색 대신 글자색을 옅게. 짙은 바탕의 장에서도 --ink를 따라 밝아진다 */
+  color: color-mix(in srgb, var(--ink) 50%, var(--bg));
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.bk-link.lk-h {
+  top: 50%;
+  left: calc(100% + var(--bk-gap) / 2);
+}
+
+.bk-link.lk-v {
+  top: calc(100% + var(--bk-gap) / 2);
+  left: 50%;
+}
+
+.bk-link.lk-h.lk-up {
+  top: calc(50% - var(--lk-pad) / 2);
+}
+
+.bk-link.lk-h.lk-down {
+  top: calc(50% + var(--lk-pad) / 2);
+}
+
+.bk-link-g {
+  display: grid;
+  place-items: center;
+}
+
+.bk-link svg {
+  display: block;
+  width: calc(48px * var(--scale, 1));
+  height: calc(48px * var(--scale, 1));
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.bk-link.lk-v.is-arrow svg {
+  rotate: 90deg;
+}
+
+.bk-link-vs {
+  font-family: var(--font-head);
+  font-size: calc(36px * var(--scale, 1));
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 /* ---------- 바탕 ---------- */

@@ -21,6 +21,8 @@ import {
   fitsHeight,
   insertAt,
   isGrow,
+  isLink,
+  linkAt,
   lookIssue,
   lookOf,
   makeBlock,
@@ -36,14 +38,16 @@ import {
   variantOfBlock,
   weighted,
   whyNot,
+  withLink,
   withLook,
   type DropTarget,
+  type LinkTarget,
 } from '../deck/blocks'
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
 import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
 
 export const REQUEST_FORMAT = 'html-maker/request'
@@ -103,6 +107,11 @@ export type Op =
   | { op: 'set_spans'; slide: SlideRef; block: BlockRef; spans: number[] }
   /** 부품 장의 줄 높이 비중 (1~100, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다 */
   | { op: 'set_row_grow'; slide: SlideRef; grow: number[] }
+  /**
+   * 이음표(카탈로그 blockLinks): right는 그 부품과 같은 줄의 오른쪽 부품 사이, below는 그 부품의 줄과 아래 줄 사이.
+   * link가 null이면 뺀다. 이음표는 글이 아니라 표시라서 사람이 적은 것을 바꾸지 않는다
+   */
+  | { op: 'set_link'; slide: SlideRef; block: BlockRef; side: 'right' | 'below'; link: BlockLink | null }
 
 export type OpName = Op['op']
 export const OP_NAMES: OpName[] = [
@@ -122,6 +131,7 @@ export const OP_NAMES: OpName[] = [
   'set_block',
   'set_spans',
   'set_row_grow',
+  'set_link',
 ]
 
 export interface ChangeRequest {
@@ -257,6 +267,13 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
       if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > 3 || !v.spans.every((x) => isInt(x, 1, 12))) return null
       return { op: 'set_spans', slide, block, spans: v.spans as number[] }
     }
+    case 'set_link': {
+      const block = blockRef(v.block)
+      if (!only(v, ['op', 'slide', 'block', 'side', 'link']) || !block) return null
+      if (v.side !== 'right' && v.side !== 'below') return null
+      if (v.link !== null && !isLink(v.link)) return null
+      return { op: 'set_link', slide, block, side: v.side, link: v.link as BlockLink | null }
+    }
   }
   return null
 }
@@ -270,6 +287,7 @@ export function parseOp(v: unknown): Op | null {
     case 'move_block':
     case 'set_block':
     case 'set_spans':
+    case 'set_link':
       return parseBlockOp(v)
     case 'set_row_grow': {
       const slide = refOrNull(v.slide)
@@ -616,7 +634,11 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           if (op.variant !== undefined && !blockVariantIds(op.type).includes(op.variant)) return fail('not_for_layout')
           const variant = op.variant === blockVariantIds(op.type)[0] ? undefined : op.variant
           block = { ...makeBlock(op.type), ...(variant ? { variant } : {}), ...(op.look ? { look: op.look } : {}), ...(op.effect ? { effect: op.effect } : {}) }
-        } else block = moving!
+        } else {
+          // 옆 부품과 잇던 이음표는 두고 간다 (편집기에서 끌어 옮길 때와 같다)
+          const { link: _, ...bare } = moving!
+          block = bare
+        }
         // 옮길 때는 편집기에서 끌 때처럼 부품을 뺀 줄들을 기준으로 자리를 센다
         const base = moving ? removeBlock(rows, moving.id) : rows
         const place = placeOf(s, base, op)
@@ -698,6 +720,23 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         // 정해진 비율이라도 부품마다 가장 좁은 너비보다 좁아지면 넣을 수 없다
         if (!spanChoices(row).some((c) => sameSpans(c, op.spans))) return fail('no_room')
         const after = rows.map((x, j) => (j === r ? { ...x, spans: op.spans } : x))
+        if (grows(rows, after, areaOf(s))) return fail('no_room')
+        put(i, { ...s, rows: after })
+        return done
+      }
+      case 'set_link': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const b = findBlock(s, op.block)
+        if (!b) return fail('no_block')
+        const rows = s.rows ?? []
+        const row = rows.findIndex((x) => x.blocks.some((y) => y.id === b.id))
+        const col = rows[row].blocks.findIndex((y) => y.id === b.id)
+        const t: LinkTarget = op.side === 'right' ? { dir: 'h', row, col } : { dir: 'v', row }
+        // 줄의 마지막 부품의 오른쪽, 마지막 줄의 아래에는 이음표가 설 데가 없다
+        if (op.side === 'right' ? col >= rows[row].blocks.length - 1 : row >= rows.length - 1) return fail('out_of_range')
+        if (linkAt(rows, t) === op.link) return fail('no_change')
+        const after = withLink(rows, t, op.link)
+        // 줄 사이의 이음표는 위아래 줄이 비켜 나는 만큼 높이가 더 든다
         if (grows(rows, after, areaOf(s))) return fail('no_room')
         put(i, { ...s, rows: after })
         return done

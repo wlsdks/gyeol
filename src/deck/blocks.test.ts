@@ -21,6 +21,12 @@ import {
   fitsWith,
   insertAt,
   isSolo,
+  LINK_PAD,
+  linkAt,
+  linkTargets,
+  needH,
+  tidyLinks,
+  withLink,
   lookIssue,
   lookOf,
   makeBlock,
@@ -361,5 +367,46 @@ describe('파일에서 읽은 부품 장', () => {
     expect(rows[1].spans).toBeUndefined()
     expect(cleanRows(rows)).toEqual(rows)
     expect(cleanRows(null)).toEqual([])
+  })
+})
+
+describe('이음표', () => {
+  const rows = [row(block('number', 'a'), block('number', 'b')), row(block('text', 'c'))]
+
+  it('칸 사이와 줄 사이에만 선다', () => {
+    expect(linkTargets(rows)).toEqual([
+      { dir: 'h', row: 0, col: 0 },
+      { dir: 'v', row: 0 },
+    ])
+    const linked = withLink(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'), { dir: 'v', row: 0 }, 'plus')
+    expect(linkAt(linked, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
+    expect(linkAt(linked, { dir: 'v', row: 0 })).toBe('plus')
+    // 빼면 값이 남지 않는다
+    expect(withLink(linked, { dir: 'h', row: 0, col: 0 }, null)[0].blocks[0]).not.toHaveProperty('link')
+  })
+
+  it('줄 사이의 이음표는 위아래 줄이 비켜 나는 만큼 높이가 더 든다. 칸 사이는 높이가 그대로', () => {
+    expect(needH(withLink(rows, { dir: 'v', row: 0 }, 'arrow'))).toBe(needH(rows) + LINK_PAD * 2)
+    expect(needH(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'))).toBe(needH(rows))
+  })
+
+  it('설 데가 없어진 이음표는 빠진다: 오른쪽 부품을 빼거나, 아래 줄이 없어지면', () => {
+    const linked = withLink(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'), { dir: 'v', row: 0 }, 'plus')
+    expect(removeBlock(linked, 'b')[0].blocks[0]).not.toHaveProperty('link')
+    expect(removeBlock(linked, 'c')[0]).not.toHaveProperty('link')
+    expect(tidyLinks(linked)).toBe(linked)
+  })
+
+  it('파일에서 읽을 때 아는 이음표만, 설 데가 있는 것만 남긴다', () => {
+    const raw = [
+      { id: 'r1', blocks: [{ ...block('number', 'a'), link: 'arrow' }, { ...block('number', 'b'), link: 'plus' }], link: 'equals' },
+      { id: 'r2', blocks: [{ ...block('text', 'c'), link: 'spiral' }, block('text', 'd')], link: 'versus' },
+    ]
+    const clean = cleanRows(raw)
+    expect(clean.map((r) => r.blocks.map((b) => b.link ?? null))).toEqual([
+      ['arrow', null],
+      [null, null],
+    ])
+    expect(clean.map((r) => r.link ?? null)).toEqual(['equals', null])
   })
 })

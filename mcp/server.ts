@@ -17,7 +17,7 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, REQUEST_FORMAT, REQUEST_ID, requestId, type ChangeRequest } from '../src/ai/ops'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { BLOCK_EFFECT_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES } from '../src/deck/blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
@@ -47,7 +47,7 @@ const PROTOCOL_WORDS = [
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
   // 부품 장
-  'blocks', 'span', 'look', 'effect', 'rowGrow',
+  'blocks', 'span', 'look', 'effect', 'rowGrow', 'link', 'rowLinks',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
   'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash',
@@ -175,6 +175,8 @@ const TOOLS = [
       '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
       '- set_spans {slide, block, spans} 그 부품이 있는 줄의 칸 너비. blockRules.spans에서 그 줄의 부품 수에 맞는 것을 고른다.',
       '- set_row_grow {slide, grow} 부품 장의 줄 높이 비중(1~100의 정수, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다. 지금 비중은 모양의 rowGrow(없으면 똑같이). 비중대로면 잘리는 줄은 잘리지 않을 높이로 묶인다.',
+      '- set_link {slide, block, side, link} 이음표(카탈로그 blockLinks)를 부품 사이에 끼운다. side가 right면 그 부품과 같은 줄의 오른쪽 부품 사이, below면 그 부품의 줄과 아래 줄 사이. link가 null이면 뺀다. 지금 이음표는 모양의 blocks[][].link와 rowLinks. ' +
+        '두 부품이 이어지거나(화살표), 함께이거나(더하기), 모여 결과가 되거나(결과), 견줄 때(견주기)만 쓴다. 줄 사이 이음표는 높이가 더 들어서 모자라면 no_room.',
     ].join('\n'),
     inputSchema: {
       type: 'object',
@@ -217,7 +219,8 @@ const TOOLS = [
               effect: { type: 'string', enum: BLOCK_EFFECT_IDS },
               row: { type: 'integer', minimum: 0, maximum: 3 },
               beside: blockRefSchema,
-              side: { type: 'string', enum: ['before', 'after'] },
+              side: { type: 'string', enum: ['before', 'after', 'right', 'below'] },
+              link: { anyOf: [{ type: 'string', enum: BLOCK_LINK_IDS }, { type: 'null' }] },
               spans: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'integer', minimum: 1, maximum: 12 } },
             },
             required: ['op'],

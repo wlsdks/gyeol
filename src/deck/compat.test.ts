@@ -49,6 +49,9 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     expect(unknownParts(withSlides(compose(raw({ ...text, glow: true }))))).toBe(1)
     expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 40 }, { id: 'r2', blocks: [{ ...text, id: 't2' }], grow: 60 }))).toBe(0)
     expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 250 }))).toBe(1)
+    // 이음표는 이 버전이 아는 모양만
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [{ ...text, link: 'arrow' }, { ...text, id: 't2' }], link: 'plus' }, { id: 'r2', blocks: [{ ...text, id: 't3' }] }))).toBe(0)
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [{ ...text, link: 'spiral' }, { ...text, id: 't2' }] }))).toBe(1)
     // 꼴이 망가진 값은 사람이 넣은 것이 아니라 세지 않는다
     expect(unknownParts(withSlides(compose(raw({ ...text, fields: { body: '글', bad: 3 } }))))).toBe(0)
   })

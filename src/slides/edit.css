@@ -421,6 +421,45 @@ body.is-row-resizing .bk-rowgap-grip {
   opacity: 1;
 }
 
+.bk-gutter.has-link .bk-gutter-grip {
+  mask: linear-gradient(#000 0 calc(50% - 56px), transparent 0 calc(50% + 56px), #000 0);
+}
+
+.bk-rowgap.has-link .bk-rowgap-grip {
+  mask: linear-gradient(90deg, #000 0 calc(50% - 56px), transparent 0 calc(50% + 56px), #000 0);
+}
+
+/* 이음표: 편집할 때는 눌러 고르고 끌어 옮긴다. 칸 사이 손잡이보다 위에 */
+.bk-area.is-live > .bk-link {
+  z-index: 6;
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  transition: box-shadow 0.14s, background-color 0.14s;
+}
+
+.bk-area.is-live > .bk-link:hover {
+  background: color-mix(in srgb, #3a6ff8 8%, transparent);
+  box-shadow: 0 0 0 calc(2px / var(--vs, 1)) color-mix(in srgb, #3a6ff8 45%, transparent);
+}
+
+.bk-area.is-live > .bk-link.is-selected {
+  background: color-mix(in srgb, #3a6ff8 10%, transparent);
+  box-shadow: 0 0 0 calc(3px / var(--vs, 1)) #3a6ff8;
+}
+
+/* 끄는 동안 놓일 자리에 흐리게 */
+.bk-area.is-live > .bk-link.is-preview {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.bk-area.is-live.is-dragging > .bk-link,
+body.is-block-dragging .bk-area.is-live > .bk-link:not(.is-preview) {
+  pointer-events: none;
+}
+
 /* 부품이 하나도 없을 때 */
 .bk-empty {
   display: grid;

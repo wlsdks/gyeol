@@ -40,13 +40,14 @@ import {
 import { FRAME } from '../../deck/frame'
 import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
-import type { Block, BlockEffect, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
+import type { Block, BlockEffect, BlockLink, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { useLinkEditing } from './LinkEditor'
 import { noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
@@ -122,6 +123,9 @@ export interface BlockEditing {
   insert(type: BlockType, from?: HTMLElement | null): void
   /** 이 부품을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
   issueFor(type: BlockType): NoRoom | null
+  /** 이음표 카드를 누르기 시작할 때. 끌면 컴포넌트 사이에 놓고, 그냥 떼면 알아서 고른 사이에 넣는다 */
+  pressLinkCard(e: ReactPointerEvent<HTMLElement>, link: BlockLink): void
+  insertLink(link: BlockLink): void
   selected: string | null
   select(id: string | null): void
   convert(): void
@@ -159,6 +163,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }, [slide.id])
 
   const compose = slide.layout === 'compose'
+
+  const links = useLinkEditing({ slideRef, areaEl, toast, deselectBlock: () => setSelected(null), selectedBlock: selected })
 
   // ---------- 놓기 ----------
 
@@ -429,8 +435,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const canvas = { w: cell.offsetWidth + 80, h: cell.offsetHeight + 80 }
       const ghost = ghostSize(canvas, area.k)
       const grab = { x: Math.min(1, Math.max(0, (x - r.left) / r.width)), y: Math.min(1, Math.max(0, (y - r.top) / r.height)) }
+      // 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
+      const { link: _, ...bare } = block
       begin(
-        { kind: 'move', block, base: removeBlock(s.rows ?? [], block.id), composed: null, target: targetOf(s.rows ?? [], block.id), blocked: null, plan: 'place', canvas, ghost, grab, source: r },
+        { kind: 'move', block: bare, base: removeBlock(s.rows ?? [], block.id), composed: null, target: targetOf(s.rows ?? [], block.id), blocked: null, plan: 'place', canvas, ghost, grab, source: r },
         x,
         y,
         r,
@@ -606,7 +614,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
   const duplicate = (b: Block) => {
     const s = slideRef.current
-    const copy = copyBlock(b)
+    const { link: _, ...copy } = copyBlock(b)
     const area = measureArea(areaEl.current)
     const t = autoTarget(s.rows ?? [], copy, area?.size.h)
     if (!t) {
@@ -711,15 +719,19 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   const edit: BlockEdit = {
-    rows: previewRows,
+    rows: previewRows ?? links.previewRows,
     dragId,
     selected: drag ? null : selected,
     opened,
     incoming: !!drag && drag.plan === 'next',
+    selectedLink: links.selectedLink,
+    linkPreview: links.preview,
+    onLinkPointerDown: links.onLinkPointerDown,
     onCellPointerDown: (e, b) => {
       if (e.button !== 0) return
       const t = e.target as HTMLElement
       setSelected(b.id)
+      links.selectLink(null)
       // 글을 쓰는 칸, 단추, 그림 칸에서는 끌지 않는다 (글자를 고르거나 누를 수 있게)
       if (t.closest('.ed-input, button, input, textarea, .img-ed, .bk-bar, .it-remove')) return
       e.preventDefault()
@@ -743,7 +755,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     },
   }
 
-  const hint = !drag
+  const hint = links.hint
+    ? links.hint
+    : !drag
     ? null
     : drag.plan === 'convert'
       ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
@@ -782,7 +796,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     : null
 
   // 고른 부품의 도구는 장 아래 도구 줄에 놓는다(Editor의 stage-tools). 부품 위에 띄우면 위 칸(제목, 위 줄 부품)을 덮는다
-  const toolbar = selectedBlock && !drag && !landing && compose ? tools(selectedBlock) : null
+  const toolbar = selectedBlock && !drag && !landing && compose ? tools(selectedBlock) : compose ? links.toolbar : null
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
   const roomFits = (h: number) => {
@@ -809,15 +823,25 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     stageSlide,
     hint,
     room,
-    ghost,
+    ghost: (
+      <>
+        {ghost}
+        {links.ghost}
+      </>
+    ),
     toolbar,
     libraryOpen,
     setLibraryOpen,
     pressCard,
     insert,
     issueFor,
+    pressLinkCard: links.pressCard,
+    insertLink: links.insert,
     selected,
-    select: setSelected,
+    select: (id) => {
+      setSelected(id)
+      if (!id) links.selectLink(null)
+    },
     convert: () => {
       store.toCompose(slide.id)
       toast.show('이 장을 컴포넌트 장으로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)

@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, BLOCKS, composeAreaH, insertAt, lookChangeIssue, lookOf, placeIssue, validTargets, whyNot, withLook } from '../deck/blocks'
+import { BLOCK_LINK_IDS, BLOCK_TYPES, BLOCKS, composeAreaH, fitsHeight, insertAt, linkTargets, lookChangeIssue, lookOf, placeIssue, validTargets, whyNot, withLink, withLook } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { makeSlide } from '../deck/generate'
 import type { Block, BlockRow, Slide } from '../deck/types'
@@ -72,6 +72,12 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       const placed = rows.flatMap((r) => r.blocks).find((x) => x.id === b.id)!
       if (!lookChangeIssue(rows, b.id, lookOf(placed), areaH)) rows = withLook(rows, b.id, lookOf(placed))
     }
+    // 이음표: 칸 사이와 줄 사이마다 셋에 하나꼴로. 줄 사이는 높이가 들어갈 때만 (편집기와 같은 규칙)
+    for (const t of linkTargets(rows)) {
+      if (rand() > 0.35) continue
+      const next = withLink(rows, t, BLOCK_LINK_IDS[Math.floor(rand() * BLOCK_LINK_IDS.length)])
+      if (t.dir === 'h' || fitsHeight(next, areaH)) rows = next
+    }
     return { slide: { ...base, rows }, refused }
   })
 }
@@ -102,6 +108,13 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
       if (fit < least) problems.push(`${what}: 글자를 ${fit}까지 줄였어요`)
       const left = clashes(cell)
       if (left.length) problems.push(`${what}: ${left.slice(0, 3).join(', ')}`)
+    }
+    // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다
+    const boxes = [...area.querySelectorAll<HTMLElement>(':scope > .bk')].map((c) => c.getBoundingClientRect())
+    for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
+      const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
+      const hit = boxes.some((r) => g.left < r.right - 0.5 && g.right > r.left + 0.5 && g.top < r.bottom - 0.5 && g.bottom > r.top + 0.5)
+      if (hit) problems.push(`${i + 1}번 장: 이음표(${lk.dataset.link})가 칸에 걸쳐요`)
     }
   })
   return { slides: areas.length, cells, problems }

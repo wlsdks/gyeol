@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { canCompose, cleanDeckRows, composeFrom, copyBlock, unwrapCompose } from '../deck/blocks'
+import { canCompose, cleanDeckRows, composeFrom, copyBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
 import { plainTheme } from '../deck/themes'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
@@ -211,7 +211,8 @@ export const useDeck = create<DeckState>((set, get) => {
     },
 
     setRows(slideId, rows, key) {
-      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, rows })), key)
+      // 부품을 옮기거나 빼서 설 자리가 없어진 이음표(줄 끝, 마지막 줄 아래)는 뺀다
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, rows: tidyLinks(rows) })), key)
     },
     updateBlock(slideId, blockId, fn, key) {
       commit(
@@ -227,7 +228,7 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => mapSlide(d, slideId, (s) => composeFrom(s)))
     },
     replaceSlide(slideId, slide) {
-      commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId })))
+      commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId, ...(slide.rows ? { rows: tidyLinks(slide.rows) } : {}) })))
     },
     addComposeSlide(rows, afterId) {
       const slide = { ...makeSlide('compose'), rows }

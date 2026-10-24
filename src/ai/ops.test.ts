@@ -217,6 +217,42 @@ describe('부품 장', () => {
     expect(parseOp({ op: 'set_row_grow', slide: sh.id, grow: [50, 50], note: 'x' })).toBeNull()
   })
 
+  it('이음표를 부품 사이와 줄 사이에 끼우고 바꾸고 뺀다. 글은 그대로', () => {
+    const sh = cshape()
+    const first = sh.blocks![0][0].id!
+    const { deck: next, results } = applyOps(composed, [
+      { op: 'add_block', slide: sh.id, type: 'number', row: 1, as: 'p1' },
+      { op: 'add_block', slide: sh.id, type: 'number', beside: 'p1', as: 'p2' },
+      { op: 'set_link', slide: sh.id, block: 'p1', side: 'right', link: 'arrow' },
+      { op: 'set_link', slide: sh.id, block: 'p1', side: 'right', link: 'arrow' },
+      { op: 'set_link', slide: sh.id, block: first, side: 'below', link: 'plus' },
+      // 줄의 마지막 부품 오른쪽, 마지막 줄 아래에는 설 데가 없다
+      { op: 'set_link', slide: sh.id, block: 'p2', side: 'right', link: 'plus' },
+      { op: 'set_link', slide: sh.id, block: 'p1', side: 'below', link: 'plus' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'applied', 'applied', 'no_change', 'applied', 'out_of_range', 'out_of_range'])
+    const rows = next.slides[at].rows!
+    expect(rows[1].blocks[0].link).toBe('arrow')
+    expect(rows[0].link).toBe('plus')
+    const shaped = toShape(next).slides[at]
+    expect(shaped.blocks![1][0].link).toBe('arrow')
+    expect(shaped.rowLinks).toEqual(['plus'])
+    expect(checkShape(toShape(next))).toBe(true)
+    expect(allText(next)).toEqual(allText(composed))
+    const p1 = shaped.blocks![1][0].id!
+    const off = applyOps(next, [{ op: 'set_link', slide: sh.id, block: p1, side: 'right', link: null }])
+    expect(off.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(off.deck.slides[at].rows![1].blocks[0]).not.toHaveProperty('link')
+    // 오른쪽 부품을 빼면 설 데가 없어진 이음표도 빠진다
+    const gone = applyOps(next, [{ op: 'remove_block', slide: sh.id, block: shaped.blocks![1][1].id! }])
+    expect(gone.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(gone.deck.slides[at].rows![1].blocks[0]).not.toHaveProperty('link')
+    // 카탈로그에 없는 이음표, 모르는 자리는 받지 않는다
+    expect(parseOp({ op: 'set_link', slide: sh.id, block: first, side: 'right', link: 'spiral' })).toBeNull()
+    expect(parseOp({ op: 'set_link', slide: sh.id, block: first, side: 'left', link: 'arrow' })).toBeNull()
+    expect(parseOp({ op: 'set_link', slide: sh.id, block: first, side: 'right', link: 'arrow', text: 'x' })).toBeNull()
+  })
+
   it('빈 부품만 빼고, 글이 있는 부품은 빼지 않는다', () => {
     const sh = cshape()
     const { deck: next, results } = applyOps(composed, [

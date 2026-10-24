@@ -1,9 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { blockCount, blockPrefH, BLOCK_GAP, BLOCK_GROUPS, BLOCKS, canCompose, MAX_BLOCKS } from '../../deck/blocks'
+import { blockCount, blockPrefH, BLOCK_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
-import type { BlockType, Deck, Slide } from '../../deck/types'
+import type { BlockLink, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
@@ -54,6 +54,47 @@ export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = '
   )
 })
 
+/** 이음표 카드의 예시: 큰 숫자 둘 사이에 그 이음표 (지어낸 숫자) */
+const LINK_SAMPLES: Record<BlockLink, [string, string, string, string]> = {
+  arrow: ['지금 처리 시간', '4.2일', '추진 후', '1.5일'],
+  plus: ['현장 교육', '12회', '도구 도입', '3종'],
+  equals: ['줄어드는 시간', '2.7일', '한 해 절감', '3.1억 원'],
+  versus: ['A안 비용', '4.8억 원', 'B안 비용', '3.6억 원'],
+}
+
+const LINK_CANVAS = { w: 660, h: 440 }
+
+/** 이음표 하나를 작은 그림으로: 컴포넌트 둘 사이에 선 모습 그대로 */
+export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview' }: { deck: Look; link: BlockLink; mode?: SlideMode }) {
+  const slide = useMemo<Slide>(() => {
+    const [l1, v1, l2, v2] = LINK_SAMPLES[link]
+    const a = { ...makeBlock('number'), id: `lk-a-${link}`, fields: { label: l1, value: v1 }, link }
+    const b = { ...makeBlock('number'), id: `lk-b-${link}`, fields: { label: l2, value: v2 } }
+    return { ...soloSlide(a), id: `solo-link-${link}`, rows: [{ id: 'solo', blocks: [a, b] }] }
+  }, [link])
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return (
+    <div ref={ref} className="lib-thumb">
+      {width > 0 && (
+        <div className="lib-thumb-scale" style={{ width: LINK_CANVAS.w, height: LINK_CANVAS.h, transform: `scale(${width / LINK_CANVAS.w})` }}>
+          <SlideCanvas deck={deck} slide={slide} mode={mode} solo={LINK_CANVAS} />
+        </div>
+      )}
+    </div>
+  )
+})
+
+/** 부품 고르기의 묶음 탭에 더하는 이음표 묶음 */
+const LINK_GROUP = { name: '이음표', short: '이음표', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
+
 export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: BlockEditing }) {
   const [group, setGroup] = useState<string | null>(null)
   // 이 장에 넣을 수 없는 카드를 눌렀을 때 그 까닭을 보여 줄 부품
@@ -101,6 +142,9 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         ? '넣으면 컴포넌트 장이 돼요'
         : '표지와 단락 장이라 다음 장에 새로 넣어요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
+  const showLinks = !group || group === LINK_GROUP.name
+  // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
+  const linkable = slide.layout === 'compose' && linkTargets(slide.rows ?? []).length > 0
   // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
   const issues = new Map(types.map((t) => [t, full ? null : blocks.issueFor(t)]))
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
@@ -135,6 +179,15 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
             {g.short}
           </button>
         ))}
+        <button
+          type="button"
+          className={cx('lib-tab', group === LINK_GROUP.name && 'is-on')}
+          aria-pressed={group === LINK_GROUP.name}
+          title={`${LINK_GROUP.name}: ${LINK_GROUP.description}`}
+          onClick={() => setGroup(LINK_GROUP.name)}
+        >
+          {LINK_GROUP.short}
+        </button>
       </div>
 
       <div className="lib-list">
@@ -176,6 +229,31 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
             </div>
           </section>
         ))}
+        {showLinks && (
+          <section className="lib-sec">
+            <h3 className="lib-group">
+              {LINK_GROUP.name}
+              <span className="lib-group-n">{BLOCK_LINKS.length}</span>
+            </h3>
+            <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 장에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
+            <div className="lib-grid">
+              {BLOCK_LINKS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className={cx('lib-card', !linkable && 'is-blocked')}
+                  title={`${l.name}: ${l.description}`}
+                  onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
+                  onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
+                >
+                  <LinkThumb deck={look} link={l.id} />
+                  <span className="lib-name">{l.name}</span>
+                  <span className="lib-desc">{l.description}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {shownWhy && (

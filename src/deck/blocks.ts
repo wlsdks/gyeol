@@ -11,7 +11,7 @@ import { BLOCK_HEIGHTS } from './blockHeights'
 import { FRAME, TITLE_TRIM } from './frame'
 import { emptyItem, uid, withDefaultOptions } from './generate'
 import { hintFor, LAYOUTS, logoColumns, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
-import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
+import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
 
 export interface BlockSpec {
   type: BlockType
@@ -568,6 +568,83 @@ export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string
 export const BLOCK_LOOK_IDS = BLOCK_LOOKS.map((l) => l.id)
 export const BLOCK_EFFECT_IDS = BLOCK_EFFECTS.map((e) => e.id)
 
+// ---------- 이음표 ----------
+// 두 컴포넌트가 어떻게 이어지는지를 칸 사이에 끼우는 표시. 칸을 차지하지 않고 칸 사이에 서서,
+// 칸 너비 비율, 한 줄의 칸 수, 잘리지 않는 높이 같은 자리 규칙을 그대로 둔다.
+// 이음표가 선 칸 사이는 양쪽 칸이 LINK_PAD만큼 비켜 이음표가 혼자 서는 자리를 낸다. 칸의 가장자리에 걸치면 깨져 보인다
+
+export const BLOCK_LINKS: { id: BlockLink; name: string; description: string }[] = [
+  { id: 'arrow', name: '화살표', description: '앞의 것이 뒤의 것으로 이어지거나 바뀌어요' },
+  { id: 'plus', name: '더하기', description: '두 가지를 함께 해요' },
+  { id: 'equals', name: '결과', description: '앞의 것이 모여 뒤의 것이 돼요' },
+  { id: 'versus', name: '견주기', description: '두 가지를 맞대어 견줘요' },
+]
+export const BLOCK_LINK_IDS = BLOCK_LINKS.map((l) => l.id)
+
+/** 이음표가 선 칸 사이에서 양쪽 칸이 비켜 주는 너비 (캔버스 px). 칸 사이(48)와 합쳐 96px에 이음표(44)가 혼자 선다 */
+export const LINK_PAD = 24
+
+export const isLink = (v: unknown): v is BlockLink => typeof v === 'string' && (BLOCK_LINK_IDS as string[]).includes(v)
+
+/** 이음표 자리: h는 row째 줄의 col째 칸과 그 오른쪽 칸 사이, v는 row째 줄과 그 아래 줄 사이 */
+export type LinkTarget = { dir: 'h'; row: number; col: number } | { dir: 'v'; row: number }
+
+export const sameLinkTarget = (a: LinkTarget | null, b: LinkTarget | null) =>
+  !!a && !!b && a.dir === b.dir && a.row === b.row && (a.dir === 'v' || (b.dir === 'h' && a.col === b.col))
+
+/** 그 자리의 이음표. 줄의 마지막 칸 뒤, 마지막 줄 아래에는 없다 */
+export function linkAt(rows: BlockRow[], t: LinkTarget): BlockLink | null {
+  const row = rows[t.row]
+  if (!row) return null
+  if (t.dir === 'v') return t.row < rows.length - 1 && isLink(row.link) ? row.link : null
+  const b = row.blocks[t.col]
+  return b && t.col < row.blocks.length - 1 && isLink(b.link) ? b.link : null
+}
+
+/** 이음표를 놓을 수 있는 모든 자리: 한 줄 안의 칸 사이, 줄 사이 */
+export function linkTargets(rows: BlockRow[]): LinkTarget[] {
+  const out: LinkTarget[] = []
+  rows.forEach((r, i) => {
+    for (let c = 0; c < r.blocks.length - 1; c++) out.push({ dir: 'h', row: i, col: c })
+    if (i < rows.length - 1) out.push({ dir: 'v', row: i })
+  })
+  return out
+}
+
+/** 그 자리에 이음표를 놓은(link가 null이면 뺀) 줄들 */
+export function withLink(rows: BlockRow[], t: LinkTarget, link: BlockLink | null): BlockRow[] {
+  return rows.map((r, i) => {
+    if (i !== t.row) return r
+    if (t.dir === 'v') {
+      const { link: _, ...rest } = r
+      return link ? { ...rest, link } : rest
+    }
+    return {
+      ...r,
+      blocks: r.blocks.map((b, c) => {
+        if (c !== t.col) return b
+        const { link: _, ...rest } = b
+        return link ? { ...rest, link } : rest
+      }),
+    }
+  })
+}
+
+/** 설 자리가 없어진 이음표(줄의 마지막 칸 뒤, 마지막 줄 아래)를 뺀다. 부품을 옮기거나 빼면 생긴다. 바뀐 것이 없으면 그대로 */
+export function tidyLinks(rows: BlockRow[]): BlockRow[] {
+  const stray = rows.some((r, i) => (r.link && i === rows.length - 1) || r.blocks.some((b, c) => b.link && c === r.blocks.length - 1))
+  if (!stray) return rows
+  return rows.map((r, i) => {
+    const { link, ...rest } = r
+    const blocks = r.blocks.map((b, c) => {
+      if (!b.link || c < r.blocks.length - 1) return b
+      const { link: _, ...bare } = b
+      return bare
+    })
+    return { ...(link && i < rows.length - 1 ? { ...rest, link } : rest), blocks }
+  })
+}
+
 export const MAX_ROWS = 3
 export const MAX_IN_ROW = 3
 export const MAX_BLOCKS = 6
@@ -983,6 +1060,11 @@ export const rowMinH = (row: BlockRow) => {
   return Math.max(0, ...row.blocks.map((b, i) => blockMinH(b, spans[i])))
 }
 
+/** 줄마다 잘리지 않을 높이. 줄 사이에 이음표가 서면 위아래 줄이 그만큼 비켜 주므로 그 몫을 더한다 */
+export function rowNeeds(rows: BlockRow[]): number[] {
+  return rows.map((r, i) => rowMinH(r) + (linkAt(rows, { dir: 'v', row: i }) ? LINK_PAD : 0) + (i > 0 && linkAt(rows, { dir: 'v', row: i - 1 }) ? LINK_PAD : 0))
+}
+
 /** 줄 높이 비중의 범위 (BlockRow.grow) */
 export const GROW_MIN = 1
 export const GROW_MAX = 100
@@ -1031,13 +1113,14 @@ export function areaStyle(rows: BlockRow[]): Record<string, string> {
   // --bk-r1..: 그래도 글이 넘치는 줄은 fitBlocks가 남는 높이를 가져다 이 줄의 바닥을 올린다.
   // 사람이 줄 높이를 정했으면(weighted) 그 비중으로 나눈다(fr). 비중대로면 잘리는 줄은 격자가 잘리지 않을 높이로 묶고 나머지를 나눈다
   const w = weighted(rows)
+  const needs = rowNeeds(rows)
   return {
-    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), ${w ? `${r.grow}fr` : 'auto'})`).join(' '),
+    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${needs[i]}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), ${w ? `${r.grow}fr` : 'auto'})`).join(' '),
   }
 }
 
 /** 줄마다 잘리지 않을 높이 (본문 상자의 data-mins. fitBlocks가 한 줄에 더 줄 수 있는 높이를 셀 때 쓴다) */
-export const rowMins = (rows: BlockRow[]): string => rows.map((r) => Math.round(rowMinH(r))).join(',')
+export const rowMins = (rows: BlockRow[]): string => rowNeeds(rows).map((h) => Math.round(h)).join(',')
 
 export function cellStyle(b: CellBox): Record<string, string> {
   return { gridRow: String(b.row + 1), gridColumn: `${b.start + 1} / span ${b.span}` }
@@ -1049,7 +1132,7 @@ export function cellStyle(b: CellBox): Record<string, string> {
  */
 export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): number[] {
   const free = areaH - Math.max(0, rows.length - 1) * gap
-  const mins = rows.map(rowMinH)
+  const mins = rowNeeds(rows)
   if (weighted(rows)) {
     // 격자의 fr 나누기와 같게: 비중대로 나누다 잘리지 않을 높이보다 낮아지는 줄은 그 높이로 묶고, 남은 줄끼리 다시 나눈다
     const fixed = new Set<number>()
@@ -1073,8 +1156,9 @@ export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): nu
  */
 export function growAt(rows: BlockRow[], heights: number[], between: number, part: number): number[] {
   const pair = heights[between] + heights[between + 1]
-  const lo = rowMinH(rows[between]) / pair
-  const hi = 1 - rowMinH(rows[between + 1]) / pair
+  const needs = rowNeeds(rows)
+  const lo = needs[between] / pair
+  const hi = 1 - needs[between + 1] / pair
   const snapped = Math.round(part * 24) / 24
   const f = lo > hi ? heights[between] / pair : Math.min(hi, Math.max(lo, snapped))
   const hs = heights.map((h, i) => (i === between ? pair * f : i === between + 1 ? pair * (1 - f) : h))
@@ -1084,7 +1168,7 @@ export function growAt(rows: BlockRow[], heights: number[], between: number, par
 
 /** 줄들을 잘리지 않게 놓는 데 드는 높이: 줄마다 가장 낮은 높이와 줄 사이 */
 export function needH(rows: BlockRow[], gap = BLOCK_GAP): number {
-  return rows.reduce((a, r) => a + rowMinH(r), 0) + Math.max(0, rows.length - 1) * gap
+  return rowNeeds(rows).reduce((a, h) => a + h, 0) + Math.max(0, rows.length - 1) * gap
 }
 
 /** 모든 줄이 잘리지 않고 장에 들어가는지 */
@@ -1213,13 +1297,15 @@ export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, row
   )
 }
 
-/** 부품을 뺀 줄들. 빈 줄은 없애고, 남은 칸은 너비를 다시 고른다 */
+/** 부품을 뺀 줄들. 빈 줄은 없애고, 남은 칸은 너비를 다시 고른다. 설 자리가 없어진 이음표도 뺀다 */
 export function removeBlock(rows: BlockRow[], blockId: string): BlockRow[] {
-  return rows.flatMap((r) => {
-    if (!r.blocks.some((b) => b.id === blockId)) return [r]
-    const blocks = r.blocks.filter((b) => b.id !== blockId)
-    return blocks.length ? [{ ...r, blocks, spans: fitSpans(blocks) ?? undefined }] : []
-  })
+  return tidyLinks(
+    rows.flatMap((r) => {
+      if (!r.blocks.some((b) => b.id === blockId)) return [r]
+      const blocks = r.blocks.filter((b) => b.id !== blockId)
+      return blocks.length ? [{ ...r, blocks, spans: fitSpans(blocks) ?? undefined }] : []
+    }),
+  )
 }
 
 /** 부품이 지금 있는 자리 (옮기기를 시작할 때 처음 자리) */
@@ -1437,8 +1523,8 @@ const strings = (v: unknown): Record<string, string> =>
  * 새 버전에서 만든 발표를 이 버전이 알아보는 데 쓴다 (compat.ts)
  */
 /** 이 버전이 아는 줄과 부품의 값. 이 밖의 값은 새 버전에서 더한 것이라, 예전 버전이 고치면 빠진다 */
-const ROW_KEYS = ['id', 'blocks', 'spans', 'grow']
-const BLOCK_KEYS = ['id', 'type', 'fields', 'items', 'hints', 'look', 'effect', 'variant', 'highlight']
+const ROW_KEYS = ['id', 'blocks', 'spans', 'grow', 'link']
+const BLOCK_KEYS = ['id', 'type', 'fields', 'items', 'hints', 'look', 'effect', 'variant', 'highlight', 'link']
 
 export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
   if (!Array.isArray(rows)) return []
@@ -1476,6 +1562,8 @@ export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
       if (typeof b.variant === 'string' && BLOCKS[type].variants?.some((v) => v.id === b.variant)) block.variant = b.variant
       else if (b.variant !== undefined) drop()
       if (Number.isInteger(b.highlight)) block.highlight = b.highlight as number
+      if (isLink(b.link)) block.link = b.link
+      else if (b.link !== undefined) drop()
       drop(Object.keys(b).filter((k) => !BLOCK_KEYS.includes(k)).length)
       blocks.push(block)
       left--
@@ -1488,10 +1576,12 @@ export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
     }
     if (isGrow(r.grow)) row.grow = r.grow
     else if (typeof r.grow === 'number') drop()
+    if (isLink(r.link)) row.link = r.link
+    else if (r.link !== undefined) drop()
     drop(Object.keys(r).filter((k) => !ROW_KEYS.includes(k)).length)
     out.push(row)
   }
-  return out
+  return tidyLinks(out)
 }
 
 /**

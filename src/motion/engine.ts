@@ -381,8 +381,18 @@ export function motionEngine(): MotionEngine {
       case 'compose': {
         const t = head()
         let at = Math.min(t, 420)
+        const links = $('.bk-area > .bk-link')
         for (const cell of $('.bk-area > .bk')) {
           block(cell, at)
+          // 이음표는 앞의 부품이 나오고 다음 부품이 나오기 전에: 화살표는 가리키는 쪽으로 밀려 나오고, 나머지는 튀어나온다
+          for (const lk of links) {
+            if (lk.dataset.after !== cell.dataset.block) continue
+            const g = lk.firstElementChild
+            const at2 = at + L.step * 1.6
+            if (lk.classList.contains('is-arrow')) {
+              run(anims, g ?? lk, [{ opacity: 0, translate: lk.classList.contains('lk-v') ? `0 ${-L.y * 0.5}px` : `${-L.y * 0.5}px 0` }], s(at2), L.move)
+            } else pop(g, at2)
+          }
           at += L.step * 2.6
         }
         fade(one('.s-source'), at + 200)

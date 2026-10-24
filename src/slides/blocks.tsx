@@ -1,8 +1,8 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, rowMins, shownLook, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
+import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, linkAt, rowMins, sameLinkTarget, shownLook, spansOf, variantOfBlock, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
-import type { Block, BlockType, NativeBlockType } from '../deck/types'
+import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
@@ -842,7 +842,82 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
   )
 }
 
-function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
+/** 칸 둘레의 이음표: 그 쪽으로 칸이 비켜 이음표가 설 자리를 낸다 (blocks.css의 .lk-r, .lk-l, .lk-b, .lk-t) */
+function linkSides(rows: BlockRow[], box: CellBox): string[] {
+  const out: string[] = []
+  if (linkAt(rows, { dir: 'h', row: box.row, col: box.col })) out.push('lk-r')
+  if (box.col > 0 && linkAt(rows, { dir: 'h', row: box.row, col: box.col - 1 })) out.push('lk-l')
+  if (linkAt(rows, { dir: 'v', row: box.row })) out.push('lk-b')
+  if (box.row > 0 && linkAt(rows, { dir: 'v', row: box.row - 1 })) out.push('lk-t')
+  // 칸 사이에 이음표가 선 줄: 이음표가 줄 가운데에 서니 그 줄의 부품도 가운데에 (위에 붙이면 이음표만 아래에 떠 보인다)
+  if (rows[box.row]?.blocks.some((_, c) => linkAt(rows, { dir: 'h', row: box.row, col: c }))) out.push('lk-row')
+  return out
+}
+
+/** 이음표의 모양. 줄 사이의 화살표는 아래를 본다 */
+export function LinkGlyph({ link }: { link: BlockLink }) {
+  if (link === 'versus') return <span className="bk-link-vs">vs</span>
+  return (
+    <svg viewBox="0 0 48 48">
+      {link === 'arrow' ? (
+        <path d="M9 24h28M27 13l11 11-11 11" />
+      ) : link === 'plus' ? (
+        <path d="M24 11v26M11 24h26" />
+      ) : (
+        <path d="M11 18.5h26M11 29.5h26" />
+      )}
+    </svg>
+  )
+}
+
+/**
+ * 칸 사이와 줄 사이의 이음표. 칸 사이는 왼쪽 칸의 자리에, 줄 사이는 위 줄의 자리에 붙여 그 바깥 간격 가운데에 세운다.
+ * 떠 있는(absolute) 격자 자식은 끝 줄을 auto로 두면 격자 끝까지 늘어나서 끝을 span 1로 정한다
+ */
+function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live: BlockEdit | null }) {
+  // after: 발표할 때 이 부품 다음에 나타난다 (칸 사이는 왼쪽 부품, 줄 사이는 위 줄의 마지막 부품)
+  const marks: { key: string; t: LinkTarget; link: BlockLink; area: React.CSSProperties; after: string; side?: string }[] = []
+  for (const b of boxes) {
+    const t: LinkTarget = { dir: 'h', row: b.row, col: b.col }
+    const link = linkAt(rows, t)
+    // 줄 사이에도 이음표가 있으면 칸이 위아래로 비켜 있어서, 칸 사이의 이음표도 칸의 가운데로 옮긴다
+    const below = !!linkAt(rows, { dir: 'v', row: b.row })
+    const above = b.row > 0 && !!linkAt(rows, { dir: 'v', row: b.row - 1 })
+    const side = below && !above ? 'lk-up' : above && !below ? 'lk-down' : undefined
+    if (link) marks.push({ key: `h${b.rowId}-${b.col}`, t, link, area: { gridRow: `${b.row + 1} / span 1`, gridColumn: `${b.start + 1} / span ${b.span}` }, after: b.block.id, side })
+  }
+  rows.forEach((r, i) => {
+    const t: LinkTarget = { dir: 'v', row: i }
+    const link = linkAt(rows, t)
+    if (link) marks.push({ key: `v${r.id}`, t, link, area: { gridRow: `${i + 1} / span 1`, gridColumn: '1 / -1' }, after: r.blocks[r.blocks.length - 1].id })
+  })
+  return (
+    <>
+      {marks.map((m) => {
+        const name = BLOCK_LINKS.find((l) => l.id === m.link)!.name
+        const preview = !!live?.linkPreview && sameLinkTarget(live.linkPreview.target, m.t)
+        return (
+          <span
+            key={m.key}
+            className={cx('bk-link', `lk-${m.t.dir}`, m.side, `is-${m.link}`, preview && 'is-preview', !!live && sameLinkTarget(live.selectedLink, m.t) && 'is-selected')}
+            style={m.area}
+            data-link={m.t.dir === 'h' ? `h${m.t.row}-${m.t.col}` : `v${m.t.row}`}
+            data-after={m.after}
+            {...(live && !preview
+              ? { role: 'button', 'aria-label': `이음표: ${name}`, title: `${name} (눌러서 바꾸거나 빼기)`, onPointerDown: (e: React.PointerEvent<HTMLElement>) => live.onLinkPointerDown(e, m.t) }
+              : { 'aria-hidden': true })}
+          >
+            <span className="bk-link-g">
+              <LinkGlyph link={m.link} />
+            </span>
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
+function BlockCell({ box, live, rows }: { box: CellBox; live: BlockEdit | null; rows: BlockRow[] }) {
   const b = box.block
   const spec = BLOCKS[b.type]
   const look = shownLook(b, box.cols)
@@ -852,6 +927,7 @@ function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
     <div
       className={cx(
         'bk',
+        ...linkSides(rows, box),
         `bk-${b.type}`,
         `bk-look-${look}`,
         `fx-${effectOf(b)}`,
@@ -882,7 +958,7 @@ function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
 }
 
 /** 줄 안의 칸 사이마다 너비를 바꾸는 손잡이. 놓으면 정해진 비율 가운데 가장 가까운 것에 붙는다 */
-function Gutters({ boxes, live }: { boxes: CellBox[]; live: BlockEdit }) {
+function Gutters({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live: BlockEdit }) {
   return (
     <>
       {boxes
@@ -890,7 +966,8 @@ function Gutters({ boxes, live }: { boxes: CellBox[]; live: BlockEdit }) {
         .map((b) => (
           <div
             key={`${b.rowId}-${b.col}`}
-            className="bk-gutter"
+            // 이음표가 선 사이는 손잡이 선이 이음표를 가로지르지 않게 가운데를 비운다
+            className={cx('bk-gutter', linkAt(rows, { dir: 'h', row: b.row, col: b.col - 1 }) && 'has-link')}
             style={{ gridRow: String(b.row + 1), gridColumn: `${b.start + 1} / span 1` }}
             role="separator"
             aria-label="칸 너비 바꾸기"
@@ -905,13 +982,13 @@ function Gutters({ boxes, live }: { boxes: CellBox[]; live: BlockEdit }) {
 }
 
 /** 줄 사이마다 높이를 나누는 손잡이. 끌면 위아래 줄이 높이를 나눠 갖고(24분의 1에 붙는다), 두 번 누르면 똑같이 */
-function RowGaps({ rows, live }: { rows: number; live: BlockEdit }) {
+function RowGaps({ rows, live }: { rows: BlockRow[]; live: BlockEdit }) {
   return (
     <>
-      {Array.from({ length: rows - 1 }, (_, i) => (
+      {Array.from({ length: rows.length - 1 }, (_, i) => (
         <div
           key={i}
-          className="bk-rowgap"
+          className={cx('bk-rowgap', linkAt(rows, { dir: 'v', row: i }) && 'has-link')}
           style={{ gridRow: String(i + 2), gridColumn: '1 / -1' }}
           role="separator"
           aria-orientation="horizontal"
@@ -988,14 +1065,16 @@ export function BlockArea() {
   const { slide, mode } = useSlide()
   const edit = useContext(BlockEditContext)
   const live = mode === 'edit' && edit ? edit : null
-  const rows = live?.rows ?? knownRows(slide.rows ?? [])
+  const saved = live?.rows ?? knownRows(slide.rows ?? [])
+  // 이음표를 끄는 동안에는 놓일 자리에 흐리게 미리 세운다 (양쪽 칸이 비켜 나는 것까지)
+  const rows = live?.linkPreview ? withLink(saved, live.linkPreview.target, live.linkPreview.link) : saved
   const boxes = cellBoxes(rows)
   const ref = useRef<HTMLDivElement | null>(null)
   // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비
   const key = rows
     .map((r) => {
       const spans = spansOf(r)
-      return `${r.blocks.map((b, i) => `${b.id}:${blockMinH(b, spans[i])}`).join(',')}|${spans.join(',')}`
+      return `${r.blocks.map((b, i) => `${b.id}:${blockMinH(b, spans[i])}:${b.link ?? ''}`).join(',')}|${spans.join(',')}|${r.link ?? ''}`
     })
     .join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
@@ -1030,10 +1109,11 @@ export function BlockArea() {
     >
       {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
       {boxes.map((box) => (
-        <BlockCell key={box.block.id} box={box} live={live} />
+        <BlockCell key={box.block.id} box={box} live={live} rows={rows} />
       ))}
-      {live && !live.dragId && <Gutters boxes={boxes} live={live} />}
-      {live && !live.dragId && rows.length > 1 && <RowGaps rows={rows.length} live={live} />}
+      <Links rows={rows} boxes={boxes} live={live} />
+      {live && !live.dragId && <Gutters rows={rows} boxes={boxes} live={live} />}
+      {live && !live.dragId && rows.length > 1 && <RowGaps rows={rows} live={live} />}
       {live?.incoming && <div className="bk-incoming" aria-hidden="true" />}
     </div>
   )

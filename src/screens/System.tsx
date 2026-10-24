@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { BLOCK_GROUPS, BLOCK_TYPES, BLOCKS } from '../deck/blocks'
+import { BLOCK_GROUPS, BLOCK_LINKS, BLOCK_TYPES, BLOCKS } from '../deck/blocks'
 import { BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { emptyItem } from '../deck/generate'
@@ -13,7 +13,7 @@ import { go } from '../lib/router'
 import { motionEngine } from '../motion/engine'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { BlockThumb, type Look } from './editor/BlockLibrary'
+import { BlockThumb, LinkThumb, type Look } from './editor/BlockLibrary'
 import { BackIcon, Brand, CheckIcon } from './ui'
 
 /*
@@ -334,6 +334,23 @@ export function System() {
                   </div>
                 </div>
               ))}
+            {width > 0 && (
+              <div className="sys-parts">
+                <h3 className="sys-h3">이음표</h3>
+                <p className="sys-group-desc">컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요. 칸 사이의 빈자리에 혼자 서서 컴포넌트를 가리지 않아요.</p>
+                <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` } as CSSProperties}>
+                  {BLOCK_LINKS.map((l) => (
+                    <figure key={l.id} className="sys-thumb sys-part">
+                      <LinkThumb deck={look} link={l.id} mode="final" />
+                      <figcaption>
+                        <b>{l.name}</b>
+                        <span>{l.description}</span>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </main>
       </div>

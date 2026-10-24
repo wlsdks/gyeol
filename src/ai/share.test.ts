@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSampleDeck } from '../deck/sample'
-import type { Block, Deck } from '../deck/types'
+import type { Block, BlockRow, Deck } from '../deck/types'
 import { checkShape, onlyKnownStrings, toShape } from './share'
 
 export const SECRET = '기밀7731'
@@ -48,9 +48,10 @@ function composeSecret(s: (k: string) => string): Deck['slides'] {
       options: {},
       fields: { title: s('ct'), lead: s('cl') },
       items: [],
+      // 이음표 자리에도: 첫 줄은 맞는 이음표, 둘째 줄과 마지막 부품은 비밀
       rows: [
-        { id: s('row-1'), spans: [s('span')] as unknown as number[], blocks: [block('message', 1), block('bullets', 2)] },
-        { id: s('row-2'), blocks: [block('kpi', 3), block(s('type'), 4)] },
+        { id: s('row-1'), spans: [s('span')] as unknown as number[], blocks: [{ ...block('message', 1), link: 'arrow' }, { ...block('bullets', 2), link: s('link') } as unknown as Block], link: 'plus' },
+        { id: s('row-2'), blocks: [{ ...block('kpi', 3), link: s('link') } as unknown as Block, block(s('type'), 4)], link: s('rowlink') } as unknown as BlockRow,
       ],
     },
   ]
@@ -75,6 +76,10 @@ describe('모양만 고르기', () => {
     expect(compose.blocks?.map((r) => r.map((b) => b.type))).toEqual([['message', 'bullets'], ['kpi']])
     expect(compose.blocks?.[0][0]).toMatchObject({ look: 'plain', effect: 'auto', variant: 'base', fields: { text: 'filled' } })
     expect(compose.blocks?.[0].reduce((a, b) => a + b.span, 0)).toBe(12)
+    // 이음표는 카탈로그의 말만: 맞지 않는 값과 설 데가 없는 것(줄의 끝, 마지막 줄 아래)은 빠진다
+    expect(compose.blocks?.[0].map((b) => b.link)).toEqual(['arrow', undefined])
+    expect(compose.blocks?.[1][0].link).toBeUndefined()
+    expect(compose.rowLinks).toEqual(['plus'])
     expect(checkShape(shape)).toBe(true)
   })
 
@@ -128,7 +133,7 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect', 'link', 'rowLinks']
     expect(onlyKnownStrings(shape, words)).toBe(true)
     expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)

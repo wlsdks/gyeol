@@ -137,6 +137,8 @@ export type BlockType = NativeBlockType | LayoutBlockType
 export type BlockLook = 'plain' | 'card' | 'bold'
 /** 발표할 때 부품이 나타나는 모습. auto는 부품마다 짜 둔 움직임(숫자가 올라가고 막대가 자라는 것) */
 export type BlockEffect = 'auto' | 'rise' | 'fade' | 'wipe' | 'slide' | 'pop' | 'zoom' | 'flip' | 'blur' | 'none'
+/** 컴포넌트 사이에 끼우는 이음표: 이어진다(바뀐다), 더한다, 결과, 견준다 */
+export type BlockLink = 'arrow' | 'plus' | 'equals' | 'versus'
 
 export interface Block {
   id: string
@@ -153,6 +155,8 @@ export interface Block {
   variant?: string
   /** 강조할 항목 (0부터, -1은 없음). 없으면 부품마다 정한 기본 */
   highlight?: number
+  /** 이 부품과 같은 줄의 오른쪽 부품 사이의 이음표. 줄의 마지막 부품에는 없다 */
+  link?: BlockLink
 }
 
 /** 부품 장의 한 줄. 칸 너비는 12를 나눈 값(spans)이고, 없거나 맞지 않으면 알아서 정한다 */
@@ -165,6 +169,8 @@ export interface BlockRow {
    * 줄이 늘거나 줄어 하나라도 없으면 예전처럼 잘리지 않을 높이에 남는 높이를 똑같이 나눈다
    */
   grow?: number
+  /** 이 줄과 아래 줄 사이의 이음표. 마지막 줄에는 없다 */
+  link?: BlockLink
 }
 
 export interface Slide {
