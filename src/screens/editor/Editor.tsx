@@ -722,6 +722,7 @@ function SlideStage({
         </FitSlide>
         {blocks.ghost}
         {!peek && !preview && blocks.toolbar}
+        {!peek && !preview && blocks.room}
       </div>
 
       <label className="notes">

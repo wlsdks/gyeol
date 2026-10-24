@@ -119,6 +119,8 @@ export interface BlockEditing {
   selected: string | null
   select(id: string | null): void
   convert(): void
+  /** 부품 장이 아닌 장의 아래쪽이 비었을 때 그 자리에 띄우는 '여기에 부품 넣기' */
+  room: ReactNode
 }
 
 export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEditing {
@@ -129,6 +131,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   // 놓은 뒤 끌던 그림이 칸으로 날아가는 동안 (id가 없으면 집어 온 카드로 돌아가 사라진다)
   const [landing, setLanding] = useState<{ id: string | null; ghost: Drag } | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  // 장 아래 빈자리의 '여기에 부품 넣기'로 부품 고르기를 열었으면, 눌러 넣는 부품을 그 자리(맨 아래 새 줄)에
+  const [toBottom, setToBottom] = useState(false)
+  useEffect(() => {
+    if (!libraryOpen) setToBottom(false)
+  }, [libraryOpen])
   const dragRef = useRef<Drag | null>(null)
   dragRef.current = drag
   const areaEl = useRef<HTMLDivElement | null>(null)
@@ -467,7 +474,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       base = composed.rows ?? []
       const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
       const h = fr ? guessArea(fr).size.h : undefined
-      target = autoTarget(base, d.block, h)
+      const bottom: DropTarget = { kind: 'row', index: base.length }
+      target = toBottom && !whyNot(base, bottom, d.block, h) ? bottom : autoTarget(base, d.block, h)
       plan = target ? 'convert' : 'next'
       if (!target) blocked = placeIssue(base, d.block, h)
     }
@@ -718,10 +726,31 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       ? createPortal(<Floating anchor={selectedBlock.id}>{tools(selectedBlock)}</Floating>, document.body)
       : null
 
+  // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
+  const roomFits = (h: number) => {
+    const base = composeFrom(slide).rows ?? []
+    return !whyNot(base, { kind: 'row', index: base.length }, makeBlock('message'), h)
+  }
+  const room =
+    !compose && canCompose(slide.layout) && !drag && !landing
+      ? createPortal(
+          <RoomZone
+            key={slide.id}
+            fits={roomFits}
+            onOpen={() => {
+              setToBottom(true)
+              setLibraryOpen(true)
+            }}
+          />,
+          document.body,
+        )
+      : null
+
   return {
     edit,
     stageSlide,
     hint,
+    room,
     ghost,
     toolbar,
     libraryOpen,
@@ -736,6 +765,69 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       toast.show('이 장을 부품 장으로 바꿨어요. 부품을 끌어 옮기거나 더 넣을 수 있어요.', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
     },
   }
+}
+
+// ---------- 장 아래 빈자리 ----------
+
+/** 본문 상자(.s-body) 아래쪽에서 글이나 그림이 없는 높이 (캔버스 px)와 그 자리의 화면 위치 */
+function freeBelow(slideEl: HTMLElement) {
+  const body = slideEl.querySelector<HTMLElement>(':scope > .s-body')
+  if (!body) return null
+  const b = body.getBoundingClientRect()
+  const k = slideEl.offsetWidth ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth : 1
+  let top = b.bottom
+  let bottom = b.top
+  for (const el of body.querySelectorAll<HTMLElement>('*')) {
+    if (el.classList.contains('ed-halo')) continue
+    const r = el.getBoundingClientRect()
+    if (!r.width || !r.height) continue
+    if (r.bottom > bottom) bottom = r.bottom
+    if (r.top < top) top = r.top
+  }
+  // 가운데 맞춘 장(한 문장, 큰 숫자)의 위아래 빈자리는 일부러 비운 것이라 세지 않는다: 위가 붙어 있고 아래만 빈 장만
+  const anchored = (top - b.top) / k < 60
+  return { free: anchored ? (b.bottom - bottom) / k : 0, rect: new DOMRect(b.left, bottom, b.width, b.bottom - bottom), k }
+}
+
+/**
+ * 장 아래가 넉넉히 비면 그 자리에 '여기에 부품 넣기'. 누르면 부품 고르기가 열리고, 고른 부품이 그 자리(맨 아래 새 줄)에 들어간다.
+ * 끌어다 놓아도 된다. 장이 움직이거나 글이 늘어도 따라가게 매 프레임 잰다
+ */
+function RoomZone({ fits, onOpen }: { fits(h: number): boolean; onOpen(): void }) {
+  const ref = useRef<HTMLButtonElement>(null)
+  const ok = useRef<{ h: number; fits: boolean } | null>(null)
+  useLayoutEffect(() => {
+    let raf = 0
+    // 장이 바뀌어 다시 그렸으면 들어갈 만한지 새로 본다
+    ok.current = null
+    const tick = () => {
+      const el = ref.current
+      const slideEl = document.querySelector<HTMLElement>('.ed-canvas .slide.m-edit')
+      const f = slideEl ? freeBelow(slideEl) : null
+      // 부품이 들어갈 만한지는 본문 높이가 바뀔 때만 다시 본다
+      const areaH = slideEl ? Math.round(slideEl.querySelector<HTMLElement>(':scope > .s-body')?.offsetHeight ?? 0) : 0
+      if (f && ok.current?.h !== areaH) ok.current = { h: areaH, fits: fits(areaH) }
+      if (el && f && f.free >= 220 && ok.current?.fits) {
+        const pad = 24 * f.k
+        el.style.translate = `${Math.round(f.rect.left)}px ${Math.round(f.rect.top + pad)}px`
+        el.style.width = `${Math.round(f.rect.width)}px`
+        el.style.height = `${Math.round(f.rect.height - pad)}px`
+        el.style.visibility = 'visible'
+      } else if (el) el.style.visibility = 'hidden'
+      raf = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => cancelAnimationFrame(raf)
+  })
+  return (
+    <button ref={ref} type="button" className="ed-room" style={{ visibility: 'hidden' }} onClick={onOpen}>
+      <span className="ed-room-t">
+        <PlusIcon />
+        여기에 부품 넣기
+      </span>
+      <span className="ed-room-s">숫자, 차트, 글을 이 아래에 더 놓을 수 있어요. 부품 고르기에서 끌어다 놓아도 돼요.</span>
+    </button>
+  )
 }
 
 // ---------- 고른 부품 위의 도구 ----------
