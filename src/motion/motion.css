@@ -62,6 +62,10 @@
     opacity: 0;
     scale: 1.012;
   }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* 생동감: 앞 장은 뒤로 물러나고, 다음 장이 옆에서 밀고 들어온다 */
@@ -100,14 +104,30 @@
     animation: none;
   }
 
-  /* 앞 장은 짧게, 처음부터 빠르게 사라진다. 두 장의 글이 겹쳐 보이는 때가 없게: 다음 장의 글은 앞 장이 다 사라진 뒤에 나온다
-     (engine.ts의 SWAP_LEAD). 그동안 다음 장은 바탕만 보여서, 흰 장끼리는 바탕이 그대로 이어진다 */
+  /* 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕. engine.ts가 다음 장의 바탕색을 넣는다 */
+  html[data-mo-swap]::view-transition {
+    background: var(--mo-vt-bg, transparent);
+  }
+
+  /* 앞 장은 짧게 사라진다. 두 장의 글이 겹쳐 보이는 때가 없게: 다음 장의 글은 앞 장이 다 사라진 뒤에 나온다
+     (engine.ts의 SWAP_LEAD). 그동안 다음 장은 바탕만 보여서, 흰 장끼리는 바탕이 그대로 이어진다.
+     두 장은 같은 시간, 같은 곡선으로 서로 반대로 옅어지고 더해진다(plus-lighter): 어느 때든 두 장을 합치면 꽉 차서
+     장 밖의 검은 띠도 비치지 않는다 */
+  html[data-mo-swap='fade']::view-transition-image-pair(root) {
+    isolation: isolate;
+  }
+
+  html[data-mo-swap='fade']::view-transition-old(root),
+  html[data-mo-swap='fade']::view-transition-new(root) {
+    mix-blend-mode: plus-lighter;
+  }
+
   html[data-mo-swap='fade']::view-transition-old(root) {
-    animation: mo-vt-fade-out 160ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: mo-vt-fade-out 180ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='fade']::view-transition-new(root) {
-    animation: mo-vt-fade-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: mo-vt-fade-in 180ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='slide']::view-transition-old(root) {

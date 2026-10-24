@@ -257,7 +257,7 @@ export function motionEngine(): MotionEngine {
    * 장을 바꾸는 중이면 다음 장의 움직임을 이만큼 늦게 시작한다. 앞 장이 사라지기 전에 다음 장의 글이 나오면
    * 두 장의 글이 겹쳐 보인다(motion.css의 전환 시간과 맞춘다). 밀기는 다음 장이 거의 다 들어온 뒤에 글이 나온다
    */
-  const SWAP_LEAD: Record<string, number> = { fade: 150, zoom: 200, slide: 220 }
+  const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 200, slide: 220 }
 
   function play(root: Element, levelName: MotionLevel): () => void {
     const L: Level = LEVELS[levelName] || LEVELS.calm
@@ -401,7 +401,7 @@ export function motionEngine(): MotionEngine {
         break
       }
       case 'section': {
-        run(anims, one('.sc-num') ?? scope, [{ opacity: 0, translate: '0 22%' }], 0, levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
+        run(anims, one('.sc-num') ?? scope, [{ opacity: 0, translate: '0 22%' }], s(0), levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
         const t = words(one('.sc-title'), 160, L.word * 1.2)
         rise(one('.sc-lead'), t, L.y * 0.6)
         fade(one('.sc-map'), t, 400)
@@ -506,7 +506,7 @@ export function motionEngine(): MotionEngine {
         const flip = !!one('.ix.is-flip')
         wipe(one('.ix-img'), 0, flip ? 'right' : 'left', 1100)
         const img = one('.ix-img img')
-        if (img) run(anims, img, [{ scale: '1.16' }, { scale: '1' }], 0, { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2600 })
+        if (img) run(anims, img, [{ scale: '1.16' }, { scale: '1' }], s(0), { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2600 })
         const t = words(one('.ix-title'), 380)
         rise(one('.ix-body'), Math.min(t, 760), L.y * 0.6)
         break
@@ -1037,7 +1037,13 @@ export function motionEngine(): MotionEngine {
       delete html.dataset.moDir
     }
     try {
-      const t = doc.startViewTransition(update)
+      const t = doc.startViewTransition(() => {
+        update()
+        // 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕을 다음 장의 바탕색으로 (motion.css의 ::view-transition).
+        // 비워 두면 브라우저의 흰 바탕이 비쳐서, 검은 장끼리 넘길 때 화면이 잠깐 회색으로 번쩍였다
+        const next = document.querySelector(':is(.present-slide, .v-slide.is-current) .slide')
+        if (next) html.style.setProperty('--mo-vt-bg', getComputedStyle(next).backgroundColor)
+      })
       // 빨리 연달아 넘기면 앞의 전환은 건너뛴다. 그때 나는 거절은 정상이라 조용히 받는다.
       t.ready.catch(() => {})
       t.updateCallbackDone.catch(() => {})
