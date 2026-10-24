@@ -1756,9 +1756,10 @@ select {
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
 }
 
+/* 오른쪽 칸은 탭(이 장 설정, 컴포넌트)을 바꿔도 폭이 같다: 탭을 바꿀 때 슬라이드 크기가 출렁이지 않게 */
 .ed-body {
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr) 296px;
+  grid-template-columns: 224px minmax(0, 1fr) 336px;
   min-height: 0;
 }
 
@@ -1776,10 +1777,12 @@ select {
   background: var(--panel);
 }
 
+/* 오른쪽 여백은 스크롤바 자리(scrollbar-gutter)가 대신한다. 윈도우의 스크롤바(17px)가 들어와도
+   번호 칸 + 미리보기(14 + 4 + 170)가 칸 안에 들어가게 (224 - 1 - 17 - 12 - 6 = 188) */
 .sl-scroll {
   flex: 1;
   min-height: 0;
-  padding: 12px 12px 4px;
+  padding: 12px 6px 4px 12px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -1802,8 +1805,8 @@ select {
 .thumb {
   position: relative;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 6px;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 4px;
   margin-bottom: 10px;
 }
 
@@ -2014,14 +2017,158 @@ select {
 }
 
 /* 오른쪽 도움말 */
-.ins {
+/* 오른쪽 칸: 위에 탭 줄, 아래에 고른 탭의 내용 */
+.side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   min-height: 0;
-  overflow-y: auto;
   border-left: 1px solid var(--line);
   background: var(--panel);
 }
 
+.side-tabs {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 4px;
+  height: 46px;
+  padding: 0 12px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.side-tab {
+  position: relative;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.14s;
+}
+
+.side-tab:hover {
+  color: var(--ink-2);
+}
+
+.side-tab[aria-selected='true'] {
+  color: var(--ink);
+}
+
+/* 고른 탭은 아래 선에 붙는 짧은 굵은 줄 */
+.side-tab[aria-selected='true']::after {
+  position: absolute;
+  right: 10px;
+  bottom: -1px;
+  left: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  content: '';
+}
+
+.side-tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--sel);
+  border-radius: 6px;
+}
+
+.side-tabs > .info {
+  align-self: center;
+  margin-left: auto;
+}
+
+.ins {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* (i) 단추와 말풍선. 말풍선은 단추 밑에 작게 붙는다 */
+.info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.info-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -4px 0 -4px 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-3);
+  cursor: help;
+  transition: color 0.14s, background-color 0.14s;
+}
+
+.info-btn .icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+
+.info:hover .info-btn,
+.info:focus-within .info-btn {
+  background: #eef0f3;
+  color: var(--ink);
+}
+
+.info-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--sel);
+}
+
+.info-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 40;
+  width: max-content;
+  max-width: 248px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: var(--ink);
+  box-shadow: 0 8px 22px rgb(16 20 31 / 0.16);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 -3px;
+  pointer-events: none;
+  transition: opacity 0.12s, translate 0.12s, visibility 0s 0.12s;
+}
+
+.info-end .info-tip {
+  right: -2px;
+}
+
+.info-start .info-tip {
+  left: -2px;
+}
+
+.info:hover .info-tip,
+.info:focus-within .info-tip {
+  opacity: 1;
+  visibility: visible;
+  translate: 0 0;
+  transition: opacity 0.14s, translate 0.14s;
+}
+
 .ins-sec {
+  position: relative;
   padding: 18px 18px 20px;
   border-bottom: 1px solid var(--line);
 }
@@ -2034,6 +2181,8 @@ select {
 }
 
 .ins-purpose {
+  display: flex;
+  align-items: center;
   margin: 0;
   font-size: 17px;
   font-weight: 700;
@@ -2045,16 +2194,6 @@ select {
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.6;
-}
-
-.ins-tip {
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #f4f6f9;
-  color: var(--ink-2);
-  font-size: 13px;
-  line-height: 1.55;
 }
 
 .ins-done {
@@ -3163,7 +3302,9 @@ select {
   position: relative;
 }
 
+/* 넓은 화면에서는 오른쪽 칸의 '컴포넌트' 탭으로 고른다. 오른쪽 칸을 접는 좁은 화면에서만 장 아래에 둔다 */
 .stage-blocks {
+  display: none;
   color: var(--sel);
 }
 
@@ -3722,121 +3863,91 @@ body.is-block-resizing * {
   color: var(--sel);
 }
 
-/* 부품 고르기: 오른쪽 '이 장 설정' 자리에 들어가고 슬라이드는 그만큼 좁아진다 (슬라이드를 가리지 않게) */
-.ed-body.has-lib {
-  grid-template-columns: 224px minmax(0, 1fr) 368px;
-}
-
+/* 컴포넌트 고르기: 오른쪽 칸의 '컴포넌트' 탭. 슬라이드를 가리지 않는다 */
 .lib {
-  z-index: 30;
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
-  border-left: 1px solid var(--line);
-  background: var(--panel);
-  animation: lib-in 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes lib-in {
-  from {
-    opacity: 0;
-    translate: 28px 0;
-  }
-}
-
-.lib-head {
+/* 이 장이 아직 컴포넌트 장이 아니거나 다 찼을 때의 알림: 상자 없이 한 줄 */
+.lib-note {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 14px 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  margin: 14px 16px 0;
 }
 
-.lib-head-t {
-  flex: 1;
+.lib-note-t {
   min-width: 0;
-}
-
-.lib-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.lib-sub {
-  margin: 3px 0 0;
   color: var(--ink-2);
   font-size: 13px;
-  line-height: 1.45;
 }
 
-.lib-note {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  margin: 0 16px 12px 20px;
-  padding: 10px 12px;
-  border-radius: var(--r);
-  background: var(--sel-soft);
-  color: #233f8f;
-  font-size: 13px;
-  line-height: 1.5;
+.lib-note-btn {
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line-2);
+  border-radius: 15px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.lib-note p {
-  margin: 0;
+.lib-note-btn:hover {
+  border-color: var(--ink-3);
 }
 
-/* 묶음 단추: 회색 판 위의 한 줄 고르기(세그먼트). 칸 너비를 똑같이 나눠 접히지 않는다 */
+/* 묶음: 같은 폭으로 나눈 글자 칩 한 줄 (접히면 어디까지가 묶음인지 읽히지 않는다). 고른 칩만 짙게 */
 .lib-tabs {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   gap: 2px;
-  margin: 0 16px 0 20px;
-  padding: 3px;
-  border-radius: 10px;
-  background: #eef0f3;
+  margin: 12px 16px 0;
 }
 
-/* 그림 위, 이름 아래 */
 .lib-tab {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  height: 46px;
-  padding: 6px 2px 5px;
+  height: 30px;
+  padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 15px;
   background: none;
   color: var(--ink-2);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.14s, color 0.14s, box-shadow 0.14s;
-}
-
-.lib-tab .icon {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.7;
+  transition: background-color 0.14s, color 0.14s;
 }
 
 .lib-tab:hover:not(.is-on) {
+  background: #eef0f3;
   color: var(--ink);
 }
 
 .lib-tab.is-on {
-  background: var(--panel);
-  box-shadow: 0 1px 3px rgb(16 20 31 / 0.12), 0 0 0 0.5px rgb(16 20 31 / 0.06);
-  color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.lib-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sel);
 }
 
 .lib-list {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  padding: 6px 12px 24px 20px;
+  padding: 6px 8px 24px 16px;
   overflow-x: hidden;
   overflow-y: auto;
   border-top: 1px solid var(--line);
@@ -4046,18 +4157,25 @@ body.is-block-resizing * {
     grid-template-columns: 196px minmax(0, 1fr);
   }
 
-  .lib {
+  /* 좁으면 오른쪽 칸을 접고, 컴포넌트를 고를 때만 슬라이드 위에 띄운다 (장 아래의 '컴포넌트 넣기'로 연다) */
+  .side {
+    display: none;
+  }
+
+  .ed-body.has-lib .side {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
-    width: 360px;
+    z-index: 30;
+    display: flex;
+    width: 336px;
     max-width: calc(100% - 40px);
     box-shadow: -14px 0 36px rgb(16 20 31 / 0.12);
   }
 
-  .ins {
-    display: none;
+  .stage-blocks {
+    display: inline-flex;
   }
 
   .save {

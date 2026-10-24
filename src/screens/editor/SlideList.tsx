@@ -142,7 +142,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         {...listeners}
         role="button"
       >
-        <ScaledSlide width={176}>
+        <ScaledSlide width={170}>
           <SlideCanvas
             deck={look}
             slide={slide}

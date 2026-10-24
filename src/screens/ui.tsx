@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { cx } from '../lib/cx'
 
 export function Brand() {
@@ -41,9 +41,27 @@ export const CloseIcon = () => <Icon d="M6 6l12 12M18 6L6 18" />
 export const BlocksIcon = () => <Icon d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7" />
 export const GripIcon = () => <Icon className="icon-fill" d="M9 5.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
 export const MotionIcon = () => <Icon d="M3.5 8h6M2.5 12h8M3.5 16h6M14 6.5l5.5 5.5-5.5 5.5" />
+export const InfoIcon = () => <Icon d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v5.5M12 7.6v.4" />
 export const SparkIcon = () => <Icon d="M12 3.5l1.9 5.2 5.1 1.8-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.8zM18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
 
-/** 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다. */
+/**
+ * (i) 단추: 늘 펼쳐 둘 필요 없는 안내를 접어 둔다. 마우스를 올리거나 눌러서(키보드로 옮겨 와도) 보인다.
+ * 말풍선은 단추 밑에 붙는다. align: 단추의 어느 쪽 끝에 말풍선 끝을 맞출지 (칸 오른쪽 끝의 단추는 end)
+ */
+export function Info({ label, children, align = 'end' }: { label: string; children: ReactNode; align?: 'start' | 'end' }) {
+  const id = useId()
+  return (
+    <span className={cx('info', `info-${align}`)}>
+      <button type="button" className="info-btn" aria-label={label} aria-describedby={id}>
+        <InfoIcon />
+      </button>
+      <span role="tooltip" id={id} className="info-tip">
+        {children}
+      </span>
+    </span>
+  )
+}
+
 export function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="toggle">
@@ -54,6 +72,7 @@ export function Toggle({ label, on, onChange }: { label: string; on: boolean; on
   )
 }
 
+/** 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다. */
 export function Popover({
   button,
   children,

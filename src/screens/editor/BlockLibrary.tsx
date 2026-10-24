@@ -8,7 +8,6 @@ import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
-import { CloseIcon, Icon } from '../ui'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { josa, noRoomText } from './noRoom'
 
@@ -16,17 +15,6 @@ import { josa, noRoomText } from './noRoom'
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
 
 export type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
-
-/** 묶음 단추의 그림. 짧은 이름만으로는 무엇이 들어 있는지 알기 어려워서 생김새를 같이 보인다 */
-const GROUP_ICONS: Record<string, string> = {
-  전체: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
-  '글과 메시지': 'M5 6h14M5 11h14M5 16h9',
-  숫자: 'M10 4L8 20M16 4l-2 16M4.5 9h15M4.5 15h15',
-  차트: 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
-  '흐름과 일정': 'M4 6.5h16v13H4zM4 10.5h16M8.5 4v4M15.5 4v4',
-  '비교와 표': 'M4 5h16v14H4zM4 10h16M12 10v9',
-  '그림과 사람': 'M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 7.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z',
-}
 
 const THUMB_RATIO = 1.5
 /** 장 본문(1680) 12칸 격자의 한 칸 너비 */
@@ -74,7 +62,6 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
   const engine = useMemo(() => motionEngine(), [])
   const playing = useRef(new WeakMap<Element, number>())
   const level = motionOf(deck, slide)
-  const close = () => blocks.setLibraryOpen(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -102,48 +89,38 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
   const counted = slide.layout === 'compose' && blockCount(slide.rows ?? []) >= MAX_BLOCKS
   // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 카드마다 표를 붙이지 않고 위에 한 번만 알린다
   const full = counted || (slide.layout === 'compose' && types.every((t) => blocks.issueFor(t)))
+  // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
   const note =
     slide.layout === 'compose'
       ? full
         ? counted
-          ? `이 장에는 컴포넌트가 ${MAX_BLOCKS}개 다 찼어요. 고르면 다음 장을 새로 만들어 넣어요.`
-          : '이 장에는 더 넣을 자리가 없어요. 고르면 다음 장을 새로 만들어 넣어요.'
+          ? `${MAX_BLOCKS}개가 다 차서 다음 장에 새로 넣어요`
+          : '자리가 모자라 다음 장에 새로 넣어요'
         : null
       : canCompose(slide.layout)
-        ? '컴포넌트를 넣으면 이 장이 컴포넌트 장으로 바뀌어요. 지금 내용은 그대로 남고, 컴포넌트로 나뉘어 옮길 수 있게 돼요.'
-        : '표지와 단락 장에는 컴포넌트를 넣지 않아요. 넣으면 이 장 다음에 컴포넌트 장을 새로 만들어요.'
+        ? '넣으면 컴포넌트 장이 돼요'
+        : '표지와 단락 장이라 다음 장에 새로 넣어요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
   const issues = new Map(types.map((t) => [t, full ? null : blocks.issueFor(t)]))
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (
-    <aside className="lib" aria-label="컴포넌트 고르기">
-      <header className="lib-head">
-        <div className="lib-head-t">
-          <h2 className="lib-title">컴포넌트 고르기</h2>
-          <p className="lib-sub">슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요.</p>
-        </div>
-        <button type="button" className="icon-btn" aria-label="컴포넌트 고르기 닫기" title="닫기 (Esc)" onClick={close}>
-          <CloseIcon />
-        </button>
-      </header>
-
+    <div className="lib" role="tabpanel" aria-label="컴포넌트">
       {note && (
         <div className="lib-note">
-          <p>{note}</p>
+          <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={blocks.convert}>
-              지금 컴포넌트 장으로 바꾸기
+            <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 칸마다 컴포넌트로 나뉘어 옮길 수 있게 돼요" onClick={blocks.convert}>
+              지금 바꾸기
             </button>
           )}
         </div>
       )}
 
-      {/* 묶음 단추는 한 줄에: 두 줄로 접히면 어디까지가 묶음인지 읽히지 않는다. 묶음의 긴 이름과 설명은 목록의 제목에 */}
+      {/* 묶음은 같은 폭의 글자 칩 한 줄. 긴 이름과 설명은 목록의 묶음 제목에 */}
       <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
         <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
-          <Icon d={GROUP_ICONS.전체} />
           전체
         </button>
         {BLOCK_GROUPS.map((g) => (
@@ -155,7 +132,6 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
             title={`${g.name}: ${g.description}`}
             onClick={() => setGroup(g.name)}
           >
-            <Icon d={GROUP_ICONS[g.name]} />
             {g.short}
           </button>
         ))}
@@ -224,6 +200,6 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
           </div>
         </div>
       )}
-    </aside>
+    </div>
   )
 }

@@ -22,7 +22,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -394,12 +394,29 @@ function EditorBody({ deck }: { deck: Deck }) {
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
-          slide &&
-          (blocks.libraryOpen ? (
-            <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
-          ) : (
-            <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
-          ))
+          slide && (
+            // 오른쪽 칸은 탭 두 개: 이 장 설정과 컴포넌트. 컴포넌트를 고르는 동안에도 어디로 돌아가는지 보인다
+            <aside className="side" aria-label="오른쪽 칸">
+              <div className="side-tabs" role="tablist">
+                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(false)}>
+                  이 장 설정
+                </button>
+                <button type="button" role="tab" className="side-tab" aria-selected={blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(true)}>
+                  컴포넌트
+                </button>
+                {blocks.libraryOpen && (
+                  <Info label="컴포넌트 넣는 법">
+                    슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요. 그림에 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+                  </Info>
+                )}
+              </div>
+              {blocks.libraryOpen ? (
+                <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
+              ) : (
+                <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
+              )}
+            </aside>
+          )
         )}
       </div>
 

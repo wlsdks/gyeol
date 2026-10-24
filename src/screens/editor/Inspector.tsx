@@ -8,7 +8,7 @@ import { cx } from '../../lib/cx'
 import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { PREVIEW_MOTION } from './DeckMenus'
-import { Toggle } from '../ui'
+import { Info, Toggle } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['단락 1', '단락 2', '단락 3']
@@ -32,12 +32,15 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
 
   return (
-    <aside className="ins" aria-label="이 장 설정">
+    <div className="ins" role="tabpanel" aria-label="이 장 설정">
       <section className="ins-sec">
         <h2 className="ins-h">이 장의 역할</h2>
-        <p className="ins-purpose">{slide.purpose}</p>
+        <p className="ins-purpose">
+          {slide.purpose}
+          {/* 발표 방식에 따른 요령은 장마다 같아서 접어 둔다 */}
+          <Info label="발표 방식에 맞는 요령" align="start">{METHOD_TIPS[deck.meta.method]}</Info>
+        </p>
         <p className="ins-guide">{slide.guide}</p>
-        <p className="ins-tip">{METHOD_TIPS[deck.meta.method]}</p>
       </section>
 
       <section className="ins-sec">
@@ -173,7 +176,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
       <section className="ins-sec">
         <Toggle label="발표할 때 이 장 건너뛰기" on={!!slide.hidden} onChange={(v) => setHidden(slide.id, v)} />
       </section>
-    </aside>
+    </div>
   )
 }
 
