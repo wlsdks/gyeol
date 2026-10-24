@@ -6,6 +6,11 @@ export interface Theme {
   name: string
   description: string
   accent: string
+  /**
+   * 짙은 면(단락 장, 표지 옆면, 진한 면 부품)의 색. 강조색은 '답'(숫자, 고른 막대)에만 쓰고, 넓은 면은 같은 계열의 깊은 색으로 깐다.
+   * 넓은 면을 쨍한 강조색으로 칠하면 화면이 시끄럽고 싸 보인다
+   */
+  deep: string
   /** good, bad: 목표 대비, 증감처럼 좋고 나쁨을 보일 때만 쓴다. 늘 글자(▲▼, 달성)와 함께 */
   colors: { bg: string; ink: string; ink2: string; ink3: string; line: string; surface: string; good: string; bad: string }
 }
@@ -13,56 +18,81 @@ export interface Theme {
 const SANS = "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
 const SERIF = "'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif"
 
+/*
+ * 색은 공개된 색 체계의 원칙을 따라 새로 골랐다 (docs/DESIGN.md '색'):
+ * - 회색은 강조색과 같은 계열로 아주 옅게 물들인다 (Radix Colors의 'natural pairing': 파랑에는 푸른 회색, 초록에는 초록 회색)
+ * - 맥락(작년, 다른 조각)은 회색, 강조색은 말하려는 한 곳에만 (Datawrapper의 차트 색 안내)
+ * - 넓은 면은 강조색을 깊게 가라앉힌 색, 그 위의 강조는 강조색을 밝힌 색
+ */
 export const THEMES: Record<ThemeId, Theme> = {
   white: {
     id: 'white',
     name: '화이트',
     description: '밝고 깔끔해요',
-    accent: '#2350E8',
+    accent: '#2F55D4',
+    deep: '#16204A',
     colors: {
       bg: '#FFFFFF',
-      ink: '#121A2B',
-      ink2: '#4A5468',
-      ink3: '#8790A2',
-      line: '#E3E7EE',
-      surface: '#F3F5F9',
-      good: '#13795B',
-      bad: '#C8372D',
+      ink: '#141A29',
+      ink2: '#4A5266',
+      ink3: '#868DA0',
+      line: '#E2E5EC',
+      surface: '#F3F4F8',
+      good: '#137A56',
+      bad: '#C93A2E',
     },
   },
   navy: {
     id: 'navy',
     name: '네이비',
-    description: '어두운 화면이라 집중돼요',
-    accent: '#8FB3FF',
+    description: '깊은 남색에 금빛 강조. 집중돼요',
+    accent: '#E8B54A',
+    deep: '#1C3160',
     colors: {
-      bg: '#0F1626',
-      ink: '#F2F4F8',
-      ink2: '#AAB4C7',
-      ink3: '#6F7B91',
-      line: '#243047',
-      surface: '#172036',
-      good: '#6FD3A0',
-      bad: '#FF8A80',
+      bg: '#0C1222',
+      ink: '#EEF1F7',
+      ink2: '#A7B0C4',
+      ink3: '#6B7690',
+      line: '#232D45',
+      surface: '#141C30',
+      good: '#67CFA0',
+      bad: '#FF8B7E',
     },
   },
   serif: {
     id: 'serif',
     name: '세리프',
     description: '차분하고 격식 있어요',
-    accent: '#1E6B4F',
+    accent: '#1B6A52',
+    deep: '#13302A',
     colors: {
-      bg: '#F1F3EE',
-      ink: '#17271F',
-      ink2: '#4C5B52',
-      ink3: '#7F8B83',
-      line: '#D3D9D1',
-      surface: '#E5E9E2',
-      good: '#1E6B4F',
+      bg: '#F3F3EF',
+      ink: '#191D1A',
+      ink2: '#4E5550',
+      ink3: '#858B85',
+      line: '#D9DBD4',
+      surface: '#E8E9E3',
+      good: '#1B6A52',
       bad: '#A63D2F',
     },
   },
 }
+
+/**
+ * 고를 수 있는 색 조합: 강조색과 짙은 면의 짝. 짝마다 세 테마와 바탕(그대로, 반대 색, 강조색)에서 맞춰 보고 골랐다.
+ * 강조색을 직접 고르면 짙은 면은 그 색을 깊게 가라앉혀 만든다 (deepOf)
+ */
+export const ACCENT_COMBOS: { name: string; accent: string; deep: string }[] = [
+  { name: '코발트', accent: '#2F55D4', deep: '#16204A' },
+  { name: '청록', accent: '#0B776E', deep: '#0F3330' },
+  { name: '숲', accent: '#1B6A52', deep: '#13302A' },
+  { name: '남보라', accent: '#4A45B5', deep: '#201E52' },
+  { name: '자두', accent: '#9A2F5F', deep: '#381426' },
+  { name: '벽돌', accent: '#B8432A', deep: '#3A1D16' },
+  { name: '황토', accent: '#9E6A12', deep: '#33260F' },
+  { name: '금빛', accent: '#E8B54A', deep: '#1C3160' },
+  { name: '먹', accent: '#3A4254', deep: '#161A22' },
+]
 
 export const THEME_ORDER: ThemeId[] = ['white', 'navy', 'serif']
 
@@ -105,16 +135,16 @@ export const TONES: { id: Tone; name: string; description: string }[] = [
   { id: 'accent', name: '강조색', description: '강조색 면 위에 글을 놓아요. 가장 중요한 장 한두 곳에만 써요.' },
 ]
 
-export const ACCENT_PRESETS = [
-  '#2350E8',
-  '#0B7A75',
-  '#1E6B4F',
-  '#C2410C',
-  '#B4235A',
-  '#6D3FD1',
-  '#B7791F',
-  '#8FB3FF',
-]
+/** 고른 색 조합의 이름 (테마 기본색, 직접 고른 색도) */
+export function comboName(deckTheme: DeckTheme): string {
+  if (!deckTheme.accent) return '테마 기본색'
+  return ACCENT_COMBOS.find((c) => c.accent.toLowerCase() === deckTheme.accent?.toLowerCase())?.name ?? '직접 고른 색'
+}
+
+/** 색 조합 견본: 왼쪽 위는 강조색, 오른쪽 아래는 짙은 면 */
+export function comboSwatch(c: { accent: string; deep: string }): string {
+  return `linear-gradient(135deg, ${c.accent} 0 52%, ${c.deep} 52% 100%)`
+}
 
 function rgb(hex: string): [number, number, number] {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
@@ -213,6 +243,42 @@ interface Palette {
   bad: string
   accent: string
   accentInk: string
+  /** 짙은 면, 그 위의 글자, 그 위의 강조, 그 위의 아주 큰 글자(단락 번호) */
+  deep: string
+  deepInk: string
+  deepAccent: string
+  deepMark: string
+}
+
+const NIGHT = '#0A0D16'
+
+/**
+ * 짙은 면의 색. 고른 색 조합이면 그 짝, 직접 고른 색이면 그 색을 깊게 가라앉힌 색.
+ * 어두운 테마는 바탕보다 한 단계 떠 있는 테마의 짙은 면을 쓴다 (강조색을 섞으면 금빛이 탁한 올리브가 된다)
+ */
+function deepOf(theme: Theme, accent: string, dark: boolean): string {
+  if (dark) return theme.deep
+  const combo = ACCENT_COMBOS.find((c) => c.accent.toLowerCase() === accent.toLowerCase())
+  if (combo && luminance(combo.deep) < 0.05) return combo.deep
+  if (accent.toLowerCase() === theme.accent.toLowerCase()) return theme.deep
+  return mix(accent, NIGHT, 0.34)
+}
+
+/**
+ * 짙은 면 위에서 강조할 색: 강조색을 그 면 위에서 읽힐 만큼 밝힌다. 원래 밝은 색(금빛)은 그대로.
+ * 글자와 점은 4.5:1, 단락 번호처럼 아주 큰 글자는 3:1이면 되어 강조색의 짙은 맛을 덜 잃는다
+ */
+function accentOnDeep(accent: string, deep: string, need = 4.5): string {
+  for (let t = 1; t >= 0.2; t -= 0.05) {
+    const c = mix(accent, '#FFFFFF', t)
+    if (contrast(c, deep) >= need) return c
+  }
+  return '#FFFFFF'
+}
+
+/** 밝은 테마의 회색 면과 선을 강조색 쪽으로 아주 옅게 물들인다. 강조색을 바꿔도 회색이 따로 놀지 않게 */
+function tinted(colors: Theme['colors'], accent: string): Theme['colors'] {
+  return { ...colors, surface: mix(accent, colors.surface, 0.02), line: mix(accent, colors.line, 0.03) }
 }
 
 function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
@@ -221,11 +287,14 @@ function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
   if (tone === 'invert') {
     const other = theme.id === 'navy' ? THEMES.white : THEMES.navy
     const a = readable(accent, other.colors.bg)
-    return { ...other.colors, accent: a, accentInk: inkOn(a) }
+    const dark = luminance(other.colors.bg) < 0.2
+    const deep = dark ? other.deep : deepOf(theme, accent, false)
+    return { ...(dark ? other.colors : tinted(other.colors, a)), accent: a, accentInk: inkOn(a), deep, deepInk: inkOn(deep), deepAccent: accentOnDeep(a, deep), deepMark: accentOnDeep(a, deep, 3) }
   }
   if (tone === 'accent') {
     // 강조색이 바탕이 되면 글자는 그 위에서 읽히는 색, 강조는 글자색 그대로 굵게
     const ink = inkOn(accent)
+    const deep = mix(accent, NIGHT, 0.5)
     return {
       bg: accent,
       ink,
@@ -237,9 +306,17 @@ function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
       bad: ink,
       accent: ink,
       accentInk: accent,
+      deep,
+      deepInk: inkOn(deep),
+      deepAccent: inkOn(deep),
+      deepMark: inkOn(deep),
     }
   }
-  return { ...theme.colors, accent, accentInk: inkOn(accent) }
+  // 금빛처럼 밝은 강조색도 흰 바탕에서 숫자가 읽히게 (기본 강조색은 이미 넉넉해서 그대로)
+  const a = readable(accent, theme.colors.bg)
+  const dark = luminance(theme.colors.bg) < 0.2
+  const deep = deepOf(theme, accent, dark)
+  return { ...(dark ? theme.colors : tinted(theme.colors, a)), accent: a, accentInk: inkOn(a), deep, deepInk: inkOn(deep), deepAccent: accentOnDeep(accent, deep), deepMark: accentOnDeep(accent, deep, 3) }
 }
 
 /** 이 바탕이 어두운지. 어두운 바탕에서는 로고 밑에 밝은 면을 까는 등 몇 가지를 바꾼다 */
@@ -261,6 +338,10 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--bad': c.bad,
     '--accent': c.accent,
     '--accent-ink': c.accentInk,
+    '--deep': c.deep,
+    '--deep-ink': c.deepInk,
+    '--deep-accent': c.deepAccent,
+    '--deep-mark': c.deepMark,
     '--font-head': f.font,
     '--font-body': SANS,
     '--head-weight': f.weight,

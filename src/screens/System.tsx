@@ -6,7 +6,7 @@ import { emptyItem } from '../deck/generate'
 import { LAYOUTS, LAYOUT_GROUPS, LAYOUT_ORDER } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { showcaseSlides } from '../deck/showcase'
-import { ACCENT_PRESETS, THEMES, THEME_ORDER, TONES, isDarkLook, themeStyle } from '../deck/themes'
+import { ACCENT_COMBOS, comboSwatch, THEMES, THEME_ORDER, TONES, isDarkLook, themeStyle } from '../deck/themes'
 import type { BlockType, Deck, DeckTheme, LayoutId, Slide, ThemeId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
@@ -32,7 +32,8 @@ const TOKENS: { v: string; name: string; use: string }[] = [
   { v: '--line', name: '줄', use: '칸과 칸 사이' },
   { v: '--surface', name: '면', use: '칸, 막대의 바탕' },
   { v: '--accent', name: '강조', use: '답에만: 숫자, 추천안, 강조한 막대' },
-  { v: '--bold-bg', name: '짙은 면', use: '단락 장, 마지막 장의 색 면' },
+  { v: '--bold-bg', name: '짙은 면', use: '단락 장, 표지 옆면, 진한 면 부품. 강조색과 짝인 깊은 색' },
+  { v: '--bold-accent', name: '짙은 면 위 강조', use: '짙은 면 안의 숫자와 점. 강조색을 밝힌 색' },
   { v: '--good', name: '좋음', use: '목표 달성, 늘어남 (▲과 함께)' },
   { v: '--bad', name: '나쁨', use: '못 미침, 줄어듦 (▼과 함께)' },
 ]
@@ -174,12 +175,12 @@ export function System() {
             </div>
           </div>
           <div className="sys-control">
-            <span className="sys-control-k">강조색</span>
+            <span className="sys-control-k">색 조합</span>
             <div className="swatches sys-swatches">
               <button
                 type="button"
                 className={cx('swatch', !accent && 'is-on')}
-                style={{ background: THEMES[themeId].accent }}
+                style={{ background: comboSwatch(THEMES[themeId]) }}
                 title="테마 기본색"
                 aria-label="테마 기본색"
                 aria-pressed={!accent}
@@ -187,17 +188,19 @@ export function System() {
               >
                 {!accent && <CheckIcon />}
               </button>
-              {ACCENT_PRESETS.filter((c) => c !== THEMES[themeId].accent).map((c) => (
+              {ACCENT_COMBOS.filter((c) => c.accent !== THEMES[themeId].accent).map((c) => (
                 <button
-                  key={c}
+                  key={c.accent}
                   type="button"
-                  className={cx('swatch', accent === c && 'is-on')}
-                  style={{ background: c }}
-                  aria-label={`강조색 ${c}`}
-                  aria-pressed={accent === c}
-                  onClick={() => setAccent(c)}
+                  className={cx('swatch', accent === c.accent && 'is-on')}
+                  // 강조색과 짙은 면을 반씩: 고르면 어떤 짝으로 칠해지는지 보이게
+                  style={{ background: comboSwatch(c) }}
+                  title={c.name}
+                  aria-label={`색 조합 ${c.name}`}
+                  aria-pressed={accent === c.accent}
+                  onClick={() => setAccent(c.accent)}
                 >
-                  {accent === c && <CheckIcon />}
+                  {accent === c.accent && <CheckIcon />}
                 </button>
               ))}
             </div>

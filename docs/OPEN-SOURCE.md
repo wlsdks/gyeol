@@ -45,6 +45,13 @@
 
 html-maker는 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI 회사의 SDK나 패키지를 쓰지 않습니다.
 
+## 참고한 공개 자료 (코드나 값을 옮기지 않음)
+
+| 자료 | 라이선스 | 참고한 것 |
+|---|---|---|
+| [Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/composing-a-palette) | MIT | 강조색과 같은 계열의 회색을 짝짓는 원칙. 색 값은 우리가 따로 골랐음 |
+| [Datawrapper 블로그: 색으로 강조하기](https://www.datawrapper.de/blog/emphasize-with-color-in-data-visualizations) | 공개 글 | 맥락은 회색, 말하려는 곳만 색 |
+
 ## 나눠 줄 때 지킬 것
 
 - **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣고, Node.js의 `LICENSE`는 `node\LICENSE.txt`로 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.

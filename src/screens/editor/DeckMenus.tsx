@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { makeSlide } from '../../deck/generate'
-import { ACCENT_PRESETS, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf } from '../../deck/themes'
+import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -58,8 +58,10 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               </button>
             ))}
           </div>
-          <p className="menu-h">강조색</p>
-          <p className="menu-note">회사의 대표 색을 고르면 표지와 숫자에 쓰여요.</p>
+          <p className="menu-h">
+            색 조합 <span className="menu-h-v">{comboName(deck.theme)}</span>
+          </p>
+          <p className="menu-note">밝은 색은 숫자와 강조할 항목에, 짙은 색은 표지 옆면과 단락 장 같은 넓은 면에 쓰여요. 회사의 대표 색은 마지막 칸에서 직접 골라요.</p>
           <div className="swatches">
             <button
               type="button"
@@ -67,20 +69,22 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               onClick={() => setAccent(undefined)}
               title="테마 기본색"
               aria-label="테마 기본색"
-              style={{ background: THEMES[deck.theme.id].accent }}
+              style={{ background: comboSwatch(THEMES[deck.theme.id]) }}
             >
               {!deck.theme.accent && <CheckIcon />}
             </button>
-            {ACCENT_PRESETS.filter((c) => c !== THEMES[deck.theme.id].accent).map((c) => (
+            {ACCENT_COMBOS.filter((c) => c.accent !== THEMES[deck.theme.id].accent).map((c) => (
               <button
-                key={c}
+                key={c.accent}
                 type="button"
-                className={cx('swatch', deck.theme.accent === c && 'is-on')}
-                style={{ background: c }}
-                aria-label={`강조색 ${c}`}
-                onClick={() => setAccent(c)}
+                className={cx('swatch', deck.theme.accent === c.accent && 'is-on')}
+                // 강조색과 짙은 면을 반씩: 고르면 어떤 짝으로 칠해지는지 보이게
+                style={{ background: comboSwatch(c) }}
+                title={c.name}
+                aria-label={`색 조합 ${c.name}`}
+                onClick={() => setAccent(c.accent)}
               >
-                {deck.theme.accent === c && <CheckIcon />}
+                {deck.theme.accent === c.accent && <CheckIcon />}
               </button>
             ))}
             <label className="swatch swatch-custom" title="직접 고르기">

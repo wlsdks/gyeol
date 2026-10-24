@@ -159,7 +159,7 @@ const TOOLS = [
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?, contain?: 이미지와 설명, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨)}',
-      '- set_theme {theme?: 테마 id, accent?: "#rrggbb" 또는 null(테마 기본색), motion?: 발표할 때 움직임(카탈로그 motions), font?: 제목 글꼴(카탈로그 fonts, null은 테마 글꼴), size?: 글자 크기(textSizes), footer?: 아래 표시(footers), transition?: 장 넘기기(transitions)}',
+      '- set_theme {theme?: 테마 id, accent?: "#rrggbb"(카탈로그 accents의 색 조합에서 고르기) 또는 null(테마 기본색), motion?: 발표할 때 움직임(카탈로그 motions), font?: 제목 글꼴(카탈로그 fonts, null은 테마 글꼴), size?: 글자 크기(textSizes), footer?: 아래 표시(footers), transition?: 장 넘기기(transitions)}',
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
       '- set_hint {slide, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸.',

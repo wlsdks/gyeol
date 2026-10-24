@@ -417,6 +417,11 @@ select {
   font-weight: 600;
 }
 
+.menu-h-v {
+  margin-left: 6px;
+  color: var(--ink);
+}
+
 .menu-note {
   margin: -2px 10px 10px;
   color: var(--ink-3);

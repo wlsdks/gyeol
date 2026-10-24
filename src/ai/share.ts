@@ -8,7 +8,7 @@ import { blockItems, cleanRows, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BL
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
-import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
+import { ACCENT_COMBOS, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Audience, Block, BlockEffect, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
@@ -129,6 +129,8 @@ export function catalog() {
     durations: DURATIONS.map((d) => ({ minutes: d.minutes, name: d.name })),
     methods: METHODS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     themes: THEME_ORDER.map((id) => ({ id, name: THEMES[id].name, description: THEMES[id].description, accent: THEMES[id].accent })),
+    // 강조색을 바꾸자고 할 때는 여기서 고른다. 짝으로 맞춰 본 색이라 아무 색보다 잘 어울린다
+    accents: ACCENT_COMBOS.map((c) => ({ name: c.name, accent: c.accent.toLowerCase() })),
     motions: MOTIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     fonts: FONTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     textSizes: TEXT_SIZES.map((m) => ({ id: m.id, name: m.name, description: m.description })),

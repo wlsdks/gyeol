@@ -112,9 +112,9 @@
 
 /* 이미지 칸 */
 .img-ed.img-empty {
-  outline: 3px dashed color-mix(in oklch, var(--ink) 22%, transparent);
+  outline: 3px dashed color-mix(in srgb, var(--ink) 22%, transparent);
   outline-offset: -3px;
-  background: color-mix(in oklch, var(--ink) 4%, var(--bg));
+  background: color-mix(in srgb, var(--ink) 4%, var(--bg));
 }
 
 .t-navy .lg-cell .img-ed.img-empty {
