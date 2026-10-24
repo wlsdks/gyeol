@@ -98,12 +98,14 @@
     animation: none;
   }
 
+  /* 앞 장은 짧게, 처음부터 빠르게 사라진다. 두 장의 글이 겹쳐 보이는 때가 없게: 다음 장의 글은 앞 장이 다 사라진 뒤에 나온다
+     (engine.ts의 SWAP_LEAD). 그동안 다음 장은 바탕만 보여서, 흰 장끼리는 바탕이 그대로 이어진다 */
   html[data-mo-swap='fade']::view-transition-old(root) {
-    animation: mo-vt-fade-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
+    animation: mo-vt-fade-out 160ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='fade']::view-transition-new(root) {
-    animation: mo-vt-fade-in 420ms cubic-bezier(0, 0, 0.2, 1) both;
+    animation: mo-vt-fade-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='slide']::view-transition-old(root) {
@@ -115,7 +117,7 @@
   }
 
   html[data-mo-swap='zoom']::view-transition-old(root) {
-    animation: mo-vt-zoom-out 360ms cubic-bezier(0.4, 0, 1, 1) both;
+    animation: mo-vt-zoom-out 240ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='zoom']::view-transition-new(root) {

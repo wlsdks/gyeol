@@ -223,7 +223,9 @@ export function motionEngine(): MotionEngine {
       const strip = document.createElement('span')
       strip.className = 'mo-odr'
       const seq: string[] = []
-      for (let d = 0; d <= 9 + digit; d++) seq.push(String(d % 10))
+      // 0부터 한 바퀴(0~9) 돈 뒤 그 숫자에서 멈춘다. 마지막 칸이 꼭 그 숫자여야 한다(9 + digit까지만 넣으면 하나 모자라
+      // 3.7에서 멈췄다가 원래 글자로 돌아올 때 4.8로 튄다)
+      for (let d = 0; d <= 10 + digit; d++) seq.push(String(d % 10))
       strip.textContent = seq.join('\n')
       strip.style.lineHeight = h + 'px'
       strip.style.translate = `0 ${-(seq.length - 1) * h}px`
@@ -239,7 +241,7 @@ export function motionEngine(): MotionEngine {
       covers.push(cover)
       c.className = 'mo-odc'
       // 왼쪽 자리가 먼저 멈추고 오른쪽으로 갈수록 조금씩 늦게
-      run(anims, strip, [{ translate: '0 0' }], at, { easing, duration: duration + (n > 1 ? (i / (n - 1)) * duration * 0.35 : 0) })
+      run(anims, strip, [{ translate: '0 0' }], at, { easing, duration: duration + (n > 1 ? (i / (n - 1)) * duration * 0.25 : 0) })
     })
     restores.push(undo)
     return true
@@ -251,8 +253,15 @@ export function motionEngine(): MotionEngine {
    * 한 장을 움직인다. 부품 장의 칸(.bk) 하나를 넘기면 그 부품만 (편집기에서 움직임을 고를 때 미리 보기).
    * 부품 장은 부품을 읽는 차례대로 하나씩: 레이아웃 부품은 그 레이아웃의 연출을 그 칸 안에서, 부품마다 고른 움직임이 있으면 그것으로.
    */
+  /**
+   * 장을 바꾸는 중이면 다음 장의 움직임을 이만큼 늦게 시작한다. 앞 장이 사라지기 전에 다음 장의 글이 나오면
+   * 두 장의 글이 겹쳐 보인다(motion.css의 전환 시간과 맞춘다). 밀기는 다음 장이 거의 다 들어온 뒤에 글이 나온다
+   */
+  const SWAP_LEAD: Record<string, number> = { fade: 150, zoom: 200, slide: 220 }
+
   function play(root: Element, levelName: MotionLevel): () => void {
     const L: Level = LEVELS[levelName] || LEVELS.calm
+    const lead = SWAP_LEAD[document.documentElement.dataset.moSwap || ''] || 0
     const cellOnly = root.classList.contains('bk') ? root : null
     const slide = cellOnly ? cellOnly.closest('.slide') : root.classList.contains('slide') ? root : root.querySelector('.slide')
     const anims: Animation[] = []
@@ -266,7 +275,7 @@ export function motionEngine(): MotionEngine {
     const one = (sel: string) => scope.querySelector(sel) as HTMLElement | null
     const layout = (/\bl-([a-zA-Z]+)/.exec(slide.className) || [])[1] || ''
     const slideVariant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
-    const s = (ms: number) => (t0 + ms) * L.speed
+    const s = (ms: number) => (t0 + ms) * L.speed + lead
     /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
     const d = (ms: number) => ms * L.speed
 
@@ -317,8 +326,9 @@ export function motionEngine(): MotionEngine {
       if (!el || el.closest('.m-edit')) return
       // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
       const lively = levelName === 'lively'
-      if (!roll(el, s(at), lively ? 1300 : 950, lively ? SPRINGS.bounce.easing : 'cubic-bezier(0.25, 0.8, 0.15, 1)', anims, restores))
-        countUp(el, s(at), lively ? 1400 : 900, stops)
+      // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
+      if (!roll(el, s(at), lively ? 900 : 800, lively ? SPRINGS.bounce.easing : 'cubic-bezier(0.25, 0.8, 0.15, 1)', anims, restores))
+        countUp(el, s(at), lively ? 1000 : 800, stops)
     }
     /** 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다 */
     const pulse = (el: HTMLElement | null, at: number) => {
@@ -420,7 +430,7 @@ export function motionEngine(): MotionEngine {
           // 면이 있는 카드만 커지며 들어오고, 띠는 숫자가 올라오기만
           if (variant === 'cards') card(el, at)
           else rise(el, at, L.y * 0.7)
-          count(el.querySelector('.kp-value'), at + 120)
+          count(el.querySelector('.kp-value'), at + 40)
         })
         fade(one('.s-source'), end + 200)
         break
