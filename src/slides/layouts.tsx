@@ -1335,7 +1335,7 @@ function Position() {
                     </span>
                   )}
                 </div>
-                <ItemTools i={i} />
+                <ItemTools i={i} sort={false} />
               </div>
             )
           })}

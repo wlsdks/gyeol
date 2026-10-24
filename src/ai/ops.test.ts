@@ -115,6 +115,33 @@ describe('제안 적용', () => {
     expect(parseOp({ op: 'set_theme', font: 'Comic Sans' })).toBeNull()
     expect(parseOp({ op: 'set_theme', transition: 'spin' })).toBeNull()
   })
+
+  it('두 판으로 나뉜 장은 옆 판의 자리와 너비를 정해진 값으로만 바꾼다. 글은 그대로', () => {
+    const cover = shape.slides.findIndex((s) => s.layout === 'cover')
+    const closing = shape.slides.findIndex((s) => s.layout === 'closing')
+    const kpi = shape.slides.findIndex((s) => s.layout === 'kpi')
+    const { deck: next, results } = run(
+      { op: 'set_options', slide: sid(cover), flip: true, pane: 5 },
+      { op: 'set_options', slide: sid(closing), pane: 9 },
+      { op: 'set_options', slide: sid(kpi), flip: true },
+    )
+    expect(results.map((r) => r.code)).toEqual(['applied', 'out_of_range', 'not_for_layout'])
+    expect(next.slides[cover].options).toMatchObject({ flip: true, pane: 5 })
+    expect(writtenText(next)).toEqual(writtenText(deck))
+    // 모양에 옆 판의 자리와 너비가 숫자와 참거짓으로만 실린다
+    const s = toShape(next).slides[cover]
+    expect(s.options).toMatchObject({ flip: true, pane: 5 })
+    expect(checkShape(toShape(next))).toBe(true)
+    // 기본 너비로 되돌리면 값이 남지 않는다
+    const back = applyOps(next, [{ op: 'set_options', slide: sid(cover), pane: null, flip: false }]).deck
+    expect(back.slides[cover].options.pane).toBeUndefined()
+    expect(back.slides[cover].options.flip).toBeUndefined()
+    // 아래 띠 모양의 표지는 판이 아래에 있어서 좌우와 너비가 없다
+    const band = applyOps(deck, [{ op: 'set_layout', slide: sid(cover), layout: 'cover', variant: 'band' }]).deck
+    expect(applyOps(band, [{ op: 'set_options', slide: sid(cover), flip: true }]).results[0].code).toBe('not_for_layout')
+    expect(parseOp({ op: 'set_options', slide: sid(cover), pane: 1.5 })).toBeNull()
+    expect(parseOp({ op: 'set_options', slide: sid(cover), pane: '4' })).toBeNull()
+  })
 })
 
 describe('부품 장', () => {

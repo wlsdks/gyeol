@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
-import { highlightOf, LAYOUTS, LAYOUT_GROUPS, variantOf } from '../../deck/layouts'
+import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, sideOf, variantOf } from '../../deck/layouts'
 import { isDarkLook, MOTIONS, motionOf, toneOf, TONES } from '../../deck/themes'
 import type { Deck, LayoutId, Motion, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { BOLD_LAYOUTS } from '../../slides/layouts'
+import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { Info, Toggle } from '../ui'
@@ -28,7 +29,10 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
   const variants = LAYOUTS[slide.layout].variants ?? []
   const current = variantOf(slide)
   const highlight = LAYOUTS[slide.layout].highlight
-  const hasOptions = !!highlight || slide.layout === 'imageText'
+  // 두 판으로 나뉜 장: 옆 판의 자리와 너비 (장 위에서 판의 이름표나 판 사이를 끌어도 된다)
+  const panes = panesOf(slide)
+  const side = sideOf(slide)
+  const hasOptions = !!highlight || slide.layout === 'imageText' || !!panes
   const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
 
   return (
@@ -97,15 +101,48 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
               </div>
             </div>
           )}
-          {slide.layout === 'imageText' && (
+          {panes && side !== null && (
             <>
-              <Toggle label="이미지를 오른쪽에" on={!!slide.options.flip} onChange={(v) => setOptions(slide.id, { flip: v })} />
-              <Toggle
-                label="이미지를 자르지 않고 전체 보이기"
-                on={!!slide.options.contain}
-                onChange={(v) => setOptions(slide.id, { contain: v })}
-              />
+              <div className="ins-row ins-row-wrap">
+                <span className="ins-label">{panes.name} 자리</span>
+                <div className="seg seg-wrap" role="group" aria-label={`${panes.name} 자리`}>
+                  {(['left', 'right'] as const).map((at) => {
+                    // 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
+                    const flip = panes.start ? at === 'right' : at === 'left'
+                    const on = !!slide.options.flip === flip
+                    return (
+                      <button key={at} type="button" className={cx('seg-btn', on && 'is-on')} aria-pressed={on} onClick={() => setOptions(slide.id, { flip: flip || undefined })}>
+                        {at === 'left' ? '왼쪽' : '오른쪽'}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="ins-row ins-row-wrap">
+                <span className="ins-label">{panes.name} 너비</span>
+                <div className="seg seg-wrap" role="group" aria-label={`${panes.name} 너비`}>
+                  {panes.sides.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={cx('seg-btn', side === n && 'is-on')}
+                      aria-pressed={side === n}
+                      onClick={() => setOptions(slide.id, { pane: n === panes.base ? undefined : n })}
+                    >
+                      {sideName(n, panes.base)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="ins-note">장 위에서 판 위쪽의 이름표를 끌어 옮기고, 판 사이를 끌어 너비를 바꿔도 돼요.</p>
             </>
+          )}
+          {slide.layout === 'imageText' && (
+            <Toggle
+              label="이미지를 자르지 않고 전체 보이기"
+              on={!!slide.options.contain}
+              onChange={(v) => setOptions(slide.id, { contain: v })}
+            />
           )}
         </section>
       )}

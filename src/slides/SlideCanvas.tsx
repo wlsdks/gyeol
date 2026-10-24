@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { LAYOUTS, variantOf } from '../deck/layouts'
+import { LAYOUTS, PANE_UNIT, panesOf, sideOf, variantOf } from '../deck/layouts'
 import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
@@ -7,6 +7,7 @@ import { cx } from '../lib/cx'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
 import { useHalos } from './halos'
 import { BOLD_LAYOUTS, LAYOUT_VIEWS } from './layouts'
+import { PaneTools } from './panes'
 
 export const SLIDE_W = 1920
 export const SLIDE_H = 1080
@@ -68,6 +69,12 @@ export const SlideCanvas = memo(function SlideCanvas({
   const footer = footerOf(deck)
   const ref = useRef<HTMLDivElement>(null)
   useHalos(ref, mode === 'edit')
+  // 두 판으로 나뉜 장: 옆 판의 자리(왼쪽, 오른쪽)와 너비. 레이아웃 CSS가 --side-w를 쓴다
+  // (편집할 때 너비가 부드럽게 바뀌도록 등록한 값이라 CSS의 기본값이 먹지 않는다. 판이 있는 장은 늘 적는다)
+  const panes = panesOf(slide)
+  const side = sideOf(slide)
+  const themed = themeStyle(deck.theme, tone)
+  const style: CSSProperties = side !== null ? ({ ...themed, '--side-w': `${side * PANE_UNIT}px` } as CSSProperties) : themed
 
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
@@ -89,10 +96,12 @@ export const SlideCanvas = memo(function SlideCanvas({
           tone !== 'base' && `tone-${tone}`,
           isDarkLook(deck.theme, tone) && 'is-dark',
           solo && 'is-solo',
+          panes && slide.options.flip && 'is-flip',
         )}
-        style={solo ? { ...themeStyle(deck.theme, tone), width: solo.w, height: solo.h } : themeStyle(deck.theme, tone)}
+        style={solo ? { ...themed, width: solo.w, height: solo.h } : style}
       >
         <View />
+        {mode === 'edit' && spec.panes && !solo && <PaneTools />}
         {!bold && !solo && page > 0 && footer !== 'none' && (
           <footer className="s-foot">
             {footer === 'page' ? (

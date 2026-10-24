@@ -645,6 +645,46 @@ export function tidyLinks(rows: BlockRow[]): BlockRow[] {
   })
 }
 
+/** 사람이 아무것도 적지 않은 부품: 칸의 글, 항목의 글, 그림이 모두 비었다 */
+export function blockIsBlank(b: Block): boolean {
+  const blank = (v: unknown) => typeof v !== 'string' || !v.trim()
+  return Object.values(b.fields).every(blank) && b.items.every((it) => (['title', 'body', 'value', 'meta', 'image'] as const).every((k) => blank(it[k])))
+}
+
+/**
+ * 발표할 때 그리는 줄: 비워 둔 부품은 빼고, 남은 부품이 그 줄을 나눠 쓴다(고른 칸 너비는 부품 수가 바뀌면 다시 고른다).
+ * 편집할 때 옆에 둔 빈 부품이 발표 화면에 구멍으로 남지 않게. 뺀 부품에 닿아 있던 이음표도 뗀다:
+ * 그대로 두면 다른 두 부품 사이에 서서 뜻이 바뀐다
+ */
+export function shownRows(rows: BlockRow[]): BlockRow[] {
+  if (!rows.some((r) => r.blocks.some(blockIsBlank))) return rows
+  const unlink = <T extends { link?: BlockLink }>(x: T): T => {
+    const { link: _, ...bare } = x
+    return bare as T
+  }
+  const out: BlockRow[] = []
+  for (const r of rows) {
+    const blocks: Block[] = []
+    for (const b of r.blocks) {
+      // 빈 부품의 이음표(오른쪽과 잇던 것)는 부품과 함께 빠지고, 왼쪽 부품이 이 부품과 잇던 이음표는 뗀다
+      if (blockIsBlank(b)) {
+        if (blocks.length) blocks[blocks.length - 1] = unlink(blocks[blocks.length - 1])
+      } else blocks.push(b)
+    }
+    if (!blocks.length) {
+      // 줄이 통째로 빠지면 위 줄이 이 줄과 잇던 이음표도
+      if (out.length) out[out.length - 1] = unlink(out[out.length - 1])
+      continue
+    }
+    if (blocks.length === r.blocks.length) out.push(r)
+    else {
+      const { spans: _, ...rest } = r
+      out.push({ ...rest, blocks })
+    }
+  }
+  return tidyLinks(out)
+}
+
 export const MAX_ROWS = 3
 export const MAX_IN_ROW = 3
 export const MAX_BLOCKS = 6

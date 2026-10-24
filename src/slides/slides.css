@@ -4,13 +4,25 @@
  * 이 파일은 내보낸 HTML 파일에도 그대로 들어간다.
  *
  * 원칙
- * - 회의실 뒷자리에서도 읽히는 크기: 제목 72, 본문 34(18pt), 가장 작은 글자(출처) 22.
+ * - 회의실 뒷자리에서도 읽히는 크기: 제목 62, 본문 30(15pt), 가장 작은 글자(출처) 22. 큰 회의실은 글자 크기 '크게'(본문 36, 18pt).
  * - 제목은 결론 한 문장. 장마다 크게 보이는 것은 하나, 나머지는 조용하게.
  * - 본문 영역은 비워 두지 않는다. 줄 나눔과 배치로 바닥까지 채운다. 면(패널)은 꼭 필요할 때만.
  * - 강조색은 '답'에만 쓴다: 숫자, 추천안, 강조한 막대, 지금 단락, 색 면 장.
  * - 좋고 나쁨(--good, --bad)은 목표 대비, 증감에만 쓰고 늘 글자(▲▼, 달성)와 함께.
  * - 같은 레이아웃 안의 모양(va-*)은 같은 칸을 다르게 놓을 뿐, 칸은 늘거나 줄지 않는다.
  */
+
+/* 두 판으로 나뉜 장의 옆 판 너비 (SlideCanvas가 늘 적는다). 등록해 두면 편집할 때 판 사이를 끌어 너비를 고를 때
+   단계 사이를 부드럽게 오간다 */
+@property --side-w {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 640px;
+}
+
+.slide.m-edit {
+  transition: --side-w 0.26s cubic-bezier(0.2, 0, 0, 1);
+}
 
 /* 글자 크기는 한 비율(1.2)의 단계에서만 고른다: 22 · 26 · 30 · 36 · 44 · 52 · 62 · 74 · 90 · 108 · 128 · 154 · 184 · 220 · 264.
    단계 밖의 크기(34, 38 같은)를 섞으면 비슷한 글끼리 크기가 조금씩 달라 위계가 흐려진다. 22는 회의실 뒷자리에서 읽히는 바닥.
@@ -402,10 +414,23 @@
   flex: none;
   flex-direction: column;
   justify-content: space-between;
-  width: 640px;
+  width: var(--side-w, 640px);
   padding: var(--pad-y) var(--pad-x) var(--pad-y) 80px;
   background: var(--bold-bg);
   color: var(--bold-ink);
+}
+
+/* 결정 요청 판을 왼쪽으로 옮긴 표지: 안쪽 여백도 좌우를 바꾼다 */
+.l-cover.va-base.is-flip {
+  flex-direction: row-reverse;
+}
+
+.l-cover.va-base.is-flip .cv-main {
+  padding: var(--pad-y) var(--pad-x) var(--pad-y) 112px;
+}
+
+.l-cover.va-base.is-flip .cv-side {
+  padding: var(--pad-y) 80px var(--pad-y) var(--pad-x);
 }
 
 .cv-label {
@@ -1615,13 +1640,27 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  width: 640px;
+  width: var(--side-w, 640px);
   padding: var(--pad-y) var(--pad-x) var(--pad-y) 80px;
   background: var(--surface);
 }
 
+.l-case.is-flip {
+  flex-direction: row-reverse;
+}
+
+.l-case.is-flip .cs-main {
+  padding: var(--pad-top) var(--pad-x) var(--pad-bottom) 112px;
+}
+
+.l-case.is-flip .cs-side {
+  padding: var(--pad-y) 80px var(--pad-y) var(--pad-x);
+}
+
+/* 결과 판을 좁게 골라도 로고가 판 밖으로 나가지 않게 */
 .cs-logo {
   width: 300px;
+  max-width: 100%;
   height: 96px;
 }
 
@@ -1659,7 +1698,12 @@
 }
 
 .l-case .s-foot {
-  right: calc(640px + 112px);
+  right: calc(var(--side-w, 640px) + 112px);
+}
+
+.l-case.is-flip .s-foot {
+  right: var(--pad-x);
+  left: calc(var(--side-w, 640px) + 112px);
 }
 
 /* ---------- 요금제 ---------- */
@@ -1869,12 +1913,12 @@
 
 .ix {
   display: grid;
-  grid-template-columns: 1100px 1fr;
+  grid-template-columns: var(--side-w, 1120px) 1fr;
   height: 100%;
 }
 
 .ix.is-flip {
-  grid-template-columns: 1fr 1100px;
+  grid-template-columns: 1fr var(--side-w, 1120px);
 }
 
 .ix.is-flip .ix-img {
@@ -1923,11 +1967,11 @@
 }
 
 .l-imageText .s-foot {
-  left: calc(1100px + 96px);
+  left: calc(var(--side-w, 1120px) + 96px);
 }
 
 .l-imageText:has(.ix.is-flip) .s-foot {
-  right: calc(1100px + 96px);
+  right: calc(var(--side-w, 1120px) + 96px);
   left: var(--pad-x);
 }
 
@@ -4370,7 +4414,7 @@
 
 .l-closing {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 820px;
+  grid-template-columns: minmax(0, 1fr) var(--side-w, 800px);
   gap: 120px;
   padding-bottom: var(--pad-y);
   background: var(--bold-bg);
@@ -4379,6 +4423,15 @@
 
 .l-closing:not(:has(.cl-steps)) {
   grid-template-columns: 1fr;
+}
+
+/* 요청 목록을 왼쪽으로 옮긴 장 */
+.l-closing.is-flip:has(.cl-steps) {
+  grid-template-columns: var(--side-w, 800px) minmax(0, 1fr);
+}
+
+.l-closing.is-flip .cl-steps {
+  order: -1;
 }
 
 .cl-main {

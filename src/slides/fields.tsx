@@ -5,6 +5,7 @@ import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
 import { imageToDataUrl, pickImage } from '../lib/image'
 import { useSlide } from './context'
+import { startItemDrag } from './itemDrag'
 
 /** [a, b]: 글자 수가 a를 넘으면 한 단계, b를 넘으면 두 단계 작게. 길이 기준이라 내보낸 파일에서도 같다. */
 type Fit = [number, number]
@@ -276,14 +277,55 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
   )
 }
 
-export function ItemTools({ i }: { i: number }) {
-  const { mode, actions, canRemoveItem } = useSlide()
-  if (mode !== 'edit' || !actions || !canRemoveItem) return null
+/**
+ * 항목 위에 올리면 보이는 도구: 왼쪽 위의 손잡이(끌어 순서 바꾸기), 오른쪽 위의 빼기.
+ * 자리가 값으로 정해지는 항목(위치 비교의 점)은 순서가 보이지 않아 손잡이를 두지 않는다
+ */
+export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
+  const { mode, actions, canRemoveItem, slide } = useSlide()
+  if (mode !== 'edit' || !actions) return null
+  const move = actions.moveItem
+  const count = slide.items.length
+  const grip = sort && !!move && count > 1
+  if (!grip && !canRemoveItem) return null
   return (
-    <button type="button" className="it-remove" aria-label="이 항목 빼기" title="이 항목 빼기" onClick={() => actions.removeItem(i)}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 6l12 12M18 6L6 18" />
-      </svg>
-    </button>
+    <>
+      {grip && (
+        <button
+          type="button"
+          className="it-grip"
+          data-i={i}
+          aria-label={`${i + 1}번째 항목. 끌거나 화살표 키로 순서를 바꿔요`}
+          title="끌어서 순서 바꾸기"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return
+            e.preventDefault()
+            e.stopPropagation()
+            startItemDrag(e.nativeEvent, e.currentTarget, i, move)
+          }}
+          onKeyDown={(e) => {
+            const d = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : 0
+            const list = e.currentTarget.closest('.it')?.parentElement
+            const n = list?.querySelectorAll(':scope > .it > .it-grip').length ?? 0
+            if (!d || i + d < 0 || i + d >= n) return
+            e.preventDefault()
+            move(i, i + d)
+            // 옮긴 항목의 손잡이에 초점을 둬서 화살표를 이어 누를 수 있게
+            requestAnimationFrame(() => list?.querySelector<HTMLElement>(`:scope > .it > .it-grip[data-i="${i + d}"]`)?.focus())
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />
+          </svg>
+        </button>
+      )}
+      {canRemoveItem && (
+        <button type="button" className="it-remove" aria-label="이 항목 빼기" title="이 항목 빼기" onClick={() => actions.removeItem(i)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      )}
+    </>
   )
 }

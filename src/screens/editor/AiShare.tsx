@@ -13,6 +13,7 @@ import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
+import { sideName } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle, useDialog } from '../ui'
 import { josa } from './noRoom'
@@ -363,7 +364,13 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     case 'set_options': {
       const parts: string[] = []
       if (op.highlight !== undefined) parts.push(op.highlight < 0 ? '강조 없음' : `${op.highlight + 1}번째를 강조`)
-      if (op.flip !== undefined) parts.push(op.flip ? '이미지를 오른쪽에' : '이미지를 왼쪽에')
+      const panes = slide && LAYOUTS[slide.layout].panes
+      if (panes && op.flip !== undefined) {
+        // 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
+        const right = panes.start ? op.flip : !op.flip
+        parts.push(`${panes.name} 자리: ${right ? '오른쪽' : '왼쪽'}`)
+      }
+      if (panes && op.pane !== undefined) parts.push(`${panes.name} 너비: ${sideName(op.pane ?? panes.base, panes.base)}`)
       if (op.contain !== undefined) parts.push(op.contain ? '이미지 전체 보이기' : '이미지로 채우기')
       if (op.tone) parts.push(`바탕: ${TONES.find((t) => t.id === op.tone)?.name}`)
       if (op.motion !== undefined) parts.push(op.motion === null ? '움직임: 발표 전체 설정대로' : `움직임: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)

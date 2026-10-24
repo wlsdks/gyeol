@@ -3,7 +3,7 @@ import { canCompose, cleanDeckRows, composeFrom, copyBlock, tidyLinks, unwrapCom
 import { unknownParts } from '../deck/compat'
 import { plainTheme } from '../deck/themes'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
-import { isMetaKey } from '../deck/fields'
+import { followIndex, isMetaKey, moveIn } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
 import type { Block, BlockRow, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
 
@@ -39,11 +39,13 @@ interface DeckState {
   setItem(slideId: string, index: number, key: ItemKey, value: string): void
   addItem(slideId: string): void
   removeItem(slideId: string, index: number): void
+  /** 항목 순서 바꾸기. 고른 강조는 그 항목을 따라간다. key가 같으면 되돌리기 한 단계로 */
+  moveItem(slideId: string, from: number, to: number, key?: string): void
   setNotes(slideId: string, notes: string): void
-  setOptions(slideId: string, options: SlideOptions): void
+  setOptions(slideId: string, options: SlideOptions, key?: string): void
   setHidden(slideId: string, hidden: boolean): void
   changeLayout(slideId: string, layout: LayoutId): void
-  setVariant(slideId: string, variant: string): void
+  setVariant(slideId: string, variant: string, key?: string): void
 
   /** 되돌리기 기록에 남기지 않는 설정 */
   setAiShare(on: boolean): void
@@ -181,11 +183,21 @@ export const useDeck = create<DeckState>((set, get) => {
     removeItem(slideId, index) {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, items: s.items.filter((_, i) => i !== index) })))
     },
+    moveItem(slideId, from, to, key) {
+      commit(
+        (d) =>
+          mapSlide(d, slideId, (s) => {
+            const highlight = followIndex(s.options.highlight, from, to)
+            return { ...s, items: moveIn(s.items, from, to), options: highlight === s.options.highlight ? s.options : { ...s.options, highlight } }
+          }),
+        key,
+      )
+    },
     setNotes(slideId, notes) {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, notes })), `${slideId}.notes`)
     },
-    setOptions(slideId, options) {
-      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, options: { ...s.options, ...options } })))
+    setOptions(slideId, options, key) {
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, options: { ...s.options, ...options } })), key)
     },
     setHidden(slideId, hidden) {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, hidden })))
@@ -208,8 +220,8 @@ export const useDeck = create<DeckState>((set, get) => {
         }),
       )
     },
-    setVariant(slideId, variant) {
-      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })))
+    setVariant(slideId, variant, key) {
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })), key)
     },
 
     setRows(slideId, rows, key) {

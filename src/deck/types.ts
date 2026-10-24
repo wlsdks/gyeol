@@ -72,8 +72,10 @@ export type ItemKey = Exclude<keyof Item, 'id'>
 export interface SlideOptions {
   /** 강조할 항목 (0부터, -1은 강조 없음). 어느 레이아웃이 쓰는지는 LayoutSpec.highlight */
   highlight?: number
-  /** 이미지와 설명: 이미지를 오른쪽에 */
+  /** 두 판으로 나뉜 장(LayoutSpec.panes): 옆 판을 반대쪽에. 이미지와 설명이면 이미지를 오른쪽에 */
   flip?: boolean
+  /** 두 판으로 나뉜 장: 옆 판의 너비. 장 너비를 12로 나눈 칸 수이고, 고를 수 있는 값은 레이아웃마다(LayoutSpec.panes.sides). 없으면 레이아웃 기본 */
+  pane?: number
   /** 이미지와 설명: 자르지 않고 전체 보이기 */
   contain?: boolean
   /** 이 장만 다른 움직임. 없으면 발표 전체 설정을 따른다 */

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Block, DeckMeta, ItemKey, Slide } from '../deck/types'
+import type { Block, DeckMeta, ItemKey, Slide, SlideOptions } from '../deck/types'
 
 /**
  * edit: 슬라이드 위에서 바로 입력
@@ -12,6 +12,11 @@ export interface SlideActions {
   setField(key: string, value: string): void
   setItem(index: number, key: ItemKey, value: string): void
   removeItem(index: number): void
+  /** 항목 순서 바꾸기 (끌어 옮길 때). key가 같으면 되돌리기 한 단계로 묶는다 */
+  moveItem?(from: number, to: number, key?: string): void
+  /** 장의 고르는 값(옆 판의 자리와 너비 같은). key가 같으면 되돌리기 한 단계로 묶는다 */
+  setOptions?(options: SlideOptions, key?: string): void
+  setVariant?(variant: string, key?: string): void
   /** 부품 장: 부품 하나를 고친다. key가 같으면 되돌리기 한 단계로 묶는다 */
   updateBlock?(blockId: string, fn: (b: Block) => Block, key?: string): void
 }

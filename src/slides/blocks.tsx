@@ -1,6 +1,6 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, linkAt, rowMins, sameLinkTarget, shownLook, spansOf, variantOfBlock, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
-import { readField } from '../deck/fields'
+import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, linkAt, rowMins, sameLinkTarget, shownLook, shownRows, spansOf, variantOfBlock, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
+import { followIndex, moveIn, readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -817,6 +817,15 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
       setField: (k, v) => (k.startsWith('$') ? outer.setField(k, v) : update(block.id, (b) => ({ ...b, fields: { ...b.fields, [k]: v } }), `${block.id}.${k}`)),
       setItem: (i, k, v) => update(block.id, (b) => ({ ...b, items: b.items.map((it, j) => (j === i ? { ...it, [k]: v } : it)) }), `${block.id}.${i}.${k}`),
       removeItem: (i) => update(block.id, (b) => ({ ...b, items: b.items.filter((_, j) => j !== i) })),
+      moveItem: (from, to, key) =>
+        update(
+          block.id,
+          (b) => {
+            const highlight = followIndex(b.highlight, from, to)
+            return { ...b, items: moveIn(b.items, from, to), ...(highlight !== undefined ? { highlight } : {}) }
+          },
+          key,
+        ),
     }
   }, [outer, block.id])
   const View = spec.layout ? LAYOUT_VIEWS[spec.layout] : NATIVE_VIEWS[block.type as NativeBlockType]
@@ -1062,7 +1071,9 @@ export function BlockArea() {
   const { slide, mode } = useSlide()
   const edit = useContext(BlockEditContext)
   const live = mode === 'edit' && edit ? edit : null
-  const saved = live?.rows ?? knownRows(slide.rows ?? [])
+  // 발표할 때는 비워 둔 부품을 빼고 그린다 (남은 부품이 줄을 채운다)
+  const known = knownRows(slide.rows ?? [])
+  const saved = live?.rows ?? (mode === 'final' ? shownRows(known) : known)
   // 이음표를 끄는 동안에는 놓일 자리에 흐리게 미리 세운다 (양쪽 칸이 비켜 나는 것까지)
   const rows = live?.linkPreview ? withLink(saved, live.linkPreview.target, live.linkPreview.link) : saved
   const boxes = cellBoxes(rows)

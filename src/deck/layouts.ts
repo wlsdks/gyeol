@@ -45,7 +45,17 @@ export interface LayoutSpec {
     default: number
     fields: ItemFieldSpec[]
   }
+  /**
+   * 두 판으로 나뉜 장: 편집할 때 옆 판을 끌어 반대쪽으로 옮기고(options.flip), 판 사이를 끌어 너비를 고른다(options.pane).
+   * name은 옆 판의 이름, el은 그 판을 찾는 선택자, sides는 고를 수 있는 너비(장 너비를 12로 나눈 칸 수), base는 고르지 않았을 때의 너비.
+   * start는 옆 판이 처음에 왼쪽에 있는 장(이미지와 설명). variants가 있으면 그 모양에서만 좌우와 너비를 고른다.
+   * below는 판이 아래에 깔리는 모양(표지의 아래 띠): 판을 장 아래쪽으로 끌면 그 모양이 되고, 위로 끌면 옆으로 돌아온다
+   */
+  panes?: { name: string; el: string; sides: number[]; base: number; start?: boolean; variants?: string[]; below?: string }
 }
+
+/** 옆 판 너비의 한 칸 (장 너비를 12로 나눈 것) */
+export const PANE_UNIT = 1920 / 12
 
 const title = (hint: string): FieldSpec => ({ key: 'title', label: '제목', hint })
 /** 숫자 장 아래의 출처·기준. 윗분이 "이 숫자 어디서 나왔어요?"를 묻지 않게 */
@@ -64,10 +74,11 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '표지',
     description: '보고 제목과 결정 요청, 발표자',
     variants: [
-      { id: 'base', name: '오른쪽 결정 요청' },
+      { id: 'base', name: '옆에 결정 요청' },
       { id: 'band', name: '아래 띠' },
       { id: 'full', name: '색 면' },
     ],
+    panes: { name: '결정 요청 판', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },
@@ -481,6 +492,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'case',
     name: '사례',
     description: '비슷한 사례와 그 결과',
+    panes: { name: '결과 판', el: '.cs-side', sides: [3, 4, 5], base: 4 },
     fields: [
       { key: 'client', label: '대상', hint: '고객사, 업종 또는 부서' },
       { key: 'title', label: '결과', hint: '얻은 결과를 한 문장으로', multiline: true },
@@ -526,6 +538,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'imageText',
     name: '이미지와 설명',
     description: '제품 화면이나 사진과 설명',
+    panes: { name: '이미지', el: '.ix-img', sides: [5, 6, 7, 8], base: 7, start: true },
     fields: [
       title('이미지가 보여주는 것'),
       { key: 'body', label: '설명', hint: '이미지를 설명하는 두세 문장', multiline: true },
@@ -609,6 +622,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { id: 'base', name: '바탕' },
       { id: 'bold', name: '색 면' },
     ],
+    panes: { name: '요청 목록', el: '.cl-steps', sides: [4, 5, 6], base: 5 },
     fields: [
       title('결정해 주실 것'),
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
@@ -713,6 +727,21 @@ export function variantOf(slide: { layout: LayoutId; variant?: string }): string
 }
 
 /** 강조할 항목. 고르지 않았으면 레이아웃의 기본값, 강조가 없는 레이아웃이면 -1 */
+/** 이 장에서 옆 판을 옮기거나 너비를 고를 수 있으면 그 정의 (모양에 따라 없을 수 있다) */
+export function panesOf(slide: Pick<Slide, 'layout' | 'variant'>): NonNullable<LayoutSpec['panes']> | null {
+  const p = LAYOUTS[slide.layout].panes
+  if (!p || (p.variants && !p.variants.includes(variantOf(slide)))) return null
+  return p
+}
+
+/** 옆 판의 너비 (칸 수). 고른 너비가 이 레이아웃에서 고를 수 없는 값이면 기본 너비 */
+export function sideOf(slide: Pick<Slide, 'layout' | 'variant' | 'options'>): number | null {
+  const p = panesOf(slide)
+  if (!p) return null
+  const n = slide.options.pane
+  return n !== undefined && p.sides.includes(n) ? n : p.base
+}
+
 export function highlightOf(slide: Pick<Slide, 'layout' | 'options' | 'items'>): number {
   const spec = LAYOUTS[slide.layout]
   if (!spec.highlight) return -1

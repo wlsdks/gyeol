@@ -29,7 +29,7 @@ export interface ShapeSlide {
   hiddenItems: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  options: { highlight?: number; flip?: boolean; contain?: boolean; motion?: Motion; tone?: Tone }
+  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
@@ -110,6 +110,8 @@ export function catalog() {
         description: spec.description,
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
         highlight: spec.highlight?.label ?? null,
+        // 두 판으로 나뉜 장: 옆 판의 이름, 고를 수 있는 너비(장 너비를 12로 나눈 칸 수), 기본 너비, 고를 수 있는 모양
+        panes: spec.panes ? { name: spec.panes.name, sides: spec.panes.sides, base: spec.panes.base, variants: spec.panes.variants ?? null } : null,
         fields: spec.fields.map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
         items: spec.items
           ? {
@@ -266,10 +268,13 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   const options: ShapeSlide['options'] = {}
   const o = slide.options ?? {}
   if (spec.highlight && Number.isInteger(o.highlight)) options.highlight = o.highlight
-  if (slide.layout === 'imageText') {
+  // 두 판으로 나뉜 장: 옆 판의 자리와 너비 (고를 수 있는 값일 때만)
+  const panes = LAYOUTS[slide.layout].panes
+  if (panes) {
     options.flip = !!o.flip
-    options.contain = !!o.contain
+    if (Number.isInteger(o.pane) && panes.sides.includes(o.pane as number)) options.pane = o.pane
   }
+  if (slide.layout === 'imageText') options.contain = !!o.contain
   if (isOneOf(MOTIONS, o.motion)) options.motion = o.motion
   if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
   const out: ShapeSlide = {
@@ -373,7 +378,8 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'contain', 'motion', 'tone'])) return false
+  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone'])) return false
+  if (o.pane !== undefined && !isInt(o.pane, 1, 12)) return false
   if (o.highlight !== undefined && !isInt(o.highlight, -1, 20)) return false
   if (o.motion !== undefined && !isOneOf(MOTIONS, o.motion)) return false
   if (o.tone !== undefined && !isOneOf(TONES, o.tone)) return false

@@ -275,6 +275,8 @@ export function motionEngine(): MotionEngine {
     const one = (sel: string) => scope.querySelector(sel) as HTMLElement | null
     const layout = (/\bl-([a-zA-Z]+)/.exec(slide.className) || [])[1] || ''
     const slideVariant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
+    // 옆 판을 반대쪽으로 옮긴 장: 판이 들어오는 쪽도 바꾼다
+    const flipped = slide.classList.contains('is-flip')
     const s = (ms: number) => (t0 + ms) * L.speed + lead
     /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
     const d = (ms: number) => ms * L.speed
@@ -401,7 +403,7 @@ export function motionEngine(): MotionEngine {
       case 'cover': {
         // 띠는 아래에서, 오른쪽 면은 오른쪽에서 밀려 들어온다. 색 면 모양은 면이 장 전체라 줄만 나타난다
         if (variant === 'full') fade(one('.cv-side'), 300, 700)
-        else if (levelName === 'lively') wipe(one('.cv-side'), 0, variant === 'band' ? 'bottom' : 'right', 1100)
+        else if (levelName === 'lively') wipe(one('.cv-side'), 0, variant === 'band' ? 'bottom' : flipped ? 'left' : 'right', 1100)
         else fade(one('.cv-side'), 0, 700)
         fade(one('.cv-logo'), 200)
         const t = words(one('.cv-title'), 180)
@@ -485,7 +487,7 @@ export function motionEngine(): MotionEngine {
         break
       }
       case 'case': {
-        if (levelName === 'lively') wipe(one('.cs-side'), 0, 'right', 1000)
+        if (levelName === 'lively') wipe(one('.cs-side'), 0, flipped ? 'left' : 'right', 1000)
         else fade(one('.cs-side'), 0)
         rise(one('.cs-client'), 80, L.y * 0.5)
         const t = words(one('.cs-title'), 160)

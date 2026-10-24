@@ -45,7 +45,7 @@ import {
 } from '../deck/blocks'
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
-import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
+import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, panesOf, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
@@ -80,7 +80,8 @@ export type Op =
   | { op: 'set_hidden'; slide: SlideRef; hidden: boolean }
   | { op: 'set_item_count'; slide: SlideRef; count: number }
   /** motion: null이면 발표 전체 설정을 따르게 되돌린다 */
-  | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; contain?: boolean; motion?: Motion | null; tone?: Tone }
+  /** flip, pane: 두 판으로 나뉜 장(LayoutSpec.panes)의 옆 판 자리와 너비. pane이 null이면 기본 너비 */
+  | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; pane?: number | null; contain?: boolean; motion?: Motion | null; tone?: Tone }
   /** font: null이면 테마의 글꼴로 */
   | {
       op: 'set_theme'
@@ -339,18 +340,20 @@ export function parseOp(v: unknown): Op | null {
         return only(v, ['op', 'slide', 'after']) && after !== undefined ? { op: v.op, slide, after } : null
       }
       if (v.op === 'set_options') {
-        if (!only(v, ['op', 'slide', 'highlight', 'flip', 'contain', 'motion', 'tone'])) return null
+        if (!only(v, ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone'])) return null
+        if (v.pane !== undefined && v.pane !== null && !(Number.isInteger(v.pane) && (v.pane as number) >= 1 && (v.pane as number) <= 12)) return null
         if (v.highlight !== undefined && !(Number.isInteger(v.highlight) && (v.highlight as number) >= -1 && (v.highlight as number) < 20)) return null
         if (v.flip !== undefined && typeof v.flip !== 'boolean') return null
         if (v.contain !== undefined && typeof v.contain !== 'boolean') return null
         if (v.motion !== undefined && v.motion !== null && !oneOf(MOTIONS, v.motion)) return null
         if (v.tone !== undefined && !oneOf(TONES, v.tone)) return null
-        if ([v.highlight, v.flip, v.contain, v.motion, v.tone].every((x) => x === undefined)) return null
+        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone].every((x) => x === undefined)) return null
         return {
           op: v.op,
           slide,
           highlight: v.highlight as number | undefined,
           flip: v.flip as boolean | undefined,
+          pane: v.pane as number | null | undefined,
           contain: v.contain as boolean | undefined,
           motion: v.motion as Motion | null | undefined,
           tone: v.tone as Tone | undefined,
@@ -606,10 +609,17 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           if (op.highlight >= Math.min(s.items.length, spec.items?.max ?? 0)) return fail('out_of_range')
           options.highlight = op.highlight
         }
-        if (op.flip !== undefined || op.contain !== undefined) {
+        if (op.flip !== undefined || op.pane !== undefined) {
+          // 옆 판을 옮기거나 너비를 고를 수 있는 장, 모양에서만 (표지의 아래 띠, 색 면은 안 된다)
+          const panes = panesOf(s)
+          if (!panes) return fail('not_for_layout')
+          if (op.pane !== undefined && op.pane !== null && !panes.sides.includes(op.pane)) return fail('out_of_range')
+          if (op.flip !== undefined) options.flip = op.flip || undefined
+          if (op.pane !== undefined) options.pane = op.pane === null || op.pane === panes.base ? undefined : op.pane
+        }
+        if (op.contain !== undefined) {
           if (s.layout !== 'imageText') return fail('not_for_layout')
-          if (op.flip !== undefined) options.flip = op.flip
-          if (op.contain !== undefined) options.contain = op.contain
+          options.contain = op.contain
         }
         if (op.motion !== undefined) options.motion = op.motion ?? undefined
         if (op.tone !== undefined) {

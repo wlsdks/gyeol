@@ -17,6 +17,27 @@ export function visibleItems(slide: Slide) {
   return slide.items.slice(0, max)
 }
 
+/** from째 항목을 to째 자리로 옮긴 목록 (사이의 항목은 한 칸씩 밀린다) */
+export function moveIn<T>(list: readonly T[], from: number, to: number): T[] {
+  const out = [...list]
+  if (from === to || from < 0 || from >= out.length) return out
+  const [it] = out.splice(from, 1)
+  out.splice(Math.max(0, Math.min(to, out.length)), 0, it)
+  return out
+}
+
+/**
+ * 항목을 옮긴 뒤 강조한 항목의 자리. 사람이 고른 강조(값이 있을 때)는 그 항목을 따라간다.
+ * 고르지 않은 강조(없음)는 '마지막 점'처럼 자리로 정한 것이라 그대로 둔다
+ */
+export function followIndex(index: number | undefined, from: number, to: number): number | undefined {
+  if (index === undefined || index < 0) return index
+  if (index === from) return to
+  if (from < index && to >= index) return index - 1
+  if (from > index && to <= index) return index + 1
+  return index
+}
+
 export interface Missing {
   key: string
   item?: number

@@ -22,6 +22,7 @@ import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, merg
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
+// &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
 
@@ -213,6 +214,8 @@ export function Gallery() {
       : picked
   const tone = params.get('tone') as Tone | null
   const hl = params.get('hl')
+  const flip = params.get('flip') === '1'
+  const side = Number(params.get('side')) || 0
   const look: Partial<DeckTheme> = {}
   for (const k of ['font', 'size', 'footer'] as const) {
     const v = params.get(k)
@@ -229,6 +232,8 @@ export function Gallery() {
         ...s.options,
         ...(tone ? { tone } : {}),
         ...(hl !== null && LAYOUTS[s.layout].highlight ? { highlight: Number(hl) } : {}),
+        ...(flip && LAYOUTS[s.layout].panes ? { flip } : {}),
+        ...(side && LAYOUTS[s.layout].panes?.sides.includes(side) ? { pane: side } : {}),
       },
     })),
   }

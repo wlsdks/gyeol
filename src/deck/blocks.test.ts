@@ -36,6 +36,7 @@ import {
   MAX_ROWS,
   removeBlock,
   rowHeights,
+  shownRows,
   growAt,
   unweighted,
   weighted,
@@ -50,6 +51,7 @@ import {
   withLook,
 } from './blocks'
 import { sampleBlock } from './blockSamples'
+import { followIndex, moveIn } from './fields'
 import { FRAME } from './frame'
 import { LAYOUT_ORDER } from './layouts'
 import { showcaseSlides } from './showcase'
@@ -367,6 +369,56 @@ describe('파일에서 읽은 부품 장', () => {
     expect(rows[1].spans).toBeUndefined()
     expect(cleanRows(rows)).toEqual(rows)
     expect(cleanRows(null)).toEqual([])
+  })
+})
+
+describe('항목 순서 바꾸기', () => {
+  it('옮긴 항목 사이의 항목은 한 칸씩 밀리고, 고른 강조는 그 항목을 따라간다', () => {
+    expect(moveIn(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+    expect(moveIn(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c'])
+    expect(moveIn(['a', 'b'], 0, 9)).toEqual(['b', 'a'])
+    // 강조: 옮긴 항목이면 새 자리로, 사이에 있던 항목이면 한 칸 밀린 자리로
+    expect(followIndex(0, 0, 2)).toBe(2)
+    expect(followIndex(1, 0, 2)).toBe(0)
+    expect(followIndex(3, 0, 2)).toBe(3)
+    expect(followIndex(0, 3, 0)).toBe(1)
+    // 고르지 않은 강조(마지막 점처럼 자리로 정한 것)와 강조 없음은 그대로
+    expect(followIndex(undefined, 0, 2)).toBeUndefined()
+    expect(followIndex(-1, 0, 2)).toBe(-1)
+  })
+})
+
+describe('발표할 때 비워 둔 부품', () => {
+  const filled = (type: Block['type'], id: string): Block => ({ ...block(type, id), fields: { title: '적은 글' } })
+
+  it('빈 부품은 빠지고 남은 부품이 줄을 나눠 쓴다 (고른 칸 너비는 다시 고른다)', () => {
+    const rows = [{ ...row(filled('text', 'a'), block('text', 'b')), spans: [8, 4] }]
+    const shown = shownRows(rows)
+    expect(shown).toHaveLength(1)
+    expect(shown[0].blocks.map((b) => b.id)).toEqual(['a'])
+    expect(shown[0]).not.toHaveProperty('spans')
+  })
+
+  it('빠진 부품에 닿아 있던 이음표도 뗀다: 남은 두 부품 사이에 서면 뜻이 바뀐다', () => {
+    const rows = [row({ ...filled('text', 'a'), link: 'arrow' }, { ...block('text', 'b'), link: 'plus' }, filled('text', 'c'))]
+    const shown = shownRows(rows)
+    expect(shown[0].blocks.map((b) => b.id)).toEqual(['a', 'c'])
+    expect(shown[0].blocks.every((b) => !b.link)).toBe(true)
+  })
+
+  it('줄이 통째로 비면 그 줄과 위 줄을 잇던 이음표도 뗀다', () => {
+    const rows = [{ ...row(filled('text', 'a')), link: 'plus' as const }, row(block('number', 'b'))]
+    const shown = shownRows(rows)
+    expect(shown).toHaveLength(1)
+    expect(shown[0]).not.toHaveProperty('link')
+  })
+
+  it('빈 부품이 없으면 그대로, 사람이 적은 글은 하나도 빠지지 않는다', () => {
+    const rows = [row(filled('text', 'a'), filled('number', 'b'))]
+    expect(shownRows(rows)).toBe(rows)
+    const mixed = [row(filled('text', 'a'), block('quote', 'q')), row(block('number', 'n'))]
+    const kept = shownRows(mixed).flatMap((r) => r.blocks.map((b) => b.id))
+    expect(kept).toEqual(['a'])
   })
 })
 

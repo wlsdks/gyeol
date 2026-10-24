@@ -34,7 +34,7 @@
 /* 넘침을 재는 동안(Editor의 useOverflow, 부품 장을 맞추는 fitBlocks): 글 밖으로 나온 편집 표시는 넘침이 아니다.
    빼지 않으면 칸 옆으로 나온 '이 항목 빼기' 단추나 그림 칸의 '바꾸기' 단추 때문에 부품의 글자를 줄인다.
    그림 위에 겹쳐 둔 칸(.on-chart)도 뺀다: 숨긴 글이 기간 칸 이름과 겹친 것으로 보인다 */
-:is(.slide.is-measuring, .bk-area.is-fitting) :is(.ed-halo, .it-remove, .img-tools, .on-chart) {
+:is(.slide.is-measuring, .bk-area.is-fitting) :is(.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .on-chart) {
   display: none;
 }
 
@@ -187,6 +187,67 @@
   stroke: currentColor;
   stroke-linecap: round;
   stroke-width: 2.6;
+}
+
+/* 항목 손잡이: 빼기 단추와 같은 크기의 흰 원을 왼쪽 위 모서리에. 끌어서 순서를 바꾼다 */
+.it-grip {
+  --d: calc(22px / var(--vs, 0.5));
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--d) / -2);
+  left: calc(var(--d) / -2);
+  display: grid;
+  place-items: center;
+  width: var(--d);
+  height: var(--d);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 0 0 calc(1px / var(--vs, 0.5)) rgb(16 20 31 / 0.14), 0 calc(2px / var(--vs, 0.5)) calc(6px / var(--vs, 0.5)) rgb(16 20 31 / 0.16);
+  color: #5b6170;
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transition: opacity 0.12s, color 0.12s;
+}
+
+.it-grip:hover {
+  color: var(--sel);
+}
+
+.it:hover > .it-grip,
+.it-grip:focus-visible,
+.it.is-lifted > .it-grip {
+  opacity: 1;
+}
+
+.it-grip svg {
+  width: 70%;
+  height: 70%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3.4;
+}
+
+/* 끌고 있는 항목: 손에 들린 듯 위로 뜨고, 이웃은 그 아래로 미끄러진다 */
+.slide.m-edit .it.is-lifted {
+  z-index: 20;
+  border-radius: calc(10px / var(--vs, 0.5));
+  background: var(--bg);
+  box-shadow: 0 0 0 calc(1.5px / var(--vs, 0.5)) var(--sel), 0 calc(10px / var(--vs, 0.5)) calc(28px / var(--vs, 0.5)) rgb(16 20 31 / 0.22);
+  cursor: grabbing;
+}
+
+.is-item-dragging,
+.is-item-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.is-item-dragging .slide.m-edit .it:not(.is-lifted) > :is(.it-grip, .it-remove) {
+  opacity: 0;
 }
 
 /* 이미지 칸: 빈 글 칸과 같은 옅은 면. 올리면 파란 선, 끌어 오면 굵은 파란 선 */
@@ -358,6 +419,172 @@
 .bk-area.is-live:not(.is-dragging) > .bk:is(:hover, .is-selected) > .bk-handle {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ---------- 두 판으로 나뉜 장: 옆 판 옮기기와 너비 (panes.tsx) ----------
+   판 위에 겹쳐 그리지만 손은 막지 않는다(글 칸을 그대로 누를 수 있게). 이름표와 판 사이만 손을 받는다 */
+.pn-tools {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.pn-tools::after {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 60%, transparent);
+  content: '';
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.pn-tools.is-on::after {
+  opacity: 1;
+}
+
+/* 판을 끄는 동안에는 판 자체가 떠서 보이므로 도구는 숨긴다 (판이 손을 따라 움직여 도구가 따라가지 못한다) */
+.pn-tools.is-move {
+  visibility: hidden;
+}
+
+/* 이름표는 판 위쪽 가운데에 매달린 탭: 판 안의 글은 왼쪽 위에서 시작해서 모서리에 두면 첫 글(결정 요청 같은)을 가리고,
+   위 가장자리에 붙여 낮게 두어야 편집기에서 가장 작게 볼 때(1280 너비)도 위 여백(--pad-y) 안에 들어간다 */
+.pn-handle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 10px 0 4px;
+  border: 0;
+  border-radius: 0 0 6px 6px;
+  background: var(--sel);
+  box-shadow: 0 2px 8px rgb(16 20 31 / 0.2);
+  color: #fff;
+  font: 600 12px/1 var(--font-body, sans-serif);
+  letter-spacing: 0;
+  white-space: nowrap;
+  cursor: grab;
+  opacity: 0;
+  pointer-events: auto;
+  touch-action: none;
+  transform-origin: 50% 0;
+  translate: -50% 0;
+  scale: calc(1 / var(--vs, 1));
+  transition: opacity 0.12s;
+}
+
+.pn-handle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3.4;
+  opacity: 0.85;
+}
+
+.pn-tools.is-on .pn-handle,
+.pn-handle:focus-visible {
+  opacity: 1;
+}
+
+/* 판 사이: 판의 안쪽 끝에 걸친 손잡이. 올리면 파란 선이 보이고, 끄는 동안 붙을 자리가 옅게 보인다 */
+.pn-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(28px / var(--vs, 0.5));
+  cursor: col-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.pn-edge.is-start {
+  left: calc(-14px / var(--vs, 0.5));
+}
+
+.pn-edge.is-end {
+  right: calc(-14px / var(--vs, 0.5));
+}
+
+.pn-edge-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(6px / var(--vs, 0.5));
+  height: calc(64px / var(--vs, 0.5));
+  border-radius: calc(3px / var(--vs, 0.5));
+  background: var(--sel);
+  box-shadow: 0 0 0 calc(2px / var(--vs, 0.5)) var(--panel, #fff);
+  opacity: 0;
+  translate: -50% -50%;
+  transition: opacity 0.12s;
+}
+
+.pn-tools.is-on .pn-edge-grip,
+.pn-edge:focus-visible .pn-edge-grip {
+  opacity: 0.55;
+}
+
+.pn-edge:hover .pn-edge-grip,
+.pn-tools.is-size .pn-edge-grip {
+  opacity: 1;
+}
+
+.pn-edge-tip {
+  position: absolute;
+  top: calc(50% + 44px / var(--vs, 0.5));
+  left: 50%;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--sel);
+  color: #fff;
+  font: 600 12px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+  transform-origin: 50% 0;
+  translate: -50% 0;
+  scale: calc(1 / var(--vs, 1));
+}
+
+.pn-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: calc(1.5px / var(--vs, 0.5)) dashed color-mix(in srgb, var(--sel) 55%, transparent);
+}
+
+.pn-guide.is-on {
+  border-left-style: solid;
+  border-left-color: var(--sel);
+}
+
+/* 끌고 있는 판: 손에 들려 위로 뜬다. 남은 판은 그 아래에서 자리를 바꾼다 */
+.slide.m-edit .pn-lifted {
+  position: relative;
+  z-index: 7;
+  box-shadow: 0 0 0 calc(2px / var(--vs, 0.5)) var(--sel), 0 calc(18px / var(--vs, 0.5)) calc(48px / var(--vs, 0.5)) rgb(16 20 31 / 0.28);
+  cursor: grabbing;
+}
+
+body.is-pane-moving,
+body.is-pane-moving * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.is-pane-sizing,
+body.is-pane-sizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* 판을 끌거나 너비를 바꾸는 동안에는 항목 손잡이와 빼기 단추를 숨긴다. 판과 함께 떠다니면 어수선하다 */
+:is(body.is-pane-moving, body.is-pane-sizing) .slide.m-edit :is(.it-grip, .it-remove) {
+  visibility: hidden;
 }
 
 /* 칸 사이 손잡이: 칸 사이 틈에 놓이고, 끌면 정해진 비율에 붙는다 */
