@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type Announcements, type DragEndEvent, type UniqueIdentifier } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { keys } from '../../lib/keys'
 import { josa } from './noRoom'
 import { missingFields, pageInfo } from '../../deck/fields'
@@ -24,6 +24,10 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   // 화면 읽기 프로그램에 들려줄 말. dnd-kit의 기본 안내는 영어라 한국어로 바꾼다
   const [said, setSaid] = useState('')
+  // 고른 장이 목록 밖에 있으면 보이는 곳으로 (장을 더하거나 장 위에서 넘겼을 때. 목록 안에서 고르면 이미 보인다)
+  useEffect(() => {
+    if (selectedId) document.getElementById(`thumb-${selectedId}`)?.scrollIntoView({ block: 'nearest' })
+  }, [selectedId])
 
   const nameOf = (id: UniqueIdentifier) => {
     const i = deck.slides.findIndex((s) => s.id === id)

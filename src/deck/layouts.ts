@@ -318,7 +318,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
           label: '담당과 시간',
           hint: '담당, 걸리는 시간',
           optional: true,
-          hints: ['영업 담당, 당일', '영업 담당, 하루', '팀장, 반나절', '영업 담당, 당일', '영업본부, 사흘', '고객지원팀'],
+          hints: ['신청자, 당일', '담당자, 하루', '팀장, 반나절', '재무팀, 당일', '본부장, 사흘', '운영팀'],
         },
         {
           key: 'body',
