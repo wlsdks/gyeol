@@ -218,10 +218,6 @@ export function Wizard() {
                 ))}
               </div>
             </fieldset>
-
-            <p className="wz-privacy">
-              입력한 내용은 이 PC 안(브라우저와 고른 보관 폴더)에만 저장돼요. 인터넷으로 보내지 않아요.
-            </p>
           </section>
         )}
       </main>
@@ -244,6 +240,8 @@ export function Wizard() {
             다음
           </button>
         )}
+        {/* 낮은 화면에서도 가리지 않게, 만들기 단추 바로 옆에 */}
+        {step === 2 && <p className="wz-privacy">입력한 내용은 이 PC 안(브라우저와 고른 보관 폴더)에만 저장돼요. 인터넷으로 보내지 않아요.</p>}
         {step === 2 && (
           <button type="button" className="btn btn-primary btn-lg" disabled={busy} onClick={create}>
             발표 만들기

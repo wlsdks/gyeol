@@ -1489,9 +1489,11 @@ select {
 }
 
 .wz-privacy {
-  margin: 8px 0 0;
+  align-self: center;
+  margin: 0 16px 0 auto;
   color: var(--ink-3);
   font-size: 13px;
+  text-align: right;
 }
 
 .wz-bottom {
@@ -1514,7 +1516,7 @@ select {
   /* 2단계(듣는 분과 시간)가 스크롤 없이 한 화면에 들어가게 세로 여백을 줄인다 */
   .wz-main {
     padding-top: 16px;
-    padding-bottom: 16px;
+    padding-bottom: 8px;
   }
 
   .wz-h {
@@ -1532,6 +1534,10 @@ select {
 
   .wz-group {
     margin-bottom: 16px;
+  }
+
+  .wz-group:last-child {
+    margin-bottom: 0;
   }
 
   .wz-group legend {
