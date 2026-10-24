@@ -851,34 +851,67 @@ function freeBelow(slideEl: HTMLElement) {
 
 /**
  * 장 아래가 넉넉히 비면 그 자리에 '여기에 부품 넣기'. 누르면 부품 고르기가 열리고, 고른 부품이 그 자리(맨 아래 새 줄)에 들어간다.
- * 끌어다 놓아도 된다. 장이 움직이거나 글이 늘어도 따라가게 매 프레임 잰다
+ * 끌어다 놓아도 된다. 장이 움직이거나 글이 늘어도 따라가게, 무대의 크기나 장 안이 바뀌거나 스크롤할 때 다시 잰다.
+ * (예전에는 매 프레임 장 안의 모든 요소를 쟀다. 가만히 있어도 CPU를 써서 느린 노트북의 배터리를 닳게 했다)
  */
 function RoomZone({ fits, onOpen }: { fits(h: number): boolean; onOpen(): void }) {
   const ref = useRef<HTMLButtonElement>(null)
   const ok = useRef<{ h: number; fits: boolean } | null>(null)
+  const fitsRef = useRef(fits)
+  fitsRef.current = fits
+  const measure = useCallback(() => {
+    const el = ref.current
+    const slideEl = document.querySelector<HTMLElement>('.ed-canvas .slide.m-edit')
+    const f = slideEl ? freeBelow(slideEl) : null
+    // 부품이 들어갈 만한지는 본문 높이가 바뀔 때만 다시 본다
+    const areaH = slideEl ? Math.round(slideEl.querySelector<HTMLElement>(':scope > .s-body')?.offsetHeight ?? 0) : 0
+    if (f && ok.current?.h !== areaH) ok.current = { h: areaH, fits: fitsRef.current(areaH) }
+    if (el && f && f.free >= 220 && ok.current?.fits) {
+      const pad = 24 * f.k
+      el.style.translate = `${Math.round(f.rect.left)}px ${Math.round(f.rect.top + pad)}px`
+      el.style.width = `${Math.round(f.rect.width)}px`
+      el.style.height = `${Math.round(f.rect.height - pad)}px`
+      el.style.visibility = 'visible'
+    } else if (el) el.style.visibility = 'hidden'
+  }, [])
+  // 다시 그릴 때마다(덱이 바뀌면) 바로 잰다. 장이 바뀌었을 수 있으니 들어갈 만한지도 새로 본다
   useLayoutEffect(() => {
-    let raf = 0
-    // 장이 바뀌어 다시 그렸으면 들어갈 만한지 새로 본다
     ok.current = null
-    const tick = () => {
-      const el = ref.current
-      const slideEl = document.querySelector<HTMLElement>('.ed-canvas .slide.m-edit')
-      const f = slideEl ? freeBelow(slideEl) : null
-      // 부품이 들어갈 만한지는 본문 높이가 바뀔 때만 다시 본다
-      const areaH = slideEl ? Math.round(slideEl.querySelector<HTMLElement>(':scope > .s-body')?.offsetHeight ?? 0) : 0
-      if (f && ok.current?.h !== areaH) ok.current = { h: areaH, fits: fits(areaH) }
-      if (el && f && f.free >= 220 && ok.current?.fits) {
-        const pad = 24 * f.k
-        el.style.translate = `${Math.round(f.rect.left)}px ${Math.round(f.rect.top + pad)}px`
-        el.style.width = `${Math.round(f.rect.width)}px`
-        el.style.height = `${Math.round(f.rect.height - pad)}px`
-        el.style.visibility = 'visible'
-      } else if (el) el.style.visibility = 'hidden'
-      raf = requestAnimationFrame(tick)
-    }
-    tick()
-    return () => cancelAnimationFrame(raf)
+    measure()
   })
+  // 그 밖에는 바뀔 때만: 무대 크기(창, 오른쪽 칸), 장 안의 글과 모양, 그림을 다 받았을 때, 스크롤. 한 프레임에 한 번만 잰다
+  useEffect(() => {
+    const canvas = document.querySelector<HTMLElement>('.ed-canvas')
+    let raf = 0
+    const schedule = () => {
+      if (!raf)
+        raf = requestAnimationFrame(() => {
+          raf = 0
+          measure()
+        })
+    }
+    const ro = new ResizeObserver(schedule)
+    // 이 단추는 body에 붙어 있어서, 여기서 고치는 단추의 style은 아래 감시에 걸리지 않는다
+    const mo = new MutationObserver(schedule)
+    if (canvas) {
+      ro.observe(canvas)
+      mo.observe(canvas, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'style'] })
+      canvas.addEventListener('load', schedule, true)
+      canvas.addEventListener('transitionend', schedule, true)
+    }
+    window.addEventListener('resize', schedule)
+    window.addEventListener('scroll', schedule, true)
+    void document.fonts?.ready.then(schedule)
+    return () => {
+      cancelAnimationFrame(raf)
+      ro.disconnect()
+      mo.disconnect()
+      canvas?.removeEventListener('load', schedule, true)
+      canvas?.removeEventListener('transitionend', schedule, true)
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('scroll', schedule, true)
+    }
+  }, [measure])
   return (
     <button ref={ref} type="button" className="ed-room" style={{ visibility: 'hidden' }} onClick={onOpen}>
       <span className="ed-room-t">
