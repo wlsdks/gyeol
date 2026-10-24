@@ -10,6 +10,7 @@ import { downloadHtml } from '../../export/exportHtml'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
+import { APP_VERSION } from '../../lib/version'
 import { BlockEditContext } from '../../slides/blockEdit'
 import type { SlideActions } from '../../slides/context'
 import { motionEngine } from '../../motion/engine'
@@ -82,7 +83,10 @@ function NewerDeck({ deck }: { deck: Deck }) {
         이 html-maker에는 없는 부품이나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
         있어요.
       </p>
-      <p>html-maker를 새 버전으로 바꾼 뒤 열어 주세요. 지금 꼭 고쳐야 하면, 없는 것만 뺀 사본을 만들어 고칠 수 있어요.</p>
+      <p>
+        html-maker를 새 버전으로 바꾼 뒤 열어 주세요(지금은 {APP_VERSION} 버전). 지금 꼭 고쳐야 하면, 없는 것만 뺀 사본을 만들어 고칠 수
+        있어요.
+      </p>
       <div className="newer-actions">
         <button type="button" className="btn btn-primary" onClick={() => go({ name: 'home' })}>
           내 발표로 가기

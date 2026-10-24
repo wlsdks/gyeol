@@ -6,6 +6,7 @@ import { createSampleDeck } from '../deck/sample'
 import type { Deck } from '../deck/types'
 import { readDeckFromHtml } from '../export/exportHtml'
 import { go, timeAgo } from '../lib/router'
+import { APP_VERSION } from '../lib/version'
 import { FitSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
 import { useDeck } from '../store/deckStore'
@@ -77,7 +78,10 @@ export function Home() {
   return (
     <div className="home">
       <header className="home-top">
-        <Brand />
+        <div className="home-brand">
+          <Brand />
+          <span className="home-ver">{APP_VERSION} 버전</span>
+        </div>
         <button type="button" className="btn btn-ghost" onClick={openFile}>
           <UploadIcon />
           파일 열기

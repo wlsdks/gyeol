@@ -1,7 +1,7 @@
 {
   "name": "html-maker",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "팀장님, 본부장님께 하는 보고 자료를 만드는 HTML 발표 빌더",
   "type": "module",
   "scripts": {

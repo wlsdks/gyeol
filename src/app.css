@@ -673,6 +673,18 @@ select {
   padding: 0 32px;
 }
 
+.home-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.home-ver {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .home-main {
   max-width: 1160px;
   margin: 0 auto;
