@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { keys } from '../../lib/keys'
 import { downloadDeckFile } from '../../store/deckFile'
 import { useDeck } from '../../store/deckStore'
 import { saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
@@ -29,7 +30,15 @@ export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersion
       align="left"
       className="pop-save"
       button={({ toggle, open }) => (
-        <button type="button" className={cx('save', `is-${tone}`)} aria-expanded={open} onClick={toggle} aria-live="polite">
+        <button
+          type="button"
+          className={cx('save', `is-${tone}`)}
+          aria-expanded={open}
+          // 따로 저장하지 않아도 된다는 것을 마우스만 올려도 알 수 있게
+          title={`고칠 때마다 저장돼요. 바로 저장하려면 ${keys('mod+S')}`}
+          onClick={toggle}
+          aria-live="polite"
+        >
           {tone === 'ok' ? <CheckIcon /> : tone === 'busy' ? <span className="save-dot" /> : <AlertIcon />}
           {label}
         </button>
@@ -180,6 +189,10 @@ export function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close
         </>
       )}
 
+      <p className="save-pop-keys">
+        <kbd>{keys('mod+S')}</kbd>
+        <span>지금 바로 저장해요. 따로 누르지 않아도 고칠 때마다 저장돼요.</span>
+      </p>
       {folder && folder.kind !== 'unsupported' && (
         <p className="save-pop-foot">
           <button type="button" className="btn-link" onClick={download}>

@@ -2,7 +2,7 @@
 // 글꼴 파일은 이 화면이 이미 받아 둔 것(같은 주소)을 다시 읽어 data: 주소로 바꾼다. 바깥 주소로는 가지 않는다.
 
 import { fontOf } from '../deck/themes'
-import type { DeckTheme } from '../deck/types'
+import type { DeckTheme, FontId } from '../deck/types'
 
 type Range = [number, number]
 
@@ -16,9 +16,20 @@ export function parseRanges(value: string): Range[] {
   })
 }
 
-/** 이 테마가 쓰는 글꼴. 본문은 늘 Pretendard이고, 명조 제목을 고르면 제목에 Hahmlet을 더 쓴다 */
+/**
+ * 고른 글꼴 짝에 더해 넣는 글꼴 (themes.ts의 FONT_LOOK과 같은 짝). Pretendard는 늘 넣는다: 명조 제목의 본문이고,
+ * 다른 글꼴에 없는 글자(SUIT의 드문 한글, ▲▼ 같은 기호)를 대신 그리고, 내보낸 파일의 뷰어 단추도 Pretendard다
+ */
+const EXTRA: Record<FontId, string[]> = {
+  sans: [],
+  serif: ['Hahmlet'],
+  suit: ['SUIT'],
+  myeongjo: ['Noto Serif KR'],
+}
+
+/** 이 테마가 쓰는 글꼴 (@font-face의 font-family를 고르는 식) */
 export function fontFamiliesOf(theme: DeckTheme): RegExp {
-  return fontOf(theme) === 'serif' ? /Pretendard|Hahmlet/i : /Pretendard/i
+  return new RegExp(['Pretendard', ...EXTRA[fontOf(theme)]].join('|'), 'i')
 }
 
 /** 글에 든 글자들 (글꼴 조각 고르기에 쓴다) */

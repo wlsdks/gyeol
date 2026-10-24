@@ -416,7 +416,8 @@
   opacity: 0.8;
 }
 
-.bk-area.is-live:not(.is-dragging) > .bk:is(:hover, .is-selected) > .bk-handle {
+/* 고른 부품은 위에 뜬 도구의 이름표가 손잡이를 맡는다 (editor/SelectionBar.tsx의 FloatTools) */
+.bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
   pointer-events: auto;
 }
@@ -491,6 +492,23 @@
   opacity: 1;
 }
 
+/* 편집기에서 항목을 골라 도구 막대가 떠 있으면 모서리의 손잡이와 빼기는 막대가 맡는다 */
+.it[data-sel='item'] > :is(.it-grip, .it-remove) {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* 편집기에서 판을 골라 도구 막대(editor/SelectionBar.tsx)가 떠 있으면: 판의 테와 판 사이 손잡이를 켜 두고,
+   이름표는 막대의 이름이 맡는다 (같은 이름이 두 번 보이지 않게) */
+.slide[data-sel='pane'] .pn-tools::after {
+  opacity: 1;
+}
+
+.slide[data-sel='pane'] .pn-tools .pn-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* 판 사이: 판의 안쪽 끝에 걸친 손잡이. 올리면 파란 선이 보이고, 끄는 동안 붙을 자리가 옅게 보인다 */
 .pn-edge {
   position: absolute;
@@ -525,6 +543,7 @@
 }
 
 .pn-tools.is-on .pn-edge-grip,
+.slide[data-sel='pane'] .pn-edge-grip,
 .pn-edge:focus-visible .pn-edge-grip {
   opacity: 0.55;
 }

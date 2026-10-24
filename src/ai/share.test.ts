@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { AUDIENCES, DECK_TYPES } from '../deck/blueprints'
+import { createDeck } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
 import type { Block, BlockRow, Deck } from '../deck/types'
 import { checkShape, onlyKnownStrings, toShape } from './share'
@@ -13,7 +15,18 @@ export function secretDeck(): Deck {
     ...deck,
     id: s('deck-id'),
     title: s('title'),
-    meta: { ...deck.meta, org: s('org'), presenter: s('presenter'), date: s('date'), contact: s('contact'), logo: `data:image/png;base64,${SECRET}` },
+    // 발표 종류, 듣는 사람, 방식도 고르는 값이지만 가져온 파일(또는 새 버전이 더한 값)이면 아무 글이나 있을 수 있다
+    meta: {
+      ...deck.meta,
+      type: s('type'),
+      audience: s('audience'),
+      method: s('method'),
+      org: s('org'),
+      presenter: s('presenter'),
+      date: s('date'),
+      contact: s('contact'),
+      logo: `data:image/png;base64,${SECRET}`,
+    } as unknown as Deck['meta'],
     // 가져온 파일이면 고르는 값 자리에도 아무 글이나 들어 있을 수 있다
     theme: { id: deck.theme.id, accent: s('accent'), font: s('font'), size: s('size'), footer: s('footer'), transition: s('transition') } as unknown as Deck['theme'],
     slides: (deck.slides.map((slide, i) => ({
@@ -92,7 +105,26 @@ describe('모양만 고르기', () => {
   })
 
   it('비밀을 심은 덱에서 만든 모양도 꼴은 맞다', () => {
-    expect(checkShape(toShape(secretDeck()))).toBe(true)
+    const shape = toShape(secretDeck())
+    expect(checkShape(shape)).toBe(true)
+    // 모르는 종류, 듣는 사람, 방식은 정해진 값으로 바꾼다
+    expect([shape.type, shape.audience, shape.method]).toEqual(['blank', 'mixed', 'live'])
+  })
+
+  it('모든 발표 종류와 듣는 사람의 구성이 꼴 확인과 마지막 그물을 지난다', () => {
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'pane', 'contain', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape']
+    for (const type of [...DECK_TYPES, 'blank' as const]) {
+      for (const { id: audience } of AUDIENCES) {
+        const shape = toShape(createDeck({ type, audience, minutes: 30, method: 'send', title: SECRET, org: SECRET, presenter: SECRET, ask: SECRET, theme: 'white' }))
+        expect(shape.type, type).toBe(type)
+        expect(shape.audience).toBe(audience)
+        expect(checkShape(shape), `${type} ${audience}`).toBe(true)
+        expect(onlyKnownStrings(shape, words), `${type} ${audience}`).toBe(true)
+        // 장 역할과 단락 이름은 구성에 있는 말이라 그대로 보인다
+        expect(shape.slides.every((s) => s.role !== null), type).toBe(true)
+        expect(JSON.stringify(shape)).not.toContain(SECRET)
+      }
+    }
   })
 
   it('정해진 꼴에서 하나라도 벗어나면 받지 않는다', () => {

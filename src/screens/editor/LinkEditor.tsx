@@ -345,7 +345,7 @@ export function useLinkEditing({
               <span className="lk-tool-g" aria-hidden="true">
                 <LinkGlyph link={l.id} />
               </span>
-              {l.name}
+              <span>{l.name}</span>
             </button>
           ))}
         </div>

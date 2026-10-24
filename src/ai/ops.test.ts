@@ -113,6 +113,12 @@ describe('제안 적용', () => {
 
     expect(parseOp({ op: 'set_options', slide: sid(body), tone: 'neon' })).toBeNull()
     expect(parseOp({ op: 'set_theme', font: 'Comic Sans' })).toBeNull()
+    // 글꼴 짝은 카탈로그에 있는 것 모두
+    for (const font of ['sans', 'suit', 'serif', 'myeongjo']) {
+      const op = parseOp({ op: 'set_theme', font })
+      expect(op, font).not.toBeNull()
+      expect(applyOps(deck, [op!]).deck.theme.font).toBe(font)
+    }
     expect(parseOp({ op: 'set_theme', transition: 'spin' })).toBeNull()
   })
 

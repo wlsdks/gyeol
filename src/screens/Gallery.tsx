@@ -14,13 +14,13 @@ import { motionEngine } from '../motion/engine'
 import { checkCombos, comboSlides } from './combos'
 import { checkEdit } from './checkEdit'
 import { checkFrame, inkOf } from './checkFrame'
-import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
+import { clashes, failingHeights, heightsSource, measureAll, measureAllFonts, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
 // &fill=max 는 항목을 가장 많이, &fill=default 는 새로 넣을 때의 수, &fill=3 처럼 숫자면 그만큼(정한 범위 안에서). &bl=plain|card 는 부품의 바탕을 모두 그것으로 (잘리지 않는 높이를 잴 때, measureBlocks.ts)
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
-// &tone=invert|accent 는 모든 장의 바탕을, &font=serif &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
+// &tone=invert|accent 는 모든 장의 바탕을, &font=serif|suit|myeongjo &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
 // &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
@@ -187,7 +187,7 @@ const NO_ACTIONS: SlideActions = { setField() {}, setItem() {}, removeItem() {},
 export function Gallery() {
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '')
   // 부품의 잘리지 않는 높이를 재는 도구 (measureBlocks.ts). 콘솔에서 await measureBlocks()
-  if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
+  if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureAllFonts, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
   if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
   // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()

@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { BLOCK_GAP } from '../deck/blocks'
 import { readField, visibleItems } from '../deck/fields'
-import { highlightOf, hintFor, logoColumns } from '../deck/layouts'
+import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
 import { formatNumber, isNumericCell, parseDelta, parseNumber, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { Compose } from './blocks'
-import { IT, ImageSlot, ItemTools, MetaRow, T, textUnits } from './fields'
+import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T } from './fields'
 import { placeLabels } from './fitBlocks'
 
 function Head({ lead = false }: { lead?: boolean }) {
@@ -31,13 +31,18 @@ function useItems() {
   return visibleItems(slide)
 }
 
-/** 나란히 놓인 숫자들이 같은 크기로 보이게, 가장 긴 값의 폭을 함께 쓴다 */
-function useSharedUnits(key: 'value') {
+/**
+ * 나란히 놓인 숫자들이 한 크기로 보이게, 가장 긴 값의 폭을 함께 쓴다(가장 작게 줄어야 하는 숫자에 모두 맞춘다).
+ * 숫자마다 제 칸에 맞춰 줄이면 '40%', '3.6시간', '1,200시간'이 세 크기로 보여 깨져 보인다.
+ * 편집할 때는 빈 칸의 안내 숫자까지 넣어 잰다(채우는 동안 크기가 들쭉날쭉하지 않게). skip은 같이 재지 않는 항목(하나 크게의 첫 숫자)
+ */
+function useSharedUnits(key: 'value', skip?: (i: number) => boolean) {
   const { slide, mode } = useSlide()
   const items = visibleItems(slide)
-  const texts = items.map((it) => it[key].trim()).filter(Boolean)
-  if (mode !== 'final' && texts.length < items.length) return undefined
-  return texts.length ? Math.max(...texts.map(textUnits)) : undefined
+  const texts = items
+    .map((it, i) => (skip?.(i) ? '' : it[key].trim() || (mode === 'final' ? '' : hintFor(slide.layout, slide.hints, key, key, i))))
+    .filter(Boolean)
+  return texts.length ? Math.max(...texts.map(numberUnits)) : undefined
 }
 
 function Cover() {
@@ -135,16 +140,19 @@ function Statement() {
 }
 
 function Kpi() {
+  const { slide } = useSlide()
   const items = useItems()
-  const units = useSharedUnits('value')
+  // 하나 크게: 첫 숫자는 혼자 크고, 나머지끼리 한 크기
+  const focus = variantOf(slide) === 'focus' && items.length > 1
+  const units = useSharedUnits('value', focus ? (i) => i === 0 : undefined)
   return (
     <>
       <Head />
-      <div className="s-body kp" data-n={items.length}>
+      <div className="s-body kp" data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
         {items.map((it, i) => (
           <div key={it.id} className="it kp-item">
             <IT i={i} k="title" className="kp-label" />
-            <IT i={i} k="value" className="kp-value" oneLine units={units} />
+            <IT i={i} k="value" className="kp-value" oneLine numeral units={focus && i === 0 ? undefined : units} />
             <IT i={i} k="body" className="kp-body" multiline />
             <ItemTools i={i} />
           </div>
@@ -268,7 +276,7 @@ function Case() {
         <div className="cs-results">
           {items.map((it, i) => (
             <div key={it.id} className="it cs-res">
-              <IT i={i} k="value" className="cs-value" oneLine units={units} />
+              <IT i={i} k="value" className="cs-value" oneLine numeral units={units} />
               <IT i={i} k="title" className="cs-label" />
               <ItemTools i={i} />
             </div>
@@ -294,7 +302,7 @@ function Pricing() {
               <IT i={i} k="title" className="pr-name" />
               {highlight === i && <span className="pr-tag">추천</span>}
             </div>
-            <IT i={i} k="value" className="pr-price" oneLine units={units} />
+            <IT i={i} k="value" className="pr-price" oneLine numeral units={units} />
             <IT i={i} k="meta" className="pr-meta" />
             <IT i={i} k="body" className="pr-body" multiline />
             <ItemTools i={i} />
@@ -698,7 +706,7 @@ function Bridge() {
           <div className="wf-plot">
             <span className="wf-bar" />
             <span className="wf-val">
-              <span className="wf-num">{known ? formatNumber(end) : '–'}</span>
+              <span className="wf-num">{known ? minusSigns(formatNumber(end)) : '–'}</span>
               {known && (unit || demo) && <span className="wf-unit">{unit || hintFor(slide.layout, slide.hints, 'unit')}</span>}
             </span>
           </div>
@@ -1026,7 +1034,10 @@ function Process() {
               <IT i={i} k="title" className="pc-title" />
             </div>
             <div className="pc-text">
-              <IT i={i} k="meta" className="pc-meta" />
+              {/* 장 한 장을 다 쓸 때는 담당과 시간을 아래 끝 줄로 내린다(slides.css). 비어 있는 단계도 그 줄의 선을 두려고 감싼다 */}
+              <div className="pc-foot">
+                <IT i={i} k="meta" className="pc-meta" />
+              </div>
               <IT i={i} k="body" className="pc-body" multiline />
             </div>
             <ItemTools i={i} />

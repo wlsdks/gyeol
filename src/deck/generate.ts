@@ -1,4 +1,4 @@
-import { BLUEPRINTS, type Recipe } from './blueprints'
+import { AUDIENCES, BLUEPRINTS, type Recipe } from './blueprints'
 import { LAYOUTS } from './layouts'
 import type { Audience, Deck, DeckType, Item, LayoutId, Method, Slide, SlideOptions, ThemeId } from './types'
 
@@ -18,20 +18,34 @@ export function targetCount(minutes: number): number {
   return 15
 }
 
+/**
+ * 듣는 사람에 맞춘 우선순위. 더 챙기는 장(up)은 3에서 2로, 덜 챙기는 장(down)은 2에서 3으로.
+ * 1은 그대로 둔다: 어느 자리에서든 빠지면 안 되는 장이라서다. 장 수를 맞출 때만 쓰고 장 자체는 바꾸지 않는다.
+ */
+export function priorityFor(recipe: Recipe, audience: Audience): Recipe['priority'] {
+  const a = AUDIENCES.find((x) => x.id === audience)
+  if (recipe.priority === 1 || !recipe.focus || !a) return recipe.priority
+  if (recipe.priority === 3 && a.up?.includes(recipe.focus)) return 2
+  if (recipe.priority === 2 && a.down?.includes(recipe.focus)) return 3
+  return recipe.priority
+}
+
 /** 청중과 시간에 맞춰 blueprint에서 장을 고른다. 순서는 유지한다. */
 export function planRecipes(type: DeckType, audience: Audience, minutes: number): Recipe[] {
-  let list = BLUEPRINTS[type].recipes.filter((r) => !r.audience || r.audience.includes(audience))
+  // 모르는 종류(새 버전이 더한 값)면 빈 발표의 구성으로
+  let list = (BLUEPRINTS[type] ?? BLUEPRINTS.blank).recipes.filter((r) => !r.audience || r.audience.includes(audience))
   const target = targetCount(minutes)
 
   while (list.length > target) {
     // 묶음(group)은 한 단위로 다룬다
     const units = new Map<string, { priority: number; pos: number; recipes: Recipe[] }>()
     list.forEach((r, pos) => {
-      if (r.priority === 1) return
+      const priority = priorityFor(r, audience)
+      if (priority === 1) return
       const key = r.group ?? `#${pos}`
       const unit = units.get(key)
       if (unit) unit.recipes.push(r)
-      else units.set(key, { priority: r.priority, pos, recipes: [r] })
+      else units.set(key, { priority, pos, recipes: [r] })
     })
     const victim = [...units.values()].sort((a, b) => b.priority - a.priority || b.pos - a.pos)[0]
     if (!victim) break
@@ -77,6 +91,8 @@ export interface DeckInput {
   presenter: string
   /** 표지에 적는 결정 요청 한 줄 */
   ask?: string
+  /** 표지의 부제. 결정을 받는 자리가 아닌 발표는 마법사에서 결정 요청 대신 이것을 묻는다 */
+  lead?: string
   theme: ThemeId
 }
 
@@ -85,7 +101,7 @@ export function formatDate(date = new Date()): string {
 }
 
 export function createDeck(input: DeckInput): Deck {
-  const blueprint = BLUEPRINTS[input.type]
+  const blueprint = BLUEPRINTS[input.type] ?? BLUEPRINTS.blank
   const recipes = planRecipes(input.type, input.audience, input.minutes)
   const sectionTitles = blueprint.recipes.filter((r) => r.layout === 'section').map((r) => r.section ?? '')
   const title = input.title.trim() || blueprint.defaultTitle
@@ -95,11 +111,12 @@ export function createDeck(input: DeckInput): Deck {
     if (recipe.layout === 'cover') {
       slide.fields.title = title
       if (input.ask?.trim()) slide.fields.ask = input.ask.trim()
+      if (input.lead?.trim()) slide.fields.lead = input.lead.trim()
     }
     if (recipe.layout === 'agenda' && sectionTitles.length) {
       slide.items = sectionTitles.map((t) => ({ ...emptyItem(), title: t }))
     } else if (recipe.layout === 'agenda' && blueprint.storyline.length) {
-      // 단락이 없는 보고(진행·실적)는 이야기 흐름을 목차의 예시로 보여 준다. 내용이 아니라 안내라서 칸은 비워 둔다.
+      // 단락이 없는 구성(실적 보고, 착수 보고 같은)은 이야기 흐름을 목차의 예시로 보여 준다. 내용이 아니라 안내라서 칸은 비워 둔다.
       slide.items = blueprint.storyline.map(() => emptyItem())
       blueprint.storyline.forEach((t, i) => (slide.hints[`items.${i}.title`] = t))
     }

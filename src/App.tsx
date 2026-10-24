@@ -4,7 +4,11 @@ import { Gallery } from './screens/Gallery'
 import { Home } from './screens/Home'
 import { Presenter } from './screens/Presenter'
 import { System } from './screens/System'
+import { installTooltips } from './screens/tooltip'
 import { Wizard } from './screens/Wizard'
+
+// 단추의 title을 바로 보이는 말풍선으로 (화면마다 따로 달지 않게 한 번만)
+installTooltips()
 
 export function App() {
   const route = useRoute()

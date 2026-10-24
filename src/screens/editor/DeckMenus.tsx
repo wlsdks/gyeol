@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { makeSlide } from '../../deck/generate'
-import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf, footerOf } from '../../deck/themes'
+import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf, fontPreview, footerOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -100,8 +100,23 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               {custom && <CheckIcon />}
             </label>
           </div>
-          <p className="menu-h">제목 글꼴</p>
-          <Choice label="제목 글꼴" options={FONTS} value={font} onPick={(id) => setLook({ font: id })} />
+          <p className="menu-h">글꼴</p>
+          {/* 제목과 본문을 맞춰 본 짝 하나를 고른다. 단추 이름을 그 글꼴로 써서 고르기 전에 모양이 보이게 */}
+          <div className="seg seg-grid seg-pad" role="group" aria-label="글꼴">
+            {FONTS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={cx('seg-btn', font === o.id && 'is-on')}
+                style={fontPreview(o.id)}
+                aria-pressed={font === o.id}
+                onClick={() => setLook({ font: o.id })}
+              >
+                {o.name}
+              </button>
+            ))}
+          </div>
+          <p className="menu-note choice-note">{FONTS.find((o) => o.id === font)?.description}</p>
           <p className="menu-h">글자 크기</p>
           <Choice label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>

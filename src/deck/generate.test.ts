@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS } from './blueprints'
-import { createDeck, planRecipes, targetCount } from './generate'
+import { AUDIENCES, BLUEPRINTS, DECK_GROUPS, DECK_TYPES, DURATIONS } from './blueprints'
+import { createDeck, planRecipes, priorityFor, targetCount } from './generate'
 import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER, LAYOUTS } from './layouts'
 import { showcaseSlides } from './showcase'
 
@@ -25,10 +25,51 @@ describe('planRecipes', () => {
   })
 
   it('어느 보고든 한 장 요약이 표지 바로 뒤에 오고 결정 요청으로 끝난다', () => {
-    for (const type of ['business', 'deal', 'improve'] as const) {
+    for (const type of ['business', 'deal', 'improve', 'decide', 'plan'] as const) {
       const plan = planRecipes(type, 'mixed', 20)
       expect(plan[1].purpose).toBe('한 장 요약')
       expect(plan[plan.length - 1].purpose).toBe('결정 요청')
+    }
+  })
+
+  it('어느 발표든 결론부터: 표지 다음에 요약이나 결론 한 장, 마지막 장(받을 것이나 남길 것)은 맨 끝', () => {
+    for (const type of DECK_TYPES) {
+      const closing = BLUEPRINTS[type].recipes.filter((r) => r.layout === 'closing')
+      expect(closing, type).toHaveLength(1)
+      for (const { id: audience } of AUDIENCES) {
+        for (const { minutes } of DURATIONS) {
+          const plan = planRecipes(type, audience, minutes)
+          const at = `${type} ${audience} ${minutes}`
+          expect(plan[0].layout, at).toBe('cover')
+          expect(['summary', 'statement', 'kpi'], at).toContain(plan[1].layout)
+          // 요청이 없을 수도 있는 보고(주간 보고, 문제 보고 같은)는 짧을 때 마지막 장을 뺀다. 넣으면 늘 맨 끝
+          if (closing[0].priority === 1 || plan.includes(closing[0])) expect(plan[plan.length - 1], at).toBe(closing[0])
+        }
+      }
+    }
+  })
+
+  it('듣는 사람에 따라 챙기는 장이 달라진다', () => {
+    const roles = (audience: (typeof AUDIENCES)[number]['id']) => planRecipes('business', audience, 20).map((r) => r.purpose)
+    // 임원은 숫자 장을 더 챙기고 일정 같은 세부 장을 먼저 뺀다. 동료는 그 반대
+    expect(roles('exec')).toContain('매출 전망')
+    expect(roles('exec')).not.toContain('추진 일정')
+    expect(roles('peers')).toContain('추진 일정')
+    expect(roles('peers')).not.toContain('매출 전망')
+    // 다른 부서는 배경 장을 챙긴다
+    expect(planRecipes('plan', 'partners', 20).map((r) => r.purpose)).toContain('올해 배운 점')
+    expect(planRecipes('plan', 'mixed', 20).map((r) => r.purpose)).not.toContain('올해 배운 점')
+  })
+
+  it('우선순위 1인 장은 듣는 사람이 누구든 빠지지 않는다', () => {
+    for (const type of DECK_TYPES) {
+      for (const { id: audience } of AUDIENCES) {
+        const plan = planRecipes(type, audience, 5)
+        for (const r of BLUEPRINTS[type].recipes) {
+          if (r.priority === 1 && (!r.audience || r.audience.includes(audience))) expect(plan, `${type} ${r.purpose}`).toContain(r)
+          expect(priorityFor(r, audience) === 1).toBe(r.priority === 1)
+        }
+      }
     }
   })
 
@@ -66,13 +107,27 @@ describe('createDeck', () => {
     theme: 'white' as const,
   }
 
-  it('보고 종류 카드에 보일 장은 이야기 흐름마다 하나씩, 그 보고의 구성에 있는 장이다', () => {
+  it('발표 종류 미리 보기에 보일 장은 이야기 흐름마다 하나씩, 그 보고의 구성에 있는 장이다', () => {
     // 마법사(Wizard.tsx)는 구성(recipes)에서 이 장들을 찾아 그린다
     for (const type of DECK_TYPES) {
       const bp = BLUEPRINTS[type]
-      if (!bp.showcase) continue
-      expect(bp.showcase).toHaveLength(bp.storyline.length)
-      for (const purpose of bp.showcase) expect(bp.recipes.some((r) => r.purpose === purpose), `${type}: ${purpose}`).toBe(true)
+      expect(bp.type).toBe(type)
+      expect(bp.showcase, type).toHaveLength(4)
+      expect(bp.storyline).toHaveLength(bp.showcase!.length)
+      for (const purpose of bp.showcase!) expect(bp.recipes.some((r) => r.purpose === purpose), `${type}: ${purpose}`).toBe(true)
+    }
+  })
+
+  it('마법사의 묶음은 빈 발표를 뺀 모든 종류를 한 번씩 담는다', () => {
+    const grouped = DECK_GROUPS.flatMap((g) => g.types)
+    expect(new Set(grouped).size).toBe(grouped.length)
+    expect([...grouped].sort()).toEqual(Object.keys(BLUEPRINTS).filter((t) => t !== 'blank').sort())
+  })
+
+  it('한 구성 안에서 장 역할 이름이 겹치지 않는다 (AI 제안과 미리 보기가 역할 이름으로 장을 찾는다)', () => {
+    for (const bp of Object.values(BLUEPRINTS)) {
+      const roles = bp.recipes.map((r) => r.purpose)
+      expect(new Set(roles).size, bp.type).toBe(roles.length)
     }
   })
 

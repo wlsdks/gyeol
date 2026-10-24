@@ -205,9 +205,24 @@
   text-wrap: balance;
 }
 
+/* 숫자의 꼴 (docs/DESIGN.md '숫자의 꼴'). 고정폭 숫자(tabular-nums)는 위아래로 줄을 맞추는 숫자(표, 막대 끝의 값, 번호 목록)에만.
+   혼자 크게 서는 숫자(핵심 숫자, 사례의 성과, 안 비교의 비용)는 글꼴 그대로의 비례폭 숫자: 고정폭이면 '1'이 '0'만큼 자리를 차지해
+   큰 크기에서 '112%'의 1과 1 사이가 벌어져 보인다 */
 .slide :where(.kp-value, .cs-value, .pr-price, .br-value, .sc-num, .ag-n, .cl-n) {
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
+}
+
+.slide :where(.kp-value, .cs-value, .pr-price) {
+  font-variant-numeric: proportional-nums;
+}
+
+/* 큰 숫자의 단위('시간', '억 원', '%'): 숫자보다 글자 크기 두 단계(1.2²) 작게, 같은 글자선 위에 (fields.tsx의 UNIT_K와 같은 값).
+   한글 단위는 숫자만큼 넓고 무거워서 같은 크기면 답(숫자)보다 단위가 먼저 읽힌다. 숫자와 단위는 붙여 쓰므로 틈은 아주 조금만 */
+.slide .u {
+  margin-left: 0.06em;
+  font-size: calc(1em / 1.44);
+  letter-spacing: -0.01em;
 }
 
 /* ---------- 공통: 제목, 본문 영역, 하단 ---------- */
@@ -599,6 +614,26 @@
   --rb: -0.037;
 }
 
+.f-suit .sc-num[data-d='1'] {
+  --rb: 0.042;
+}
+
+.f-myeongjo .sc-num {
+  --rb: -0.002;
+}
+
+.f-myeongjo .sc-num[data-d='1'] {
+  --rb: -0.018;
+}
+
+.f-myeongjo .sc-num[data-d='4'] {
+  --rb: -0.024;
+}
+
+.f-myeongjo .sc-num[data-d='7'] {
+  --rb: 0.018;
+}
+
 .sc-text {
   position: relative;
   flex: 1;
@@ -792,6 +827,18 @@
   word-break: keep-all;
 }
 
+/* 나란히를 장 한 장에 쓸 때: 칸을 본문 높이만큼 세워 나누는 줄이 위아래 끝까지 가게 하고, 번호와 이름은 칸 안에서
+   눈높이(가운데보다 조금 위)에 둔다. 칸을 내용 높이로 가운데에 두면 짧은 줄과 글이 떠 보였다 (숫자 장과 같은 짜임) */
+.l-agenda.va-columns .ag-list {
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: stretch;
+}
+
+.l-agenda.va-columns .ag-item {
+  justify-content: center;
+  padding: 0 0 8%;
+}
+
 /* ---------- 한 문장 메시지 ---------- */
 
 .st {
@@ -821,12 +868,16 @@
 }
 
 /* ---------- 핵심 숫자 ---------- */
-/* 기본(나란히): 면 없이 세로 줄로 나눈 띠. 이름 → 숫자 → 설명 순으로 위에서 읽힌다. */
+/* 기본(나란히): 면 없이 세로 줄로 나눈 띠. 이름 → 숫자 → 설명 순으로 위에서 읽힌다.
+   칸 사이는 틈(--kp-gap)으로 비우고 나누는 줄은 그 틈 가운데에 긋는다. 예전처럼 칸마다 안쪽 여백을 달리 두면(첫 칸만 왼쪽 여백 없음)
+   글자 칸 너비가 칸마다 달라서, 칸 너비로 줄이는 숫자(.one-line의 100cqi)가 같은 폭을 써도 첫 칸만 크게 보였다 */
 
 .kp {
+  --kp-gap: 112px;
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
+  column-gap: var(--kp-gap);
   align-content: center;
   padding-bottom: 40px;
 }
@@ -837,13 +888,17 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 8px 56px 12px;
-  border-left: var(--rule) solid var(--line);
+  padding: 8px 0 12px;
 }
 
-.kp-item:first-child {
-  padding-left: 0;
-  border-left: 0;
+.kp-item + .kp-item::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((var(--kp-gap) + var(--rule)) / -2);
+  width: var(--rule);
+  background: var(--line);
+  content: '';
 }
 
 .kp-label {
@@ -877,6 +932,62 @@
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;
+}
+
+/* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 칸이 본문 상자 높이를 다 차지해 나누는 줄이 본문 위에서 아래까지 서고,
+   숫자 묶음은 칸 가운데(눈높이로 조금 위)에. 줄을 묶음 높이만큼만 그으면 본문 가운데에 낮은 띠가 떠서 위아래가 비어 보였다.
+   빈 높이가 넉넉해서 숫자도 한 단계 크게 */
+.l-kpi.va-base .kp:not([data-n='1']) {
+  container-type: inline-size;
+  grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1.3fr);
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+/* 칸마다 따로 가운데에 두면 설명이 있는 칸만 이름과 숫자가 올라가 줄이 어긋난다. 이름, 숫자, 설명 줄을 모든 칸이 같이 쓴다(subgrid).
+   칸이 크기 상자(container)이면 subgrid가 되지 않아서, 크기 상자는 숫자 묶음 전체(.kp)로 두고 숫자는 한 칸 너비로 줄인다 */
+.l-kpi.va-base .kp:not([data-n='1']) .kp-item {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  padding: 0;
+  container-type: normal;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-value.one-line {
+  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1)), calc((100cqi - (var(--n) - 1) * var(--kp-gap)) / var(--n) / (var(--units, 1) * var(--glyph-k, 1))));
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-label {
+  grid-row: 2;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-value {
+  grid-row: 3;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-body {
+  grid-row: 4;
+}
+
+.l-kpi.va-base .kp[data-n='2'] .kp-value {
+  --fs: 220px;
+}
+
+.l-kpi.va-base .kp[data-n='3'] .kp-value {
+  --fs: 184px;
+}
+
+.l-kpi.va-base .kp[data-n='4'] .kp-value {
+  --fs: 128px;
+}
+
+.l-kpi.va-base .kp-value {
+  margin-top: 36px;
+}
+
+.l-kpi.va-base .kp-body {
+  margin-top: 44px;
 }
 
 /* 숫자 하나: 면 없이 아주 크게. 이름과 설명은 숫자 오른쪽 아래에 붙여 가로를 채운다 */
@@ -925,17 +1036,20 @@
 
 /* 모양: 카드. 숫자마다 면을 깔아 따로따로 */
 .va-cards .kp {
+  --kp-gap: var(--gap);
   align-content: stretch;
   gap: var(--gap);
   padding-bottom: 0;
 }
 
-.va-cards .kp-item,
-.va-cards .kp-item:first-child {
+.va-cards .kp-item {
   padding: 52px 56px 56px;
-  border: 0;
   border-radius: var(--r-panel);
   background: var(--surface);
+}
+
+:is(.va-cards, .va-focus) .kp-item::before {
+  content: none;
 }
 
 .va-cards .kp-value {
@@ -966,8 +1080,7 @@
 
 .va-focus .kp:not([data-n='1']) .kp-item {
   justify-content: center;
-  padding: 0 0 0 0;
-  border-left: 0;
+  padding: 0;
   border-top: var(--rule) solid var(--line);
 }
 
@@ -1170,6 +1283,34 @@
 
 .va-columns .pt-body {
   --fs: 30px;
+}
+
+/* 세로 칸을 장 한 장에 쓸 때: 칸이 서넛이면 이름과 설명을 한 단계씩 키운다. 그대로면 낮은 띠가 본문 가운데에 떠서
+   위아래가 크게 비었다. 이름과 설명은 모든 칸이 같은 줄(subgrid)을 써서, 한 칸의 이름이 두 줄이어도 설명의 첫 줄이 맞는다 */
+.l-points.va-columns .pt {
+  grid-template-rows: auto auto;
+  row-gap: 0;
+}
+
+.l-points.va-columns .pt-item {
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  /* 줄 안에서 가운데에 두면 짧은 설명만 내려가 첫 줄이 어긋난다 */
+  align-items: start;
+}
+
+.l-points.va-columns .pt-body {
+  margin-top: 28px;
+}
+
+.l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-title {
+  --fs: 52px;
+}
+
+.l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-body {
+  --fs: 36px;
+  margin-top: 32px;
 }
 
 /* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
@@ -1479,6 +1620,80 @@
 
 .tl:is([data-n='5'], [data-n='6']) .tl-body {
   --fs: 26px;
+}
+
+/* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 시기, 점, 이름, 설명을 한 단계씩 키워 띠가 본문 높이의 반을 넘게 한다.
+   그대로 두면 낮은 띠가 본문 가운데에 떠서 위아래가 크게 비었다. 이름과 설명은 모든 단계가 같은 줄(subgrid)을 써서
+   한 단계의 이름이 두 줄이어도 옆 단계의 설명과 줄이 맞는다. 위의 기본 규칙은 부품 칸이 쓰므로 그대로 둔다(잰 높이 표) */
+.l-timeline.va-base .tl {
+  --tl-meta-h: 72px;
+  --tl-dot: 48px;
+  --tl-gap: 64px;
+  grid-template-rows: repeat(4, auto);
+  gap: 0 var(--tl-gap);
+}
+
+.l-timeline.va-base .tl-item {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  padding-right: 0;
+}
+
+/* 선은 점의 가운데를 지난다: 시기 줄 높이 + 점 위 틈 + 점 반지름 */
+.l-timeline.va-base .tl-item::before {
+  top: calc(var(--tl-meta-h) + 20px + var(--tl-dot) / 2 - 2px);
+  right: calc(var(--tl-gap) * -1);
+}
+
+.l-timeline.va-base .tl-item:last-child::before {
+  right: 0;
+}
+
+.l-timeline.va-base .tl-meta {
+  --fs: 44px;
+  height: var(--tl-meta-h);
+  line-height: var(--tl-meta-h);
+}
+
+.l-timeline.va-base .tl-dot {
+  width: var(--tl-dot);
+  height: var(--tl-dot);
+  margin: 20px 0 72px;
+  border-width: 8px;
+}
+
+.l-timeline.va-base .tl-title {
+  --fs: 52px;
+}
+
+.l-timeline.va-base .tl-body {
+  --fs: 36px;
+  margin-top: 24px;
+}
+
+.l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) {
+  --tl-meta-h: 56px;
+  --tl-dot: 36px;
+  --tl-gap: 40px;
+}
+
+.l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-meta {
+  --fs: 30px;
+}
+
+.l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-dot {
+  margin-bottom: 56px;
+  border-width: 7px;
+}
+
+.l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-title {
+  --fs: 36px;
+}
+
+.l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-body {
+  --fs: 26px;
+  margin-top: 20px;
 }
 
 /* 모양: 세로 목록. 왼쪽에 시기, 가운데 선과 점, 오른쪽에 할 일 */
@@ -3009,14 +3224,16 @@
 
 /* ---------- 단계 흐름 ----------
    선으로 잇기: 단계마다 번호 점을 찍고 점 사이를 선으로 잇는다. 강조할 단계는 점을 칠하고 둘레를 옅게.
-   (꺾쇠 화살표 면은 예전 도표 모양이라 쓰지 않는다) 칸: 둥근 면을 화살표로 잇는다. */
+   (꺾쇠 화살표 면은 예전 도표 모양이라 쓰지 않는다) 칸: 둥근 면을 화살표로 잇는다.
+   단계는 같은 너비의 칸이다. 선은 마지막 단계에서도 오른쪽 끝까지 간다: 마지막 점에서 끊으면 마지막 칸의 오른쪽이
+   비어 점 사이가 고르지 않아 보였다. 아래 기본 규칙은 부품 칸 안에서도 쓰므로 높이를 바꾸지 않는다(잰 높이 표).
+   장 한 장을 다 쓸 때의 짜임은 그 아래 .l-process 규칙에 있다 */
 
 .pc {
   --pc-node: 64px;
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   align-content: center;
-  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -3026,8 +3243,8 @@
   min-width: 0;
 }
 
-/* 점 사이 선: 이 점의 오른쪽 끝에서 다음 칸의 점까지 (칸 사이 틈이 없어서 칸 끝까지 그으면 닿는다) */
-.pc-step:not(:last-child)::before {
+/* 점의 오른쪽 끝에서 다음 칸의 점까지 (칸 사이 틈이 없어서 칸 끝까지 그으면 닿는다). 마지막 단계는 오른쪽 끝까지 */
+.pc-step::before {
   position: absolute;
   top: calc(var(--pc-node) / 2 - 1.5px);
   right: 0;
@@ -3113,6 +3330,137 @@
   padding-right: 28px;
 }
 
+/* 장 한 장을 다 쓸 때: 점 줄은 본문 첫 줄(제목 아래 틈 바로 밑)에, 담당과 시간은 본문 아래 끝 줄에 둔다.
+   점, 이름, 설명만 가운데에 두면 작은 띠가 떠서 위아래가 크게 비었다. 담당과 시간을 아래 끝 줄로 내리면 설명과
+   섞이지 않고(설명은 이름 바로 아래 한 덩이), 모든 단계의 담당과 시간이 한 줄에 맞아 표처럼 읽힌다.
+   이름과 설명은 모든 단계가 같은 줄(subgrid)을 쓴다: 한 단계의 이름이 두 줄이 되어도 옆 단계의 설명이 따라 내려간다.
+   담당과 시간이 하나도 없으면 아래 끝 줄이 비므로, 그때는 띠를 본문 가운데(눈높이로 조금 위)에 둔다 */
+.l-process .pc {
+  --pc-node: 80px;
+  /* 단계 사이 글의 틈: 글은 칸 오른쪽에서 이만큼 비우고 줄을 바꾼다 */
+  --pc-gutter: 56px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.l-process .pc-step {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+}
+
+.l-process.va-base .pc:has(.pc-meta) {
+  align-content: stretch;
+}
+
+.l-process.va-base .pc:not(:has(.pc-meta)) {
+  grid-template-rows: auto auto auto;
+  padding-bottom: 56px;
+}
+
+.l-process .pc-head {
+  display: contents;
+}
+
+.l-process .pc-n {
+  grid-row: 1;
+  font-size: 30px;
+}
+
+.l-process.va-base .pc-step.is-hl .pc-n {
+  box-shadow: 0 0 0 14px var(--accent-soft);
+}
+
+.l-process .pc-title {
+  --fs: 52px;
+  grid-row: 2;
+  margin-top: 48px;
+  padding-right: var(--pc-gutter);
+}
+
+.l-process .pc-text {
+  display: flex;
+  grid-row: 3;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px var(--pc-gutter) 0 0;
+}
+
+.l-process .pc-body {
+  --fs: 36px;
+  order: 1;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* 담당과 시간의 줄: 칸마다 선을 하나 두고 그 아래에. 비어 있는 단계도 선을 두어 줄이 끊기지 않게 */
+.l-process .pc-foot {
+  --pc-meta-fs: 30px;
+  order: 2;
+  min-height: calc(var(--pc-meta-fs) * 1.35 * var(--scale, 1));
+  margin-top: auto;
+  padding-top: 28px;
+  border-top: var(--rule) solid var(--line);
+}
+
+.l-process .pc-meta {
+  --fs: var(--pc-meta-fs);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.l-process.va-base .pc:not(:has(.pc-meta)) .pc-foot {
+  display: none;
+}
+
+.l-process .pc[data-n='4'] {
+  --pc-gutter: 48px;
+}
+
+.l-process .pc[data-n='4'] .pc-title {
+  --fs: 44px;
+  margin-top: 44px;
+}
+
+.l-process .pc[data-n='4'] .pc-body {
+  --fs: 30px;
+}
+
+.l-process .pc[data-n='4'] .pc-foot {
+  --pc-meta-fs: 26px;
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) {
+  --pc-node: 64px;
+  --pc-gutter: 32px;
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) .pc-n {
+  font-size: 26px;
+}
+
+.l-process.va-base .pc:is([data-n='5'], [data-n='6']) .pc-step.is-hl .pc-n {
+  box-shadow: 0 0 0 12px var(--accent-soft);
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) .pc-title {
+  --fs: 36px;
+  margin-top: 36px;
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) .pc-text {
+  padding-top: 16px;
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) .pc-body {
+  --fs: 26px;
+}
+
+.l-process .pc:is([data-n='5'], [data-n='6']) .pc-foot {
+  --pc-meta-fs: 26px;
+  padding-top: 24px;
+}
+
 /* 모양: 칸. 둥근 면, 사이에 화살표 */
 .va-cards .pc {
   --pc-gap: 64px;
@@ -3194,6 +3542,77 @@
 
 .is-dark.va-cards .pc-step.is-hl :is(.pc-n, .pc-meta) {
   color: var(--accent);
+}
+
+/* 칸 모양을 장 한 장에 쓸 때: 칸을 본문 높이만큼 세우고(가운데 뜬 짧은 칸이 아니라), 번호와 이름은 위에,
+   담당과 시간은 칸 아래 끝에 둔다. 칸 안 글 크기는 선 모양과 같은 단계 */
+.l-process.va-cards .pc {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
+  row-gap: 0;
+}
+
+.l-process.va-cards .pc-step {
+  display: grid;
+  min-height: 0;
+  padding: 56px 48px 52px;
+}
+
+/* 다섯, 여섯 칸은 칸이 좁아 설명이 몇 글자씩 줄이 바뀐다. 글자를 줄이지 않고 칸 사이와 안쪽 틈을 줄여 글 폭을 넓힌다 */
+.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) {
+  --pc-gap: 32px;
+}
+
+.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-step {
+  padding: 36px 24px 32px;
+}
+
+.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-n {
+  width: 56px;
+  height: 56px;
+}
+
+.l-process.va-cards .pc-n {
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+  font-size: 26px;
+}
+
+.l-process.va-cards .pc-title {
+  --fs: 44px;
+  margin-top: 40px;
+  padding-right: 0;
+}
+
+.l-process.va-cards .pc[data-n='4'] .pc-title {
+  --fs: 36px;
+  margin-top: 36px;
+}
+
+.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-title {
+  --fs: 30px;
+  margin-top: 28px;
+}
+
+.l-process.va-cards .pc-text {
+  padding: 20px 0 0;
+}
+
+.l-process.va-cards .pc-foot {
+  border-top-color: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.l-process.va-cards .pc-step.is-hl .pc-meta {
+  opacity: var(--o-sub);
+}
+
+.is-dark.l-process.va-cards .pc-step.is-hl .pc-meta {
+  opacity: 1;
+}
+
+.l-process.va-cards .pc:not(:has(.pc-meta)) .pc-foot {
+  display: none;
 }
 
 /* 칸 사이 화살표: 두 변만 그린 마름모를 돌려 화살촉으로 */
