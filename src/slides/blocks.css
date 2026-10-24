@@ -2587,6 +2587,26 @@
   --fn-gap: clamp(20px, 3.5cqh, 30px);
 }
 
+/* 2×2 우선순위가 넓고 낮은 칸에 들면 칸마다 이름과 설명을 옆으로 눕힌다(이름 왼쪽, 설명 오른쪽, 위아래 가운데).
+   위아래로 쌓으면 칸 높이가 모자라 설명이 칸 아래 선에 붙었다. 글자를 줄이지 않고 짜임을 바꾼다.
+   이름 칸은 판의 격자를 나눠 써서(subgrid) 위아래 두 칸의 긴 이름에 맞춘다: 설명이 같은 자리에서 시작하고, 이름이 한 줄로 선다 */
+@container bk (min-width: 1200px) and (max-height: 560px) {
+  .bk-in .mx-grid {
+    grid-template-columns: fit-content(24%) minmax(0, 1fr) fit-content(24%) minmax(0, 1fr);
+  }
+
+  .bk-in .mx-cell {
+    display: grid;
+    grid-column: span 2;
+    grid-template-columns: subgrid;
+    /* 크게에서 설명이 두 줄이면 칸보다 높아진다: 위로 넘치지 않게(safe) 아래로 넘쳐 글자 맞추기가 잡게 */
+    align-content: safe center;
+    align-items: baseline;
+    gap: 8px 32px;
+    padding: 20px 40px;
+  }
+}
+
 /* 증감 요인: 칸이 좁으면 처음과 끝 값의 단위가 숫자 아래로 내려가 값이 두 줄이 된다. 막대 위에 그만큼 자리를 더 둔다 (장에서는 96px) */
 @container bk (max-width: 1300px) {
   .bk-in .wf-bar,
