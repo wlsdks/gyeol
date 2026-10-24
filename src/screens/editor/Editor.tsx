@@ -31,7 +31,6 @@ import { useBlockEditing, type BlockEditing } from './BlockEditor'
 import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector } from './Inspector'
-import { OutlineView } from './OutlineView'
 import { SaveStatus } from './SaveStatus'
 import { SlideList } from './SlideList'
 import { VersionPanel } from './Versions'
@@ -178,7 +177,6 @@ function EditorBody({ deck }: { deck: Deck }) {
   const slide = useSelectedSlide() ?? deck.slides[0]
   const store = useDeck()
   const markVersion = useAutosave(deck)
-  const [view, setView] = useState<'slides' | 'doc'>('slides')
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
@@ -291,7 +289,6 @@ function EditorBody({ deck }: { deck: Deck }) {
     setConfirmPresent(null)
     const target = deck.slides.find((s) => !s.hidden && missingFields(s, deck.meta).length > 0)
     if (!target) return
-    setView('slides')
     store.select(target.id)
     const m = missingFields(target, deck.meta)[0]
     window.setTimeout(() => focusField(target.id, m), 60)
@@ -357,15 +354,6 @@ function EditorBody({ deck }: { deck: Deck }) {
           <SaveStatus deck={deck} onOpenVersions={() => setVersionsOpen(true)} />
         </div>
 
-        <div className="seg ed-view" role="group" aria-label="보기">
-          <button type="button" className={cx('seg-btn', view === 'slides' && 'is-on')} aria-pressed={view === 'slides'} onClick={() => setView('slides')}>
-            슬라이드
-          </button>
-          <button type="button" className={cx('seg-btn', view === 'doc' && 'is-on')} aria-pressed={view === 'doc'} onClick={() => setView('doc')}>
-            문서
-          </button>
-        </div>
-
         <div className="ed-top-r">
           <button type="button" className="icon-btn" aria-label="되돌리기" title={`되돌리기 (${keys('mod+Z')})`} disabled={!store.past.length} onClick={store.undo}>
             <UndoIcon />
@@ -400,23 +388,12 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
       </header>
 
-      <div className={cx('ed-body', view === 'doc' && 'is-doc', versionsOpen && 'has-versions', view === 'slides' && blocks.libraryOpen && !versionsOpen && 'has-lib')}>
+      <div className={cx('ed-body', versionsOpen && 'has-versions', blocks.libraryOpen && !versionsOpen && 'has-lib')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
-        {view === 'slides' && slide ? (
-          <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />
-        ) : (
-          <OutlineView
-            deck={deck}
-            onOpenSlide={(sid) => {
-              store.select(sid)
-              setView('slides')
-            }}
-          />
-        )}
+        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
-          view === 'slides' &&
           slide &&
           (blocks.libraryOpen ? (
             <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
