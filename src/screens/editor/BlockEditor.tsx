@@ -46,7 +46,7 @@ import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
 import { noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
@@ -679,6 +679,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const onKey = (e: KeyboardEvent) => {
       const typing = (e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')
       if (typing) return
+      // 대화 창이 떠 있으면 그 창의 키다: 창을 닫는 Esc로 고르기를 끝내거나, 창 뒤의 컴포넌트를 지우지 않는다
+      if (e.defaultPrevented || dialogOpen()) return
       if (e.key === 'Escape') setSelected(null)
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const b = (slideRef.current.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected)

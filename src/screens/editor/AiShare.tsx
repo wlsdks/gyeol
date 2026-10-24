@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ASKS, askOf, askSentence, type AskError, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
 import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
@@ -14,7 +14,7 @@ import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle } from '../ui'
+import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle, useDialog } from '../ui'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',
@@ -412,14 +412,12 @@ export function AiReview({
   const changed = applied.deck.slides.filter((s) => before.has(s.id) && applied.touched.has(s.id))
   const pairs = changed.length > 0 && changed.length <= 3 ? changed : []
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // 열면 초점이 '나중에'로 들어온다. 적용하기에 바로 두면 Enter 한 번에 적용돼 버린다
+  const ref = useRef<HTMLDivElement>(null)
+  useDialog(ref, onClose)
 
   return (
-    <div className="vpp air" role="dialog" aria-modal="true" aria-label="AI 제안 미리 보기">
+    <div className="vpp air" role="dialog" aria-modal="true" aria-label="AI 제안 미리 보기" ref={ref} tabIndex={-1}>
       <header className="vpp-head">
         <div>
           <p className="vpp-title">AI가 구성을 바꾸자고 해요</p>

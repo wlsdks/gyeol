@@ -22,7 +22,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present } from '../Present'
-import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -580,7 +580,7 @@ function SlideStage({
   useEffect(() => setPeek(false), [slide.id])
   useEffect(() => {
     if (!peek) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPeek(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !dialogOpen() && setPeek(false)
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [peek])

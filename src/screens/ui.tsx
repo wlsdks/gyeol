@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 
 export function Brand() {
@@ -109,6 +109,72 @@ export function Popover({
   )
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]'
+
+/** 대화 창(aria-modal)이 떠 있는지. 떠 있으면 뒤쪽 화면의 단축키(지우기, Esc로 닫기)는 쉰다 */
+export function dialogOpen(): boolean {
+  return !!document.querySelector('[aria-modal="true"]')
+}
+
+/**
+ * 대화 창의 초점: 열 때 안으로 옮기고([data-autofocus]가 있으면 그것), Tab은 창 안에서만 돌고,
+ * 닫으면 창을 연 단추로 돌려준다. Esc는 맨 위의 창 하나만 닫는다.
+ * Esc는 다른 단축키보다 먼저(잡는 단계에서) 받아 preventDefault로 표시한다. 그래야 뒤쪽 화면이 같은 Esc로
+ * 컴포넌트 고르기를 닫거나 고른 컴포넌트를 놓지 않는다 (창은 그 사이에 이미 닫혀 있을 수 있어서 dialogOpen만으로는 모른다).
+ * onClose는 그릴 때마다 새로 만들어져도 된다: 한 번만 걸어 두고 늘 최근 것을 부른다
+ * (예전에는 다시 그릴 때마다 초점을 돌려줬다가 다시 옮겨서, Tab으로 옮겨 둔 초점이 첫 단추로 튀었다).
+ */
+export function useDialog(ref: RefObject<HTMLElement | null>, onClose: () => void) {
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const prev = document.activeElement as HTMLElement | null
+    const start = el.querySelector<HTMLElement>('[data-autofocus]') ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el
+    start.focus({ preventScroll: true })
+    // 창 위에 또 창이 뜨면(버전 미리 보기 위의 '되돌릴까요?') 맨 위 창만 키를 받는다
+    const isTop = () => {
+      const all = document.querySelectorAll('[aria-modal="true"]')
+      return all[all.length - 1] === el
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing || !isTop()) return
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        close.current()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0)
+      const active = document.activeElement
+      if (!items.length) {
+        e.preventDefault()
+        el.focus()
+        return
+      }
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (!el.contains(active)) {
+        e.preventDefault()
+        ;(e.shiftKey ? last : first).focus()
+      } else if (e.shiftKey && (active === first || active === el)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      // 연 단추가 아직 화면에 있으면 그리로 (메뉴 안의 단추였으면 메뉴와 함께 사라졌을 수 있다)
+      if (prev?.isConnected) prev.focus({ preventScroll: true })
+    }
+  }, [ref])
+}
+
 export function Modal({
   title,
   children,
@@ -121,19 +187,10 @@ export function Modal({
   onClose: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const prev = document.activeElement as HTMLElement | null
-    ref.current?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      prev?.focus?.()
-    }
-  }, [onClose])
+  useDialog(ref, onClose)
   return (
     <div className="modal-back" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1}>
         <h2 className="modal-title">{title}</h2>
         {children && <div className="modal-body">{children}</div>}
         <div className="modal-actions">{actions}</div>

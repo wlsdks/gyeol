@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { pageInfo } from '../../deck/fields'
 import { uid } from '../../deck/generate'
 import type { Deck } from '../../deck/types'
@@ -19,7 +19,7 @@ import {
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
-import { CloseIcon, HistoryIcon, Modal, MoreIcon, Popover } from '../ui'
+import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, useDialog } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -71,7 +71,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
   }, [deck.id])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !preview && !restoring && onClose()
+    // 대화 창이 받은 Esc(defaultPrevented)로 버전 기록까지 닫지 않는다
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !preview && !restoring && !dialogOpen() && onClose()
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, preview, restoring])
@@ -313,13 +314,10 @@ function VersionPreview({
   const diff = (s: Deck['slides'][number]) => (!now.has(s.id) ? '지금은 없는 장' : now.get(s.id) !== JSON.stringify(s) ? '지금과 달라요' : null)
   const visible = deck.slides.filter((s) => !s.hidden)
   const differs = visible.filter((s) => diff(s)).length
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const ref = useRef<HTMLDivElement>(null)
+  useDialog(ref, onClose)
   return (
-    <div className="vpp" role="dialog" aria-modal="true" aria-label="버전 미리 보기">
+    <div className="vpp" role="dialog" aria-modal="true" aria-label="버전 미리 보기" ref={ref} tabIndex={-1}>
       <header className="vpp-head">
         <div>
           <p className="vpp-title">{versionTitle(version)}</p>

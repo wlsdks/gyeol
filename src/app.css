@@ -549,6 +549,12 @@ select {
   box-shadow: var(--shadow-pop);
 }
 
+/* 창을 열 때 단추가 없으면 창 자체로 초점을 옮긴다(useDialog). 그때 창 전체에 테두리가 생기지 않게 */
+.modal:focus,
+.vpp:focus {
+  outline: none;
+}
+
 .modal-title {
   margin: 0;
   font-size: 18px;
