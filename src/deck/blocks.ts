@@ -1282,9 +1282,36 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
 }
 
 /**
- * 부품 장의 본문 상자: 12칸 격자. 줄마다 잘리지 않을 높이를 주고, 남는 높이는 줄마다 똑같이 나눠 더한다
- * (minmax(최소, auto)를 격자가 늘린다). 줄 높이를 통째로 똑같이 나누면 한 줄짜리 핵심 문장도 표만큼 높아져
- * 문장 위아래가 크게 빈다. 부품마다 비중을 두어 남는 높이를 나누면 무거운 줄(차트, 질문)만 장 끝까지 늘어난다.
+ * 높이를 받으면 커지는 부품: 차트, 그림, 표처럼 칸 높이를 다 쓰는 것. 사람이 줄 높이를 정하지 않은 장에서는 남는 높이를
+ * 이 부품이 든 줄끼리만 나눠 가진다(stretchRows). 글과 숫자는 높이를 더 받아도 칸 안이 빌 뿐이다
+ */
+const STRETCHY = new Set<BlockType>([
+  ...(BLOCK_GROUPS.find((g) => g.short === '차트')?.types ?? []),
+  'ring',
+  'ratio',
+  'spark',
+  'gantt',
+  'matrix',
+  'position',
+  'swot',
+  'table',
+  'image',
+  'logos',
+])
+
+/**
+ * 남는 높이를 나눠 가질 줄: 높이를 받으면 커지는 부품이 든 줄. 그런 줄이 없으면(글과 숫자뿐이면) 모든 줄.
+ * 모든 줄에 똑같이 나누면 차트 위의 핵심 한 줄도 차트만큼 높아져서, 칸이 내용보다 훨씬 크게 잡히고 칸 안 위아래가 비었다
+ */
+export function stretchRows(rows: BlockRow[]): boolean[] {
+  const s = rows.map((r) => r.blocks.some((b) => STRETCHY.has(b.type)))
+  return s.some(Boolean) ? s : rows.map(() => true)
+}
+
+/**
+ * 부품 장의 본문 상자: 12칸 격자. 줄마다 잘리지 않을 높이를 주고, 남는 높이는 나눠 가질 줄(stretchRows)에 더한다.
+ * 모든 줄이 나눠 가지면 똑같이 나눠 더하고(minmax(최소, auto)를 격자가 늘린다), 차트·그림·표가 든 줄이 있으면
+ * 그 줄끼리 똑같이 나누고(1fr) 글과 숫자의 줄은 잘리지 않을 높이 그대로 둔다.
  * 계산은 브라우저의 격자가 한다. 그래서 내보낸 HTML도 자바스크립트 없이 같은 자리에 그려진다.
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
@@ -1293,8 +1320,17 @@ export function areaStyle(rows: BlockRow[]): Record<string, string> {
   // 사람이 줄 높이를 정했으면(weighted) 그 비중으로 나눈다(fr). 비중대로면 잘리는 줄은 격자가 잘리지 않을 높이로 묶고 나머지를 나눈다
   const w = weighted(rows)
   const needs = rowNeeds(rows)
+  const stretch = stretchRows(rows)
+  const some = !stretch.every(Boolean)
   return {
-    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${needs[i]}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), ${w ? `${r.grow}fr` : 'auto'})`).join(' '),
+    gridTemplateRows: rows
+      .map((r, i) => {
+        const least = `max(calc(${needs[i]}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px))`
+        if (w) return `minmax(${least}, ${r.grow}fr)`
+        if (!some) return `minmax(${least}, auto)`
+        return stretch[i] ? `minmax(${least}, 1fr)` : least
+      })
+      .join(' '),
   }
 }
 
@@ -1312,15 +1348,19 @@ export function cellStyle(b: CellBox): Record<string, string> {
 export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): number[] {
   const free = areaH - Math.max(0, rows.length - 1) * gap
   const mins = rowNeeds(rows)
-  if (weighted(rows)) {
-    // 격자의 fr 나누기와 같게: 비중대로 나누다 잘리지 않을 높이보다 낮아지는 줄은 그 높이로 묶고, 남은 줄끼리 다시 나눈다
-    const fixed = new Set<number>()
+  const w = weighted(rows)
+  const stretch = stretchRows(rows)
+  if (w || !stretch.every(Boolean)) {
+    // 격자의 fr 나누기와 같게: 비중대로 나누다 잘리지 않을 높이보다 낮아지는 줄은 그 높이로 묶고, 남은 줄끼리 다시 나눈다.
+    // 비중이 없으면 나눠 가질 줄(stretchRows)이 1씩, 나머지 줄은 처음부터 잘리지 않을 높이로 묶는다
+    const share = (i: number) => (w ? rows[i].grow! : 1)
+    const fixed = new Set<number>(w ? [] : rows.map((_, i) => i).filter((i) => !stretch[i]))
     for (;;) {
       const left = free - [...fixed].reduce((a, i) => a + mins[i], 0)
-      const g = rows.reduce((a, r, i) => a + (fixed.has(i) ? 0 : r.grow!), 0)
+      const g = rows.reduce((a, _, i) => a + (fixed.has(i) ? 0 : share(i)), 0)
       const unit = g ? Math.max(0, left) / g : 0
-      const low = rows.map((_, i) => i).filter((i) => !fixed.has(i) && mins[i] > rows[i].grow! * unit)
-      if (!low.length) return rows.map((r, i) => (fixed.has(i) ? mins[i] : r.grow! * unit))
+      const low = rows.map((_, i) => i).filter((i) => !fixed.has(i) && mins[i] > share(i) * unit)
+      if (!low.length) return rows.map((_, i) => (fixed.has(i) ? mins[i] : share(i) * unit))
       low.forEach((i) => fixed.add(i))
     }
   }

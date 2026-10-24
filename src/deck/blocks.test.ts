@@ -2,6 +2,7 @@ import { BLOCK_HEIGHTS } from './blockHeights'
 import { describe, expect, it } from 'vitest'
 import {
   BLOCK_GAP,
+  areaStyle,
   allBlocks,
   autoTarget,
   BLOCK_GROUPS,
@@ -36,6 +37,7 @@ import {
   MAX_ROWS,
   removeBlock,
   rowHeights,
+  stretchRows,
   shownRows,
   growAt,
   unweighted,
@@ -278,6 +280,24 @@ describe('자리 정하기', () => {
     const mins = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 0)
     const extra = three.map((h, i) => h - mins[i])
     expect(Math.max(...extra) - Math.min(...extra)).toBeLessThan(1)
+  })
+
+  it('차트, 표, 그림이 든 줄이 있으면 남는 높이는 그 줄끼리 나누고, 글과 숫자 줄은 잘리지 않을 높이 그대로', () => {
+    const areaH = 1080 - FRAME.y - FRAME.bottom
+    const free = areaH - BLOCK_GAP
+    const two = [row(block('message', 'm')), row(block('bars', 'b'))]
+    expect(stretchRows(two)).toEqual([false, true])
+    const [lowM] = rowHeights(two, 0)
+    const hs = rowHeights(two, areaH)
+    expect(hs[0]).toBeCloseTo(lowM, 0)
+    expect(hs[0] + hs[1]).toBeCloseTo(free, 0)
+    // 격자도 같은 계산: 글 줄은 높이 그대로, 차트 줄은 1fr
+    const rowsCss = areaStyle(two).gridTemplateRows
+    expect(rowsCss).toMatch(/^max\(.*\) minmax\(.*, 1fr\)$/)
+    // 차트가 같은 줄에 있으면 그 줄도 나눠 가진다
+    expect(stretchRows([row(block('delta', 'd'), block('versus', 'v')), row(block('text', 't'))])).toEqual([true, false])
+    // 글과 숫자뿐이면 모든 줄이 나눠 가진다 (위의 똑같이 나누기)
+    expect(stretchRows([row(block('message', 'm')), row(block('kpi', 'k'))])).toEqual([true, true])
   })
 
   it('사람이 줄 높이를 정하면 그 비중으로 나누되, 줄마다 잘리지 않을 높이는 지킨다', () => {

@@ -144,6 +144,20 @@
   grid-template-columns: minmax(0, max-content) auto;
 }
 
+/* 진행 상태 칩: 앞의 점(::before)이 격자의 다음 줄로 밀려 칩이 두 줄 높이가 되고, 그만큼 줄이 넘쳐 글자가 줄었다 */
+.slide.m-edit .ps-chip.ed {
+  grid-template-columns: auto minmax(0, max-content);
+  align-items: center;
+}
+
+.slide.m-edit .ps-chip.ed > * {
+  grid-area: 1 / 2;
+}
+
+.slide.m-edit .ps-chip.ed::before {
+  grid-area: 1 / 1;
+}
+
 .slide.m-edit :is(.mx-x, .pm-x).ed::after {
   grid-area: 1 / 2;
 }
