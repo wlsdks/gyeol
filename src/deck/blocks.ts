@@ -493,7 +493,7 @@ export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
 ]
 
 export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string }[] = [
-  { id: 'auto', name: '알아서', description: '부품에 맞게: 숫자는 올라가고, 막대는 자라고, 선은 그려져요' },
+  { id: 'auto', name: '알아서', description: '컴포넌트에 맞게: 숫자는 올라가고, 막대는 자라고, 선은 그려져요' },
   { id: 'rise', name: '올라오기', description: '아래에서 살짝 올라와요' },
   { id: 'fade', name: '나타나기', description: '제자리에서 천천히 보여요' },
   { id: 'wipe', name: '펼치기', description: '왼쪽에서 오른쪽으로 걷히듯' },
@@ -936,7 +936,7 @@ export function fitsWith(rows: BlockRow[], blockId: string, fn: (b: Block) => Bl
 }
 
 /** 자리가 모자라 항목을 더하거나 모양을 바꿀 수 없을 때의 안내 */
-export const NO_ROOM = '장에 자리가 모자라요. 다른 부품을 빼거나 다음 장으로 나눠 보세요'
+export const NO_ROOM = '장에 자리가 모자라요. 다른 컴포넌트를 빼거나 다음 장으로 나눠 보세요'
 
 /** 제목, 부제 한 줄의 높이와 한 줄에 드는 너비 (slides.css의 .s-title, .s-lead). 보내는 자료(d-read)는 한 단계 작다 */
 const HEAD_TYPE = {

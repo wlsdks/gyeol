@@ -626,10 +626,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   },
   compose: {
     id: 'compose',
-    name: '부품으로 꾸미기',
-    description: '부품을 골라 끌어다 놓으면 알맞은 자리에 들어가요',
+    name: '컴포넌트로 꾸미기',
+    description: '컴포넌트를 골라 끌어다 놓으면 알맞은 자리에 들어가요',
     fields: [
-      { key: 'title', label: '제목', hint: '이 장의 결론 한 줄 (비우면 부품만 보여요)', multiline: true, optional: true },
+      { key: 'title', label: '제목', hint: '이 장의 결론 한 줄 (비우면 컴포넌트만 보여요)', multiline: true, optional: true },
       lead(),
       source,
     ],
@@ -671,7 +671,7 @@ export const LAYOUT_ORDER: LayoutId[] = [
 
 /** 쓰임으로 묶은 레이아웃. 장 추가 메뉴와 장 모음 화면에 이 묶음과 순서로 보인다. 모든 레이아웃이 한 번씩 들어간다. */
 export const LAYOUT_GROUPS: { name: string; description: string; layouts: LayoutId[] }[] = [
-  { name: '자유롭게 꾸미기', description: '부품을 골라 끌어다 놓아요', layouts: ['compose'] },
+  { name: '자유롭게 꾸미기', description: '컴포넌트를 골라 끌어다 놓아요', layouts: ['compose'] },
   { name: '결론과 메시지', description: '하고 싶은 말을 먼저', layouts: ['summary', 'statement', 'points'] },
   { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'versus', 'bridge', 'trend', 'share', 'funnel'] },
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },

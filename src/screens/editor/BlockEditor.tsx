@@ -187,12 +187,12 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         store.setRows(s.id, insertAt(d.base, d.target, block, uid())!)
       } else if (d.plan === 'convert' && d.target && d.composed) {
         store.replaceSlide(s.id, { ...d.composed, rows: insertAt(d.base, d.target, block, uid())! })
-        toast.show('이 장을 부품 장으로 바꿔 넣었어요', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
+        toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
       } else {
         store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
         const why = d.blocked && (canCompose(s.layout) || s.layout === 'compose') ? noRoomText(d.blocked, block.type, 'slide').why : null
         toast.show(
-          why ? `${why} 그래서 다음 장에 새로 넣었어요` : canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 부품 장을 새로 만들어 넣었어요',
+          why ? `${why} 그래서 다음 장에 새로 넣었어요` : canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 컴포넌트 장을 새로 만들어 넣었어요',
           undefined,
           6000,
         )
@@ -545,7 +545,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const s = slideRef.current
     store.setRows(s.id, removeBlock(s.rows ?? [], b.id))
     setSelected(null)
-    toast.show(`${BLOCKS[b.type].name} 부품을 뺐어요`, { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, { label: '되돌리기', run: () => useDeck.getState().undo() })
   }
   const duplicate = (b: Block) => {
     const s = slideRef.current
@@ -553,7 +553,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const area = measureArea(areaEl.current)
     const t = autoTarget(s.rows ?? [], copy, area?.size.h)
     if (!t) {
-      toast.show('이 장에는 더 넣을 자리가 없어요. 부품을 빼거나 다음 장에 넣어 주세요.')
+      toast.show('이 장에는 더 넣을 자리가 없어요. 컴포넌트를 빼거나 다음 장에 넣어 주세요.')
       return
     }
     store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid())!)
@@ -670,11 +670,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     onGutterPointerDown,
     empty: () => (
       <div className="bk-empty">
-        <p className="bk-empty-t">부품을 골라 넣어 이 장을 꾸며요</p>
+        <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
         <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 아무 데나 놓아도 줄과 칸이 맞춰져요.</p>
         <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
           <BlocksIcon />
-          부품 고르기
+          컴포넌트 고르기
         </button>
       </div>
     ),
@@ -686,11 +686,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const hint = !drag
     ? null
     : drag.plan === 'convert'
-      ? '놓으면 이 장을 부품 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
+      ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
         ? compose || canCompose(slide.layout)
           ? `${drag.blocked ? noRoomText(drag.blocked, drag.block.type, 'slide').why : '이 장에는 자리가 없어요.'} 놓으면 다음 장에 새로 만들어 넣어요.`
-          : '표지와 단락 장에는 넣을 수 없어요. 놓으면 다음 장에 부품 장을 새로 만들어요.'
+          : '표지와 단락 장에는 넣을 수 없어요. 놓으면 다음 장에 컴포넌트 장을 새로 만들어요.'
         : drag.kind === 'new' && !drag.plan
           ? '슬라이드 위로 끌어 오세요'
           : null
@@ -760,7 +760,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     select: setSelected,
     convert: () => {
       store.toCompose(slide.id)
-      toast.show('이 장을 부품 장으로 바꿨어요. 부품을 끌어 옮기거나 더 넣을 수 있어요.', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
+      toast.show('이 장을 컴포넌트 장으로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
     },
   }
 }
@@ -821,9 +821,9 @@ function RoomZone({ fits, onOpen }: { fits(h: number): boolean; onOpen(): void }
     <button ref={ref} type="button" className="ed-room" style={{ visibility: 'hidden' }} onClick={onOpen}>
       <span className="ed-room-t">
         <PlusIcon />
-        여기에 부품 넣기
+        여기에 컴포넌트 넣기
       </span>
-      <span className="ed-room-s">숫자, 차트, 글을 이 아래에 더 놓을 수 있어요. 부품 고르기에서 끌어다 놓아도 돼요.</span>
+      <span className="ed-room-s">숫자, 차트, 글을 이 아래에 더 놓을 수 있어요. 컴포넌트 고르기에서 끌어다 놓아도 돼요.</span>
     </button>
   )
 }
@@ -933,7 +933,7 @@ function BlockTools({
       <span className="bk-tool-sep" />
       {/* 바탕: 견본만 늘어놓으면 무엇을 고르는지 알 수 없어서, 지금 바탕의 이름을 보이고 누르면 설명과 함께 고른다 */}
       <div className="bk-tool-menu">
-        <button type="button" className={cx('bk-tool', menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="부품의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
+        <button type="button" className={cx('bk-tool', menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="컴포넌트의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
           <span className={cx('bk-look', `is-${look}`)} aria-hidden="true" />
           <span>{BLOCK_LOOKS.find((l) => l.id === look)?.name}</span>
         </button>
@@ -1052,7 +1052,7 @@ function BlockTools({
                     }}
                   >
                     <b>{f.label}</b>
-                    <span className="bk-menu-d">{f.item ? `${spec.items?.label ?? '항목'}마다 한 칸씩` : '이 부품에 한 칸'}</span>
+                    <span className="bk-menu-d">{f.item ? `${spec.items?.label ?? '항목'}마다 한 칸씩` : '이 컴포넌트에 한 칸'}</span>
                   </button>
                 </li>
               ))}

@@ -25,7 +25,7 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   unknown_role: '모르는 장이에요',
   no_change: '이미 그렇게 되어 있어요',
   not_reviewed: '보지 않았어요',
-  no_block: '그 부품이 지금은 없어요',
+  no_block: '그 컴포넌트가 지금은 없어요',
   no_room: '장에 자리가 모자라요',
 }
 
@@ -301,9 +301,9 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
   }
   // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
   const blockName = (ref: string) => {
-    if (/^p\d+$/.test(ref)) return named.get(ref) ?? '새 부품'
+    if (/^p\d+$/.test(ref)) return named.get(ref) ?? '새 컴포넌트'
     const b = deck.slides.flatMap((s) => (s.rows ?? []).flatMap((r) => r.blocks)).find((x) => shapeBlockId(x) === ref)
-    return b ? `‘${BLOCKS[b.type].name}’ 부품` : '없는 부품'
+    return b ? `‘${BLOCKS[b.type].name}’ 컴포넌트` : '없는 컴포넌트'
   }
   const placeText = (p: { row?: number; beside?: string; side?: 'before' | 'after' }) =>
     p.row !== undefined ? `${p.row + 1}번째 줄로` : p.beside ? `${blockName(p.beside)} ${p.side === 'before' ? '앞에' : '옆에'}` : '빈자리에'
@@ -354,12 +354,12 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     case 'set_guide':
       return { text: `${name(op.slide)} 장 안내 바꾸기`, detail: op.text }
     case 'add_block': {
-      const label = `‘${BLOCKS[op.type].name}’ 부품`
+      const label = `‘${BLOCKS[op.type].name}’ 컴포넌트`
       if (op.as) named.set(op.as, `새 ${label}`)
       return { text: `${name(op.slide)}에 빈 ${label} 넣기`, detail: placeText(op) }
     }
     case 'remove_block':
-      return { text: `${name(op.slide)}에서 ${blockName(op.block)} 빼기`, detail: '빈 부품만 빼요' }
+      return { text: `${name(op.slide)}에서 ${blockName(op.block)} 빼기`, detail: '빈 컴포넌트만 빼요' }
     case 'move_block':
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 옮기기`, detail: placeText(op) }
     case 'set_block': {

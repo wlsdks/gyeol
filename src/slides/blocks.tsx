@@ -862,7 +862,7 @@ export function BlockArea() {
       data-rows={rows.length}
       data-mins={rows.length ? rowMins(rows) : undefined}
     >
-      {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">부품을 골라 넣어 꾸미는 장이에요</p>)}
+      {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
       {boxes.map((box) => (
         <BlockCell key={box.block.id} box={box} live={live} />
       ))}

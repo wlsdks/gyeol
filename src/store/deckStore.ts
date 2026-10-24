@@ -103,8 +103,10 @@ export const useDeck = create<DeckState>((set, get) => {
         set({ deck: null, newer: raw, selectedId: null, past: [], future: [], lastKey: null })
         return
       }
-      // 가져온 파일이나 예전 저장본: 부품 장의 줄을 정해진 꼴로 맞추고, 예전 세리프 테마는 화이트에 명조 제목으로
-      const deck = cleanDeckRows({ ...raw, theme: plainTheme(raw.theme) })
+      // 가져온 파일이나 예전 저장본: 부품 장의 줄을 정해진 꼴로 맞추고, 예전 세리프 테마는 화이트에 명조 제목으로.
+      // 화면에서 '부품'을 '컴포넌트'로 부르기 전에 만든 장은 역할 이름도 지금 이름으로
+      const slides = raw.slides.map((s) => (s.purpose === '부품으로 꾸미기' ? { ...s, purpose: LAYOUTS.compose.name } : s))
+      const deck = cleanDeckRows({ ...raw, slides, theme: plainTheme(raw.theme) })
       set({ deck, newer: null, selectedId: deck.slides[0]?.id ?? null, past: [], future: [], lastKey: null })
     },
     close() {

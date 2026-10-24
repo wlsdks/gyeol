@@ -28,11 +28,11 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
   const name = BLOCKS[type].name
   switch (r.kind) {
     case 'full':
-      return { why: `한 장에는 부품을 ${MAX_BLOCKS}개까지 넣어요.`, fix: '부품을 하나 빼거나 다음 장에 넣어 주세요.' }
+      return { why: `한 장에는 컴포넌트를 ${MAX_BLOCKS}개까지 넣어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
     case 'rows':
       return where === 'here'
-        ? { why: `줄은 ${MAX_ROWS}개까지라 새 줄을 만들 수 없어요.`, fix: '다른 부품 옆에 놓아 보세요.' }
-        : { why: `줄 ${MAX_ROWS}개가 다 찼고, 어느 줄에도 옆에 놓을 칸이 없어요.`, fix: '부품을 하나 빼거나 다음 장에 넣어 주세요.' }
+        ? { why: `줄은 ${MAX_ROWS}개까지라 새 줄을 만들 수 없어요.`, fix: '다른 컴포넌트 옆에 놓아 보세요.' }
+        : { why: `줄 ${MAX_ROWS}개가 다 찼고, 어느 줄에도 옆에 놓을 칸이 없어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
     case 'row-full':
       return { why: `한 줄에는 ${MAX_IN_ROW}개까지 나란히 놓아요.`, fix: '위나 아래에 새 줄로 놓아 보세요.' }
     case 'narrow':
@@ -45,9 +45,9 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
       return {
         why:
           where === 'change'
-            ? `이렇게 바꾸면 이 장의 부품들이 장 높이의 ${pct}%를 차지해서 글이 잘려요.`
-            : `${josa(name, '을', '를')} 넣으면 이 장의 부품들이 장 높이의 ${pct}%를 차지해서 글이 잘려요.`,
-        fix: where === 'change' ? '다른 부품을 빼거나 항목을 줄이면 바꿀 수 있어요.' : '다른 부품을 빼거나 항목을 줄이면 들어가요.',
+            ? `이렇게 바꾸면 이 장의 컴포넌트들이 장 높이의 ${pct}%를 차지해서 글이 잘려요.`
+            : `${josa(name, '을', '를')} 넣으면 이 장의 컴포넌트들이 장 높이의 ${pct}%를 차지해서 글이 잘려요.`,
+        fix: where === 'change' ? '다른 컴포넌트를 빼거나 항목을 줄이면 바꿀 수 있어요.' : '다른 컴포넌트를 빼거나 항목을 줄이면 들어가요.',
       }
     }
   }

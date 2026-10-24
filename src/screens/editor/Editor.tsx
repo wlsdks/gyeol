@@ -79,7 +79,7 @@ function NewerDeck({ deck }: { deck: Deck }) {
     <div className="center-msg newer-deck">
       <h1 className="newer-h">새 버전에서 만든 발표예요</h1>
       <p>
-        이 html-maker에는 없는 부품이나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
+        이 html-maker에는 없는 컴포넌트나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
         있어요.
       </p>
       <p>
@@ -607,7 +607,7 @@ function SlideStage({
                 <>
                   <div className="stage-tools-l">{blocks.toolbar}</div>
                   <div className="stage-tools-r">
-                    <button type="button" className="btn btn-sm" title="부품 고르기를 끝내요 (Esc)" onClick={() => blocks.select(null)}>
+                    <button type="button" className="btn btn-sm" title="컴포넌트 고르기를 끝내요 (Esc)" onClick={() => blocks.select(null)}>
                       완료
                     </button>
                   </div>
@@ -628,11 +628,11 @@ function SlideStage({
                   type="button"
                   className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}
                   aria-pressed={blocks.libraryOpen}
-                  title="부품을 골라 이 장에 넣어요"
+                  title="컴포넌트를 골라 이 장에 넣어요"
                   onClick={() => blocks.setLibraryOpen(!blocks.libraryOpen)}
                 >
                   <BlocksIcon />
-                  부품 넣기
+                  컴포넌트 넣기
                 </button>
                 <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
                 {nextVariant && (

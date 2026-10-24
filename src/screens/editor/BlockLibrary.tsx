@@ -106,25 +106,25 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
     slide.layout === 'compose'
       ? full
         ? counted
-          ? `이 장에는 부품이 ${MAX_BLOCKS}개 다 찼어요. 고르면 다음 장을 새로 만들어 넣어요.`
+          ? `이 장에는 컴포넌트가 ${MAX_BLOCKS}개 다 찼어요. 고르면 다음 장을 새로 만들어 넣어요.`
           : '이 장에는 더 넣을 자리가 없어요. 고르면 다음 장을 새로 만들어 넣어요.'
         : null
       : canCompose(slide.layout)
-        ? '부품을 넣으면 이 장이 부품 장으로 바뀌어요. 지금 내용은 그대로 남고, 부품으로 나뉘어 옮길 수 있게 돼요.'
-        : '표지와 단락 장에는 부품을 넣지 않아요. 넣으면 이 장 다음에 부품 장을 새로 만들어요.'
+        ? '컴포넌트를 넣으면 이 장이 컴포넌트 장으로 바뀌어요. 지금 내용은 그대로 남고, 컴포넌트로 나뉘어 옮길 수 있게 돼요.'
+        : '표지와 단락 장에는 컴포넌트를 넣지 않아요. 넣으면 이 장 다음에 컴포넌트 장을 새로 만들어요.'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
   const issues = new Map(types.map((t) => [t, full ? null : blocks.issueFor(t)]))
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (
-    <aside className="lib" aria-label="부품 고르기">
+    <aside className="lib" aria-label="컴포넌트 고르기">
       <header className="lib-head">
         <div className="lib-head-t">
-          <h2 className="lib-title">부품 고르기</h2>
+          <h2 className="lib-title">컴포넌트 고르기</h2>
           <p className="lib-sub">슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요.</p>
         </div>
-        <button type="button" className="icon-btn" aria-label="부품 고르기 닫기" title="닫기 (Esc)" onClick={close}>
+        <button type="button" className="icon-btn" aria-label="컴포넌트 고르기 닫기" title="닫기 (Esc)" onClick={close}>
           <CloseIcon />
         </button>
       </header>
@@ -134,14 +134,14 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
           <p>{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
             <button type="button" className="btn btn-ghost btn-sm" onClick={blocks.convert}>
-              지금 부품 장으로 바꾸기
+              지금 컴포넌트 장으로 바꾸기
             </button>
           )}
         </div>
       )}
 
       {/* 묶음 단추는 한 줄에: 두 줄로 접히면 어디까지가 묶음인지 읽히지 않는다. 묶음의 긴 이름과 설명은 목록의 제목에 */}
-      <div className="lib-tabs" role="group" aria-label="부품 묶음">
+      <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
         <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
           <Icon d={GROUP_ICONS.전체} />
           전체

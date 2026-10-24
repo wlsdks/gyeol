@@ -32,7 +32,7 @@ const TOKENS: { v: string; name: string; use: string }[] = [
   { v: '--line', name: '줄', use: '칸과 칸 사이' },
   { v: '--surface', name: '면', use: '칸, 막대의 바탕' },
   { v: '--accent', name: '강조', use: '답에만: 숫자, 추천안, 강조한 막대' },
-  { v: '--bold-bg', name: '짙은 면', use: '단락 장, 표지 옆면, 진한 면 부품. 강조색과 짝인 깊은 색' },
+  { v: '--bold-bg', name: '짙은 면', use: '단락 장, 표지 옆면, 진한 면 컴포넌트. 강조색과 짝인 깊은 색' },
   { v: '--bold-accent', name: '짙은 면 위 강조', use: '짙은 면 안의 숫자와 점. 강조색을 밝힌 색' },
   { v: '--good', name: '좋음', use: '목표 달성, 늘어남 (▲과 함께)' },
   { v: '--bad', name: '나쁨', use: '못 미침, 줄어듦 (▼과 함께)' },
@@ -127,7 +127,7 @@ export function System() {
     () => [
       { id: 'sys-tokens', name: '색과 글자' },
       ...LAYOUT_GROUPS.map((g, i) => ({ id: `sys-g${i}`, name: g.name, count: g.layouts.length })),
-      { id: 'sys-parts', name: '부품', count: BLOCK_TYPES.length },
+      { id: 'sys-parts', name: '컴포넌트', count: BLOCK_TYPES.length },
     ],
     [],
   )
@@ -239,8 +239,8 @@ export function System() {
           <div className="sys-intro">
             <h1 className="sys-h1">장 모음</h1>
             <p className="sys-lead">
-              만들 수 있는 장 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지, 부품 장에 넣는 부품 {BLOCK_TYPES.length}가지를 모았어요. 위에서 테마와
-              강조색을 바꾸면 모두 함께 바뀌어요. 발표를 편집할 때 ‘장 추가’와 ‘부품 넣기’에서 넣을 수 있어요.
+              만들 수 있는 장 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지, 컴포넌트 장에 넣는 컴포넌트 {BLOCK_TYPES.length}가지를 모았어요. 위에서 테마와
+              강조색을 바꾸면 모두 함께 바뀌어요. 발표를 편집할 때 ‘장 추가’와 ‘컴포넌트 넣기’에서 넣을 수 있어요.
             </p>
           </div>
 
@@ -319,9 +319,9 @@ export function System() {
           ))}
 
           <section id="sys-parts" className="sys-group">
-            <h2 className="sys-h2">부품</h2>
+            <h2 className="sys-h2">컴포넌트</h2>
             <p className="sys-group-desc">
-              부품 장에 끌어다 놓는 부품이에요. 정해진 줄과 칸에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+              컴포넌트 장에 끌어다 놓는 컴포넌트예요. 정해진 줄과 칸에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
             </p>
             {width > 0 &&
               BLOCK_GROUPS.map((g) => (
