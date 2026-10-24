@@ -17,7 +17,8 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, REQUEST_FORMAT, REQUEST_ID, requestId, type ChangeRequest } from '../src/ai/ops'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { AI_LAYOUTS } from '../src/deck/layouts'
+import { BLOCK_EFFECT_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES } from '../src/deck/blocks'
+import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
 const SHARE_DIR_NAME = 'AI 공유'
@@ -49,7 +50,7 @@ const PROTOCOL_WORDS = [
   'blocks', 'span', 'look', 'effect',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
-  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed',
+  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room',
   ...OP_NAMES,
   ...Object.values(MESSAGES),
 ]
@@ -114,6 +115,7 @@ function pendingFor(dirs: Dirs, deck: string): ChangeRequest[] {
 class ToolError extends Error {}
 
 const refSchema = { type: 'string', description: '장 id(s로 시작하는 9글자) 또는 같은 제안에서 add_slide의 as로 붙인 이름(n1, n2...)' }
+const blockRefSchema = { type: 'string', description: '부품 id(get_shape의 blocks[][].id, b로 시작하는 9글자) 또는 같은 제안에서 add_block의 as로 붙인 이름(p1, p2...)' }
 
 const TOOLS = [
   {
@@ -136,7 +138,7 @@ const TOOLS = [
     name: 'get_shape',
     description:
       '발표 하나의 모양: 장 순서, 장마다 레이아웃과 역할, 숨김 여부, 칸마다 비었는지(empty)/채웠는지(filled)/길어서 넘칠 수 있는지(long), 항목 수, 옵션, 테마. ' +
-      '부품 장(layout compose)은 사람이 부품을 골라 꾸민 장으로, blocks에 줄마다 부품의 종류, 너비(span, 12 기준), 바탕, 움직임, 칸 상태가 나온다. ' +
+      '부품 장(layout compose)은 부품을 줄과 칸에 놓아 꾸민 장으로, blocks에 줄마다 부품의 id(b로 시작), 종류, 너비(span, 12 기준), 모양, 바탕, 움직임, 칸 상태가 나온다. ' +
       '사람이 적은 글은 이 서버에 없다. 글의 내용을 추측하거나 사용자에게 붙여 달라고 하지 말고 모양만으로 판단한다.',
     inputSchema: {
       type: 'object',
@@ -155,14 +157,21 @@ const TOOLS = [
       '- add_slide {after: 장 id 또는 null(맨 앞), role?: 카탈로그의 역할 이름, layout?: 레이아웃 id, as?: "n1"} role이나 layout 중 하나는 있어야 한다.',
       '- remove_slide {slide} 빈 장만 지운다. 내용이 있으면 has_content로 실패하니 set_hidden을 쓴다.',
       '- move_slide {slide, after: 장 id 또는 null(맨 앞)}',
-      '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다. 부품 장(compose)은 바꾸지 않고, 부품 장으로 바꾸지도 않는다.',
+      '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다. ' +
+        'layout을 compose로 하면 같은 내용의 부품 장이 되고(표지, 단락 장은 안 됨), 부품 장은 그 레이아웃의 부품 하나뿐일 때만 다른 레이아웃으로 되돌릴 수 있다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?, contain?: 이미지와 설명, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨)}',
       '- set_theme {theme?: 테마 id, accent?: "#rrggbb"(카탈로그 accents의 색 조합에서 고르기) 또는 null(테마 기본색), motion?: 발표할 때 움직임(카탈로그 motions), font?: 제목 글꼴(카탈로그 fonts, null은 테마 글꼴), size?: 글자 크기(textSizes), footer?: 아래 표시(footers), transition?: 장 넘기기(transitions)}',
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
-      '- set_hint {slide, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸.',
+      '- set_hint {slide, block?, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸. block이 있으면 부품 장의 그 부품 칸(카탈로그 blocks[].fields, items.fields).',
+      '부품 장(compose): 줄은 위에서 아래로, 한 줄에 부품이 왼쪽에서 오른쪽으로 놓인다. 줄 수, 한 줄과 한 장의 부품 수, 고를 수 있는 너비는 카탈로그 blockRules. 부품마다 가장 좁은 너비는 blocks[].minSpan. 장에 자리가 모자라면 no_room으로 건너뛴다.',
+      '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: row(그 차례에 새 줄, 0이 맨 위) 또는 beside(그 부품의 줄에)와 side(before|after, 기본 after). 자리를 빼면 알아서 놓는다.',
+      '- remove_block {slide, block} 빈 부품만 뺀다. 내용이 있으면 has_content.',
+      '- move_block {slide, block, 자리} 부품을 옮긴다. 글은 부품과 함께 간다. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다.',
+      '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
+      '- set_spans {slide, block, spans} 그 부품이 있는 줄의 칸 너비. blockRules.spans에서 그 줄의 부품 수에 맞는 것을 고른다.',
     ].join('\n'),
     inputSchema: {
       type: 'object',
@@ -179,9 +188,9 @@ const TOOLS = [
               op: { type: 'string', enum: OP_NAMES },
               slide: refSchema,
               after: { anyOf: [refSchema, { type: 'null' }] },
-              layout: { type: 'string', enum: AI_LAYOUTS },
+              layout: { type: 'string', enum: LAYOUT_ORDER },
               role: { type: 'string', maxLength: 24 },
-              as: { type: 'string', pattern: '^n[0-9]{1,2}$' },
+              as: { type: 'string', pattern: '^[np][0-9]{1,2}$' },
               hidden: { type: 'boolean' },
               count: { type: 'integer', minimum: 0, maximum: 20 },
               highlight: { type: 'integer', minimum: -1, maximum: 19 },
@@ -199,6 +208,14 @@ const TOOLS = [
               field: { type: 'string' },
               item: { type: 'integer', minimum: 0 },
               text: { type: 'string' },
+              block: blockRefSchema,
+              type: { type: 'string', enum: BLOCK_TYPES },
+              look: { type: 'string', enum: BLOCK_LOOK_IDS },
+              effect: { type: 'string', enum: BLOCK_EFFECT_IDS },
+              row: { type: 'integer', minimum: 0, maximum: 3 },
+              beside: blockRefSchema,
+              side: { type: 'string', enum: ['before', 'after'] },
+              spans: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'integer', minimum: 1, maximum: 12 } },
             },
             required: ['op'],
             additionalProperties: false,

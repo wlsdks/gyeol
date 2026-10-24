@@ -119,6 +119,11 @@ describe('모양만 고르기', () => {
     expect(badBlocks((b) => (b.span = 13))).toBe(false)
     expect(badBlocks((b) => (b.note = SECRET))).toBe(false)
     expect(badBlocks((b) => ((b.fields as Record<string, string>).text = SECRET))).toBe(false)
+    // 부품 id는 해시 id(b로 시작)만. 원래 id나 글이면 버린다. 예전 앱이 쓴 모양 파일처럼 없으면 받는다
+    expect(badBlocks((b) => (b.id = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.id = 's12345678'))).toBe(false)
+    expect(badBlocks((b) => delete b.id)).toBe(true)
+    expect(badBlocks((b) => (b.highlight = SECRET))).toBe(false)
   })
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {

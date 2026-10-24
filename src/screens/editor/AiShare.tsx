@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ASKS, askOf, askSentence, type AskError, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
-import { shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
+import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
+import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES } from '../../deck/themes'
@@ -18,12 +19,14 @@ import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle } from '..
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',
   has_content: '적은 내용이 있어서 지우지 않아요',
-  out_of_range: '이 레이아웃이 담을 수 있는 수를 넘어요',
+  out_of_range: '고를 수 있는 범위를 넘어요',
   not_for_layout: '이 레이아웃에는 없는 설정이에요',
   last_slide: '마지막 남은 장은 지울 수 없어요',
   unknown_role: '모르는 장이에요',
   no_change: '이미 그렇게 되어 있어요',
   not_reviewed: '보지 않았어요',
+  no_block: '그 부품이 지금은 없어요',
+  no_room: '장에 자리가 모자라요',
 }
 
 const ASK_STEP: Record<AskStep, string> = {
@@ -296,6 +299,14 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     const i = deck.slides.findIndex((s) => shapeSlideId(s) === ref)
     return i < 0 ? '없는 장' : `${i + 1}장 ‘${deck.slides[i].purpose}’`
   }
+  // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
+  const blockName = (ref: string) => {
+    if (/^p\d+$/.test(ref)) return named.get(ref) ?? '새 부품'
+    const b = deck.slides.flatMap((s) => (s.rows ?? []).flatMap((r) => r.blocks)).find((x) => shapeBlockId(x) === ref)
+    return b ? `‘${BLOCKS[b.type].name}’ 부품` : '없는 부품'
+  }
+  const placeText = (p: { row?: number; beside?: string; side?: 'before' | 'after' }) =>
+    p.row !== undefined ? `${p.row + 1}번째 줄로` : p.beside ? `${blockName(p.beside)} ${p.side === 'before' ? '앞에' : '옆에'}` : '빈자리에'
   const slide =
     'slide' in op
       ? /^n\d+$/.test(op.slide)
@@ -342,7 +353,29 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     }
     case 'set_guide':
       return { text: `${name(op.slide)} 장 안내 바꾸기`, detail: op.text }
+    case 'add_block': {
+      const label = `‘${BLOCKS[op.type].name}’ 부품`
+      if (op.as) named.set(op.as, `새 ${label}`)
+      return { text: `${name(op.slide)}에 빈 ${label} 넣기`, detail: placeText(op) }
+    }
+    case 'remove_block':
+      return { text: `${name(op.slide)}에서 ${blockName(op.block)} 빼기`, detail: '빈 부품만 빼요' }
+    case 'move_block':
+      return { text: `${name(op.slide)}의 ${blockName(op.block)} 옮기기`, detail: placeText(op) }
+    case 'set_block': {
+      const parts: string[] = []
+      const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => (s.rows ?? []).flatMap((r) => r.blocks)).find((x) => shapeBlockId(x) === op.block)
+      if (op.variant) parts.push(`모양: ${(b && BLOCKS[b.type].variants?.find((v) => v.id === op.variant)?.name) ?? op.variant}`)
+      if (op.look) parts.push(`바탕: ${BLOCK_LOOKS.find((l) => l.id === op.look)?.name}`)
+      if (op.effect) parts.push(`움직임: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)
+      if (op.count !== undefined) parts.push(`${(b && BLOCKS[b.type].items?.label) ?? '항목'} ${op.count}개`)
+      if (op.highlight !== undefined) parts.push(op.highlight < 0 ? '강조 없음' : `${op.highlight + 1}번째를 강조`)
+      return { text: `${name(op.slide)}의 ${blockName(op.block)} 모양 바꾸기`, detail: parts.join(', ') }
+    }
+    case 'set_spans':
+      return { text: `${name(op.slide)}의 칸 너비 바꾸기`, detail: `${blockName(op.block)}이 있는 줄을 ${op.spans.join(' : ')}로` }
     case 'set_hint': {
+      if (op.block) return { text: `${name(op.slide)}의 ${blockName(op.block)} 안내 문구`, detail: op.text }
       const spec = slide && LAYOUTS[slide.layout]
       const label = spec?.fields.find((f) => f.key === op.field)?.label ?? spec?.items?.fields.find((f) => f.key === op.field)?.label ?? op.field
       return { text: `${name(op.slide)} 안내 문구: ${op.item !== undefined ? `${op.item + 1}번째 ` : ''}${label}`, detail: op.text }

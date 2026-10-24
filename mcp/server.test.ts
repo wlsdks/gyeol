@@ -106,6 +106,28 @@ describe('MCP 서버', () => {
     expect((await tool('get_result', { request: value.request })).value.status).toBe('pending')
   })
 
+  it('부품 장의 부품을 해시 id로 가리켜 모양을 바꾸자고 할 수 있다', async () => {
+    const { value: list } = await tool('list_decks')
+    const { value: shape } = await tool('get_shape', { deck: list.decks[0].deck })
+    const compose = shape.slides.find((x: { layout: string }) => x.layout === 'compose')
+    const first = compose.blocks[0][0].id
+    expect(first).toMatch(/^b[0-9a-f]{8}$/)
+    const { value, isError } = await tool('propose_changes', {
+      deck: shape.deck,
+      ops: [
+        { op: 'add_block', slide: compose.id, type: 'number', row: 2, as: 'p1' },
+        { op: 'set_block', slide: compose.id, block: 'p1', look: 'card' },
+        { op: 'move_block', slide: compose.id, block: first, beside: 'p1', side: 'after' },
+        { op: 'set_spans', slide: compose.id, block: first, spans: [6, 6] },
+      ],
+    })
+    expect(isError).toBe(false)
+    expect(value.status).toBe('pending')
+    // 부품의 글을 쓰려는 키는 받지 않는다
+    const bad = await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_block', slide: compose.id, block: first, text: '새 글' }] })
+    expect(bad.isError).toBe(true)
+  })
+
   it('칸의 글을 쓰려는 제안은 받지 않는다', async () => {
     const { value: list } = await tool('list_decks')
     const before = readdirSync(join(share, 'requests')).length

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { BLOCKS, canCompose } from '../deck/blocks'
 import { createSampleDeck } from '../deck/sample'
+import type { Deck, Item } from '../deck/types'
 import { applyOps, parseOp, parseRequest, REQUEST_FORMAT, slideEmpty, type Op } from './ops'
-import { shapeSlideId, toShape } from './share'
+import { checkShape, shapeSlideId, toShape } from './share'
 
 const deck = createSampleDeck()
 const shape = toShape(deck)
@@ -123,17 +125,150 @@ describe('부품 장', () => {
     return { ...d, slides: [...d.slides, slide] }
   }
 
-  it('AI는 부품 장을 만들거나 그 장으로 바꾸지 않는다', () => {
-    expect(parseOp({ op: 'add_slide', after: null, layout: 'compose' })).toBeNull()
-    expect(parseOp({ op: 'set_layout', slide: sid(1), layout: 'compose' })).toBeNull()
+  /** 발표의 모든 글 (장의 칸과 항목, 부품의 칸과 항목, 노트). 모양만 바꾸는 제안 전후로 같아야 한다 */
+  function allText(d: Deck): string[] {
+    const out: string[] = []
+    const keys = ['title', 'body', 'value', 'meta', 'image'] as const
+    const take = (fields: Record<string, string>, items: Item[]) => {
+      for (const v of Object.values(fields)) if (v.trim()) out.push(v)
+      for (const it of items) for (const k of keys) if (it[k]?.trim()) out.push(it[k]!)
+    }
+    for (const s of d.slides) {
+      take(s.fields, s.items)
+      for (const r of s.rows ?? []) for (const b of r.blocks) take(b.fields, b.items)
+      if (s.notes.trim()) out.push(s.notes)
+    }
+    return out.sort()
+  }
+
+  // 예시 발표에서 항목이 있고 부품 장으로 바꿀 수 있는 첫 장을 부품 장으로 바꾼 것
+  const at = deck.slides.findIndex((s) => canCompose(s.layout) && s.layout !== 'statement' && s.layout !== 'imageText' && s.layout !== 'case' && s.items.length > 0)
+  const composed = applyOps(deck, [{ op: 'set_layout', slide: sid(at), layout: 'compose' }]).deck
+  const cshape = () => toShape(composed).slides[at]
+
+  it('장을 부품 장으로 바꿔도 글은 하나도 잃지 않고, 부품에 해시 id가 붙는다', () => {
+    const { deck: next, results } = applyOps(deck, [{ op: 'set_layout', slide: sid(at), layout: 'compose' }])
+    expect(results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(next.slides[at].layout).toBe('compose')
+    expect(allText(next)).toEqual(allText(deck))
+    const ids = cshape().blocks!.flat().map((b) => b.id)
+    expect(ids.every((id) => /^b[0-9a-f]{8}$/.test(id!))).toBe(true)
+    expect(checkShape(toShape(next))).toBe(true)
   })
 
-  it('부품 장의 레이아웃은 바꾸지 않는다', () => {
-    const d = withCompose({ body: '적은 글' })
-    const id = shapeSlideId(d.slides[d.slides.length - 1])
-    const { deck: next, results } = applyOps(d, [{ op: 'set_layout', slide: id, layout: 'points' }])
-    expect(results[0]).toEqual({ ok: false, code: 'not_for_layout' })
-    expect(next.slides[next.slides.length - 1].layout).toBe('compose')
+  it('표지와 단락 장은 부품 장으로 바꾸지 않는다', () => {
+    const cover = deck.slides.findIndex((s) => s.layout === 'cover')
+    expect(applyOps(deck, [{ op: 'set_layout', slide: sid(cover), layout: 'compose' }]).results[0]).toEqual({ ok: false, code: 'not_for_layout' })
+  })
+
+  it('그 레이아웃의 부품 하나뿐인 부품 장만 다시 그 레이아웃으로 되돌린다', () => {
+    const layout = deck.slides[at].layout
+    const back = applyOps(composed, [{ op: 'set_layout', slide: cshape().id, layout }])
+    expect(back.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(back.deck.slides[at].layout).toBe(layout)
+    expect(allText(back.deck)).toEqual(allText(deck))
+    // 부품이 더 있으면 되돌리면서 그 부품을 버리게 되므로 하지 않는다
+    const more = applyOps(composed, [{ op: 'add_block', slide: cshape().id, type: 'callout', row: 1 }]).deck
+    expect(applyOps(more, [{ op: 'set_layout', slide: cshape().id, layout }]).results[0]).toEqual({ ok: false, code: 'not_for_layout' })
+  })
+
+  it('빈 부품을 넣고 같은 제안 안에서 이름으로 가리켜 모양, 너비, 자리를 바꾼다. 글은 그대로', () => {
+    const sh = cshape()
+    const { deck: next, results } = applyOps(composed, [
+      { op: 'add_block', slide: sh.id, type: 'number', row: 1, as: 'p1' },
+      { op: 'add_block', slide: sh.id, type: 'callout', beside: 'p1', as: 'p2' },
+      { op: 'set_block', slide: sh.id, block: 'p2', look: 'card', effect: 'rise' },
+      { op: 'set_spans', slide: sh.id, block: 'p1', spans: [8, 4] },
+      { op: 'move_block', slide: sh.id, block: 'p2', beside: 'p1', side: 'before' },
+      // 이미 그 자리면 바꾸지 않는다
+      { op: 'move_block', slide: sh.id, block: 'p2', beside: 'p1', side: 'before' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'applied', 'applied', 'applied', 'applied', 'no_change'])
+    const row = next.slides[at].rows![1]
+    expect(row.blocks.map((b) => b.type)).toEqual(['callout', 'number'])
+    expect(row.blocks[0]).toMatchObject({ look: 'card', effect: 'rise', fields: {} })
+    expect(allText(next)).toEqual(allText(composed))
+    // 처음 있던 부품(글이 든 것)도 옮길 수 있고, 글은 부품과 함께 간다
+    const first = sh.blocks![0][0].id!
+    const moved = applyOps(next, [{ op: 'move_block', slide: sh.id, block: first, row: 1 }])
+    expect(moved.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(moved.deck.slides[at].rows!.map((r) => r.blocks.map((b) => b.type))).toEqual([['callout', 'number'], [composed.slides[at].rows![0].blocks[0].type]])
+    expect(allText(moved.deck)).toEqual(allText(composed))
+  })
+
+  it('빈 부품만 빼고, 글이 있는 부품은 빼지 않는다', () => {
+    const sh = cshape()
+    const { deck: next, results } = applyOps(composed, [
+      { op: 'add_block', slide: sh.id, type: 'number', row: 1, as: 'p1' },
+      { op: 'remove_block', slide: sh.id, block: 'p1' },
+      { op: 'remove_block', slide: sh.id, block: sh.blocks![0][0].id! },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'applied', 'has_content'])
+    expect(next.slides[at].rows).toHaveLength(1)
+  })
+
+  it('항목 수는 정한 범위에서, 줄일 때는 끝의 빈 항목만', () => {
+    const sh = cshape()
+    const b = composed.slides[at].rows![0].blocks[0]
+    const n = b.items.length
+    const { results } = applyOps(composed, [
+      { op: 'set_block', slide: sh.id, block: sh.blocks![0][0].id!, count: n - 1 },
+      { op: 'set_block', slide: sh.id, block: sh.blocks![0][0].id!, count: 99 },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['has_content', 'out_of_range'])
+  })
+
+  it('자리가 모자라면 넣지 않는다', () => {
+    const sh = cshape()
+    const ops: Op[] = Array.from({ length: 8 }, () => ({ op: 'add_block' as const, slide: sh.id, type: 'number' as const }))
+    const { deck: next, results } = applyOps(composed, ops)
+    expect(results.some((r) => r.code === 'no_room')).toBe(true)
+    expect(next.slides[at].rows!.flatMap((r) => r.blocks).length).toBeLessThanOrEqual(6)
+  })
+
+  it('없는 부품, 정해지지 않은 너비, 부품 장이 아닌 장은 건너뛴다', () => {
+    const sh = cshape()
+    const { results } = applyOps(composed, [
+      { op: 'set_block', slide: sh.id, block: 'b00000000', look: 'card' },
+      { op: 'set_spans', slide: sh.id, block: sh.blocks![0][0].id!, spans: [5] },
+      { op: 'add_block', slide: sid(0), type: 'number' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['no_block', 'out_of_range', 'not_for_layout'])
+  })
+
+  it('부품의 칸 안내 문구를 바꾼다 (글은 그대로)', () => {
+    const sh = cshape()
+    const id = sh.blocks![0][0].id!
+    const type = composed.slides[at].rows![0].blocks[0].type
+    const field = BLOCKS[type].items?.fields[0].key ?? BLOCKS[type].fields[0].key
+    const { deck: next, results } = applyOps(composed, [
+      { op: 'set_hint', slide: sh.id, block: id, field, text: '숫자부터 적어 주세요' },
+      { op: 'set_hint', slide: sh.id, block: id, field: 'nothing', text: '안내' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'not_for_layout'])
+    expect(Object.values(next.slides[at].rows![0].blocks[0].hints ?? {})).toContain('숫자부터 적어 주세요')
+    expect(allText(next)).toEqual(allText(composed))
+  })
+
+  it('부품의 글을 쓰는 키는 받지 않는다', () => {
+    const sh = cshape()
+    const id = sh.blocks![0][0].id!
+    expect(parseOp({ op: 'add_block', slide: sh.id, type: 'text', fields: { body: 'x' } })).toBeNull()
+    expect(parseOp({ op: 'set_block', slide: sh.id, block: id, fields: { body: 'x' } })).toBeNull()
+    expect(parseOp({ op: 'set_block', slide: sh.id, block: id, items: [{ title: 'x' }] })).toBeNull()
+    expect(parseOp({ op: 'move_block', slide: sh.id, block: id })).toBeNull()
+    expect(parseOp({ op: 'add_block', slide: sh.id, type: 'text', row: 0, beside: id })).toBeNull()
+  })
+
+  it('빈 부품 장을 새로 만들 수 있다', () => {
+    const { deck: next, results } = applyOps(deck, [
+      { op: 'add_slide', after: sid(0), layout: 'compose', as: 'n1' },
+      { op: 'add_block', slide: 'n1', type: 'number' },
+      { op: 'add_block', slide: 'n1', type: 'number' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'applied', 'applied'])
+    expect(next.slides[1].layout).toBe('compose')
+    expect(next.slides[1].rows!.flatMap((r) => r.blocks)).toHaveLength(2)
   })
 
   it('부품이 있는 장은 글을 비워 둬도 빈 장이 아니라서 지우지 못한다', () => {

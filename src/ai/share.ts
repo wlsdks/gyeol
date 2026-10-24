@@ -4,7 +4,7 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { blockItems, cleanRows, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
+import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
@@ -37,6 +37,8 @@ export interface ShapeSlide {
 }
 
 export interface ShapeBlock {
+  /** 부품을 가리키는 해시 id (b로 시작). 예전 앱이 쓴 모양 파일에는 없다 */
+  id?: string
   type: BlockType
   /** 칸 너비 (12 기준) */
   span: number
@@ -44,6 +46,8 @@ export interface ShapeBlock {
   effect: BlockEffect
   /** 카탈로그 blocks[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
+  /** 강조할 항목을 고를 수 있는 부품만 (카탈로그 blocks[].highlight) */
+  highlight?: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
 }
@@ -70,7 +74,7 @@ export interface ShapeDeck {
 
 const isOneOf = <T extends string>(list: { id: T }[], v: unknown): v is T => list.some((x) => x.id === v)
 
-const OPAQUE_ID = /^[sd][0-9a-f]{8}$/
+const OPAQUE_ID = /^[sdb][0-9a-f]{8}$/
 const HEX = /^#[0-9a-f]{6}$/i
 const ALL_TYPES: DeckType[] = [...DECK_TYPES, 'blank']
 
@@ -86,6 +90,7 @@ function fnv(text: string): string {
 
 export const shapeSlideId = (slide: Pick<Slide, 'id'>) => `s${fnv(`slide:${slide.id}`)}`
 export const shapeDeckId = (deck: Pick<Deck, 'id'>) => `d${fnv(`deck:${deck.id}`)}`
+export const shapeBlockId = (block: Pick<Block, 'id'>) => `b${fnv(`block:${block.id}`)}`
 
 // ---------- 카탈로그: 앱에 원래 있는 말. AI에게 보여 줘도 되는 글자는 이것뿐이다. ----------
 
@@ -146,6 +151,7 @@ export function catalog() {
         motion: spec.motion,
         minSpan: spec.minSpan,
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
+        highlight: (spec.layout && LAYOUTS[spec.layout].highlight?.label) || null,
         fields: blockFieldSpecs(type).map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
         items: spec.items
           ? {
@@ -157,6 +163,8 @@ export function catalog() {
           : null,
       }
     }),
+    // 부품 장의 짜임: 줄 수, 한 줄의 부품 수, 한 장의 부품 수, 한 줄에 고를 수 있는 너비 (12 기준)
+    blockRules: { maxRows: MAX_ROWS, maxInRow: MAX_IN_ROW, maxBlocks: MAX_BLOCKS, spans: [1, 2, 3].map((n) => COMBOS[n]) },
     blockLooks: BLOCK_LOOKS.map((m) => ({ id: m.id, name: m.name })),
     blockEffects: BLOCK_EFFECTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
@@ -289,7 +297,9 @@ function shapeBlock(block: Block, span: number): ShapeBlock {
         return o
       })
     : []
-  return { type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
+  const out: ShapeBlock = { id: shapeBlockId(block), type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
+  if (spec.layout && LAYOUTS[spec.layout].highlight && Number.isInteger(block.highlight)) out.highlight = block.highlight
+  return out
 }
 
 // ---------- 확인: 모양 파일이 정해진 꼴 그대로인지. 하나라도 어긋나면 통째로 버린다. ----------
@@ -304,7 +314,9 @@ function checkStates(v: unknown, keys: string[]): boolean {
 }
 
 function checkBlock(v: unknown): boolean {
-  if (!isObj(v) || !keysIn(v, ['type', 'span', 'look', 'effect', 'variant', 'fields', 'items'])) return false
+  if (!isObj(v) || !keysIn(v, ['id', 'type', 'span', 'look', 'effect', 'variant', 'highlight', 'fields', 'items'])) return false
+  if (v.id !== undefined && !(typeof v.id === 'string' && OPAQUE_ID.test(v.id) && v.id[0] === 'b')) return false
+  if (v.highlight !== undefined && !isInt(v.highlight, -1, 20)) return false
   if (!BLOCK_TYPES.includes(v.type as BlockType)) return false
   const spec = BLOCKS[v.type as BlockType]
   if (!isInt(v.span, 1, 12)) return false

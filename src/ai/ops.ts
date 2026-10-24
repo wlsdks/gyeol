@@ -1,15 +1,44 @@
 // AI가 보내는 변경 요청. 모양만 바꿀 수 있고, 사람이 적은 글은 쓰지도 지우지도 못한다.
 //
 // - 칸의 글(fields, items의 글)을 쓰는 동작은 아예 없다.
-// - 지우는 동작은 빈 장, 빈 항목만. 내용이 있는 장은 '발표에서 빼기'(숨기기)만 된다.
+// - 지우는 동작은 빈 장, 빈 항목, 빈 부품만. 내용이 있는 장은 '발표에서 빼기'(숨기기)만 된다.
+// - 부품 장도 모양은 바꿀 수 있다: 빈 부품 넣기, 부품 옮기기, 너비, 모양, 바탕, 움직임, 항목 수. 부품 안의 글은 그대로 따라간다.
 // - AI가 적을 수 있는 글은 세 가지뿐이고 모두 사람에게 보이는 안내다: 제안 설명, 장 안내, 칸 안내 문구.
 
+import {
+  autoTarget,
+  BLOCK_EFFECT_IDS,
+  BLOCK_LOOK_IDS,
+  BLOCK_TYPES,
+  BLOCKS,
+  blockItems,
+  canCompose,
+  changeRows,
+  COMBOS,
+  composeAreaH,
+  composeFrom,
+  effectOf,
+  fitsHeight,
+  insertAt,
+  lookOf,
+  makeBlock,
+  needH,
+  removeBlock,
+  sameTarget,
+  spanChoices,
+  spansOf,
+  targetOf,
+  unwrapCompose,
+  variantOfBlock,
+  whyNot,
+  type DropTarget,
+} from '../deck/blocks'
 import { BLUEPRINTS } from '../deck/blueprints'
 import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
-import { AI_LAYOUTS, BOLD_LAYOUTS, LAYOUTS, variantIds, variantOf } from '../deck/layouts'
+import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
-import { shapeDeckId, shapeSlideId } from './share'
+import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
 
 export const REQUEST_FORMAT = 'html-maker/request'
 export const MAX_OPS = 40
@@ -20,6 +49,18 @@ export const ROLE_MAX = 24
 
 /** 장을 가리키는 값: 모양 파일의 장 id(s로 시작) 또는 같은 요청에서 새로 만든 장의 이름(n1, n2...) */
 type SlideRef = string
+/** 부품을 가리키는 값: 모양 파일의 부품 id(b로 시작) 또는 같은 요청에서 새로 넣은 부품의 이름(p1, p2...) */
+type BlockRef = string
+
+/**
+ * 부품을 놓을 자리. row만 있으면 그 차례에 새 줄(0이 맨 위), beside가 있으면 그 부품의 줄에서 앞(before)이나 뒤(after).
+ * 둘 다 없으면 편집기에서 '넣기'를 누를 때처럼 알아서 (마지막 줄 옆이나 아래)
+ */
+interface Place {
+  row?: number
+  beside?: BlockRef
+  side?: 'before' | 'after'
+}
 
 export type Op =
   | { op: 'add_slide'; after: SlideRef | null; layout?: LayoutId; role?: string; as?: string }
@@ -42,7 +83,18 @@ export type Op =
       transition?: Transition
     }
   | { op: 'set_guide'; slide: SlideRef; text: string }
-  | { op: 'set_hint'; slide: SlideRef; field: string; item?: number; text: string }
+  /** block이 있으면 부품 장의 그 부품 칸 */
+  | { op: 'set_hint'; slide: SlideRef; block?: BlockRef; field: string; item?: number; text: string }
+  /** 부품 장에 빈 부품 넣기 */
+  | ({ op: 'add_block'; slide: SlideRef; type: BlockType; variant?: string; look?: BlockLook; effect?: BlockEffect; as?: string } & Place)
+  /** 빈 부품만 뺀다 */
+  | { op: 'remove_block'; slide: SlideRef; block: BlockRef }
+  /** row나 beside 중 하나. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다 */
+  | ({ op: 'move_block'; slide: SlideRef; block: BlockRef } & Place)
+  /** count는 항목 수(줄일 때는 끝의 빈 항목만), highlight는 강조할 항목(-1은 없음) */
+  | { op: 'set_block'; slide: SlideRef; block: BlockRef; variant?: string; look?: BlockLook; effect?: BlockEffect; count?: number; highlight?: number }
+  /** 그 부품이 있는 줄의 칸 너비 (12 기준, 카탈로그 blockRules.spans 중 하나) */
+  | { op: 'set_spans'; slide: SlideRef; block: BlockRef; spans: number[] }
 
 export type OpName = Op['op']
 export const OP_NAMES: OpName[] = [
@@ -56,6 +108,11 @@ export const OP_NAMES: OpName[] = [
   'set_theme',
   'set_guide',
   'set_hint',
+  'add_block',
+  'remove_block',
+  'move_block',
+  'set_block',
+  'set_spans',
 ]
 
 export interface ChangeRequest {
@@ -79,6 +136,8 @@ export type OpCode =
   | 'unknown_role'
   | 'no_change'
   | 'not_reviewed'
+  | 'no_block'
+  | 'no_room'
 
 export interface OpResult {
   ok: boolean
@@ -88,6 +147,8 @@ export interface OpResult {
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const REF = /^(s[0-9a-f]{8}|n[0-9]{1,2})$/
 const NEW_REF = /^n[0-9]{1,2}$/
+const BLOCK_REF = /^(b[0-9a-f]{8}|p[0-9]{1,2})$/
+const NEW_BLOCK = /^p[0-9]{1,2}$/
 const HEX = /^#[0-9a-f]{6}$/i
 const oneOf = (list: { id: string }[], v: unknown) => list.some((x) => x.id === v)
 export const REQUEST_ID = /^r[0-9a-f]{12}$/
@@ -108,13 +169,97 @@ function refOrNull(v: unknown): SlideRef | null | undefined {
 }
 
 const only = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).every((k) => keys.includes(k))
-// 부품 장은 사람이 직접 꾸미는 장이라 AI가 만들거나 그 장으로 바꾸지 않는다
-const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && AI_LAYOUTS.includes(v as LayoutId)
+const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && LAYOUT_ORDER.includes(v as LayoutId)
+const blockRef = (v: unknown): BlockRef | undefined => (typeof v === 'string' && BLOCK_REF.test(v) ? v : undefined)
+const isInt = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max
+
+/** 놓을 자리. 꼴이 틀리면 null, 없으면 빈 자리({}) */
+function parsePlace(v: Record<string, unknown>): Place | null {
+  if (v.row !== undefined && !isInt(v.row, 0, 3)) return null
+  if (v.beside !== undefined && !blockRef(v.beside)) return null
+  if (v.side !== undefined && v.side !== 'before' && v.side !== 'after') return null
+  if (v.row !== undefined && v.beside !== undefined) return null
+  if (v.side !== undefined && v.beside === undefined) return null
+  return { row: v.row as number | undefined, beside: v.beside as string | undefined, side: v.side as Place['side'] }
+}
+
+/** 부품의 모양 값 (variant는 부품 종류를 알아야 확인할 수 있어서 적용할 때 본다) */
+function parseLooks(v: Record<string, unknown>): boolean {
+  if (v.variant !== undefined && !(typeof v.variant === 'string' && /^[a-z][a-zA-Z0-9]{0,23}$/.test(v.variant))) return false
+  if (v.look !== undefined && !BLOCK_LOOK_IDS.includes(v.look as BlockLook)) return false
+  if (v.effect !== undefined && !BLOCK_EFFECT_IDS.includes(v.effect as BlockEffect)) return false
+  return true
+}
+
+function parseBlockOp(v: Record<string, unknown>): Op | null {
+  const slide = refOrNull(v.slide)
+  if (!slide) return null
+  switch (v.op) {
+    case 'add_block': {
+      if (!only(v, ['op', 'slide', 'type', 'variant', 'look', 'effect', 'as', 'row', 'beside', 'side'])) return null
+      if (!BLOCK_TYPES.includes(v.type as BlockType) || !parseLooks(v)) return null
+      if (v.as !== undefined && !(typeof v.as === 'string' && NEW_BLOCK.test(v.as))) return null
+      const place = parsePlace(v)
+      if (!place) return null
+      return {
+        op: 'add_block',
+        slide,
+        type: v.type as BlockType,
+        variant: v.variant as string | undefined,
+        look: v.look as BlockLook | undefined,
+        effect: v.effect as BlockEffect | undefined,
+        as: v.as as string | undefined,
+        ...place,
+      }
+    }
+    case 'remove_block': {
+      const block = blockRef(v.block)
+      return only(v, ['op', 'slide', 'block']) && block ? { op: 'remove_block', slide, block } : null
+    }
+    case 'move_block': {
+      const block = blockRef(v.block)
+      if (!only(v, ['op', 'slide', 'block', 'row', 'beside', 'side']) || !block) return null
+      const place = parsePlace(v)
+      if (!place || (place.row === undefined && place.beside === undefined)) return null
+      return { op: 'move_block', slide, block, ...place }
+    }
+    case 'set_block': {
+      const block = blockRef(v.block)
+      if (!only(v, ['op', 'slide', 'block', 'variant', 'look', 'effect', 'count', 'highlight']) || !block || !parseLooks(v)) return null
+      if (v.count !== undefined && !isInt(v.count, 0, 20)) return null
+      if (v.highlight !== undefined && !isInt(v.highlight, -1, 19)) return null
+      if ([v.variant, v.look, v.effect, v.count, v.highlight].every((x) => x === undefined)) return null
+      return {
+        op: 'set_block',
+        slide,
+        block,
+        variant: v.variant as string | undefined,
+        look: v.look as BlockLook | undefined,
+        effect: v.effect as BlockEffect | undefined,
+        count: v.count as number | undefined,
+        highlight: v.highlight as number | undefined,
+      }
+    }
+    case 'set_spans': {
+      const block = blockRef(v.block)
+      if (!only(v, ['op', 'slide', 'block', 'spans']) || !block) return null
+      if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > 3 || !v.spans.every((x) => isInt(x, 1, 12))) return null
+      return { op: 'set_spans', slide, block, spans: v.spans as number[] }
+    }
+  }
+  return null
+}
 
 /** 정해진 꼴이 아니면 null. 모르는 키가 하나라도 있으면 받지 않는다. */
 export function parseOp(v: unknown): Op | null {
   if (!isObj(v) || typeof v.op !== 'string') return null
   switch (v.op) {
+    case 'add_block':
+    case 'remove_block':
+    case 'move_block':
+    case 'set_block':
+    case 'set_spans':
+      return parseBlockOp(v)
     case 'add_slide': {
       if (!only(v, ['op', 'after', 'layout', 'role', 'as'])) return null
       const after = refOrNull(v.after ?? null)
@@ -177,11 +322,12 @@ export function parseOp(v: unknown): Op | null {
         }
       }
       // set_hint
-      if (!only(v, ['op', 'slide', 'field', 'item', 'text'])) return null
+      if (!only(v, ['op', 'slide', 'block', 'field', 'item', 'text'])) return null
       const text = cleanText(v.text, HINT_MAX)
       if (!text || typeof v.field !== 'string' || !/^[a-zA-Z]{1,20}$/.test(v.field)) return null
       if (v.item !== undefined && !(Number.isInteger(v.item) && (v.item as number) >= 0 && (v.item as number) < 20)) return null
-      return { op: 'set_hint', slide, field: v.field, item: v.item as number | undefined, text }
+      if (v.block !== undefined && !blockRef(v.block)) return null
+      return { op: 'set_hint', slide, ...(v.block !== undefined ? { block: v.block as string } : {}), field: v.field, item: v.item as number | undefined, text }
     }
     case 'set_theme': {
       if (!only(v, ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'])) return null
@@ -241,6 +387,12 @@ function prefilledWords(): Set<string> {
 
 const blank = (v: string | undefined) => !(v ?? '').trim() || prefilledWords().has(v!.trim())
 const itemEmpty = (it: Item) => (['title', 'body', 'value', 'meta', 'image'] as ItemKey[]).every((k) => blank(it[k]))
+/** 사람이 적은 것이 하나도 없는 부품인지. 숨은 항목(최대 개수 뒤)도 본다 */
+const blockEmpty = (b: Block) => Object.values(b.fields).every(blank) && b.items.every(itemEmpty)
+const blockVariantIds = (type: BlockType) => (BLOCKS[type].variants ?? [{ id: 'base' }]).map((v) => v.id)
+const sameSpans = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
+/** 바꾼 줄들이 장에 들어가지 않는데 바꾸기 전보다 높아지면 (이미 넘치던 장을 줄이는 것은 받는다) */
+const grows = (before: BlockRow[], after: BlockRow[], areaH: number) => !fitsHeight(after, areaH) && needH(after) > needH(before)
 
 /** 사람이 적은 것이 하나도 없는 장인지. 노트도 내용이다. */
 export function slideEmpty(slide: Slide): boolean {
@@ -272,6 +424,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
   let motion = deck.motion
   const named = new Map<string, string>()
   const touched = new Set<string>()
+  /** add_block의 as 이름 → 새 부품의 id */
+  const blockNamed = new Map<string, string>()
 
   const find = (ref: SlideRef): number => {
     const id = NEW_REF.test(ref) ? named.get(ref) : undefined
@@ -283,6 +437,26 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
     slides = slides.map((x, j) => (j === i ? s : x))
     touched.add(s.id)
   }
+  /** 장 안의 부품. 모양 파일의 id가 둘 이상 맞으면 찾지 못한 것으로 친다 */
+  const findBlock = (s: Slide, ref: BlockRef): Block | undefined => {
+    const blocks = (s.rows ?? []).flatMap((r) => r.blocks)
+    if (NEW_BLOCK.test(ref)) return blocks.find((b) => b.id === blockNamed.get(ref))
+    const hits = blocks.filter((b) => shapeBlockId(b) === ref)
+    return hits.length === 1 ? hits[0] : undefined
+  }
+  /** 놓을 자리. 알아서 고르면 null, 옆에 둘 부품이 없으면 'no_block' */
+  const placeOf = (s: Slide, rows: BlockRow[], p: Place): DropTarget | null | 'no_block' => {
+    if (p.row !== undefined) return { kind: 'row', index: p.row }
+    if (p.beside === undefined) return null
+    const next = findBlock(s, p.beside)
+    for (let r = 0; next && r < rows.length; r++) {
+      const c = rows[r].blocks.findIndex((b) => b.id === next.id)
+      if (c >= 0) return { kind: 'cell', row: r, index: c + (p.side === 'before' ? 0 : 1) }
+    }
+    return 'no_block'
+  }
+  // 부품 장의 본문 높이: 잴 수 없으니 제목, 부제 길이와 발표 설정(글자 크기, 보내는 자료)으로 어림한다
+  const areaOf = (s: Slide) => composeAreaH(s, { meta: deck.meta, theme })
 
   const results = ops.map((op): OpResult => {
     const fail = (code: OpCode): OpResult => ({ ok: false, code })
@@ -346,8 +520,21 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         return done
       }
       case 'set_layout': {
-        // 부품 장의 부품은 다른 레이아웃의 칸으로 옮길 수 없다. 바꾸면 사람이 꾸민 것이 안 보이게 된다
-        if (s.layout === 'compose') return fail('not_for_layout')
+        if (s.layout === 'compose' || op.layout === 'compose') {
+          if (s.layout === op.layout) return fail('no_change')
+          // 부품 장으로: 글을 하나도 버리지 않고 같은 모습의 부품으로 옮긴다 (표지, 단락 장은 안 된다)
+          if (op.layout === 'compose') {
+            if (!canCompose(s.layout)) return fail('not_for_layout')
+            put(i, composeFrom(s))
+            return done
+          }
+          // 부품 장에서: 그 레이아웃의 부품 하나뿐일 때만. 다른 부품이 있으면 되돌리면서 버리게 된다
+          const back = unwrapCompose(s, op.layout)
+          if (!back) return fail('not_for_layout')
+          const variant = op.variant ?? variantOf(back)
+          put(i, { ...back, variant: variant === variantIds(op.layout)[0] ? undefined : variant })
+          return done
+        }
         const variant = op.variant ?? (op.layout === s.layout ? variantOf(s) : variantIds(op.layout)[0])
         if (op.layout === s.layout && variant === variantOf(s)) return fail('no_change')
         const items = [...s.items]
@@ -401,7 +588,110 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       case 'set_guide':
         put(i, { ...s, guide: op.text })
         return done
+      case 'add_block':
+      case 'move_block': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const rows = s.rows ?? []
+        const moving = op.op === 'move_block' ? findBlock(s, op.block) : undefined
+        if (op.op === 'move_block' && !moving) return fail('no_block')
+        let block: Block
+        if (op.op === 'add_block') {
+          if (op.variant !== undefined && !blockVariantIds(op.type).includes(op.variant)) return fail('not_for_layout')
+          const variant = op.variant === blockVariantIds(op.type)[0] ? undefined : op.variant
+          block = { ...makeBlock(op.type), ...(variant ? { variant } : {}), ...(op.look ? { look: op.look } : {}), ...(op.effect ? { effect: op.effect } : {}) }
+        } else block = moving!
+        // 옮길 때는 편집기에서 끌 때처럼 부품을 뺀 줄들을 기준으로 자리를 센다
+        const base = moving ? removeBlock(rows, moving.id) : rows
+        const place = placeOf(s, base, op)
+        if (place === 'no_block') return fail('no_block')
+        if (place?.kind === 'row' && place.index > base.length) return fail('out_of_range')
+        const area = areaOf(s)
+        const target = place ?? autoTarget(base, block, area)
+        if (!target) return fail('no_room')
+        if (moving && sameTarget(targetOf(rows, moving.id), target)) return fail('no_change')
+        if (whyNot(base, target, block, area)) return fail('no_room')
+        put(i, { ...s, rows: insertAt(base, target, block)! })
+        if (op.op === 'add_block' && op.as) blockNamed.set(op.as, block.id)
+        return done
+      }
+      case 'remove_block': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const b = findBlock(s, op.block)
+        if (!b) return fail('no_block')
+        if (!blockEmpty(b)) return fail('has_content')
+        put(i, { ...s, rows: removeBlock(s.rows ?? [], b.id) })
+        return done
+      }
+      case 'set_block': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const b = findBlock(s, op.block)
+        if (!b) return fail('no_block')
+        const bs = BLOCKS[b.type]
+        const next: Block = { ...b }
+        if (op.variant !== undefined) {
+          const ids = blockVariantIds(b.type)
+          if (!ids.includes(op.variant)) return fail('not_for_layout')
+          next.variant = op.variant === ids[0] ? undefined : op.variant
+        }
+        if (op.look) next.look = op.look
+        if (op.effect) next.effect = op.effect
+        if (op.count !== undefined) {
+          if (!bs.items) return fail('not_for_layout')
+          if (op.count < bs.items.min || op.count > bs.items.max) return fail('out_of_range')
+          const visible = blockItems(b).length
+          const items = [...b.items]
+          if (op.count > visible) items.splice(visible, 0, ...Array.from({ length: op.count - visible }, emptyItem))
+          else if (op.count < visible) {
+            if (!items.slice(op.count, visible).every(itemEmpty)) return fail('has_content')
+            items.splice(op.count, visible - op.count)
+          }
+          next.items = items
+        }
+        if (op.highlight !== undefined) {
+          if (!bs.layout || !LAYOUTS[bs.layout].highlight) return fail('not_for_layout')
+          if (op.highlight >= blockItems(next).length) return fail('out_of_range')
+          next.highlight = op.highlight
+        }
+        const same =
+          variantOfBlock(next) === variantOfBlock(b) && lookOf(next) === lookOf(b) && effectOf(next) === effectOf(b) && next.items.length === b.items.length && next.highlight === b.highlight
+        if (same) return fail('no_change')
+        const rows = s.rows ?? []
+        const after = changeRows(rows, b.id, () => next)
+        if (grows(rows, after, areaOf(s))) return fail('no_room')
+        put(i, { ...s, rows: after })
+        return done
+      }
+      case 'set_spans': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const b = findBlock(s, op.block)
+        if (!b) return fail('no_block')
+        const rows = s.rows ?? []
+        const r = rows.findIndex((x) => x.blocks.some((y) => y.id === b.id))
+        const row = rows[r]
+        if (!(COMBOS[row.blocks.length] ?? []).some((c) => sameSpans(c, op.spans))) return fail('out_of_range')
+        if (sameSpans(spansOf(row), op.spans)) return fail('no_change')
+        // 정해진 비율이라도 부품마다 가장 좁은 너비보다 좁아지면 넣을 수 없다
+        if (!spanChoices(row).some((c) => sameSpans(c, op.spans))) return fail('no_room')
+        const after = rows.map((x, j) => (j === r ? { ...x, spans: op.spans } : x))
+        if (grows(rows, after, areaOf(s))) return fail('no_room')
+        put(i, { ...s, rows: after })
+        return done
+      }
       case 'set_hint': {
+        if (op.block !== undefined) {
+          if (s.layout !== 'compose') return fail('not_for_layout')
+          const b = findBlock(s, op.block)
+          if (!b) return fail('no_block')
+          const bs = BLOCKS[b.type]
+          let key = op.field
+          if (op.item !== undefined || !bs.fields.some((f) => f.key === op.field && !f.key.startsWith('$') && !f.image)) {
+            if (!bs.items?.fields.some((f) => f.key === op.field && !f.image)) return fail('not_for_layout')
+            if (op.item !== undefined && op.item >= blockItems(b).length) return fail('out_of_range')
+            key = op.item === undefined ? `items.${op.field}` : `items.${op.item}.${op.field}`
+          }
+          put(i, { ...s, rows: changeRows(s.rows ?? [], b.id, (x) => ({ ...x, hints: { ...x.hints, [key]: op.text } })) })
+          return done
+        }
         if (op.item === undefined && spec.fields.some((f) => f.key === op.field && !f.key.startsWith('$') && !f.image)) {
           put(i, { ...s, hints: { ...s.hints, [op.field]: op.text } })
           return done

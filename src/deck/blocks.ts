@@ -534,7 +534,7 @@ export const MAX_BLOCKS = 6
 export const BLOCK_GAP = 48
 
 /** 한 줄의 부품 수마다 고를 수 있는 칸 너비 */
-const COMBOS: Record<number, number[][]> = {
+export const COMBOS: Record<number, number[][]> = {
   1: [[12]],
   2: [
     [6, 6],
@@ -907,14 +907,18 @@ export function fitsHeight(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): bo
   return needH(rows, gap) <= areaH + 1
 }
 
-/** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
-export function changeIssue(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): NoRoom | null {
-  const next = rows.map((r) => {
+/** 부품 하나를 바꾼 줄들. 바뀐 부품이 지금 너비에 들어가지 않으면 그 줄의 너비를 다시 고른다 (놓을 때와 같은 규칙) */
+export function changeRows(rows: BlockRow[], blockId: string, fn: (b: Block) => Block): BlockRow[] {
+  return rows.map((r) => {
     if (!r.blocks.some((b) => b.id === blockId)) return r
     const blocks = r.blocks.map((b) => (b.id === blockId ? fn(b) : b))
-    // 바뀐 부품이 지금 너비에 들어가지 않으면 그 줄의 너비를 다시 고른다 (놓을 때와 같은 규칙)
     return { ...r, blocks, spans: fitSpans(blocks, r.spans) ?? r.spans }
   })
+}
+
+/** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
+export function changeIssue(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): NoRoom | null {
+  const next = changeRows(rows, blockId, fn)
   return fitsHeight(next, areaH) ? null : { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
 }
 
