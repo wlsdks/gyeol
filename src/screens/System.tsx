@@ -54,11 +54,12 @@ const VARIANT_COUNT = LAYOUT_ORDER.reduce((n, id) => n + (LAYOUTS[id].variants?.
 /** 부품이 가장 좁게 들어가는 너비 (12칸 격자의 칸 수 → 쓰는 사람의 말) */
 const NARROWEST: Record<number, string> = { 3: '장 너비의 4분의 1', 4: '장 너비의 3분의 1', 6: '장 너비의 절반', 8: '장 너비의 3분의 2', 12: '한 줄 전체' }
 
-/** 이 레이아웃이 어느 보고 구성에 들어가는지 */
+/** 이 레이아웃이 어느 발표 구성에 들어가는지. 종류가 열셋이라 넷 이상이면 셋만 적고 수를 센다(한 줄을 넘지 않게) */
 function usedIn(id: LayoutId): string {
   const names = DECK_TYPES.filter((t) => BLUEPRINTS[t].recipes.some((r) => r.layout === id)).map((t) => BLUEPRINTS[t].name)
-  if (names.length === DECK_TYPES.length) return '모든 보고 구성에 들어가요'
-  if (!names.length) return '보고 구성에는 없어요. 편집할 때 장 추가에서 넣어요'
+  if (names.length === DECK_TYPES.length) return '모든 발표 구성에 들어가요'
+  if (!names.length) return '발표 구성에는 없어요. 편집할 때 장 추가에서 넣어요'
+  if (names.length > 3) return `${names.slice(0, 3).join(', ')} 등 ${names.length}가지 구성에 들어가요`
   return `${names.join(', ')} 구성에 들어가요`
 }
 

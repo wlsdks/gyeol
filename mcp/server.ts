@@ -121,7 +121,7 @@ const TOOLS = [
   {
     name: 'list_decks',
     description:
-      '사용자가 앱에서 AI 공유를 켠 발표 목록. 제목은 없고 해시 id(d로 시작)로 구분한다. 보고 종류, 장 수, 보고 받는 분, 시간이 나온다. ' +
+      '사용자가 앱에서 AI 공유를 켠 발표 목록. 제목은 없고 해시 id(d로 시작)로 구분한다. 발표 종류, 장 수, 듣는 사람, 시간이 나온다. ' +
       '최근에 고친 순서라서, 여러 개면 맨 앞이 지금 고치고 있는 발표일 가능성이 크다. 목록이 비었으면 앱의 편집 화면 위쪽 AI 버튼에서 공유를 켜 달라고 안내한다.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: false },
@@ -129,7 +129,7 @@ const TOOLS = [
   {
     name: 'get_catalog',
     description:
-      '쓸 수 있는 레이아웃(칸과 항목 수 범위 포함), 보고 종류별 장 역할(role)과 순서, 보고 받는 분, 시간, 방식, 테마, 부품 장에 쓰이는 부품(blocks). ' +
+      '쓸 수 있는 레이아웃(칸과 항목 수 범위 포함), 발표 종류별 장 역할(role)과 순서, 듣는 사람, 시간, 방식, 테마, 부품 장에 쓰이는 부품(blocks). ' +
       '제안을 만들기 전에 한 번 읽는다. add_slide의 role에 여기 나온 역할 이름을 쓰면 그 장의 안내와 이름표까지 같이 들어간다.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: false },

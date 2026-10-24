@@ -13,7 +13,7 @@ import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
 import { particle } from './editor/noRoom'
-import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
+import { Brand, CopyIcon, FolderIcon, Info, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
 
 const SAMPLE_ID = 'sample'
 
@@ -121,7 +121,7 @@ export function Home() {
         {decks && decks.length === 0 && (
           <div className="home-empty">
             <p className="home-empty-h">아직 만든 발표가 없어요</p>
-            <p className="home-empty-p">어떤 발표인지 알려 주시면 순서와 장 구성을 잡아 드려요. 내용만 채우면 돼요.</p>
+            <p className="home-empty-p">발표 종류를 고르면 장 구성을 잡아 드려요. 내용만 채우면 돼요.</p>
             <div className="home-empty-actions">
               <button type="button" className="btn btn-primary btn-lg" onClick={() => go({ name: 'new' })}>
                 <PlusIcon />새 발표 만들기
@@ -255,7 +255,10 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
       <p className="store-note is-ready">
         <FolderIcon />
         <span>
-          ‘<b>{folder.name}</b>’ 폴더에 자동으로 보관하고 있어요. 고칠 때마다 저장되고, 버전 기록도 이 폴더에 남아요.
+          ‘<b>{folder.name}</b>’ 폴더에 자동으로 보관해요
+          <Info label="보관 폴더 설명" align="start">
+            고칠 때마다 저장되고, 버전 기록도 이 폴더에 남아요.
+          </Info>
         </span>
         <button type="button" className="btn-link" onClick={() => run(choose)}>
           폴더 바꾸기
@@ -269,7 +272,10 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
       <div className="store-note is-warn">
         <FolderIcon />
         <p>
-          <b>‘{folder.name}’ 폴더와 다시 연결해 주세요.</b> 브라우저를 새로 열면 한 번 더 허용해야 해요. 허용하기 전까지는 이 브라우저에만 저장돼요.
+          <b>‘{folder.name}’ 폴더와 다시 연결해 주세요.</b>
+          <Info label="다시 연결하는 까닭" align="start">
+            브라우저를 새로 열면 한 번 더 허용해야 해요. 허용하기 전까지는 이 브라우저에만 저장돼요.
+          </Info>
         </p>
         <button type="button" className="btn btn-primary btn-sm" onClick={() => run(allow)}>
           허용하기
@@ -283,8 +289,10 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
       <div className="store-note is-warn">
         <FolderIcon />
         <p>
-          <b>보관 폴더를 정해 두세요.</b> 지금은 이 브라우저에만 저장돼서 기록을 지우거나 PC를 바꾸면 사라질 수 있어요. 폴더를 정하면 고칠 때마다 그
-          폴더에 파일로 저장되고, 버전 기록도 함께 남아요.
+          <b>보관 폴더를 정해 두세요.</b> 지금은 이 브라우저에만 저장돼요.
+          <Info label="보관 폴더 설명" align="start">
+            브라우저 기록을 지우거나 PC를 바꾸면 사라질 수 있어요. 폴더를 정하면 고칠 때마다 그 폴더에 파일로 저장되고, 버전 기록도 함께 남아요.
+          </Info>
         </p>
         <button type="button" className="btn btn-primary btn-sm" onClick={() => run(choose)}>
           보관 폴더 고르기
@@ -297,8 +305,10 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
     <p className="store-note is-warn">
       <FolderIcon />
       <span>
-        지금은 이 브라우저에만 저장돼요. 크롬이나 엣지에서 열면 PC 폴더에 자동으로 보관할 수 있어요. 그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을
-        내려받아 두세요.
+        <b>지금은 이 브라우저에만 저장돼요.</b> 크롬이나 엣지에서 열면 PC 폴더에 보관할 수 있어요.
+        <Info label="보관 설명" align="start">
+          그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을 내려받아 두세요.
+        </Info>
       </span>
     </p>
   )

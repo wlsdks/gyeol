@@ -56,6 +56,13 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     expect(unknownParts(withSlides(compose(raw({ ...text, fields: { body: '글', bad: 3 } }))))).toBe(0)
   })
 
+  it('모르는 발표 종류와 듣는 사람은 세지 않는다', () => {
+    // 종류와 듣는 사람은 장을 처음 만들 때만 쓰고, 예전 버전도 고쳐 저장할 때 값을 그대로 둔다(잃는 글이 없다).
+    // 이름은 내 발표 목록에서 비고, AI에게는 빈 발표와 '여러 분이 함께'로 보인다(share.test.ts)
+    const meta = { ...createSampleDeck().meta, type: 'townhall', audience: 'board' } as unknown as Deck['meta']
+    expect(unknownParts({ ...createSampleDeck(), meta })).toBe(0)
+  })
+
   it('아는 것만 남긴 사본은 그대로 열리고, 아는 부품의 글은 다 남는다', () => {
     const text = { ...sampleBlock('text'), fields: { body: '남을 글' } }
     const deck = withSlides(
