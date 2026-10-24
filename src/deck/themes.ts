@@ -113,8 +113,8 @@ export const TEXT_SIZES: { id: TextSize; name: string; description: string }[] =
 ]
 
 export const FOOTERS: { id: FooterMode; name: string; description: string }[] = [
-  { id: 'section', name: '단락만', description: '아래에 지금 단락만 보여요. 화면으로 발표할 때 알맞아요.' },
-  { id: 'all', name: '단락과 쪽 번호', description: '아래에 지금 단락과 쪽 번호가 보여요. 인쇄하거나 보낼 때 알맞아요.' },
+  { id: 'section', name: '섹션만', description: '아래에 지금 섹션 이름만 보여요. 화면으로 발표할 때 알맞아요.' },
+  { id: 'all', name: '섹션과 쪽 번호', description: '아래에 지금 섹션 이름과 쪽 번호가 보여요. 인쇄하거나 보낼 때 알맞아요.' },
   { id: 'page', name: '쪽 번호만', description: '아래에 쪽 번호만 보여요.' },
   { id: 'none', name: '숨기기', description: '아래에 아무것도 넣지 않아요.' },
 ]

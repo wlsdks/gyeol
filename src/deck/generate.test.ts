@@ -66,6 +66,16 @@ describe('createDeck', () => {
     theme: 'white' as const,
   }
 
+  it('보고 종류 카드에 보일 장은 이야기 흐름마다 하나씩, 그 보고의 구성에 있는 장이다', () => {
+    // 마법사(Wizard.tsx)는 구성(recipes)에서 이 장들을 찾아 그린다
+    for (const type of DECK_TYPES) {
+      const bp = BLUEPRINTS[type]
+      if (!bp.showcase) continue
+      expect(bp.showcase).toHaveLength(bp.storyline.length)
+      for (const purpose of bp.showcase) expect(bp.recipes.some((r) => r.purpose === purpose), `${type}: ${purpose}`).toBe(true)
+    }
+  })
+
   it('표지 제목, 결정 요청, 목차를 미리 채운다', () => {
     const deck = createDeck(input)
     expect(deck.title).toBe('구독형 품질 관리 사업 제안')

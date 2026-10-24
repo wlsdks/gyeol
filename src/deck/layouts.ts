@@ -78,7 +78,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { id: 'band', name: '아래 띠' },
       { id: 'full', name: '색 면' },
     ],
-    panes: { name: '결정 요청 판', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
+    panes: { name: '결정 요청', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },
@@ -92,13 +92,13 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   section: {
     id: 'section',
     name: '섹션 구분',
-    description: '이야기의 큰 단락을 나눠요',
+    description: '이야기를 큰 덩어리로 나눠요',
     // 기본은 테마 바탕: 흰 장 사이에 검은 장이 끼면 장마다 무게가 달라 보인다. 짙은 면은 고르는 모양
     variants: [
       { id: 'base', name: '바탕' },
       { id: 'bold', name: '색 면' },
     ],
-    fields: [title('이번 단락의 제목'), lead('이 단락에서 다룰 내용')],
+    fields: [title('이번 섹션의 제목'), lead('이 섹션에서 다룰 내용')],
   },
   agenda: {
     id: 'agenda',
@@ -492,7 +492,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'case',
     name: '사례',
     description: '비슷한 사례와 그 결과',
-    panes: { name: '결과 판', el: '.cs-side', sides: [3, 4, 5], base: 4 },
+    panes: { name: '결과', el: '.cs-side', sides: [3, 4, 5], base: 4 },
     fields: [
       { key: 'client', label: '대상', hint: '고객사, 업종 또는 부서' },
       { key: 'title', label: '결과', hint: '얻은 결과를 한 문장으로', multiline: true },
@@ -692,7 +692,7 @@ export const LAYOUT_GROUPS: { name: string; description: string; layouts: Layout
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
   { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'position', 'pricing', 'table'] },
   { name: '자료와 사례', description: '화면, 사례, 고객사', layouts: ['imageText', 'case', 'logos'] },
-  { name: '시작과 끝', description: '표지, 목차, 단락, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
+  { name: '시작과 끝', description: '표지, 목차, 섹션, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
 ]
 
 /** 칸의 안내 문구. 항목 하나에 붙은 안내, 슬라이드에 지정된 안내, 레이아웃 기본값 순으로 쓴다. */

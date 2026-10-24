@@ -4,14 +4,26 @@ import { pageInfo } from '../deck/fields'
 import { createDeck, formatDate, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { THEMES, THEME_ORDER } from '../deck/themes'
-import type { Audience, DeckMeta, DeckType, Method, ThemeId } from '../deck/types'
+import type { Audience, Deck, DeckMeta, DeckType, Method, Slide, ThemeId } from '../deck/types'
 import { cx } from '../lib/cx'
 import { go } from '../lib/router'
-import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
-import { Brand, ChevronIcon, SAVE_HELP, useToast } from './ui'
+import { Brand, SAVE_HELP, useToast } from './ui'
 
-const STEPS = ['보고 종류', '듣는 분과 시간', '기본 정보']
+// 보고 상황: 누구에게, 얼마나, 어떻게 보고하는지. 표지: 제목, 결정 요청, 발표자와 테마
+const STEPS = ['보고 종류', '보고 상황', '표지']
+
+/** 보고 종류 카드의 작은 그림들: 이야기 흐름의 차례마다 그 보고에서 만들어지는 장 하나 (blueprints의 showcase) */
+function filmOf(type: DeckType): { deck: Deck; slides: Slide[] } {
+  const bp = BLUEPRINTS[type]
+  const deck = createDeck({ type, audience: 'mixed', minutes: 20, method: 'live', title: '', org: '', presenter: '', theme: 'white' })
+  const slides = (bp.showcase ?? []).flatMap((purpose) => {
+    const recipe = bp.recipes.find((r) => r.purpose === purpose)
+    return recipe ? [makeSlide(recipe.layout, recipe)] : []
+  })
+  return { deck: { ...deck, slides }, slides }
+}
 
 export function Wizard() {
   const [step, setStep] = useState(0)
@@ -90,7 +102,7 @@ export function Wizard() {
         {step === 0 && (
           <section className="wz-sec">
             <h1 className="wz-h">어떤 보고인가요?</h1>
-            <p className="wz-sub">팀장님, 본부장님께 무엇을 보고하는지 고르면 그에 맞는 순서와 장 구성을 잡아 드려요.</p>
+            <p className="wz-sub">무엇을 보고하는지 고르면 그에 맞는 순서로 장을 만들어 드려요. 그림은 그 순서대로 만들어지는 장이에요.</p>
             <div className="wz-types">
               {DECK_TYPES.map((t) => {
                 const bp = BLUEPRINTS[t]
@@ -103,21 +115,11 @@ export function Wizard() {
                   >
                     <span className="wz-type-name">{bp.name}</span>
                     <span className="wz-type-desc">{bp.description}</span>
-                    <span className="wz-flow" aria-label={`이야기 흐름: ${bp.storyline.join(', ')}`}>
-                      {bp.storyline.map((s, i) => (
-                        <span key={s} className="wz-flow-step">
-                          {i > 0 && <ChevronIcon />}
-                          {s}
-                        </span>
-                      ))}
-                    </span>
+                    <Film type={t} label={bp.storyline} />
                   </button>
                 )
               })}
             </div>
-            <button type="button" className="btn-link wz-blank" onClick={() => chooseType('blank')}>
-              정해진 구성 없이 빈 발표로 시작하기
-            </button>
           </section>
         )}
 
@@ -166,16 +168,16 @@ export function Wizard() {
             <aside className="wz-plan">
               <p className="wz-plan-k">{blueprint.name}</p>
               <p className="wz-plan-h" aria-live="polite">
-                {preview.slides.length}장으로 구성돼요
+                {preview.slides.length}장으로 만들어요
               </p>
-              {/* 실제로 만들어질 장을 작게 그린다. 내용은 비어 있고 칸마다 안내만 흐리게 보인다 */}
-              <ol className="wz-plan-grid">
-                {preview.slides.map((s, i) => (
-                  <li key={s.id} className={cx(s.layout === 'section' && 'is-section')} title={LAYOUTS[s.layout].name}>
-                    <span aria-hidden="true">
-                      <ScaledSlide width={86}>
+              {/* 실제로 만들어질 장을 작게 그린다. 칸마다 들어갈 예시가 보이고, 편집기에서는 이 자리에 회색 안내로 남는다 */}
+              <ol className="wz-plan-grid wz-real">
+                {planKeys(preview.slides).map(([key, s], i) => (
+                  <li key={key} className={cx(s.layout === 'section' && 'is-section')} title={LAYOUTS[s.layout].name}>
+                    <span className="wz-shot" aria-hidden="true">
+                      <FitSlide>
                         <SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} />
-                      </ScaledSlide>
+                      </FitSlide>
                     </span>
                     <span className="wz-plan-name">
                       <span className="wz-plan-n">{i + 1}</span>
@@ -189,64 +191,72 @@ export function Wizard() {
         )}
 
         {step === 2 && (
-          <section className="wz-sec">
-            <h1 className="wz-h">기본 정보를 알려 주세요</h1>
-            <p className="wz-sub">나중에 언제든 바꿀 수 있어요. 비워 두어도 괜찮아요.</p>
-            <div className="wz-fields">
-              <label className="field">
-                <span className="field-label">발표 제목</span>
-                <input
-                  className="input"
-                  value={title}
-                  placeholder={`예: ${blueprint.examples.title}`}
-                  onChange={(e) => setTitle(e.target.value)}
-                  autoFocus
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">소속</span>
-                <input className="input" value={org} placeholder="예: 영업 2팀" onChange={(e) => setOrg(e.target.value)} />
-              </label>
-              <label className="field">
-                <span className="field-label">발표자</span>
-                <input className="input" value={presenter} placeholder="예: 김민준 매니저" onChange={(e) => setPresenter(e.target.value)} />
-              </label>
-              <label className="field wz-field-wide">
-                <span className="field-label">
-                  결정받고 싶은 것 <span className="field-opt">표지에 크게 보여요</span>
-                </span>
-                <input className="input" value={ask} placeholder={`예: ${blueprint.examples.ask}`} onChange={(e) => setAsk(e.target.value)} />
-              </label>
+          <section className="wz-sec wz-split">
+            <div className="wz-form">
+              <h1 className="wz-h">표지를 채워 주세요</h1>
+              <p className="wz-sub">적는 대로 오른쪽 표지가 바뀌어요. 비워 두고 나중에 채워도 돼요.</p>
+              <div className="wz-fields">
+                <label className="field">
+                  <span className="field-label">발표 제목</span>
+                  <input
+                    className="input"
+                    value={title}
+                    placeholder={`예: ${blueprint.examples.title}`}
+                    onChange={(e) => setTitle(e.target.value)}
+                    autoFocus
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">
+                    결정받고 싶은 것 <span className="field-opt">표지에 크게 보여요</span>
+                  </span>
+                  <input className="input" value={ask} placeholder={`예: ${blueprint.examples.ask}`} onChange={(e) => setAsk(e.target.value)} />
+                </label>
+                <div className="wz-pair">
+                  <label className="field">
+                    <span className="field-label">소속</span>
+                    <input className="input" value={org} placeholder="예: 영업 2팀" onChange={(e) => setOrg(e.target.value)} />
+                  </label>
+                  <label className="field">
+                    <span className="field-label">발표자</span>
+                    <input className="input" value={presenter} placeholder="예: 김민준 매니저" onChange={(e) => setPresenter(e.target.value)} />
+                  </label>
+                </div>
+              </div>
+
+              <fieldset className="wz-group">
+                <legend>테마</legend>
+                <div className="wz-options wz-options-2">
+                  {THEME_ORDER.map((id) => (
+                    <Option key={id} on={theme === id} onClick={() => setTheme(id)} name={THEMES[id].name} desc={THEMES[id].description} swatch={id} />
+                  ))}
+                </div>
+              </fieldset>
             </div>
 
-            <fieldset className="wz-group">
-              <legend>테마</legend>
-              <div className="wz-themes">
-                {THEME_ORDER.map((id) => (
-                  <ThemeCard
-                    key={id}
-                    id={id}
-                    on={theme === id}
-                    onClick={() => setTheme(id)}
-                    title={title || blueprint.defaultTitle}
-                    org={org}
-                    presenter={presenter}
-                    ask={ask}
-                  />
-                ))}
-              </div>
-            </fieldset>
+            <aside className="wz-plan wz-cover" aria-label="표지 미리 보기">
+              <p className="wz-plan-k">표지 미리 보기</p>
+              <span className="wz-shot" aria-hidden="true">
+                <FitSlide>
+                  <CoverPreview id={theme} title={title || blueprint.defaultTitle} org={org} presenter={presenter} ask={ask} />
+                </FitSlide>
+              </span>
+              <p className="wz-cover-note">나머지 {preview.slides.length - 1}장은 만든 뒤 편집기에서 채워요.</p>
+            </aside>
           </section>
         )}
       </main>
 
       <footer className="wz-bottom">
+        {/* 빈 발표는 고르는 카드 밖의 다른 길이라 아래 줄 왼쪽에 (낮은 화면에서도 카드 두 줄이 스크롤 없이 보이게) */}
         {step > 0 ? (
           <button type="button" className="btn btn-ghost" onClick={back}>
             이전
           </button>
         ) : (
-          <span />
+          <button type="button" className="btn-link wz-blank" onClick={() => chooseType('blank')}>
+            정해진 구성 없이 빈 발표로 시작하기
+          </button>
         )}
         {step === 0 && (
           <button type="button" className="btn btn-primary btn-lg" onClick={() => setStep(1)}>
@@ -271,10 +281,46 @@ export function Wizard() {
   )
 }
 
-function Option({ on, onClick, name, desc }: { on: boolean; onClick: () => void; name: string; desc: string }) {
+/** 같은 장이 두 번 나와도(단락 장 같은) 고를 때마다 다시 그려지지 않게, 장의 역할과 차례로 이름을 붙인다 */
+function planKeys(slides: Slide[]): [string, Slide][] {
+  const seen = new Map<string, number>()
+  return slides.map((s) => {
+    const base = `${s.layout}:${s.layout === 'section' ? s.section : s.purpose}`
+    const n = seen.get(base) ?? 0
+    seen.set(base, n + 1)
+    return [`${base}:${n}`, s]
+  })
+}
+
+/** 보고 종류 카드의 작은 그림 줄. 그림 아래에 이야기 흐름의 이름 */
+function Film({ type, label }: { type: DeckType; label: string[] }) {
+  const film = useMemo(() => filmOf(type), [type])
+  const info = useMemo(() => pageInfo(film.slides), [film])
+  if (!film.slides.length) return null
+  return (
+    <span className="wz-film wz-real" aria-label={`이야기 흐름: ${label.join(', ')}`}>
+      {film.slides.map((s, i) => (
+        <span key={s.id} className="wz-film-item">
+          <span className="wz-shot" aria-hidden="true">
+            <FitSlide>
+              <SlideCanvas deck={film.deck} slide={s} mode="preview" {...pageProps(info, s.id)} />
+            </FitSlide>
+          </span>
+          <span className="wz-film-cap">
+            <span className="wz-plan-n">{i + 1}</span>
+            {label[i]}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function Option({ on, onClick, name, desc, swatch }: { on: boolean; onClick: () => void; name: string; desc: string; swatch?: ThemeId }) {
   return (
     <button type="button" className={cx('opt', on && 'is-on')} aria-pressed={on} onClick={onClick}>
       <span className="opt-radio" aria-hidden="true" />
+      {swatch && <span className={cx('wz-swatch', `wz-swatch-${swatch}`)} aria-hidden="true" />}
       <span className="opt-text">
         <span className="opt-name">{name}</span>
         <span className="opt-desc">{desc}</span>
@@ -283,8 +329,8 @@ function Option({ on, onClick, name, desc }: { on: boolean; onClick: () => void;
   )
 }
 
-function ThemeCard(props: { id: ThemeId; on: boolean; onClick: () => void; title: string; org: string; presenter: string; ask: string }) {
-  const { id, on, onClick, title, org, presenter, ask } = props
+function CoverPreview(props: { id: ThemeId; title: string; org: string; presenter: string; ask: string }) {
+  const { id, title, org, presenter, ask } = props
   const slide = useMemo(() => {
     const s = makeSlide('cover')
     s.fields.title = title
@@ -302,13 +348,5 @@ function ThemeCard(props: { id: ThemeId; on: boolean; onClick: () => void; title
     contact: '',
     logo: '',
   }
-  return (
-    <button type="button" className={cx('wz-theme', on && 'is-on')} aria-pressed={on} title={THEMES[id].description} onClick={onClick}>
-      <ScaledSlide width={220}>
-        <SlideCanvas deck={{ meta, theme: { id }, title }} slide={slide} mode="final" />
-      </ScaledSlide>
-      <span className="wz-theme-name">{THEMES[id].name}</span>
-      <span className="wz-theme-desc">{THEMES[id].description}</span>
-    </button>
-  )
+  return <SlideCanvas deck={{ meta, theme: { id }, title }} slide={slide} mode="preview" />
 }

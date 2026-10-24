@@ -143,7 +143,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         : null
       : canCompose(slide.layout)
         ? '넣으면 컴포넌트 장이 돼요'
-        : '표지와 단락 장이라 다음 장에 새로 넣어요'
+        : '표지와 섹션 장이라 다음 장에 새로 넣어요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   const showLinks = !group || group === LINK_GROUP.name
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다

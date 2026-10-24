@@ -766,7 +766,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       : drag.plan === 'next'
         ? compose || canCompose(slide.layout)
           ? `${drag.blocked ? noRoomText(drag.blocked, drag.block.type, 'slide').why : '이 장에는 자리가 없어요.'} 놓으면 다음 장에 새로 만들어 넣어요.`
-          : '표지와 단락 장에는 넣을 수 없어요. 놓으면 다음 장에 컴포넌트 장을 새로 만들어요.'
+          : '표지와 섹션 장에는 넣을 수 없어요. 놓으면 다음 장에 컴포넌트 장을 새로 만들어요.'
         : drag.kind === 'new' && !drag.plan
           ? '슬라이드 위로 끌어 오세요'
           : null

@@ -368,7 +368,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (panes && op.flip !== undefined) {
         // 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
         const right = panes.start ? op.flip : !op.flip
-        parts.push(`${panes.name} 자리: ${right ? '오른쪽' : '왼쪽'}`)
+        parts.push(`${panes.name} 위치: ${right ? '오른쪽' : '왼쪽'}`)
       }
       if (panes && op.pane !== undefined) parts.push(`${panes.name} 너비: ${sideName(op.pane ?? panes.base, panes.base)}`)
       if (op.contain !== undefined) parts.push(op.contain ? '이미지 전체 보이기' : '이미지로 채우기')

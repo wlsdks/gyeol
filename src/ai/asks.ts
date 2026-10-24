@@ -88,7 +88,7 @@ export const ASKS = [
     name: '테마와 움직임',
     description: '보고 받는 분에 맞게 테마, 글꼴, 움직임을 골라요',
     prompt:
-      '보고 받는 분(audience)과 발표 방식(method)에 맞게 테마, 글꼴, 장 넘기기, 발표할 때 움직임을 골라 주세요. 장마다 바탕을 바꿀 필요가 있으면 단락을 여는 장 위주로만 바꾸세요.',
+      '보고 받는 분(audience)과 발표 방식(method)에 맞게 테마, 글꼴, 장 넘기기, 발표할 때 움직임을 골라 주세요. 장마다 바탕을 바꿀 필요가 있으면 섹션을 여는 장 위주로만 바꾸세요.',
   },
 ] as const satisfies readonly Ask[]
 

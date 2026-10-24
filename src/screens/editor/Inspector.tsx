@@ -12,7 +12,7 @@ import { PREVIEW_MOTION } from './DeckMenus'
 import { Info, Toggle } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
-const PREVIEW_SECTIONS = ['단락 1', '단락 2', '단락 3']
+const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
 
 const METHOD_TIPS: Record<Deck['meta']['method'], string> = {
   live: '현장 발표에서는 화면의 글을 줄이고, 말로 할 설명은 아래 발표자 노트에 적어 두세요.',
@@ -104,8 +104,8 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
           {panes && side !== null && (
             <>
               <div className="ins-row ins-row-wrap">
-                <span className="ins-label">{panes.name} 자리</span>
-                <div className="seg seg-wrap" role="group" aria-label={`${panes.name} 자리`}>
+                <span className="ins-label">{panes.name} 위치</span>
+                <div className="seg seg-wrap" role="group" aria-label={`${panes.name} 위치`}>
                   {(['left', 'right'] as const).map((at) => {
                     // 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
                     const flip = panes.start ? at === 'right' : at === 'left'
@@ -134,7 +134,7 @@ export function Inspector({ deck, slide, onFocusField }: { deck: Deck; slide: Sl
                   ))}
                 </div>
               </div>
-              <p className="ins-note">장 위에서 판 위쪽의 이름표를 끌어 옮기고, 판 사이를 끌어 너비를 바꿔도 돼요.</p>
+              <p className="ins-note">장 위에서 위쪽의 이름표를 끌어 옮기거나, 경계를 끌어 너비를 바꿔도 돼요.</p>
             </>
           )}
           {slide.layout === 'imageText' && (

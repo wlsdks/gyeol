@@ -282,7 +282,7 @@ export function PaneTools() {
       <button
         type="button"
         className="pn-handle"
-        title={below ? `끌어서 ${spec.name}을 옆으로 옮겨요` : spec.below ? `끌어서 ${spec.name}을 반대쪽이나 아래로 옮겨요` : `끌어서 ${spec.name}을 반대쪽으로 옮겨요`}
+        title={below ? '끌어서 옆으로 옮겨요' : spec.below ? '끌어서 반대쪽이나 아래로 옮겨요' : '끌어서 반대쪽으로 옮겨요'}
         aria-label={`${spec.name} 옮기기. 화살표 키로도 옮겨요`}
         onPointerDown={startMove}
         onKeyDown={onHandleKey}

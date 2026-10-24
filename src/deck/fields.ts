@@ -95,7 +95,7 @@ export function pageInfo(slides: Slide[]): PageInfo {
   if (visible.some((s) => s.layout === 'section')) {
     // 섹션 구분 장부터 다음 구분 장 전까지가 한 단락이다.
     for (const s of visible) {
-      if (s.layout === 'section') sections.push(s.fields.title?.trim() || s.section || `${sections.length + 1}단락`)
+      if (s.layout === 'section') sections.push(s.fields.title?.trim() || s.section || `섹션 ${sections.length + 1}`)
       if (sections.length) sectionOf.set(s.id, sections.length - 1)
     }
   } else {

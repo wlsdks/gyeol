@@ -1232,7 +1232,7 @@ select {
 
 .wz-main {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 40px 32px 32px;
 }
@@ -1261,8 +1261,9 @@ select {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 24px 24px 22px;
+  gap: 4px;
+  min-width: 0;
+  padding: 22px 22px 18px;
   border: 1.5px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--panel);
@@ -1290,31 +1291,68 @@ select {
   color: var(--ink-2);
 }
 
-.wz-flow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 18px;
-  color: var(--ink-3);
-  font-size: 13px;
-  font-weight: 600;
+/* 보고 종류 카드의 작은 장 그림: 이야기 흐름의 차례대로 네 장. 글로 된 흐름(배경 > 제안 > …)보다 무엇이 만들어지는지 바로 보인다 */
+.wz-film {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
 }
 
-.wz-flow-step {
-  display: inline-flex;
-  align-items: center;
+.wz-film-item {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.wz-film-cap {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 작은 장 그림의 자리: 16:9 상자에 맞춰 그린다(FitSlide). 고정 너비로 그리면 좁은 창이나 스크롤바가 생긴 창에서 칸 밖으로 넘친다 */
+.wz-shot {
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.wz-shot .slide-frame {
+  border-radius: 4px;
+}
+
+/* 고르는 동안의 그림은 칸마다 들어갈 예시를 진하게: 흐린 안내만 있으면 어떤 장인지 알아보기 어렵다 */
+.wz-real .slide .is-hint {
+  opacity: 1;
+}
+
+.wz-real .slide .is-demo :is(.br-fill, .sk-fill, .sk-diff, .sk-mark, .sk-rate) {
+  opacity: 1;
 }
 
 .wz-blank {
-  margin-top: 24px;
+  align-self: center;
 }
 
 .wz-split {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 48px;
   align-items: start;
+}
+
+/* 표지 미리 보기는 적은 글이 읽히게 조금 더 크게 */
+.wz-split:has(.wz-cover) {
+  grid-template-columns: minmax(0, 1fr) 480px;
 }
 
 .wz-group {
@@ -1383,6 +1421,8 @@ select {
   color: var(--ink-3);
   font-size: 13px;
   line-height: 1.45;
+  /* 좁은 칸에서 '장 / 수는 적게'처럼 낱말 하나만 다음 줄로 넘어가지 않게 */
+  text-wrap: balance;
 }
 
 .wz-chips {
@@ -1414,12 +1454,11 @@ select {
   letter-spacing: -0.02em;
 }
 
-/* 작은 그림 86px: 낮은 화면에서 이 칸에 윈도우 스크롤바(17px)가 생겨도 세 개가 가로로 넘치지 않는 너비 (296 - 17 >= 86 * 3 + 20) */
+/* 낮은 화면에서 이 칸에 윈도우 스크롤바(17px)가 생겨도 가로로 넘치지 않게 칸 너비에 맞춰 나눈다 */
 .wz-plan-grid {
   display: grid;
-  grid-template-columns: repeat(3, 86px);
-  gap: 12px 10px;
-  justify-content: space-between;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1428,13 +1467,23 @@ select {
 .wz-plan-grid li {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
+  animation: wz-in 0.24s ease-out both;
 }
 
-.wz-plan-grid .slide-frame {
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--line);
+/* 고르는 값이 바뀌어 새로 들어온 장만 살짝 나타난다 (그대로인 장은 다시 그리지 않는다) */
+@keyframes wz-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-plan-grid li {
+    animation: none;
+  }
 }
 
 .wz-plan-name {
@@ -1459,49 +1508,49 @@ select {
 
 .wz-fields {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
   gap: 16px;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
 
-.wz-field-wide:last-child {
-  grid-column: 1 / -1;
-}
-
-.wz-themes {
+.wz-pair {
   display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.wz-theme {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: left;
-  cursor: pointer;
+.wz-options-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.wz-theme .slide-frame {
-  margin-bottom: 10px;
+/* 테마 고르기의 작은 색 견본 (오른쪽 표지 미리 보기가 크게 보여서 카드 그림 대신) */
+.wz-swatch {
+  flex: none;
+  width: 30px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.wz-swatch-white {
+  background: linear-gradient(90deg, #fff 62%, #1e3a8a 62%);
+}
+
+.wz-swatch-navy {
+  background: linear-gradient(90deg, #000 62%, #1b1d22 62%);
+}
+
+.wz-cover .wz-shot {
   border-radius: 8px;
-  box-shadow: 0 0 0 1px var(--line);
-  transition: box-shadow 0.12s;
+  box-shadow: 0 1px 2px rgb(16 20 31 / 0.06), 0 10px 30px rgb(16 20 31 / 0.1);
 }
 
-.wz-theme.is-on .slide-frame {
-  box-shadow: 0 0 0 2px var(--app-bg), 0 0 0 4px var(--ink);
+.wz-cover .wz-plan-k {
+  margin-bottom: 12px;
 }
 
-.wz-theme-name {
-  font-weight: 700;
-}
-
-.wz-theme-desc {
+.wz-cover-note {
+  margin: 12px 0 0;
   color: var(--ink-3);
   font-size: 13px;
 }
@@ -1531,9 +1580,9 @@ select {
     height: 56px;
   }
 
-  /* 2단계(듣는 분과 시간)가 스크롤 없이 한 화면에 들어가게 세로 여백을 줄인다 */
+  /* 2단계(보고 상황)가 스크롤 없이 한 화면에 들어가게 세로 여백을 줄인다 */
   .wz-main {
-    padding-top: 16px;
+    padding-top: 12px;
     padding-bottom: 8px;
   }
 
@@ -1542,12 +1591,17 @@ select {
   }
 
   .wz-sub {
-    margin-bottom: 16px;
+    margin: 4px 0 14px;
     font-size: 15px;
   }
 
+  /* 보고 종류 카드 두 줄이 1280×600에서 (윈도우 스크롤바가 자리를 차지해도) 스크롤 없이 보이게 */
+  .wz-types {
+    gap: 10px;
+  }
+
   .wz-type {
-    padding: 18px 20px 16px;
+    padding: 14px 18px 12px;
   }
 
   .wz-group {
@@ -1566,13 +1620,17 @@ select {
     padding: 11px 14px;
   }
 
-  /* 테마 이름까지 아래 단추 줄에 가리지 않게. 설명은 그림과 이름으로 충분해서 낮은 화면에서는 뺀다 */
   .wz-fields {
-    margin-bottom: 22px;
+    gap: 12px;
+    margin-bottom: 16px;
   }
 
-  .wz-theme-desc {
-    display: none;
+  .wz-pair {
+    gap: 12px;
+  }
+
+  .wz-film {
+    margin-top: 8px;
   }
 
   .wz-plan {

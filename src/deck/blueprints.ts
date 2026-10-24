@@ -35,6 +35,8 @@ export interface Blueprint {
   description: string
   /** 마법사에서 보여주는 이야기 흐름 */
   storyline: string[]
+  /** 마법사의 보고 종류 카드에 작은 그림으로 보일 장(장의 역할 이름). 이야기 흐름의 차례마다 하나 */
+  showcase?: string[]
   defaultTitle: string
   /** 마법사의 입력 예시 */
   examples: { title: string; ask: string }
@@ -63,7 +65,7 @@ function section(title: string, lead: string): Recipe {
     priority: 3,
     group: 'sections',
     section: title,
-    guide: '이야기의 큰 단락이 바뀌는 곳이에요. 듣는 분이 지금 어디쯤인지 알 수 있어요.',
+    guide: '이야기의 큰 흐름이 바뀌는 곳이에요. 보고 받는 분이 지금 어디쯤인지 알 수 있어요.',
     fields: { title },
     hints: { lead },
   }
@@ -148,6 +150,7 @@ const business: Blueprint = {
   name: '사업 제안',
   description: '새 사업이나 프로젝트를 하자고 제안하고 승인받아요',
   storyline: ['배경', '제안', '효과', '결정 요청'],
+  showcase: ['기회의 크기', '바뀌는 모습', '매출 전망', '결정 요청'],
   defaultTitle: '사업 제안',
   examples: { title: '중소 제조사 대상 구독형 품질 관리 사업 제안', ask: '시범 사업 예산 1.2억 원 승인' },
   recipes: [
@@ -286,6 +289,7 @@ const deal: Blueprint = {
   name: '고객 제안 계획',
   description: '어느 고객에게 무엇을 얼마에 제안할지 보고하고 승인받아요',
   storyline: ['사업 기회', '제안 전략', '가격', '결정 요청'],
+  showcase: ['사업 규모', '제안 내용', '가격 안', '결정 요청'],
   defaultTitle: '고객 제안 계획',
   examples: { title: '한빛제조 품질 관리 시스템 제안 계획', ask: '제안 가격 4.8억 원 승인' },
   recipes: [
@@ -401,6 +405,7 @@ const improve: Blueprint = {
   name: '개선 제안',
   description: '일하는 방식이나 제도, 도구를 바꾸자고 제안해요',
   storyline: ['문제', '원인', '개선안', '효과'],
+  showcase: ['문제의 크기', '원인', '바뀌는 절차', '기대 효과'],
   defaultTitle: '개선 제안',
   examples: { title: '견적 작성 방식 개선 제안', ask: '한 팀 시범 운영 승인' },
   recipes: [
@@ -542,6 +547,7 @@ const report: Blueprint = {
   name: '진행·실적 보고',
   description: '맡은 일의 실적과 진행 상황을 보고하고 지원을 요청해요',
   storyline: ['실적', '분석', '대책', '계획'],
+  showcase: ['핵심 실적', '증감 요인', '문제와 대책', '다음 계획'],
   defaultTitle: '실적 보고',
   examples: { title: '3분기 영업 실적 보고', ask: '신규 인력 1명 충원' },
   recipes: [
@@ -678,7 +684,7 @@ const blank: Blueprint = {
   description: '처음부터 직접 구성해요',
   storyline: [],
   defaultTitle: '새 발표',
-  examples: { title: '발표 제목', ask: '결정받고 싶은 것' },
+  examples: { title: '하반기 팀 운영 계획 보고', ask: '하반기 교육 예산 승인' },
   recipes: [
     cover,
     {

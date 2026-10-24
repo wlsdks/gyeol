@@ -158,7 +158,7 @@ const TOOLS = [
       '- remove_slide {slide} 빈 장만 지운다. 내용이 있으면 has_content로 실패하니 set_hidden을 쓴다.',
       '- move_slide {slide, after: 장 id 또는 null(맨 앞)}',
       '- set_layout {slide, layout, variant?} 내용은 그대로 두고 모양만 바꾼다. variant는 카탈로그 layouts[].variants의 id. 넘치는 항목은 숨겨질 뿐 지워지지 않는다. ' +
-        'layout을 compose로 하면 같은 내용의 부품 장이 되고(표지, 단락 장은 안 됨), 부품 장은 그 레이아웃의 부품 하나뿐일 때만 다른 레이아웃으로 되돌릴 수 있다.',
+        'layout을 compose로 하면 같은 내용의 부품 장이 되고(표지, 섹션 장은 안 됨), 부품 장은 그 레이아웃의 부품 하나뿐일 때만 다른 레이아웃으로 되돌릴 수 있다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
       '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?: 옆 판을 반대쪽에, pane?: 옆 판 너비(layouts[].panes.sides 중 하나, null은 기본; 둘 다 panes가 있는 레이아웃의 panes.variants 모양에서만), contain?: 이미지와 설명의 이미지를 자르지 않기, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨)}',
