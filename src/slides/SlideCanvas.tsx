@@ -1,6 +1,6 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LAYOUTS, variantOf } from '../deck/layouts'
-import { fontOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
+import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -62,10 +62,10 @@ export const SlideCanvas = memo(function SlideCanvas({
   const bold = BOLD_LAYOUTS.includes(slide.layout)
   const canRemoveItem = !!spec.items && slide.items.length > spec.items.min
   const density = deck.meta.method === 'send' ? 'd-read' : 'd-present'
-  // 색 면 장(표지, 섹션, 마지막 장)은 이미 색이 정해져 있어 바탕을 바꾸지 않는다
+  // 표지, 단락 장, 마지막 장은 모양(색 면, 바탕)으로 면을 고르므로 장의 바탕은 바꾸지 않는다
   const tone = bold ? 'base' : toneOf(slide)
   const size = deck.theme.size === 'small' || deck.theme.size === 'large' ? `sz-${deck.theme.size}` : null
-  const footer = deck.theme.footer ?? 'all'
+  const footer = footerOf(deck)
   const ref = useRef<HTMLDivElement>(null)
   useHalos(ref, mode === 'edit')
 
@@ -110,10 +110,12 @@ export const SlideCanvas = memo(function SlideCanvas({
             ) : (
               <span className="s-deck">{deck.title}</span>
             )}
-            <span className="s-page">
-              {page}
-              <span className="s-total"> / {total}</span>
-            </span>
+            {footer !== 'section' && (
+              <span className="s-page">
+                {page}
+                <span className="s-total"> / {total}</span>
+              </span>
+            )}
           </footer>
         )}
       </div>

@@ -40,7 +40,7 @@ export type FontId = 'sans' | 'serif'
 /** 발표 전체의 글자 크기 */
 export type TextSize = 'small' | 'normal' | 'large'
 /** 슬라이드 아래의 단락 지도와 쪽 번호 */
-export type FooterMode = 'all' | 'page' | 'none'
+export type FooterMode = 'section' | 'all' | 'page' | 'none'
 /** 장을 넘길 때의 화면 전환. auto는 움직임 정도에 맞춘다 */
 export type Transition = 'auto' | 'none' | 'fade' | 'slide' | 'zoom'
 /** 장의 바탕. invert는 테마의 반대(밝은 테마면 어둡게), accent는 강조색 면 */

@@ -26,11 +26,12 @@
      레이아웃은 이 값으로만 여백을 잡는다. 갤러리 콘솔의 checkFrame()이 모든 장을 잰다 */
   --pad-x: 120px;
   --pad-y: 72px;
-  /* 아래 띠: 하단 표시(글 21 + 단락 밑줄 13), 그 위에 24 띄우고 출처 한 줄, 본문과는 28 */
+  /* 아래 띠: 하단 표시(글 21 + 단락 밑줄 13), 그 위에 14 띄우고 출처 한 줄, 본문과는 38.
+     출처와 하단 표시는 한 띠로 붙이고 본문과는 그 두 배 넘게 띄운다: 가까운 것끼리 한 무리로 읽힌다 */
   --foot-h: 34px;
   --source-h: 29px;
   --pad-top: var(--pad-y);
-  --pad-bottom: calc(var(--pad-y) + var(--foot-h) + 24px + var(--source-h) + 28px);
+  --pad-bottom: calc(var(--pad-y) + var(--foot-h) + 14px + var(--source-h) + 38px);
   /* 틀선에 닿는 글은 글자 선까지 당긴다: 위로 -1em × ((줄 높이 - 글꼴 높이) / 2 + 글꼴 높이 위에서 글자 윗선까지),
      아래로 같은 꼴에 글자 아랫선부터 글꼴 높이 아래까지(두 글꼴 모두 0.16). 본문 글꼴(프리텐다드)은 높이 1.19, 위 0.155.
      제목 글꼴은 --head-box, --head-gap (themes.ts). 아래 규칙들의 margin calc가 이 꼴이다 */
@@ -39,7 +40,7 @@
   /* sRGB로 섞는다: oklch로 섞으면 색상이 먼 둘 사이에서 주황으로 틀어진다 */
   --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in srgb, var(--accent) 26%, var(--bg));
-  /* 단락 장, 마지막 장, 표지 옆면 같은 짙은 면. 테마의 짙은 면(themes.ts의 deep, 검정)으로 깔고,
+  /* 표지 옆면, 진한 면 부품, 색 면 단락 장 같은 짙은 면. 테마의 짙은 면(themes.ts의 deepOf: 흰 바탕은 강조색을 깊게 한 색)으로 깔고,
      그 위의 강조는 강조색을 밝힌 색(--bold-accent)으로 쓴다. 테마 값이 없을 때는 강조색을 글자색 쪽으로 가라앉힌다 */
   --bold-bg: var(--deep, color-mix(in srgb, var(--accent) 36%, var(--ink)));
   --bold-ink: var(--deep-ink, var(--bg));
@@ -81,7 +82,7 @@
 
 /* 검은 바탕에서 장 전체를 덮는 짙은 면(단락 장, 마지막 장, 색 면 표지)은 바탕과 같은 검정.
    한 단계 뜬 회색으로 장 전체를 덮으면 검은 장들 사이에 회색 장이 끼어 탁해 보인다. 옆면, 카드처럼 일부만 덮는 면은 그대로 */
-.slide.is-dark:not(.tone-accent):is(.l-section:not(.va-plain), .l-closing:not(.va-plain), .l-cover.va-full) {
+.slide.is-dark:not(.tone-accent):is(.l-section.va-bold, .l-closing.va-bold, .l-cover.va-full) {
   background: var(--bg);
 }
 
@@ -89,8 +90,8 @@
    장 전체가 짙은 면이면 테마 색이 장(.slide)에 바로 붙어 있어서, 그 안쪽에서 바꾼다 */
 .cv-side,
 .l-cover.va-full > *,
-.l-section:not(.va-plain) > *,
-.l-closing:not(.va-plain) > * {
+.l-section.va-bold > *,
+.l-closing.va-bold > * {
   --accent: var(--bold-accent);
   --accent-ink: var(--bold-bg);
 }
@@ -215,7 +216,7 @@
 /* 숫자 장의 출처·기준: 가장 작고 흐리게, 쪽 번호 바로 위에 */
 .s-source {
   position: absolute;
-  bottom: calc(var(--pad-y) + var(--foot-h) + 24px);
+  bottom: calc(var(--pad-y) + var(--foot-h) + 14px);
   left: var(--pad-x);
   max-width: 1280px;
   color: var(--ink-3);
@@ -603,38 +604,38 @@
 }
 
 /* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에, 단락 번호만 강조색으로 제목 위에 둔다 */
-.l-section.va-plain {
+.l-section:not(.va-bold) {
   background: var(--bg);
   color: var(--ink);
 }
 
-.l-section.va-plain .sc-body {
+.l-section:not(.va-bold) .sc-body {
   flex-direction: column-reverse;
   align-items: flex-start;
   gap: 56px;
 }
 
-.l-section.va-plain .sc-num {
+.l-section:not(.va-bold) .sc-num {
   margin-right: 0;
   color: var(--accent);
   font-size: 200px;
 }
 
-.l-section.va-plain .sc-lead {
+.l-section:not(.va-bold) .sc-lead {
   color: var(--ink-2);
   opacity: 1;
 }
 
-.l-section.va-plain .sc-map {
+.l-section:not(.va-bold) .sc-map {
   border-top-color: var(--line);
 }
 
-.l-section.va-plain .sc-map li {
+.l-section:not(.va-bold) .sc-map li {
   color: var(--ink-3);
   opacity: 1;
 }
 
-.l-section.va-plain .sc-map li.is-on {
+.l-section:not(.va-bold) .sc-map li.is-on {
   color: var(--accent);
 }
 
@@ -706,30 +707,45 @@
   border-top: 0;
 }
 
-/* 칸마다 세로 줄로 나누고, 번호는 위에 크게, 이름은 바닥에 */
+/* 칸마다 세로 줄로 나누고, 번호를 크게, 이름은 번호 바로 아래에. 번호와 이름을 칸의 위와 바닥으로 떼어 두면 그 사이가 비어 보인다.
+   칸들은 내용 높이로 가운데에 두고, 칸 너비는 모두 같게(나누는 줄은 칸 사이 틈의 가운데) */
+.va-columns .ag-list,
+.va-columns .ag-list:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: auto;
+  align-content: safe center;
+  column-gap: 64px;
+}
+
+/* 칸이 좁으면(부품 장의 좁은 칸, 단락이 많을 때) 번호와 이름도 칸 너비를 따라 작게: 장 크기 그대로면 번호가 칸을 다 쓰고 이름은 글자마다 줄이 바뀐다 */
 .va-columns .ag-item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  padding: 0 48px 8px;
+  gap: 36px;
+  padding: 8px 0;
   border-bottom: 0;
-  border-left: 2px solid var(--line);
+  container-type: inline-size;
 }
 
-.va-columns .ag-item:first-child {
-  padding-left: 0;
-  border-left: 0;
+.va-columns .ag-item:not(:first-child)::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -32px;
+  border-left: 2px solid var(--line);
+  content: '';
 }
 
 .va-columns .ag-n {
-  font-size: 200px;
+  font-size: min(200px, 64cqi);
   line-height: calc(0.8 * var(--tall, 1));
   letter-spacing: -0.04em;
 }
 
 .va-columns .ag-t {
-  --fs: 52px;
+  --fs: min(52px, 24cqi);
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 /* ---------- 한 문장 메시지 ---------- */
@@ -1055,8 +1071,9 @@
 .pt-item {
   position: relative;
   display: grid;
-  grid-template-columns: 560px minmax(0, 1fr);
-  gap: 64px;
+  /* 이름 칸은 장에서 560px, 좁은 칸에서는 너비의 36%: 고정 너비면 좁은 칸에서 설명이 몇 글자씩 줄이 바뀐다 */
+  grid-template-columns: minmax(0, min(560px, 36%)) minmax(0, 1fr);
+  gap: min(64px, 4%);
   align-items: center;
   border-bottom: 1px solid var(--line);
 }
@@ -1246,6 +1263,11 @@
   transform: translate(-50%, -50%);
 }
 
+/* 화살표는 두 면 사이에 하나만: 줄마다 두면 줄이 낮을 때 동그라미끼리 붙어 사슬처럼 보인다. 줄끼리는 같은 높이로 짝이 이미 보인다 */
+.cp-row > .cp-arrow {
+  display: none;
+}
+
 .cp-arrow svg {
   width: 30px;
   height: 30px;
@@ -1286,6 +1308,14 @@
 .va-table .cp-r {
   border-color: var(--line);
   padding-left: 80px;
+}
+
+.va-table .cp-row > .cp-arrow {
+  display: grid;
+}
+
+.va-table .cp > .cp-arrow {
+  display: none;
 }
 
 .va-table .cp-arrow {
@@ -2198,9 +2228,17 @@
   content: '';
 }
 
-/* 바닥을 올렸을 때: 처음과 끝 막대가 바닥 쪽으로 흐려지며 사라져, 아래로 더 이어진다(잘랐다)는 것을 보인다 */
-.wf.is-cut .wf-total .wf-bar {
-  mask-image: linear-gradient(to top, transparent 0, rgb(0 0 0 / 0.35) 36px, #000 128px);
+/* 바닥을 올렸을 때: 처음과 끝 막대의 아래쪽을 비스듬히 끊어, 아래로 더 이어진다(잘랐다)는 것을 보인다.
+   흐리게 사라지게 하면 막대가 꾸밈 그러데이션처럼 보인다. 끊는 띠는 바탕색(카드 위에서는 카드 면)이다 */
+.wf.is-cut .wf-total .wf-bar::after {
+  position: absolute;
+  right: -4px;
+  bottom: 28px;
+  left: -4px;
+  height: 10px;
+  background: var(--bg);
+  transform: skewY(-10deg);
+  content: '';
 }
 
 /* 값 자리는 막대 칸 너비라서, 한 줄로 줄이는 숫자(.one-line의 100cqi)의 기준으로 쓴다: 숫자가 칸보다 넓으면 칸에 맞게 작아진다.
@@ -4378,27 +4416,27 @@
 }
 
 /* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에, 요청 번호만 강조색으로 채운다 */
-.l-closing.va-plain {
+.l-closing:not(.va-bold) {
   background: var(--bg);
   color: var(--ink);
 }
 
-.l-closing.va-plain :is(.cl-steps, .cl-step) {
+.l-closing:not(.va-bold) :is(.cl-steps, .cl-step) {
   border-color: var(--line);
 }
 
-.l-closing.va-plain .cl-n {
+.l-closing:not(.va-bold) .cl-n {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-ink);
 }
 
-.l-closing.va-plain .cl-step-b {
+.l-closing:not(.va-bold) .cl-step-b {
   color: var(--ink-2);
   opacity: 1;
 }
 
-.l-closing.va-plain .meta-row dt {
+.l-closing:not(.va-bold) .meta-row dt {
   color: var(--ink-3);
 }
 

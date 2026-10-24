@@ -453,6 +453,7 @@ export function motionEngine(): MotionEngine {
           pop(el.querySelector('.cp-arrow'), at + 160)
           rise(el.querySelector('.cp-r'), at + 240, L.y * 0.6)
         })
+        pop(one('.cp > .cp-arrow'), t + L.step * 1.5 + 160)
         break
       }
       case 'timeline': {

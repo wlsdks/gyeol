@@ -82,9 +82,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'section',
     name: '섹션 구분',
     description: '이야기의 큰 단락을 나눠요',
+    // 기본은 테마 바탕: 흰 장 사이에 검은 장이 끼면 장마다 무게가 달라 보인다. 짙은 면은 고르는 모양
     variants: [
-      { id: 'base', name: '색 면' },
-      { id: 'plain', name: '바탕' },
+      { id: 'base', name: '바탕' },
+      { id: 'bold', name: '색 면' },
     ],
     fields: [title('이번 단락의 제목'), lead('이 단락에서 다룰 내용')],
   },
@@ -605,8 +606,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '결정 요청',
     description: '결정해 주실 것과 언제까지 필요한지',
     variants: [
-      { id: 'base', name: '색 면' },
-      { id: 'plain', name: '바탕' },
+      { id: 'base', name: '바탕' },
+      { id: 'bold', name: '색 면' },
     ],
     fields: [
       title('결정해 주실 것'),

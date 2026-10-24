@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { makeSlide } from '../../deck/generate'
-import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf } from '../../deck/themes'
+import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf, footerOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
@@ -20,7 +20,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
   const motion = deck.motion ?? 'calm'
   const font = fontOf(deck.theme)
   const size = deck.theme.size ?? 'normal'
-  const footer = deck.theme.footer ?? 'all'
+  const footer = footerOf(deck)
   const transition = deck.theme.transition ?? 'auto'
   const cover = useMemo(() => {
     const s = makeSlide('cover')

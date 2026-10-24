@@ -222,6 +222,8 @@ function Compare() {
             <ItemTools i={i} />
           </div>
         ))}
+        {/* 두 면 사이의 화살표 하나 (표 모양은 줄마다의 화살표를 쓴다) */}
+        <Arrow />
       </div>
     </>
   )

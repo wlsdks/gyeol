@@ -7,10 +7,10 @@ export interface Theme {
   description: string
   accent: string
   /**
-   * 짙은 면(단락 장, 표지 옆면, 진한 면 부품)의 색. 강조색은 '답'(숫자, 고른 막대)에만 쓰고, 넓은 면은 검정으로 깐다.
-   * 넓은 면을 강조색이나 남색으로 칠하면 화면이 시끄럽고 낡아 보인다
+   * 짙은 면(표지 옆면, 진한 면 부품, 색 면 단락 장)의 색. null이면 강조색을 깊게 가라앉힌 색(deepOf).
+   * 쨍한 강조색은 '답'(숫자, 고른 막대)에만 쓰고, 넓은 면은 강조색을 깊게 한 색으로 깐다
    */
-  deep: string
+  deep: string | null
   /** good, bad: 목표 대비, 증감처럼 좋고 나쁨을 보일 때만 쓴다. 늘 글자(▲▼, 달성)와 함께 */
   colors: { bg: string; ink: string; ink2: string; ink3: string; line: string; surface: string; good: string; bad: string }
 }
@@ -19,10 +19,12 @@ const SANS = "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFo
 const SERIF = "'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif"
 
 /*
- * 바탕은 흰색 아니면 검은색 두 가지뿐이다. 남색, 크림색처럼 색이 있는 바탕이나 넓은 색 면은 화면을 낡고 무겁게 만든다.
+ * 바탕은 흰색 아니면 검은색 두 가지뿐이다. 크림색처럼 색이 있는 바탕은 화면을 낡고 무겁게 만든다.
  * - 회색은 색을 섞지 않은 중립 회색. 강조색을 바꿔도 회색이 따로 놀지 않는다
  * - 맥락(작년, 다른 조각)은 회색, 강조색은 말하려는 한 곳에만 (Datawrapper의 차트 색 안내)
- * - 넓은 면(단락 장, 표지 옆면, 진한 면 부품)은 강조색이 아니라 검정(흰 바탕) 또는 한 단계 뜬 검정(검은 바탕)
+ * - 넓은 면(표지 옆면, 진한 면 부품, 색 면 단락 장)은 흰 바탕에서는 강조색을 깊게 가라앉힌 색(코발트면 짙은 남색),
+ *   검은 바탕에서는 한 단계 뜬 검정. 흰 장 사이의 새까만 면은 너무 세고, 쨍한 강조색 면은 시끄럽다.
+ *   흰 바탕, 짙은 남색 면, 강조색 하나는 보고 자료에서 오래 쓰인 짝이다
  */
 const WHITE: Theme['colors'] = {
   bg: '#FFFFFF',
@@ -41,7 +43,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     name: '화이트',
     description: '흰 바탕이에요. 밝은 회의실과 인쇄에 잘 맞아요',
     accent: '#2F55D4',
-    deep: '#000000',
+    deep: null,
     colors: WHITE,
   },
   // id는 저장된 발표와 맞추려고 그대로 둔다 (예전 이름: 네이비)
@@ -68,7 +70,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     name: '화이트',
     description: '흰 바탕에 명조 제목이에요',
     accent: '#2F55D4',
-    deep: '#000000',
+    deep: null,
     colors: WHITE,
   },
 }
@@ -111,7 +113,8 @@ export const TEXT_SIZES: { id: TextSize; name: string; description: string }[] =
 ]
 
 export const FOOTERS: { id: FooterMode; name: string; description: string }[] = [
-  { id: 'all', name: '단락과 쪽 번호', description: '아래에 지금 단락과 쪽 번호가 보여요.' },
+  { id: 'section', name: '단락만', description: '아래에 지금 단락만 보여요. 화면으로 발표할 때 알맞아요.' },
+  { id: 'all', name: '단락과 쪽 번호', description: '아래에 지금 단락과 쪽 번호가 보여요. 인쇄하거나 보낼 때 알맞아요.' },
   { id: 'page', name: '쪽 번호만', description: '아래에 쪽 번호만 보여요.' },
   { id: 'none', name: '숨기기', description: '아래에 아무것도 넣지 않아요.' },
 ]
@@ -219,6 +222,16 @@ export function fontOf(deckTheme: DeckTheme): FontId {
   return deckTheme.id === 'serif' ? 'serif' : 'sans'
 }
 
+/**
+ * 아래 표시: 정한 값, 없으면 화면으로 발표하는 자료는 단락만, 보내는 자료는 쪽 번호까지.
+ * 발표할 때 쪽 번호는 눈길만 끌고, 보낸 자료는 받은 분이 '몇 쪽'으로 짚어 묻는다
+ */
+export function footerOf(deck: Pick<Deck, 'theme' | 'meta'>): FooterMode {
+  const own = deck.theme.footer
+  if (own && FOOTERS.some((m) => m.id === own)) return own
+  return deck.meta.method === 'send' ? 'all' : 'section'
+}
+
 /** 이 장의 움직임: 장에 정한 값, 없으면 발표 전체 값 */
 export function motionOf(deck: Pick<Deck, 'motion'>, slide?: Pick<Slide, 'options'>): Motion {
   const own = slide?.options.motion
@@ -259,6 +272,11 @@ interface Palette {
 
 const NIGHT = '#0A0D16'
 
+/** 흰 바탕의 짙은 면: 강조색을 밤색(NIGHT) 쪽으로 반쯤 가라앉힌다. 강조색을 바꾸면 면도 그 색의 깊은 색으로 따라간다 */
+function deepOf(theme: Theme, accent: string): string {
+  return theme.deep ?? mix(accent, NIGHT, 0.5)
+}
+
 /**
  * 짙은 면 위에서 강조할 색: 강조색을 그 면 위에서 읽힐 만큼(4.5:1) 밝힌다. 원래 밝은 색(하늘)은 그대로.
  * 단락 번호처럼 아주 큰 글자도 같게: 검정 위에서 3:1의 짙은 강조색은 가라앉아 흐려 보인다
@@ -277,7 +295,7 @@ function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
   if (tone === 'invert') {
     const other = theme.id === 'navy' ? THEMES.white : THEMES.navy
     const a = readable(accent, other.colors.bg)
-    const deep = other.deep
+    const deep = deepOf(other, a)
     return { ...other.colors, accent: a, accentInk: inkOn(a), deep, deepInk: inkOn(deep), deepAccent: accentOnDeep(a, deep), deepMark: accentOnDeep(a, deep) }
   }
   if (tone === 'accent') {
@@ -303,7 +321,7 @@ function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
   }
   // 밝은 강조색도 흰 바탕에서, 짙은 강조색도 검은 바탕에서 숫자가 읽히게
   const a = readable(accent, theme.colors.bg)
-  const deep = theme.deep
+  const deep = deepOf(theme, a)
   return { ...theme.colors, accent: a, accentInk: inkOn(a), deep, deepInk: inkOn(deep), deepAccent: accentOnDeep(a, deep), deepMark: accentOnDeep(a, deep) }
 }
 

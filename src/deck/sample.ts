@@ -7,9 +7,11 @@ function svg(body: string, w = 360, h = 120): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`
 }
 
+/** 모양 + 회사 이름 네 글자. 그림 너비를 글자 끝(96 + 40×4)에 맞춰야 칸에 맞출 때 로고가 작아지지 않는다 */
 function wordmark(name: string, shape: string): string {
   return svg(
     `${shape}<text x="96" y="74" font-family="Pretendard Variable, Apple SD Gothic Neo, sans-serif" font-size="40" font-weight="800" letter-spacing="-1" fill="#1d2330">${name}</text>`,
+    280,
   )
 }
 
