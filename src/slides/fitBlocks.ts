@@ -196,12 +196,25 @@ export function blockFitter() {
   }
 
   /** 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치면 한 단계 작게, 끝까지 넘치면 그대로 */
+  /**
+   * 키울 때는 더 엄격하게: 글만이 아니라 항목(줄)의 상자까지 안쪽 여백 안에. 글만 보면 줄의 아래 여백과 선이
+   * 카드 가장자리까지 내려가도 넘친 줄 모른다 (시장 규모의 목록이 카드 바닥에 선을 긋던 것)
+   */
+  function crowded(inner: HTMLElement): boolean {
+    if (over(inner)) return true
+    const r = inner.getBoundingClientRect()
+    const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
+    const bottom = r.bottom - parseFloat(getComputedStyle(inner).paddingBottom) * k + 2 * k
+    for (const it of inner.querySelectorAll<HTMLElement>('.it')) if (it.getBoundingClientRect().bottom > bottom) return true
+    return false
+  }
+
   function enlarge(cells: HTMLElement[]): void {
     const inners = cells.map((c) => c.querySelector<HTMLElement>(':scope > .bk-in')).filter((el): el is HTMLElement => !!el)
     for (const k of ups) {
       for (const c of cells) c.style.setProperty('--bk-fit', String(k))
       for (const inner of inners) labels(inner)
-      if (!inners.some(over)) return
+      if (!inners.some(crowded)) return
     }
     for (const c of cells) c.style.removeProperty('--bk-fit')
     for (const inner of inners) labels(inner)
@@ -215,7 +228,7 @@ export function blockFitter() {
       let ok = false
       for (const a of airs) {
         c.style.setProperty('--bk-air', a + 'px')
-        if (!over(inner)) {
+        if (!crowded(inner)) {
           ok = true
           break
         }
