@@ -240,24 +240,32 @@ function EditorBody({ deck }: { deck: Deck }) {
   /** 발표자 화면과 함께: 큰 화면에 발표 화면을 꽉 채우고, 이 화면에 발표자 화면 창을 연다 */
   const launchWithPresenter = useCallback(
     async (startId: string | undefined, placement: Placement | null) => {
-      if (placement) {
-        // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
-        const ok = await enterFullscreen(placement.audience)
-        if (!ok) return false
-        openPresenterWindow(deck.id, placement.presenter)
-      } else {
-        // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
-        openPresenterWindow(deck.id)
-      }
+      // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
+      if (placement && !(await enterFullscreen(placement.audience))) return false
+      // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
+      const win = placement ? openPresenterWindow(deck.id, placement.presenter) : openPresenterWindow(deck.id)
       setAskScreens(null)
+      if (!win) {
+        // 팝업 차단: 발표자 화면 없이 시작하면 노트도 다음 장도 볼 수 없다. 시작하지 않고 허용하는 법을 알린다.
+        // 전체 화면을 빠져나와야 주소창의 차단 아이콘이 보인다
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+        toast.show('브라우저가 발표자 화면 창을 막았어요. 주소창의 팝업 차단 아이콘에서 허용한 뒤 다시 발표해 주세요.', undefined, 10000)
+        return true
+      }
       setPresenting({ startId })
       return true
     },
+    // toast는 그릴 때마다 새로 만들어지지만 알림을 띄우는 길은 같아서 의존성에서 뺀다
     [deck.id],
   )
 
   const startPresent = useCallback(
     async (startId?: string, force = false, how: PresentHow = 'auto') => {
+      // 모든 장을 발표에서 빼 두었으면 빈 전체 화면만 뜬다
+      if (!deck.slides.some((s) => !s.hidden)) {
+        toast.show('모든 장이 발표에서 빠져 있어서 발표할 장이 없어요. 장을 골라 ‘발표에 다시 넣기’를 눌러 주세요.', undefined, 6000)
+        return
+      }
       const missing = deckMissingCount(deck)
       if (missing > 0 && !force) {
         setConfirmPresent({ startId, how, missing })
