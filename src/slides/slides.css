@@ -599,6 +599,26 @@
   --rb: -0.037;
 }
 
+.f-suit .sc-num[data-d='1'] {
+  --rb: 0.042;
+}
+
+.f-myeongjo .sc-num {
+  --rb: -0.002;
+}
+
+.f-myeongjo .sc-num[data-d='1'] {
+  --rb: -0.018;
+}
+
+.f-myeongjo .sc-num[data-d='4'] {
+  --rb: -0.024;
+}
+
+.f-myeongjo .sc-num[data-d='7'] {
+  --rb: 0.018;
+}
+
 .sc-text {
   position: relative;
   flex: 1;

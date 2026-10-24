@@ -1,11 +1,14 @@
 import { BLOCKS, BLOCK_GAP, BLOCK_TYPES, LINK_PAD } from '../deck/blocks'
+import { FONTS } from '../deck/themes'
 import type { BlockType } from '../deck/types'
 import { blockOverflows, blockTextLines, fitBlocks } from '../slides/fitBlocks'
 
 /*
  * 부품의 잘리지 않는 높이(deck/blockHeights.ts)를 재는 개발용 도구. 갤러리에서 브라우저 콘솔로 부른다:
- *   #/gallery?set=blocks   →   copy(heightsSource(mergeHeights((await measureAll()).table, (await measureAll(undefined, 'font=serif')).table)))
- *   →   deck/blockHeights.ts에 붙여 넣기 (고딕과 명조 제목 글꼴 가운데 높은 쪽)
+ *   #/gallery?set=blocks   →   copy(heightsSource(await measureAllFonts()))
+ *   →   deck/blockHeights.ts에 붙여 넣기 (고를 수 있는 글꼴 짝마다 재어 가장 높은 쪽)
+ *   글꼴 하나만 더했으면 그 글꼴로만 재어 지금 표와 합친다:
+ *   copy(heightsSource(mergeHeights((await import('/src/deck/blockHeights.ts')).BLOCK_HEIGHTS, (await measureAll(undefined, 'font=suit')).table)))
  * 부품마다, 모양마다, 바탕(그대로, 카드)마다, 항목 수마다, 들어갈 수 있는 칸 너비마다 잰다.
  * 글자는 칸 크기에 따라 단계로 줄고(--bk-w, --bk-h) 칸 모양에 따라 배치가 바뀌어서, 가장 좁은 칸에서만 재거나
  * 넘치지 않는 첫 높이만 찾으면 그보다 넓거나 높은 칸에서 넘치는 것을 놓친다. 그래서 위에서부터 내려오며
@@ -250,7 +253,7 @@ export async function measureAll(
   return { table, fails, source: heightsSource(table) }
 }
 
-/** 두 번 잰 것(고딕과 명조 글꼴)에서 자리마다 높은 쪽. 제목 글꼴을 명조로 바꿔도 잘리지 않게 */
+/** 두 번 잰 것(글꼴 짝 둘)에서 자리마다 높은 쪽. 어느 글꼴을 골라도 잘리지 않게 */
 export function mergeHeights(a: HeightTable, b: HeightTable): HeightTable {
   const out: HeightTable = structuredClone(a)
   for (const [key, spans] of Object.entries(b)) {
@@ -262,6 +265,16 @@ export function mergeHeights(a: HeightTable, b: HeightTable): HeightTable {
     }
   }
   return out
+}
+
+/** 고를 수 있는 글꼴 짝(themes.ts의 FONTS)마다 모두 재어 자리마다 가장 높은 쪽. 글꼴마다 2분쯤 걸린다 */
+export async function measureAllFonts(log: (s: string) => void = console.info): Promise<HeightTable> {
+  let table: HeightTable = {}
+  for (const f of FONTS) {
+    log(`글꼴: ${f.name}`)
+    table = mergeHeights(table, (await measureAll(log, `font=${f.id}`)).table)
+  }
+  return table
 }
 
 /** 잰 값을 blockHeights.ts의 글로. 항목 수가 최소보다 적은 자리는 최소의 값으로 채워 둔다 (배열 자리 = 항목 수) */
@@ -284,8 +297,8 @@ export function heightsSource(table: HeightTable): string {
 const HEIGHTS_HEAD = `/*
  * 부품이 잘리지 않는 가장 낮은 칸 높이(캔버스 px). 갤러리에서 잰 값이라 손으로 고치지 않는다.
  * 다시 재기: npm run dev → #/gallery?set=blocks 에서 브라우저 콘솔에 (screens/measureBlocks.ts)
- *   copy(heightsSource(mergeHeights((await measureAll()).table, (await measureAll(undefined, 'font=serif')).table)))
- * 고딕과 명조 제목 글꼴로 한 번씩 재어 높은 쪽을 쓴다.
+ *   copy(heightsSource(await measureAllFonts()))
+ * 고를 수 있는 글꼴 짝(themes.ts의 FONTS)마다 재어 가장 높은 쪽을 쓴다.
  *
  * 열쇠는 '부품.모양.바탕'(plain: 그대로, card: 카드와 강조색 면), 값은 { 칸 너비(12칸 중): [항목 수마다의 높이] }.
  * 항목이 없는 부품은 [0]에. 999는 그 너비에서 860px로도 안 되는 것 (그런 너비에는 놓지 않는다).
