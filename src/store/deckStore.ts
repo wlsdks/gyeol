@@ -141,7 +141,8 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => ({ ...d, theme: { ...d.theme, id } }))
     },
     setAccent(accent) {
-      commit((d) => ({ ...d, theme: { ...d.theme, accent } }))
+      // 색 고르기 창은 끄는 동안 값을 계속 보낸다. 한 단계로 묶어야 되돌리기 기록(100개)이 색 하나로 다 차지 않는다
+      commit((d) => ({ ...d, theme: { ...d.theme, accent } }), 'theme.accent')
     },
     setMotion(motion) {
       commit((d) => ({ ...d, motion }))

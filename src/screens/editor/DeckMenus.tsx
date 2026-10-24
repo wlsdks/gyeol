@@ -28,6 +28,12 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
     return s
   }, [deck.slides, deck.title])
   const accent = accentOf(deck.theme)
+  // 색 고르기 창은 소문자(#2f55d4)로, 견본은 대문자로 적혀 있어서 대소문자 없이 견준다
+  const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
+  const combos = ACCENT_COMBOS.filter((c) => !same(c.accent, THEMES[deck.theme.id].accent))
+  const isDefault = !deck.theme.accent || same(deck.theme.accent, THEMES[deck.theme.id].accent)
+  // 견본에 없는 색을 직접 골랐으면 '직접 고르기' 칸이 그 색으로 골라진 것처럼 보인다
+  const custom = !isDefault && !combos.some((c) => same(c.accent, deck.theme.accent))
 
   return (
     <Popover
@@ -65,30 +71,33 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <div className="swatches">
             <button
               type="button"
-              className={cx('swatch swatch-default', !deck.theme.accent && 'is-on')}
+              className={cx('swatch swatch-default', isDefault && 'is-on')}
               onClick={() => setAccent(undefined)}
               title="테마 기본색"
               aria-label="테마 기본색"
+              aria-pressed={isDefault}
               style={{ background: comboSwatch(THEMES[deck.theme.id]) }}
             >
-              {!deck.theme.accent && <CheckIcon />}
+              {isDefault && <CheckIcon />}
             </button>
-            {ACCENT_COMBOS.filter((c) => c.accent !== THEMES[deck.theme.id].accent).map((c) => (
+            {combos.map((c) => (
               <button
                 key={c.accent}
                 type="button"
-                className={cx('swatch', deck.theme.accent === c.accent && 'is-on')}
+                className={cx('swatch', same(deck.theme.accent, c.accent) && 'is-on')}
                 // 강조색과 짙은 면을 반씩: 고르면 어떤 짝으로 칠해지는지 보이게
                 style={{ background: comboSwatch(c) }}
                 title={c.name}
                 aria-label={`강조색 ${c.name}`}
+                aria-pressed={same(deck.theme.accent, c.accent)}
                 onClick={() => setAccent(c.accent)}
               >
-                {deck.theme.accent === c.accent && <CheckIcon />}
+                {same(deck.theme.accent, c.accent) && <CheckIcon />}
               </button>
             ))}
-            <label className="swatch swatch-custom" title="직접 고르기">
-              <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label="강조색 직접 고르기" />
+            <label className={cx('swatch swatch-custom', custom && 'is-on')} title="직접 고르기" style={custom ? { background: accent } : undefined}>
+              <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label={custom ? `강조색 직접 고르기, 지금 ${accent}` : '강조색 직접 고르기'} />
+              {custom && <CheckIcon />}
             </label>
           </div>
           <p className="menu-h">제목 글꼴</p>
