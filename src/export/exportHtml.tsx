@@ -2,13 +2,13 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { pageInfo } from '../deck/fields'
 import { uid } from '../deck/generate'
-import { fontOf } from '../deck/themes'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { safeFileName } from '../store/deckFile'
 import motionCss from '../motion/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
 import blocksCss from '../slides/blocks.css?inline'
+import { embedFonts, fontFamiliesOf } from './fonts'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
 const DATA_ID = 'html-maker-deck'
@@ -39,66 +39,6 @@ function renderSlides(deck: Deck): string {
   const html = host.innerHTML
   root.unmount()
   return html
-}
-
-// ---------- 폰트: 실제로 쓴 글자가 들어 있는 묶음만 파일에 넣는다 ----------
-
-type Range = [number, number]
-
-function parseRanges(value: string): Range[] {
-  return value.split(',').flatMap((part) => {
-    const m = /U\+([0-9a-f?]+)(?:-([0-9a-f]+))?/i.exec(part.trim())
-    if (!m) return []
-    if (m[1].includes('?')) return [[parseInt(m[1].replace(/\?/g, '0'), 16), parseInt(m[1].replace(/\?/g, 'f'), 16)] as Range]
-    const start = parseInt(m[1], 16)
-    return [[start, m[2] ? parseInt(m[2], 16) : start] as Range]
-  })
-}
-
-const fontCache = new Map<string, string>()
-
-async function toDataUrl(url: string): Promise<string> {
-  const cached = fontCache.get(url)
-  if (cached) return cached
-  const blob = await (await fetch(url)).blob()
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
-  fontCache.set(url, dataUrl)
-  return dataUrl
-}
-
-async function embedFonts(text: string, families: RegExp): Promise<string> {
-  const used = [...new Set([...text].map((ch) => ch.codePointAt(0)!))]
-  const out: string[] = []
-  for (const sheet of Array.from(document.styleSheets)) {
-    let rules: CSSRuleList
-    try {
-      rules = sheet.cssRules
-    } catch {
-      continue
-    }
-    for (const rule of Array.from(rules)) {
-      if (!(rule instanceof CSSFontFaceRule)) continue
-      const family = rule.style.getPropertyValue('font-family')
-      if (!families.test(family)) continue
-      const range = rule.style.getPropertyValue('unicode-range')
-      if (range) {
-        const ranges = parseRanges(range)
-        if (!used.some((cp) => ranges.some(([a, b]) => cp >= a && cp <= b))) continue
-      }
-      const url = /url\(["']?([^"')]+)["']?\)/.exec(rule.style.getPropertyValue('src'))?.[1]
-      if (!url) continue
-      const data = await toDataUrl(new URL(url, sheet.href ?? location.href).href)
-      out.push(
-        `@font-face{font-family:${family};font-style:normal;font-weight:${rule.style.getPropertyValue('font-weight') || '100 900'};font-display:block;src:url(${data}) format('woff2');${range ? `unicode-range:${range};` : ''}}`,
-      )
-    }
-  }
-  return out.join('\n')
 }
 
 function escapeHtml(text: string): string {
@@ -135,7 +75,7 @@ async function exportCsp(): Promise<string> {
 
 export async function buildHtml(deck: Deck): Promise<string> {
   const slides = renderSlides(deck)
-  const families = fontOf(deck.theme) === 'serif' ? /Pretendard|Hahmlet/i : /Pretendard/i
+  const families = fontFamiliesOf(deck.theme)
   const text = (slides.replace(/<[^>]+>/g, ' ') + deck.title + VIEWER_TEXT).replace(/&[a-z]+;/g, ' ')
   const fonts = await embedFonts(text, families)
   const csp = await exportCsp()

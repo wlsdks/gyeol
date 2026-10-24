@@ -37,6 +37,9 @@ execSync('npm run build', { cwd: root, stdio: 'inherit' })
 // 빌드 결과에 바깥 주소가 섞이면 멈춘다. SVG 네임스페이스와 문서 주소는 연결이 아니라서 뺀다.
 const allowed = [
   /^http:\/\/www\.w3\.org\//,
+  // PPT 파일(.pptx)의 XML 이름공간(export/pptx.ts). 이름표일 뿐 PowerPoint도 이 주소로 연결하지 않는다
+  /^http:\/\/schemas\.openxmlformats\.org\//,
+  /^http:\/\/purl\.org\/dc\//,
   /^https?:\/\/(reactjs\.org|react\.dev)\//,
   // 로컬 서버가 자기 주소(127.0.0.1)를 만드는 곳
   /^http:\/\/(127\.0\.0\.1|\$\{HOST\}|\$\{req\.headers\.host\})/,

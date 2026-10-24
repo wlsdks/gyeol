@@ -7,6 +7,8 @@ import { LAYOUTS, variantOf } from '../../deck/layouts'
 import { motionOf } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
+import { downloadPptx } from '../../export/exportPptx'
+import { exposePptDebug } from '../../export/rasterize'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { go } from '../../lib/router'
@@ -401,6 +403,32 @@ function EditorBody({ deck }: { deck: Deck }) {
     }
   }
 
+  // PPT는 장마다 그림을 그려서 장이 많으면 오래 걸린다. 지금 몇 장째인지 보이고, 두 번 눌러도 한 번만 만든다
+  const pptBusy = useRef(false)
+  const exportPpt = async () => {
+    if (pptBusy.current) {
+      toast.show('PPT를 만들고 있어요. 다 되면 알려 드릴게요.')
+      return
+    }
+    const total = deck.slides.filter((s) => !s.hidden).length
+    if (!total) {
+      toast.show('모든 장을 숨겨서 PPT에 넣을 장이 없어요. 장 하나 이상의 숨기기를 풀어 주세요.')
+      return
+    }
+    pptBusy.current = true
+    markVersion('export')
+    try {
+      await downloadPptx(deck, (done, all) => toast.show(`PPT를 만드는 중이에요 (${done}/${all})`, undefined, 60000))
+      toast.show('PPT 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
+    } catch {
+      toast.show('PPT 파일을 만들지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      pptBusy.current = false
+    }
+  }
+  // 콘솔에서 PPT의 장 그림만 볼 수 있게 (그림 점검용. rasterize.tsx의 exposePptDebug)
+  useEffect(() => exposePptDebug(() => useDeck.getState().deck), [])
+
   const removeSlide = (s: Slide) => {
     store.removeSlide(s.id)
     toast.show('장을 지웠어요', undoAction(toast))
@@ -486,6 +514,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           <ExportMenu
             onHtml={exportHtml}
             onPdf={printPdf}
+            onPpt={() => void exportPpt()}
             onDeckFile={() => {
               downloadDeckFile(deck)
               toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')

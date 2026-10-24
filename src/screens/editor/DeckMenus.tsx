@@ -178,7 +178,17 @@ function Choice<T extends string>({
   )
 }
 
-export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; onPdf: () => void; onDeckFile: () => void }) {
+export function ExportMenu({
+  onHtml,
+  onPdf,
+  onPpt,
+  onDeckFile,
+}: {
+  onHtml: () => void
+  onPdf: () => void
+  onPpt: () => void
+  onDeckFile: () => void
+}) {
   return (
     <Popover
       button={({ toggle, open }) => (
@@ -211,6 +221,19 @@ export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; 
           >
             <span className="menu-item-name">PDF <kbd>{keys('mod+P')}</kbd></span>
             <span className="menu-item-desc">인쇄 창이 열리면 대상에서 ‘PDF로 저장’을 고르세요.</span>
+          </button>
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => {
+              close()
+              onPpt()
+            }}
+          >
+            <span className="menu-item-name">PPT (그림)</span>
+            <span className="menu-item-desc">
+              장마다 그림 한 장으로 들어가서 PowerPoint에서 글은 고칠 수 없어요. 발표자 노트가 함께 들어가니 다른 분께 보내기 전에 노트를 확인하세요.
+            </span>
           </button>
           <div className="menu-sep" role="separator" />
           <button

@@ -57,11 +57,13 @@ html-maker는 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI �
 | [IBM Carbon: Data table, Legends](https://carbondesignsystem.com/components/data-table/style/) | Apache-2.0 | 줄 높이를 정한 단계로만 줄인다, 범례는 줄 수를 정해 둔다 |
 | [Apache ECharts 문서: Media query](https://apache.googlesource.com/echarts-doc/+/refs/heads/v4/en/tutorial/media-query.md) | Apache-2.0 | 차트 자리의 너비, 높이, 가로세로비로 조건을 나눠 범례 자리와 방향을 바꾼다 |
 | [ONS Service Manual: Data visualisation](https://service-manual.ons.gov.uk/data-visualisation/guidance/chart-text) | OGL v3.0 | 제목은 요점을 먼저, 범례는 차트 위 한 줄 |
+| [ECMA-376 Office Open XML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) (ISO/IEC 29500) | Ecma 표준: 누구나 무료로 받아 보고 구현할 수 있음. Microsoft는 Open Specification Promise로 이 규격을 구현하는 것에 특허를 주장하지 않기로 함 | PPT로 내보내기(그림)의 .pptx 짜임(부분, 관계, 장·틀·노트 XML). 다른 라이브러리의 코드는 옮기지 않고 규격을 보고 직접 씀 |
+| [PKWARE APPNOTE (ZIP 형식)](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) | 공개 문서. 기본 기능(그대로 두기, deflate)만 쓰고, 특허가 걸린 강한 암호화 기능은 쓰지 않음 | .pptx를 묶는 ZIP(로컬 머리, 중앙 목록, CRC-32). 직접 씀 |
 
 ## 나눠 줄 때 지킬 것
 
 - **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣고, Node.js의 `LICENSE`는 `node\LICENSE.txt`로 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.
-- **글꼴(OFL-1.1):** 글꼴만 따로 팔 수 없고, 문서에 넣는 것은 자유입니다. 내보낸 HTML에는 글꼴 원작자가 미리 나눠 둔 부분 파일(unicode-range 조각)을 **고치지 않고** 넣으므로 수정본이 아니며, 'Pretendard' 예약 글꼴 이름 조항에 걸리지 않습니다. 글꼴 파일 안의 저작권 정보도 그대로 남습니다.
+- **글꼴(OFL-1.1):** 글꼴만 따로 팔 수 없고, 문서에 넣는 것은 자유입니다. 내보낸 HTML에는 글꼴 원작자가 미리 나눠 둔 부분 파일(unicode-range 조각)을 **고치지 않고** 넣으므로 수정본이 아니며, 'Pretendard' 예약 글꼴 이름 조항에 걸리지 않습니다. 글꼴 파일 안의 저작권 정보도 그대로 남습니다. PPT(그림)에는 글꼴 파일이 들어가지 않고 글꼴로 그린 그림만 들어갑니다.
 
 ## 새 패키지를 넣을 때
 
