@@ -2501,13 +2501,92 @@
   }
 }
 
+/* 체계도: 맨 앞 사람(이끄는 사람)을 위 가운데에, 나머지를 아래에 나란히 두고 선으로 잇는다.
+   격자는 세 줄(이끄는 사람, 잇는 선, 맡은 사람들). 가로 선은 목록의 ::before를 가운데 줄에 두고 양 끝 사람의 가운데까지만 긋는다.
+   세로 선은 이끄는 사람 아래(::after)와 맡은 사람마다 위(::before)에 반씩, 글에서 조금 띄운다(--pp-air).
+   동그라미는 빼고 글을 가운데로: 동그라미와 글을 옆으로 두면 세로 선이 둘 사이에 떨어져 글에 꽂혀 보였다 */
+.va-tree .bk-pp-list {
+  --pp-tg: calc(88px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  --pp-cg: 40px;
+  --pp-air: 14px;
+  --pp-cols: 1;
+  grid-auto-flow: row;
+  grid-template-columns: repeat(var(--pp-cols), minmax(0, 1fr));
+  grid-template-rows: auto var(--pp-tg) auto;
+  gap: 0 var(--pp-cg);
+}
+
+.va-tree .bk-pp-list[data-n='3'] {
+  --pp-cols: 2;
+}
+
+.va-tree .bk-pp-list[data-n='4'] {
+  --pp-cols: 3;
+}
+
+.va-tree .bk-pp-list[data-n='1'] {
+  grid-template-rows: auto;
+}
+
+.va-tree .bk-pp-list:not([data-n='1'])::before {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  align-self: center;
+  /* 맡은 사람 칸 하나의 너비의 반: 양 끝 사람의 가운데에서 멈춘다 */
+  margin: 0 calc((100% - (var(--pp-cols) - 1) * var(--pp-cg)) / var(--pp-cols) / 2);
+  border-top: var(--rule) solid var(--ink-3);
+  content: '';
+}
+
+.va-tree .bk-pp-card {
+  position: relative;
+  grid-row: 3;
+  justify-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.va-tree .bk-pp-card:first-child {
+  grid-row: 1;
+  grid-column: 1 / -1;
+}
+
+.va-tree .bk-pp-av {
+  display: none;
+}
+
+.va-tree .bk-pp-list:not([data-n='1']) > .bk-pp-card:first-child::after,
+.va-tree .bk-pp-card:not(:first-child)::before {
+  position: absolute;
+  left: 50%;
+  height: calc(var(--pp-tg) / 2 - var(--pp-air));
+  border-left: var(--rule) solid var(--ink-3);
+  content: '';
+}
+
+.va-tree .bk-pp-card:first-child::after {
+  top: calc(100% + var(--pp-air));
+}
+
+.va-tree .bk-pp-card:not(:first-child)::before {
+  bottom: calc(100% + var(--pp-air));
+}
+
+.va-tree .bk-pp-card:not(:first-child) .bk-pp-name {
+  --fs: 30px;
+}
+
+.va-tree .bk-pp-b {
+  margin-top: 8px;
+}
+
 /*
  * 큰 칸에 혼자 있는 숫자, 강조 상자, 인용, 예상 질문, 맡은 사람은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게).
  * 키운 뒤에도 잘리지 않아야 한다: 높이 기준은 가장 키 큰 '전과 후'가 키운 크기로 들어가는 410부터.
- * 맡은 사람의 목록 모양은 줄이 사람 수만큼 늘어 키우면 넘치므로 뺀다 (갤러리 &fill=max&bv=list에서 잰다)
+ * 맡은 사람의 목록 모양은 줄이 사람 수만큼 늘어 키우면 넘치므로 뺀다 (갤러리 &fill=max&bv=list에서 잰다). 체계도는 두 층이라 같다
  */
 @container bk (min-width: 1100px) and (min-height: 410px) {
-  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list)) > .bk-in {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list, .va-tree)) > .bk-in {
     --bk-up: 1.2;
   }
 }

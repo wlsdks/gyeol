@@ -378,6 +378,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     variants: [
       { id: 'row', name: '나란히' },
       { id: 'list', name: '목록' },
+      { id: 'tree', name: '체계도' },
     ],
     fields: [{ key: 'heading', label: '소제목', hint: '예: 추진 체계', optional: true }],
     items: {

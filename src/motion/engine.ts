@@ -968,13 +968,30 @@ export function motionEngine(): MotionEngine {
             grow(el.querySelector('.bk-gt-bar'), at + 120, 'x')
           })
           break
-        case 'people':
+        case 'people': {
           rise(one('.bk-h'), 60, L.y * 0.5)
+          const tree = one('.va-tree .bk-pp-list')
+          if (tree) {
+            // 체계도: 이끄는 사람이 먼저 올라오고, 그 아래 선이 내려와 가운데에서 양옆으로 퍼진 뒤,
+            // 맡은 사람마다 선이 내려오며 글이 올라온다. 선은 칸의 가짜 요소라 칸이 아니라 글만 올린다(칸을 숨기면 선도 숨는다)
+            const [lead, ...team] = Array.from(tree.querySelectorAll<HTMLElement>(':scope > .bk-pp-card'))
+            rise(lead?.querySelector('.bk-pp-text') ?? null, 160, L.y * 0.5)
+            if (team.length) {
+              grow(lead, 520, 'down', '::after')
+              run(anims, tree, [{ scale: '0 1', transformOrigin: 'center' }, { scale: '1 1', transformOrigin: 'center' }], s(680), L.grow, '::before')
+              team.forEach((el, i) => {
+                grow(el, 860 + i * L.step, 'down', '::before')
+                rise(el.querySelector('.bk-pp-text'), 920 + i * L.step, L.y * 0.4)
+              })
+            }
+            break
+          }
           items('.bk-pp-card', 160, (el, at) => {
             pop(el.querySelector('.bk-pp-av'), at)
             rise(el.querySelector('.bk-pp-text'), at + 100, L.y * 0.4)
           }, L.step * 1.5)
           break
+        }
         case 'rating':
           // 안 이름과 추천 띠가 먼저 깔리고, 기준마다 줄이 올라오며 표시가 안 차례로 찍힌다.
           // 줄은 선까지 통째로: 선만 먼저 보이면 빈 표가 깔려 있다가 채워지는 것처럼 보인다
