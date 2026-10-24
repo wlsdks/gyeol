@@ -46,7 +46,7 @@ import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction } from '../ui'
 import { noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
@@ -192,7 +192,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         store.setRows(s.id, insertAt(d.base, d.target, block, uid())!)
       } else if (d.plan === 'convert' && d.target && d.composed) {
         store.replaceSlide(s.id, { ...d.composed, rows: insertAt(d.base, d.target, block, uid())! })
-        toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
+        toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
         store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
         const why = d.blocked && (canCompose(s.layout) || s.layout === 'compose') ? noRoomText(d.blocked, block.type, 'slide').why : null
@@ -602,7 +602,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const s = slideRef.current
     store.setRows(s.id, removeBlock(s.rows ?? [], b.id))
     setSelected(null)
-    toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, undoAction(toast))
   }
   const duplicate = (b: Block) => {
     const s = slideRef.current
@@ -822,7 +822,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     select: setSelected,
     convert: () => {
       store.toCompose(slide.id)
-      toast.show('이 장을 컴포넌트 장으로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', { label: '되돌리기', run: () => useDeck.getState().undo() }, 6000)
+      toast.show('이 장을 컴포넌트 장으로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', undoAction(toast), 6000)
     },
   }
 }

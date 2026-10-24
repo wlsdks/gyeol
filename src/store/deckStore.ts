@@ -304,6 +304,21 @@ export const useDeck = create<DeckState>((set, get) => {
   }
 })
 
+/**
+ * 알림의 '되돌리기'용. 바꾼 바로 뒤에 불러 두면, 돌려준 함수는 그 바꾼 것이 아직 맨 위일 때만 되돌리고 true를 돌려준다.
+ * 알림이 떠 있는 사이에 다른 것을 고쳤으면 그것을 되돌리게 되므로 되돌리지 않는다.
+ * 되돌리기 기록의 맨 위(바꾸기 전 덱)가 같은지로 본다: AI 공유처럼 기록에 남지 않는 설정이 바뀌어도 그대로 되돌릴 수 있다
+ */
+export function undoLast(): () => boolean {
+  const before = useDeck.getState().past.at(-1)
+  return () => {
+    const s = useDeck.getState()
+    if (!before || s.past.at(-1) !== before) return false
+    s.undo()
+    return true
+  }
+}
+
 export function useSelectedSlide(): Slide | null {
   return useDeck((s) => s.deck?.slides.find((x) => x.id === s.selectedId) ?? null)
 }

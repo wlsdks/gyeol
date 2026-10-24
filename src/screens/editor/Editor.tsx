@@ -22,7 +22,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
-import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, ShapesIcon, SlidersIcon, takeNotice, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, ShapesIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -256,7 +256,7 @@ function EditorBody({ deck }: { deck: Deck }) {
     const result = applyOps(current, request.ops)
     store.replaceDeck(result.deck)
     setReviewing(null)
-    toast.show('AI 제안을 적용했어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show('AI 제안을 적용했어요', undoAction(toast))
     await ai.resolve(request, 'applied', result.results)
   }
 
@@ -403,7 +403,7 @@ function EditorBody({ deck }: { deck: Deck }) {
 
   const removeSlide = (s: Slide) => {
     store.removeSlide(s.id)
-    toast.show('장을 지웠어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show('장을 지웠어요', undoAction(toast))
   }
 
   // 좁은 창(1100px 아래)에서는 오른쪽 칸을 접어 두고, 열면 슬라이드 위에 띄운다.

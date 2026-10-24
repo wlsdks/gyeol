@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
+import { keys } from '../lib/keys'
+import { undoLast } from '../store/deckStore'
 
 export function Brand() {
   return (
@@ -214,11 +216,27 @@ export function takeNotice(): string | null {
   return text
 }
 
+type ToastAction = { label: string; run: () => void }
+
+/**
+ * 알림의 '되돌리기' 단추. 바꾼 바로 뒤에 만든다.
+ * 알림이 떠 있는 사이에 다른 것을 고쳤으면 엉뚱한 것을 되돌리지 않고, 위쪽 되돌리기로 하라고 알린다
+ */
+export function undoAction(toast: { show(text: string, action?: ToastAction, ms?: number): void }): ToastAction {
+  const undo = undoLast()
+  return {
+    label: '되돌리기',
+    run: () => {
+      if (!undo()) toast.show(`그 뒤에 고친 것이 있어서 여기서는 되돌리지 않았어요. 위쪽의 되돌리기(${keys('mod+Z')})로 차례로 되돌려 주세요.`, undefined, 6000)
+    },
+  }
+}
+
 /** 화면 아래에 잠깐 떴다 사라지는 알림 */
 export function useToast() {
-  const [toast, setToast] = useState<{ text: string; action?: { label: string; run: () => void } } | null>(null)
+  const [toast, setToast] = useState<{ text: string; action?: ToastAction } | null>(null)
   const timer = useRef<number>(0)
-  const show = (text: string, action?: { label: string; run: () => void }, ms = 4000) => {
+  const show = (text: string, action?: ToastAction, ms = 4000) => {
     setToast({ text, action })
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setToast(null), ms)
@@ -231,8 +249,10 @@ export function useToast() {
           type="button"
           className="toast-action"
           onClick={() => {
-            toast.action!.run()
+            // 먼저 닫고 할 일을 한다: 할 일이 새 알림을 띄우면 그것이 남게
+            window.clearTimeout(timer.current)
             setToast(null)
+            toast.action!.run()
           }}
         >
           {toast.action.label}
