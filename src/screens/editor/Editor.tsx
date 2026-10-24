@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import { blockFieldPrefix } from '../../deck/blocks'
 import { knownOnly, unknownParts } from '../../deck/compat'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
-import { LAYOUTS, variantOf } from '../../deck/layouts'
+import { LAYOUTS } from '../../deck/layouts'
 import { motionOf } from '../../deck/themes'
-import type { Deck, Slide } from '../../deck/types'
+import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
 import { downloadPptx } from '../../export/exportPptx'
 import { exposePptDebug } from '../../export/rasterize'
@@ -24,7 +24,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
-import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, ShapesIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -32,8 +32,10 @@ import { ASK_ERROR, AiInbox, AiMenu, AiReview, AskStatus, SlideAsk } from './AiS
 import { useBlockEditing, type BlockEditing } from './BlockEditor'
 import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
-import { Inspector } from './Inspector'
+import { Inspector, layoutPreview } from './Inspector'
 import { SaveStatus } from './SaveStatus'
+import { SelectionBar } from './SelectionBar'
+import { VariantMenu } from './VariantMenu'
 import { SlideList } from './SlideList'
 import { VersionPanel } from './Versions'
 
@@ -214,6 +216,9 @@ function EditorBody({ deck }: { deck: Deck }) {
   const store = useDeck()
   const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  // '레이아웃 바꾸기'에서 그림에 올린 레이아웃. 슬라이드 자리에 그 모습으로 미리 보인다
+  const [layoutPeek, setLayoutPeek] = useState<LayoutId | null>(null)
+  useEffect(() => setLayoutPeek(null), [slide?.id])
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
   // 발표자 화면을 처음 쓸 때: 화면 두 개를 다뤄도 되는지 브라우저가 묻는다
@@ -526,7 +531,7 @@ function EditorBody({ deck }: { deck: Deck }) {
 
       <div className={cx('ed-body', versionsOpen && 'has-versions', side.shown && !versionsOpen && 'has-side')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
-        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} side={side} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
+        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} side={side} layoutPeek={layoutPeek} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
@@ -553,7 +558,7 @@ function EditorBody({ deck }: { deck: Deck }) {
               {blocks.libraryOpen ? (
                 <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
               ) : (
-                <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} />
+                <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} onPeekLayout={setLayoutPeek} />
               )}
             </aside>
           )
@@ -674,6 +679,7 @@ function SlideStage({
   ask,
   blocks,
   side,
+  layoutPeek,
   onRemove,
   onPresentHere,
 }: {
@@ -683,6 +689,7 @@ function SlideStage({
   ask: AiAsk
   blocks: BlockEditing
   side: SidePanel
+  layoutPeek: LayoutId | null
   onRemove: (s: Slide) => void
   onPresentHere: () => void
 }) {
@@ -708,7 +715,7 @@ function SlideStage({
   )
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
   const variants = spec.variants ?? []
-  const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variantOf(slide)) + 1) % variants.length] : null
+  const peekSlide = useMemo(() => (layoutPeek ? layoutPreview(slide, layoutPeek) : null), [slide, layoutPeek])
 
   // 테마 메뉴에서 움직임을 고르면 이 장에서 발표할 때처럼 한 번 보여 준다
   const [preview, setPreview] = useState(0)
@@ -760,6 +767,8 @@ function SlideStage({
             {blocks.hint}
           </p>
         )}
+        {/* 레이아웃 장에서 고른 항목이나 옆 판의 도구 (부품 장은 부품마다 자기 도구가 있다) */}
+        {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar deck={deck} slide={slide} canvasRef={canvasRef} />}
         <FitSlide
           padding={4}
           belowHeight={56}
@@ -777,7 +786,11 @@ function SlideStage({
                 </>
               ) : (
               <>
-              {peek ? (
+              {peekSlide ? (
+                <div className="stage-tools-l">
+                  <p className="stage-peek">‘{LAYOUTS[peekSlide.layout].name}’ 레이아웃으로 바꾸면 이렇게 보여요. 누르면 바뀌어요.</p>
+                </div>
+              ) : peek ? (
                 <div className="stage-tools-l">
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview((n) => n + 1)}>
                     <PlayIcon />
@@ -809,17 +822,7 @@ function SlideStage({
                   <span className="btn-t">이 장 설정</span>
                 </button>
                 <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
-                {nextVariant && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    title={`다음 모양: ${nextVariant.name}`}
-                    onClick={() => store.setVariant(slide.id, nextVariant.id)}
-                  >
-                    <ShapesIcon />
-                    <span className="btn-t">다른 모양</span>
-                  </button>
-                )}
+                {variants.length > 1 && <VariantMenu deck={deck} slide={slide} />}
                 {spec.items && (
                   <button
                     type="button"
@@ -892,8 +895,8 @@ function SlideStage({
               <SlideCanvas
                 deck={look}
                 // 부품을 끌어 부품 장이 아닌 장 위에 오면, 놓았을 때 바뀔 모습을 미리 보여 준다
-                slide={peek || preview > 0 ? slide : blocks.stageSlide}
-                mode={peek || preview > 0 ? 'final' : 'edit'}
+                slide={peekSlide ?? (peek || preview > 0 ? slide : blocks.stageSlide)}
+                mode={peekSlide ? 'preview' : peek || preview > 0 ? 'final' : 'edit'}
                 actions={actions}
                 {...pageProps(info, slide.id)}
               />

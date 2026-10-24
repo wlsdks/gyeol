@@ -39,6 +39,8 @@ interface DeckState {
   setItem(slideId: string, index: number, key: ItemKey, value: string): void
   addItem(slideId: string): void
   removeItem(slideId: string, index: number): void
+  /** 항목을 바로 뒤에 하나 더 (사람이 장 위에서 고른 항목만. 칸 수가 다 찼으면 그대로) */
+  duplicateItem(slideId: string, index: number): void
   /** 항목 순서 바꾸기. 고른 강조는 그 항목을 따라간다. key가 같으면 되돌리기 한 단계로 */
   moveItem(slideId: string, from: number, to: number, key?: string): void
   setNotes(slideId: string, notes: string): void
@@ -182,6 +184,20 @@ export const useDeck = create<DeckState>((set, get) => {
     },
     removeItem(slideId, index) {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, items: s.items.filter((_, i) => i !== index) })))
+    },
+    duplicateItem(slideId, index) {
+      commit((d) =>
+        mapSlide(d, slideId, (s) => {
+          const max = LAYOUTS[s.layout].items?.max ?? 0
+          if (Math.min(s.items.length, max) >= max || !s.items[index]) return s
+          const items = [...s.items]
+          items.splice(index + 1, 0, { ...s.items[index] })
+          // 강조는 원래 항목에 그대로 둔다 (뒤의 항목을 강조했으면 한 칸 밀린다)
+          const h = s.options.highlight
+          const highlight = typeof h === 'number' && h > index ? h + 1 : h
+          return { ...s, items, options: highlight === h ? s.options : { ...s.options, highlight } }
+        }),
+      )
     },
     moveItem(slideId, from, to, key) {
       commit(

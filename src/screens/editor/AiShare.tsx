@@ -112,7 +112,7 @@ function AskList({ scope, deck, slide, ai, ask, onPicked }: { scope: AskScope; d
   )
 }
 
-/** 슬라이드 아래의 'AI에게 부탁'. 이 장 하나를 맡긴다 */
+/** 슬라이드 아래의 'AI로 다듬기'. 이 장 하나를 맡긴다 */
 export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; ai: AiShare; ask: AiAsk }) {
   if (!ai.status) return null
   const busy = ask.job?.state === 'running'
@@ -121,15 +121,15 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
       align="left"
       className="pop-ask"
       button={({ toggle, open }) => (
-        <button type="button" className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')} aria-expanded={open} onClick={toggle}>
+        <button type="button" className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')} aria-expanded={open} title="레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요" onClick={toggle}>
           <SparkIcon />
-          {busy ? 'AI가 보는 중' : 'AI에게 부탁'}
+          {busy ? 'AI가 보는 중' : 'AI로 다듬기'}
         </button>
       )}
     >
       {(close) => (
         <div className="ask-pop">
-          <p className="menu-h">이 장을 AI에게 부탁하기</p>
+          <p className="menu-h">이 장을 AI로 다듬기</p>
           <AskList scope="slide" deck={deck} slide={slide} ai={ai} ask={ask} onPicked={close} />
           <p className="ask-foot">AI에게는 장 순서, 레이아웃, 칸이 비었는지만 보여요. 적은 글은 보내지 않아요. 바뀌는 모습을 미리 보고 적용할지 정해요.</p>
         </div>
@@ -200,7 +200,7 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
   const shape = useMemo(() => JSON.stringify(toShape(deck), null, 2), [deck])
   return (
     <div className="ai-pop">
-      <p className="save-pop-h">AI에게 부탁하기</p>
+      <p className="save-pop-h">AI로 다듬기</p>
       <p className="save-pop-p">AI가 이 발표의 장 구성과 모양을 보고 바꾸자고 제안해요. 적은 글은 AI에게 보이지 않아요.</p>
 
       {ai.status === undefined && <p className="ai-pop-note">연결을 확인하고 있어요…</p>}
@@ -210,7 +210,7 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
       {ai.status && (
         <>
           <AskList scope="deck" deck={deck} slide={null} ai={ai} ask={ask} onPicked={onPicked} />
-          <p className="ai-pop-note">장 하나만 맡기려면 슬라이드 아래 ‘AI에게 부탁’을 눌러요.</p>
+          <p className="ai-pop-note">장 하나만 맡기려면 슬라이드 아래 ‘AI로 다듬기’를 눌러요.</p>
         </>
       )}
       {ai.status && (

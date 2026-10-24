@@ -16,7 +16,7 @@ import { useSlide } from './context'
  * 바뀌어 보인다(되돌리기는 끈 한 번이 한 단계). 글자 크기와 여백은 레이아웃이 알아서 맞춘다.
  */
 
-type Zone = 'start' | 'end' | 'below'
+export type Zone = 'start' | 'end' | 'below'
 
 interface Box {
   x: number
@@ -36,7 +36,7 @@ export function sideName(n: number, base: number): string {
 }
 
 /** 옆 판이 지금 장의 어느 쪽에 있는지 */
-function zoneOf(slide: Slide): Zone {
+export function zoneOf(slide: Slide): Zone {
   const spec = LAYOUTS[slide.layout].panes!
   if (spec.below && variantOf(slide) === spec.below) return 'below'
   const flip = !!slide.options.flip
@@ -44,7 +44,7 @@ function zoneOf(slide: Slide): Zone {
 }
 
 /** 판의 자리를 이 쪽으로 바꾸는 값 (모양과 좌우) */
-function placeFor(slide: Slide, zone: Zone): { variant?: string; flip: boolean } {
+export function placeFor(slide: Slide, zone: Zone): { variant?: string; flip: boolean } {
   const spec = LAYOUTS[slide.layout].panes!
   const variants = LAYOUTS[slide.layout].variants ?? []
   if (zone === 'below') return { variant: spec.below, flip: !!slide.options.flip }

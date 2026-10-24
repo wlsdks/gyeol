@@ -1,0 +1,350 @@
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { visibleItems } from '../../deck/fields'
+import { highlightOf, LAYOUTS, panesOf, sideOf } from '../../deck/layouts'
+import type { Deck, Slide } from '../../deck/types'
+import { cx } from '../../lib/cx'
+import { startItemDrag } from '../../slides/itemDrag'
+import { placeFor, sideName, zoneOf } from '../../slides/panes'
+import { useDeck } from '../../store/deckStore'
+import { CopyIcon, GripIcon, Icon, TrashIcon } from '../ui'
+import { VariantMenu } from './VariantMenu'
+
+/**
+ * 장 위에서 고른 것의 도구. 레이아웃 장에서 칸을 누르면 그 칸이 든 항목(카드, 줄, 단계)이나 옆 판을
+ * 파란 테로 두르고, 바로 위에 이름과 할 수 있는 일을 띄운다: 끌어 옮기기, 앞뒤로, 강조, 복제, 빼기 /
+ * 반대쪽으로, 좁게·넓게, 아래로.
+ *
+ * 예전에는 칸을 누르면 글 상자 테두리만 보이고, 옮기는 손잡이는 마우스를 올려야 작게 보여서
+ * '이걸 어떻게 옮기지?'를 알 수 없었다. 부품 장(.bk)은 부품마다 자기 도구가 있어 여기서는 다루지 않는다.
+ */
+
+type Target =
+  | { kind: 'item'; el: HTMLElement; index: number; across: boolean }
+  | { kind: 'pane'; el: HTMLElement }
+  /** 항목도 판도 아닌 칸(표지 제목 같은): 무슨 칸인지와 이 장의 모양 */
+  | { kind: 'field'; el: HTMLElement; label: string }
+
+interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+const ArrowIcon = ({ dir }: { dir: 'left' | 'right' | 'up' | 'down' }) => (
+  <Icon d={{ left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6', up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6' }[dir]} />
+)
+const StarIcon = () => <Icon d="M12 4.5l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L4.5 10l5.2-.8z" />
+const SwapIcon = () => <Icon d="M7 7h11l-3-3M17 17H6l3 3" />
+const NarrowIcon = () => <Icon d="M4 12h6M7 9l3 3-3 3M20 12h-6M17 9l-3 3 3 3" />
+const WideIcon = () => <Icon d="M10 12H4M7 9l-3 3 3 3M14 12h6M17 9l3 3-3 3" />
+const BelowIcon = () => <Icon d="M4 5h16v9H4zM4 17.5h16" />
+
+/** 누른 곳에서 고를 것을 찾는다: 항목이 먼저, 아니면 옆 판 */
+function targetAt(node: Element, slide: Slide): Target | null {
+  const slideEl = node.closest<HTMLElement>('.slide')
+  if (!slideEl || node.closest('.bk, .pn-tools, .it-grip, .it-remove')) return null
+  const item = node.closest<HTMLElement>('.it')
+  if (item && slideEl.contains(item) && LAYOUTS[slide.layout].items) {
+    const list = [...(item.parentElement?.children ?? [])].filter((c): c is HTMLElement => c instanceof HTMLElement && c.classList.contains('it'))
+    const grip = item.querySelector<HTMLElement>(':scope > .it-grip')
+    const index = grip?.dataset.i ? Number(grip.dataset.i) : list.indexOf(item)
+    // 가로로 놓인 목록(카드, 단계)은 왼쪽·오른쪽, 세로로 쌓인 목록(줄)은 위·아래
+    let across = true
+    if (list.length > 1) {
+      const a = list[0].getBoundingClientRect()
+      const b = list[1].getBoundingClientRect()
+      across = Math.abs(b.left - a.left) > Math.abs(b.top - a.top)
+    }
+    if (index >= 0) return { kind: 'item', el: item, index, across }
+  }
+  const panes = panesOf(slide)
+  const pane = panes && slideEl.querySelector<HTMLElement>(panes.el)
+  if (pane && pane.contains(node) && (sideOf(slide) !== null || zoneOf(slide) === 'below')) return { kind: 'pane', el: pane }
+  const field = node.closest<HTMLElement>('[data-field]')
+  const label = field && LAYOUTS[slide.layout].fields.find((f) => f.key === field.dataset.field)?.label
+  if (field && label && (LAYOUTS[slide.layout].variants?.length ?? 0) > 1) return { kind: 'field', el: field, label }
+  return null
+}
+
+export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Slide; canvasRef: RefObject<HTMLDivElement | null> }) {
+  const store = useDeck()
+  const [target, setTarget] = useState<Target | null>(null)
+  const [ring, setRing] = useState<Rect | null>(null)
+  const [bar, setBar] = useState<{ x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const barRef = useRef<HTMLDivElement>(null)
+  const slideRef = useRef(slide)
+  slideRef.current = slide
+
+  // 다른 장으로 가면 고른 것을 놓는다
+  useEffect(() => setTarget(null), [slide.id])
+
+  // 칸에 들어가거나(키보드도) 항목을 누르면 고르고, 슬라이드 밖을 누르면 놓는다
+  useEffect(() => {
+    const root = canvasRef.current
+    if (!root) return
+    const pick = (t: EventTarget | null) => {
+      if (!(t instanceof Element) || t.closest('.sel-bar')) return
+      if (!t.closest('.slide')) return setTarget(null)
+      setTarget(targetAt(t, slideRef.current))
+    }
+    const onFocus = (e: FocusEvent) => pick(e.target)
+    const onDown = (e: PointerEvent) => {
+      // 항목의 손잡이로 끄는 동안은 도구를 걷는다 (항목이 손을 따라 움직인다)
+      if (e.target instanceof Element && e.target.closest('.it-grip, .pn-tools')) {
+        setDragging(true)
+        const up = () => {
+          setDragging(false)
+          window.removeEventListener('pointerup', up, true)
+        }
+        window.addEventListener('pointerup', up, true)
+        return
+      }
+      pick(e.target)
+    }
+    const onOutside = (e: PointerEvent) => {
+      if (e.target instanceof Node && !root.contains(e.target)) setTarget(null)
+    }
+    root.addEventListener('focusin', onFocus)
+    root.addEventListener('pointerdown', onDown)
+    document.addEventListener('pointerdown', onOutside, true)
+    return () => {
+      root.removeEventListener('focusin', onFocus)
+      root.removeEventListener('pointerdown', onDown)
+      document.removeEventListener('pointerdown', onOutside, true)
+    }
+  }, [canvasRef])
+
+  // 고른 것의 자리를 따라간다 (글을 적어 카드가 커지거나 순서를 바꿔 옮겨 가도)
+  useLayoutEffect(() => {
+    if (!target) {
+      setRing(null)
+      setBar(null)
+      return
+    }
+    let raf = 0
+    const tick = () => {
+      if (!target.el.isConnected) return setTarget(null)
+      const r = target.el.getBoundingClientRect()
+      // 막대는 슬라이드 위 여백까지 쓸 수 있다 (판이 장 맨 위에 붙어 있어도 판의 글을 가리지 않게)
+      const area = (canvasRef.current?.closest('.stage') ?? canvasRef.current)?.getBoundingClientRect()
+      setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
+      const bw = barRef.current?.offsetWidth ?? 0
+      const bh = barRef.current?.offsetHeight ?? 36
+      const top = area ? area.top + 4 : 4
+      // 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위에
+      const y = r.top - bh - 8 >= top ? r.top - bh - 8 : r.top + 8
+      const maxX = (area ? area.right : innerWidth) - bw - 8
+      const x = Math.max(area ? area.left + 8 : 8, Math.min(r.left, maxX))
+      setBar((p) => (p && p.x === x && p.y === y ? p : { x, y }))
+      raf = requestAnimationFrame(tick)
+    }
+    tick()
+    return () => cancelAnimationFrame(raf)
+  }, [target, canvasRef])
+
+  // 옆 판을 고르면 판의 테와 판 사이 손잡이를 켜 두고, 판의 이름표는 막대의 이름이 맡는다.
+  // 항목을 고르면 항목 모서리의 손잡이와 빼기 단추를 숨긴다 (막대에 같은 일이 있다). edit.css
+  useEffect(() => {
+    if (!target || target.kind === 'field') return
+    const el = target.kind === 'pane' ? target.el.closest<HTMLElement>('.slide') : target.el
+    if (!el) return
+    el.dataset.sel = target.kind
+    return () => {
+      delete el.dataset.sel
+    }
+  }, [target])
+
+  if (!target || !ring || dragging) return null
+  const spec = LAYOUTS[slide.layout]
+
+  let name = ''
+  let tools: ReactNode = null
+  if (target.kind === 'item' && spec.items) {
+    const i = target.index
+    const n = visibleItems(slide).length
+    const back = target.across ? 'left' : 'up'
+    const fwd = target.across ? 'right' : 'down'
+    const highlight = spec.highlight
+    const on = highlight && highlightOf(slide) === i
+    name = `${spec.items.label} ${i + 1}`
+    // 옮긴 뒤에도 같은 항목을 고른 채로 둔다: 새 자리의 항목을 다시 찾는다
+    const moveTo = (to: number) => {
+      const list = target.el.parentElement
+      store.moveItem(slide.id, i, to)
+      requestAnimationFrame(() => {
+        const items = [...(list?.children ?? [])].filter((c): c is HTMLElement => c instanceof HTMLElement && c.classList.contains('it'))
+        const el = items[to]
+        if (el) setTarget({ ...target, el, index: to })
+      })
+    }
+    const grip = target.el.querySelector<HTMLElement>(':scope > .it-grip')
+    tools = (
+      <>
+        <button type="button" className="sel-btn" title={target.across ? '왼쪽으로' : '위로'} aria-label={target.across ? '왼쪽으로' : '위로'} disabled={i <= 0} onClick={() => moveTo(i - 1)}>
+          <ArrowIcon dir={back} />
+        </button>
+        <button type="button" className="sel-btn" title={target.across ? '오른쪽으로' : '아래로'} aria-label={target.across ? '오른쪽으로' : '아래로'} disabled={i >= n - 1} onClick={() => moveTo(i + 1)}>
+          <ArrowIcon dir={fwd} />
+        </button>
+        {highlight && (
+          <button
+            type="button"
+            className={cx('sel-btn has-t', on && 'is-on')}
+            aria-pressed={!!on}
+            title={on ? `${highlight.label} 끄기` : `이 ${spec.items.label}을(를) ${highlight.label}`}
+            onClick={() => store.setOptions(slide.id, { highlight: on ? -1 : i })}
+          >
+            <StarIcon />
+            <span>강조</span>
+          </button>
+        )}
+        <span className="sel-sep" aria-hidden="true" />
+        <button
+          type="button"
+          className="sel-btn"
+          title={n >= spec.items.max ? `${spec.items.label}은(는) ${spec.items.max}개까지예요` : '복제'}
+          aria-label="복제"
+          disabled={n >= spec.items.max}
+          onClick={() => store.duplicateItem(slide.id, i)}
+        >
+          <CopyIcon />
+        </button>
+        <button
+          type="button"
+          className="sel-btn"
+          title={n <= spec.items.min ? `${spec.items.label}은(는) ${spec.items.min}개 아래로 줄일 수 없어요` : '이 항목 빼기'}
+          aria-label="이 항목 빼기"
+          disabled={n <= spec.items.min}
+          onClick={() => {
+            store.removeItem(slide.id, i)
+            setTarget(null)
+          }}
+        >
+          <TrashIcon />
+        </button>
+      </>
+    )
+    return (
+      <>
+        <div className="sel-ring" style={{ translate: `${ring.x}px ${ring.y}px`, width: ring.w, height: ring.h }} aria-hidden="true" />
+        <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${name} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
+          {grip && n > 1 ? (
+            <button
+              type="button"
+              className="sel-name is-grip"
+              title="끌어서 순서 바꾸기"
+              onPointerDown={(e) => {
+                if (e.button !== 0) return
+                e.preventDefault()
+                setDragging(true)
+                const up = () => {
+                  setDragging(false)
+                  window.removeEventListener('pointerup', up, true)
+                }
+                window.addEventListener('pointerup', up, true)
+                startItemDrag(e.nativeEvent, grip, i, (from, to, key) => store.moveItem(slide.id, from, to, key))
+              }}
+            >
+              <GripIcon />
+              {name}
+            </button>
+          ) : (
+            <span className="sel-name">{name}</span>
+          )}
+          <span className="sel-sep" aria-hidden="true" />
+          {tools}
+        </div>
+      </>
+    )
+  }
+
+  if (target.kind === 'field') {
+    return (
+      <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${target.label} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
+        <span className="sel-name">{target.label}</span>
+        <span className="sel-sep" aria-hidden="true" />
+        <VariantMenu deck={deck} slide={slide} compact />
+      </div>
+    )
+  }
+
+  if (target.kind === 'pane' && spec.panes) {
+    const panes = panesOf(slide) ?? spec.panes
+    const zone = zoneOf(slide)
+    const side = sideOf(slide)
+    const at = panes.sides.indexOf(side ?? panes.base)
+    const place = (to: 'start' | 'end' | 'below') => {
+      const p = placeFor(slide, to)
+      if (p.variant) store.setVariant(slide.id, p.variant)
+      store.setOptions(slide.id, { flip: p.flip || undefined })
+    }
+    const setSide = (k: number) => {
+      const n = panes.sides[k]
+      store.setOptions(slide.id, { pane: n === panes.base ? undefined : n })
+    }
+    name = panes.name
+    tools = (
+      <>
+        {zone !== 'below' && (
+          <button type="button" className="sel-btn has-t" title="반대쪽으로 옮기기" onClick={() => place(zone === 'start' ? 'end' : 'start')}>
+            <SwapIcon />
+            <span>{zone === 'start' ? '오른쪽으로' : '왼쪽으로'}</span>
+          </button>
+        )}
+        {spec.panes.below && (
+          <button type="button" className="sel-btn has-t" title={zone === 'below' ? '옆으로 세우기' : '장 아래에 띠로 깔기'} onClick={() => place(zone === 'below' ? (spec.panes!.start ? 'start' : 'end') : 'below')}>
+            <BelowIcon />
+            <span>{zone === 'below' ? '옆으로' : '아래로'}</span>
+          </button>
+        )}
+        {side !== null && zone !== 'below' && (
+          <>
+            <span className="sel-sep" aria-hidden="true" />
+            <button type="button" className="sel-btn" title={at > 0 ? `좁게 (${sideName(panes.sides[at - 1], panes.base)})` : '더 좁게 할 수 없어요'} aria-label="좁게" disabled={at <= 0} onClick={() => setSide(at - 1)}>
+              <NarrowIcon />
+            </button>
+            <span className="sel-val">{sideName(side, panes.base)}</span>
+            <button
+              type="button"
+              className="sel-btn"
+              title={at < panes.sides.length - 1 ? `넓게 (${sideName(panes.sides[at + 1], panes.base)})` : '더 넓게 할 수 없어요'}
+              aria-label="넓게"
+              disabled={at >= panes.sides.length - 1}
+              onClick={() => setSide(at + 1)}
+            >
+              <WideIcon />
+            </button>
+          </>
+        )}
+      </>
+    )
+    return (
+      <>
+        <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${name} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
+          <button
+            type="button"
+            className="sel-name is-grip"
+            title={spec.panes.below ? '끌어서 반대쪽이나 아래로 옮겨요' : '끌어서 반대쪽으로 옮겨요'}
+            onPointerDown={(e) => {
+              if (e.button !== 0) return
+              e.preventDefault()
+              // 판 옮기기는 판의 이름표(panes.tsx)가 한다. 손이 막대에서 시작해도 이름표를 잡은 것처럼 넘긴다
+              const handle = target.el.closest('.slide')?.querySelector<HTMLElement>('.pn-handle')
+              handle?.dispatchEvent(
+                new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, buttons: 1, clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType, isPrimary: true }),
+              )
+            }}
+          >
+            <GripIcon />
+            {name}
+          </button>
+          <span className="sel-sep" aria-hidden="true" />
+          {tools}
+        </div>
+      </>
+    )
+  }
+  return null
+}

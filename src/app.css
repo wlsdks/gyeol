@@ -234,17 +234,24 @@ select {
   align-self: flex-start;
 }
 
-/* 넷처럼 한 줄에 다 들어가지 않는 선택지는 어중간하게 줄바꿈하지 않고 두 줄 두 칸으로 */
-.seg-grid {
+/* 칸 너비를 다 쓰는 고르기: 단추를 같은 너비로 한 줄에 (넷이어도 두 줄로 꺾지 않는다) */
+.seg-fill {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  width: 100%;
+}
+
+.seg-fill .seg-btn {
+  min-width: 0;
+  padding: 0 4px;
 }
 
 .seg-btn {
   height: 30px;
   padding: 0 14px;
   border: 0;
+  white-space: nowrap;
   border-radius: 6px;
   background: none;
   color: var(--ink-2);
@@ -2173,6 +2180,43 @@ select {
   scrollbar-gutter: stable;
 }
 
+/* 앱 전체의 말풍선 (screens/tooltip.ts). (i) 단추의 말풍선과 같은 생김새 */
+.tt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--ink);
+  box-shadow: 0 6px 18px rgb(16 20 31 / 0.18);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: keep-all;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.1s, visibility 0s 0.1s;
+}
+
+.tt.is-on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.12s;
+}
+
+.tt-key {
+  margin-left: 6px;
+  color: rgb(255 255 255 / 0.62);
+  font-weight: 400;
+}
+
 /* (i) 단추와 말풍선. 말풍선은 단추 밑에 작게 붙는다 */
 .info {
   position: relative;
@@ -2266,34 +2310,144 @@ select {
   font-weight: 700;
 }
 
-.ins-purpose {
+.ins-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+/* 지금 레이아웃: 누르면 레이아웃 고르기가 열린다 */
+.ins-cur {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s, background-color 0.14s;
+}
+
+.ins-cur:hover {
+  border-color: var(--line-2);
+  background: #f8f9fa;
+}
+
+.ins-cur .slide-frame {
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.ins-cur-t {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ins-cur-k {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ins-cur-n {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ins-cur-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--sel);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ins-cur-go .icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* 빈칸: 몇 곳 남았는지 한 줄. 목록은 펼쳐야 보인다 */
+.ins-blank {
   display: flex;
   align-items: center;
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.ins-guide {
-  margin: 6px 0 0;
-  color: var(--ink-2);
+.ins-blank-n {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: -6px;
+  padding: 6px 8px 6px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
   font-size: 14px;
-  line-height: 1.6;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.ins-done {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 14px;
+.ins-blank-n:hover {
+  background: #f1f3f5;
 }
 
-/* 고르는 값 아래의 짧은 도움말 (장 위에서 끌어도 된다는 것처럼) */
-.ins-note {
-  margin: 2px 0 0;
+.ins-blank-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8a317;
+}
+
+.ins-blank-chev {
+  display: inline-grid;
+  margin-left: -4px;
   color: var(--ink-3);
-  font-size: 13px;
-  line-height: 1.5;
+  transition: rotate 0.16s;
+}
+
+.ins-blank-chev .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.ins-blank-chev.is-open {
+  rotate: 90deg;
+}
+
+.ins-blank.is-done {
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.ins-blank.is-done .icon {
+  width: 16px;
+  height: 16px;
+  color: #1f8a4c;
+}
+
+.ins-blank-wrap .ins-missing {
+  max-height: 220px;
+  margin-top: 4px;
+  overflow-y: auto;
 }
 
 .ins-missing {
@@ -2332,36 +2486,101 @@ select {
   background: #f1f3f5;
 }
 
-.ins-note {
-  margin: -4px 0 12px;
-  color: var(--ink-3);
-  font-size: 13px;
+/* 고르기 한 줄: 이름은 왼쪽, 단추는 오른쪽. 단추가 많으면 이름 아래 한 줄을 다 쓴다 */
+.ins-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
 }
 
-.ins-row {
-  display: flex;
+.ins-opt.is-wide {
   flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 
-.ins-row + .ins-row,
-.ins-row + .toggle,
-.ins-note + .toggle {
-  margin-top: 14px;
+.ins-opt + .ins-opt,
+.ins-variants + .ins-opt,
+.ins-variants + .toggle,
+.ins-opt + .toggle {
+  margin-top: 12px;
 }
 
-/* 모양 그림 아래에 이어지는 고르기 줄은 그림 이름과 붙어 보이지 않게 더 띄운다 */
-.ins-layouts + :is(.ins-row, .toggle) {
-  margin-top: 20px;
+.ins-variants + .ins-opt {
+  margin-top: 18px;
 }
 
-.ins-label {
+.ins-opt-l {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
   font-size: 14px;
+  white-space: nowrap;
 }
 
-.ins-link {
-  margin: 12px 0 0;
-  font-size: 13px;
+.ins-opt.is-wide .ins-opt-l {
+  display: flex;
+}
+
+.ins-play {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+}
+
+.ins-play .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.ins-variants {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 10px;
+}
+
+/* 레이아웃 바꾸기: 위에 돌아가기 줄을 붙여 두고 묶음마다 그림 두 칸 */
+.ins-picker-h {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px 10px 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.ins-picker-t {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ins-picker .ins-group {
+  padding: 0 18px;
+}
+
+.ins-picker-h + .ins-group {
+  margin-top: 16px;
+}
+
+.ins-picker .ins-group:last-child {
+  padding-bottom: 28px;
+}
+
+/* 슬라이드 아래 '모양': 이 레이아웃의 모양들을 그림으로 */
+.variant-pop {
+  padding: 6px 12px 14px;
+}
+
+.variant-grid {
+  display: flex;
+  gap: 12px;
+  padding: 0 2px;
 }
 
 .ins-layouts {
@@ -4962,4 +5181,119 @@ body.is-block-resizing * {
 
 .air .vpp-item.is-hidden .vpp-slide {
   opacity: 0.4;
+}
+
+/* ---------- 장 위에서 고른 것의 도구 (editor/SelectionBar.tsx) ---------- */
+
+.sel-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--sel);
+  pointer-events: none;
+}
+
+.sel-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+}
+
+.sel-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--sel-soft);
+  color: var(--sel);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sel-name.is-grip {
+  padding-left: 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sel-name.is-grip:active {
+  cursor: grabbing;
+}
+
+.sel-name .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sel-btn.has-t {
+  padding: 0 9px 0 7px;
+}
+
+.sel-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.sel-btn:hover:not(:disabled) {
+  background: #f1f3f5;
+  color: var(--ink);
+}
+
+.sel-btn.is-on {
+  background: var(--sel-soft);
+  color: var(--sel);
+}
+
+.sel-btn:disabled {
+  color: var(--line-2);
+  cursor: not-allowed;
+}
+
+.sel-sep {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+.sel-val {
+  min-width: 44px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
 }
