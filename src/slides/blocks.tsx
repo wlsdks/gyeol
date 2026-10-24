@@ -1260,6 +1260,13 @@ function Sparks() {
           <span className="bk-sx-hk is-now">지금</span>
           <span className="bk-sx-hk is-chg">{first ? '처음보다' : '바로 앞보다'}</span>
         </div>
+        {/* 넓은 칸에서 두 단으로 흘릴 때 오른쪽 단의 머리 (blocks.css). 기간은 왼쪽 머리에서만 고친다 */}
+        <div className="bk-sx-head is-more" aria-hidden="true">
+          <span />
+          <span className="bk-sx-hk bk-sx-period">{slide.fields.period?.trim()}</span>
+          <span className="bk-sx-hk is-now">지금</span>
+          <span className="bk-sx-hk is-chg">{first ? '처음보다' : '바로 앞보다'}</span>
+        </div>
         <ul className="bk-sx-list" data-n={items.length}>
           {items.map((it, i) => {
             const toks = tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(-24)
