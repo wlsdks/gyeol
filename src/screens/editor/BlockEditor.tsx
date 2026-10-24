@@ -18,7 +18,7 @@ import {
   foldableFields,
   growAt,
   insertAt,
-  lookIssue,
+  lookChangeIssue,
   shownLook,
   makeBlock,
   placeIssue,
@@ -651,7 +651,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       inRow={(slide.rows ?? []).find((r) => r.blocks.some((x) => x.id === b.id))?.blocks.length ?? 1}
       itemIssue={issue(b, withItem)}
       variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}
-      lookIssue={(lk) => (lk ? lookIssue(slide.rows ?? [], b.id, lk) : null) ?? issue(b, (x) => ({ ...x, look: lk }))}
+      lookIssue={(lk) => lookChangeIssue(slide.rows ?? [], b.id, lk ?? 'plain', measureArea(areaEl.current)?.size.h)}
       onBlocked={(r) => {
         const t = noRoomText(r, b.type, 'change')
         toast.show(`${t.why} ${t.fix}`, undefined, 6000)

@@ -154,12 +154,18 @@ function lowest(cell: HTMLElement, el: HTMLElement, span: number): number {
   return ok
 }
 
-/** 갤러리에 그려진 부품마다 칸 너비별로 잰다: { 부품: { 너비: 높이 } } */
-export async function measureBlocks(): Promise<Partial<Record<BlockType, Record<number, number>>>> {
+/**
+ * 갤러리에 그려진 부품마다 칸 너비별로 잰다: { 부품: { 너비: 높이 } }.
+ * look을 주면 그 바탕으로 그려진 칸을 먼저 잰다: 혼자 한 줄을 다 쓰는 칸은 고른 면이 있어도 바탕 없이 그려져서(shownLook)
+ * 맨 앞 칸만 재면 카드 높이가 바탕 없는 높이로 잡힌다. 그렇게 그려진 칸이 없는 부품(늘 혼자 쓰는 부품)은 그려지는 대로
+ */
+export async function measureBlocks(look?: 'plain' | 'card'): Promise<Partial<Record<BlockType, Record<number, number>>>> {
   await document.fonts.ready
   const out: Partial<Record<BlockType, Record<number, number>>> = {}
   for (const area of document.querySelectorAll<HTMLElement>('.bk-area')) area.style.removeProperty('--bk-sq')
-  for (const cell of document.querySelectorAll<HTMLElement>('.bk')) {
+  const all = Array.from(document.querySelectorAll<HTMLElement>('.bk'))
+  const cells = look ? [...all.filter((c) => c.classList.contains(`bk-look-${look}`)), ...all] : all
+  for (const cell of cells) {
     const type = BLOCK_TYPES.find((t) => cell.classList.contains(`bk-${t}`))
     const el = inner(cell)
     if (!type || !el || out[type]) continue
@@ -195,11 +201,15 @@ export type HeightTable = Record<string, Record<number, number[]>>
  * 모든 부품 × 모양 × 바탕 × 항목 수 × 칸 너비. 열쇠는 '부품.모양.바탕'(바탕: plain, card — 강조색 면은 카드와 안쪽 여백이 같다),
  * 값은 { 칸 너비: [항목 수마다의 높이] } (항목이 없는 부품은 [0]에). source는 blockHeights.ts에 그대로 붙여 넣을 글
  */
-export async function measureAll(log: (s: string) => void = console.info, extra = ''): Promise<{ table: HeightTable; fails: string[]; source: string }> {
+export async function measureAll(
+  log: (s: string) => void = console.info,
+  extra = '',
+  looks: readonly ('plain' | 'card')[] = ['plain', 'card'],
+): Promise<{ table: HeightTable; fails: string[]; source: string }> {
   const table: HeightTable = {}
   const fails: string[] = []
   const t0 = performance.now()
-  for (const look of ['plain', 'card'] as const) {
+  for (const look of looks) {
     // 모양마다: 기본 모양(첫째)은 모든 부품을 한 번에, 다른 모양은 그 모양이 있는 부품만
     const variantIds = [null, ...new Set(BLOCK_TYPES.flatMap((t) => (BLOCKS[t].variants ?? []).slice(1).map((v) => v.id)))]
     for (const bv of variantIds) {
@@ -213,7 +223,7 @@ export async function measureAll(log: (s: string) => void = console.info, extra 
         })
         if (!types.length) continue
         await show(`set=blocks&mode=final&bl=${look}&fill=${n}${bv ? `&bv=${bv}` : ''}${extra ? `&${extra}` : ''}&types=${types.join(',')}`, types)
-        const m = await measureBlocks()
+        const m = await measureBlocks(look)
         for (const t of types) {
           const v = bv ?? BLOCKS[t].variants?.[0].id ?? 'base'
           const key = `${t}.${v}.${look}`

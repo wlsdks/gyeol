@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, BLOCKS, composeAreaH, insertAt, lookOf, placeIssue, validTargets, whyNot, withLook } from '../deck/blocks'
+import { BLOCK_TYPES, BLOCKS, composeAreaH, insertAt, lookChangeIssue, lookOf, placeIssue, validTargets, whyNot, withLook } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { makeSlide } from '../deck/generate'
 import type { Block, BlockRow, Slide } from '../deck/types'
@@ -68,9 +68,9 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       // validTargets와 whyNot이 같은 것을 말하는지
       if (whyNot(rows, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
       rows = insertAt(rows, t, b, `r${k}-${tries}`)!
-      // 편집기에서 면을 고를 때처럼 같은 줄은 같은 면으로
+      // 편집기에서 면을 고를 때처럼 같은 줄은 같은 면으로. 그러면 장을 넘칠 때는 편집기처럼 고를 수 없으니 그대로
       const placed = rows.flatMap((r) => r.blocks).find((x) => x.id === b.id)!
-      rows = withLook(rows, b.id, lookOf(placed))
+      if (!lookChangeIssue(rows, b.id, lookOf(placed), areaH)) rows = withLook(rows, b.id, lookOf(placed))
     }
     return { slide: { ...base, rows }, refused }
   })

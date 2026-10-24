@@ -896,7 +896,8 @@ export function blockMinH(block: Block, span: number): number {
   const spec = BLOCKS[block.type]
   const variant = variantOfBlock(block)
   const n = spec.items ? blockItems(block).length : 0
-  const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${lookOf(block) === 'plain' ? 'plain' : 'card'}`]
+  // 그려지는 면으로 본다: 한 줄을 다 쓰는 너비(12)면 혼자인 줄이라 고른 면이 있어도 바탕 없이 그려진다 (shownLook)
+  const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${shownLook(block, span >= 12 ? 1 : 2) === 'plain' ? 'plain' : 'card'}`]
   // 잰 너비가 아니면 그보다 넓은 것 가운데 가장 가까운 것 (없으면 가장 넓은 것)
   const at = SPANS.find((x) => x >= span && table?.[x]) ?? [...SPANS].reverse().find((x) => table?.[x])
   const hs = at !== undefined ? table?.[at] : undefined
@@ -1036,6 +1037,17 @@ export function changeRows(rows: BlockRow[], blockId: string, fn: (b: Block) => 
 /** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
 export function changeIssue(rows: BlockRow[], blockId: string, fn: (b: Block) => Block, areaH: number): NoRoom | null {
   const next = changeRows(rows, blockId, fn)
+  return fitsHeight(next, areaH) ? null : { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
+}
+
+/**
+ * 면을 이것으로 바꿀 수 없는 까닭: 면의 규칙(lookIssue), 그리고 같은 줄이 함께 바뀐 뒤(withLook)에도 장에 들어가는지.
+ * 옅은 면은 안쪽 여백만큼 높아져서, 고른 부품만 보면 옆 부품까지 바뀌어 넘치는 것을 놓친다
+ */
+export function lookChangeIssue(rows: BlockRow[], blockId: string, look: BlockLook, areaH?: number): NoRoom | null {
+  const why = lookIssue(rows, blockId, look)
+  if (why || areaH === undefined) return why
+  const next = withLook(rows, blockId, look)
   return fitsHeight(next, areaH) ? null : { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
 }
 
