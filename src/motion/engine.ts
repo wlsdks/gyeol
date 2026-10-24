@@ -406,6 +406,8 @@ export function motionEngine(): MotionEngine {
           rise(el.querySelector('.sk-name'), at, L.y * 0.5)
           grow(el.querySelector('.sk-fill'), at + 120)
           pop(el.querySelector('.sk-mark'), at + 320)
+          // 넘은 만큼(모자란 만큼)은 목표 줄이 선 다음 그 자리에서 뻗어 나간다
+          grow(el.querySelector('.sk-diff'), at + 420)
           fade(el.querySelector('.sk-target'), at + 80, 500)
           countIn(el.querySelector('.sk-value'), at + 120)
           countIn(el.querySelector('.sk-rate'), at + 200)

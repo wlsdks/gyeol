@@ -438,13 +438,15 @@ function Scorecard() {
           const scale = Math.max(target, actual) || 1
           const bar = { '--a': known ? ((actual / scale) * 100).toFixed(2) : '0', '--t': known ? ((target / scale) * 100).toFixed(2) : '0' } as CSSProperties
           return (
-            <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && actual >= target && 'is-met', demo && 'is-demo')}>
+            <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && (actual >= target ? 'is-met' : 'is-miss'), demo && 'is-demo')}>
               <div className="sk-name">
                 <IT i={i} k="title" className="sk-title" />
                 <IT i={i} k="body" className="sk-body" />
               </div>
               <div className="sk-bar" style={bar} aria-hidden="true">
                 <span className="sk-fill" />
+                {/* 목표를 넘은 만큼, 또는 목표까지 모자란 만큼을 목표 줄에 붙여 따로 칠한다 */}
+                {known && actual !== target && <span className="sk-diff" />}
                 {known && <span className="sk-mark" />}
               </div>
               <IT i={i} k="meta" className="sk-target sk-num" />
