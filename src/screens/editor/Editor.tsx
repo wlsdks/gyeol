@@ -19,9 +19,9 @@ import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
 import { uid } from '../../deck/generate'
-import { loadBestDeck, persistNow, saveToBrowser, saveToFolder } from '../../store/persist'
+import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
-import { Present } from '../Present'
+import { Present, presentKey } from '../Present'
 import { BackIcon, BlocksIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
@@ -166,17 +166,29 @@ function useAutosave(deck: Deck) {
   }, [flush])
 
   /** 발표나 내보내기처럼 중요한 순간 전에 부른다 */
-  return useCallback((reason: VersionReason) => {
+  const markVersion = useCallback((reason: VersionReason) => {
     flush()
     lastVersionAt.current = Date.now()
     void saveVersion(latest.current, { reason })
   }, [flush])
+
+  /** Ctrl+S: 모아 둔 저장을 기다리지 않고 두 곳에 바로 저장한다. 고른 폴더에 쓰지 못했거나 브라우저에 못 쓰면 false */
+  const saveNow = useCallback(async () => {
+    const d = latest.current
+    if (useDeck.getState().newer?.id === d.id) return true
+    dirty.current = { browser: false, folder: false }
+    const browser = await saveToBrowser(d)
+    const folder = await saveToFolder(d)
+    return browser && (folder || useStorage.getState().folder?.kind !== 'ready')
+  }, [])
+
+  return { markVersion, saveNow }
 }
 
 function EditorBody({ deck }: { deck: Deck }) {
   const slide = useSelectedSlide() ?? deck.slides[0]
   const store = useDeck()
-  const markVersion = useAutosave(deck)
+  const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
@@ -294,30 +306,52 @@ function EditorBody({ deck }: { deck: Deck }) {
     window.setTimeout(() => focusField(target.id, m), 60)
   }
 
-  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게)
+  const printPdf = useCallback(() => {
+    markVersion('export')
+    setPrinting(true)
+  }, [markVersion])
+
+  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게), Ctrl+S 저장, Ctrl+P PDF
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (presenting) return
       const typing = (e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')
       const mod = e.metaKey || e.ctrlKey
+      // 한글 입력 상태에서는 Ctrl+Z가 'ㅋ'로 와서 글자 키는 자판 자리로 읽는다
+      const k = presentKey(e).toLowerCase()
+      const save = mod && !e.shiftKey && !e.altKey && k === 's'
+      // Ctrl+P를 브라우저에 맡기면 인쇄할 장이 없어 빈 쪽이 나온다. 내보내기의 PDF와 같은 길로 보낸다
+      const print = mod && !e.shiftKey && !e.altKey && k === 'p'
+      // 브라우저의 새로 고침, 페이지 저장, 인쇄 창은 글을 쓰는 중에도, 창이 떠 있어도 막는다
+      if (e.key === 'F5' || save || print) e.preventDefault()
+      if (presenting || dialogOpen()) return
       if (e.key === 'F5') {
-        e.preventDefault()
         void startPresent(e.shiftKey ? slide?.id : undefined, false, e.altKey ? 'presenter' : 'auto')
         return
       }
+      if (save) {
+        void saveNow().then((ok) =>
+          toast.show(ok ? '저장했어요. 고칠 때마다 자동으로 저장되고 있어요.' : '저장하지 못했어요. 위쪽의 저장 상태를 눌러 할 일을 확인해 주세요.'),
+        )
+        return
+      }
+      if (print) {
+        printPdf()
+        return
+      }
       if (typing) return
-      if (mod && e.key.toLowerCase() === 'z') {
+      if (mod && k === 'z') {
         e.preventDefault()
         if (e.shiftKey) store.redo()
         else store.undo()
-      } else if (mod && e.key.toLowerCase() === 'y') {
+      } else if (mod && k === 'y') {
         e.preventDefault()
         store.redo()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [presenting, startPresent, slide?.id, store])
+    // toast는 그릴 때마다 새로 만들어져서 의존성에서 뺀다
+  }, [presenting, startPresent, slide?.id, store, saveNow, printPdf])
 
   const exportHtml = async () => {
     markVersion('export')
@@ -375,10 +409,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           <ThemeMenu deck={deck} />
           <ExportMenu
             onHtml={exportHtml}
-            onPdf={() => {
-              markVersion('export')
-              setPrinting(true)
-            }}
+            onPdf={printPdf}
             onDeckFile={() => {
               downloadDeckFile(deck)
               toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')

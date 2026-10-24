@@ -209,7 +209,7 @@ export function ExportMenu({ onHtml, onPdf, onDeckFile }: { onHtml: () => void; 
               onPdf()
             }}
           >
-            <span className="menu-item-name">PDF</span>
+            <span className="menu-item-name">PDF <kbd>{keys('mod+P')}</kbd></span>
             <span className="menu-item-desc">인쇄 창이 열리면 대상에서 ‘PDF로 저장’을 고르세요.</span>
           </button>
           <div className="menu-sep" role="separator" />
