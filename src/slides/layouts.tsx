@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { BLOCK_GAP } from '../deck/blocks'
 import { readField, visibleItems } from '../deck/fields'
-import { highlightOf, hintFor } from '../deck/layouts'
+import { highlightOf, hintFor, logoColumns } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
@@ -335,12 +335,6 @@ function Logos() {
   )
 }
 
-function logoColumns(n: number): number {
-  if (n <= 2) return 2
-  if (n === 3 || n === 6) return 3
-  if (n >= 9) return 6
-  return 4
-}
 
 
 /** 숫자를 넣기 전, 편집할 때 흐리게 보여 줄 예시 길이. 어떤 모양의 장인지 알아보게만 한다. */

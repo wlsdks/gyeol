@@ -25,6 +25,7 @@ import {
   lookOf,
   makeBlock,
   MAX_BLOCKS,
+  minSpanOf,
   MAX_IN_ROW,
   MAX_ROWS,
   removeBlock,
@@ -138,11 +139,11 @@ describe('자리 정하기', () => {
         const blocks = [block(a, 'a'), block(b, 'b')]
         const spans = fitSpans(blocks)
         if (!spans) {
-          expect(BLOCKS[a].minSpan + BLOCKS[b].minSpan).toBeGreaterThan(12)
+          expect(minSpanOf(blocks[0]) + minSpanOf(blocks[1])).toBeGreaterThan(12)
           continue
         }
         expect(spans.reduce((x, y) => x + y, 0)).toBe(12)
-        spans.forEach((sp, i) => expect(sp).toBeGreaterThanOrEqual(BLOCKS[blocks[i].type].minSpan))
+        spans.forEach((sp, i) => expect(sp).toBeGreaterThanOrEqual(minSpanOf(blocks[i])))
       }
   })
 
@@ -281,6 +282,15 @@ describe('자리 정하기', () => {
     expect(read.map((r) => r.grow)).toEqual([40, undefined])
     expect(weighted(read)).toBe(false)
     expect(unweighted([{ ...two[0], grow: 40 }]).every((r) => r.grow === undefined)).toBe(true)
+  })
+
+  it('로고가 많으면 넓은 칸에만 놓는다', () => {
+    const logos = (n: number) => ({ ...block('logos', 'l'), items: Array.from({ length: n }, (_, i) => ({ ...block('logos').items[0], id: `l${i}` })) })
+    expect([3, 6, 10].map((n) => minSpanOf(logos(n)))).toEqual([6, 8, 12])
+    const rows = [row(block('callout', 'c'))]
+    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, logos(4))).toBeNull()
+    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, logos(10))).toEqual({ kind: 'narrow', span: 12 })
+    expect(whyNot(rows, { kind: 'row', index: 1 }, logos(10))).toBeNull()
   })
 
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {

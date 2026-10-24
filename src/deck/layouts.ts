@@ -721,3 +721,11 @@ export function highlightOf(slide: Pick<Slide, 'layout' | 'options' | 'items'>):
   if (spec.highlight.fallback === 'last') return Math.min(slide.items.length, spec.items?.max ?? 0) - 1
   return spec.highlight.fallback
 }
+
+/** 로고 모음의 한 줄에 놓는 로고 수 (2개까지 둘, 3·6개는 셋, 9개부터 여섯, 나머지 넷). 줄이 짝 맞게 차도록 */
+export function logoColumns(n: number): number {
+  if (n <= 2) return 2
+  if (n === 3 || n === 6) return 3
+  if (n >= 9) return 6
+  return 4
+}

@@ -10,7 +10,7 @@
 import { BLOCK_HEIGHTS } from './blockHeights'
 import { FRAME, TITLE_TRIM } from './frame'
 import { emptyItem, uid, withDefaultOptions } from './generate'
-import { hintFor, LAYOUTS, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
+import { hintFor, LAYOUTS, logoColumns, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
 import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
 
 export interface BlockSpec {
@@ -803,8 +803,19 @@ export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
   }
 }
 
+/**
+ * 이 부품이 들어갈 가장 좁은 칸. 로고 모음은 로고가 많을수록 넓어야 한다: 칸 너비를 로고 수로 나눠 쓰므로
+ * 좁은 칸에 여럿이면 글자는 안 잘려도 로고 하나하나를 알아볼 수 없게 작아진다 (다섯 개부터 3분의 2, 아홉 개부터 한 줄)
+ */
+export function minSpanOf(block: Block): number {
+  const base = BLOCKS[block.type].minSpan
+  if (block.type !== 'logos') return base
+  const n = block.items.length
+  return Math.max(base, n > 8 ? 12 : n > 4 ? 8 : 6)
+}
+
 // 그 너비로는 높이가 아무리 높아도 잘리는 부품(blockHeights.ts의 999)도 그 너비에 넣지 않는다
-const fits = (blocks: Block[], combo: number[]) => combo.every((s, i) => s >= BLOCKS[blocks[i].type].minSpan && blockMinH(blocks[i], s) < NO_FIT)
+const fits = (blocks: Block[], combo: number[]) => combo.every((s, i) => s >= minSpanOf(blocks[i]) && blockMinH(blocks[i], s) < NO_FIT)
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
 /**
@@ -870,6 +881,12 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
 /** 항목이 셋 이상인 부품: 칸이 230px 밑이면 글자가 가장 작은 단계(--bk-h 0.68)로 떨어져 빽빽해진다. 로고는 그림이라 빼고 */
 const LIST_FLOOR = 240
 
+/** 로고 모음: 로고 판 한 줄이 150px는 되어야 로고를 알아본다. 그림은 칸에 맞춰 줄어서 글처럼 잘리지 않으니 잰 높이로는 모른다 */
+const logoFloor = (n: number) => {
+  const rows = Math.ceil(n / logoColumns(n))
+  return rows * 150 + (rows - 1) * 20
+}
+
 /**
  * 부품을 이 너비(12칸 중 몇 칸)에 놓을 때 잘리지 않는 가장 낮은 칸 높이(캔버스 px).
  * 모양, 바탕(그대로 / 카드와 강조색 면), 항목 수, 너비마다 갤러리에서 잰 값(blockHeights.ts)에 보기 좋은 바닥을 더한다.
@@ -886,7 +903,8 @@ export function blockMinH(block: Block, span: number): number {
   // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
   const measured = hs?.length ? hs[Math.min(n, hs.length - 1)] : 400
   if (measured >= NO_FIT) return measured
-  return Math.max(measured, FLOOR[block.type]?.(variant) ?? 0, n >= 3 && block.type !== 'logos' ? LIST_FLOOR : 0)
+  const floor = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
+  return Math.max(measured, floor, n >= 3 && block.type !== 'logos' ? LIST_FLOOR : 0)
 }
 
 /** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */
@@ -1172,7 +1190,7 @@ export function whyNot(rows: BlockRow[], target: DropTarget, block: Block, areaH
     if (solo) return { kind: 'solo', type: solo.type }
   }
   const next = insertAt(rows, target, block, 'x')
-  if (!next) return { kind: 'narrow', span: BLOCKS[block.type].minSpan }
+  if (!next) return { kind: 'narrow', span: minSpanOf(block) }
   if (areaH !== undefined && !fitsHeight(next, areaH)) return { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
   return null
 }
