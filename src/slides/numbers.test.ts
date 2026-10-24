@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, parseDelta, parseNumber, spanIn, statusOf } from './numbers'
+import { colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, parseDelta, parseNumber, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 숫자만 읽는다', () => {
@@ -81,5 +81,12 @@ describe('평가표 읽기', () => {
     expect(gradesOf('상 중 하').map(gradeOf)).toEqual(['good', 'mid', 'bad'])
     expect(gradeOf('1.9억')).toBeNull()
     expect(gradesOf('')).toEqual([])
+  })
+})
+
+describe('낮을수록 좋은 목표', () => {
+  it('이하, 이내, 미만, ≤로 적은 목표를 알아본다', () => {
+    for (const t of ['7분 이하', '3일 이내', '불량률 0.5% 미만', '≤ 2건', '<10%']) expect(lowerIsBetter(t), t).toBe(true)
+    for (const t of ['117억 원', '90%', '5곳 이상']) expect(lowerIsBetter(t), t).toBe(false)
   })
 })

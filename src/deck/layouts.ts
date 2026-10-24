@@ -192,9 +192,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '영업이익', '신규 고객', '재계약률', '이익률', '방문 건수'] },
-        { key: 'meta', label: '목표', hint: '117억 원', hints: ['117억 원', '14억 원', '5곳', '90%', '12%', '300건'] },
-        { key: 'value', label: '실적', hint: '131억 원', hints: ['131억 원', '15.2억 원', '4곳', '93%', '11%', '320건'] },
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '영업이익', '신규 고객', '처리 기간', '이익률', '방문 건수'] },
+        { key: 'meta', label: '목표', hint: '117억 원', hints: ['117억 원', '14억 원', '5곳', '5일 이하', '12%', '300건'] },
+        { key: 'value', label: '실적', hint: '131억 원', hints: ['131억 원', '15.2억 원', '4곳', '4.2일', '11%', '320건'] },
         { key: 'body', label: '설명', hint: '짧은 설명이나 원인', optional: true },
       ],
     },

@@ -7,6 +7,14 @@ export function parseNumber(text: string): number {
 }
 
 /**
+ * 낮을수록 좋은 목표인지 ('7분 이하', '불량률 0.5% 미만', '≤ 3일'). 대기 시간, 비용, 불량처럼 줄여야 하는 지표는
+ * 목표를 이렇게 적으므로, 이때는 실적이 목표보다 작아야 달성이고 달성률도 거꾸로(목표 ÷ 실적) 센다
+ */
+export function lowerIsBetter(target: string): boolean {
+  return /이하|이내|미만|아래|[≤⩽<]/.test(target)
+}
+
+/**
  * 증감 값. ▲와 +는 더하기, ▼ △ − - 는 빼기.
  * 보고서에서 흔히 쓰는 표기(△는 회계에서 마이너스, 유니코드 빼기 기호 −)를 모두 받는다.
  */

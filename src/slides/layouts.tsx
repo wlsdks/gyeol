@@ -5,7 +5,7 @@ import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
-import { formatNumber, isNumericCell, parseDelta, parseNumber, statusOf, STATUS_NAMES, type Status } from './numbers'
+import { formatNumber, isNumericCell, lowerIsBetter, parseDelta, parseNumber, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { Compose } from './blocks'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T } from './fields'
 import { placeLabels } from './fitBlocks'
@@ -615,11 +615,15 @@ function Scorecard() {
           const target = parseNumber(meta)
           const actual = parseNumber(value)
           const known = target > 0 && value.trim() !== ''
+          // 낮을수록 좋은 지표('7분 이하'): 목표보다 작아야 달성, 달성률은 목표 ÷ 실적
+          const lower = lowerIsBetter(meta)
+          const met = lower ? actual <= target : actual >= target
+          const rate = lower ? (actual > 0 ? target / actual : 0) : actual / target
           // 목표와 실적 중 큰 쪽이 막대 끝. 목표를 넘으면 목표 줄이 막대 안으로 들어간다.
           const scale = Math.max(target, actual) || 1
           const bar = { '--a': known ? ((actual / scale) * 100).toFixed(2) : '0', '--t': known ? ((target / scale) * 100).toFixed(2) : '0' } as CSSProperties
           return (
-            <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && (actual >= target ? 'is-met' : 'is-miss'), demo && 'is-demo')}>
+            <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && (met ? 'is-met' : 'is-miss'), demo && 'is-demo')}>
               <div className="sk-name">
                 <IT i={i} k="title" className="sk-title" />
                 <IT i={i} k="body" className="sk-body" />
@@ -632,7 +636,7 @@ function Scorecard() {
               </div>
               <IT i={i} k="meta" className="sk-target sk-num" />
               <IT i={i} k="value" className="sk-value sk-num" />
-              <span className="sk-rate sk-num">{known ? `${Math.round((actual / target) * 100)}%` : '–'}</span>
+              <span className="sk-rate sk-num">{known && rate > 0 ? `${Math.round(rate * 100)}%` : '–'}</span>
               <ItemTools i={i} />
             </div>
           )
