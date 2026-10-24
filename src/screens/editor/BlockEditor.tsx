@@ -1095,7 +1095,8 @@ function BlockTools({
           onClick={() => setMenu(menu === 'motion' ? null : 'motion')}
         >
           <MotionIcon />
-          <span>{BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
+          {/* 기본이면 무엇을 하는 단추인지를, 고른 것이 있으면 그 이름을 ('기본'만 보이면 무엇의 기본인지 모른다) */}
+          <span>{effect === 'auto' ? '움직임' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
         {menu === 'motion' && (
           <ul ref={menuRef} className="bk-menu" role="menu">

@@ -278,7 +278,7 @@ export function Wizard() {
                 <div className="wz-pair">
                   <label className="field">
                     <span className="field-label">소속</span>
-                    <input className="input" value={org} placeholder="예: 영업 2팀" onChange={(e) => setOrg(e.target.value)} />
+                    <input className="input" value={org} placeholder="예: 경영지원팀" onChange={(e) => setOrg(e.target.value)} />
                   </label>
                   <label className="field">
                     <span className="field-label">발표자</span>

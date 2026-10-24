@@ -64,7 +64,7 @@ export const PANE_UNIT = 1920 / 12
 
 const title = (hint: string): FieldSpec => ({ key: 'title', label: '제목', hint })
 /** 숫자 장 아래의 출처·기준. 윗분이 "이 숫자 어디서 나왔어요?"를 묻지 않게 */
-const source: FieldSpec = { key: 'source', label: '출처', hint: '출처나 기준 시점 (예: 영업관리 시스템, 9월 말 기준)', optional: true }
+const source: FieldSpec = { key: 'source', label: '출처', hint: '출처나 기준 시점 (예: 사내 집계, 9월 말 기준)', optional: true }
 const lead = (hint = '제목을 뒷받침하는 한두 문장'): FieldSpec => ({
   key: 'lead',
   label: '부제',
@@ -89,7 +89,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },
       { key: 'ask', label: '결정 요청', hint: '결정받고 싶은 것을 한 줄로', multiline: true, optional: true },
-      { key: '$org', label: '소속', hint: '소속 (예: 영업 2팀)', optional: true },
+      { key: '$org', label: '소속', hint: '소속 (예: 경영지원팀)', optional: true },
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
       { key: '$date', label: '날짜', hint: '발표 날짜', optional: true },
       { key: '$logo', label: '회사 로고', hint: '회사 로고', optional: true, image: true },
@@ -262,7 +262,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       default: 5,
       fields: [
         { key: 'title', label: '과제', hint: '과제 이름', hints: ['견적 자동 계산', '단가표 공유', '승인 단계 줄이기', '현장 교육', '효과 점검', '양식 정리', '결과 보고'] },
-        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true, hints: ['영업기획팀, 10월', '구매팀, 11월', '영업본부, 11월', '교육팀, 12월', '영업기획팀, 1월', '영업기획팀, 1월', '영업본부, 2월'] },
+        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true, hints: ['기획팀, 10월', '구매팀, 11월', '사업본부, 11월', '교육팀, 12월', '기획팀, 1월', '기획팀, 1월', '사업본부, 2월'] },
         { key: 'value', label: '진행률', hint: '80%', hints: ['100%', '80%', '40%', '20%', '0%', '50%', '0%'] },
         {
           key: 'body',
@@ -334,7 +334,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   funnel: {
     id: 'funnel',
     name: '깔때기',
-    description: '단계를 거치며 얼마나 남는지 (영업 단계, 고객 전환). 전환율은 저절로 계산돼요',
+    description: '단계를 거치며 얼마나 남는지 (채용 단계, 신청에서 승인까지). 전환율은 저절로 계산돼요',
     highlight: { label: '강조할 단계', fallback: 'last' },
     fields: [title('전환을 요약하는 한 문장'), { key: 'unit', label: '단위', hint: '건', optional: true }, source],
     items: {
@@ -369,7 +369,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       default: 4,
       fields: [
         { key: 'title', label: '첫째 칸', hint: '과제 이름', hints: ['견적 양식 통일', '단가표 공유', '승인 단계 줄이기', '효과 점검'] },
-        { key: 'meta', label: '둘째 칸', hint: '담당', hints: ['영업기획팀', '구매팀', '영업본부', '영업기획팀'], optional: true },
+        { key: 'meta', label: '둘째 칸', hint: '담당', hints: ['기획팀', '구매팀', '사업본부', '기획팀'], optional: true },
         { key: 'value', label: '셋째 칸', hint: '기한', hints: ['11월', '12월', '1월', '2월'], optional: true },
         {
           key: 'body',
@@ -651,7 +651,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '컴포넌트로 꾸미기',
     description: '컴포넌트를 골라 끌어다 놓으면 알맞은 자리에 들어가요',
     fields: [
-      { key: 'title', label: '제목', hint: '이 장의 결론 한 줄 (비우면 컴포넌트만 보여요)', multiline: true, optional: true },
+      { key: 'title', label: '제목', hint: '이 장의 결론 한 줄', multiline: true, optional: true },
       lead(),
       source,
     ],

@@ -688,7 +688,7 @@ export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
 ]
 
 export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string }[] = [
-  { id: 'auto', name: '알아서', description: '컴포넌트에 맞게: 숫자는 올라가고, 막대는 자라고, 선은 그려져요' },
+  { id: 'auto', name: '기본', description: '컴포넌트에 맞게: 숫자는 올라가고, 막대는 자라고, 선은 그려져요' },
   { id: 'rise', name: '올라오기', description: '아래에서 살짝 올라와요' },
   { id: 'fade', name: '나타나기', description: '제자리에서 천천히 보여요' },
   { id: 'wipe', name: '펼치기', description: '왼쪽에서 오른쪽으로 걷히듯' },

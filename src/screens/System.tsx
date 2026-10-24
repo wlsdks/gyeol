@@ -46,7 +46,7 @@ const TYPE: { name: string; px: number; text: string; head?: boolean; tone?: 'ac
   { name: '이끄는 말', px: 36, text: '지금 시스템의 유지보수가 내년 3월에 끝나요', tone: 'ink-2' },
   { name: '본문', px: 30, text: '불량이 가장 많은 3개 라인에 먼저 구축해요' },
   { name: '보충', px: 26, text: '첫해 구축비, 3개 라인 기준', tone: 'ink-3' },
-  { name: '출처', px: 22, text: '영업관리 시스템, 9월 말 기준', tone: 'ink-3' },
+  { name: '출처', px: 22, text: '사내 집계, 9월 말 기준', tone: 'ink-3' },
 ]
 
 /** 글꼴 견본으로 그리는 장: 제목, 큰 숫자, 이름표, 설명이 한 장에 다 있다 */
