@@ -187,10 +187,26 @@ describe('자리 정하기', () => {
     expect(autoTarget(rows, block('callout', 'more'))).toBeNull()
   })
 
+  it('새 줄이 들어갈 높이가 모자라면 다른 줄의 칸 너비를 다시 나눠 넣는다', () => {
+    // 짧은 글 옆의 4칸짜리 전과 후는 위아래로 쌓여 높고, 8칸이면 옆으로 놓여 낮다
+    const rows = [{ ...row(block('text', 't'), block('delta', 'd')), spans: [8, 4] }]
+    const chart = block('bars', 'c')
+    const below = { kind: 'row', index: 1 } as const
+    const stacked = needH(insertAt(rows, below, chart, 'x')!)
+    const areaH = stacked - 60
+    const placed = insertAt(rows, below, chart, 'x', areaH)!
+    expect(fitsHeight(placed, areaH)).toBe(true)
+    expect(spansOf(placed[0])).toEqual([4, 8])
+    expect(whyNot(rows, below, chart, areaH)).toBeNull()
+    expect(validTargets(rows, chart, areaH)).toContainEqual(below)
+    // 그대로 들어가면 사람이 고른 비율을 바꾸지 않는다
+    expect(spansOf(insertAt(rows, below, chart, 'x', stacked)![0])).toEqual([8, 4])
+  })
+
   it('놓을 자리를 고르면 잘리지 않는 높이 안에서만 고른다', () => {
     const areaH = 1080 - FRAME.y - FRAME.bottom
     const rows = [row(block('table', 't'))]
-    for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'))!, areaH)).toBe(true)
+    for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'), 'x', areaH)!, areaH)).toBe(true)
     const hs = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], areaH)
     expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
   })

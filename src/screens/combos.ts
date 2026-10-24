@@ -67,7 +67,7 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       const t = valid[Math.floor(rand() * valid.length)]
       // validTargets와 whyNot이 같은 것을 말하는지
       if (whyNot(rows, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
-      rows = insertAt(rows, t, b, `r${k}-${tries}`)!
+      rows = insertAt(rows, t, b, `r${k}-${tries}`, areaH)!
       // 편집기에서 면을 고를 때처럼 같은 줄은 같은 면으로. 그러면 장을 넘칠 때는 편집기처럼 고를 수 없으니 그대로
       const placed = rows.flatMap((r) => r.blocks).find((x) => x.id === b.id)!
       if (!lookChangeIssue(rows, b.id, lookOf(placed), areaH)) rows = withLook(rows, b.id, lookOf(placed))

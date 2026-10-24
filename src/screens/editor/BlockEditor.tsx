@@ -66,6 +66,8 @@ interface Drag {
   /** 부품 장이 아닌 장에 놓을 때: 같은 내용으로 바꾼 부품 장 */
   composed: Slide | null
   target: DropTarget | null
+  /** 자리를 고를 때 잰 본문 높이. 넣을 때도 이 높이로 칸 너비를 다시 나눠야(insertAt) 끄는 동안 보인 모습 그대로 놓인다 */
+  room?: number
   /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
   blocked: NoRoom | null
   /** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 다음 장에 새로 만들기 */
@@ -183,7 +185,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         // 놓을 자리가 없는 곳에 놓으면 원래 자리로 돌아간다
         const original = targetOf(s.rows ?? [], d.block.id)
         const t = d.plan === 'place' && d.target ? d.target : original
-        const next = t ? insertAt(d.base, t, d.block, uid()) : null
+        const next = t ? insertAt(d.base, t, d.block, uid(), d.room) : null
         if (next && t && !sameTarget(t, original)) store.setRows(s.id, next)
         land(d)
         return
@@ -195,9 +197,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       }
       const block = d.block
       if (d.plan === 'place' && d.target) {
-        store.setRows(s.id, insertAt(d.base, d.target, block, uid())!)
+        store.setRows(s.id, insertAt(d.base, d.target, block, uid(), d.room)!)
       } else if (d.plan === 'convert' && d.target && d.composed) {
-        store.replaceSlide(s.id, { ...d.composed, rows: insertAt(d.base, d.target, block, uid())! })
+        store.replaceSlide(s.id, { ...d.composed, rows: insertAt(d.base, d.target, block, uid(), d.room)! })
         toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
         store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
@@ -292,6 +294,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     let plan: Drag['plan'] = null
     let target: DropTarget | null = null
     let blocked: NoRoom | null = null
+    let room = d.room
     let composed = d.composed
     if (over) {
       if (s.layout === 'compose' || (d.kind === 'new' && canCompose(s.layout))) {
@@ -300,6 +303,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const area = measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)
         const base = s.layout === 'compose' ? d.base : (composed?.rows ?? [])
         if (area) {
+          room = area.size.h
           const p = { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }
           target = dropTarget(base, d.block, p, area.size, undefined, d.target)
           // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
@@ -316,8 +320,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       } else if (d.kind === 'new') plan = 'next'
     }
     const base = s.layout === 'compose' ? d.base : (composed?.rows ?? d.base)
-    if (plan !== d.plan || !sameTarget(target, d.target) || composed !== d.composed || JSON.stringify(blocked) !== JSON.stringify(d.blocked)) {
-      const next = { ...d, plan, target, blocked, composed, base }
+    if (plan !== d.plan || !sameTarget(target, d.target) || composed !== d.composed || room !== d.room || JSON.stringify(blocked) !== JSON.stringify(d.blocked)) {
+      const next = { ...d, plan, target, blocked, composed, base, room }
       // 놓는 순간에도 바로 읽을 수 있게 그리기를 기다리지 않고 맞춘다
       dragRef.current = next
       setDrag(next)
@@ -481,6 +485,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     let composed: Slide | null = null
     let base = d.base
     let blocked: NoRoom | null = null
+    let room = area?.size.h
     if (s.layout === 'compose') {
       target = autoTarget(base, d.block, area?.size.h)
       plan = target ? 'place' : 'next'
@@ -490,12 +495,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       base = composed.rows ?? []
       const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
       const h = fr ? guessArea(fr).size.h : undefined
+      room = h
       const bottom: DropTarget = { kind: 'row', index: base.length }
       target = toBottom && !whyNot(base, bottom, d.block, h) ? bottom : autoTarget(base, d.block, h)
       plan = target ? 'convert' : 'next'
       if (!target) blocked = placeIssue(base, d.block, h)
     }
-    const full = { ...d, plan, target, blocked, composed, base }
+    const full = { ...d, plan, target, blocked, composed, base, room }
     if (!r) {
       finish(full)
       return
@@ -615,7 +621,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       toast.show('이 장에는 더 넣을 자리가 없어요. 컴포넌트를 빼거나 다음 장에 넣어 주세요.')
       return
     }
-    store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid())!)
+    store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid(), area?.size.h)!)
     setSelected(copy.id)
   }
   /** 접어 둔 칸을 열고 그 칸(항목이면 처음 빈 항목)에 바로 쓰게 한다 */
@@ -705,7 +711,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   let dragId: string | null = null
   if (drag) {
     if (drag.target && (drag.plan === 'place' || drag.plan === 'convert')) {
-      previewRows = insertAt(drag.base, drag.target, drag.block, `drop-${drag.block.id}`)
+      previewRows = insertAt(drag.base, drag.target, drag.block, `drop-${drag.block.id}`, drag.room)
       dragId = drag.block.id
     } else if (drag.kind === 'move') {
       // 장 밖으로 끌고 나가면 원래 자리를 비워 둔다. 놓으면 돌아온다

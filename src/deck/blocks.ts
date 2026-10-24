@@ -1457,12 +1457,16 @@ export type DropTarget = { kind: 'row'; index: number } | { kind: 'cell'; row: n
 export const sameTarget = (a: DropTarget | null, b: DropTarget | null) =>
   !!a && !!b && a.kind === b.kind && (a.kind === 'row' ? a.index === (b as typeof a).index : a.row === (b as typeof a).row && a.index === (b as typeof a).index)
 
-/** 그 자리에 부품을 넣은 줄들. 넣을 수 없는 자리면 null */
-export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, rowId = uid()): BlockRow[] | null {
+/**
+ * 그 자리에 부품을 넣은 줄들. 넣을 수 없는 자리면 null.
+ * 본문 높이(areaH)를 주면, 넣고 나서 장보다 높아질 때 다른 줄의 칸 너비를 다시 나눠 높이를 줄인다(roomyRows).
+ * 놓을 수 있는지 따질 때(whyNot)와 끄는 동안 보이는 모습, 놓은 뒤가 같은 높이를 주어야 서로 맞는다
+ */
+export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, rowId = uid(), areaH?: number): BlockRow[] | null {
   if (blockCount(rows) >= MAX_BLOCKS) return null
   if (target.kind === 'row') {
     if (rows.length >= MAX_ROWS || target.index < 0 || target.index > rows.length) return null
-    return settleLook([...rows.slice(0, target.index), { id: rowId, blocks: [block] }, ...rows.slice(target.index)], block)
+    return roomyRows(settleLook([...rows.slice(0, target.index), { id: rowId, blocks: [block] }, ...rows.slice(target.index)], block), areaH)
   }
   const row = rows[target.row]
   if (!row || row.blocks.length >= MAX_IN_ROW || target.index < 0 || target.index > row.blocks.length) return null
@@ -1470,10 +1474,46 @@ export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, row
   blocks.splice(target.index, 0, block)
   const spans = fitSpans(blocks)
   if (!spans) return null
-  return settleLook(
-    rows.map((r, i) => (i === target.row ? { ...r, blocks, spans } : r)),
-    block,
+  return roomyRows(
+    settleLook(
+      rows.map((r, i) => (i === target.row ? { ...r, blocks, spans } : r)),
+      block,
+    ),
+    areaH,
   )
+}
+
+/**
+ * 장보다 높은 줄들을 칸 너비만 다시 나눠 들어가게 한다. 이미 들어가면 그대로, 들어가면 그 줄들,
+ * 어떻게 해도 안 되면 가장 낮게 나눈 줄들(넣을 수 없다고 알릴 때 '장 높이의 몇 %'를 가장 덜 모자란 값으로 말하려고).
+ * 전과 후처럼 좁으면 위아래로 쌓여 높아지는 부품은 넓은 칸에서 낮아진다. 그래서 짧은 글 옆의 전과 후가 4칸이면
+ * 아래에 차트 한 줄이 들어갈 높이가 없지만, 8칸으로 넓히면 들어간다. 예전에는 장이 반쯤 비어 보여도 차트를 모두 막았다.
+ * 줄이는 폭이 큰 줄부터 하나씩 바꾸고, 들어가는 순간 멈춘다(사람이 고른 비율은 될 수 있는 한 그대로 둔다).
+ * 한 줄 안에서는 가장 낮아지는 비율, 같으면 지금 비율에 가까운 것
+ */
+function roomyRows(rows: BlockRow[], areaH?: number): BlockRow[] {
+  if (areaH === undefined || fitsHeight(rows, areaH)) return rows
+  const lowest = rows.map((r) => {
+    const now = spansOf(r)
+    let best = now
+    let bestH = rowMinH(r)
+    for (const c of spanChoices(r)) {
+      const h = Math.max(0, ...r.blocks.map((b, i) => blockMinH(b, c[i])))
+      const off = (x: number[]) => x.reduce((n, v, i) => n + Math.abs(v - now[i]), 0)
+      if (h < bestH || (h === bestH && off(c) < off(best))) {
+        best = c
+        bestH = h
+      }
+    }
+    return { spans: best, saves: rowMinH(r) - bestH }
+  })
+  const order = lowest.map((_, i) => i).filter((i) => lowest[i].saves > 0).sort((a, b) => lowest[b].saves - lowest[a].saves)
+  let out = rows
+  for (const i of order) {
+    out = out.map((r, j) => (j === i ? { ...r, spans: lowest[i].spans } : r))
+    if (fitsHeight(out, areaH)) return out
+  }
+  return out
 }
 
 /** 부품을 뺀 줄들. 빈 줄은 없애고, 남은 칸은 너비를 다시 고른다. 설 자리가 없어진 이음표도 뺀다 */
@@ -1533,7 +1573,7 @@ export function whyNot(rows: BlockRow[], target: DropTarget, block: Block, areaH
     const solo = [block, ...(rows[target.row]?.blocks ?? [])].find((b) => isSolo(b.type))
     if (solo) return { kind: 'solo', type: solo.type }
   }
-  const next = insertAt(rows, target, block, 'x')
+  const next = insertAt(rows, target, block, 'x', areaH)
   if (!next) return { kind: 'narrow', span: minSpanOf(block) }
   if (areaH !== undefined && !fitsHeight(next, areaH)) return { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
   return null
@@ -1566,7 +1606,7 @@ export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): Drop
   if (!rows.length) return valid[0] ?? null
   const last = rows.length - 1
   const beside: DropTarget = { kind: 'cell', row: last, index: rows[last].blocks.length }
-  const placed = insertAt(rows, beside, block, 'x')
+  const placed = insertAt(rows, beside, block, 'x', areaH)
   if (placed && ok(beside)) {
     const row = placed[last]
     const spans = spansOf(row)
@@ -1608,7 +1648,7 @@ export function dropTarget(
   let best: DropTarget | null = null
   let bestD = Infinity
   for (const t of valid) {
-    const pr = cellRects(insertAt(base, t, block, 'x')!, size, gap).get(block.id)!
+    const pr = cellRects(insertAt(base, t, block, 'x', size.h)!, size, gap).get(block.id)!
     const d = Math.hypot(p.x - (pr.x + pr.w / 2), p.y - (pr.y + pr.h / 2))
     if (d < bestD) {
       best = t
@@ -1620,7 +1660,7 @@ export function dropTarget(
 
 /** 이 자리에 놓으면 끄는 부품이 들어갈 칸 (장 본문 px) */
 export function slotRect(base: BlockRow[], t: DropTarget, block: Block, size: { w: number; h: number }, gap = BLOCK_GAP): Rect | null {
-  const rows = insertAt(base, t, block, 'x')
+  const rows = insertAt(base, t, block, 'x', size.h)
   return rows ? (cellRects(rows, size, gap).get(block.id) ?? null) : null
 }
 

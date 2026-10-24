@@ -666,7 +666,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         if (!target) return fail('no_room')
         if (moving && sameTarget(targetOf(rows, moving.id), target)) return fail('no_change')
         if (whyNot(base, target, block, area)) return fail('no_room')
-        const placed = insertAt(base, target, block)!
+        const placed = insertAt(base, target, block, undefined, area)!
         // 장의 다른 면과 어긋나는 면은 넣을 때 바탕 없이 바뀐다. AI가 그 면을 골랐으면 알린다
         if (op.op === 'add_block' && op.look && placed.flatMap((r) => r.blocks).some((b) => b.id === block.id && lookOf(b) !== op.look)) return fail('look_clash')
         put(i, { ...s, rows: placed })
