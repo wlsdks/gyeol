@@ -40,10 +40,10 @@ export const HEAD_KEYS = ['title', 'lead', 'source']
 const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
   message: {
     name: '핵심 한 줄',
-    description: '윗분이 기억할 한 문장을 크게',
+    description: '듣는 분이 기억할 한 문장을 크게',
     motion: '낱말마다 차례로 올라와요',
     fields: [
-      { key: 'text', label: '핵심 문장', hint: '윗분이 기억할 한 문장', multiline: true },
+      { key: 'text', label: '핵심 문장', hint: '듣는 분이 기억할 한 문장', multiline: true },
       { key: 'sub', label: '덧붙이는 말', hint: '뒷받침하는 한 줄', optional: true, multiline: true },
     ],
     minSpan: 6,
@@ -227,7 +227,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
   },
   risks: {
     name: '걱정과 대책',
-    description: '윗분이 걱정할 만한 점과 막는 방법을 짝지어',
+    description: '걱정할 만한 점과 막는 방법을 짝지어',
     motion: '걱정 다음에 대책이 따라 들어와요',
     fields: [{ key: 'heading', label: '소제목', hint: '예: 걱정되는 점과 대책', optional: true }],
     items: {
