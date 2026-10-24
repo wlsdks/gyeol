@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { join } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -36,4 +37,6 @@ function aiShare(): Plugin {
 export default defineConfig({
   plugins: [react(), cspMeta(), aiShare()],
   base: './',
+  // 에이전트가 따로 쓰는 작업 폴더(.claude/worktrees)의 시험 사본은 돌리지 않는다
+  test: { exclude: ['**/node_modules/**', '**/.git/**', '.claude/**'] },
 })
