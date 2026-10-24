@@ -85,7 +85,7 @@ export async function buildHtml(deck: Deck): Promise<string> {
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="html-maker">
+<meta name="generator" content="gyeol">
 <title>${escapeHtml(deck.title)}</title>
 <style>
 ${fonts}

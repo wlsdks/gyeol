@@ -1,4 +1,4 @@
-// html-maker를 이 PC 안에서만 띄우는 작은 서버. 외부 패키지 없이 Node만으로 돈다.
+// 결을 이 PC 안에서만 띄우는 작은 서버. 외부 패키지 없이 Node만으로 돈다.
 //
 // - 127.0.0.1에만 묶는다. 같은 네트워크의 다른 PC에서는 접속할 수 없다.
 // - 포트를 고정한다. 브라우저 저장소는 주소(포트 포함)마다 따로라서, 포트가 바뀌면 저장한 발표가 안 보인다.
@@ -15,7 +15,7 @@ import { CSP } from './csp'
 
 export { CSP }
 export const HOST = '127.0.0.1'
-export const PORT = Number(process.env.HTML_MAKER_PORT) || 41580
+export const PORT = Number(process.env.GYEOL_PORT) || 41580
 const ORIGIN = `http://${HOST}:${PORT}`
 const HERE = dirname(fileURLToPath(import.meta.url))
 /** 빌드하면 dist-node/ 안에 들어가므로 한 단계 위가 앱 폴더다 */
@@ -58,7 +58,7 @@ export interface ServerOptions {
 
 export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(APP_ROOT, SHARE_DIR_NAME) }: ServerOptions = {}) {
   root = normalize(root)
-  const ai = createAiHandler(share, { mcpPath: join(HERE, 'html-maker-mcp.mjs') })
+  const ai = createAiHandler(share, { mcpPath: join(HERE, 'gyeol-mcp.mjs') })
 
   return createServer(async (req: IncomingMessage, res: ServerResponse) => {
     // 다른 이름으로 들어온 요청은 받지 않는다 (DNS 리바인딩 방어).
@@ -97,7 +97,7 @@ export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(AP
   })
 }
 
-/** 이미 이 PC에서 html-maker가 떠 있는지 */
+/** 이미 이 PC에서 결이 떠 있는지. 답하는 말은 예전 이름 그대로 둔다 (예전 판이 떠 있어도 알아보게) */
 function alreadyRunning(): Promise<boolean> {
   return new Promise((resolve) => {
     const req = get({ host: HOST, port: PORT, path: HEALTH, headers: { Host: `${HOST}:${PORT}` }, timeout: 800 }, (res) => {
@@ -121,7 +121,7 @@ function windowsBrowsers(): string[] {
 
 /** 크롬이나 엣지로 연다. 둘 다 없으면 기본 브라우저로. */
 function openBrowser(url: string) {
-  if (process.env.HTML_MAKER_NO_OPEN) return
+  if (process.env.GYEOL_NO_OPEN) return
   const tries: [string, string[]][] =
     process.platform === 'darwin'
       ? [
@@ -167,7 +167,7 @@ function fail(message: string): never {
 async function main() {
   if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
   if (await alreadyRunning()) {
-    console.log(`html-maker가 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
+    console.log(`결이 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
     openBrowser(ORIGIN)
     return
   }
@@ -179,7 +179,7 @@ async function main() {
     fail(err.message)
   })
   server.listen(PORT, HOST, () => {
-    console.log(`html-maker가 켜졌어요: ${ORIGIN}`)
+    console.log(`결이 켜졌어요: ${ORIGIN}`)
     console.log('이 PC 안에서만 열리고, 발표 내용은 어디로도 보내지 않아요. 끄려면 이 창을 닫거나 Ctrl+C를 누르세요.')
     openBrowser(ORIGIN)
   })

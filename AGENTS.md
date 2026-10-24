@@ -4,6 +4,8 @@
 
 ## 무엇을 만드나
 
+이름은 **결**(영문 `gyeol`, 저장소 `wlsdks/gyeol`)입니다. 화면, 배포본, MCP 서버 이름에 씁니다. 저장 형식과 저장소 이름(`html-maker/deck` 같은 format, IndexedDB 이름, `/__html-maker/` 주소, BroadcastChannel, localStorage 키)은 예전 이름 그대로 둡니다. 바꾸면 예전에 저장한 발표를 읽지 못합니다.
+
 회사에서 PPT로 하던 발표를 HTML로 만드는 도구입니다. 팀장, 본부장께 결정을 받는 보고(사업 제안, 개선 제안, 계획)만이 아니라 주간 업무 보고, 결과·장애 보고, 프로젝트 착수, 지식 공유, 팀 소개처럼 동료나 다른 부서 앞에서 하는 발표도 다룹니다.
 
 - 쓰는 사람은 대부분 **비개발자**입니다. 설명 없이 쓸 수 있어야 합니다.
@@ -32,7 +34,7 @@
    - `mcp/server.ts`의 Node 권한 모델 실행(`--permission`, `--allow-fs-*`)을 빼지 않습니다.
    - 권한 모델은 심볼릭 링크를 따라가므로, 링크와 하드 링크를 거르는 `readJson`을 유지합니다.
    - 오류 메시지에 받은 값이나 경로를 넣지 않습니다. 정해진 문구(`MESSAGES`)만 씁니다. stdout에 로그를 쓰지 않습니다.
-   - ‘AI에게 부탁’(`server/agent.ts`)은 Claude Code를 기본 도구 없이(`--tools ""`), html-maker MCP 서버 하나만(`--strict-mcp-config`), 사용자 설정 없이(`--restricted`), 권한 질문은 모두 거절로(`--permission-prompts none`) 띄웁니다. 이 인자를 빼거나 다른 도구를 열지 않습니다.
+   - ‘AI에게 부탁’(`server/agent.ts`)은 Claude Code를 기본 도구 없이(`--tools ""`), 결 MCP 서버(`gyeol`) 하나만(`--strict-mcp-config`), 사용자 설정 없이(`--restricted`), 권한 질문은 모두 거절로(`--permission-prompts none`) 띄웁니다. 이 인자를 빼거나 다른 도구를 열지 않습니다.
    - 부탁은 `src/ai/asks.ts`의 id와 해시 id만 받고, AI에게 보낼 문장은 서버가 정해진 말로 만듭니다. 사람이 적은 글을 받는 칸을 만들지 않습니다. 문장은 명령줄이 아니라 stdin으로 넘깁니다.
 5. **실제 업무 자료를 저장소에 넣지 않는다.** 테스트, 예시, 스크린샷, 이슈, 커밋 메시지 모두 해당합니다. 예시 덱(`src/deck/sample.ts`)의 회사, 사람, 숫자는 지어낸 것입니다.
 6. **의존성은 사내에서 써도 되는 오픈소스만.**

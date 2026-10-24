@@ -7,7 +7,7 @@ import { toShape } from './share'
 const POLL_MS = 2500
 
 export interface AiShare {
-  /** undefined: 확인 중, null: 이 화면에서는 쓸 수 없음 (html-maker 시작 파일로 켜지 않았을 때) */
+  /** undefined: 확인 중, null: 이 화면에서는 쓸 수 없음 (‘결 시작’ 파일로 켜지 않았을 때) */
   status: AiStatus | null | undefined
   /** 이 발표에 온, 아직 보지 않은 제안 */
   requests: ChangeRequest[]

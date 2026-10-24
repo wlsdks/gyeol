@@ -26,7 +26,7 @@ const KEEP_RESULTS_MS = 7 * 24 * 60 * 60 * 1000
 const DECK_ID = /^d[0-9a-f]{8}$/
 const OP_CODES: OpCode[] = ['applied', 'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed']
 
-const README = `이 폴더는 html-maker가 AI(Claude Code, Codex)와 주고받는 곳이에요.
+const README = `이 폴더는 결이 AI(Claude Code, Codex)와 주고받는 곳이에요.
 
 - decks: 공유를 켠 발표의 '모양'만 있어요. 장 순서, 레이아웃, 칸이 비었는지, 테마.
   제목, 적은 글, 이미지, 발표자 노트, 소속과 이름은 들어 있지 않아요. 파일을 열어 직접 확인해 보세요.

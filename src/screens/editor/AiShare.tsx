@@ -205,7 +205,7 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
 
       {ai.status === undefined && <p className="ai-pop-note">연결을 확인하고 있어요…</p>}
       {ai.status === null && (
-        <p className="ai-pop-note is-warn">AI 연결은 ‘html-maker 시작’ 파일로 켰을 때만 쓸 수 있어요. 지금 화면은 다른 방법으로 열려 있어요.</p>
+        <p className="ai-pop-note is-warn">AI 연결은 ‘결 시작’ 파일로 켰을 때만 쓸 수 있어요. 지금 화면은 다른 방법으로 열려 있어요.</p>
       )}
       {ai.status && (
         <>
@@ -249,9 +249,9 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
         <details className="ai-pop-more">
           <summary>터미널에서 Claude Code, Codex로 직접 부탁하기</summary>
           <p className="ai-pop-step">위의 부탁 말고 직접 말로 부탁하려면 {isMac ? '터미널' : 'PowerShell'}에 한 번만 입력하세요. 쓰는 쪽 하나만 하면 돼요.</p>
-          <Command label="Claude Code" text={`claude mcp add html-maker -- ${mcpCommand(ai.status)}`} />
-          <Command label="Codex" text={`codex mcp add html-maker -- ${mcpCommand(ai.status)}`} />
-          <p className="ai-pop-step">그다음 AI에게 이렇게 말해 보세요. “html-maker에 공유한 발표를 본부장 보고에 맞게 구성을 다듬어 줘”</p>
+          <Command label="Claude Code" text={`claude mcp add gyeol -- ${mcpCommand(ai.status)}`} />
+          <Command label="Codex" text={`codex mcp add gyeol -- ${mcpCommand(ai.status)}`} />
+          <p className="ai-pop-step">그다음 AI에게 이렇게 말해 보세요. “결(gyeol)에 공유한 발표를 본부장 보고에 맞게 구성을 다듬어 줘”</p>
         </details>
       )}
 

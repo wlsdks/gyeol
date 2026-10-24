@@ -10,7 +10,7 @@ import { createSampleDeck } from '../src/deck/sample'
 
 // 빌드한 MCP 서버를 실제로 띄워서 Claude Code처럼 이야기해 본다.
 const repo = join(import.meta.dirname, '..')
-const base = mkdtempSync(join(tmpdir(), 'html-maker-mcp-'))
+const base = mkdtempSync(join(tmpdir(), 'gyeol-mcp-'))
 const share = join(base, 'AI 공유')
 let child: ChildProcessWithoutNullStreams
 let nextId = 1
@@ -47,7 +47,7 @@ beforeAll(async () => {
   writeFileSync(join(base, 'outside-hard.json'), JSON.stringify(hard))
   linkSync(join(base, 'outside-hard.json'), join(share, 'decks', 'd11111111.json'))
 
-  child = spawn(process.execPath, [join(repo, 'dist-node', 'html-maker-mcp.mjs')], { env: { ...process.env, HTML_MAKER_SHARE: share } })
+  child = spawn(process.execPath, [join(repo, 'dist-node', 'gyeol-mcp.mjs')], { env: { ...process.env, GYEOL_SHARE: share } })
   createInterface({ input: child.stdout }).on('line', (line) => {
     raw.push(line)
     const msg = JSON.parse(line)

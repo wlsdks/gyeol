@@ -1,4 +1,4 @@
-// html-maker MCP 서버. Claude Code, Codex가 발표의 '모양'만 보고 바꾸자고 제안할 수 있게 한다.
+// 결(gyeol) MCP 서버. Claude Code, Codex가 발표의 '모양'만 보고 바꾸자고 제안할 수 있게 한다.
 //
 // 내용이 새지 않게 세 겹으로 막는다.
 // 1. 볼 수 있는 곳: 'AI 공유' 폴더뿐. 스스로를 Node 권한 모델(--permission) 안에서 다시 띄워서
@@ -306,7 +306,7 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
 type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unknown }
 
 const INSTRUCTIONS =
-  'html-maker는 사내 보고 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
+  '결(gyeol)은 회사에서 하는 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
   '사람이 적은 글은 보안 때문에 이 서버에 없고, 사용자에게 붙여 달라고 하지도 않는다. ' +
   '순서: list_decks → get_catalog → get_shape → propose_changes → (사용자가 앱에서 적용) → get_result.'
 
@@ -330,7 +330,7 @@ export function handleMessage(dirs: Dirs, msg: Message): object | null {
       return reply({
         protocolVersion: PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'html-maker', version: VERSION },
+        serverInfo: { name: 'gyeol', version: VERSION },
         instructions: INSTRUCTIONS,
       })
     }
@@ -359,7 +359,7 @@ export function handleMessage(dirs: Dirs, msg: Message): object | null {
 function serve(shareRoot: string) {
   const dirs: Dirs = { decks: join(shareRoot, 'decks'), requests: join(shareRoot, 'requests'), results: join(shareRoot, 'results') }
   if (!checkDirs(dirs)) {
-    process.stderr.write('html-maker: AI 공유 폴더를 쓸 수 없어요.\n')
+    process.stderr.write('gyeol: AI 공유 폴더를 쓸 수 없어요.\n')
     process.exit(1)
   }
   const write = (out: unknown) => process.stdout.write(JSON.stringify(out) + '\n')
@@ -386,7 +386,7 @@ function serve(shareRoot: string) {
 /** 권한 모델 밖에서 시작했으면, 'AI 공유' 폴더와 이 서버 코드만 읽을 수 있게 스스로를 다시 띄운다. */
 function launch() {
   const here = dirname(fileURLToPath(import.meta.url))
-  const share = process.env.HTML_MAKER_SHARE || join(here, '..', SHARE_DIR_NAME)
+  const share = process.env.GYEOL_SHARE || join(here, '..', SHARE_DIR_NAME)
   const sandboxed = (process as { permission?: unknown }).permission !== undefined
 
   if (sandboxed) return serve(share)
@@ -401,7 +401,7 @@ function launch() {
       `--allow-fs-read=${here}`,
       fileURLToPath(import.meta.url),
     ],
-    { stdio: 'inherit', env: { ...process.env, HTML_MAKER_SHARE: share } },
+    { stdio: 'inherit', env: { ...process.env, GYEOL_SHARE: share } },
   )
   for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => child.kill(sig))
   child.on('exit', (code) => process.exit(code ?? 0))

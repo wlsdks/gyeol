@@ -9,7 +9,7 @@ export default defineConfig({
     target: 'node22',
     minify: false,
     rollupOptions: {
-      input: { serve: 'server/serve.ts', 'html-maker-mcp': 'mcp/server.ts' },
+      input: { serve: 'server/serve.ts', 'gyeol-mcp': 'mcp/server.ts' },
       output: { entryFileNames: '[name].mjs', chunkFileNames: 'shared-[hash].mjs', format: 'es' },
     },
   },

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 더블클릭하면 html-maker를 켜고 크롬(없으면 엣지)으로 엽니다. 이 PC 안에서만 열려요.
+# 더블클릭하면 결을 켜고 크롬(없으면 엣지)으로 엽니다. 이 PC 안에서만 열려요.
 cd "$(dirname "$0")" || exit 1
 
 if ! command -v node >/dev/null 2>&1; then
@@ -13,7 +13,7 @@ if [ ! -f dist/index.html ] || [ ! -f dist-node/serve.mjs ]; then
     echo "처음 실행이라 화면 파일을 만들고 있어요..."
     npm run build || { read -r -p "만들지 못했어요. Enter를 누르면 닫혀요."; exit 1; }
   else
-    echo "화면 파일(dist)이 없어요. 받은 html-maker 폴더를 통째로 다시 풀어 주세요."
+    echo "화면 파일(dist)이 없어요. 받은 결 폴더를 통째로 다시 풀어 주세요."
     read -r -p "창을 닫으려면 Enter를 누르세요."
     exit 1
   fi

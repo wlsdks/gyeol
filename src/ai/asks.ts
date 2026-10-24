@@ -112,7 +112,7 @@ export function validAsk(ask: unknown, deck: unknown, slide: unknown): ask is As
 
 /** 이 PC에서 Claude Code를 바로 띄울 수 없을 때, Claude Code나 Codex에 붙여 넣을 부탁 */
 export function askSentence(ask: AskId, deck: string, slide: string | null): string {
-  return `html-maker에 공유한 ${slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`}: ${askOf(ask)!.prompt} 바꿀 것은 propose_changes로 제안해 줘.`
+  return `결(gyeol)에 공유한 ${slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`}: ${askOf(ask)!.prompt} 바꿀 것은 propose_changes로 제안해 줘.`
 }
 
 /** AI에게 보내는 문장. 정해진 말과 해시 id만으로 만든다 */
@@ -120,12 +120,12 @@ export function askPrompt(ask: AskId, deck: string, slide: string | null): strin
   const a = askOf(ask)!
   const target = slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`
   return [
-    `html-maker 앱에서 사람이 ${target}에 대해 부탁했어요.`,
+    `결(gyeol) 앱에서 사람이 ${target}에 대해 부탁했어요.`,
     '',
     `부탁: ${a.prompt}`,
     '',
     '지킬 것',
-    '- html-maker 도구만 쓸 수 있어요. get_catalog로 레이아웃과 고를 수 있는 값을, get_shape로 이 발표의 모양을 먼저 보세요.',
+    '- gyeol 도구만 쓸 수 있어요. get_catalog로 레이아웃과 고를 수 있는 값을, get_shape로 이 발표의 모양을 먼저 보세요.',
     '- 사람이 적은 글은 보이지 않고 바꿀 수도 없어요. 장 순서, 레이아웃과 모양, 강조, 바탕, 움직임, 테마, 안내 문구만 바꿀 수 있어요.',
     '- 바꿀 것을 모아 propose_changes를 한 번만 부르세요. note에는 왜 이렇게 바꾸는지 듣는 사람 입장에서 한두 문장으로 쓰세요.',
     '- 지금 모양이 이미 잘 맞으면 제안을 보내지 말고, 왜 그런지 두 문장 안으로만 답하고 끝내세요. 되묻지 마세요.',

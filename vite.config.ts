@@ -8,7 +8,7 @@ import { CSP } from './server/csp'
 /** 빌드한 화면에도 서버와 같은 CSP를 넣는다. 다른 방법으로 열어도 이 PC 밖으로는 연결하지 못한다. */
 function cspMeta(): Plugin {
   return {
-    name: 'html-maker-csp',
+    name: 'gyeol-csp',
     apply: 'build',
     transformIndexHtml: (html) =>
       html.replace(
@@ -22,11 +22,11 @@ function cspMeta(): Plugin {
 /** 개발 서버에서도 'AI 공유' 창구를 연다. 실제 서버(server/serve.ts)와 같은 처리기를 쓴다. */
 function aiShare(): Plugin {
   return {
-    name: 'html-maker-ai',
+    name: 'gyeol-ai',
     apply: 'serve',
     configureServer(server) {
       const root = process.cwd()
-      const handle = createAiHandler(join(root, SHARE_DIR_NAME), { mcpPath: join(root, 'dist-node', 'html-maker-mcp.mjs') })
+      const handle = createAiHandler(join(root, SHARE_DIR_NAME), { mcpPath: join(root, 'dist-node', 'gyeol-mcp.mjs') })
       server.middlewares.use((req, res, next) => {
         handle(req, res).then((done) => done || next(), next)
       })

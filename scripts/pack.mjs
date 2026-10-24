@@ -1,4 +1,4 @@
-// 나눠 줄 폴더와 zip을 만든다: release/html-maker-<버전>/
+// 나눠 줄 폴더와 zip을 만든다: release/gyeol-<버전>/
 //
 // 쓰는 사람은 대부분 윈도우라 윈도우를 기본으로 묶는다.
 // - node.exe(Node.js 공식 윈도우 배포본)를 같이 넣어서, 받는 사람이 Node.js를 설치하지 않아도 된다.
@@ -22,7 +22,7 @@ import { zipDir } from './zip.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-const name = `html-maker-${version}`
+const name = `gyeol-${version}`
 const out = join(root, 'release', name)
 const withNode = !process.argv.includes('--no-node')
 
@@ -80,7 +80,7 @@ async function windowsNode() {
     rmSync(zip, { force: true })
     throw new Error('받은 Node.js의 체크섬이 맞지 않아요. 다시 실행해 주세요.')
   }
-  const tmp = mkdtempSync(join(tmpdir(), 'html-maker-node-'))
+  const tmp = mkdtempSync(join(tmpdir(), 'gyeol-node-'))
   // 맥과 윈도우 10 이상의 tar(bsdtar)는 zip도 푼다
   execFileSync('tar', ['-xf', zip, '-C', tmp, `${NODE_DIST}/node.exe`, `${NODE_DIST}/LICENSE`])
   return { dir: join(tmp, NODE_DIST), cleanup: () => rmSync(tmp, { recursive: true, force: true }) }
@@ -97,12 +97,12 @@ mkdirSync(out, { recursive: true })
 cpSync(join(root, 'dist'), join(out, 'dist'), { recursive: true })
 cpSync(join(root, 'dist-node'), join(out, 'dist-node'), { recursive: true })
 execSync(`node scripts/licenses.mjs --notices "${join(out, '오픈소스 라이선스.txt')}"`, { cwd: root, stdio: 'ignore' })
-for (const file of ['html-maker 시작.command', 'html-maker 시작.bat', '사용법.txt']) {
+for (const file of ['결 시작.command', '결 시작.bat', '사용법.txt']) {
   cpSync(join(root, 'launch', file), join(out, file))
 }
-chmodSync(join(out, 'html-maker 시작.command'), 0o755)
+chmodSync(join(out, '결 시작.command'), 0o755)
 // dist-node의 .mjs는 그 자체로 ES 모듈이지만, 폴더를 알아보기 쉽게 이름과 버전을 남긴다
-writeFileSync(join(out, 'package.json'), JSON.stringify({ name: 'html-maker', version, private: true, type: 'module' }, null, 2) + '\n')
+writeFileSync(join(out, 'package.json'), JSON.stringify({ name: 'gyeol', version, private: true, type: 'module' }, null, 2) + '\n')
 
 if (withNode) {
   try {
@@ -119,7 +119,7 @@ if (withNode) {
   }
 }
 
-windowsText(join(out, 'html-maker 시작.bat'), { bom: false })
+windowsText(join(out, '결 시작.bat'), { bom: false })
 for (const file of ['사용법.txt', '오픈소스 라이선스.txt']) windowsText(join(out, file), { bom: true })
 if (withNode) windowsText(join(out, 'node', 'LICENSE.txt'), { bom: true })
 

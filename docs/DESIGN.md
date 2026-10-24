@@ -1,4 +1,4 @@
-# html-maker 설계
+# 결 (gyeol) 설계
 
 회사에서 PPT로 하던 발표를 HTML로 만드는 빌더. 팀장, 본부장께 결정을 받는 보고(사업 제안, 고객 제안 계획, 개선 제안, 계획)만이 아니라 주간 업무 보고, 결과·장애 보고, 프로젝트 착수, 지식 공유, 팀 소개처럼 동료나 다른 부서 앞에서 하는 발표도 다룬다. 사용자는 대부분 비개발자다. 개인 PC에서 localhost로만 띄운다.
 
@@ -262,13 +262,13 @@ Claude Code나 Codex가 MCP로 붙어서 발표의 구성과 모양을 다듬을
 비개발자가 터미널을 열고 MCP를 연결해 말을 거는 대신, 슬라이드 아래 **AI에게 부탁**(이 장)이나 위쪽 **AI** 버튼(발표 전체)에서 부탁을 고른다. 로컬 서버가 이 PC의 Claude Code를 대신 띄워 부탁을 전하고, 제안이 오면 미리 보기가 바로 열린다.
 
 ```
-[부탁 고르기] ──POST {ask, deck 해시, slide 해시}──▶ 로컬 서버 ──stdin: 정해진 문장──▶ claude -p (도구 없음 + html-maker MCP만)
+[부탁 고르기] ──POST {ask, deck 해시, slide 해시}──▶ 로컬 서버 ──stdin: 정해진 문장──▶ claude -p (도구 없음 + gyeol MCP만)
      ▲                                                                                        │
      └── 진행(도구 이름), 제안 id ◀── 로컬 서버 ◀── AI 공유/requests/<id>.json ◀── propose_changes
 ```
 
 - **부탁(`src/ai/asks.ts`):** 이 장 넷(더 어울리는 모양으로, 핵심이 눈에 띄게, 칸 안내 다듬기, 앞뒤에 필요한 장), 발표 전체 셋(보고 흐름 점검, 시간에 맞추기, 테마와 움직임). 오가는 것은 id와 해시뿐이고, AI에게 갈 문장은 로컬 서버가 `askPrompt`로 정해진 말로 만든다. 사람이 적은 글은 받지 않는다.
-- **띄우는 법(`server/agent.ts`):** `claude -p --restricted --tools "" --strict-mcp-config --mcp-config <html-maker만> --allowedTools mcp__html-maker__* --permission-prompts none`. 파일 읽기·쓰기, 명령 실행, 웹 도구가 아예 없고, 사용자의 훅·플러그인·다른 MCP 서버도 읽지 않는다. AI가 볼 수 있는 것은 MCP 서버가 내주는 모양뿐이다. 사람이 Claude Code를 직접 쓸 때보다 좁다. 한 번에 하나, 3분이 넘으면 끈다.
+- **띄우는 법(`server/agent.ts`):** `claude -p --restricted --tools "" --strict-mcp-config --mcp-config <gyeol만> --allowedTools mcp__gyeol__* --permission-prompts none`. 파일 읽기·쓰기, 명령 실행, 웹 도구가 아예 없고, 사용자의 훅·플러그인·다른 MCP 서버도 읽지 않는다. AI가 볼 수 있는 것은 MCP 서버가 내주는 모양뿐이다. 사람이 Claude Code를 직접 쓸 때보다 좁다. 한 번에 하나, 3분이 넘으면 끈다.
 - **ACP를 쓰지 않은 까닭:** ACP는 편집기와 에이전트를 잇는 표준이지만 Claude Code, Codex 모두 따로 어댑터를 깔아야 하고, 우리는 대화가 아니라 정해진 부탁 하나를 맡기면 된다. 이미 깔린 Claude Code의 비대화 실행이 도구를 더 좁게 막을 수 있다.
 - **Codex:** Codex의 비대화 실행(`codex exec`)은 도구를 하나씩 끄는 방식이라 버전이 오르며 새 도구가 생기면 열릴 수 있다. 그래서 바로 띄우지 않고, 부탁 문장을 복사해 붙여 넣게 한다(Claude Code가 없는 PC도 같다).
 - **진행과 결과:** 오른쪽 아래 카드에 ‘켜는 중 → 모양을 보는 중 → 정리하는 중’을 보여 주고 그만둘 수 있다. 제안이 오면 미리 보기가 바로 열리고, 바뀌는 장은 ‘지금 → 적용하면’을 나란히 먼저 보여 준다. 바꿀 게 없으면 AI가 말한 까닭(마크다운을 걷고 280자까지)을 카드에 남긴다. AI → 앱 쪽 글이라 내용이 나가는 길이 아니다.

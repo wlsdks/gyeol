@@ -1,9 +1,9 @@
 // 'AI에게 부탁'을 누르면 이 PC에 깔린 Claude Code를 앱 대신 띄워 부탁을 전한다.
-// 사람이 터미널을 열고 html-maker를 연결해 말을 거는 일을 버튼 하나로 줄인 것이다.
+// 사람이 터미널을 열고 결을 연결해 말을 거는 일을 버튼 하나로 줄인 것이다.
 //
 // 내용이 새지 않게 이렇게 띄운다.
 // 1. 받는 것은 부탁 id(src/ai/asks.ts)와 해시 id뿐이다. AI에게 보내는 문장은 askPrompt가 정해진 말로 만든다.
-// 2. Claude Code의 기본 도구(파일 읽기·쓰기, 명령 실행, 웹)를 모두 끄고(--tools ""), html-maker MCP 서버 하나만
+// 2. Claude Code의 기본 도구(파일 읽기·쓰기, 명령 실행, 웹)를 모두 끄고(--tools ""), 결 MCP 서버(gyeol) 하나만
 //    붙인다(--strict-mcp-config). MCP 서버는 늘 그렇듯 'AI 공유' 폴더 안에서만 움직이므로, AI는 모양 파일 말고는
 //    아무것도 볼 수 없다. 사람이 직접 Claude Code를 쓸 때보다 좁다.
 // 3. 사용자 설정 파일(훅, 플러그인, 다른 MCP 서버)을 읽지 않고(--restricted), 물어야 하는 권한은 모두 거절한다.
@@ -20,7 +20,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { askPrompt, REASON_MAX, type AskError, type AskId, type AskRun, type AskState } from '../src/ai/asks'
 
-/** 띄울 프로그램. args는 html-maker가 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
+/** 띄울 프로그램. args는 결이 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
 export interface AgentCommand {
   file: string
   args?: string[]
@@ -41,7 +41,7 @@ export interface AgentOptions {
 export const ASK_RUN_ID = /^a[0-9a-f]{12}$/
 const TIMEOUT_MS = 3 * 60 * 1000
 const KEEP_MS = 10 * 60 * 1000
-const TOOLS = ['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'].map((t) => `mcp__html-maker__${t}`)
+const TOOLS = ['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'].map((t) => `mcp__gyeol__${t}`)
 
 const isFile = (f: string) => {
   try {
@@ -186,12 +186,12 @@ export function createAgent(opts: AgentOptions) {
       const run: Running = { id: `a${randomBytes(6).toString('hex')}`, state: 'running', step: 'starting', deck, before: new Set(opts.requestIds(deck)) }
       runs.set(run.id, run)
 
-      const dir = mkdtempSync(join(tmpdir(), 'html-maker-agent-'))
+      const dir = mkdtempSync(join(tmpdir(), 'gyeol-agent-'))
       const config = join(dir, 'mcp.json')
       writeFileSync(
         config,
         JSON.stringify({
-          mcpServers: { 'html-maker': { type: 'stdio', command: opts.nodePath, args: [opts.mcpPath], env: { HTML_MAKER_SHARE: opts.shareRoot } } },
+          mcpServers: { gyeol: { type: 'stdio', command: opts.nodePath, args: [opts.mcpPath], env: { GYEOL_SHARE: opts.shareRoot } } },
         }),
       )
       const cleanup = () => rmSync(dir, { recursive: true, force: true })

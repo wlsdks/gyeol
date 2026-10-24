@@ -14,9 +14,9 @@ import { createAiHandler } from './ai'
 // 진짜 Claude Code 대신 띄우는 가짜. 받은 인자와 부탁 문장을 적어 두고, 시킨 대로 제안을 남기거나 실패한다.
 type Plan = 'propose' | 'nothing' | 'login' | 'hang'
 
-const base = mkdtempSync(join(tmpdir(), 'html-maker-agent-'))
+const base = mkdtempSync(join(tmpdir(), 'gyeol-agent-'))
 const share = join(base, 'AI 공유')
-const mcpPath = join(base, 'html-maker-mcp.mjs')
+const mcpPath = join(base, 'gyeol-mcp.mjs')
 const logFile = join(base, 'agent-log.json')
 const deck = createSampleDeck()
 const shape = toShape(deck)
@@ -37,10 +37,10 @@ process.stdin.on('end', () => {
   const say = (e) => process.stdout.write(JSON.stringify(e) + '\\n')
   const plan = ${JSON.stringify(plan)}
   if (plan === 'hang') return setTimeout(() => {}, 60000)
-  say({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__html-maker__get_shape' }] } })
+  say({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__gyeol__get_shape' }] } })
   if (plan === 'propose') {
     writeFileSync(${JSON.stringify(join(share, 'requests', `${req.id}.json`))}, ${JSON.stringify(JSON.stringify(req))})
-    say({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__html-maker__propose_changes' }] } })
+    say({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__gyeol__propose_changes' }] } })
   }
   say({ type: 'result', is_error: plan === 'login', result: plan === 'login' ? 'Not logged in · Please run /login' : '이 장은 **지금 모양이** 잘 맞아요.\\n- 빈 칸이 없어요.' })
   process.exit(plan === 'login' ? 1 : 0)
@@ -99,13 +99,13 @@ describe('AI에게 부탁', () => {
     }
   })
 
-  it('기본 도구를 모두 끄고 html-maker MCP 서버 하나만 붙여 띄운다', () => {
+  it('기본 도구를 모두 끄고 결 MCP 서버 하나만 붙여 띄운다', () => {
     const args = agentArgs('/tmp/mcp.json')
     expect(args[args.indexOf('--tools') + 1]).toBe('')
     expect(args).toContain('--strict-mcp-config')
     expect(args).toContain('--restricted')
     expect(args[args.indexOf('--permission-prompts') + 1]).toBe('none')
-    expect(args[args.indexOf('--allowedTools') + 1].split(',').every((t) => t.startsWith('mcp__html-maker__'))).toBe(true)
+    expect(args[args.indexOf('--allowedTools') + 1].split(',').every((t) => t.startsWith('mcp__gyeol__'))).toBe(true)
   })
 
   it('부탁을 전하고, AI가 남긴 제안 id를 알려 준다', async () => {

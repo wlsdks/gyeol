@@ -166,7 +166,7 @@ function themeXml(name: string): string {
   return (
     XML_HEAD +
     `<a:theme xmlns:a="${NS_A}" name="${name}"><a:themeElements>` +
-    `<a:clrScheme name="html-maker">` +
+    `<a:clrScheme name="gyeol">` +
     color('dk1', '16171A') +
     color('lt1', 'FFFFFF') +
     color('dk2', '2B2D33') +
@@ -180,8 +180,8 @@ function themeXml(name: string): string {
     color('hlink', '2F55D4') +
     color('folHlink', '6B4FBB') +
     `</a:clrScheme>` +
-    `<a:fontScheme name="html-maker"><a:majorFont>${font}</a:majorFont><a:minorFont>${font}</a:minorFont></a:fontScheme>` +
-    `<a:fmtScheme name="html-maker">` +
+    `<a:fontScheme name="gyeol"><a:majorFont>${font}</a:majorFont><a:minorFont>${font}</a:minorFont></a:fontScheme>` +
+    `<a:fmtScheme name="gyeol">` +
     `<a:fillStyleLst>${fill.repeat(3)}</a:fillStyleLst>` +
     `<a:lnStyleLst>${[6350, 12700, 19050].map((w) => `<a:ln w="${w}">${fill}</a:ln>`).join('')}</a:lnStyleLst>` +
     `<a:effectStyleLst>${'<a:effectStyle><a:effectLst/></a:effectStyle>'.repeat(3)}</a:effectStyleLst>` +
@@ -276,7 +276,7 @@ export function pptxParts({ title, slides, date = new Date() }: PptxInput): Pptx
     data:
       XML_HEAD +
       '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-      `<Application>html-maker</Application><Slides>${slides.length}</Slides><Notes>${notesCount}</Notes>` +
+      `<Application>gyeol</Application><Slides>${slides.length}</Slides><Notes>${notesCount}</Notes>` +
       '</Properties>',
   })
 
@@ -352,7 +352,7 @@ export function pptxParts({ title, slides, date = new Date() }: PptxInput): Pptx
     [{ id: 'rId1', type: REL_TYPE.slideMaster, target: '../slideMasters/slideMaster1.xml' }],
   )
 
-  parts.push({ name: 'ppt/theme/theme1.xml', contentType: CONTENT_TYPE.theme, data: themeXml('html-maker') })
+  parts.push({ name: 'ppt/theme/theme1.xml', contentType: CONTENT_TYPE.theme, data: themeXml('gyeol') })
 
   withRels(
     {
@@ -367,7 +367,7 @@ export function pptxParts({ title, slides, date = new Date() }: PptxInput): Pptx
     },
     [{ id: 'rId1', type: REL_TYPE.theme, target: '../theme/theme2.xml' }],
   )
-  parts.push({ name: 'ppt/theme/theme2.xml', contentType: CONTENT_TYPE.theme, data: themeXml('html-maker notes') })
+  parts.push({ name: 'ppt/theme/theme2.xml', contentType: CONTENT_TYPE.theme, data: themeXml('gyeol notes') })
 
   slides.forEach((s, i) => {
     const n = i + 1

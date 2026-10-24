@@ -11,7 +11,7 @@ import { HOST, createAppServer } from './serve'
 
 let server: Server
 let port: number
-const base = mkdtempSync(join(tmpdir(), 'html-maker-serve-'))
+const base = mkdtempSync(join(tmpdir(), 'gyeol-serve-'))
 const root = join(base, 'dist')
 const share = join(base, 'AI 공유')
 
