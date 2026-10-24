@@ -59,9 +59,9 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
             ))}
           </div>
           <p className="menu-h">
-            색 조합 <span className="menu-h-v">{comboName(deck.theme)}</span>
+            강조색 <span className="menu-h-v">{comboName(deck.theme)}</span>
           </p>
-          <p className="menu-note">밝은 색은 숫자와 강조할 항목에, 짙은 색은 표지 옆면과 단락 장 같은 넓은 면에 쓰여요. 회사의 대표 색은 마지막 칸에서 직접 골라요.</p>
+          <p className="menu-note">숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 마지막 칸에서 직접 골라요.</p>
           <div className="swatches">
             <button
               type="button"
@@ -81,7 +81,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 // 강조색과 짙은 면을 반씩: 고르면 어떤 짝으로 칠해지는지 보이게
                 style={{ background: comboSwatch(c) }}
                 title={c.name}
-                aria-label={`색 조합 ${c.name}`}
+                aria-label={`강조색 ${c.name}`}
                 onClick={() => setAccent(c.accent)}
               >
                 {deck.theme.accent === c.accent && <CheckIcon />}

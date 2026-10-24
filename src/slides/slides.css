@@ -25,10 +25,10 @@
   --pad-bottom: 140px;
   --gap: 28px;
   --r-panel: 24px;
-  /* sRGB로 섞는다: oklch로 섞으면 금빛 바탕 위의 남색처럼 색상이 먼 둘 사이에서 주황으로 틀어진다 */
+  /* sRGB로 섞는다: oklch로 섞으면 색상이 먼 둘 사이에서 주황으로 틀어진다 */
   --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in srgb, var(--accent) 26%, var(--bg));
-  /* 단락 장, 마지막 장, 표지 옆면 같은 짙은 면. 색 조합의 짙은 색(themes.ts의 deep)으로 깔아 쨍하지 않게 하고,
+  /* 단락 장, 마지막 장, 표지 옆면 같은 짙은 면. 테마의 짙은 면(themes.ts의 deep, 검정)으로 깔고,
      그 위의 강조는 강조색을 밝힌 색(--bold-accent)으로 쓴다. 테마 값이 없을 때는 강조색을 글자색 쪽으로 가라앉힌다 */
   --bold-bg: var(--deep, color-mix(in srgb, var(--accent) 36%, var(--ink)));
   --bold-ink: var(--deep-ink, var(--bg));
@@ -61,11 +61,17 @@
 }
 
 /* 어두운 바탕의 짙은 면은 바탕보다 한 단계 떠 있는 면이라 선을 조금 덜 밝게.
-   강조한 칸의 옅은 면은 강조색(금빛)을 섞으면 탁한 갈색이 되어, 짙은 면 쪽으로 한 단계 띄운다 */
+   강조한 칸의 옅은 면은 강조색을 섞으면 검정 위에서 탁해져서, 짙은 면 쪽으로 한 단계 띄운다 */
 .slide.is-dark {
   --bold-line: color-mix(in srgb, var(--bold-ink) 18%, transparent);
   --accent-soft: color-mix(in srgb, var(--bold-bg) 62%, var(--bg));
   --accent-line: color-mix(in srgb, var(--accent) 34%, var(--bg));
+}
+
+/* 검은 바탕에서 장 전체를 덮는 짙은 면(단락 장, 마지막 장, 색 면 표지)은 바탕과 같은 검정.
+   한 단계 뜬 회색으로 장 전체를 덮으면 검은 장들 사이에 회색 장이 끼어 탁해 보인다. 옆면, 카드처럼 일부만 덮는 면은 그대로 */
+.slide.is-dark:not(.tone-accent):is(.l-section:not(.va-plain), .l-closing:not(.va-plain), .l-cover.va-full) {
+  background: var(--bg);
 }
 
 /* 짙은 면 위의 강조(지금 단락, 다음 할 일 번호)는 강조색을 밝힌 색. 강조색 위의 글자는 짙은 면의 색.
@@ -477,7 +483,7 @@
   flex: none;
   /* 글자마다 오른쪽 여백이 달라서(1은 넓고 2, 3은 좁다) 반만 당겨 오른쪽 끝을 아래 선 끝과 비슷하게 */
   margin-right: -0.02em;
-  /* 아주 큰 글자라 강조색을 조금만 밝힌 색(--deep-mark). 반투명으로 겹치면 금빛이 남색과 섞여 탁한 올리브가 된다 */
+  /* 짙은 면 위에서 읽히게 밝힌 강조색(--deep-mark). 반투명으로 겹치면 강조색이 짙은 면과 섞여 탁해진다 */
   color: var(--deep-mark, var(--accent));
   font-size: 600px;
   font-weight: var(--display-weight);
@@ -1855,15 +1861,15 @@
   text-align: center;
 }
 
-/* 어두운 화면에서는 검은 로고가 묻히므로 밝은 바탕을 깐다 */
-.is-dark .lg-cell {
-  background: #edf0f5;
+/* 어두운 화면의 로고 모음: 밝은 판을 깔면 검은 장 위에 흰 타일이 줄지어 떠서 눈이 부시다.
+   판은 어두운 면 그대로 두고 로고를 흑백으로 뒤집어 밝게 한다. 흰 바탕 그림(JPG)의 바탕은 뒤집으면 검정이 되어
+   screen으로 겹치면 판 색에 묻힌다 */
+.is-dark .lg-img img {
+  filter: grayscale(1) invert(1);
+  mix-blend-mode: screen;
 }
 
-.is-dark .lg-name {
-  color: #5d677b;
-}
-
+/* 표지, 사례의 회사 로고 하나는 색을 살려야 해서 밝은 판을 깐다 */
 .is-dark :is(.cv-logo, .cs-logo):not(.img-empty) {
   width: auto;
   max-width: 380px;
@@ -3075,7 +3081,7 @@
   background: color-mix(in srgb, var(--accent) calc(var(--t, 40) * 1%), var(--bg));
 }
 
-/* 어두운 바탕에서 강조색을 바탕에 섞으면 금빛이 갈색으로 탁해진다. 회색의 농담으로 잇고 강조할 단계만 강조색 */
+/* 어두운 바탕에서 강조색을 바탕에 섞으면 탁해진다. 회색의 농담으로 잇고 강조할 단계만 강조색 */
 .is-dark .fn-bar {
   background: color-mix(in srgb, var(--ink-2) calc(var(--t, 40) * 0.8%), var(--bg));
 }
@@ -4083,7 +4089,7 @@
   translate: 0 -50%;
 }
 
-/* 어두운 바탕에서 강조색을 바탕에 섞으면 금빛이 갈색으로 탁해진다. 회색 길로 */
+/* 어두운 바탕에서 강조색을 바탕에 섞으면 탁해진다. 회색 길로 */
 .is-dark .vs-span {
   --vs-span: color-mix(in srgb, var(--ink-2) 34%, var(--bg));
 }

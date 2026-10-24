@@ -145,11 +145,6 @@
   background: color-mix(in srgb, var(--ink) 4%, var(--bg));
 }
 
-.t-navy .lg-cell .img-ed.img-empty {
-  outline-color: rgb(16 20 31 / 0.2);
-  background: rgb(16 20 31 / 0.04);
-}
-
 .img-ed.is-over {
   outline: 4px solid #3a6ff8;
 }
@@ -167,10 +162,6 @@
   font-family: var(--font-body);
   text-align: center;
   cursor: pointer;
-}
-
-.t-navy .lg-cell .img-drop {
-  color: #5d677b;
 }
 
 .img-drop-t {

@@ -2,6 +2,7 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { pageInfo } from '../deck/fields'
 import { uid } from '../deck/generate'
+import { fontOf } from '../deck/themes'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { safeFileName } from '../store/deckFile'
@@ -134,7 +135,7 @@ async function exportCsp(): Promise<string> {
 
 export async function buildHtml(deck: Deck): Promise<string> {
   const slides = renderSlides(deck)
-  const families = deck.theme.id === 'serif' ? /Pretendard|Hahmlet/i : /Pretendard/i
+  const families = fontOf(deck.theme) === 'serif' ? /Pretendard|Hahmlet/i : /Pretendard/i
   const text = (slides.replace(/<[^>]+>/g, ' ') + deck.title + VIEWER_TEXT).replace(/&[a-z]+;/g, ' ')
   const fonts = await embedFonts(text, families)
   const csp = await exportCsp()

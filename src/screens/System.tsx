@@ -175,7 +175,7 @@ export function System() {
             </div>
           </div>
           <div className="sys-control">
-            <span className="sys-control-k">색 조합</span>
+            <span className="sys-control-k">강조색</span>
             <div className="swatches sys-swatches">
               <button
                 type="button"
@@ -196,7 +196,7 @@ export function System() {
                   // 강조색과 짙은 면을 반씩: 고르면 어떤 짝으로 칠해지는지 보이게
                   style={{ background: comboSwatch(c) }}
                   title={c.name}
-                  aria-label={`색 조합 ${c.name}`}
+                  aria-label={`강조색 ${c.name}`}
                   aria-pressed={accent === c.accent}
                   onClick={() => setAccent(c.accent)}
                 >

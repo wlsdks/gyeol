@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { canCompose, cleanDeckRows, composeFrom, copyBlock, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
+import { plainTheme } from '../deck/themes'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
 import { isMetaKey } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
@@ -102,8 +103,8 @@ export const useDeck = create<DeckState>((set, get) => {
         set({ deck: null, newer: raw, selectedId: null, past: [], future: [], lastKey: null })
         return
       }
-      // 가져온 파일이나 예전 저장본: 부품 장의 줄을 정해진 꼴로 맞춘다
-      const deck = cleanDeckRows(raw)
+      // 가져온 파일이나 예전 저장본: 부품 장의 줄을 정해진 꼴로 맞추고, 예전 세리프 테마는 화이트에 명조 제목으로
+      const deck = cleanDeckRows({ ...raw, theme: plainTheme(raw.theme) })
       set({ deck, newer: null, selectedId: deck.slides[0]?.id ?? null, past: [], future: [], lastKey: null })
     },
     close() {

@@ -20,8 +20,8 @@
 | idb-keyval | 6.3.0 | Apache-2.0 | 브라우저 안 저장(IndexedDB) |
 | @dnd-kit/core, sortable, utilities, accessibility | 6.3.1 외 | MIT | 장 순서 끌어 옮기기 |
 | tslib | 2.8.1 | 0BSD | dnd-kit이 쓰는 도우미 |
-| pretendard | 1.3.9 | OFL-1.1 | 본문 글꼴 |
-| @fontsource-variable/hahmlet | 5.3.0 | OFL-1.1 | 세리프 테마 제목 글꼴 |
+| pretendard | 1.3.9 | OFL-1.1 | 글꼴 (제목과 본문 모두) |
+| @fontsource-variable/hahmlet | 5.3.0 | OFL-1.1 | 명조 제목 글꼴 (고를 때만) |
 | @types/react, csstype | 19.3.0, 3.2.3 | MIT | 타입 정보만. 실행 파일에는 들어가지 않음 |
 
 ## 만들 때만 쓰는 것 (42개)
