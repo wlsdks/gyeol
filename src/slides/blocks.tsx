@@ -7,7 +7,7 @@ import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
-import { IT, ImageSlot, ItemTools, numberUnits, T } from './fields'
+import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
 import { colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
 
@@ -1090,6 +1090,226 @@ function Diverge() {
   )
 }
 
+/**
+ * 칸마다의 값 글. 흐름 칸(seriesOf)처럼 나누되, 숫자가 없는 칸('-', '없음')도 제자리를 지켜 그 칸을 비운다.
+ * 숫자 뒤에 띄어 쓴 단위('42 억')는 앞 숫자에 붙인다
+ */
+function tokensOf(text: string): string[] {
+  const out: string[] = []
+  for (const tok of text.split(/[\s/·|]+|,\s+/)) {
+    if (!tok) continue
+    const parts = /^[-−–△▼+]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(tok) ? [tok] : tok.split(',').filter(Boolean)
+    for (const p of parts) {
+      if (/\d/.test(p) || /^([-−–—.x×?]+|없음)$/.test(p) || !out.length) out.push(p)
+      else out[out.length - 1] += ` ${p}`
+    }
+  }
+  return out
+}
+
+/** 숫자 글: 빼기 기호로 바꾸고, 붙여 쓴 단위('58억')는 두 단계 작은 글자로 뗀다 (fields.tsx의 Shown과 같은 꼴) */
+function Numeral({ text }: { text: string }) {
+  const t = minusSigns(text)
+  const p = splitNumber(t)
+  if (!p) return <>{t}</>
+  return (
+    <>
+      {p.num}
+      <span className="u">{p.unit}</span>
+    </>
+  )
+}
+
+/** 색 표의 칸 수: 열두 달까지 */
+const HEAT_COLS = 12
+
+/**
+ * 색 표(히트맵): 줄(지점)과 칸(월)으로 놓인 값을 강조색의 진하기 하나로 칠한다. 가장 낮은 값이 가장 옅고 가장 높은 값이 강조색 그대로.
+ * 칸 안 숫자의 색은 칸의 진하기(--t)로 CSS가 고른다(blocks.css). 표 전체에서 견주면 가장 높은 칸과 낮은 칸에 고리를 두르고
+ * 위에 어디인지 적는다. 줄마다 견주면(지표마다 단위가 다를 때) 줄마다 제 눈금이라 고리를 두르지 않는다.
+ * 색만으로는 값을 읽지 못해서 칸마다 숫자를 그대로 둔다. 그래서 진하기를 읽는 눈금 띠는 두지 않는다
+ */
+function Heat() {
+  const { slide, meta, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.heat.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim())
+  const colsText = readField(slide, meta, 'cols').trim()
+  const names = colsOf(colsText || (final ? '' : hintFor(slide.layout, slide.hints, 'cols')))
+  const rows = items.map((it, i) => tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(0, HEAT_COLS))
+  const c = Math.max(1, Math.min(HEAT_COLS, Math.max(names.length, ...rows.map((r) => r.length))))
+  const nums = rows.map((r) => Array.from({ length: c }, (_, j) => numberOrNull(r[j] ?? '')))
+  const byRow = slide.variant === 'rows'
+  const rangeOf = (vs: (number | null)[]) => {
+    const k = vs.filter((v): v is number => v !== null)
+    return k.length ? { lo: Math.min(...k), hi: Math.max(...k) } : null
+  }
+  const all = rangeOf(nums.flat())
+  // 진하기 0~1. 줄의 값이 모두 같으면 가운데 진하기
+  const shade = nums.map((r) => {
+    const g = byRow ? rangeOf(r) : all
+    return r.map((v) => (v === null || !g ? null : g.hi === g.lo ? 0.5 : (v - g.lo) / (g.hi - g.lo)))
+  })
+  // 가장 높은 칸과 낮은 칸: 같은 값이 여럿이면 먼저 나온 칸. 값이 다 같으면 짚지 않는다
+  const find = (v: number): [number, number] | null => {
+    for (let i = 0; i < nums.length; i++) for (let j = 0; j < c; j++) if (nums[i][j] === v) return [i, j]
+    return null
+  }
+  const marks = !byRow && !!all && all.hi > all.lo
+  const top = marks ? find(all.hi) : null
+  const low = marks ? find(all.lo) : null
+  const is = (p: [number, number] | null, i: number, j: number) => !!p && p[0] === i && p[1] === j
+  const rowName = (i: number) => items[i].title.trim() || (final ? '' : hintFor(slide.layout, slide.hints, 'title', 'title', i))
+  const where = (p: [number, number] | null) => (p ? [rowName(p[0]), names[p[1]] ?? ''].filter(Boolean).join(' ') : '')
+  const topAt = where(top)
+  const lowAt = where(low)
+  return (
+    <div className={cx('bk-cc bk-hm', demo && 'is-demo')} style={{ '--c': c } as CSSProperties}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        sum={
+          topAt && lowAt ? (
+            <>
+              가장 높은 곳 <b>{topAt}</b>
+              <span className="bk-hm-low">가장 낮은 곳 {lowAt}</span>
+            </>
+          ) : undefined
+        }
+      />
+      <div className="bk-hm-grid">
+        {names.length > 0 && (
+          <div className={cx('bk-hm-head', !colsText && 'is-hint')}>
+            <span />
+            {Array.from({ length: c }, (_, j) => (
+              <span key={j} className="bk-hm-cn">
+                {names[j] && (
+                  <span className="bk-hm-ct one-line" style={{ '--units': textUnits(names[j]).toFixed(2) } as CSSProperties}>
+                    {names[j]}
+                  </span>
+                )}
+              </span>
+            ))}
+            {/* 칸 이름은 이름 줄 위에서 고친다 (올리거나 누르면 글이 보인다). 편집 때만 줄이 늘면 발표 화면과 높이가 달라진다 */}
+            {mode === 'edit' && <T k="cols" className="bk-hm-colsed on-chart" oneLine />}
+          </div>
+        )}
+        <ul className="bk-hm-list" data-n={items.length}>
+          {items.map((it, i) => (
+            <li key={it.id} className="it bk-hm-row">
+              <IT i={i} k="title" className="bk-hm-name" />
+              {shade[i].map((v, j) => {
+                const text = rows[i][j] ?? ''
+                const mark = is(top, i, j) ? 'is-max' : is(low, i, j) ? 'is-min' : null
+                return (
+                  <span key={j} className={cx('bk-hm-cell', v === null && 'is-empty', mark)} style={v === null ? undefined : ({ '--t': v.toFixed(3) } as CSSProperties)}>
+                    {v !== null && (
+                      <span className="bk-hm-v one-line" style={{ '--units': numberUnits(text).toFixed(2) } as CSSProperties}>
+                        <Numeral text={text} />
+                      </span>
+                    )}
+                    {mark && <span className="bk-hm-ring" aria-hidden="true" />}
+                  </span>
+                )
+              })}
+              {/* 줄의 값은 칸들 위에서 고친다 */}
+              {mode === 'edit' && <IT i={i} k="value" className="bk-hm-in on-chart" oneLine />}
+              <ItemTools i={i} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/** 숫자 글의 소수 자리 수 */
+const decimalsOf = (t: string) => /\.(\d+)/.exec(t)?.[1].length ?? 0
+
+/** 지표 흐름표의 바뀐 만큼: 값 그대로의 차이와 단위. 단위가 %면 %p */
+function stepOf(from: string, to: string, unit: string): { text: string; dir: number } | null {
+  const a = numberOrNull(from)
+  const b = numberOrNull(to)
+  if (a === null || b === null) return null
+  const k = 10 ** Math.min(2, Math.max(decimalsOf(from), decimalsOf(to)))
+  const d = Math.round((b - a) * k) / k
+  // 단위 칸이 비었으면 값에 붙여 쓴 단위('58억')를 그대로
+  const u = unit || to.replace(/^[^\d]*[\d.,]+/, '').trim()
+  return { text: `${formatNumber(Math.abs(d))}${u === '%' ? '%p' : u}`, dir: Math.sign(d) }
+}
+
+/**
+ * 지표 흐름표: 지표마다 그동안의 흐름을 작은 선으로 긋고, 지금 값(흐름의 마지막)과 바뀐 만큼을 나란히 둔다. 선은 지표마다 제 눈금이라
+ * 크기와 단위가 다른 지표(억 원, %)를 한 표에 둔다. 강조색은 지금(선 끝의 점과 지금 값)에만. 오른 것이 좋은지(매출) 나쁜지(불량률)는
+ * 지표마다 달라서 바뀐 만큼은 색 없이 ▲▼로. 칸은 줄마다 같은 자리에 오게 표 하나의 격자를 나눠 쓴다(subgrid, blocks.css)
+ */
+function Sparks() {
+  const { slide, mode, folds } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.sparks.items!.max)
+  const final = mode === 'final'
+  const demo = !final && items.every((it) => !it.value.trim())
+  const first = slide.variant === 'first'
+  // 단위 칸은 편집할 때 지금 값 옆에서 적는다. 모두 비어 접혀 있으면(칸 더하기로 연다) 적은 단위나 예시 단위를 그대로 보인다
+  const unitField = mode === 'edit' && !folds?.has('items.meta')
+  return (
+    <div className={cx('bk-sx', demo && 'is-demo')}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <div className="bk-sx-table">
+        <div className="bk-sx-head">
+          <span />
+          <T k="period" as="span" className="bk-sx-hk bk-sx-period" />
+          <span className="bk-sx-hk is-now">지금</span>
+          <span className="bk-sx-hk is-chg">{first ? '처음보다' : '바로 앞보다'}</span>
+        </div>
+        <ul className="bk-sx-list" data-n={items.length}>
+          {items.map((it, i) => {
+            const toks = tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(-24)
+            const pts = toks.flatMap((t, j) => {
+              const v = numberOrNull(t)
+              return v === null ? [] : [{ j, v, t }]
+            })
+            const lo = Math.min(...pts.map((p) => p.v))
+            const hi = Math.max(...pts.map((p) => p.v))
+            // 위아래 끝의 점이 칸 밖으로 나가지 않게 조금 띄운다. 비어 있는 자리('-')는 그 자리를 건너뛰어 잇는다
+            const at = pts.map((p) => ({ x: (p.j / Math.max(1, toks.length - 1)) * 100, y: hi === lo ? 50 : 88 - ((p.v - lo) / (hi - lo)) * 76 }))
+            const line = at.map((p, k) => `${k ? 'L' : 'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
+            const last = pts[pts.length - 1]
+            const base = first ? pts[0] : pts[pts.length - 2]
+            const unit = it.meta.trim() || (demo ? hintFor(slide.layout, slide.hints, 'meta', 'meta', i) : '')
+            const step = last && base && base !== last ? stepOf(base.t, last.t, unit) : null
+            const end = at[at.length - 1]
+            return (
+              <li key={it.id} className="it bk-sx-row">
+                <IT i={i} k="title" className="bk-sx-name" />
+                <div className="bk-sx-plot">
+                  {pts.length > 1 && (
+                    <svg className="bk-sx-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                      <path d={line} />
+                    </svg>
+                  )}
+                  {end && <span className="bk-sx-dot" style={{ '--x': end.x.toFixed(2), '--y': end.y.toFixed(2) } as CSSProperties} aria-hidden="true" />}
+                  {/* 흐름 숫자는 선 자리에서 고친다 (올리거나 누르면 숫자가 보인다) */}
+                  {mode === 'edit' && <IT i={i} k="value" className="bk-sx-in on-chart" oneLine />}
+                </div>
+                <span className="bk-sx-now">
+                  {last && (
+                    <span className="bk-sx-v">
+                      <Numeral text={last.t} />
+                    </span>
+                  )}
+                  {/* 단위는 숫자보다 두 단계 작게 */}
+                  {unitField ? <IT i={i} k="meta" as="span" className="bk-sx-u" /> : unit && last && <span className="bk-sx-u">{unit}</span>}
+                </span>
+                <span className="bk-sx-chg">{step && (step.dir === 0 ? '그대로' : `${step.dir > 0 ? '▲' : '▼'} ${step.text}`)}</span>
+                <ItemTools i={i} />
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 function Picture() {
   const { slide } = useSlide()
   return (
@@ -1126,6 +1346,8 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   attain: Attain,
   diverge: Diverge,
   stack: Stack,
+  heat: Heat,
+  sparks: Sparks,
 }
 
 // ---------- 부품 하나 ----------

@@ -107,11 +107,11 @@
   opacity: 0;
 }
 
-.slide.m-edit :has(> .on-chart:is(:hover, :focus-within)) > :is(svg, .bk-sp-dot, .bk-gt-bar, .bk-ev-cell, .bk-cc-v, .bk-st-stack) {
+.slide.m-edit :has(> .on-chart:is(:hover, :focus-within)) > :is(svg, .bk-sp-dot, .bk-gt-bar, .bk-ev-cell, .bk-cc-v, .bk-st-stack, .bk-hm-cell, .bk-sx-dot) {
   opacity: 0.15;
 }
 
-.slide.m-edit :is(.bk-gt-colwrap, .bk-ev-colwrap, .bk-st-keywrap):has(> .on-chart:is(:hover, :focus-within)) > :is(.bk-gt-cols, .bk-ev-cols, .bk-st-keys) {
+.slide.m-edit :is(.bk-gt-colwrap, .bk-ev-colwrap, .bk-st-keywrap, .bk-hm-head):has(> .on-chart:is(:hover, :focus-within)) > :is(.bk-gt-cols, .bk-ev-cols, .bk-st-keys, .bk-hm-cn) {
   visibility: hidden;
 }
 
