@@ -4992,6 +4992,16 @@
   opacity: var(--o-sub);
 }
 
+/* 요청이 셋 이하면 줄마다 높이가 300px 가까이 남아서, 36px 제목과 26px 설명이 줄 가운데에 작은 띠로만 보였다.
+   한 단계씩 키운다 (넷 이상은 줄이 낮아 그대로) */
+.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) .cl-step-t {
+  --fs: 44px;
+}
+
+.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) .cl-step-b {
+  --fs: 30px;
+}
+
 .l-closing .meta-row :is(dt, dd) {
   color: inherit;
 }
