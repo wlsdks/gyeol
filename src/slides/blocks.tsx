@@ -7,7 +7,7 @@ import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
-import { IT, ImageSlot, ItemTools, T } from './fields'
+import { IT, ImageSlot, ItemTools, numberUnits, T } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
 import { colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
 
@@ -115,9 +115,17 @@ function deltaOf(before: string, after: string): { text: string; dir: -1 | 0 | 1
   return { text: `${formatNumber(Math.abs(round((d / Math.abs(a)) * 100)))}%`, dir }
 }
 
+/**
+ * 전과 후: 두 숫자는 같은 크기로(둘 중 긴 쪽이 들어가는 크기), 전은 옅게, 후는 강조색으로. 크기가 다르면 같은 줄의 두 숫자가
+ * 서로 다른 것을 재는 것처럼 보인다. 바뀐 만큼은 결과(후) 바로 아래에 붙인다
+ */
 function Delta() {
+  const { slide, meta } = useSlide()
   const { demo, read } = useDemo(['before', 'after'])
   const delta = deltaOf(read('before'), read('after'))
+  // 비어 있는 쪽은 안내 글의 폭으로 (편집할 때 안내 글이 그 자리에 보인다)
+  const shown = (k: string) => readField(slide, meta, k).trim() || hintFor(slide.layout, slide.hints, k)
+  const units = Math.max(numberUnits(shown('before')), numberUnits(shown('after')))
   return (
     <div className={cx('bk-dl', demo && 'is-demo')}>
       <T k="label" className="bk-dl-l" />
@@ -125,7 +133,7 @@ function Delta() {
         <div className="bk-dl-side bk-dl-from">
           <span className="bk-dl-k">전</span>
           <div className="bk-dl-vbox">
-            <T k="before" className="bk-dl-v" oneLine />
+            <T k="before" className="bk-dl-v" oneLine numeral units={units} />
           </div>
         </div>
         <span className="bk-dl-arrow" aria-hidden="true">
@@ -136,18 +144,16 @@ function Delta() {
         <div className="bk-dl-side bk-dl-to">
           <span className="bk-dl-k">후</span>
           <div className="bk-dl-vbox">
-            <T k="after" className="bk-dl-v" oneLine />
+            <T k="after" className="bk-dl-v" oneLine numeral units={units} />
           </div>
+          {delta && (
+            <span className={cx('bk-dl-chip', delta.dir < 0 ? 'is-down' : delta.dir > 0 ? 'is-up' : 'is-flat')}>
+              {delta.dir < 0 ? '▼' : delta.dir > 0 ? '▲' : '–'} {delta.text}
+            </span>
+          )}
         </div>
       </div>
-      <div className="bk-dl-foot">
-        {delta && (
-          <span className={cx('bk-dl-chip', delta.dir < 0 ? 'is-down' : delta.dir > 0 ? 'is-up' : 'is-flat')}>
-            {delta.dir < 0 ? '▼' : delta.dir > 0 ? '▲' : '–'} {delta.text}
-          </span>
-        )}
-        <T k="note" className="bk-dl-n" />
-      </div>
+      <T k="note" className="bk-dl-n" />
     </div>
   )
 }
@@ -162,7 +168,17 @@ function Goal() {
     <div className={cx('bk-gl', demo && 'is-demo', pct !== null && pct >= 100 && 'is-met')} style={{ '--p': Math.min(100, Math.max(0, pct ?? 0)).toFixed(1) } as CSSProperties}>
       <div className="bk-gl-top">
         <T k="label" className="bk-gl-l" />
-        <span className="bk-gl-pct">{pct === null ? '–' : `${formatNumber(Math.round(pct))}%`}</span>
+        {/* 큰 숫자처럼 단위(%)는 두 단계 작게: 같은 장의 전과 후, 큰 숫자와 꼴이 같다 */}
+        <span className="bk-gl-pct">
+          {pct === null ? (
+            '–'
+          ) : (
+            <>
+              {formatNumber(Math.round(pct))}
+              <span className="u">%</span>
+            </>
+          )}
+        </span>
       </div>
       <div className="bk-gl-bar" aria-hidden="true">
         <span className="bk-gl-fill" />

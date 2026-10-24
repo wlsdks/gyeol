@@ -13,6 +13,9 @@
  *    글자를 더 키우면 장마다 글자 크기가 들쭉날쭉해지고, 가운데에 작게 모아 두면 위아래가 빈다. 줄 사이만 넓히면 칸을 채운다.
  *    칸마다 따로 고른다: 항목 수가 다른 두 목록이 한 줄에 있어도 둘 다 칸 아래까지 닿는다. 이 값을 쓰지 않는 부품은 그대로다
  *
+ * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그리지만(소제목 윗선을 맞춘다, blocks.css), 줄 안에서 가장 긴 내용을
+ *    기준으로 묶음째 가운데로 내린다(--bk-lift, 캔버스 px). 위에만 붙여 두면 높은 줄에서 아래 절반이 통째로 빈다.
+ *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
  * 발표할 때 움직이는 중인 장(motion/engine.ts가 data-mo-play를 붙인다)은 재지 않는다. 그동안 글자와 막대는 옮겨지거나 커지는 중이고
@@ -317,6 +320,43 @@ export function blockFitter() {
     }
   }
 
+  /**
+   * 줄마다 부품 내용의 묶음을 가운데로 (맨 위 설명 3-3). 칸 높이를 다 쓰는 부품(차트, 표)이 있는 줄은 그 부품이 가장 길어서
+   * 내리지 않는다. 이음표가 선 줄은 부품마다 가운데에 두어서(blocks.css) 건너뛴다
+   */
+  function lift(cells: HTMLElement[]): void {
+    const rows = new Map<string, HTMLElement[]>()
+    for (const c of cells) {
+      if (!c.classList.contains('is-shared') || c.classList.contains('lk-row')) continue
+      const key = c.style.gridRow || '1'
+      rows.set(key, (rows.get(key) || []).concat(c))
+    }
+    rows.forEach((row) => {
+      let room = Infinity
+      let most = 0
+      let k = 1
+      for (const c of row) {
+        const body = c.querySelector<HTMLElement>(':scope > .bk-in > *')
+        if (!body || !body.offsetHeight) return
+        const r = body.getBoundingClientRect()
+        k = r.height / body.offsetHeight
+        const cs = getComputedStyle(body)
+        const top = r.top + parseFloat(cs.paddingTop) * k
+        let end = top
+        for (const el of Array.from(body.children)) {
+          const b = el.getBoundingClientRect()
+          const es = getComputedStyle(el)
+          if (b.height && es.position !== 'absolute' && es.position !== 'fixed') end = Math.max(end, b.bottom + Math.max(0, parseFloat(es.marginBottom)) * k)
+        }
+        room = Math.min(room, r.bottom - parseFloat(cs.paddingBottom) * k - top)
+        most = Math.max(most, end - top)
+      }
+      // 캔버스 8px 밑으로 남으면 그대로 (내려 봐야 보이지 않고, 글을 적을 때마다 조금씩 움직인다)
+      const d = (room - most) / 2 / k
+      if (d >= 8) for (const c of row) c.style.setProperty('--bk-lift', Math.round(d) + 'px')
+    })
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -337,6 +377,7 @@ export function blockFitter() {
       for (const c of cells) {
         c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')
+        c.style.removeProperty('--bk-lift')
       }
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
@@ -373,6 +414,7 @@ export function blockFitter() {
       if (!squeezed) grow(area, cells, room)
       for (const c of cells) shrink(c, 0)
       if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) spread(cells, enlarge(cells))
+      lift(cells)
       area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도
