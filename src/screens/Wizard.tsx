@@ -40,9 +40,19 @@ export function Wizard() {
     window.scrollTo(0, 0)
   }, [step])
 
+  // 빈 발표를 골랐다가 '이전'으로 돌아오면 그 전에 골라 둔 보고 종류로 되돌린다.
+  // 빈 발표인 채로 두면 1단계에 골라진 카드가 없고, '다음'이 구성이 빈 2단계를 연다
+  const [typeBefore, setTypeBefore] = useState<DeckType>('business')
   const chooseType = (t: DeckType) => {
+    if (t === 'blank' && type !== 'blank') setTypeBefore(type)
     setType(t)
     setStep(t === 'blank' ? 2 : 1)
+  }
+  const back = () => {
+    if (type === 'blank' && step === 2) {
+      setType(typeBefore)
+      setStep(0)
+    } else setStep(step - 1)
   }
 
   const create = async () => {
@@ -232,7 +242,7 @@ export function Wizard() {
 
       <footer className="wz-bottom">
         {step > 0 ? (
-          <button type="button" className="btn btn-ghost" onClick={() => setStep(type === 'blank' && step === 2 ? 0 : step - 1)}>
+          <button type="button" className="btn btn-ghost" onClick={back}>
             이전
           </button>
         ) : (
