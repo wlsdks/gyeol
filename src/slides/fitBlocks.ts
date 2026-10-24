@@ -3,10 +3,12 @@
  * 부품을 놓을 때는 잘리지 않는 자리만 고르지만, 놓은 뒤에 항목을 더하거나 글을 길게 쓰면 넘칠 수 있다.
  *
  * 1. 줄마다의 가장 낮은 높이를 더해도 본문 상자보다 높으면, 줄 높이를 같은 비율로 낮춘다(--bk-sq).
- * 2. 그래도 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
+ * 2. 줄 높이는 똑같이 나누지만(deck/blocks.ts의 areaStyle), 글이 넘치는 칸이 있는 줄은 다른 줄이 잘리지 않을 높이까지
+ *    남는 높이를 가져온다(--bk-r1..). 잰 높이(blockHeights.ts)는 보통 글자 크기라, 크게나 명조에서 딱 그 높이면 모자랄 수 있다.
+ * 3. 그래도 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
  *
- * 3. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
+ * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
  * 앱과 내보낸 HTML(export/viewer.ts가 blockFitter의 소스를 그대로 넣는다)이 같이 쓴다. 그래서 안에서 바깥의 이름을 쓰지 않는다.
  * 부품의 잘리지 않는 높이를 잴 때(screens/measureBlocks.ts)도 이것으로 맞추고, 글 줄의 자리도 이것으로 본다.
@@ -156,6 +158,34 @@ export function blockFitter() {
     }
   }
 
+  /**
+   * 글이 넘치는 칸이 있는 줄의 바닥을 조금씩 올린다. 다른 줄은 잘리지 않을 높이(data-mins)나 이미 올린 바닥 밑으로
+   * 내려가지 않게, 바닥을 다 더해도 본문 상자를 넘지 않는 데까지만. 넘치는 줄이 여럿이면 차례로 조금씩 나눠 가진다.
+   * 올린 만큼은 다른 줄이 똑같이 나눠 내준다(격자의 1fr)
+   */
+  function grow(area: HTMLElement, cells: HTMLElement[], room: number): void {
+    const floor = (area.dataset.mins || '').split(',').map(Number)
+    const n = getComputedStyle(area).gridTemplateRows.split(' ').length
+    if (n < 2 || floor.length !== n || floor.some((m) => !(m >= 0))) return
+    const inners = floor.map((_, i) =>
+      cells
+        .filter((c) => c.style.gridRow === String(i + 1))
+        .map((c) => c.querySelector<HTMLElement>(':scope > .bk-in'))
+        .filter((el): el is HTMLElement => !!el),
+    )
+    for (let moved = true; moved; ) {
+      moved = false
+      for (let i = 0; i < n; i++) {
+        const most = room - floor.reduce((a, m, j) => (j === i ? a : a + m), 0)
+        const h = parseFloat(getComputedStyle(area).gridTemplateRows.split(' ')[i])
+        if (h >= most - 1 || !inners[i].some(over)) continue
+        floor[i] = Math.min(most, h + 16)
+        area.style.setProperty('--bk-r' + (i + 1), floor[i] + 'px')
+        moved = true
+      }
+    }
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -163,9 +193,12 @@ export function blockFitter() {
     for (const area of areas) {
       const cells = Array.from(area.children).filter((c) => c instanceof HTMLElement && c.classList.contains('bk')) as HTMLElement[]
       area.style.removeProperty('--bk-sq')
+      for (let i = 1; i <= 3; i++) area.style.removeProperty('--bk-r' + i)
       for (const c of cells) c.style.removeProperty('--bk-fit')
       // 안 보이는 장(자리를 재지 못한다)은 건너뛴다
       if (!cells.length || !area.clientHeight) continue
+      // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
+      area.classList.add('is-fitting')
       // 줄 높이의 합으로 본다. 상자 전체의 scrollHeight는 칸 밖으로 넘친 글까지 세어서, 칸 하나가 조금 넘쳐도
       // 모든 줄을 낮추게 된다 (넘친 칸은 아래에서 그 칸의 글자만 줄인다)
       const style = getComputedStyle(area)
@@ -173,17 +206,29 @@ export function blockFitter() {
       const gaps = (parseFloat(style.rowGap) || 0) * Math.max(0, tracks.length - 1)
       const need = tracks.reduce((a, n) => a + n, 0)
       const room = area.clientHeight - gaps
-      if (need > room + 1) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
-      for (const c of cells) {
+      const squeezed = need > room + 1
+      if (squeezed) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
+      // 글자는 먼저 늘 줄여도 되는 데까지만(보통 한 단계, 크게는 두 단계: 보통을 한 단계 줄인 것과 같은 크기) 줄인다.
+      // 그래도 넘치는 줄만 다른 줄의 남는 높이를 가져온다. 거꾸로 하면 조금만 넘쳐도 줄 높이가 달라져 1:1이 자주 깨진다
+      const least = area.closest('.sz-large') ? 0.84 : 0.92
+      const shrink = (c: HTMLElement, last: number) => {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
-        if (!inner) continue
-        labels(inner)
+        if (!inner) return
         for (const k of steps) {
-          if (!over(inner)) break
+          if (k < last || !over(inner)) break
+          if (Number(c.style.getPropertyValue('--bk-fit') || 1) <= k) continue
           c.style.setProperty('--bk-fit', String(k))
           labels(inner)
         }
       }
+      for (const c of cells) {
+        const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+        if (inner) labels(inner)
+        shrink(c, least)
+      }
+      if (!squeezed) grow(area, cells, room)
+      for (const c of cells) shrink(c, 0)
+      area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도
     for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot'))) if (!plot.closest('.bk-area')) labels(plot)

@@ -29,8 +29,9 @@
   transition: box-shadow 0.12s, background-color 0.12s;
 }
 
-/* 넘침을 재는 동안(Editor의 useOverflow): 글 밖으로 나온 편집 표시는 넘침이 아니다 */
-.slide.is-measuring :is(.ed-halo, .it-remove) {
+/* 넘침을 재는 동안(Editor의 useOverflow, 부품 장을 맞추는 fitBlocks): 글 밖으로 나온 편집 표시는 넘침이 아니다.
+   빼지 않으면 칸 옆으로 나온 '이 항목 빼기' 단추나 그림 칸의 '바꾸기' 단추 때문에 부품의 글자를 줄인다 */
+:is(.slide.is-measuring, .bk-area.is-fitting) :is(.ed-halo, .it-remove, .img-tools) {
   display: none;
 }
 

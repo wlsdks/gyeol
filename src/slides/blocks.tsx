@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
+import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, rowMins, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { Block, BlockType, NativeBlockType } from '../deck/types'
@@ -861,6 +861,7 @@ export function BlockArea() {
       className={cx('bk-area', live && 'is-live', live?.dragId && 'is-dragging', !rows.length && 'is-empty')}
       style={rows.length ? areaStyle(rows) : undefined}
       data-rows={rows.length}
+      data-mins={rows.length ? rowMins(rows) : undefined}
     >
       {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">부품을 골라 넣어 꾸미는 장이에요</p>)}
       {boxes.map((box) => (

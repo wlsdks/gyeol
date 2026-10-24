@@ -854,9 +854,15 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
  * 계산은 브라우저의 격자가 한다. 그래서 내보낸 HTML도 자바스크립트 없이 같은 자리에 그려진다.
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
-  // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다
-  return { gridTemplateRows: rows.map((r) => `minmax(calc(${rowMinH(r)}px * var(--bk-sq, 1)), 1fr)`).join(' ') }
+  // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다.
+  // --bk-r1..: 똑같이 나눈 높이에서 글이 넘치는 줄은 fitBlocks가 다른 줄의 남는 높이를 가져다 이 줄의 바닥을 올린다
+  return {
+    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), 1fr)`).join(' '),
+  }
 }
+
+/** 줄마다 잘리지 않을 높이 (본문 상자의 data-mins. fitBlocks가 한 줄에 더 줄 수 있는 높이를 셀 때 쓴다) */
+export const rowMins = (rows: BlockRow[]): string => rows.map((r) => Math.round(rowMinH(r))).join(',')
 
 export function cellStyle(b: CellBox): Record<string, string> {
   return { gridRow: String(b.row + 1), gridColumn: `${b.start + 1} / span ${b.span}` }

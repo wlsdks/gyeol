@@ -82,6 +82,11 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
   const areas = [...document.querySelectorAll<HTMLElement>('.bk-area')]
   areas.forEach((area, i) => {
     if (area.style.getPropertyValue('--bk-sq')) problems.push(`${i + 1}번 장: 줄을 낮춰야 들어가요 (${area.style.getPropertyValue('--bk-sq')})`)
+    // 줄 높이의 합이 본문 상자보다 높으면 아래 줄이 출처와 하단 표시 자리로 내려간다
+    const style = getComputedStyle(area)
+    const tracks = style.gridTemplateRows.split(' ').map(parseFloat)
+    const used = tracks.reduce((a, h) => a + h, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, tracks.length - 1)
+    if (used > area.clientHeight + 1) problems.push(`${i + 1}번 장: 줄이 본문 상자보다 ${Math.round(used - area.clientHeight)} 높아요`)
     // 글자 크기 '크게'(1.08배)는 두 단계(0.84)까지 줄여도 보통 크기를 한 단계 줄인 것(0.92)과 같다
     const least = area.closest('.slide')?.classList.contains('sz-large') ? 0.84 : 0.92
     for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
