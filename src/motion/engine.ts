@@ -467,11 +467,27 @@ export function motionEngine(): MotionEngine {
         const t = head()
         fade(one('.sh-top'), t, 500)
         if (variant === 'donut') {
-          // 고리가 돌며 자리 잡고, 조각이 차례로 맺힌다. 가운데 합계는 그다음
-          const svg = one('.sh-ring svg')
-          if (svg) run(anims, svg, [{ opacity: 0, rotate: '-200deg', scale: '0.86' }], s(t), levelName === 'lively' ? SPRINGS.soft : SPRINGS.glide)
-          $('.sh-arc').forEach((el, i) => fade(el, t + 120 + i * 90, 500))
-          rise(one('.sh-total'), t + 420, L.y * 0.4)
+          // 12시 방향에서 시계 방향으로 한 바퀴: 조각마다 앞 조각이 끝난 자리에서 이어 그려진다.
+          // 한 바퀴는 처음에 빠르고 끝에서 느려지게, 조각은 그 안에서 제 몫의 시간만 쓴다
+          const sweep = d(levelName === 'lively' ? 1300 : 1000)
+          const ease = (x: number) => 1 - Math.pow(1 - x, 2.2)
+          fade(one('.sh-ring-track'), t, 300)
+          for (const el of $('.sh-arc')) {
+            const from = -(parseFloat(el.getAttribute('stroke-dashoffset') || '0') || 0) / 100
+            const len = (parseFloat(el.getAttribute('stroke-dasharray') || '0') || 0) / 100
+            const a = ease(from)
+            const b = ease(Math.min(1, from + len))
+            run(anims, el, [{ strokeDasharray: '0 100' }, { strokeDasharray: el.getAttribute('stroke-dasharray') || '0 100' }], s(t + 80) + a * sweep, { easing: 'linear', duration: Math.max(1, (b - a) * sweep) })
+          }
+          // 강조한 조각은 다 그려진 뒤 한 번 도톰해졌다 돌아온다
+          const hl = $('.sh-item').findIndex((el) => el.classList.contains('is-hl'))
+          const arc = hl >= 0 ? $('.sh-arc')[hl] : null
+          if (arc) {
+            const w = parseFloat(getComputedStyle(arc).strokeWidth) || 15
+            run(anims, arc, [{ strokeWidth: String(w) }, { strokeWidth: String(w * 1.3) }, { strokeWidth: String(w) }], s(t + 80) + sweep, { easing: 'ease-in-out', duration: d(520) })
+          }
+          rise(one('.sh-total'), t + 360, L.y * 0.4)
+          count(one('.sh-total-v'), t + 360)
         } else wipe(one('.sh-band'), t, 'left', 900)
         const end = items('.sh-item', t + 260, (el, at) => {
           rise(el, at, L.y * 0.5)
