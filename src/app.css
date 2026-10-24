@@ -405,6 +405,12 @@ select {
   left: 0;
 }
 
+/* 아래에 자리가 없어 위로 연 창 (Popover의 flip) */
+.pop.pop-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .menu {
   display: flex;
   flex-direction: column;

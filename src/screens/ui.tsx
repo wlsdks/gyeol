@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
 import { undoLast } from '../store/deckStore'
@@ -75,20 +75,41 @@ export function Toggle({ label, on, onChange }: { label: string; on: boolean; on
   )
 }
 
-/** 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다. */
+/**
+ * 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다.
+ * flip: 스크롤되는 상자 안의 단추라서 아래로 열면 잘릴 수 있을 때. 아래에 자리가 없고 위에 있으면 위로 연다
+ * (버전 기록 맨 아래 버전의 메뉴가 낮은 노트북 화면에서 잘리지 않게)
+ */
 export function Popover({
   button,
   children,
   align = 'right',
   className,
+  flip = false,
 }: {
   button: (props: { open: boolean; toggle: () => void }) => ReactNode
   children: (close: () => void) => ReactNode
   align?: 'left' | 'right'
   className?: string
+  flip?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [up, setUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
+
+  // 그리기 전에 재서 정한다 (아래로 열렸다가 위로 튀지 않게)
+  useLayoutEffect(() => {
+    const wrap = ref.current
+    const pop = popRef.current
+    if (!flip || !open || !wrap || !pop) return
+    let box = wrap.parentElement
+    while (box && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement
+    const area = box ? box.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }
+    const at = wrap.getBoundingClientRect()
+    const h = pop.offsetHeight + 6
+    setUp(at.bottom + h > Math.min(area.bottom, window.innerHeight) && at.top - h >= Math.max(area.top, 0))
+  }, [flip, open])
 
   useEffect(() => {
     if (!open) return
@@ -107,7 +128,11 @@ export function Popover({
   return (
     <div className="pop-wrap" ref={ref}>
       {button({ open, toggle: () => setOpen((o) => !o) })}
-      {open && <div className={cx('pop', `pop-${align}`, className)}>{children(() => setOpen(false))}</div>}
+      {open && (
+        <div ref={popRef} className={cx('pop', `pop-${align}`, flip && up && 'pop-up', className)}>
+          {children(() => setOpen(false))}
+        </div>
+      )}
     </div>
   )
 }

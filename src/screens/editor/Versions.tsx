@@ -60,6 +60,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
   const [preview, setPreview] = useState<{ version: DeckVersion; deck: Deck } | null>(null)
   const [restoring, setRestoring] = useState<DeckVersion | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<DeckVersion | null>(null)
   const folder = useStorage((s) => s.folder)
   const current = deckSignature(deck)
 
@@ -240,6 +241,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
                   )}
                   <Popover
                     className="vp-menu"
+                    flip
                     button={({ toggle, open }) => (
                       <button type="button" className="icon-btn vp-more" aria-label={`${versionTitle(v)} 더 보기`} aria-expanded={open} onClick={toggle}>
                         <MoreIcon />
@@ -258,7 +260,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
                           {v.named ? '이름 바꾸기' : '이름 붙여 보관하기'}
                         </button>
                         <div className="menu-sep" role="separator" />
-                        <button type="button" className="menu-item is-danger" onClick={() => (close(), remove(v))}>
+                        {/* 이름 붙여 보관한 버전은 되돌릴 수 없으니 한 번 묻는다. 자동 저장은 어차피 30개만 남아서 바로 지운다 */}
+                        <button type="button" className="menu-item is-danger" onClick={() => (close(), v.named ? setRemoving(v) : remove(v))}>
                           이 버전 지우기
                         </button>
                       </div>
@@ -280,6 +283,35 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
           onClose={() => setPreview(null)}
           onRestore={() => setRestoring(preview.version)}
         />
+      )}
+
+      {removing && (
+        <Modal
+          title="이 버전을 지울까요?"
+          onClose={() => setRemoving(null)}
+          actions={
+            <>
+              <button type="button" className="btn btn-ghost" data-autofocus onClick={() => setRemoving(null)}>
+                취소
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  setRemoving(null)
+                  void remove(removing)
+                }}
+              >
+                지우기
+              </button>
+            </>
+          }
+        >
+          <p>
+            이름 붙여 보관한 ‘{removing.name}’ 버전을 버전 기록에서 지워요. 지우면 되돌릴 수 없어요.
+            {folder?.kind === 'ready' && ` ‘${folder.name}/버전 기록’ 폴더에 남긴 파일은 그대로 있어요.`}
+          </p>
+        </Modal>
       )}
 
       {restoring && (
