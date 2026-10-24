@@ -96,7 +96,7 @@ function BigNumber() {
   return (
     <div className="bk-num">
       <T k="label" className="bk-num-l" />
-      <T k="value" className="bk-num-v" oneLine />
+      <T k="value" className="bk-num-v" oneLine numeral />
       <T k="note" className="bk-num-n" multiline />
     </div>
   )
@@ -210,7 +210,7 @@ function Ring() {
               )}
             </svg>
             <div className="bk-rg-c">
-              <T k="value" className="bk-rg-v" oneLine />
+              <T k="value" className="bk-rg-v" oneLine numeral />
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ function Ring() {
             {v !== null && p > 0 && <circle className="bk-rg-arc" cx="50" cy="50" r="44" pathLength="100" />}
           </svg>
           <div className="bk-rg-c">
-            <T k="value" className="bk-rg-v" oneLine />
+            <T k="value" className="bk-rg-v" oneLine numeral />
           </div>
         </div>
       </div>
@@ -327,7 +327,7 @@ function Spark() {
     <div className={cx('bk-sp', demo && 'is-demo')}>
       <div className="bk-sp-text">
         <T k="label" className="bk-sp-l" />
-        <T k="value" className="bk-sp-v" oneLine />
+        <T k="value" className="bk-sp-v" oneLine numeral />
         <T k="note" className="bk-sp-n" />
       </div>
       <div className="bk-sp-chart">

@@ -1307,6 +1307,22 @@
   text-wrap: pretty;
 }
 
+/* 좁은 칸: 항목 칸은 항목 이름만큼만(가장 긴 이름, 목록 너비의 3분의 1까지). 이름은 '기간', '예산'처럼 짧은데 칸을 비율로 잡으면
+   이름 옆이 비고 내용 칸이 좁아져서, 내용이 줄마다 두 줄로 꺾이며 목록이 높아진다(글자를 줄여야 들어갔다).
+   줄마다 따로 재면 내용이 줄마다 다른 자리에서 시작해서, 항목 칸은 목록이 함께 정하고 줄은 그 칸을 나눠 쓴다(subgrid) */
+@container bk (max-width: 700px) {
+  .bk-fc-list {
+    grid-template-columns: fit-content(34%) minmax(0, 1fr);
+    column-gap: 28px;
+  }
+
+  .bk-fc-row {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: 28px;
+  }
+}
+
 /* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄 선은 둘 다 진하게 */
 @container bk (min-width: 1300px) {
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
@@ -2666,6 +2682,433 @@
   }
 }
 
+/* ---------- 핵심 숫자 부품 ----------
+   숫자 크기: 나란한 숫자는 모두 같은 크기(가장 긴 숫자의 폭을 같이 쓴다, layouts.tsx의 useSharedUnits)이고, 그 크기는 글자 크기 단계
+   (slides.css 맨 위) 가운데 가장 긴 숫자가 들어가는 가장 큰 단계. 칸 너비로 그대로 줄이면 134px, 97px처럼 단계 밖의 크기가 되어
+   옆 부품의 숫자와 어긋난다. 들어갈 크기(--kp-a)는 정한 크기, 너비(--kp-w), 줄 높이(--kp-h) 가운데 작은 쪽.
+   단계마다 '들어가면 그 단계, 아니면 0'을 만들어(clamp의 가운데 값은 들어갈 때만 양수) 가장 큰 것을 고른다.
+   어느 단계도 들어가지 않으면 들어갈 크기 그대로(바닥 22px까지) */
+.bk-in .kp {
+  --kp-w: 100cqi;
+  --kp-h: 1000px;
+}
+
+.bk-in .kp-value.one-line {
+  --kp-a: min(
+    var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1),
+    var(--kp-w) / (var(--units, 1) * var(--glyph-k, 1)),
+    var(--kp-h)
+  );
+  font-size: max(
+    min(var(--fs-min, 22px), var(--kp-a)),
+    clamp(0px, (var(--kp-a) - 263px) * 999, 264px),
+    clamp(0px, (var(--kp-a) - 219px) * 999, 220px),
+    clamp(0px, (var(--kp-a) - 183px) * 999, 184px),
+    clamp(0px, (var(--kp-a) - 153px) * 999, 154px),
+    clamp(0px, (var(--kp-a) - 127px) * 999, 128px),
+    clamp(0px, (var(--kp-a) - 107px) * 999, 108px),
+    clamp(0px, (var(--kp-a) - 89px) * 999, 90px),
+    clamp(0px, (var(--kp-a) - 73px) * 999, 74px),
+    clamp(0px, (var(--kp-a) - 61px) * 999, 62px),
+    clamp(0px, (var(--kp-a) - 51px) * 999, 52px),
+    clamp(0px, (var(--kp-a) - 43px) * 999, 44px),
+    clamp(0px, (var(--kp-a) - 35px) * 999, 36px),
+    clamp(0px, (var(--kp-a) - 29px) * 999, 30px),
+    clamp(0px, (var(--kp-a) - 25px) * 999, 26px)
+  );
+}
+
+/* 좁은 칸(반 칸, 3분의 2 칸)에 높이가 넉넉하면 숫자를 줄로 쌓는다. 나란히 두면 숫자가 칸의 3분의 1 너비에 맞춰 작아지고(44px),
+   이름은 두 줄로 꺾이고, 칸 높이 가운데에 낮은 띠만 남아 위아래가 빈다. 줄로 쌓으면 줄이 칸 높이를 똑같이 나눠 칸을 채우고,
+   숫자는 줄 높이와 칸 너비를 다 쓴다. 줄마다 100px(설명이 있으면 120px)이 안 되는 낮은 칸은 나란히 두는 쪽이 숫자가 크다.
+   줄마다 150px(설명이 있으면 200px)을 넘으면 이름을 숫자 위에 두고 숫자가 칸 너비를 다 쓴다(--kp-tall).
+   바꾸는 높이가 숫자 수와 설명마다 달라서, 칸 높이로 표시(--kp-stack, --kp-tall)만 붙이고 짜임은 그 표시를 물어 한 번만 쓴다(@container style) */
+@container bk (max-width: 1200px) and (min-height: 200px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 240px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 300px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-stack: 1;
+  }
+
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 360px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 400px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+    --kp-stack: 1;
+  }
+
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 450px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 480px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 600px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)),
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 800px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+/* 쌓은 줄: 숫자 왼쪽, 이름(과 설명) 오른쪽. 숫자 칸과 이름 칸은 모든 줄이 같이 써서(subgrid) 이름이 같은 자리에서 시작한다.
+   크기 상자는 묶음 전체(.kp)로 둔다: 칸(.kp-item)이 크기 상자이면 subgrid가 되지 않는다. 줄 높이(100cqh)도 이 상자로 재서
+   옅은 면, 진한 면의 안쪽 여백이 저절로 빠진다. 숫자는 칸 너비의 56%까지 (나머지는 이름) */
+@container style(--kp-stack: 1) {
+  .bk-in > .kp:not([data-n='1']) {
+    --kp-gy: 0px;
+    --kp-iy: 24px;
+    --kp-px: 0px;
+    --kp-w: calc((100cqi - var(--kp-px)) * 0.56);
+    --kp-h: max(44px, ((100cqh - (var(--n) - 1) * var(--kp-gy)) / var(--n) - var(--kp-iy) - 8px) / (0.95 * var(--tall, 1)));
+    container: kp / size;
+    grid-auto-flow: row;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-auto-rows: minmax(0, 1fr);
+    align-content: stretch;
+    gap: var(--kp-gy) 40px;
+    padding-bottom: 0;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    grid-template-rows: auto auto;
+    align-content: center;
+    min-height: 0;
+    padding: calc(var(--kp-iy) / 2) calc(var(--kp-px) / 2);
+    container-type: normal;
+  }
+
+  .bk-in > .kp:not([data-n='1']) .kp-value {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bk-in > .kp:not([data-n='1']) .kp-label {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .bk-in > .kp:not([data-n='1']) .kp-body {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  /* 설명이 없으면 이름을 숫자와 같은 글자선에 */
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) {
+    grid-template-rows: auto;
+    align-items: last baseline;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) > :is(.kp-value, .kp-label) {
+    grid-row: 1;
+    align-self: last baseline;
+  }
+
+  /* 줄 사이는 가로 줄 (나란할 때의 세로 줄 대신) */
+  .va-base > .bk-in > .kp:not([data-n='1']) > .kp-item + .kp-item::before {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: auto;
+    height: var(--rule);
+  }
+
+  /* 카드는 줄마다 면 하나 */
+  .va-cards > .bk-in > .kp:not([data-n='1']) {
+    --kp-gy: 16px;
+    --kp-iy: 48px;
+    --kp-px: 80px;
+  }
+}
+
+/* 줄이 넉넉하면 이름 → 숫자 → 설명을 위에서 아래로. 숫자가 칸 너비를 다 쓰고, 이름은 한 줄로 남는다.
+   숫자 높이에서 이름과 설명의 자리(--kp-txt)를 뺀다. 글자 맞추기(fitBlocks)가 이름을 한 단계(1.2) 키워도 숫자가 그대로이게
+   이름은 키운 크기로 잡는다 */
+@container style(--kp-tall: 1) {
+  .bk-in > .kp:not([data-n='1']) {
+    --kp-txt: calc(30px * 1.3 * 1.2 * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--scale, 1) + 16px);
+    --kp-w: calc(100cqi - var(--kp-px));
+    --kp-h: max(44px, ((100cqh - (var(--n) - 1) * var(--kp-gy)) / var(--n) - var(--kp-iy) - var(--kp-txt)) / (0.95 * var(--tall, 1)));
+  }
+
+  .bk-in > .kp:not([data-n='1']):has(.kp-body) {
+    --kp-txt: calc(30px * (1.3 + 1.5) * 1.2 * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--scale, 1) + 32px);
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item,
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) {
+    grid-template-rows: auto auto auto;
+    align-items: normal;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item > :is(.kp-label, .kp-value, .kp-body),
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) > :is(.kp-label, .kp-value) {
+    grid-column: 1 / -1;
+    align-self: auto;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) > .kp-label,
+  .bk-in > .kp:not([data-n='1']) > .kp-item > .kp-label {
+    grid-row: 1;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item > .kp-value,
+  .bk-in > .kp:not([data-n='1']) > .kp-item:not(:has(.kp-body)) > .kp-value {
+    grid-row: 2;
+    margin-top: 16px;
+  }
+
+  .bk-in > .kp:not([data-n='1']) > .kp-item > .kp-body {
+    grid-row: 3;
+    margin-top: 16px;
+  }
+}
+
+/* 하나 크게, 좁고 높은 칸: 큰 숫자는 위에 그대로, 나머지는 그 아래에 줄로 쌓아 남은 높이를 나눠 채운다(숫자 왼쪽, 이름 오른쪽).
+   나란히 두면 나머지가 큰 숫자 바로 밑 한 줄에 몰려 칸 아래쪽 절반이 빈다 */
+@container bk (max-width: 1200px) and (min-height: 360px) {
+  .va-focus > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 400px) {
+  .va-focus > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 460px) {
+  .va-focus > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 520px) {
+  .va-focus > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 560px) {
+  .va-focus > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 640px) {
+  .va-focus > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+@container style(--kp-fstack: 1) {
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) {
+    --kp-w: 100cqi;
+    container: kp / inline-size;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 0 40px;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item {
+    grid-column: 1 / -1;
+    container-type: normal;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:first-child {
+    grid-row: 1;
+    padding-bottom: 40px;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child) {
+    --kp-w: calc(100cqi * 0.56);
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-template-rows: auto auto;
+    align-content: center;
+    min-height: 0;
+    padding: 12px 0;
+    border-top: var(--rule) solid var(--line);
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child) > .kp-value {
+    --fs: 74px;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    order: 0;
+    margin: 0;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child) > .kp-label {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child) > .kp-body {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child):not(:has(.kp-body)) {
+    grid-template-rows: auto;
+    align-items: last baseline;
+  }
+
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child):not(:has(.kp-body)) > :is(.kp-value, .kp-label) {
+    grid-row: 1;
+    align-self: last baseline;
+  }
+}
+
+/* 목차 나란히, 좁고 높은 칸: 줄로 쌓아 칸 높이를 채운다(큰 번호 왼쪽, 이름 오른쪽). 나란히 두면 칸 높이 가운데에 번호와 이름의
+   낮은 띠만 남는다. 번호 크기는 줄 높이로(번호는 한두 자라 너비는 넉넉하다), 단계(slides.css 맨 위)에서 */
+@container bk (max-width: 1200px) and (min-height: 240px) {
+  .va-columns > .bk-in:has(> .ag > .ag-list[data-n='2']) {
+    --ag-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 340px) {
+  .va-columns > .bk-in:has(> .ag > .ag-list[data-n='3']) {
+    --ag-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 440px) {
+  .va-columns > .bk-in:has(> .ag > .ag-list[data-n='4']) {
+    --ag-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 540px) {
+  .va-columns > .bk-in:has(> .ag > .ag-list[data-n='5']) {
+    --ag-stack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 640px) {
+  .va-columns > .bk-in:has(> .ag > .ag-list[data-n='6']) {
+    --ag-stack: 1;
+  }
+}
+
+@container style(--ag-stack: 1) {
+  .va-columns > .bk-in > .ag > .ag-list:is([data-n]) {
+    --ag-row: calc((100cqh - 3px) / var(--ag-n, 3));
+    grid-auto-flow: row;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-auto-columns: auto;
+    grid-auto-rows: minmax(0, 1fr);
+    align-content: stretch;
+    column-gap: 56px;
+    border-top: 3px solid var(--ink);
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list[data-n='2'] {
+    --ag-n: 2;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list[data-n='4'] {
+    --ag-n: 4;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list[data-n='5'] {
+    --ag-n: 5;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list[data-n='6'] {
+    --ag-n: 6;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+    min-height: 0;
+    padding: 0;
+    border-bottom: var(--rule) solid var(--line);
+    container-type: normal;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item::before {
+    content: none;
+  }
+
+  /* 번호: 줄 높이의 0.6배까지, 단계에서 고른다 (번호 글자의 키는 글자 크기의 0.72 남짓) */
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item > .ag-n {
+    --ag-a: min(154px, var(--ag-row) * 0.6);
+    min-width: 0.62em;
+    font-size: max(
+      36px,
+      clamp(0px, (var(--ag-a) - 153px) * 999, 154px),
+      clamp(0px, (var(--ag-a) - 127px) * 999, 128px),
+      clamp(0px, (var(--ag-a) - 107px) * 999, 108px),
+      clamp(0px, (var(--ag-a) - 89px) * 999, 90px),
+      clamp(0px, (var(--ag-a) - 73px) * 999, 74px),
+      clamp(0px, (var(--ag-a) - 61px) * 999, 62px),
+      clamp(0px, (var(--ag-a) - 51px) * 999, 52px),
+      clamp(0px, (var(--ag-a) - 43px) * 999, 44px)
+    );
+    font-variant-numeric: tabular-nums;
+  }
+
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item > .ag-t {
+    --fs: 52px;
+  }
+}
+
 /* 장보다 좁은 칸: 장 크기로 정한 고정 너비(px)를 칸 너비의 비율로 바꾼다.
    그대로 두면 이름 칸이 글자마다 줄이 바뀌거나, 숫자가 칸 밖으로 나가거나, 줄끼리 겹친다 */
 @container bk (max-width: 1300px) {
@@ -2777,6 +3220,14 @@
   .va-donut > .bk-in .sh-ring {
     width: min(540px, 100cqh - 24px);
   }
+}
+
+/* 구성비 띠: 장에서는 112px 그대로지만 칸에서는 칸 높이를 따라 줄인다. 줄어들지 않게(flex: none) 해 둔다:
+   세로로 쌓인 상자(.sh)에서 띠는 글이 없어서 남는 높이가 모자라면 띠가 먼저 0까지 눌렸다(낮은 칸에서 1px, 글자를 키우면 0.6px).
+   글이 없으니 넘침으로도 보이지 않는다. 눌리지 않으면 모자란 높이는 글이 넘치는 것으로 드러나 글자 맞추기와 잘리지 않는 높이가 안다 */
+.bk-in .sh-band {
+  flex: none;
+  height: clamp(48px, 15cqh, 112px);
 }
 
 /* 구성비 띠의 비율 목록: 반 칸에서 다섯, 여섯을 한 줄에 두면 비율 숫자끼리 붙는다('9.2%5.7%'). 셋씩 두 줄로 */

@@ -15,6 +15,11 @@
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
+ * 발표할 때 움직이는 중인 장(motion/engine.ts가 data-mo-play를 붙인다)은 재지 않는다. 그동안 글자와 막대는 옮겨지거나 커지는 중이고
+ * 숫자는 0부터 굴러가는 중이라, 재면 끝 모습과 다른 값이 나온다: 움직이며 넘긴 장은 글자를 줄이고, 뒤로 돌아온 장(움직이지 않는다)은
+ * 키워서 같은 장이 넘긴 길에 따라 달라 보였다. 맞춘 값은 그대로 두고 움직임이 끝나면(mo-end) 다시 맞춘다. 처음 맞추기는
+ * 움직임이 걸리기 전이다(BlockArea의 layout effect가 발표 화면의 움직임보다 먼저, 뷰어는 파일을 열 때).
+ *
  * 앱과 내보낸 HTML(export/viewer.ts가 blockFitter의 소스를 그대로 넣는다)이 같이 쓴다. 그래서 안에서 바깥의 이름을 쓰지 않는다.
  * 부품의 잘리지 않는 높이를 잴 때(screens/measureBlocks.ts)도 이것으로 맞추고, 글 줄의 자리도 이것으로 본다.
  */
@@ -28,6 +33,30 @@ export function blockFitter() {
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
+  // 움직임이 끝나기를 기다리는 본문 상자와 판 (같은 것을 여러 번 기다리지 않게)
+  const waiting = new WeakSet<Element>()
+
+  /** 이것을 움직이는 중인 요소(그 장, 또는 그 안의 부품 하나). 없으면 null */
+  function moving(el: Element): Element | null {
+    return el.closest('[data-mo-play]') || el.querySelector('[data-mo-play]')
+  }
+
+  /**
+   * 움직임이 끝나면 다시 맞춘다. 장을 넘겨서 끝난 움직임이면 그 장은 곧 빠지므로, 끝난 차례에 바로 재지 않고 한 박자 뒤에
+   * (빠진 장은 크기가 없어 건너뛴다)
+   */
+  function later(el: Element, mover: Element, again: () => void): void {
+    if (waiting.has(el)) return
+    waiting.add(el)
+    mover.addEventListener(
+      'mo-end',
+      () => {
+        waiting.delete(el)
+        Promise.resolve().then(again)
+      },
+      { once: true },
+    )
+  }
 
   /**
    * 글자 상자(글꼴의 위아래 여백까지 든 높이) 가운데 위와 아래로 비어 있는 몫. 글꼴마다, 글마다 다르다:
@@ -103,10 +132,13 @@ export function blockFitter() {
     const cs = getComputedStyle(inner)
     // 여백 안으로 8px까지는 봐준다 (그 정도는 여백이 무너져 보이지 않는다)
     const pad = (v: string) => Math.max(0, parseFloat(v) - 8) * k
-    const top = r.top + pad(cs.paddingTop) - 1
-    const bottom = r.bottom - pad(cs.paddingBottom) + 1
-    const left = r.left + pad(cs.paddingLeft) - 1
-    const right = r.right - pad(cs.paddingRight) + 1
+    // 글 줄이 여백에 걸쳐도 되는 틈도 캔버스 px로(2px, 잘리지 않는 높이를 재는 갤러리의 반 크기 장에서 화면 1px).
+    // 화면 px로 두면 장을 그리는 크기마다 기준이 달라서, 내보낸 파일을 열었을 때(줄여 그린다)와 발표할 때(꽉 채운다) 글자 크기가 달랐다
+    const slack = 2 * k
+    const top = r.top + pad(cs.paddingTop) - slack
+    const bottom = r.bottom - pad(cs.paddingBottom) + slack
+    const left = r.left + pad(cs.paddingLeft) - slack
+    const right = r.right - pad(cs.paddingRight) + slack
     const ls = lines(inner)
     for (const q of ls) if (q.t < top || q.b > bottom || q.l < left || q.r > right) return true
     // 겹침은 캔버스 2px 넘게 (줄여 그린 화면에서도 같은 기준)
@@ -141,7 +173,7 @@ export function blockFitter() {
    * 위치 비교의 이름표 자리를 그려진 크기로 다시 고른다. 그리기 전에 글 길이로 어림한 자리(layouts.tsx의 labelSides)를 먼저 보고,
    * 앞의 점의 이름표나 다른 점을 덮거나 판 밖으로 나가면 오른쪽, 왼쪽, 위, 아래 차례로 겹치지 않는 자리를 찾는다. 없으면 어림한 자리
    */
-  function labels(scope: ParentNode): void {
+  function place(scope: ParentNode): void {
     const plots = scope instanceof HTMLElement && scope.classList.contains('pm-plot') ? [scope] : Array.from(scope.querySelectorAll<HTMLElement>('.pm-plot'))
     const SIDES = ['is-left', 'is-up', 'is-down']
     const tries = [[], ['is-left'], ['is-up'], ['is-down'], ['is-left', 'is-up'], ['is-left', 'is-down']]
@@ -216,40 +248,67 @@ export function blockFitter() {
     }
   }
 
-  /** 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치면 한 단계 작게, 끝까지 넘치면 그대로 */
+  /** 칸 안의 그림 하나와 키우기 전의 크기 (화면 px) */
+  type Shape = { el: Element; w: number; h: number }
+
+  /**
+   * 칸 안의 그림: 글이 없는 요소(구성비 띠, 막대, 원, 그림 판) 가운데 가로세로 24px는 되는 것과 그 크기. 키우기 전에 잰다.
+   * 글이 커지면 같은 칸의 그림이 남는 높이를 내주며 줄어드는데, 글이 없어서 넘침으로 보이지 않는다
+   * (구성비 띠가 112px에서 1px 아래로 납작해졌다)
+   */
+  function shapesOf(inner: HTMLElement): Shape[] {
+    const r = inner.getBoundingClientRect()
+    const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
+    const out: Shape[] = []
+    for (const el of Array.from(inner.querySelectorAll('*'))) {
+      if ((el.textContent || '').trim()) continue
+      const b = el.getBoundingClientRect()
+      if (b.width >= 24 * k && b.height >= 24 * k) out.push({ el, w: b.width, h: b.height })
+    }
+    return out
+  }
+
   /**
    * 키울 때는 더 엄격하게: 글만이 아니라 항목(줄)의 상자까지 안쪽 여백 안에. 글만 보면 줄의 아래 여백과 선이
-   * 카드 가장자리까지 내려가도 넘친 줄 모른다 (시장 규모의 목록이 카드 바닥에 선을 긋던 것)
+   * 카드 가장자리까지 내려가도 넘친 줄 모른다 (시장 규모의 목록이 카드 바닥에 선을 긋던 것).
+   * 그림이 키우기 전의 반 밑으로 줄어도 넘친 것이다: 글자를 키우느라 그래프를 찌그러뜨리지 않는다
    */
-  function crowded(inner: HTMLElement): boolean {
+  function crowded(inner: HTMLElement, shapes: Shape[] = []): boolean {
     if (over(inner)) return true
     const r = inner.getBoundingClientRect()
     const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
     const bottom = r.bottom - parseFloat(getComputedStyle(inner).paddingBottom) * k + 2 * k
     for (const it of inner.querySelectorAll<HTMLElement>('.it')) if (it.getBoundingClientRect().bottom > bottom) return true
+    for (const s of shapes) {
+      const b = s.el.getBoundingClientRect()
+      if (b.width < s.w * 0.5 || b.height < s.h * 0.5) return true
+    }
     return false
   }
 
-  function enlarge(cells: HTMLElement[]): void {
+  /** 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치거나 그림이 찌그러지면 그대로. 키우기 전 그림의 크기를 돌려준다 */
+  function enlarge(cells: HTMLElement[]): Map<HTMLElement, Shape[]> {
     const inners = cells.map((c) => c.querySelector<HTMLElement>(':scope > .bk-in')).filter((el): el is HTMLElement => !!el)
+    const shapes = new Map(inners.map((inner) => [inner, shapesOf(inner)] as const))
     for (const k of ups) {
       for (const c of cells) c.style.setProperty('--bk-fit', String(k))
-      for (const inner of inners) labels(inner)
-      if (!inners.some(crowded)) return
+      for (const inner of inners) place(inner)
+      if (!inners.some((inner) => crowded(inner, shapes.get(inner)))) return shapes
     }
     for (const c of cells) c.style.removeProperty('--bk-fit')
-    for (const inner of inners) labels(inner)
+    for (const inner of inners) place(inner)
+    return shapes
   }
 
-  /** 칸마다 줄 사이를 넘치지 않는 가장 넓은 단계로. 키우기(enlarge)가 끝난 뒤 */
-  function spread(cells: HTMLElement[]): void {
+  /** 칸마다 줄 사이를 넘치지 않는 가장 넓은 단계로. 키우기(enlarge)가 끝난 뒤. 그림은 키우기 전 크기와 견준다 */
+  function spread(cells: HTMLElement[], shapes: Map<HTMLElement, Shape[]>): void {
     for (const c of cells) {
       const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
       if (!inner) continue
       let ok = false
       for (const a of airs) {
         c.style.setProperty('--bk-air', a + 'px')
-        if (!crowded(inner)) {
+        if (!crowded(inner, shapes.get(inner))) {
           ok = true
           break
         }
@@ -263,15 +322,22 @@ export function blockFitter() {
     inks = {}
     const areas = root instanceof HTMLElement && root.classList.contains('bk-area') ? [root] : Array.from(root.querySelectorAll<HTMLElement>('.bk-area'))
     for (const area of areas) {
+      // 움직이는 중이면 맞춘 값을 그대로 두고 끝나면 다시 (맨 위 설명)
+      const mover = moving(area)
+      if (mover) {
+        later(area, mover, () => fit(area))
+        continue
+      }
       const cells = Array.from(area.children).filter((c) => c instanceof HTMLElement && c.classList.contains('bk')) as HTMLElement[]
+      // 안 보이는 장(자리를 재지 못한다)은 맞춘 값을 지우지 않고 건너뛴다. 내보낸 파일은 발표하는 동안 다른 장을 숨겨 두는데,
+      // 그때 글꼴이 와서 다시 맞추면 숨긴 장의 값이 모두 지워져 넘겨 보면 글자가 다른 크기였다
+      if (!cells.length || !area.clientHeight) continue
       area.style.removeProperty('--bk-sq')
       for (let i = 1; i <= 3; i++) area.style.removeProperty('--bk-r' + i)
       for (const c of cells) {
         c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')
       }
-      // 안 보이는 장(자리를 재지 못한다)은 건너뛴다
-      if (!cells.length || !area.clientHeight) continue
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
       // 줄 높이의 합으로 본다. 상자 전체의 scrollHeight는 칸 밖으로 넘친 글까지 세어서, 칸 하나가 조금 넘쳐도
@@ -296,24 +362,31 @@ export function blockFitter() {
           if (k < last || !over(inner)) break
           if (Number(c.style.getPropertyValue('--bk-fit') || 1) <= k) continue
           c.style.setProperty('--bk-fit', String(k))
-          labels(inner)
+          place(inner)
         }
       }
       for (const c of cells) {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
-        if (inner) labels(inner)
+        if (inner) place(inner)
         shrink(c, least)
       }
       if (!squeezed) grow(area, cells, room)
       for (const c of cells) shrink(c, 0)
-      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) {
-        enlarge(cells)
-        spread(cells)
-      }
+      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) spread(cells, enlarge(cells))
       area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도
     for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot'))) if (!plot.closest('.bk-area')) labels(plot)
+  }
+
+  /** 이름표 자리 고르기의 바깥 입구: 움직이는 중인 판(점이 내려앉는 중이다)은 끝난 뒤에 */
+  function labels(scope: ParentNode): void {
+    const plots = scope instanceof HTMLElement && scope.classList.contains('pm-plot') ? [scope] : Array.from(scope.querySelectorAll<HTMLElement>('.pm-plot'))
+    for (const plot of plots) {
+      const mover = moving(plot)
+      if (mover) later(plot, mover, () => place(plot))
+      else place(plot)
+    }
   }
 
   return { fit, lines, over, labels }
