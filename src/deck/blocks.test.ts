@@ -31,6 +31,7 @@ import {
   withItem,
 } from './blocks'
 import { sampleBlock } from './blockSamples'
+import { FRAME } from './frame'
 import { LAYOUT_ORDER } from './layouts'
 import { showcaseSlides } from './showcase'
 import type { Block, BlockRow, Slide } from './types'
@@ -166,7 +167,7 @@ describe('자리 정하기', () => {
   })
 
   it('놓을 자리를 고르면 잘리지 않는 높이 안에서만 고른다', () => {
-    const areaH = 1080 - 100 - 140
+    const areaH = 1080 - FRAME.y - FRAME.bottom
     const rows = [row(block('table', 't'))]
     for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'))!, areaH)).toBe(true)
     const hs = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], areaH)
@@ -177,7 +178,7 @@ describe('자리 정하기', () => {
     // 아래 줄에 차트나 질문이 와도 남는 높이를 그 줄이 다 가져가지 않는다
     const [a, b] = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], 800)
     expect(Math.abs(a - b)).toBeLessThan(1)
-    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - 100 - 140)
+    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - FRAME.y - FRAME.bottom)
     expect(Math.max(...three) - Math.min(...three)).toBeLessThan(1)
     // 낮은 장이면 한 줄이 잘리지 않을 높이에 묶이고, 다른 줄이 나머지를 가져간다
     const tight = [row(block('message', 'm')), row(block('faq', 'f'))]
@@ -203,11 +204,11 @@ describe('자리 정하기', () => {
     expect(fitsHeight(rows, areaH)).toBe(true)
     expect(fitsWith(rows, 'p', withItem, areaH)).toBe(false)
     // 제목과 부제를 비우면 본문 상자가 그만큼 높다
-    expect(composeAreaH({ fields: {} } as unknown as Slide)).toBe(1080 - 100 - 140)
+    expect(composeAreaH({ fields: {} } as unknown as Slide)).toBe(1080 - FRAME.y - FRAME.bottom)
   })
 
   it('아무 데나 놓아도 정해진 자리 가운데 하나로 들어간다', () => {
-    const size = { w: 1680, h: 1080 - 100 - 140 - 200 }
+    const size = { w: 1680, h: 1080 - FRAME.y - FRAME.bottom - 200 }
     const rows = [row(block('number', 'n')), row(block('bullets', 'b'))]
     const dragged = block('callout', 'c')
     for (let x = 0; x <= size.w; x += 120)

@@ -97,7 +97,7 @@ function Section() {
           <T k="lead" as="p" className="sc-lead" multiline />
         </div>
         {sectionIndex >= 0 && (
-          <div className="sc-num" aria-hidden="true">
+          <div className="sc-num" data-d={(sectionIndex + 1) % 10} aria-hidden="true">
             {sectionIndex + 1}
           </div>
         )}

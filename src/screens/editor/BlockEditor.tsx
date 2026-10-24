@@ -32,6 +32,7 @@ import {
   type DropTarget,
   type NoRoom,
 } from '../../deck/blocks'
+import { FRAME } from '../../deck/frame'
 import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
@@ -89,15 +90,15 @@ function measureArea(el: HTMLElement | null) {
 }
 
 /**
- * 부품 장이 아닌 장을 부품 장으로 바꿨을 때의 본문 상자 어림: 장의 위아래 여백(100, 140)과 옆 여백(120),
+ * 부품 장이 아닌 장을 부품 장으로 바꿨을 때의 본문 상자 어림: 장의 틀(위, 본문 아래의 띠, 옆),
  * 지금 장의 제목 높이와 제목 아래 간격(64)을 뺀다. 바뀐 모습이 그려지면 그때부터는 실제로 잰다
  */
 function guessArea(frame: DOMRect) {
   const head = document.querySelector<HTMLElement>('.ed-canvas .slide .s-head')
   const k = frame.width / 1920
-  const top = 100 + (head && head.offsetHeight ? head.offsetHeight + 64 : 0)
-  const size = { w: 1680, h: 1080 - top - 140 }
-  return { rect: new DOMRect(frame.left + 120 * k, frame.top + top * k, size.w * k, size.h * k), k, size }
+  const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + 64 : 0)
+  const size = { w: 1920 - FRAME.x * 2, h: 1080 - top - FRAME.bottom }
+  return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
 }
 
 export interface BlockEditing {

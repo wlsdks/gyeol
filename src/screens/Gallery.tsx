@@ -13,6 +13,7 @@ import { fitBlocks } from '../slides/fitBlocks'
 import { motionEngine } from '../motion/engine'
 import { checkCombos, comboSlides } from './combos'
 import { checkEdit } from './checkEdit'
+import { checkFrame, inkOf } from './checkFrame'
 import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
@@ -179,6 +180,8 @@ export function Gallery() {
   if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
   // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()
   if (params.get('mode') === 'edit') Object.assign(window, { checkEdit })
+  // 장의 틀 점검 (checkFrame.ts). 콘솔에서 await checkFrame()
+  Object.assign(window, { checkFrame, inkOf })
   // 움직임 보기: 콘솔에서 playSlide(0, 'lively')로 그 장을 발표할 때처럼 움직인다
   Object.assign(window, { playSlide: (i: number, level: 'calm' | 'lively' = 'calm') => motionEngine().play(document.querySelectorAll('.slide')[i], level) })
   const theme = (params.get('theme') ?? 'white') as ThemeId

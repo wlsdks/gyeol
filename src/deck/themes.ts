@@ -205,10 +205,12 @@ export function accentOf(deckTheme: Deck['theme']): string {
 /**
  * glyph: 한 줄로 줄이는 글(숫자 등)의 글자 폭이 고딕(textUnits의 기준)보다 얼마나 넓은지. 명조는 숫자와 %가 넓다.
  * tall: 큰 숫자의 줄 높이를 얼마나 늘리는지. 명조는 한글과 숫자의 키가 커서 줄 높이 0.8로는 위아래 글에 올라탄다
+ * box, gap: 글꼴 높이(위아래 합)와 그 위에서 한글 윗선까지(글자 크기 배율, 캔버스로 잰 값). 장 맨 위의 제목을
+ *   글자 윗선으로 틀에 맞출 때 쓴다(slides.css의 --pad-y)
  */
-const FONT_LOOK: Record<FontId, { font: string; weight: number; tracking: string; glyph: number; tall: number }> = {
-  sans: { font: SANS, weight: 700, tracking: '-0.022em', glyph: 1, tall: 1 },
-  serif: { font: SERIF, weight: 600, tracking: '-0.012em', glyph: 1.15, tall: 1.18 },
+const FONT_LOOK: Record<FontId, { font: string; weight: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
+  sans: { font: SANS, weight: 700, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
+  serif: { font: SERIF, weight: 600, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
 }
 
 /** 테마가 원래 쓰는 글꼴 */
@@ -335,5 +337,7 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--head-tracking': f.tracking,
     '--glyph-k': f.glyph,
     '--tall': f.tall,
+    '--head-box': f.box,
+    '--head-gap': f.gap,
   } as CSSProperties
 }

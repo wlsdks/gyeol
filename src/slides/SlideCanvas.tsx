@@ -1,6 +1,6 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LAYOUTS, variantOf } from '../deck/layouts'
-import { isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
+import { fontOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -77,6 +77,7 @@ export const SlideCanvas = memo(function SlideCanvas({
           'slide',
           `l-${slide.layout}`,
           `t-${deck.theme.id}`,
+          `f-${fontOf(deck.theme)}`,
           density,
           bold && 'is-bold',
           `m-${mode}`,

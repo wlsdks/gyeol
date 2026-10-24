@@ -8,6 +8,7 @@
 // 똑같이 그리고, 끌어다 놓는 동안 놓일 자리를 찾을 때도 이 계산을 쓴다(움직이는 중인 화면을 재지 않는다).
 
 import { BLOCK_HEIGHTS } from './blockHeights'
+import { FRAME, TITLE_TRIM } from './frame'
 import { emptyItem, uid, withDefaultOptions } from './generate'
 import { hintFor, LAYOUTS, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
 import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
@@ -926,7 +927,8 @@ const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.
 /**
  * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다. edit면 편집 화면 기준).
  * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기, 시험) 쓴다. 제목은 길이에 따라 글자가 작아지고(fields.tsx의 fit, 24자와 40자)
- * 1560px을 넘으면 줄이 바뀐다. 부제는 1320px, 제목과 부제 사이 28, 머리 아래 64. 발표 설정(글자 크기, 보내는 자료)도 본다
+ * 1560px을 넘으면 줄이 바뀐다. 부제는 1320px, 제목과 부제 사이 28, 머리 아래 64. 발표 설정(글자 크기, 보내는 자료)도 본다.
+ * 장의 틀(frame.ts)에서 제목은 글자 윗선을 맞추느라 조금 올라간다
  */
 export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }, edit?: boolean): number {
   // 편집 화면은 비운 제목과 부제에도 안내를 보여서 그만큼 본문이 낮다
@@ -939,8 +941,8 @@ export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; 
   const lfs = type.lead * scale
   const titleH = title ? lineCount(title, tfs, 1560) * tfs * 1.2 : 0
   const leadH = lead ? lineCount(lead, lfs, 1320) * lfs * 1.48 : 0
-  const head = titleH + leadH + (title && lead ? 28 : 0)
-  return Math.floor(1080 - 100 - 140 - (head ? head + 64 : 0))
+  const head = titleH - (title ? tfs * TITLE_TRIM : 0) + leadH + (title && lead ? 28 : 0)
+  return Math.floor(1080 - FRAME.y - FRAME.bottom - (head ? head + 64 : 0))
 }
 
 /** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
