@@ -618,7 +618,14 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-rg-track'), 80, 500)
           // 둘레가 12시 방향에서부터 비율만큼 차오르고, 가운데 숫자가 같이 올라간다
           const arc = one('.bk-rg-arc')
-          if (arc) run(anims, arc, [{ strokeDasharray: '0 100' }], s(160), { easing: OUT, duration: d(levelName === 'lively' ? 1500 : 1100) })
+          const fill = { easing: OUT, duration: d(levelName === 'lively' ? 1500 : 1100) }
+          if (arc) run(anims, arc, [{ strokeDasharray: '0 100' }], s(160), fill)
+          // 반원 게이지의 손잡이는 호와 같은 시간, 같은 이징으로 돌아서 호의 끝에 붙어 간다
+          const knob = one('.bk-rg-knob')
+          if (knob) {
+            run(anims, knob, [{ rotate: '0deg' }], s(160), fill)
+            fade(knob, 120, 240)
+          }
           countIn(one('.bk-rg-v'), 160)
           fade(one('.bk-rg-n'), 640, 500)
           break

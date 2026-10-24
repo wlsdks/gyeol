@@ -688,6 +688,42 @@
   opacity: 0.35;
 }
 
+/* 반원 게이지: 가로로 긴 상자(100:58)에 호를 두고, 숫자는 호 안쪽 아래에. 손잡이가 호의 끝을 따라간다 */
+.is-gauge .bk-rg-sq {
+  width: min(100cqw, 100cqh * 100 / 58);
+  aspect-ratio: 100 / 58;
+}
+
+.is-gauge .bk-rg-sq svg {
+  rotate: none;
+}
+
+.is-gauge :is(.bk-rg-track, .bk-rg-arc) {
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.bk-rg-knob {
+  rotate: calc(var(--p) * 1.8deg);
+  transform-box: view-box;
+  transform-origin: 50px 52px;
+}
+
+.bk-rg-knob circle {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 3.4;
+}
+
+.is-gauge .bk-rg-c {
+  inset: 34% 24% 0;
+  place-items: end center;
+}
+
+.bk-rg.is-demo .bk-rg-knob {
+  opacity: 0.35;
+}
+
 @container bk (min-aspect-ratio: 3 / 2) and (min-width: 700px) {
   .bk-rg {
     grid-template: minmax(0, 1fr) minmax(0, 1fr) / auto minmax(0, 1fr);

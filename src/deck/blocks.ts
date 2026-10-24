@@ -168,6 +168,10 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     name: '비율 원',
     description: '비율 하나를 원으로 크게 (달성률, 만족도)',
     motion: '원이 차오르며 숫자가 올라가요',
+    variants: [
+      { id: 'base', name: '원' },
+      { id: 'gauge', name: '반원 게이지' },
+    ],
     fields: [
       { key: 'label', label: '무엇의 비율', hint: '무엇의 비율인지 (예: 자동 검사 비율)' },
       { key: 'value', label: '비율', hint: '72%' },
