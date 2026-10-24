@@ -19,7 +19,7 @@ import {
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
-import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, useDialog } from '../ui'
+import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -85,10 +85,16 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     notify(v ? `‘${label}’ 버전을 남겼어요` : '버전을 남기지 못했어요. 다시 시도해 주세요.')
   }
 
+  // 버전 내용을 읽지 못했을 때: 다른 창에서 지웠거나 브라우저 저장소가 지워졌을 수 있다. 보관 폴더에 같은 때의 파일이 있으면 그것으로 연다
+  const loadFailed = () =>
+    folder?.kind === 'ready'
+      ? `이 버전을 불러오지 못했어요. ‘${folder.name}/버전 기록’ 폴더에 같은 때의 파일이 있으면 내 발표에서 ‘파일 열기’로 열어 주세요.`
+      : '이 버전을 불러오지 못했어요. 기록에서 지워졌을 수 있어요. 다른 버전을 골라 주세요.'
+
   const openPreview = async (version: DeckVersion) => {
     const d = await loadVersionDeck(version.id)
     if (d) setPreview({ version, deck: d })
-    else notify('이 버전을 불러오지 못했어요')
+    else notify(loadFailed())
   }
 
   const restore = async (version: DeckVersion) => {
@@ -96,24 +102,29 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     setRestoring(null)
     setPreview(null)
     if (!d) {
-      notify('이 버전을 불러오지 못했어요')
+      notify(loadFailed())
       return
     }
     await saveVersion(deck, { reason: 'restore' })
     // AI 공유는 버전에 딸린 내용이 아니라 지금 켜 둔 설정이다. 예전 버전이 켜져 있었다고 꺼 둔 공유를 다시 켜지 않는다
     const next: Deck = { ...d, id: deck.id, updatedAt: Date.now(), aiShare: useDeck.getState().deck?.aiShare ?? deck.aiShare }
     useDeck.getState().open(next)
-    await persistNow(next)
-    notify(`${fullFmt.format(version.createdAt)} 버전으로 되돌렸어요. 되돌리기 전 상태도 기록에 남겨 뒀어요.`)
+    const saved = await persistNow(next)
+    notify(
+      saved
+        ? `${fullFmt.format(version.createdAt)} 버전으로 되돌렸어요. 되돌리기 전 상태도 기록에 남겨 뒀어요.`
+        : `${fullFmt.format(version.createdAt)} 버전으로 되돌렸지만 저장하지 못했어요. ${SAVE_HELP}`,
+    )
   }
 
   const openCopy = async (version: DeckVersion) => {
     const d = await loadVersionDeck(version.id)
-    if (!d) return notify('이 버전을 불러오지 못했어요')
+    if (!d) return notify(loadFailed())
     const now = Date.now()
     // 새 발표는 AI 공유를 끈 채로 시작한다 (공유는 발표마다 사람이 켠다)
     const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now, aiShare: false }
-    await persistNow(copy)
+    // 저장하지 못한 채 가면 편집기가 '찾을 수 없는 발표'로 보인다
+    if (!(await persistNow(copy))) return notify(`새 발표로 꺼내지 못했어요. ${SAVE_HELP}`)
     go({ name: 'edit', id: copy.id })
   }
 

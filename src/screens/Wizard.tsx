@@ -9,7 +9,7 @@ import { cx } from '../lib/cx'
 import { go } from '../lib/router'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
-import { Brand, ChevronIcon } from './ui'
+import { Brand, ChevronIcon, SAVE_HELP, useToast } from './ui'
 
 const STEPS = ['보고 종류', '듣는 분과 시간', '기본 정보']
 
@@ -25,6 +25,7 @@ export function Wizard() {
   const [ask, setAsk] = useState('')
   const [theme, setTheme] = useState<ThemeId>('white')
   const [busy, setBusy] = useState(false)
+  const toast = useToast()
 
   const blueprint = BLUEPRINTS[type]
   // 2단계 오른쪽에 보여 줄 구성. 고르는 대로 바로 바뀐다
@@ -46,9 +47,16 @@ export function Wizard() {
 
   const create = async () => {
     setBusy(true)
-    const deck = createDeck({ type, audience, minutes, method, title, org, presenter, ask, theme })
-    await persistNow(deck)
-    go({ name: 'edit', id: deck.id })
+    try {
+      const deck = createDeck({ type, audience, minutes, method, title, org, presenter, ask, theme })
+      // 저장하지 못한 채 편집기로 가면 '찾을 수 없는 발표'로 보인다. 여기 머물러 다시 누를 수 있게
+      if (await persistNow(deck)) go({ name: 'edit', id: deck.id })
+      else toast.show(`발표를 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+    } catch {
+      toast.show(`발표를 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -248,6 +256,7 @@ export function Wizard() {
           </button>
         )}
       </footer>
+      {toast.node}
     </div>
   )
 }

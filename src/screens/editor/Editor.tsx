@@ -22,7 +22,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
-import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, SlidersIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, ShapesIcon, SlidersIcon, takeNotice, TrashIcon, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -50,7 +50,9 @@ export function Editor({ id }: { id: string }) {
   if (notFound) {
     return (
       <div className="center-msg">
-        <p>이 발표를 찾을 수 없어요. 다른 브라우저에서 만들었거나 지운 발표일 수 있어요.</p>
+        <p>
+          이 발표를 찾을 수 없어요. 다른 브라우저에서 만들었거나 지운 발표일 수 있어요. 작업 파일(.deck)이 있으면 내 발표에서 ‘파일 열기’로 불러오세요.
+        </p>
         <button type="button" className="btn btn-primary" onClick={() => go({ name: 'home' })}>
           내 발표로 가기
         </button>
@@ -69,10 +71,14 @@ export function Editor({ id }: { id: string }) {
 function NewerDeck({ deck }: { deck: Deck }) {
   const count = unknownParts(deck)
   const known = knownOnly(deck)
+  const toast = useToast()
   const openCopy = async () => {
     const now = Date.now()
     const copy: Deck = { ...structuredClone(known), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
-    await persistNow(copy)
+    if (!(await persistNow(copy))) {
+      toast.show(`사본을 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+      return
+    }
     go({ name: 'edit', id: copy.id })
   }
   return (
@@ -92,10 +98,11 @@ function NewerDeck({ deck }: { deck: Deck }) {
         </button>
         {known.slides.length > 0 && (
           <button type="button" className="btn btn-ghost" onClick={openCopy}>
-            빼고 사본 만들기
+            없는 {count}개를 뺀 사본 만들기
           </button>
         )}
       </div>
+      {toast.node}
     </div>
   )
 }
@@ -215,6 +222,13 @@ function EditorBody({ deck }: { deck: Deck }) {
   const ai = useAiShare(deck)
   const ask = useAiAsk(deck)
   const blocks = useBlockEditing(deck, slide, toast)
+
+  // 내 발표에서 파일을 열고 왔을 때의 알림 (있던 발표를 파일 내용으로 바꿨는지, 사본으로 열었는지)
+  useEffect(() => {
+    const text = takeNotice()
+    if (text) toast.show(text, undefined, 8000)
+    // 처음 열 때 한 번만
+  }, [])
 
   // 부탁이 끝나면: 제안이 왔으면 미리 보기를 바로 열고, 아니면 왜인지 알려 준다.
   // 바꿀 게 없다고 하면 AI가 말한 까닭을 읽을 수 있게 오른쪽 아래 카드를 남겨 둔다.

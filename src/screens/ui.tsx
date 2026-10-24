@@ -200,6 +200,20 @@ export function Modal({
   )
 }
 
+/** 이 브라우저에 저장하지 못했을 때 덧붙이는 말. IndexedDB가 거절하는 것은 거의 저장 공간이 모자랄 때다 */
+export const SAVE_HELP = '브라우저 저장 공간이 모자라면 저장되지 않아요. 쓰지 않는 발표를 지우거나 큰 이미지를 줄인 뒤 다시 해 주세요.'
+
+// 화면을 옮긴 뒤에 보일 알림 (내 발표에서 파일을 열고 편집기로 갈 때처럼, 보낸 화면은 그 사이에 사라진다)
+let pendingNotice: string | null = null
+export function noticeAfterGo(text: string) {
+  pendingNotice = text
+}
+export function takeNotice(): string | null {
+  const text = pendingNotice
+  pendingNotice = null
+  return text
+}
+
 /** 화면 아래에 잠깐 떴다 사라지는 알림 */
 export function useToast() {
   const [toast, setToast] = useState<{ text: string; action?: { label: string; run: () => void } } | null>(null)
