@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
-import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, sideOf, variantOf } from '../../deck/layouts'
-import { isDarkLook, MOTIONS, motionOf, toneOf, TONES } from '../../deck/themes'
+import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
+import { isDarkLook, MOTIONS, motionOf, PLACES, toneOf, TONES } from '../../deck/themes'
 import type { Deck, LayoutId, Motion, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { BOLD_LAYOUTS } from '../../slides/layouts'
@@ -138,7 +138,9 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
   const highlight = LAYOUTS[slide.layout].highlight
   const panes = panesOf(slide)
   const side = sideOf(slide)
-  const hasOptions = !!highlight || slide.layout === 'imageText' || !!panes
+  const place = placeOf(slide)
+  const placeSpec = LAYOUTS[slide.layout].place
+  const hasOptions = !!highlight || slide.layout === 'imageText' || !!panes || !!place
   if (variants.length < 2 && !hasOptions) return null
   return (
     <section className="ins-sec">
@@ -210,6 +212,24 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
             </div>
           </Opt>
         </>
+      )}
+      {place && placeSpec && (
+        <Opt label={`${placeSpec.name} 자리`} tip="장 위에서 제목을 누르고 위쪽 막대의 이름을 위아래로 끌어도 돼요.">
+          <div className="seg" role="group" aria-label={`${placeSpec.name} 자리`}>
+            {PLACES.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={cx('seg-btn', place === p.id && 'is-on')}
+                aria-pressed={place === p.id}
+                title={p.description}
+                onClick={() => setOptions(slide.id, { place: p.id === placeSpec.base ? undefined : p.id })}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </Opt>
       )}
       {slide.layout === 'imageText' && (
         <Toggle label="이미지를 자르지 않고 전체 보이기" on={!!slide.options.contain} onChange={(v) => setOptions(slide.id, { contain: v })} />

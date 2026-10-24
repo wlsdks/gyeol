@@ -70,6 +70,8 @@ export type FooterMode = 'section' | 'all' | 'page' | 'none'
 export type Transition = 'auto' | 'none' | 'fade' | 'slide' | 'zoom'
 /** 장의 바탕. invert는 테마의 반대(밝은 테마면 어둡게), accent는 강조색 면 */
 export type Tone = 'base' | 'invert' | 'accent'
+/** 제목 덩어리의 자리 (표지, 섹션). 값 목록은 themes.ts의 PLACES */
+export type Place = 'top' | 'middle' | 'bottom'
 
 export interface DeckTheme {
   id: ThemeId
@@ -107,6 +109,8 @@ export interface SlideOptions {
   motion?: Motion
   /** 이 장의 바탕. 색 면 장(표지, 섹션, 마지막 장)에는 쓰지 않는다 */
   tone?: Tone
+  /** 제목 덩어리를 위, 가운데, 아래 중 어디에 둘지 (LayoutSpec.place가 있는 레이아웃). 없으면 레이아웃 기본 */
+  place?: Place
 }
 
 /** 부품 장만의 부품. 목록과 모양은 src/deck/blocks.ts */

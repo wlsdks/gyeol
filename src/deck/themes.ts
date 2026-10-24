@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { Deck, DeckTheme, FontId, FooterMode, Motion, Slide, TextSize, ThemeId, Tone, Transition } from './types'
+import type { Deck, DeckTheme, FontId, FooterMode, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from './types'
 
 export interface Theme {
   id: ThemeId
@@ -137,6 +137,13 @@ export const TRANSITIONS: { id: Transition; name: string; description: string }[
   { id: 'fade', name: '흐리게', description: '앞 장이 흐려지며 다음 장이 나타나요.' },
   { id: 'slide', name: '밀기', description: '다음 장이 옆에서 밀고 들어와요.' },
   { id: 'zoom', name: '다가오기', description: '다음 장이 앞으로 다가오듯 커지며 나타나요.' },
+]
+
+/** 제목 덩어리의 자리 (표지, 섹션). 장 위에서 제목을 위아래로 끌거나 이 장 설정에서 고른다 */
+export const PLACES: { id: Place; name: string; description: string }[] = [
+  { id: 'top', name: '위', description: '제목을 장 위쪽에 둬요. 아래가 넓게 비어 차분해 보여요.' },
+  { id: 'middle', name: '가운데', description: '제목을 장 가운데에 둬요. 한 문장을 크게 보일 때 좋아요.' },
+  { id: 'bottom', name: '아래', description: '제목을 장 아래쪽에 둬요. 보고 표지에 많이 쓰는 자리예요.' },
 ]
 
 export const TONES: { id: Tone; name: string; description: string }[] = [

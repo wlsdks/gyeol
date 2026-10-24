@@ -5600,3 +5600,56 @@ body.is-block-resizing * {
   color: var(--ink);
   font: 600 12px/1.4 inherit;
 }
+
+/* 제목 덩어리를 위아래로 끄는 동안의 세 자리 (editor/SelectionBar.tsx의 PlaceGuide) */
+body.is-placing,
+body.is-placing * {
+  cursor: grabbing !important;
+}
+
+.place-guide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.place-band {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 14px;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sel) 28%, transparent);
+  transition: background-color 0.12s;
+}
+
+.place-band + .place-band {
+  border-top: 1.5px dashed color-mix(in srgb, var(--sel) 45%, transparent);
+  box-shadow: none;
+}
+
+.place-band span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--line-2);
+}
+
+.place-band.is-on {
+  background: color-mix(in srgb, var(--sel) 9%, transparent);
+}
+
+.place-band.is-on span {
+  background: var(--sel);
+  color: #fff;
+  box-shadow: none;
+}

@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
 import { visibleItems } from '../../deck/fields'
-import { highlightOf, LAYOUTS, panesOf, sideOf } from '../../deck/layouts'
-import type { Deck, Slide } from '../../deck/types'
+import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layouts'
+import { PLACES } from '../../deck/themes'
+import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, zoneOf } from '../../slides/panes'
@@ -21,8 +22,8 @@ import { VariantMenu } from './VariantMenu'
 type Target =
   | { kind: 'item'; el: HTMLElement; index: number; across: boolean }
   | { kind: 'pane'; el: HTMLElement }
-  /** 항목도 판도 아닌 칸(표지 제목 같은): 무슨 칸인지와 이 장의 모양 */
-  | { kind: 'field'; el: HTMLElement; label: string }
+  /** 항목도 판도 아닌 칸(표지 제목 같은): 무슨 칸인지와 이 장의 모양. place면 el은 위아래로 옮길 수 있는 제목 덩어리 */
+  | { kind: 'field'; el: HTMLElement; label: string; place?: boolean }
 
 interface Rect {
   x: number
@@ -39,6 +40,13 @@ const SwapIcon = () => <Icon d="M7 7h11l-3-3M17 17H6l3 3" />
 const NarrowIcon = () => <Icon d="M4 12h6M7 9l3 3-3 3M20 12h-6M17 9l-3 3 3 3" />
 const WideIcon = () => <Icon d="M10 12H4M7 9l-3 3 3 3M14 12h6M17 9l3 3-3 3" />
 const BelowIcon = () => <Icon d="M4 5h16v9H4zM4 17.5h16" />
+/** 제목 자리: 장 틀 안의 위, 가운데, 아래 줄 */
+const PlaceIcon = ({ at }: { at: Place }) => <Icon d={`M5 4h14v16H5zM8.5 ${at === 'top' ? 8 : at === 'middle' ? 12 : 16}h7`} />
+
+/** 끄는 자리를 칸 높이의 어디에서 바꿀지 (가운데 칸을 조금 좁게: 위아래로 조금만 끌어도 바뀌지 않게) */
+function placeAt(t: number): Place {
+  return t < 0.36 ? 'top' : t < 0.64 ? 'middle' : 'bottom'
+}
 
 /**
  * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
@@ -116,6 +124,10 @@ function targetAt(node: Element, slide: Slide): Target | null {
   const panes = panesOf(slide)
   const pane = panes && slideEl.querySelector<HTMLElement>(panes.el)
   if (pane && pane.contains(node) && (sideOf(slide) !== null || zoneOf(slide) === 'below')) return { kind: 'pane', el: pane }
+  // 제목 덩어리를 옮길 수 있는 장(표지, 섹션): 제목이나 부제를 누르면 덩어리를 고른다
+  const place = LAYOUTS[slide.layout].place
+  const group = place && slideEl.querySelector<HTMLElement>(place.el)
+  if (group && group.contains(node)) return { kind: 'field', el: group, label: place.name, place: true }
   const field = node.closest<HTMLElement>('[data-field]')
   const label = field && LAYOUTS[slide.layout].fields.find((f) => f.key === field.dataset.field)?.label
   if (field && label && (LAYOUTS[slide.layout].variants?.length ?? 0) > 1) return { kind: 'field', el: field, label }
@@ -128,6 +140,8 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
   const [ring, setRing] = useState<Rect | null>(null)
   const [bar, setBar] = useState<{ x: number; y: number } | null>(null)
   const [dragging, setDragging] = useState(false)
+  /** 제목 덩어리를 위아래로 끄는 중: 덩어리가 놓이는 칸의 자리와 지금 붙을 자리 (세 자리를 그 위에 보인다) */
+  const [placing, setPlacing] = useState<{ rect: Rect; at: Place } | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const slideRef = useRef(slide)
   slideRef.current = slide
@@ -203,6 +217,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     }
   }, [target])
 
+  if (placing) return <PlaceGuide rect={placing.rect} at={placing.at} />
   if (!target || !ring || dragging) return null
   const spec = LAYOUTS[slide.layout]
 
@@ -308,12 +323,89 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
   }
 
   if (target.kind === 'field') {
+    const placeSpec = target.place ? spec.place : undefined
+    const current = placeOf(slide)
+    const setPlace = (p: Place, key?: string) => store.setOptions(slide.id, { place: p === placeSpec?.base ? undefined : p }, key)
+    // 이름을 잡고 위아래로 끌면 제목 덩어리가 세 자리 가운데 손 가까운 곳으로 바로 옮겨 간다. Esc는 처음 자리로, 한 번 끈 것은 되돌리기 한 단계
+    const startPlace = (e: ReactPointerEvent<HTMLButtonElement>) => {
+      // 세 자리는 제목 덩어리가 놓이는 칸(표지는 결정 요청 판을 뺀 쪽, 섹션은 장 전체) 안에서 나눈다
+      const box = target.el.parentElement
+      if (e.button !== 0 || !placeSpec || !box || !current) return
+      e.preventDefault()
+      const from = current
+      const key = `place:${slide.id}:${Math.round(performance.now())}`
+      let at = from
+      const rectOf = () => {
+        const r = box.getBoundingClientRect()
+        return { x: r.left, y: r.top, w: r.width, h: r.height }
+      }
+      setPlacing({ rect: rectOf(), at })
+      document.body.classList.add('is-placing')
+      const move = (ev: PointerEvent) => {
+        const r = rectOf()
+        const next = placeAt((ev.clientY - r.y) / r.h)
+        if (next !== at) {
+          at = next
+          setPlace(next, key)
+        }
+        setPlacing({ rect: r, at })
+      }
+      const stop = (cancel: boolean) => {
+        window.removeEventListener('pointermove', move)
+        window.removeEventListener('pointerup', up)
+        window.removeEventListener('keydown', onKey, true)
+        document.body.classList.remove('is-placing')
+        if (cancel && at !== from) setPlace(from, key)
+        setPlacing(null)
+      }
+      const up = () => stop(false)
+      const onKey = (ev: KeyboardEvent) => {
+        if (ev.key !== 'Escape') return
+        ev.preventDefault()
+        ev.stopPropagation()
+        stop(true)
+      }
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', up)
+      window.addEventListener('keydown', onKey, true)
+    }
     return (
-      <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${target.label} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
-        <span className="sel-name">{target.label}</span>
-        <span className="sel-sep" aria-hidden="true" />
-        <VariantMenu deck={deck} slide={slide} compact />
-      </div>
+      <>
+        {placeSpec && <div className="sel-ring" style={{ translate: `${ring.x}px ${ring.y}px`, width: ring.w, height: ring.h }} aria-hidden="true" />}
+        <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${target.label} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
+          {placeSpec ? (
+            <button type="button" className="sel-name is-grip" title="위아래로 끌어 자리 옮기기" onPointerDown={startPlace}>
+              <GripIcon />
+              {target.label}
+            </button>
+          ) : (
+            <span className="sel-name">{target.label}</span>
+          )}
+          {placeSpec && current && (
+            <>
+              <span className="sel-sep" aria-hidden="true" />
+              {PLACES.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={cx('sel-btn', current === p.id && 'is-on')}
+                  aria-pressed={current === p.id}
+                  title={`${p.name}에 두기`}
+                  onClick={() => setPlace(p.id)}
+                >
+                  <PlaceIcon at={p.id} />
+                </button>
+              ))}
+            </>
+          )}
+          {(spec.variants?.length ?? 0) > 1 && (
+            <>
+              <span className="sel-sep" aria-hidden="true" />
+              <VariantMenu deck={deck} slide={slide} compact />
+            </>
+          )}
+        </div>
+      </>
     )
   }
 
@@ -394,4 +486,22 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     )
   }
   return null
+}
+
+/** 제목 덩어리를 끄는 동안 그 칸 위에 보이는 세 자리. 손이 있는 자리가 짙어지고, 놓으면 그 자리에 붙는다 */
+function PlaceGuide({ rect, at }: { rect: Rect; at: Place }) {
+  const bands: [Place, number, number][] = [
+    ['top', 0, 0.36],
+    ['middle', 0.36, 0.64],
+    ['bottom', 0.64, 1],
+  ]
+  return (
+    <div className="place-guide" style={{ translate: `${rect.x}px ${rect.y}px`, width: rect.w, height: rect.h }} aria-hidden="true">
+      {bands.map(([id, a, b]) => (
+        <div key={id} className={cx('place-band', at === id && 'is-on')} style={{ top: `${a * 100}%`, height: `${(b - a) * 100}%` }}>
+          <span>{PLACES.find((p) => p.id === id)?.name}</span>
+        </div>
+      ))}
+    </div>
+  )
 }

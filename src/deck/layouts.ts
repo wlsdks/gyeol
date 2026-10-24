@@ -1,4 +1,4 @@
-import type { ItemKey, LayoutId, Slide } from './types'
+import type { ItemKey, LayoutId, Place, Slide } from './types'
 
 export interface FieldSpec {
   /** 슬라이드 칸 이름. `$`로 시작하면 덱 단위 값(소속, 발표자 등) */
@@ -52,6 +52,11 @@ export interface LayoutSpec {
    * below는 판이 아래에 깔리는 모양(표지의 아래 띠): 판을 장 아래쪽으로 끌면 그 모양이 되고, 위로 끌면 옆으로 돌아온다
    */
   panes?: { name: string; el: string; sides: number[]; base: number; start?: boolean; variants?: string[]; below?: string }
+  /**
+   * 제목 덩어리를 위, 가운데, 아래로 옮길 수 있는 장 (SlideOptions.place). name은 덩어리의 이름, el은 장 안의 그 요소.
+   * 글상자를 아무 데나 놓게 하지 않고 정해 둔 세 자리에만 붙인다 (줄과 여백이 어긋나지 않게)
+   */
+  place?: { name: string; el: string; base: Place }
 }
 
 /** 옆 판 너비의 한 칸 (장 너비를 12로 나눈 것) */
@@ -79,6 +84,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { id: 'full', name: '색 면' },
     ],
     panes: { name: '결정 요청', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
+    place: { name: '제목', el: '.cv-text', base: 'bottom' },
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },
       { key: 'lead', label: '부제', hint: '한 줄 부제', optional: true },
@@ -98,6 +104,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { id: 'base', name: '바탕' },
       { id: 'bold', name: '색 면' },
     ],
+    place: { name: '제목', el: '.sc-body', base: 'bottom' },
     fields: [title('이번 섹션의 제목'), lead('이 섹션에서 다룰 내용')],
   },
   agenda: {
@@ -732,6 +739,14 @@ export function panesOf(slide: Pick<Slide, 'layout' | 'variant'>): NonNullable<L
   const p = LAYOUTS[slide.layout].panes
   if (!p || (p.variants && !p.variants.includes(variantOf(slide)))) return null
   return p
+}
+
+/** 제목 덩어리의 자리. 옮길 수 없는 레이아웃이면 null, 고른 적이 없으면 레이아웃 기본 */
+export function placeOf(slide: Pick<Slide, 'layout' | 'options'>): Place | null {
+  const p = LAYOUTS[slide.layout].place
+  if (!p) return null
+  const v = slide.options.place
+  return v === 'top' || v === 'middle' || v === 'bottom' ? v : p.base
 }
 
 /** 옆 판의 너비 (칸 수). 고른 너비가 이 레이아웃에서 고를 수 없는 값이면 기본 너비 */

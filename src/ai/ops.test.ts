@@ -94,6 +94,25 @@ describe('제안 적용', () => {
     expect(results.map((r) => r.code)).toEqual(['not_for_layout', 'no_slide'])
   })
 
+  it('제목 자리는 표지와 섹션에서만, 정해진 세 자리로만 옮긴다', () => {
+    const body = shape.slides.findIndex((s) => s.layout === 'kpi')
+    expect(shape.slides[0].options.place).toBe('bottom')
+    expect(shape.slides[body].options.place).toBeUndefined()
+    const { deck: next, results } = run(
+      { op: 'set_options', slide: sid(0), place: 'top' },
+      { op: 'set_options', slide: sid(body), place: 'top' },
+    )
+    expect(results.map((r) => r.code)).toEqual(['applied', 'not_for_layout'])
+    expect(next.slides[0].options.place).toBe('top')
+    expect(toShape(next).slides[0].options.place).toBe('top')
+    expect(checkShape(toShape(next))).toBe(true)
+    expect(writtenText(next)).toEqual(writtenText(deck))
+    // 기본 자리로 돌리면 값을 지운다
+    expect(applyOps(next, [{ op: 'set_options', slide: sid(0), place: null }]).deck.slides[0].options.place).toBeUndefined()
+    expect(applyOps(next, [{ op: 'set_options', slide: sid(0), place: 'bottom' }]).deck.slides[0].options.place).toBeUndefined()
+    expect(parseOp({ op: 'set_options', slide: sid(0), place: 'left' })).toBeNull()
+  })
+
   it('장마다 바탕과 움직임, 발표 전체의 글꼴과 전환을 정해진 값으로만 바꾼다', () => {
     const body = shape.slides.findIndex((s) => s.layout === 'kpi')
     const { deck: next, results } = run(

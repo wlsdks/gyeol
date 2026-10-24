@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { LAYOUTS, PANE_UNIT, panesOf, sideOf, variantOf } from '../deck/layouts'
+import { LAYOUTS, PANE_UNIT, panesOf, placeOf, sideOf, variantOf } from '../deck/layouts'
 import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
@@ -72,6 +72,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   // 두 판으로 나뉜 장: 옆 판의 자리(왼쪽, 오른쪽)와 너비. 레이아웃 CSS가 --side-w를 쓴다
   // (편집할 때 너비가 부드럽게 바뀌도록 등록한 값이라 CSS의 기본값이 먹지 않는다. 판이 있는 장은 늘 적는다)
   const panes = panesOf(slide)
+  const place = placeOf(slide)
   const side = sideOf(slide)
   const themed = themeStyle(deck.theme, tone)
   const style: CSSProperties = side !== null ? ({ ...themed, '--side-w': `${side * PANE_UNIT}px` } as CSSProperties) : themed
@@ -97,6 +98,8 @@ export const SlideCanvas = memo(function SlideCanvas({
           isDarkLook(deck.theme, tone) && 'is-dark',
           solo && 'is-solo',
           panes && slide.options.flip && 'is-flip',
+          // 제목 덩어리의 자리: 레이아웃 기본 자리면 붙이지 않는다
+          place && place !== spec.place?.base && `pl-${place}`,
         )}
         style={solo ? { ...themed, width: solo.w, height: solo.h } : style}
       >

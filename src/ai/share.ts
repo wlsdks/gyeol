@@ -7,9 +7,9 @@
 import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock, weighted } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
-import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
-import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Audience, Block, BlockEffect, BlockLink, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
+import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, PLACES, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
+import type { Audience, Block, BlockEffect, BlockLink, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
 
@@ -29,7 +29,7 @@ export interface ShapeSlide {
   hiddenItems: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone }
+  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
@@ -112,6 +112,8 @@ export function catalog() {
         highlight: spec.highlight?.label ?? null,
         // 두 판으로 나뉜 장: 옆 판의 이름, 고를 수 있는 너비(장 너비를 12로 나눈 칸 수), 기본 너비, 고를 수 있는 모양
         panes: spec.panes ? { name: spec.panes.name, sides: spec.panes.sides, base: spec.panes.base, variants: spec.panes.variants ?? null } : null,
+        // 제목 덩어리를 위, 가운데, 아래로 옮길 수 있는 장: 덩어리의 이름과 기본 자리 (고를 값은 places)
+        place: spec.place ? { name: spec.place.name, base: spec.place.base } : null,
         fields: spec.fields.map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
         items: spec.items
           ? {
@@ -150,6 +152,7 @@ export function catalog() {
     footers: FOOTERS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     transitions: TRANSITIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     tones: TONES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    places: PLACES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     blocks: BLOCK_TYPES.map((type) => {
       const spec = BLOCKS[type]
       return {
@@ -277,6 +280,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   if (slide.layout === 'imageText') options.contain = !!o.contain
   if (isOneOf(MOTIONS, o.motion)) options.motion = o.motion
   if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
+  const place = placeOf(slide)
+  if (place) options.place = place
   const out: ShapeSlide = {
     id: shapeSlideId(slide),
     layout: slide.layout,
@@ -378,7 +383,8 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone'])) return false
+  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'])) return false
+  if (o.place !== undefined && !isOneOf(PLACES, o.place)) return false
   if (o.pane !== undefined && !isInt(o.pane, 1, 12)) return false
   if (o.highlight !== undefined && !isInt(o.highlight, -1, 20)) return false
   if (o.motion !== undefined && !isOneOf(MOTIONS, o.motion)) return false

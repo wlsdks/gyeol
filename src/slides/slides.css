@@ -563,6 +563,35 @@
   max-width: 100%;
 }
 
+/* 제목 자리 (SlideOptions.place). 기본은 아래. 위로 올리면 로고는 아래로 내려 제목 자리를 비켜 주고,
+   가운데면 로고는 위에 띄워 두어(자리를 차지하지 않게) 제목이 장의 가운데에 온다. 글자 윗선과 아랫선은 틀선에 맞춘다 */
+.l-cover:is(.pl-top, .pl-middle) .cv-text > .cv-title:first-child {
+  margin-top: calc(-1em * ((1.12 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.l-cover.pl-top .cv-text {
+  order: -1;
+  margin-top: 0;
+}
+
+.l-cover.pl-top .cv-logo {
+  order: 1;
+  margin-top: auto;
+}
+
+.l-cover.pl-middle .cv-main {
+  position: relative;
+}
+
+.l-cover.pl-middle .cv-logo {
+  position: absolute;
+  top: var(--pad-y);
+}
+
+.l-cover.pl-middle .cv-text {
+  margin-block: auto;
+}
+
 /* ---------- 섹션 구분 ---------- */
 
 .l-section {
@@ -716,6 +745,41 @@
 
 .l-section:not(.va-bold) .sc-map li.is-on {
   color: var(--accent);
+}
+
+/* 제목 자리 (SlideOptions.place). 기본은 아래. 위면 제목 덩어리를 위 틀선에, 단락 지도는 아래 틀선에 둔다.
+   가운데면 제목 덩어리만 남은 높이의 가운데에 (단락 지도는 아래에 그대로) */
+.l-section.pl-top .sc-body {
+  align-items: flex-start;
+  margin-bottom: auto;
+}
+
+/* 색 면의 큰 단락 번호는 아래에 그대로 두고 제목만 위로: 제목과 번호가 대각선으로 마주 본다
+   (번호를 같이 올리면 명조의 1처럼 깃이 글자 윗선 위로 솟는 숫자가 위 틀을 넘는다) */
+.l-section.va-bold.pl-top .sc-body {
+  flex: 1;
+  align-items: stretch;
+  margin-bottom: 0;
+}
+
+.l-section.va-bold.pl-top .sc-text {
+  align-self: flex-start;
+}
+
+.l-section.va-bold.pl-top .sc-num {
+  align-self: flex-end;
+}
+
+.l-section.va-bold.pl-top .sc-text > .sc-title:first-child {
+  margin-top: calc(-1em * ((1.08 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.l-section.pl-middle .sc-body {
+  margin-block: auto;
+}
+
+.l-section:not(.va-bold):is(.pl-top, .pl-middle) .sc-body {
+  align-items: flex-start;
 }
 
 /* ---------- 목차 ---------- */
