@@ -15,6 +15,7 @@
  *
  * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그리지만(소제목 윗선을 맞춘다, blocks.css), 줄 안에서 가장 긴 내용을
  *    기준으로 묶음째 가운데로 내린다(--bk-lift, 캔버스 px). 위에만 붙여 두면 높은 줄에서 아래 절반이 통째로 빈다.
+ *    칸 높이를 다 쓰는 부품(차트, 표) 옆의 짧은 부품은 그것들끼리 묶어 가운데로, 그 가운데 숫자 부품은 그 전에 한두 단계 키운다.
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
@@ -328,9 +329,34 @@ export function blockFitter() {
   }
 
   /**
-   * 줄마다 부품 내용의 묶음을 가운데로 (맨 위 설명 3-3). 칸 높이를 다 쓰는 부품(차트, 표)이 있는 줄은 그 부품이 가장 길어서
-   * 내리지 않는다. 이음표가 선 줄은 부품마다 가운데에 두어서(blocks.css) 건너뛴다
+   * 칸 안 내용이 차지한 높이와 칸 안쪽 높이 (화면 px). 그리지 않은 칸이면 null.
+   * 내용은 보이는 첫 자식: 레이아웃 부품(차트, 표)은 첫 자식이 숨긴 장 제목(높이 0)이라, 첫 자식만 보면 차트가 있는 줄을 통째로 건너뛰었다
    */
+  function used(c: HTMLElement): { room: number; used: number; k: number } | null {
+    const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)
+    if (!body) return null
+    const r = body.getBoundingClientRect()
+    const k = r.height / body.offsetHeight
+    const cs = getComputedStyle(body)
+    const top = r.top + parseFloat(cs.paddingTop) * k
+    let end = top
+    for (const el of Array.from(body.children)) {
+      const b = el.getBoundingClientRect()
+      const es = getComputedStyle(el)
+      if (b.height && es.position !== 'absolute' && es.position !== 'fixed') end = Math.max(end, b.bottom + Math.max(0, parseFloat(es.marginBottom)) * k)
+    }
+    return { room: r.bottom - parseFloat(cs.paddingBottom) * k - top, used: end - top, k }
+  }
+
+  /**
+   * 줄마다 부품 내용의 묶음을 가운데로 (맨 위 설명 3-3). 이음표가 선 줄은 부품마다 가운데에 두어서(blocks.css) 건너뛴다.
+   * 칸 높이를 다 쓰는 부품(차트, 표) 옆의 짧은 부품은 그 부품들끼리 묶어 가운데로 내린다: 줄에서 가장 긴 내용을 기준으로 하면
+   * 차트가 가장 길어 내리지 않아서, 차트 옆의 숫자가 칸 위에 붙고 아래 절반이 통째로 비었다.
+   * 그 가운데 숫자 부품(큰 숫자, 전과 후, 목표 대비)은 내리기 전에 한두 단계 키운다(boosts): 높은 칸에 작은 숫자가 떠 있으면
+   * 칸이 비어 보인다. 글 부품은 키우지 않는다(장 제목과 크기가 가까워진다)
+   */
+  const boosts = [1.44, 1.2]
+  const boostable = new Set(['number', 'delta', 'goal'])
   function lift(cells: HTMLElement[]): void {
     const rows = new Map<string, HTMLElement[]>()
     for (const c of cells) {
@@ -339,25 +365,44 @@ export function blockFitter() {
       rows.set(key, (rows.get(key) || []).concat(c))
     }
     rows.forEach((row) => {
-      let room = Infinity
-      let most = 0
-      let k = 1
-      for (const c of row) {
-        const body = c.querySelector<HTMLElement>(':scope > .bk-in > *')
-        if (!body || !body.offsetHeight) return
-        const r = body.getBoundingClientRect()
-        k = r.height / body.offsetHeight
-        const cs = getComputedStyle(body)
-        const top = r.top + parseFloat(cs.paddingTop) * k
-        let end = top
-        for (const el of Array.from(body.children)) {
-          const b = el.getBoundingClientRect()
-          const es = getComputedStyle(el)
-          if (b.height && es.position !== 'absolute' && es.position !== 'fixed') end = Math.max(end, b.bottom + Math.max(0, parseFloat(es.marginBottom)) * k)
+      const ms = row.map(used)
+      if (ms.some((m) => !m)) return
+      const room = Math.min(...ms.map((m) => m!.room))
+      const k = ms[0]!.k
+      // 칸 높이를 다 쓰는 부품 (캔버스 16px까지는 다 쓴 것으로)
+      const full = ms.map((m) => m!.used >= room - 16 * k)
+      const short = row.filter((_, i) => !full[i])
+      if (full.some(Boolean) && short.length) {
+        for (const c of short) {
+          if (!boostable.has(c.dataset.type || '')) continue
+          const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+          if (!inner) continue
+          const was = c.style.getPropertyValue('--bk-fit')
+          const now = Number(was || 1)
+          const shapes = shapesOf(inner)
+          let ok = false
+          for (const f of boosts) {
+            if (f <= now) break
+            c.style.setProperty('--bk-fit', String(f))
+            place(inner)
+            const m = used(c)
+            if (m && m.used <= room && !crowded(inner, shapes)) {
+              ok = true
+              break
+            }
+          }
+          if (!ok) {
+            if (was) c.style.setProperty('--bk-fit', was)
+            else c.style.removeProperty('--bk-fit')
+            place(inner)
+          }
         }
-        room = Math.min(room, r.bottom - parseFloat(cs.paddingBottom) * k - top)
-        most = Math.max(most, end - top)
+        const most = Math.max(...short.map((c) => used(c)?.used ?? room))
+        const d = (room - most) / 2 / k
+        if (d >= 8) for (const c of short) c.style.setProperty('--bk-lift', Math.round(d) + 'px')
+        return
       }
+      const most = Math.max(...ms.map((m) => m!.used))
       // 캔버스 8px 밑으로 남으면 그대로 (내려 봐야 보이지 않고, 글을 적을 때마다 조금씩 움직인다)
       const d = (room - most) / 2 / k
       if (d >= 8) for (const c of row) c.style.setProperty('--bk-lift', Math.round(d) + 'px')
