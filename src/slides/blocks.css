@@ -89,6 +89,12 @@
   }
 }
 
+/* 한 줄에 부품이 둘 이상이면 모두 위에서부터: 가운데에 두면 내용이 적은 부품이 옆 부품과 다른 높이에 떠서
+   소제목의 윗선이 칸마다 어긋나 보인다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에 */
+.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp) {
+  justify-content: flex-start;
+}
+
 /* ---------- 바탕 ---------- */
 
 .bk-look-card {
@@ -106,6 +112,11 @@
 .bk-look-card > .bk-in,
 .bk-look-bold > .bk-in {
   padding: 44px 52px;
+}
+
+/* 면 위에서는 면의 가장자리가 이미 묶음을 보여서, 목록 맨 위의 굵은 줄은 뺀다 (면 바로 안쪽에 줄이 한 번 더 그어져 보인다) */
+:is(.bk-look-card, .bk-look-bold) > .bk-in .pt {
+  border-top: 0;
 }
 
 /* 진한 면: 짙은 면(--bold-bg)이 바탕이 되고, 글자는 그 위에서 읽히는 색, 강조는 강조색을 밝힌 색(--bold-accent).
@@ -168,16 +179,6 @@
   flex-direction: column;
   justify-content: safe center;
   height: 100%;
-}
-
-.bk-msg::before {
-  content: '';
-  flex: none;
-  width: 72px;
-  height: 6px;
-  margin-bottom: 40px;
-  border-radius: 3px;
-  background: var(--accent);
 }
 
 .bk-msg-t {
@@ -502,6 +503,55 @@
   opacity: 0.45;
 }
 
+/* 혼자 한 줄을 다 쓰는 넓고 높은 칸: 전과 후가 칸의 왼쪽 절반에 작게 몰리지 않게 숫자와 글을 키우고 사이를 넓힌다 */
+@container bk (min-width: 1200px) and (min-height: 520px) {
+  .bk-dl-l {
+    --fs: var(--t-h);
+    color: var(--ink);
+    font-family: var(--font-head);
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+  }
+
+  .bk-dl-row {
+    gap: 8px 64px;
+    max-width: 1480px;
+    margin-top: 40px;
+  }
+
+  .bk-dl-k {
+    --fs: var(--t-body);
+  }
+
+  .bk-dl-v {
+    --fs: 220px;
+  }
+
+  .bk-dl-from .bk-dl-v {
+    --fs: 150px;
+  }
+
+  .bk-dl-arrow {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 40px;
+  }
+
+  .bk-dl-arrow svg {
+    width: 72px;
+    height: 72px;
+  }
+
+  .bk-dl-foot {
+    margin-top: 40px;
+  }
+
+  .bk-dl-chip,
+  .bk-dl-n {
+    --fs: var(--t-body);
+  }
+}
+
 /* ---------- 목표 대비 ---------- */
 
 .bk-gl {
@@ -605,7 +655,9 @@
 .bk-rg {
   --py: 44px;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* 원 자리는 칸 너비까지만 키우고 셋을 가운데에 모은다. 1fr로 두면 좁고 높은 칸에서 원 위아래가 비어 이름과 덧붙임이 원에서 멀리 떨어진다 */
+  grid-template-rows: auto minmax(0, 100cqw) auto;
+  align-content: safe center;
   justify-items: center;
   gap: 22px;
   height: 100%;
@@ -757,6 +809,18 @@
     grid-area: n;
     align-self: start;
     color: var(--ink-2);
+  }
+}
+
+/* 혼자 한 줄을 다 쓰는 넓은 칸: 원과 짝이 되게 글을 한 번 더 키운다. 작은 글이 넓은 칸 왼쪽에만 있으면 칸 오른쪽이 빈다.
+   낮은 줄에서는 커진 글이 원보다 높아져서, 원이 충분히 클 때만 */
+@container bk (min-aspect-ratio: 3 / 2) and (min-width: 1200px) and (min-height: 440px) {
+  .bk-rg-l {
+    --fs: 64px;
+  }
+
+  .bk-rg-n {
+    --fs: var(--t-lead);
   }
 }
 

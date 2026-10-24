@@ -4,11 +4,11 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
+import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, variantIds, variantOf } from '../deck/layouts'
-import { ACCENT_COMBOS, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
+import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Audience, Block, BlockEffect, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 
 export const SHAPE_FORMAT = 'html-maker/shape'
@@ -150,6 +150,7 @@ export function catalog() {
         description: spec.description,
         motion: spec.motion,
         minSpan: spec.minSpan,
+        looks: looksFor(type),
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
         highlight: (spec.layout && LAYOUTS[spec.layout].highlight?.label) || null,
         fields: blockFieldSpecs(type).map((f) => ({ key: f.key, label: f.label, optional: !!f.optional, image: !!f.image })),
@@ -235,7 +236,7 @@ export function toShape(deck: Deck): ShapeDeck {
     motion: MOTIONS.some((m) => m.id === deck.motion) ? deck.motion! : 'calm',
     font: isOneOf(FONTS, deck.theme.font) ? deck.theme.font : null,
     size: isOneOf(TEXT_SIZES, deck.theme.size) ? deck.theme.size : 'normal',
-    footer: isOneOf(FOOTERS, deck.theme.footer) ? deck.theme.footer : 'all',
+    footer: footerOf(deck),
     transition: isOneOf(TRANSITIONS, deck.theme.transition) ? deck.theme.transition : 'auto',
     updatedAt: Math.round(deck.updatedAt) || 0,
     slides: deck.slides.filter((s) => s.layout in LAYOUTS).map((s) => shapeSlide(deck, s)),

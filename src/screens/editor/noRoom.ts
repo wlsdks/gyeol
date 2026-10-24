@@ -40,6 +40,23 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
         why: `${josa(name, '은', '는')} 장 너비의 ${WIDTH[r.span] ?? '절반'} 이상이 있어야 해서, 이 줄에 끼우면 칸이 너무 좁아져요.`,
         fix: '위나 아래에 새 줄로 놓아 보세요.',
       }
+    case 'solo': {
+      const solo = BLOCKS[r.type].name
+      return {
+        why: `${josa(solo, '은', '는')} 한 줄을 혼자 써요. 옆에 다른 컴포넌트를 두면 둘 다 좁아져 읽기 어려워요.`,
+        fix: '위나 아래에 새 줄로 놓아 보세요.',
+      }
+    }
+    case 'look':
+      return r.why === 'one-bold'
+        ? { why: '진한 면은 한 장에 하나만 써요. 둘이면 어느 쪽이 결론인지 흐려져요.', fix: '다른 컴포넌트의 진한 면을 먼저 바꿔 주세요.' }
+        : r.why === 'mix'
+          ? { why: '옅은 면과 진한 면은 한 장에 같이 쓰지 않아요. 상자 두 종류가 눈길을 나눠 가져요.', fix: '이 장의 다른 컴포넌트와 같은 면을 골라 주세요.' }
+          : r.why === 'alone'
+            ? { why: '혼자 한 줄을 다 쓰는 컴포넌트는 면 없이 써요. 넓은 면 안에 글이 한쪽에만 있어 비어 보여요.', fix: '옆에 컴포넌트를 하나 더 놓으면 둘 다 면을 깔 수 있어요.' }
+            : r.why === 'no-bold'
+              ? { why: '진한 면은 숫자나 강조할 말 하나에만 써요. 목록이나 그림을 검게 칠하면 장이 무거워 보여요.', fix: '옅은 면을 골라 보세요.' }
+              : { why: '이 컴포넌트는 면 없이 써요. 안에 이미 칸과 줄이 있어서 면을 깔면 상자 안에 상자가 돼요.', fix: '강조할 것은 큰 숫자나 강조 상자에 면을 깔아 보세요.' }
     case 'height': {
       const pct = Math.round((r.need / Math.max(1, r.room)) * 100)
       return {

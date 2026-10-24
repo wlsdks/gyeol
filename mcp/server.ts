@@ -50,7 +50,7 @@ const PROTOCOL_WORDS = [
   'blocks', 'span', 'look', 'effect',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
-  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room',
+  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash',
   ...OP_NAMES,
   ...Object.values(MESSAGES),
 ]
@@ -166,7 +166,9 @@ const TOOLS = [
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
       '- set_hint {slide, block?, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸. block이 있으면 부품 장의 그 부품 칸(카탈로그 blocks[].fields, items.fields).',
-      '부품 장(compose): 줄은 위에서 아래로, 한 줄에 부품이 왼쪽에서 오른쪽으로 놓인다. 줄 수, 한 줄과 한 장의 부품 수, 고를 수 있는 너비는 카탈로그 blockRules. 부품마다 가장 좁은 너비는 blocks[].minSpan. 장에 자리가 모자라면 no_room으로 건너뛴다.',
+      '부품 장(compose): 줄은 위에서 아래로, 한 줄에 부품이 왼쪽에서 오른쪽으로 놓인다. 줄 수, 한 줄과 한 장의 부품 수, 고를 수 있는 너비는 카탈로그 blockRules. 부품마다 가장 좁은 너비는 blocks[].minSpan(12면 그 부품은 한 줄을 혼자 쓴다). 장에 자리가 모자라면 no_room으로 건너뛴다. ' +
+        '면(look)은 부품마다 고를 수 있는 것(blocks[].looks)에서, 한 장에 한 가지만: 옅은 면(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. ' +
+        '옅은 면은 같은 줄의 부품이 함께 바뀌고, 혼자 한 줄을 다 쓰는 부품은 면 없이 그려진다. 어긋나면 look_clash로 건너뛴다.',
       '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: row(그 차례에 새 줄, 0이 맨 위) 또는 beside(그 부품의 줄에)와 side(before|after, 기본 after). 자리를 빼면 알아서 놓는다.',
       '- remove_block {slide, block} 빈 부품만 뺀다. 내용이 있으면 has_content.',
       '- move_block {slide, block, 자리} 부품을 옮긴다. 글은 부품과 함께 간다. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다.',

@@ -27,6 +27,7 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   not_reviewed: '보지 않았어요',
   no_block: '그 컴포넌트가 지금은 없어요',
   no_room: '장에 자리가 모자라요',
+  look_clash: '이 장의 다른 컴포넌트와 면이 어울리지 않아요',
 }
 
 const ASK_STEP: Record<AskStep, string> = {

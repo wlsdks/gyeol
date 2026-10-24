@@ -36,8 +36,9 @@
   display: none;
 }
 
-/* 빈칸은 늘 보이게: 옅은 면만 깐다. 칸마다 점선 상자를 두르면 장이 어수선하고 칸끼리 맞닿아 보인다. 채우면 사라진다 */
-.slide.m-edit .ed.is-empty > .ed-halo {
+/* 빈칸은 파워포인트의 개체 틀처럼 흐린 안내 글로만 보인다. 옅은 면을 늘 깔면 면이 글보다 옆으로 번져서
+   채운 제목과 빈 부제의 왼쪽 끝이 어긋나 보이고, 빈칸이 많은 장은 회색 상자로 덮인다. 면은 올렸을 때만 */
+.slide.m-edit .ed.is-empty:hover > .ed-halo {
   background: color-mix(in srgb, currentColor 7%, transparent);
 }
 

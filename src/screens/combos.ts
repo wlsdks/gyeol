@@ -1,4 +1,4 @@
-import { BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, composeAreaH, insertAt, placeIssue, validTargets, whyNot } from '../deck/blocks'
+import { BLOCK_TYPES, BLOCKS, composeAreaH, insertAt, lookOf, placeIssue, validTargets, whyNot, withLook } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { makeSlide } from '../deck/generate'
 import type { Block, BlockRow, Slide } from '../deck/types'
@@ -29,7 +29,10 @@ function randomBlock(rand: () => number, id: string): Block {
   const sample = sampleBlock(type)
   const variants = spec.variants ?? []
   const variant = variants.length ? variants[Math.floor(rand() * variants.length)].id : undefined
-  const look = BLOCK_LOOK_IDS[Math.floor(rand() * BLOCK_LOOK_IDS.length)]
+  // 실제로 쓰는 비율에 가깝게: 대부분 바탕 없이, 가끔 옅은 면, 드물게 진한 면(장의 다른 면과 어긋나면 넣을 때 바탕 없이 바뀐다)
+  const r = rand()
+  const look = r < 0.55 ? 'plain' : r < 0.85 ? 'card' : 'bold'
+
   const it = spec.items
   const n = it ? it.min + Math.floor(rand() * (it.max - it.min + 1)) : 0
   const items = it && sample.items.length ? Array.from({ length: n }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${id}-it${i}` })) : sample.items
@@ -65,6 +68,9 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       // validTargets와 whyNot이 같은 것을 말하는지
       if (whyNot(rows, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
       rows = insertAt(rows, t, b, `r${k}-${tries}`)!
+      // 편집기에서 면을 고를 때처럼 같은 줄은 같은 면으로
+      const placed = rows.flatMap((r) => r.blocks).find((x) => x.id === b.id)!
+      rows = withLook(rows, b.id, lookOf(placed))
     }
     return { slide: { ...base, rows }, refused }
   })

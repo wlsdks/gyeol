@@ -2,7 +2,7 @@
 //
 // 자리 규칙: 한 장에 줄은 셋까지, 한 줄에 칸은 셋까지, 부품은 여섯까지. 칸 너비는 12를 나눈 정해진 비율
 // (1:1, 2:1, 1:2, 1:1:1, 2:1:1 ...) 가운데 하나다. 그래서 어디에 대충 놓아도 칸이 줄과 간격에 딱 맞고
-// 삐뚤빼뚤해지지 않는다. 줄 높이는 똑같이 나눈다(잘리지 않을 높이는 지킨다).
+// 삐뚤빼뚤해지지 않는다. 줄마다 잘리지 않을 높이를 주고, 남는 높이는 줄마다 똑같이 나눠 준다.
 //
 // 칸의 자리는 측정하지 않고 계산한다. 같은 계산을 CSS calc()로 써서 편집 화면, 발표, 내보낸 HTML이
 // 똑같이 그리고, 끌어다 놓는 동안 놓일 자리를 찾을 때도 이 계산을 쓴다(움직이는 중인 화면을 재지 않는다).
@@ -25,7 +25,7 @@ export interface BlockSpec {
   items?: LayoutSpec['items']
   variants?: VariantSpec[]
   highlight?: LayoutSpec['highlight']
-  /** 칸 너비(12 기준). 이보다 좁은 칸에는 넣지 않는다 */
+  /** 칸 너비(12 기준). 이보다 좁은 칸에는 넣지 않는다. 12면 한 줄을 혼자 쓴다(표, 일정처럼 넓게 짜인 부품은 옆에 무엇을 두면 둘 다 좁아진다) */
   minSpan: number
   /** 이만큼은 되어야 보기 좋은 너비. 알아서 놓을 때와 비율을 고를 때 쓴다 */
   prefSpan: number
@@ -121,7 +121,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    look: 'card',
     sample: { fields: { value: '4.8억 원', label: '첫해 예상 매출', note: '3년이면 7.2억 원' } },
   },
   delta: {
@@ -136,7 +135,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    look: 'card',
     sample: { fields: { label: '불량률', before: '3.2%', after: '1.1%', note: '시범 라인 3개월 결과' } },
   },
   goal: {
@@ -152,7 +150,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    look: 'card',
     sample: { fields: { label: '연간 수주', value: '7.2', target: '10', unit: '억 원', note: '4분기 계약 3건이 남았어요' } },
   },
   ring: {
@@ -170,7 +167,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    look: 'card',
     sample: { fields: { label: '사람 손 없이 끝내는 검사', value: '72%', note: '지난해에는 41%였어요' } },
   },
   ratio: {
@@ -186,7 +182,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    look: 'card',
     sample: { fields: { label: '시범 뒤 도입을 정한 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 정해요' } },
   },
   spark: {
@@ -201,7 +196,6 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
-    look: 'card',
     sample: { fields: { label: '월 불량률', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
   },
   facts: {
@@ -355,7 +349,8 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     items: {
       label: '할 일',
-      min: 1,
+      // 할 일이 하나면 일정표가 아니라 한 줄 글이다
+      min: 2,
       max: 6,
       default: 4,
       fields: [
@@ -364,7 +359,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
         { key: 'meta', label: '담당', hint: '담당', optional: true },
       ],
     },
-    minSpan: 8,
+    minSpan: 12,
     prefSpan: 12,
     sample: {
       fields: { heading: '추진 일정', cols: '11월 12월 1월 2월 3월', now: '12월' },
@@ -427,24 +422,24 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
 
 /** 레이아웃 부품의 칸 크기와 움직임. 칸은 그 레이아웃의 것에서 머리(제목, 부제, 출처)만 뺀다 */
 const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; motion: string; look?: BlockLook }> = {
-  summary: { minSpan: 8, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
+  summary: { minSpan: 12, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
   points: { minSpan: 8, prefSpan: 12, motion: '하나씩 차례로 올라와요' },
   kpi: { minSpan: 6, prefSpan: 12, motion: '숫자가 자리마다 굴러가 맞춰져요' },
-  scorecard: { minSpan: 8, prefSpan: 12, motion: '실적 막대가 목표까지 자라요' },
+  scorecard: { minSpan: 12, prefSpan: 12, motion: '실적 막대가 목표까지 자라요' },
   bars: { minSpan: 6, prefSpan: 8, motion: '막대가 차례로 자라요' },
   versus: { minSpan: 6, prefSpan: 8, motion: '두 막대가 나란히 자라고, 선은 차례로 그려져요' },
-  bridge: { minSpan: 8, prefSpan: 12, motion: '막대가 하나씩 쌓여요' },
+  bridge: { minSpan: 12, prefSpan: 12, motion: '막대가 하나씩 쌓여요' },
   trend: { minSpan: 6, prefSpan: 8, motion: '선이 왼쪽부터 그려져요' },
   share: { minSpan: 6, prefSpan: 8, motion: '조각이 차례로 채워져요' },
   funnel: { minSpan: 6, prefSpan: 8, motion: '단계마다 줄어들며 내려와요' },
-  progress: { minSpan: 8, prefSpan: 12, motion: '진행 막대가 차올라요' },
-  process: { minSpan: 8, prefSpan: 12, motion: '점이 맺히고 다음 단계로 선이 이어져요' },
-  timeline: { minSpan: 8, prefSpan: 12, motion: '선을 따라 차례로 나타나요' },
-  compare: { minSpan: 8, prefSpan: 12, motion: '두 면이 차례로 들어와요' },
+  progress: { minSpan: 12, prefSpan: 12, motion: '진행 막대가 차올라요' },
+  process: { minSpan: 12, prefSpan: 12, motion: '점이 맺히고 다음 단계로 선이 이어져요' },
+  timeline: { minSpan: 12, prefSpan: 12, motion: '선을 따라 차례로 나타나요' },
+  compare: { minSpan: 12, prefSpan: 12, motion: '두 면이 차례로 들어와요' },
   matrix: { minSpan: 6, prefSpan: 8, motion: '네 칸이 차례로 나타나요' },
-  position: { minSpan: 8, prefSpan: 12, motion: '점이 하나씩 제자리에 내려앉아요' },
-  pricing: { minSpan: 8, prefSpan: 12, motion: '안마다 차례로 올라와요' },
-  table: { minSpan: 8, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
+  position: { minSpan: 12, prefSpan: 12, motion: '점이 하나씩 제자리에 내려앉아요' },
+  pricing: { minSpan: 12, prefSpan: 12, motion: '안마다 차례로 올라와요' },
+  table: { minSpan: 12, prefSpan: 12, motion: '줄마다 차례로 들어와요' },
   logos: { minSpan: 6, prefSpan: 12, motion: '로고가 차례로 나타나요' },
   agenda: { minSpan: 6, prefSpan: 8, motion: '항목이 차례로 들어와요' },
 }
@@ -532,6 +527,68 @@ export const COMBOS: Record<number, number[][]> = {
 
 // 가져온 파일에는 아무 값이나 있을 수 있어서 정해진 값이 아니면 기본값으로 읽는다
 export const lookOf = (b: Pick<Block, 'type' | 'look'>): BlockLook => (b.look && BLOCK_LOOK_IDS.includes(b.look) ? b.look : (BLOCKS[b.type].look ?? 'plain'))
+
+/** 한 줄을 혼자 쓰는 부품 (minSpan 12) */
+export const isSolo = (type: BlockType) => BLOCKS[type].minSpan >= 12
+
+/** 안에 이미 칸이나 면이 있는 부품. 면을 깔면 상자 안에 상자가 된다 */
+const FLAT: BlockType[] = ['logos', 'compare', 'pricing', 'matrix', 'agenda', 'image']
+/** 진한 면을 깔 수 있는 부품: 한 장의 결론이 되는 숫자와 말. 목록이나 그림을 검게 칠하면 장이 무겁고 어디가 결론인지 흐려진다 */
+const BOLD_OK: BlockType[] = ['callout', 'number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'quote', 'text', 'message']
+
+/** 이 부품에 고를 수 있는 면. 한 줄을 혼자 쓰는 부품(표, 일정 같은)과 안에 칸이 있는 부품은 면 없이만 */
+export function looksFor(type: BlockType): BlockLook[] {
+  if (isSolo(type) || FLAT.includes(type)) return ['plain']
+  return BOLD_OK.includes(type) ? ['plain', 'card', 'bold'] : ['plain', 'card']
+}
+
+/**
+ * 면을 깔면 상자만 커 보이는 자리: 혼자 한 줄을 다 쓰는 부품. 넓은 면 안에 글이 한쪽에만 있어 비어 보이고, 면이 없어도 줄이 이미 한 덩어리로 읽힌다.
+ * 면은 같은 줄에 나란한 부품들이 같은 꼴의 칸(타일)으로 읽힐 때 쓴다. 강조 상자는 띠처럼 길게 써도 된다
+ */
+const looksEmptyAlone = (b: Pick<Block, 'type'>, inRow: number) => inRow === 1 && b.type !== 'callout'
+
+/** 그려지는 면. 혼자 한 줄을 다 쓰는 부품과 그 면을 쓸 수 없는 부품(예전 파일)은 고른 면이 있어도 바탕 없이 (옆에 부품을 놓으면 다시 보인다) */
+export const shownLook = (b: Pick<Block, 'type' | 'look'>, inRow: number): BlockLook =>
+  looksEmptyAlone(b, inRow) || !looksFor(b.type).includes(lookOf(b)) ? 'plain' : lookOf(b)
+
+/**
+ * 이 부품의 면을 이것으로 바꿀 수 없는 까닭. 한 장에는 면 한 가지만 쓴다: 옅은 면끼리, 또는 진한 면 하나와 바탕 없는 부품들.
+ * 진한 면과 옅은 면이 섞이면 상자 두 종류가 눈길을 나눠 갖고, 진한 면이 둘이면 어느 쪽이 결론인지 흐려진다
+ */
+export function lookIssue(rows: BlockRow[], blockId: string, look: BlockLook): NoRoom | null {
+  if (look === 'plain') return null
+  const self = allBlocks(rows).find((b) => b.id === blockId)
+  if (self && !looksFor(self.type).includes(look)) return { kind: 'look', why: look === 'bold' && looksFor(self.type).includes('card') ? 'no-bold' : 'flat' }
+  const others = allBlocks(rows)
+    .filter((b) => b.id !== blockId)
+    .map(lookOf)
+  if (look === 'bold' && others.includes('bold')) return { kind: 'look', why: 'one-bold' }
+  if (others.includes(look === 'bold' ? 'card' : 'bold')) return { kind: 'look', why: 'mix' }
+  const row = rows.find((r) => r.blocks.some((b) => b.id === blockId))
+  const block = row?.blocks.find((b) => b.id === blockId)
+  if (row && block && looksEmptyAlone(block, row.blocks.length)) return { kind: 'look', why: 'alone' }
+  return null
+}
+
+/**
+ * 부품의 면을 바꾼 줄들. 옅은 면과 바탕 없음은 같은 줄의 부품이 함께 바뀐다: 한 줄에 면이 있는 칸과 없는 칸이
+ * 섞이면 칸 높이와 여백이 달라 보여 한쪽이 덜 된 것처럼 보인다. 진한 면은 그 부품 하나만(한 장의 결론 하나)
+ */
+export function withLook(rows: BlockRow[], blockId: string, look: BlockLook): BlockRow[] {
+  const row = rows.find((r) => r.blocks.some((b) => b.id === blockId))
+  const together = (b: Block) =>
+    b.id === blockId || (look !== 'bold' && lookOf(b) !== 'bold' && looksFor(b.type).includes(look) && !!row?.blocks.includes(b))
+  return rows.map((r) => (r === row ? { ...r, blocks: r.blocks.map((b) => (together(b) ? { ...b, look } : b)) } : r))
+}
+
+/** 넣은 부품의 면이 장의 다른 면과 어긋나면(진한 면이 둘, 진한 면과 옅은 면) 바탕 없이. 강조 상자는 처음에 진한 면이라 흔하다 */
+function settleLook(rows: BlockRow[], block: Block): BlockRow[] {
+  const why = lookIssue(rows, block.id, lookOf(block))
+  // 혼자 한 줄을 쓰는 자리는 고른 면을 그대로 둔다: 그릴 때만 바탕 없이, 옆에 부품이 오면 다시 보인다
+  if (!why || why.kind !== 'look' || why.why === 'alone') return rows
+  return rows.map((r) => (r.blocks.some((b) => b === block) ? { ...r, blocks: r.blocks.map((b) => (b === block ? { ...b, look: 'plain' as const } : b)) } : r))
+}
 export const effectOf = (b: Pick<Block, 'effect'>): BlockEffect => (b.effect && BLOCK_EFFECT_IDS.includes(b.effect) ? b.effect : 'auto')
 
 export function makeBlock(type: BlockType): Block {
@@ -867,16 +924,16 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
 }
 
 /**
- * 부품 장의 본문 상자: 12칸 격자. 줄 높이는 똑같이 나눈다(위아래 줄이 1:1, 세 줄이면 1:1:1). 부품마다 비중을 두어 나누면
- * 남는 높이가 무거운 줄로 몰려 장마다 줄 높이가 제각각이 된다. 다만 잘리지 않을 높이 밑으로는 줄이지 않고,
- * 그 줄이 더 가져간 만큼을 나머지 줄이 다시 똑같이 나눈다.
+ * 부품 장의 본문 상자: 12칸 격자. 줄마다 잘리지 않을 높이를 주고, 남는 높이는 줄마다 똑같이 나눠 더한다
+ * (minmax(최소, auto)를 격자가 늘린다). 줄 높이를 통째로 똑같이 나누면 한 줄짜리 핵심 문장도 표만큼 높아져
+ * 문장 위아래가 크게 빈다. 부품마다 비중을 두어 남는 높이를 나누면 무거운 줄(차트, 질문)만 장 끝까지 늘어난다.
  * 계산은 브라우저의 격자가 한다. 그래서 내보낸 HTML도 자바스크립트 없이 같은 자리에 그려진다.
  */
 export function areaStyle(rows: BlockRow[]): Record<string, string> {
   // --bk-sq: 놓은 뒤에 내용이 늘어 줄들이 장보다 높아지면 slides/fitBlocks.ts가 줄 높이를 같은 비율로 낮춘다.
-  // --bk-r1..: 똑같이 나눈 높이에서 글이 넘치는 줄은 fitBlocks가 다른 줄의 남는 높이를 가져다 이 줄의 바닥을 올린다
+  // --bk-r1..: 그래도 글이 넘치는 줄은 fitBlocks가 남는 높이를 가져다 이 줄의 바닥을 올린다
   return {
-    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), 1fr)`).join(' '),
+    gridTemplateRows: rows.map((r, i) => `minmax(max(calc(${rowMinH(r)}px * var(--bk-sq, 1)), var(--bk-r${i + 1}, 0px)), auto)`).join(' '),
   }
 }
 
@@ -888,21 +945,14 @@ export function cellStyle(b: CellBox): Record<string, string> {
 }
 
 /**
- * 줄마다의 높이(px). 격자의 minmax(최소, 1fr)와 같은 계산이다: 똑같이 나눠 최소보다 낮아지는 줄은
- * 최소에 묶고, 남은 높이를 나머지 줄이 다시 똑같이 나눈다. 끌어다 놓는 동안 놓일 자리를 찾을 때 쓴다.
+ * 줄마다의 높이(px). 격자의 minmax(최소, auto)와 같은 계산이다: 줄마다 잘리지 않을 높이에 남는 높이를
+ * 똑같이 나눠 더한다(남는 높이가 없으면 잘리지 않을 높이 그대로). 끌어다 놓는 동안 놓일 자리를 찾을 때 쓴다.
  */
 export function rowHeights(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): number[] {
   const free = areaH - Math.max(0, rows.length - 1) * gap
   const mins = rows.map(rowMinH)
-  const fixed = new Set<number>()
-  for (;;) {
-    const rest = rows.length - fixed.size
-    const restH = free - [...fixed].reduce((a, i) => a + mins[i], 0)
-    const each = rest > 0 ? Math.max(0, restH) / rest : 0
-    const next = mins.findIndex((m, i) => !fixed.has(i) && each < m)
-    if (next < 0) return mins.map((m, i) => (fixed.has(i) ? m : each))
-    fixed.add(next)
-  }
+  const spare = Math.max(0, free - mins.reduce((a, m) => a + m, 0))
+  return mins.map((m) => m + (rows.length ? spare / rows.length : 0))
 }
 
 /** 줄들을 잘리지 않게 놓는 데 드는 높이: 줄마다 가장 낮은 높이와 줄 사이 */
@@ -1011,7 +1061,7 @@ export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, row
   if (blockCount(rows) >= MAX_BLOCKS) return null
   if (target.kind === 'row') {
     if (rows.length >= MAX_ROWS || target.index < 0 || target.index > rows.length) return null
-    return [...rows.slice(0, target.index), { id: rowId, blocks: [block] }, ...rows.slice(target.index)]
+    return settleLook([...rows.slice(0, target.index), { id: rowId, blocks: [block] }, ...rows.slice(target.index)], block)
   }
   const row = rows[target.row]
   if (!row || row.blocks.length >= MAX_IN_ROW || target.index < 0 || target.index > row.blocks.length) return null
@@ -1019,7 +1069,10 @@ export function insertAt(rows: BlockRow[], target: DropTarget, block: Block, row
   blocks.splice(target.index, 0, block)
   const spans = fitSpans(blocks)
   if (!spans) return null
-  return rows.map((r, i) => (i === target.row ? { ...r, blocks, spans } : r))
+  return settleLook(
+    rows.map((r, i) => (i === target.row ? { ...r, blocks, spans } : r)),
+    block,
+  )
 }
 
 /** 부품을 뺀 줄들. 빈 줄은 없애고, 남은 칸은 너비를 다시 고른다 */
@@ -1063,12 +1116,20 @@ export type NoRoom =
   | { kind: 'row-full' }
   | { kind: 'narrow'; span: number }
   | { kind: 'height'; need: number; room: number }
+  /** 한 줄을 혼자 쓰는 부품(type)과 나란히 놓으려 할 때 */
+  | { kind: 'solo'; type: BlockType }
+  /** 면을 바꿀 수 없을 때: 진한 면은 하나만, 진한 면과 옅은 면은 섞지 않고, 혼자 한 줄을 다 쓰는 작은 부품은 면 없이 */
+  | { kind: 'look'; why: 'one-bold' | 'mix' | 'alone' | 'flat' | 'no-bold' }
 
 /** 그 자리에 넣을 수 없는 까닭. 넣을 수 있으면 null */
 export function whyNot(rows: BlockRow[], target: DropTarget, block: Block, areaH?: number): NoRoom | null {
   if (blockCount(rows) >= MAX_BLOCKS) return { kind: 'full' }
   if (target.kind === 'row' && rows.length >= MAX_ROWS) return { kind: 'rows' }
   if (target.kind === 'cell' && (rows[target.row]?.blocks.length ?? 0) >= MAX_IN_ROW) return { kind: 'row-full' }
+  if (target.kind === 'cell') {
+    const solo = [block, ...(rows[target.row]?.blocks ?? [])].find((b) => isSolo(b.type))
+    if (solo) return { kind: 'solo', type: solo.type }
+  }
   const next = insertAt(rows, target, block, 'x')
   if (!next) return { kind: 'narrow', span: BLOCKS[block.type].minSpan }
   if (areaH !== undefined && !fitsHeight(next, areaH)) return { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }

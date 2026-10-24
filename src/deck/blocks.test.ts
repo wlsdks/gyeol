@@ -19,18 +19,24 @@ import {
   fitsHeight,
   fitsWith,
   insertAt,
+  isSolo,
+  lookIssue,
+  lookOf,
   makeBlock,
   MAX_BLOCKS,
   MAX_IN_ROW,
   MAX_ROWS,
   removeBlock,
   rowHeights,
+  shownLook,
   spansAt,
   spansOf,
   targetOf,
   unwrapCompose,
   validTargets,
+  whyNot,
   withItem,
+  withLook,
 } from './blocks'
 import { sampleBlock } from './blockSamples'
 import { FRAME } from './frame'
@@ -176,6 +182,45 @@ describe('자리 정하기', () => {
     expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
   })
 
+  it('표나 일정처럼 넓게 짜인 부품은 한 줄을 혼자 쓴다', () => {
+    const rows = [row(block('bullets', 'b'))]
+    // 점 목록 옆에 표를 놓을 수 없고, 표 옆에 점 목록도 놓을 수 없다. 새 줄로는 된다
+    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, block('table', 't'))).toEqual({ kind: 'solo', type: 'table' })
+    expect(whyNot([row(block('table', 't'))], { kind: 'cell', row: 0, index: 1 }, block('bullets', 'x'))).toEqual({ kind: 'solo', type: 'table' })
+    expect(whyNot(rows, { kind: 'row', index: 1 }, block('table', 't'))).toBeNull()
+    for (const t of ['table', 'gantt', 'timeline', 'process', 'compare', 'pricing'] as const) expect(isSolo(t)).toBe(true)
+    expect(isSolo('bars')).toBe(false)
+  })
+
+  it('한 장에는 면 한 가지만: 진한 면은 하나, 진한 면과 옅은 면은 섞지 않는다', () => {
+    const withLooks = (...looks: Block['look'][]) => [row(...looks.map((look, i) => ({ ...block('text', `k${i}`), look })))]
+    expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'one-bold' })
+    expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'card')).toEqual({ kind: 'look', why: 'mix' })
+    expect(lookIssue(withLooks('card', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'mix' })
+    expect(lookIssue(withLooks('card', 'plain'), 'k1', 'card')).toBeNull()
+    // 혼자 한 줄을 다 쓰는 작은 부품은 면을 깔지 않는다 (그려질 때도 바탕 없이)
+    const ring = { ...block('ring', 'g'), look: 'card' as const }
+    expect(lookIssue([row(ring)], 'g', 'card')).toEqual({ kind: 'look', why: 'alone' })
+    expect(shownLook(ring, 1)).toBe('plain')
+    expect(shownLook(ring, 2)).toBe('card')
+    // 강조 상자는 띠처럼 혼자 써도 된다
+    expect(lookIssue([row(block('callout', 'c'))], 'c', 'bold')).toBeNull()
+  })
+
+  it('넣은 부품의 면이 장과 어긋나면 바탕 없이, 옅은 면은 같은 줄이 함께 바뀐다', () => {
+    // 진한 면이 이미 있는 장에 강조 상자(처음엔 진한 면)를 넣으면 바탕 없이
+    const rows = [row({ ...block('text', 'a'), look: 'bold' })]
+    const next = insertAt(rows, { kind: 'row', index: 1 }, block('callout', 'c'))!
+    expect(lookOf(next[1].blocks[0])).toBe('plain')
+    // 옅은 면을 고르면 같은 줄의 다른 부품도 옅은 면, 다른 줄은 그대로
+    const two = [row(block('text', 'a'), block('bullets', 'b')), row(block('number', 'n'))]
+    const carded = withLook(two, 'a', 'card')
+    expect(carded[0].blocks.map(lookOf)).toEqual(['card', 'card'])
+    expect(lookOf(carded[1].blocks[0])).toBe('plain')
+    // 진한 면은 그 부품 하나만
+    expect(withLook(two, 'a', 'bold')[0].blocks.map(lookOf)).toEqual(['bold', 'plain'])
+  })
+
   it('같은 장에 같은 부품이 둘이면 빈칸 목록에서 자리로 부른다', () => {
     const rows = [row(block('kpi', 'k')), row(block('faq', 'f1'), block('faq', 'f2'))]
     const names = blockNames(rows)
@@ -191,20 +236,19 @@ describe('자리 정하기', () => {
     expect(blockMissing(rows[1].blocks[0], names.get('f1')).some((m) => labels.includes(m.label))).toBe(false)
   })
 
-  it('줄 높이는 똑같이 나누고, 잘리지 않을 높이가 더 필요한 줄만 더 가져간다', () => {
-    // 아래 줄에 차트나 질문이 와도 남는 높이를 그 줄이 다 가져가지 않는다
-    const [a, b] = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], 800)
-    expect(Math.abs(a - b)).toBeLessThan(1)
-    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - FRAME.y - FRAME.bottom)
-    expect(Math.max(...three) - Math.min(...three)).toBeLessThan(1)
-    // 낮은 장이면 한 줄이 잘리지 않을 높이에 묶이고, 다른 줄이 나머지를 가져간다
-    const tight = [row(block('message', 'm')), row(block('faq', 'f'))]
+  it('줄마다 잘리지 않을 높이를 주고, 남는 높이는 똑같이 나눠 더한다', () => {
     // 자리가 없으면 줄마다 잘리지 않을 높이가 그대로 나온다
+    const tight = [row(block('message', 'm')), row(block('faq', 'f'))]
     const [low, need] = rowHeights(tight, 0)
     expect(low).toBeLessThan(need - 40)
-    const hs = rowHeights(tight, need * 2 + 48 - 40)
-    expect(hs[1]).toBeCloseTo(need, 0)
-    expect(hs[0]).toBeCloseTo(need - 40, 0)
+    // 남는 높이 200은 두 줄이 100씩: 핵심 문장 줄이 질문 줄만큼 높아지지 않고, 질문 줄만 장 끝까지 늘어나지도 않는다
+    const hs = rowHeights(tight, low + need + 48 + 200)
+    expect(hs[0]).toBeCloseTo(low + 100, 0)
+    expect(hs[1]).toBeCloseTo(need + 100, 0)
+    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - FRAME.y - FRAME.bottom)
+    const mins = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 0)
+    const extra = three.map((h, i) => h - mins[i])
+    expect(Math.max(...extra) - Math.min(...extra)).toBeLessThan(1)
   })
 
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {

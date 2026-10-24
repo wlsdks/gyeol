@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
-import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, lookOf, rowMins, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
+import { areaStyle, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, rowMins, shownLook, spansOf, variantOfBlock, type CellBox } from '../deck/blocks'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { Block, BlockType, NativeBlockType } from '../deck/types'
@@ -703,7 +703,7 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
 function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
   const b = box.block
   const spec = BLOCKS[b.type]
-  const look = lookOf(b)
+  const look = shownLook(b, box.cols)
   const slot = live?.dragId === b.id
   const selected = !!live && live.selected === b.id && !live.dragId
   return (
@@ -715,6 +715,7 @@ function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
         `fx-${effectOf(b)}`,
         spec.layout && 'bk-layout',
         `va-${variantOfBlock(b)}`,
+        box.cols > 1 && 'is-shared',
         selected && 'is-selected',
         slot && 'is-slot',
       )}

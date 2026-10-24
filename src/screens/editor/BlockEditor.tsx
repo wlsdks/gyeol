@@ -17,7 +17,8 @@ import {
   effectOf,
   foldableFields,
   insertAt,
-  lookOf,
+  lookIssue,
+  shownLook,
   makeBlock,
   placeIssue,
   pointerTarget,
@@ -29,6 +30,7 @@ import {
   variantOfBlock,
   whyNot,
   withItem,
+  withLook,
   type DropTarget,
   type NoRoom,
 } from '../../deck/blocks'
@@ -591,16 +593,17 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const tools = (b: Block) => (
     <BlockTools
       block={b}
+      inRow={(slide.rows ?? []).find((r) => r.blocks.some((x) => x.id === b.id))?.blocks.length ?? 1}
       itemIssue={issue(b, withItem)}
       variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}
-      lookIssue={(lk) => issue(b, (x) => ({ ...x, look: lk }))}
+      lookIssue={(lk) => (lk ? lookIssue(slide.rows ?? [], b.id, lk) : null) ?? issue(b, (x) => ({ ...x, look: lk }))}
       onBlocked={(r) => {
         const t = noRoomText(r, b.type, 'change')
         toast.show(`${t.why} ${t.fix}`, undefined, 6000)
       }}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setRows(slideRef.current.id, shiftBlock(slideRef.current.rows ?? [], b.id, dir))}
-      onLook={(lk) => update(b.id, (x) => ({ ...x, look: lk }))}
+      onLook={(lk) => store.setRows(slideRef.current.id, withLook(slideRef.current.rows ?? [], b.id, lk ?? 'plain'))}
       onEffect={(fx) => {
         update(b.id, (x) => ({ ...x, effect: fx }))
         requestAnimationFrame(() => preview(b, fx))
@@ -839,6 +842,7 @@ const LOOK_NOTES: Record<Block['look'] & string, string> = {
 
 function BlockTools({
   block,
+  inRow,
   itemIssue,
   variantIssue,
   lookIssue,
@@ -859,6 +863,8 @@ function BlockTools({
   /** 항목을 더하거나 모양, 바탕을 바꾸면 장에 들어가지 않을 때 그 까닭 */
   itemIssue: NoRoom | null
   variantIssue(variant: string): NoRoom | null
+  /** 이 부품의 줄에 놓인 부품 수 (혼자 한 줄을 다 쓰는 작은 부품은 면 없이 그려진다) */
+  inRow: number
   lookIssue(look: Block['look']): NoRoom | null
   /** 그런 단추를 눌렀을 때 (막아 두되, 누르면 까닭을 보여 준다) */
   onBlocked(r: NoRoom): void
@@ -901,7 +907,8 @@ function BlockTools({
       window.removeEventListener('keydown', onKey, true)
     }
   }, [menu])
-  const look = lookOf(block)
+  // 그려지는 면을 보인다: 혼자 한 줄을 다 쓰는 작은 부품은 고른 면이 있어도 바탕 없이 그려진다
+  const look = shownLook(block, inRow)
   const effect = effectOf(block)
   const variants = spec.variants ?? []
   const variant = variantOfBlock(block)

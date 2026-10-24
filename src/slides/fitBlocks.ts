@@ -3,10 +3,12 @@
  * 부품을 놓을 때는 잘리지 않는 자리만 고르지만, 놓은 뒤에 항목을 더하거나 글을 길게 쓰면 넘칠 수 있다.
  *
  * 1. 줄마다의 가장 낮은 높이를 더해도 본문 상자보다 높으면, 줄 높이를 같은 비율로 낮춘다(--bk-sq).
- * 2. 줄 높이는 똑같이 나누지만(deck/blocks.ts의 areaStyle), 글이 넘치는 칸이 있는 줄은 다른 줄이 잘리지 않을 높이까지
- *    남는 높이를 가져온다(--bk-r1..). 잰 높이(blockHeights.ts)는 보통 글자 크기라, 크게나 명조에서 딱 그 높이면 모자랄 수 있다.
+ * 2. 줄마다 잘리지 않을 높이에 남는 높이를 똑같이 나눠 더하지만(deck/blocks.ts의 areaStyle), 글이 넘치는 칸이 있는 줄은
+ *    다른 줄이 잘리지 않을 높이까지 남는 높이를 더 가져온다(--bk-r1..). 잰 높이(blockHeights.ts)는 보통 글자 크기라, 크게나 명조에서 딱 그 높이면 모자랄 수 있다.
  * 3. 그래도 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
+ * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
+ *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
@@ -15,6 +17,8 @@
  */
 export function blockFitter() {
   const steps = [0.92, 0.84, 0.76, 0.68]
+  // 키울 때는 큰 것부터: 넘치지 않는 가장 큰 단계를 쓴다
+  const ups = [1.24, 1.16, 1.08]
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
@@ -186,6 +190,18 @@ export function blockFitter() {
     }
   }
 
+  /** 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치면 한 단계 작게, 끝까지 넘치면 그대로 */
+  function enlarge(cells: HTMLElement[]): void {
+    const inners = cells.map((c) => c.querySelector<HTMLElement>(':scope > .bk-in')).filter((el): el is HTMLElement => !!el)
+    for (const k of ups) {
+      for (const c of cells) c.style.setProperty('--bk-fit', String(k))
+      for (const inner of inners) labels(inner)
+      if (!inners.some(over)) return
+    }
+    for (const c of cells) c.style.removeProperty('--bk-fit')
+    for (const inner of inners) labels(inner)
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -209,7 +225,7 @@ export function blockFitter() {
       const squeezed = need > room + 1
       if (squeezed) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
       // 글자는 먼저 늘 줄여도 되는 데까지만(보통 한 단계, 크게는 두 단계: 보통을 한 단계 줄인 것과 같은 크기) 줄인다.
-      // 그래도 넘치는 줄만 다른 줄의 남는 높이를 가져온다. 거꾸로 하면 조금만 넘쳐도 줄 높이가 달라져 1:1이 자주 깨진다
+      // 그래도 넘치는 줄만 다른 줄의 남는 높이를 가져온다. 거꾸로 하면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다
       const least = area.closest('.sz-large') ? 0.84 : 0.92
       const shrink = (c: HTMLElement, last: number) => {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
@@ -228,6 +244,7 @@ export function blockFitter() {
       }
       if (!squeezed) grow(area, cells, room)
       for (const c of cells) shrink(c, 0)
+      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) enlarge(cells)
       area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도

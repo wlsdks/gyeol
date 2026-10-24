@@ -788,8 +788,7 @@ export function motionEngine(): MotionEngine {
       if (!cell.classList.contains('bk-look-plain')) card(cell, 0)
       switch (type) {
         case 'message': {
-          grow(one('.bk-msg'), 0, 'x', '::before')
-          const t = words(one('.bk-msg-t'), 100, L.word * 1.2)
+          const t = words(one('.bk-msg-t'), 0, L.word * 1.2)
           rise(one('.bk-msg-s'), t, L.y * 0.6)
           break
         }

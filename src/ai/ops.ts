@@ -20,6 +20,7 @@ import {
   effectOf,
   fitsHeight,
   insertAt,
+  lookIssue,
   lookOf,
   makeBlock,
   needH,
@@ -31,6 +32,7 @@ import {
   unwrapCompose,
   variantOfBlock,
   whyNot,
+  withLook,
   type DropTarget,
 } from '../deck/blocks'
 import { BLUEPRINTS } from '../deck/blueprints'
@@ -138,6 +140,8 @@ export type OpCode =
   | 'not_reviewed'
   | 'no_block'
   | 'no_room'
+  /** 한 장에는 면 한 가지만: 진한 면은 하나, 진한 면과 옅은 면은 섞지 않고, 혼자 한 줄을 다 쓰는 작은 부품은 면 없이 */
+  | 'look_clash'
 
 export interface OpResult {
   ok: boolean
@@ -610,7 +614,10 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         if (!target) return fail('no_room')
         if (moving && sameTarget(targetOf(rows, moving.id), target)) return fail('no_change')
         if (whyNot(base, target, block, area)) return fail('no_room')
-        put(i, { ...s, rows: insertAt(base, target, block)! })
+        const placed = insertAt(base, target, block)!
+        // 장의 다른 면과 어긋나는 면은 넣을 때 바탕 없이 바뀐다. AI가 그 면을 골랐으면 알린다
+        if (op.op === 'add_block' && op.look && placed.flatMap((r) => r.blocks).some((b) => b.id === block.id && lookOf(b) !== op.look)) return fail('look_clash')
+        put(i, { ...s, rows: placed })
         if (op.op === 'add_block' && op.as) blockNamed.set(op.as, block.id)
         return done
       }
@@ -633,7 +640,10 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           if (!ids.includes(op.variant)) return fail('not_for_layout')
           next.variant = op.variant === ids[0] ? undefined : op.variant
         }
-        if (op.look) next.look = op.look
+        if (op.look) {
+          if (lookIssue(s.rows ?? [], b.id, op.look)) return fail('look_clash')
+          next.look = op.look
+        }
         if (op.effect) next.effect = op.effect
         if (op.count !== undefined) {
           if (!bs.items) return fail('not_for_layout')
@@ -656,7 +666,9 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           variantOfBlock(next) === variantOfBlock(b) && lookOf(next) === lookOf(b) && effectOf(next) === effectOf(b) && next.items.length === b.items.length && next.highlight === b.highlight
         if (same) return fail('no_change')
         const rows = s.rows ?? []
-        const after = changeRows(rows, b.id, () => next)
+        const changed = changeRows(rows, b.id, () => next)
+        // 옅은 면과 바탕 없음은 같은 줄의 부품이 함께 바뀐다 (편집기와 같은 규칙)
+        const after = op.look ? withLook(changed, b.id, op.look) : changed
         if (grows(rows, after, areaOf(s))) return fail('no_room')
         put(i, { ...s, rows: after })
         return done
