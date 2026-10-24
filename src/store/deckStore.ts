@@ -118,14 +118,15 @@ export const useDeck = create<DeckState>((set, get) => {
     undo() {
       const { deck, past, future } = get()
       if (!deck || !past.length) return
-      const prev = past[past.length - 1]
+      // AI 공유는 되돌리기 기록에 없는 설정이라 지금 값을 그대로 둔다. 끈 공유가 되돌리기로 다시 켜지면 모양이 몰래 다시 올라간다
+      const prev = { ...past[past.length - 1], aiShare: deck.aiShare }
       const selectedId = prev.slides.some((s) => s.id === get().selectedId) ? get().selectedId : prev.slides[0]?.id
       set({ deck: prev, past: past.slice(0, -1), future: [deck, ...future], lastKey: null, selectedId })
     },
     redo() {
       const { deck, past, future } = get()
       if (!deck || !future.length) return
-      const next = future[0]
+      const next = { ...future[0], aiShare: deck.aiShare }
       const selectedId = next.slides.some((s) => s.id === get().selectedId) ? get().selectedId : next.slides[0]?.id
       set({ deck: next, past: [...past, deck], future: future.slice(1), lastKey: null, selectedId })
     },

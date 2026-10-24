@@ -99,7 +99,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
       return
     }
     await saveVersion(deck, { reason: 'restore' })
-    const next: Deck = { ...d, id: deck.id, updatedAt: Date.now() }
+    // AI 공유는 버전에 딸린 내용이 아니라 지금 켜 둔 설정이다. 예전 버전이 켜져 있었다고 꺼 둔 공유를 다시 켜지 않는다
+    const next: Deck = { ...d, id: deck.id, updatedAt: Date.now(), aiShare: useDeck.getState().deck?.aiShare ?? deck.aiShare }
     useDeck.getState().open(next)
     await persistNow(next)
     notify(`${fullFmt.format(version.createdAt)} 버전으로 되돌렸어요. 되돌리기 전 상태도 기록에 남겨 뒀어요.`)
@@ -109,7 +110,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     const d = await loadVersionDeck(version.id)
     if (!d) return notify('이 버전을 불러오지 못했어요')
     const now = Date.now()
-    const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now }
+    // 새 발표는 AI 공유를 끈 채로 시작한다 (공유는 발표마다 사람이 켠다)
+    const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now, aiShare: false }
     await persistNow(copy)
     go({ name: 'edit', id: copy.id })
   }
