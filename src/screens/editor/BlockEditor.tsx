@@ -253,21 +253,15 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const dy = (gr.top + gr.height / 2 - (r.top + r.height / 2)) / vs
     // FLIP으로 이미 움직이기 시작한 칸은 멈추고 여기서 다시
     cell.getAnimations().forEach((a) => a.cancel())
-    const spring = cell.animate(
+    cell.animate(
       [
         { transformOrigin: '50% 50%', transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: 0.35 },
         { transformOrigin: '50% 50%', transform: 'none', opacity: 1 },
       ],
       { duration: 520, easing: SPRING },
     )
-    // 새로 넣은 부품: 자리에 맞춰지면 발표할 때의 움직임을 한 번 (숫자가 오르고 막대가 자라는 것을 넣자마자 보게)
-    const level = motionOf(deck, slideRef.current)
-    if (landing.ghost.kind === 'new' && level !== 'none') {
-      spring.finished.then(
-        () => cell.isConnected && engine.play(cell, level),
-        () => {},
-      )
-    }
+    // 넣은 뒤에 발표할 때의 움직임을 이어서 틀지 않는다: 자리에 맞춰진 내용이 사라졌다가 조각조각 다시 나타나서
+    // 넣자마자 깨진 것처럼 보였다. 움직임은 '이 장 설정'의 움직임 ▶나 컴포넌트 도구의 움직임에서 미리 본다
     const end = { x: r.left + r.width / 2 - gr.width / 2, y: r.top + r.height / 2 - gr.height / 2 }
     g.style.transformOrigin = '50% 50%'
     const fly = g.animate(
