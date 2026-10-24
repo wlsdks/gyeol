@@ -99,8 +99,8 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
     const tracks = style.gridTemplateRows.split(' ').map(parseFloat)
     const used = tracks.reduce((a, h) => a + h, 0) + (parseFloat(style.rowGap) || 0) * Math.max(0, tracks.length - 1)
     if (used > area.clientHeight + 1) problems.push(`${i + 1}번 장: 줄이 본문 상자보다 ${Math.round(used - area.clientHeight)} 높아요`)
-    // 글자 크기 '크게'(1.08배)는 한 단계(0.84)까지 줄여도 보통 크기와 거의 같다
-    const least = area.closest('.slide')?.classList.contains('sz-large') ? 0.84 : 1
+    // 글자 크기 '크게'(1.2배)는 한 단계(1/1.2, fitBlocks.ts)까지 줄여도 보통 크기와 같다
+    const least = area.closest('.slide')?.classList.contains('sz-large') ? 1 / 1.2 : 1
     for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
       cells++
       const fit = Number(cell.style.getPropertyValue('--bk-fit') || 1)

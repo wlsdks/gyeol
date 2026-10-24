@@ -284,12 +284,15 @@ export function blockFitter() {
       const squeezed = need > room + 1
       if (squeezed) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
       // 보통 크기는 글자를 줄이기 전에 넘치는 줄이 다른 줄의 남는 높이를 먼저 가져온다(잰 높이는 줄이지 않고 들어가는 높이다).
-      // 크게(1.08배)는 먼저 한 단계 줄인다: 줄여도 보통보다 조금 작을 뿐이고, 줄 높이를 먼저 바꾸면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다
-      const least = area.closest('.sz-large') ? 0.84 : 1
+      // 크게(1.2배)는 먼저 한 단계 줄인다: 줄여도 보통과 같은 크기이고, 줄 높이를 먼저 바꾸면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다.
+      // 크게의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
+      const large = !!area.closest('.sz-large')
+      const ladder = large ? [1 / 1.2, steps[1]] : steps
+      const least = large ? ladder[0] : 1
       const shrink = (c: HTMLElement, last: number) => {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (!inner) return
-        for (const k of steps) {
+        for (const k of ladder) {
           if (k < last || !over(inner)) break
           if (Number(c.style.getPropertyValue('--bk-fit') || 1) <= k) continue
           c.style.setProperty('--bk-fit', String(k))

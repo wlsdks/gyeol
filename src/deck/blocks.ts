@@ -1272,7 +1272,7 @@ export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; 
   const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
   const lead = slide.fields.lead?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'lead') : '')
   const type = look?.meta?.method === 'send' ? HEAD_TYPE.read : HEAD_TYPE.present
-  const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.08 : 1
+  const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.2 : 1
   const n = [...title].length
   const tfs = type.title * scale * (n > 40 ? 0.7 : n > 24 ? 0.84 : 1)
   const lfs = type.lead * scale
