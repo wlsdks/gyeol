@@ -7,10 +7,12 @@ import { createSampleDeck } from '../deck/sample'
 import { extraSlides, withItems, withOptions } from '../deck/showcase'
 import type { BlockLook, BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
 import type { SlideMode } from '../slides/context'
+import type { SlideActions } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { fitBlocks } from '../slides/fitBlocks'
 import { motionEngine } from '../motion/engine'
 import { checkCombos, comboSlides } from './combos'
+import { checkEdit } from './checkEdit'
 import { clashes, failingHeights, heightsSource, measureAll, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
@@ -162,9 +164,12 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
   if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl')) }
-  if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }).map((c) => c.slide) }
+  if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }, params.get('mode') === 'edit').map((c) => c.slide) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
+
+/** 편집 보기에서 칸을 편집기처럼 그리려고 (적어도 바뀌지 않는다) */
+const NO_ACTIONS: SlideActions = { setField() {}, setItem() {}, removeItem() {}, updateBlock() {} }
 
 export function Gallery() {
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '')
@@ -172,6 +177,8 @@ export function Gallery() {
   if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
   if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
+  // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()
+  if (params.get('mode') === 'edit') Object.assign(window, { checkEdit })
   // 움직임 보기: 콘솔에서 playSlide(0, 'lively')로 그 장을 발표할 때처럼 움직인다
   Object.assign(window, { playSlide: (i: number, level: 'calm' | 'lively' = 'calm') => motionEngine().play(document.querySelectorAll('.slide')[i], level) })
   const theme = (params.get('theme') ?? 'white') as ThemeId
@@ -220,6 +227,7 @@ export function Gallery() {
             deck={deck}
             slide={slide}
             mode={mode}
+            actions={mode === 'edit' ? NO_ACTIONS : undefined}
             {...pageProps(info, origin.get(slide.id) ?? slide.id)}
           />
         </ScaledSlide>

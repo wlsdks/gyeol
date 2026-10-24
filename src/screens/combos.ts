@@ -43,12 +43,13 @@ export interface Combo {
 }
 
 /** 규칙이 받아들인 조합 n개. 제목이 있는 장과 없는 장을 섞는다 */
-export function comboSlides(seed: number, n: number, look?: Parameters<typeof composeAreaH>[1]): Combo[] {
+/** edit면 편집 화면의 본문 높이(비운 제목과 부제의 안내까지)로 놓는다: 편집 화면에서 잘리거나 겹치는지 볼 때 */
+export function comboSlides(seed: number, n: number, look?: Parameters<typeof composeAreaH>[1], edit?: boolean): Combo[] {
   const rand = random(seed)
   return Array.from({ length: n }, (_, k) => {
     const title = rand() < 0.7 ? `조합 ${seed}-${k + 1}` : ''
     const base: Slide = { ...makeSlide('compose'), id: `combo-${seed}-${k}`, fields: { title } }
-    const areaH = composeAreaH(base, look)
+    const areaH = composeAreaH(base, look, edit)
     let rows: BlockRow[] = []
     const refused: Combo['refused'] = []
     const want = 1 + Math.floor(rand() * 6)

@@ -116,6 +116,8 @@ function Editable({
 
   return (
     <Tag className={cx(className, 'ed', !value && 'is-empty')} style={style}>
+      {/* 칸에 두르는 면과 점선. 넓이는 이웃한 칸과의 틈에 맞춘다 (halos.ts) */}
+      <span className="ed-halo" aria-hidden="true" />
       <span className="ed-hint" aria-hidden="true">
         {hint}
       </span>

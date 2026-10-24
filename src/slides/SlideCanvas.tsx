@@ -5,6 +5,7 @@ import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
+import { useHalos } from './halos'
 import { BOLD_LAYOUTS, LAYOUT_VIEWS } from './layouts'
 
 export const SLIDE_W = 1920
@@ -65,10 +66,13 @@ export const SlideCanvas = memo(function SlideCanvas({
   const tone = bold ? 'base' : toneOf(slide)
   const size = deck.theme.size === 'small' || deck.theme.size === 'large' ? `sz-${deck.theme.size}` : null
   const footer = deck.theme.footer ?? 'all'
+  const ref = useRef<HTMLDivElement>(null)
+  useHalos(ref, mode === 'edit')
 
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
       <div
+        ref={ref}
         className={cx(
           'slide',
           `l-${slide.layout}`,

@@ -9,7 +9,7 @@
 
 import { BLOCK_HEIGHTS } from './blockHeights'
 import { emptyItem, uid, withDefaultOptions } from './generate'
-import { LAYOUTS, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
+import { hintFor, LAYOUTS, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
 import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
 
 export interface BlockSpec {
@@ -921,13 +921,14 @@ const EM_PER_CHAR = 0.67
 const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.ceil(([...text].length * EM_PER_CHAR * fs) / width))
 
 /**
- * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다).
+ * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다. edit면 편집 화면 기준).
  * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기, 시험) 쓴다. 제목은 길이에 따라 글자가 작아지고(fields.tsx의 fit, 24자와 40자)
  * 1560px을 넘으면 줄이 바뀐다. 부제는 1320px, 제목과 부제 사이 28, 머리 아래 64. 발표 설정(글자 크기, 보내는 자료)도 본다
  */
-export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }): number {
-  const title = slide.fields.title?.trim() ?? ''
-  const lead = slide.fields.lead?.trim() ?? ''
+export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }, edit?: boolean): number {
+  // 편집 화면은 비운 제목과 부제에도 안내를 보여서 그만큼 본문이 낮다
+  const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
+  const lead = slide.fields.lead?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'lead') : '')
   const type = look?.meta?.method === 'send' ? HEAD_TYPE.read : HEAD_TYPE.present
   const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.08 : 1
   const n = [...title].length
