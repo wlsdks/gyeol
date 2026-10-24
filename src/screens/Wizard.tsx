@@ -163,7 +163,7 @@ export function Wizard() {
                 {preview.slides.map((s, i) => (
                   <li key={s.id} className={cx(s.layout === 'section' && 'is-section')} title={LAYOUTS[s.layout].name}>
                     <span aria-hidden="true">
-                      <ScaledSlide width={92}>
+                      <ScaledSlide width={86}>
                         <SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} />
                       </ScaledSlide>
                     </span>
