@@ -12,7 +12,8 @@ import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
 import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
-import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, PlusIcon, Popover, TrashIcon, UploadIcon, useToast } from './ui'
+import { particle } from './editor/noRoom'
+import { Brand, CopyIcon, FolderIcon, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
 
 const SAMPLE_ID = 'sample'
 
@@ -40,7 +41,7 @@ export function Home() {
   const duplicate = async (deck: Deck) => {
     const now = Date.now()
     const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
-    await persistNow(copy)
+    if (!(await persistNow(copy))) toast.show(`사본을 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
     refresh()
   }
 
@@ -52,7 +53,11 @@ export function Home() {
       return
     }
     const deck = { ...createSampleDeck(), id: SAMPLE_ID }
-    await persistNow(deck)
+    // 저장하지 못한 채 편집기로 가면 '찾을 수 없는 발표'로 보인다
+    if (!(await persistNow(deck))) {
+      toast.show(`예시를 열지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+      return
+    }
     go({ name: 'edit', id: deck.id })
   }
 
@@ -70,7 +75,15 @@ export function Home() {
         return
       }
       const opened = await importDeck(deck)
-      go({ name: 'edit', id: opened.id })
+      if (!opened.saved) {
+        toast.show(`파일을 열지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+        refresh()
+        return
+      }
+      // 같은 발표를 말없이 덮어쓰지 않았다는 것을 편집기에서 알린다
+      if (opened.replaced) noticeAfterGo('있던 발표를 파일 내용으로 바꿨어요. 바뀌기 전 모습은 버전 기록에 있어요.')
+      else if (opened.copied) noticeAfterGo('같은 발표가 이미 있어서 사본으로 열었어요. 있던 발표는 그대로예요.')
+      go({ name: 'edit', id: opened.deck.id })
     }
     input.click()
   }
@@ -158,8 +171,8 @@ export function Home() {
         >
           <p>
             {folder?.kind === 'ready'
-              ? `‘${toDelete.title}’을 목록에서 지워요. 보관 폴더의 작업 파일은 ‘지운 발표’ 폴더로 옮겨 두니, 필요하면 파일 열기로 다시 불러올 수 있어요.`
-              : `‘${toDelete.title}’을 지우면 되돌릴 수 없어요. 버전 기록도 함께 지워지고, 내보낸 파일은 그대로 남아요.`}
+              ? `‘${toDelete.title}’${particle(toDelete.title, '을', '를')} 목록에서 지워요. 보관 폴더의 작업 파일은 ‘지운 발표’ 폴더로 옮겨 두니, 필요하면 파일 열기로 다시 불러올 수 있어요.`
+              : `‘${toDelete.title}’${particle(toDelete.title, '을', '를')} 지우면 되돌릴 수 없어요. 버전 기록도 함께 지워지고, 내보낸 파일은 그대로 남아요.`}
           </p>
         </Modal>
       )}
@@ -190,7 +203,7 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
         </div>
         <Popover
           button={({ toggle, open }) => (
-            <button type="button" className="icon-btn" aria-label="더 보기" aria-expanded={open} onClick={toggle}>
+            <button type="button" className="icon-btn" aria-label={`${deck.title} 더 보기`} aria-expanded={open} onClick={toggle}>
               <MoreIcon />
             </button>
           )}

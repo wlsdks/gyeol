@@ -19,10 +19,10 @@ import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
 import { uid } from '../../deck/generate'
-import { loadBestDeck, persistNow, saveToBrowser, saveToFolder } from '../../store/persist'
+import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
-import { Present } from '../Present'
-import { BackIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, ScreenIcon, ShapesIcon, TrashIcon, UndoIcon, useToast } from '../ui'
+import { Present, presentKey } from '../Present'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, ShapesIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -50,7 +50,9 @@ export function Editor({ id }: { id: string }) {
   if (notFound) {
     return (
       <div className="center-msg">
-        <p>이 발표를 찾을 수 없어요. 다른 브라우저에서 만들었거나 지운 발표일 수 있어요.</p>
+        <p>
+          이 발표를 찾을 수 없어요. 다른 브라우저에서 만들었거나 지운 발표일 수 있어요. 작업 파일(.deck)이 있으면 내 발표에서 ‘파일 열기’로 불러오세요.
+        </p>
         <button type="button" className="btn btn-primary" onClick={() => go({ name: 'home' })}>
           내 발표로 가기
         </button>
@@ -69,10 +71,14 @@ export function Editor({ id }: { id: string }) {
 function NewerDeck({ deck }: { deck: Deck }) {
   const count = unknownParts(deck)
   const known = knownOnly(deck)
+  const toast = useToast()
   const openCopy = async () => {
     const now = Date.now()
     const copy: Deck = { ...structuredClone(known), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
-    await persistNow(copy)
+    if (!(await persistNow(copy))) {
+      toast.show(`사본을 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
+      return
+    }
     go({ name: 'edit', id: copy.id })
   }
   return (
@@ -92,10 +98,11 @@ function NewerDeck({ deck }: { deck: Deck }) {
         </button>
         {known.slides.length > 0 && (
           <button type="button" className="btn btn-ghost" onClick={openCopy}>
-            빼고 사본 만들기
+            없는 {count}개를 뺀 사본 만들기
           </button>
         )}
       </div>
+      {toast.node}
     </div>
   )
 }
@@ -166,17 +173,44 @@ function useAutosave(deck: Deck) {
   }, [flush])
 
   /** 발표나 내보내기처럼 중요한 순간 전에 부른다 */
-  return useCallback((reason: VersionReason) => {
+  const markVersion = useCallback((reason: VersionReason) => {
     flush()
     lastVersionAt.current = Date.now()
     void saveVersion(latest.current, { reason })
   }, [flush])
+
+  /** Ctrl+S: 모아 둔 저장을 기다리지 않고 두 곳에 바로 저장한다. 고른 폴더에 쓰지 못했거나 브라우저에 못 쓰면 false */
+  const saveNow = useCallback(async () => {
+    const d = latest.current
+    if (useDeck.getState().newer?.id === d.id) return true
+    dirty.current = { browser: false, folder: false }
+    const browser = await saveToBrowser(d)
+    const folder = await saveToFolder(d)
+    return browser && (folder || useStorage.getState().folder?.kind !== 'ready')
+  }, [])
+
+  return { markVersion, saveNow }
+}
+
+/** app.css의 '좁은 화면'과 같은 너비: 이보다 좁으면 오른쪽 칸을 접는다 */
+const NARROW = '(max-width: 1100px)'
+
+/** 오른쪽 칸(이 장 설정, 컴포넌트)을 좁은 창에서 띄우고 닫는 일 */
+interface SidePanel {
+  /** 좁은 창에서 띄워 두었는지 */
+  shown: boolean
+  /** 띄운 칸이 '이 장 설정'을 보이는지 */
+  settingsShown: boolean
+  settings(): void
+  toggleSettings(): void
+  toggleLibrary(): void
+  close(): void
 }
 
 function EditorBody({ deck }: { deck: Deck }) {
   const slide = useSelectedSlide() ?? deck.slides[0]
   const store = useDeck()
-  const markVersion = useAutosave(deck)
+  const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
   const [confirmPresent, setConfirmPresent] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
@@ -188,6 +222,13 @@ function EditorBody({ deck }: { deck: Deck }) {
   const ai = useAiShare(deck)
   const ask = useAiAsk(deck)
   const blocks = useBlockEditing(deck, slide, toast)
+
+  // 내 발표에서 파일을 열고 왔을 때의 알림 (있던 발표를 파일 내용으로 바꿨는지, 사본으로 열었는지)
+  useEffect(() => {
+    const text = takeNotice()
+    if (text) toast.show(text, undefined, 8000)
+    // 처음 열 때 한 번만
+  }, [])
 
   // 부탁이 끝나면: 제안이 왔으면 미리 보기를 바로 열고, 아니면 왜인지 알려 준다.
   // 바꿀 게 없다고 하면 AI가 말한 까닭을 읽을 수 있게 오른쪽 아래 카드를 남겨 둔다.
@@ -215,7 +256,7 @@ function EditorBody({ deck }: { deck: Deck }) {
     const result = applyOps(current, request.ops)
     store.replaceDeck(result.deck)
     setReviewing(null)
-    toast.show('AI 제안을 적용했어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show('AI 제안을 적용했어요', undoAction(toast))
     await ai.resolve(request, 'applied', result.results)
   }
 
@@ -228,24 +269,32 @@ function EditorBody({ deck }: { deck: Deck }) {
   /** 발표자 화면과 함께: 큰 화면에 발표 화면을 꽉 채우고, 이 화면에 발표자 화면 창을 연다 */
   const launchWithPresenter = useCallback(
     async (startId: string | undefined, placement: Placement | null) => {
-      if (placement) {
-        // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
-        const ok = await enterFullscreen(placement.audience)
-        if (!ok) return false
-        openPresenterWindow(deck.id, placement.presenter)
-      } else {
-        // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
-        openPresenterWindow(deck.id)
-      }
+      // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
+      if (placement && !(await enterFullscreen(placement.audience))) return false
+      // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
+      const win = placement ? openPresenterWindow(deck.id, placement.presenter) : openPresenterWindow(deck.id)
       setAskScreens(null)
+      if (!win) {
+        // 팝업 차단: 발표자 화면 없이 시작하면 노트도 다음 장도 볼 수 없다. 시작하지 않고 허용하는 법을 알린다.
+        // 전체 화면을 빠져나와야 주소창의 차단 아이콘이 보인다
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+        toast.show('브라우저가 발표자 화면 창을 막았어요. 주소창의 팝업 차단 아이콘에서 허용한 뒤 다시 발표해 주세요.', undefined, 10000)
+        return true
+      }
       setPresenting({ startId })
       return true
     },
+    // toast는 그릴 때마다 새로 만들어지지만 알림을 띄우는 길은 같아서 의존성에서 뺀다
     [deck.id],
   )
 
   const startPresent = useCallback(
     async (startId?: string, force = false, how: PresentHow = 'auto') => {
+      // 모든 장을 발표에서 빼 두었으면 빈 전체 화면만 뜬다
+      if (!deck.slides.some((s) => !s.hidden)) {
+        toast.show('모든 장이 발표에서 빠져 있어서 발표할 장이 없어요. 장을 골라 ‘발표에 다시 넣기’를 눌러 주세요.', undefined, 6000)
+        return
+      }
       const missing = deckMissingCount(deck)
       if (missing > 0 && !force) {
         setConfirmPresent({ startId, how, missing })
@@ -294,30 +343,52 @@ function EditorBody({ deck }: { deck: Deck }) {
     window.setTimeout(() => focusField(target.id, m), 60)
   }
 
-  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게)
+  const printPdf = useCallback(() => {
+    markVersion('export')
+    setPrinting(true)
+  }, [markVersion])
+
+  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게), Ctrl+S 저장, Ctrl+P PDF
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (presenting) return
       const typing = (e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')
       const mod = e.metaKey || e.ctrlKey
+      // 한글 입력 상태에서는 Ctrl+Z가 'ㅋ'로 와서 글자 키는 자판 자리로 읽는다
+      const k = presentKey(e).toLowerCase()
+      const save = mod && !e.shiftKey && !e.altKey && k === 's'
+      // Ctrl+P를 브라우저에 맡기면 인쇄할 장이 없어 빈 쪽이 나온다. 내보내기의 PDF와 같은 길로 보낸다
+      const print = mod && !e.shiftKey && !e.altKey && k === 'p'
+      // 브라우저의 새로 고침, 페이지 저장, 인쇄 창은 글을 쓰는 중에도, 창이 떠 있어도 막는다
+      if (e.key === 'F5' || save || print) e.preventDefault()
+      if (presenting || dialogOpen()) return
       if (e.key === 'F5') {
-        e.preventDefault()
         void startPresent(e.shiftKey ? slide?.id : undefined, false, e.altKey ? 'presenter' : 'auto')
         return
       }
+      if (save) {
+        void saveNow().then((ok) =>
+          toast.show(ok ? '저장했어요. 고칠 때마다 자동으로 저장되고 있어요.' : '저장하지 못했어요. 위쪽의 저장 상태를 눌러 할 일을 확인해 주세요.'),
+        )
+        return
+      }
+      if (print) {
+        printPdf()
+        return
+      }
       if (typing) return
-      if (mod && e.key.toLowerCase() === 'z') {
+      if (mod && k === 'z') {
         e.preventDefault()
         if (e.shiftKey) store.redo()
         else store.undo()
-      } else if (mod && e.key.toLowerCase() === 'y') {
+      } else if (mod && k === 'y') {
         e.preventDefault()
         store.redo()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [presenting, startPresent, slide?.id, store])
+    // toast는 그릴 때마다 새로 만들어져서 의존성에서 뺀다
+  }, [presenting, startPresent, slide?.id, store, saveNow, printPdf])
 
   const exportHtml = async () => {
     markVersion('export')
@@ -332,8 +403,47 @@ function EditorBody({ deck }: { deck: Deck }) {
 
   const removeSlide = (s: Slide) => {
     store.removeSlide(s.id)
-    toast.show('장을 지웠어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+    toast.show('장을 지웠어요', undoAction(toast))
   }
+
+  // 좁은 창(1100px 아래)에서는 오른쪽 칸을 접어 두고, 열면 슬라이드 위에 띄운다.
+  // 띄워 둘지는 어느 탭을 보는지와 따로 둔다: 탭을 '이 장 설정'으로 바꿔도 닫히지 않게 (컴포넌트를 고르는 중이면 늘 띄운다)
+  const [sideOpen, setSideOpen] = useState(false)
+  const side: SidePanel = {
+    shown: sideOpen || blocks.libraryOpen,
+    settingsShown: sideOpen && !blocks.libraryOpen,
+    settings: () => {
+      blocks.setLibraryOpen(false)
+      if (matchMedia(NARROW).matches) setSideOpen(true)
+    },
+    toggleSettings: () => {
+      if (sideOpen && !blocks.libraryOpen) setSideOpen(false)
+      else {
+        blocks.setLibraryOpen(false)
+        setSideOpen(true)
+      }
+    },
+    toggleLibrary: () => {
+      if (!blocks.libraryOpen) return blocks.setLibraryOpen(true)
+      blocks.setLibraryOpen(false)
+      setSideOpen(false)
+    },
+    close: () => {
+      setSideOpen(false)
+      blocks.setLibraryOpen(false)
+    },
+  }
+  // 띄운 '이 장 설정'은 Esc로 닫는다 (컴포넌트 탭의 Esc는 BlockLibrary가 받아 '이 장 설정'으로 돌아간다)
+  useEffect(() => {
+    if (!sideOpen || blocks.libraryOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || dialogOpen()) return
+      if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
+      setSideOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sideOpen, blocks.libraryOpen])
 
   if (presenting) return <Present deck={deck} startId={presenting.startId} onExit={() => setPresenting(null)} />
 
@@ -375,10 +485,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           <ThemeMenu deck={deck} />
           <ExportMenu
             onHtml={exportHtml}
-            onPdf={() => {
-              markVersion('export')
-              setPrinting(true)
-            }}
+            onPdf={printPdf}
             onDeckFile={() => {
               downloadDeckFile(deck)
               toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
@@ -388,9 +495,9 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
       </header>
 
-      <div className={cx('ed-body', versionsOpen && 'has-versions', blocks.libraryOpen && !versionsOpen && 'has-lib')}>
+      <div className={cx('ed-body', versionsOpen && 'has-versions', side.shown && !versionsOpen && 'has-side')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
-        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
+        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} side={side} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
@@ -398,7 +505,7 @@ function EditorBody({ deck }: { deck: Deck }) {
             // 오른쪽 칸은 탭 두 개: 이 장 설정과 컴포넌트. 컴포넌트를 고르는 동안에도 어디로 돌아가는지 보인다
             <aside className="side" aria-label="오른쪽 칸">
               <div className="side-tabs" role="tablist">
-                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(false)}>
+                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={side.settings}>
                   이 장 설정
                 </button>
                 <button type="button" role="tab" className="side-tab" aria-selected={blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(true)}>
@@ -409,6 +516,10 @@ function EditorBody({ deck }: { deck: Deck }) {
                     슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요. 그림에 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
                   </Info>
                 )}
+                {/* 좁은 창에서 슬라이드 위에 띄웠을 때만 보인다 */}
+                <button type="button" className="icon-btn side-close" aria-label="오른쪽 칸 닫기" title="닫기 (Esc)" onClick={side.close}>
+                  <CloseIcon />
+                </button>
               </div>
               {blocks.libraryOpen ? (
                 <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
@@ -533,6 +644,7 @@ function SlideStage({
   ai,
   ask,
   blocks,
+  side,
   onRemove,
   onPresentHere,
 }: {
@@ -541,6 +653,7 @@ function SlideStage({
   ai: AiShare
   ask: AiAsk
   blocks: BlockEditing
+  side: SidePanel
   onRemove: (s: Slide) => void
   onPresentHere: () => void
 }) {
@@ -548,7 +661,9 @@ function SlideStage({
   const info = pageInfo(deck.slides)
   const spec = LAYOUTS[slide.layout]
   const canvasRef = useRef<HTMLDivElement>(null)
-  const overflow = useOverflow(canvasRef, slide)
+  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
+  // 테마, 글꼴, 글자 크기, 발표 정보(아래 표시의 이름, 소속)를 바꿔도 다시 잰다
+  const overflow = useOverflow(canvasRef, slide, look)
 
   const actions = useMemo<SlideActions>(
     () => ({
@@ -559,7 +674,6 @@ function SlideStage({
     }),
     [slide.id],
   )
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
   const variants = spec.variants ?? []
   const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variantOf(slide)) + 1) % variants.length] : null
@@ -580,7 +694,7 @@ function SlideStage({
   useEffect(() => setPeek(false), [slide.id])
   useEffect(() => {
     if (!peek) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPeek(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !dialogOpen() && setPeek(false)
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [peek])
@@ -646,10 +760,21 @@ function SlideStage({
                   className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}
                   aria-pressed={blocks.libraryOpen}
                   title="컴포넌트를 골라 이 장에 넣어요"
-                  onClick={() => blocks.setLibraryOpen(!blocks.libraryOpen)}
+                  onClick={side.toggleLibrary}
                 >
                   <BlocksIcon />
                   컴포넌트 넣기
+                </button>
+                {/* 오른쪽 칸을 접는 좁은 창에서만 보인다. 레이아웃, 모양, 바탕을 여기서 연다 */}
+                <button
+                  type="button"
+                  className={cx('btn btn-sm stage-side', side.settingsShown ? 'is-on' : 'btn-ghost')}
+                  aria-pressed={side.settingsShown}
+                  title="이 장의 레이아웃, 모양, 바탕, 움직임"
+                  onClick={side.toggleSettings}
+                >
+                  <SlidersIcon />
+                  <span className="btn-t">이 장 설정</span>
                 </button>
                 <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
                 {nextVariant && (
@@ -664,14 +789,21 @@ function SlideStage({
                   </button>
                 )}
                 {spec.items && (
-                  <button type="button" className="btn btn-ghost btn-sm" title={`${spec.items.label} 추가`} disabled={!canAddItem} onClick={() => store.addItem(slide.id)}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    // 막아 둔 단추는 왜 안 되는지를 말한다
+                    title={canAddItem ? `${spec.items.label} 추가` : `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요`}
+                    disabled={!canAddItem}
+                    onClick={() => store.addItem(slide.id)}
+                  >
                     <PlusIcon />
                     <span className="btn-t">{spec.items.label} 추가</span>
                   </button>
                 )}
                 {overflow && (
                   // 자리가 모자라면 짧은 말만 (말줄임으로 '글이 슬...'처럼 잘리면 무슨 뜻인지 모른다)
-                  <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 오른쪽에서 레이아웃을 바꿔 보세요.">
+                  <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.">
                     <span className="stage-warn-l">글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.</span>
                     <span className="stage-warn-s">글이 넘쳤어요</span>
                   </p>
@@ -684,15 +816,15 @@ function SlideStage({
                   type="button"
                   className={cx('btn btn-ghost btn-sm', peek && 'is-on')}
                   aria-pressed={peek}
-                  title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리보기'}
+                  title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리 보기'}
                   onClick={() => (peek ? setPeek(false) : startPeek())}
                 >
                   <ScreenIcon />
-                  <span className="btn-t">{peek ? '편집으로' : '미리보기'}</span>
+                  <span className="btn-t">{peek ? '편집으로' : '미리 보기'}</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" title="여기서부터 발표" onClick={onPresentHere}>
+                <button type="button" className="btn btn-ghost btn-sm" title={`지금 장부터 발표 (${keys('shift+F5')})`} onClick={onPresentHere}>
                   <PlayIcon />
-                  <span className="btn-t">여기서부터 발표</span>
+                  <span className="btn-t">지금 장부터 발표</span>
                 </button>
                 <button type="button" className="btn btn-ghost btn-sm" title="복제" onClick={() => store.duplicateSlide(slide.id)}>
                   <CopyIcon />
@@ -707,7 +839,13 @@ function SlideStage({
                   {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
                   <span className="btn-t">{slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}</span>
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" title="지우기" disabled={deck.slides.length <= 1} onClick={() => onRemove(slide)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  title={deck.slides.length <= 1 ? '장이 하나뿐이라 지울 수 없어요' : '지우기'}
+                  disabled={deck.slides.length <= 1}
+                  onClick={() => onRemove(slide)}
+                >
                   <TrashIcon />
                   <span className="btn-t">지우기</span>
                 </button>
@@ -748,7 +886,7 @@ function SlideStage({
 }
 
 /** 슬라이드 안의 글이 영역을 넘치는지 확인한다 */
-function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide): boolean {
+function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): boolean {
   const [overflow, setOverflow] = useState(false)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
@@ -767,7 +905,7 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide):
     // 부품 장에서 부품이 자리를 옮기는 동안(움직임 중)에는 넘쳐 보일 수 있어서, 다 움직인 뒤에 한 번 더 본다
     const t = window.setTimeout(check, 800)
     return () => window.clearTimeout(t)
-  }, [ref, slide])
+  }, [ref, slide, look])
   return overflow
 }
 

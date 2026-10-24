@@ -14,7 +14,8 @@ import {
 } from './folder'
 import { deleteDeck, listDecks, loadDeck, saveDeck } from './library'
 import { unshareDeck } from '../ai/client'
-import { deckSignature, deleteDeckVersions, saveVersion } from './versions'
+import { uid } from '../deck/generate'
+import { deckSignature, deleteDeckVersions, listVersions, saveVersion } from './versions'
 
 /*
  * 저장은 두 곳에 한다.
@@ -147,14 +148,39 @@ export async function loadBestDeck(id: string): Promise<Deck | undefined> {
   return local
 }
 
-/** 내려받아 둔 작업 파일을 연다. 같은 발표가 이미 있으면 지금 상태를 버전으로 남기고 바꾼다. */
-export async function importDeck(deck: Deck): Promise<Deck> {
+export interface Imported {
+  deck: Deck
+  /** 이 브라우저에 저장했는지 */
+  saved: boolean
+  /** 같은 발표가 있어서 파일 내용으로 바꿨다 (바뀌기 전은 버전 기록에 있다) */
+  replaced: boolean
+  /** 같은 발표가 있는데 바뀌기 전을 버전으로 남기지 못해서, 덮어쓰지 않고 사본으로 열었다 */
+  copied: boolean
+}
+
+/**
+ * 내려받아 둔 작업 파일을 연다. 같은 발표가 이미 있으면 지금 상태를 버전으로 남기고 파일 내용으로 바꾼다.
+ * 버전 기록에 남았는지 확인하지 못하면 있던 발표를 덮어쓰지 않고 사본으로 연다.
+ */
+export async function importDeck(deck: Deck): Promise<Imported> {
   const local = await loadDeck(deck.id)
-  if (local && deckSignature(local) !== deckSignature(deck)) await saveVersion(local, { reason: 'file' })
+  const now = Date.now()
   // 가져온 발표는 AI 공유를 끈 채로 시작한다. 공유는 발표마다 사람이 켠다.
-  const next = { ...deck, aiShare: false, updatedAt: Date.now() }
-  await persistNow(next)
-  return next
+  let next: Deck = { ...deck, aiShare: false, updatedAt: now }
+  let replaced = false
+  let copied = false
+  if (local && deckSignature(local) !== deckSignature(deck)) {
+    await saveVersion(local, { reason: 'file' })
+    // 같은 내용의 버전이 이미 있으면 saveVersion이 건너뛰므로, 남겼는지가 아니라 기록에 있는지를 본다
+    const signature = deckSignature(local)
+    if ((await listVersions(local.id)).some((v) => v.signature === signature)) replaced = true
+    else {
+      next = { ...next, id: uid(), title: `${deck.title} 사본`, createdAt: now }
+      copied = true
+    }
+  }
+  const saved = await persistNow(next)
+  return { deck: next, saved, replaced, copied }
 }
 
 export async function removeDeck(deck: Deck): Promise<void> {

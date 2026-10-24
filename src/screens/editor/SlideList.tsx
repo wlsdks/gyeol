@@ -1,7 +1,9 @@
-import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type Announcements, type DragEndEvent, type UniqueIdentifier } from '@dnd-kit/core'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState } from 'react'
+import { keys } from '../../lib/keys'
+import { josa } from './noRoom'
 import { missingFields, pageInfo } from '../../deck/fields'
 import { LAYOUTS, LAYOUT_GROUPS } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
@@ -17,10 +19,28 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   const addSlide = useDeck((s) => s.addSlide)
   const info = pageInfo(deck.slides)
   const sections = useStableSections(info)
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  // 끌기는 마우스로만. dnd-kit의 키보드 끌기는 Space와 Enter로 시작해서, 장을 고르려고 Enter를 누르면 끌기가 시작됐다.
+  // 키보드로는 Alt+위아래 화살표로 한 칸씩 옮긴다 (아래 onKeyDown)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  // 화면 읽기 프로그램에 들려줄 말. dnd-kit의 기본 안내는 영어라 한국어로 바꾼다
+  const [said, setSaid] = useState('')
+
+  const nameOf = (id: UniqueIdentifier) => {
+    const i = deck.slides.findIndex((s) => s.id === id)
+    return i < 0 ? '장' : `${i + 1}번째 장 ‘${deck.slides[i].purpose}’`
+  }
+  const placeOf = (id: UniqueIdentifier) => deck.slides.findIndex((s) => s.id === id) + 1
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `${josa(nameOf(active.id), '을', '를')} 집었어요.`,
+    onDragOver: ({ over }) => (over ? `${placeOf(over.id)}번째 자리 위에 있어요.` : '목록 밖에 있어요.'),
+    onDragEnd: ({ active, over }) =>
+      over && over.id !== active.id ? `${josa(nameOf(active.id), '을', '를')} ${placeOf(over.id)}번째 자리에 놓았어요.` : `${josa(nameOf(active.id), '은', '는')} 제자리에 있어요.`,
+    onDragCancel: ({ active }) => `옮기기를 그만뒀어요. ${josa(nameOf(active.id), '은', '는')} 제자리에 있어요.`,
+  }
+  const accessibility = {
+    announcements,
+    screenReaderInstructions: { draggable: `마우스로 끌어 순서를 바꿔요. 키보드로는 ${keys('alt+↑')}, ${keys('alt+↓')}로 한 칸씩 옮겨요.` },
+  }
 
   const onDragEnd = (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return
@@ -31,19 +51,31 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return
     const i = deck.slides.findIndex((s) => s.id === selectedId)
-    const next = deck.slides[i + (e.key === 'ArrowDown' ? 1 : -1)]
-    if (next) {
-      e.preventDefault()
-      select(next.id)
-      document.getElementById(`thumb-${next.id}`)?.focus()
+    const to = i + (e.key === 'ArrowDown' ? 1 : -1)
+    if (i < 0 || to < 0 || to >= deck.slides.length) return
+    e.preventDefault()
+    const id = deck.slides[i].id
+    if (e.altKey) {
+      // 고른 장을 한 칸 옮긴다. 옮기면서 단추가 다시 붙어 초점이 빠지므로 다시 둔다
+      setSaid(`${josa(nameOf(id), '을', '를')} ${to + 1}번째로 옮겼어요.`)
+      moveSlide(i, to)
+      requestAnimationFrame(() => document.getElementById(`thumb-${id}`)?.focus())
+      return
     }
+    const next = deck.slides[to]
+    select(next.id)
+    document.getElementById(`thumb-${next.id}`)?.focus()
   }
 
   return (
     <nav className="sl" aria-label="슬라이드 목록">
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
       <div className="sl-scroll" onKeyDown={onKeyDown}>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd} accessibility={accessibility}>
           <SortableContext items={deck.slides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             {deck.slides.map((slide) => (
               <Thumb
@@ -97,7 +129,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
             ))}
             {/* 편집하던 화면은 그대로 두고 새 탭에서 모든 장을 크게 본다 */}
             <a className="menu-foot" href={hashOf({ name: 'system' })} target="_blank" rel="noopener">
-              모든 장을 그림으로 보기
+              장 모음 보기
             </a>
           </div>
         )}
@@ -123,7 +155,7 @@ interface ThumbProps {
 const Thumb = memo(function Thumb(props: ThumbProps) {
   const { meta, theme, title, slide, page, total, sections, sectionIndex, selected, missing, onSelect } = props
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 장' } })
   return (
     <div
       ref={setNodeRef}

@@ -118,14 +118,15 @@ export const useDeck = create<DeckState>((set, get) => {
     undo() {
       const { deck, past, future } = get()
       if (!deck || !past.length) return
-      const prev = past[past.length - 1]
+      // AI 공유는 되돌리기 기록에 없는 설정이라 지금 값을 그대로 둔다. 끈 공유가 되돌리기로 다시 켜지면 모양이 몰래 다시 올라간다
+      const prev = { ...past[past.length - 1], aiShare: deck.aiShare }
       const selectedId = prev.slides.some((s) => s.id === get().selectedId) ? get().selectedId : prev.slides[0]?.id
       set({ deck: prev, past: past.slice(0, -1), future: [deck, ...future], lastKey: null, selectedId })
     },
     redo() {
       const { deck, past, future } = get()
       if (!deck || !future.length) return
-      const next = future[0]
+      const next = { ...future[0], aiShare: deck.aiShare }
       const selectedId = next.slides.some((s) => s.id === get().selectedId) ? get().selectedId : next.slides[0]?.id
       set({ deck: next, past: [...past, deck], future: future.slice(1), lastKey: null, selectedId })
     },
@@ -140,7 +141,8 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => ({ ...d, theme: { ...d.theme, id } }))
     },
     setAccent(accent) {
-      commit((d) => ({ ...d, theme: { ...d.theme, accent } }))
+      // 색 고르기 창은 끄는 동안 값을 계속 보낸다. 한 단계로 묶어야 되돌리기 기록(100개)이 색 하나로 다 차지 않는다
+      commit((d) => ({ ...d, theme: { ...d.theme, accent } }), 'theme.accent')
     },
     setMotion(motion) {
       commit((d) => ({ ...d, motion }))
@@ -302,6 +304,21 @@ export const useDeck = create<DeckState>((set, get) => {
     },
   }
 })
+
+/**
+ * 알림의 '되돌리기'용. 바꾼 바로 뒤에 불러 두면, 돌려준 함수는 그 바꾼 것이 아직 맨 위일 때만 되돌리고 true를 돌려준다.
+ * 알림이 떠 있는 사이에 다른 것을 고쳤으면 그것을 되돌리게 되므로 되돌리지 않는다.
+ * 되돌리기 기록의 맨 위(바꾸기 전 덱)가 같은지로 본다: AI 공유처럼 기록에 남지 않는 설정이 바뀌어도 그대로 되돌릴 수 있다
+ */
+export function undoLast(): () => boolean {
+  const before = useDeck.getState().past.at(-1)
+  return () => {
+    const s = useDeck.getState()
+    if (!before || s.past.at(-1) !== before) return false
+    s.undo()
+    return true
+  }
+}
 
 export function useSelectedSlide(): Slide | null {
   return useDeck((s) => s.deck?.slides.find((x) => x.id === s.selectedId) ?? null)

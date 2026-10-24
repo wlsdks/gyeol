@@ -5,7 +5,7 @@ import { cx } from '../lib/cx'
 import { isMac } from '../lib/keys'
 import { hasSecondScreen, presentChannel, type Blank, type PresentMessage } from '../present/link'
 import { FitSlide, pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { BLANK_KEYS, NEXT_KEYS, PREV_KEYS } from './Present'
+import { BLANK_KEYS, NEXT_KEYS, presentKey, PREV_KEYS } from './Present'
 
 const NOTE_SIZES = [18, 21, 24, 28, 32, 38]
 const NOTE_SIZE_KEY = 'html-maker:notes-size'
@@ -115,24 +115,30 @@ export function Presenter({ id }: { id: string }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // F5로 새로 고치면 발표 화면과 끊긴다 (발표 화면과 같게 막는다)
+      if (e.key === 'F5') {
+        e.preventDefault()
+        return
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      const key = presentKey(e)
       const { index: i, blank: b } = now.current
-      const nextBlank = BLANK_KEYS[e.key]
+      const nextBlank = BLANK_KEYS[key]
       if (nextBlank) {
         sendBlank(b === nextBlank ? null : nextBlank)
         e.preventDefault()
         return
       }
-      if (b && e.key !== 'Escape') {
+      if (b && key !== 'Escape') {
         sendBlank(null)
         e.preventDefault()
         return
       }
-      if (NEXT_KEYS.includes(e.key)) go(i + 1)
-      else if (PREV_KEYS.includes(e.key)) go(i - 1)
-      else if (e.key === 'Home') go(0)
-      else if (e.key === 'End') go(slides.length - 1)
-      else if (e.key === 'Escape') end()
+      if (NEXT_KEYS.includes(key)) go(i + 1)
+      else if (PREV_KEYS.includes(key)) go(i - 1)
+      else if (key === 'Home') go(0)
+      else if (key === 'End') go(slides.length - 1)
+      else if (key === 'Escape') end()
       else return
       e.preventDefault()
     }
@@ -203,7 +209,8 @@ export function Presenter({ id }: { id: string }) {
               }
             }}
           >
-            {paused === null ? '멈춤' : '이어서'}
+            {/* 단추에는 지금 상태가 아니라 누르면 할 일을 쓴다 */}
+            {paused === null ? '시간 멈추기' : '이어 재기'}
           </button>
           <button
             type="button"
@@ -213,7 +220,8 @@ export function Presenter({ id }: { id: string }) {
               setPaused(paused === null ? null : Date.now())
             }}
           >
-            처음부터
+            {/* 장은 그대로 두고 지난 시간만 0부터 (장을 처음으로 돌리는 것으로 읽히지 않게) */}
+            시간 다시 재기
           </button>
         </div>
         <span className="pv-clock">{new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' }).format(tick)}</span>

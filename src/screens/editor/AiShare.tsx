@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ASKS, askOf, askSentence, type AskError, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
 import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
@@ -14,7 +14,8 @@ import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle } from '../ui'
+import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle, useDialog } from '../ui'
+import { josa } from './noRoom'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',
@@ -42,7 +43,8 @@ export const ASK_ERROR: Record<AskError, string> = {
   not_shared: '발표의 모양을 AI에게 보여 주지 못했어요. 다시 눌러 주세요.',
   bad_ask: '이 장에는 할 수 없는 부탁이에요.',
   timeout: 'AI가 3분 안에 끝내지 못해서 멈췄어요. 다시 눌러 주세요.',
-  login: 'Claude Code에 로그인돼 있지 않아요. 터미널에서 claude를 한 번 실행해 로그인한 뒤 다시 눌러 주세요.',
+  // 아래 '직접 부탁하기'의 안내와 같게, 윈도우에서는 PowerShell
+  login: `Claude Code에 로그인돼 있지 않아요. ${isMac ? '터미널' : 'PowerShell'}에서 claude를 한 번 실행해 로그인한 뒤 다시 눌러 주세요.`,
   failed: 'AI가 부탁을 끝내지 못했어요. 잠시 뒤 다시 눌러 주세요.',
 }
 
@@ -55,6 +57,8 @@ export const ASK_ERROR: Record<AskError, string> = {
 function AskList({ scope, deck, slide, ai, ask, onPicked }: { scope: AskScope; deck: Deck; slide: Slide | null; ai: AiShare; ask: AiAsk; onPicked: () => void }) {
   const setAiShare = useDeck((s) => s.setAiShare)
   const [copied, setCopied] = useState<string | null>(null)
+  // 복사하지 못한 부탁의 글. 화면에 보여서 직접 골라 복사하게 한다 (정해진 말과 해시 id뿐이라 보여도 된다)
+  const [failed, setFailed] = useState<string | null>(null)
   const direct = !!ai.status?.agent
   const busy = ask.job?.state === 'running'
 
@@ -66,11 +70,14 @@ function AskList({ scope, deck, slide, ai, ask, onPicked }: { scope: AskScope; d
     }
     // 붙여 넣은 부탁을 AI가 들어주려면 모양이 공유돼 있어야 한다
     if (!deck.aiShare) setAiShare(true)
+    const text = askSentence(id, shapeDeckId(deck), slide ? shapeSlideId(slide) : null)
     try {
-      await navigator.clipboard.writeText(askSentence(id, shapeDeckId(deck), slide ? shapeSlideId(slide) : null))
+      await navigator.clipboard.writeText(text)
       setCopied(id)
+      setFailed(null)
     } catch {
       setCopied(null)
+      setFailed(text)
     }
   }
 
@@ -93,6 +100,12 @@ function AskList({ scope, deck, slide, ai, ask, onPicked }: { scope: AskScope; d
           </button>
         ))}
       </div>
+      {failed && (
+        <div role="alert">
+          <p className="ask-note copy-fail">복사하지 못했어요. 아래 글을 눌러 고른 뒤 직접 복사해 주세요({keys('mod+C')}).</p>
+          <pre className="ai-pop-pre ask-fail">{failed}</pre>
+        </div>
+      )}
       {busy && <p className="ask-note">AI가 다른 부탁을 하고 있어요. 끝나면 고를 수 있어요.</p>}
     </div>
   )
@@ -136,7 +149,7 @@ export function AskStatus({ deck, job, onCancel }: { deck: Deck; job: AskJob; on
         </span>
         <div className="ai-inbox-text">
           <p className="ai-inbox-h">AI가 바꿀 곳을 찾지 못했어요</p>
-          <p className="ai-inbox-p ai-reason">{job.reason ?? `${target}은 지금 모양이 이미 잘 맞는다는 뜻이에요.`}</p>
+          <p className="ai-inbox-p ai-reason">{job.reason ?? `${josa(target, '은', '는')} 지금 모양이 이미 잘 맞는다는 뜻이에요.`}</p>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
           닫기
@@ -250,23 +263,34 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
 
 function Command({ label, text }: { label: string; text: string }) {
   const [copied, setCopied] = useState(false)
+  const [failed, setFailed] = useState(false)
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
+      setFailed(false)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
       setCopied(false)
+      setFailed(true)
     }
   }
   return (
-    <div className="ai-cmd">
-      <span className="ai-cmd-label">{label}</span>
-      <code className="ai-cmd-text">{text}</code>
-      <button type="button" className="icon-btn icon-btn-sm" aria-label={`${label} 명령 복사`} title="복사" onClick={copy}>
-        {copied ? <CheckIcon /> : <CopyIcon />}
-      </button>
-    </div>
+    <>
+      <div className="ai-cmd">
+        <span className="ai-cmd-label">{label}</span>
+        {/* 복사하지 못했으면 명령 전체를 펼쳐, 눌러서 한 번에 고를 수 있게 */}
+        <code className={cx('ai-cmd-text', failed && 'is-open')}>{text}</code>
+        <button type="button" className="icon-btn icon-btn-sm" aria-label={`${label} 명령 복사`} title="복사" onClick={copy}>
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+      </div>
+      {failed && (
+        <p className="copy-fail" role="alert">
+          복사하지 못했어요. 명령을 눌러 고른 뒤 직접 복사해 주세요({keys('mod+C')}).
+        </p>
+      )}
+    </>
   )
 }
 
@@ -417,14 +441,12 @@ export function AiReview({
   const changed = applied.deck.slides.filter((s) => before.has(s.id) && applied.touched.has(s.id))
   const pairs = changed.length > 0 && changed.length <= 3 ? changed : []
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // 열면 초점이 '나중에'로 들어온다. 적용하기에 바로 두면 Enter 한 번에 적용돼 버린다
+  const ref = useRef<HTMLDivElement>(null)
+  useDialog(ref, onClose)
 
   return (
-    <div className="vpp air" role="dialog" aria-modal="true" aria-label="AI 제안 미리 보기">
+    <div className="vpp air" role="dialog" aria-modal="true" aria-label="AI 제안 미리 보기" ref={ref} tabIndex={-1}>
       <header className="vpp-head">
         <div>
           <p className="vpp-title">AI가 구성을 바꾸자고 해요</p>

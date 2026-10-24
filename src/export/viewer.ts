@@ -98,7 +98,12 @@ document.addEventListener('mousemove',function(){if(presenting())wake()});
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&presenting())stop()});
 document.addEventListener('keydown',function(e){
   var k=e.key;
-  if(!presenting()){if(k==='F5'){e.preventDefault();start(0)}return}
+  // 한글 입력 상태에서는 B가 'ㅠ'나 'Process'로 온다. 글자 키는 자판 자리로 읽는다 (앱의 presentKey와 같게)
+  if(/^Key[A-Z]$/.test(e.code)&&!/^[a-z]$/i.test(k))k=e.code.slice(3).toLowerCase();
+  else if(k==='Process')k={Period:'.',Comma:',',Space:' ',Enter:'Enter'}[e.code]||k;
+  // 발표 중에 F5를 또 누르면 새로 고쳐져 발표가 끊긴다
+  if(k==='F5'){e.preventDefault();if(!presenting())start(0);return}
+  if(!presenting())return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   var b={b:'black',B:'black','.':'black',w:'white',W:'white',',':'white'}[k];
   if(b){setBlank(blank.hidden||blank.className.indexOf(b)<0?b:null);e.preventDefault();return}

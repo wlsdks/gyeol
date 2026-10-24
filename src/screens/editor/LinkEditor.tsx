@@ -5,7 +5,7 @@ import type { BlockLink, BlockRow, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { LinkGlyph } from '../../slides/blocks'
 import { useDeck } from '../../store/deckStore'
-import { TrashIcon } from '../ui'
+import { dialogOpen, TrashIcon, undoAction } from '../ui'
 
 // 이음표(화살표, 더하기, 결과, 견주기)를 컴포넌트 사이에 끼우는 일.
 //
@@ -299,7 +299,7 @@ export function useLinkEditing({
     store.setRows(s.id, withLink(s.rows ?? [], t, link))
     if (!link) {
       setSelected(null)
-      toast.show('이음표를 뺐어요', { label: '되돌리기', run: () => useDeck.getState().undo() })
+      toast.show('이음표를 뺐어요', undoAction(toast))
     }
   }
 
@@ -308,6 +308,8 @@ export function useLinkEditing({
     if (!selectedLink) return
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
+      // 대화 창이 떠 있으면 그 창의 키다: 창을 닫는 Esc로 고르기를 끝내거나, 창 뒤의 이음표를 빼지 않는다
+      if (e.defaultPrevented || dialogOpen()) return
       if (e.key === 'Escape') setSelected(null)
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()

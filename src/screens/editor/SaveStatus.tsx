@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { downloadDeckFile } from '../../store/deckFile'
-import { useStorage } from '../../store/persist'
+import { useDeck } from '../../store/deckStore'
+import { saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AlertIcon, CheckIcon, FolderIcon, Popover } from '../ui'
 
 type Tone = 'ok' | 'warn' | 'bad' | 'busy'
@@ -39,15 +41,79 @@ export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersion
 }
 
 export function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () => void; onOpenVersions?: () => void }) {
-  const { folder, choose, allow } = useStorage()
+  const { folder, browser, folderWrite, choose, allow } = useStorage()
+  const [busy, setBusy] = useState(false)
+  // 위쪽 단추가 '저장하지 못했어요'라고 할 때와 같은 조건 (useSaveSummary)
+  const browserFailed = browser === 'failed' && folderWrite !== 'saved'
+  const folderFailed = folder?.kind === 'ready' && folderWrite === 'failed'
+  // 다시 저장할 때는 열려 있는 지금 발표를 쓴다 (이 창을 연 뒤에 더 고쳤을 수 있다)
+  const current = () => useDeck.getState().deck ?? deck
   const download = () => {
-    downloadDeckFile(deck)
+    downloadDeckFile(current())
     close()
+  }
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true)
+    try {
+      await fn()
+    } finally {
+      setBusy(false)
+    }
+  }
+  // 폴더에 못 쓴 까닭이 허용이 풀린 것이면 다시 묻는다 (단추를 누른 지금만 물을 수 있다). 이미 허용돼 있으면 묻지 않고 넘어간다
+  const retryFolder = () =>
+    run(async () => {
+      if ((await allow()).kind === 'ready') await saveToFolder(current())
+    })
+  const pickFolder = () =>
+    run(async () => {
+      if ((await choose()).kind === 'ready') await saveToFolder(current())
+    })
+
+  if (browserFailed) {
+    return (
+      <div className="save-pop">
+        <p className="save-pop-h">
+          <AlertIcon />이 브라우저에 저장하지 못했어요
+        </p>
+        <p className="save-pop-p">
+          브라우저 저장 공간이 모자라면 저장되지 않아요. 고친 내용을 잃지 않게 먼저 작업 파일을 내려받아 두고, 쓰지 않는 발표를 지우거나 큰 이미지를 줄인 뒤 다시
+          저장해 주세요.
+        </p>
+        <div className="save-pop-actions">
+          <button type="button" className="btn btn-primary btn-sm" onClick={download}>
+            작업 파일 내려받기
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => run(() => saveToBrowser(current()))}>
+            다시 저장하기
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="save-pop">
-      {folder?.kind === 'ready' && (
+      {folder?.kind === 'ready' && folderFailed && (
+        <>
+          <p className="save-pop-h">
+            <AlertIcon />‘{folder.name}’ 폴더에 저장하지 못했어요
+          </p>
+          <p className="save-pop-p">
+            폴더를 옮기거나 지웠거나, 공유 드라이브 연결이 끊겼거나, 폴더 허용이 풀렸을 수 있어요. 고친 내용은 이 브라우저에는 저장돼 있어요.
+          </p>
+          <div className="save-pop-actions">
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={retryFolder}>
+              다시 허용하고 저장하기
+            </button>
+            <button type="button" className="btn-link" disabled={busy} onClick={pickFolder}>
+              다른 폴더 고르기
+            </button>
+          </div>
+        </>
+      )}
+
+      {folder?.kind === 'ready' && !folderFailed && (
         <>
           <p className="save-pop-h">
             <FolderIcon />‘{folder.name}’ 폴더에 저장하고 있어요

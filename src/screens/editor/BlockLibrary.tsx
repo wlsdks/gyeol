@@ -9,6 +9,7 @@ import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { soloSlide, type BlockEditing } from './BlockEditor'
+import { dialogOpen } from '../ui'
 import { josa, noRoomText } from './noRoom'
 
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
@@ -108,6 +109,8 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || document.body.classList.contains('is-block-dragging')) return
       if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
+      // 대화 창을 닫는 Esc로 컴포넌트 고르기까지 닫지 않는다
+      if (e.defaultPrevented || dialogOpen()) return
       // 까닭을 펼쳐 두었으면 그것만 닫는다
       if (why) setWhy(null)
       else blocks.setLibraryOpen(false)
@@ -156,7 +159,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
           <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
             <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 칸마다 컴포넌트로 나뉘어 옮길 수 있게 돼요" onClick={blocks.convert}>
-              지금 바꾸기
+              컴포넌트 장으로 바꾸기
             </button>
           )}
         </div>
@@ -257,7 +260,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
       </div>
 
       {shownWhy && (
-        <div className="lib-why" role="dialog" aria-label={`${BLOCKS[shownWhy.type].name}을 넣을 수 없는 까닭`}>
+        <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 까닭`}>
           <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 넣을 수 없어요</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>

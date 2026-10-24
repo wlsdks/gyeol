@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { pageInfo } from '../../deck/fields'
 import { uid } from '../../deck/generate'
 import type { Deck } from '../../deck/types'
@@ -19,7 +19,8 @@ import {
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
-import { CloseIcon, HistoryIcon, Modal, MoreIcon, Popover } from '../ui'
+import { particle } from './noRoom'
+import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -59,6 +60,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
   const [preview, setPreview] = useState<{ version: DeckVersion; deck: Deck } | null>(null)
   const [restoring, setRestoring] = useState<DeckVersion | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<DeckVersion | null>(null)
   const folder = useStorage((s) => s.folder)
   const current = deckSignature(deck)
 
@@ -71,7 +73,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
   }, [deck.id])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !preview && !restoring && onClose()
+    // 대화 창이 받은 Esc(defaultPrevented)로 버전 기록까지 닫지 않는다
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !preview && !restoring && !dialogOpen() && onClose()
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, preview, restoring])
@@ -84,10 +87,16 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     notify(v ? `‘${label}’ 버전을 남겼어요` : '버전을 남기지 못했어요. 다시 시도해 주세요.')
   }
 
+  // 버전 내용을 읽지 못했을 때: 다른 창에서 지웠거나 브라우저 저장소가 지워졌을 수 있다. 보관 폴더에 같은 때의 파일이 있으면 그것으로 연다
+  const loadFailed = () =>
+    folder?.kind === 'ready'
+      ? `이 버전을 불러오지 못했어요. ‘${folder.name}/버전 기록’ 폴더에 같은 때의 파일이 있으면 내 발표에서 ‘파일 열기’로 열어 주세요.`
+      : '이 버전을 불러오지 못했어요. 기록에서 지워졌을 수 있어요. 다른 버전을 골라 주세요.'
+
   const openPreview = async (version: DeckVersion) => {
     const d = await loadVersionDeck(version.id)
     if (d) setPreview({ version, deck: d })
-    else notify('이 버전을 불러오지 못했어요')
+    else notify(loadFailed())
   }
 
   const restore = async (version: DeckVersion) => {
@@ -95,22 +104,29 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     setRestoring(null)
     setPreview(null)
     if (!d) {
-      notify('이 버전을 불러오지 못했어요')
+      notify(loadFailed())
       return
     }
     await saveVersion(deck, { reason: 'restore' })
-    const next: Deck = { ...d, id: deck.id, updatedAt: Date.now() }
+    // AI 공유는 버전에 딸린 내용이 아니라 지금 켜 둔 설정이다. 예전 버전이 켜져 있었다고 꺼 둔 공유를 다시 켜지 않는다
+    const next: Deck = { ...d, id: deck.id, updatedAt: Date.now(), aiShare: useDeck.getState().deck?.aiShare ?? deck.aiShare }
     useDeck.getState().open(next)
-    await persistNow(next)
-    notify(`${fullFmt.format(version.createdAt)} 버전으로 되돌렸어요. 되돌리기 전 상태도 기록에 남겨 뒀어요.`)
+    const saved = await persistNow(next)
+    notify(
+      saved
+        ? `${fullFmt.format(version.createdAt)} 버전으로 되돌렸어요. 되돌리기 전 상태도 기록에 남겨 뒀어요.`
+        : `${fullFmt.format(version.createdAt)} 버전으로 되돌렸지만 저장하지 못했어요. ${SAVE_HELP}`,
+    )
   }
 
   const openCopy = async (version: DeckVersion) => {
     const d = await loadVersionDeck(version.id)
-    if (!d) return notify('이 버전을 불러오지 못했어요')
+    if (!d) return notify(loadFailed())
     const now = Date.now()
-    const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now }
-    await persistNow(copy)
+    // 새 발표는 AI 공유를 끈 채로 시작한다 (공유는 발표마다 사람이 켠다)
+    const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now, aiShare: false }
+    // 저장하지 못한 채 가면 편집기가 '찾을 수 없는 발표'로 보인다
+    if (!(await persistNow(copy))) return notify(`새 발표로 꺼내지 못했어요. ${SAVE_HELP}`)
     go({ name: 'edit', id: copy.id })
   }
 
@@ -225,6 +241,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
                   )}
                   <Popover
                     className="vp-menu"
+                    flip
                     button={({ toggle, open }) => (
                       <button type="button" className="icon-btn vp-more" aria-label={`${versionTitle(v)} 더 보기`} aria-expanded={open} onClick={toggle}>
                         <MoreIcon />
@@ -243,7 +260,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
                           {v.named ? '이름 바꾸기' : '이름 붙여 보관하기'}
                         </button>
                         <div className="menu-sep" role="separator" />
-                        <button type="button" className="menu-item is-danger" onClick={() => (close(), remove(v))}>
+                        {/* 이름 붙여 보관한 버전은 되돌릴 수 없으니 한 번 묻는다. 자동 저장은 어차피 30개만 남아서 바로 지운다 */}
+                        <button type="button" className="menu-item is-danger" onClick={() => (close(), v.named ? setRemoving(v) : remove(v))}>
                           이 버전 지우기
                         </button>
                       </div>
@@ -267,6 +285,35 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
         />
       )}
 
+      {removing && (
+        <Modal
+          title="이 버전을 지울까요?"
+          onClose={() => setRemoving(null)}
+          actions={
+            <>
+              <button type="button" className="btn btn-ghost" data-autofocus onClick={() => setRemoving(null)}>
+                취소
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  setRemoving(null)
+                  void remove(removing)
+                }}
+              >
+                지우기
+              </button>
+            </>
+          }
+        >
+          <p>
+            이름 붙여 보관한 ‘{removing.name}’ 버전을 버전 기록에서 지워요. 지우면 되돌릴 수 없어요.
+            {folder?.kind === 'ready' && ` ‘${folder.name}/버전 기록’ 폴더에 남긴 파일은 그대로 있어요.`}
+          </p>
+        </Modal>
+      )}
+
       {restoring && (
         <Modal
           title="이 버전으로 되돌릴까요?"
@@ -283,7 +330,7 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
           }
         >
           <p>
-            {fullFmt.format(restoring.createdAt)}에 남긴 ‘{versionTitle(restoring)}’로 되돌려요. 지금 상태는 버전 기록에 남겨 두니 언제든 다시 돌아올 수 있어요.
+            {fullFmt.format(restoring.createdAt)}에 남긴 ‘{versionTitle(restoring)}’{particle(versionTitle(restoring), '으로', '로')} 되돌려요. 지금 상태는 버전 기록에 남겨 두니 언제든 다시 돌아올 수 있어요.
           </p>
         </Modal>
       )}
@@ -311,13 +358,10 @@ function VersionPreview({
   const diff = (s: Deck['slides'][number]) => (!now.has(s.id) ? '지금은 없는 장' : now.get(s.id) !== JSON.stringify(s) ? '지금과 달라요' : null)
   const visible = deck.slides.filter((s) => !s.hidden)
   const differs = visible.filter((s) => diff(s)).length
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const ref = useRef<HTMLDivElement>(null)
+  useDialog(ref, onClose)
   return (
-    <div className="vpp" role="dialog" aria-modal="true" aria-label="버전 미리 보기">
+    <div className="vpp" role="dialog" aria-modal="true" aria-label="버전 미리 보기" ref={ref} tabIndex={-1}>
       <header className="vpp-head">
         <div>
           <p className="vpp-title">{versionTitle(version)}</p>
