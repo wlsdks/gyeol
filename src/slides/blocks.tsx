@@ -725,8 +725,15 @@ function BlockCell({ box, live }: { box: CellBox; live: BlockEdit | null }) {
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
     >
       {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} />}
-      {/* 끌어서 옮기는 손잡이. 글 칸이 부품을 거의 덮어도 잡을 데가 있게 */}
-      {live && !slot && <span className="bk-handle" title="끌어서 옮기기" aria-hidden="true" />}
+      {/* 끌어서 옮기는 손잡이: 칸 왼쪽 위에 붙는 이름표. 글 칸이 부품을 거의 덮어도 잡을 데가 있게 */}
+      {live && !slot && (
+        <span className="bk-handle" title="끌어서 옮기기" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 5.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-6 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
+          </svg>
+          {spec.name}
+        </span>
+      )}
     </div>
   )
 }
@@ -792,13 +799,18 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key:
       }
       const dx = f.x - last.x
       const dy = f.y - last.y
-      const sx = f.w / (last.w || 1)
-      const sy = f.h / (last.h || 1)
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(sx - 1) < 0.002 && Math.abs(sy - 1) < 0.002) continue
+      const dw = f.w - last.w
+      const dh = f.h - last.h
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dw) < 1 && Math.abs(dh) < 1) continue
+      // 자리는 미끄러지고, 크기는 늘이지 않는다(가로세로를 다르게 늘이면 글자가 찌그러져 보인다).
+      // 커지는 칸은 옛 크기만큼 보이던 데서 새 크기로 펼쳐지고, 작아지는 칸은 새 크기로 바로 바뀐 채 미끄러진다
+      const round = getComputedStyle(cell).borderTopLeftRadius || '0px'
+      const clip = (w: number, h: number) => `inset(0 ${Math.max(0, last.w - w)}px ${Math.max(0, last.h - h)}px 0 round ${round})`
+      const grow = dw < -1 || dh < -1
       cell.animate(
         [
-          { transformOrigin: '0 0', transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
-          { transformOrigin: '0 0', transform: 'none' },
+          { translate: `${dx}px ${dy}px`, ...(grow ? { clipPath: clip(f.w, f.h) } : {}) },
+          { translate: '0 0', ...(grow ? { clipPath: clip(last.w, last.h) } : {}) },
         ],
         { duration: 470, easing: FLIP_EASING },
       )

@@ -207,11 +207,16 @@
 .slide.m-edit .bk-area.is-live > .bk {
   outline: 3px solid transparent;
   outline-offset: 12px;
-  transition: outline-color 0.12s;
+  transition: outline-color 0.16s;
+}
+
+/* 장에 올리면 부품마다 옅은 테두리: 어떻게 짜였는지 보인다 */
+.slide.m-edit .bk-area.is-live:hover:not(.is-dragging) > .bk {
+  outline-color: rgb(58 111 248 / 0.14);
 }
 
 .slide.m-edit .bk-area.is-live:not(.is-dragging) > .bk:hover {
-  outline-color: rgb(58 111 248 / 0.32);
+  outline-color: rgb(58 111 248 / 0.45);
 }
 
 .slide.m-edit .bk-area.is-live > .bk.is-selected {
@@ -230,28 +235,44 @@
   background: rgb(58 111 248 / 0.08);
 }
 
+/* 끌기 손잡이: 테두리 왼쪽 위 바깥에 붙는 이름표. 고르면 그 자리에 도구 띠가 뜨므로 숨긴다.
+   슬라이드 축소와 상관없이 화면에서 같은 크기 (--vs) */
 .bk-handle {
   position: absolute;
   z-index: 6;
-  top: 0;
-  left: 50%;
-  width: 46px;
-  height: 18px;
-  border-radius: 9px;
-  background:
-    radial-gradient(circle, rgb(255 255 255 / 0.95) 1.4px, transparent 1.8px) center / 6px 6px,
-    #3a6ff8;
-  box-shadow: 0 2px 8px rgb(16 20 31 / 0.24);
+  top: -15px;
+  left: -15px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 9px 0 4px;
+  border-radius: 6px 6px 6px 0;
+  background: #3a6ff8;
+  box-shadow: 0 2px 8px rgb(16 20 31 / 0.2);
+  color: #fff;
+  font: 600 12px/1 var(--font-body, sans-serif);
+  letter-spacing: 0;
+  white-space: nowrap;
   cursor: grab;
   opacity: 0;
-  translate: -50% -50%;
+  pointer-events: none;
+  transform-origin: 0 100%;
+  translate: 0 -100%;
   scale: calc(1 / var(--vs, 1));
-  transition: opacity 0.12s;
+  transition: opacity 0.14s;
 }
 
-.bk-area.is-live:not(.is-dragging) > .bk:hover > .bk-handle,
-.bk-area.is-live > .bk.is-selected > .bk-handle {
+.bk-handle svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* 칸 사이 손잡이: 칸 사이 틈에 놓이고, 끌면 정해진 비율에 붙는다 */
