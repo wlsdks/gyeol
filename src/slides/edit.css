@@ -416,7 +416,8 @@
   opacity: 0.8;
 }
 
-.bk-area.is-live:not(.is-dragging) > .bk:is(:hover, .is-selected) > .bk-handle {
+/* 고른 부품은 위에 뜬 도구의 이름표가 손잡이를 맡는다 (editor/SelectionBar.tsx의 FloatTools) */
+.bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
   pointer-events: auto;
 }

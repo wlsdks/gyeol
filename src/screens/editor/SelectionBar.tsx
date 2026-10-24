@@ -40,6 +40,61 @@ const NarrowIcon = () => <Icon d="M4 12h6M7 9l3 3-3 3M20 12h-6M17 9l-3 3 3 3" />
 const WideIcon = () => <Icon d="M10 12H4M7 9l-3 3 3 3M14 12h6M17 9l3 3-3 3" />
 const BelowIcon = () => <Icon d="M4 5h16v9H4zM4 17.5h16" />
 
+/**
+ * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
+ * 슬라이드 위 여백까지 쓴다 (판이나 부품이 장 맨 위에 붙어 있어도 그 글을 가리지 않게)
+ */
+function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null) {
+  const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
+  const bw = bar?.offsetWidth ?? 0
+  const bh = bar?.offsetHeight ?? 36
+  const top = area ? area.top + 4 : 4
+  const y = r.top - bh - 8 >= top ? r.top - bh - 8 : r.top + 8
+  const maxX = (area ? area.right : innerWidth) - bw - 8
+  const x = Math.max(area ? area.left + 8 : 8, Math.min(r.left, maxX))
+  return { x, y, room: area ? area.width - 16 : innerWidth }
+}
+
+/**
+ * 부품 장에서 고른 컴포넌트(이음표도)의 도구를 그 바로 위에 띄운다. 레이아웃 장의 막대와 같은 자리, 같은 방식이라
+ * 어느 장이든 '고르면 위에 도구가 뜬다'로 같다. 예전에는 장 아래 도구 줄이 고른 부품의 도구로 바뀌어서
+ * 고른 것과 도구가 멀리 떨어져 있었다. 장이 좁아 다 들어가지 않으면 이름표 말고는 글자를 숨긴다 (말풍선으로)
+ */
+export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [spot, setSpot] = useState<{ x: number; y: number } | null>(null)
+  const [tight, setTight] = useState(false)
+  const full = useRef(0)
+  const anchor = useRef<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    let raf = 0
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area > .is-selected') ?? null
+      const bar = ref.current
+      if (!el || !bar) return setSpot(null)
+      // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다
+      if (el !== anchor.current) {
+        anchor.current = el
+        full.current = 0
+        setTight(false)
+        return
+      }
+      const s = barSpot(el.getBoundingClientRect(), bar, canvasRef.current)
+      if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
+      setTight(full.current > s.room)
+      setSpot((p) => (p && p.x === s.x && p.y === s.y ? p : { x: s.x, y: s.y }))
+    }
+    tick()
+    return () => cancelAnimationFrame(raf)
+  }, [canvasRef])
+  return (
+    <div ref={ref} className={cx('float-tools', tight && 'is-tight')} style={spot ? { translate: `${spot.x}px ${spot.y}px` } : { visibility: 'hidden' }}>
+      {children}
+    </div>
+  )
+}
+
 /** 누른 곳에서 고를 것을 찾는다: 항목이 먼저, 아니면 옆 판 */
 function targetAt(node: Element, slide: Slide): Target | null {
   const slideEl = node.closest<HTMLElement>('.slide')
@@ -127,16 +182,8 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     const tick = () => {
       if (!target.el.isConnected) return setTarget(null)
       const r = target.el.getBoundingClientRect()
-      // 막대는 슬라이드 위 여백까지 쓸 수 있다 (판이 장 맨 위에 붙어 있어도 판의 글을 가리지 않게)
-      const area = (canvasRef.current?.closest('.stage') ?? canvasRef.current)?.getBoundingClientRect()
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
-      const bw = barRef.current?.offsetWidth ?? 0
-      const bh = barRef.current?.offsetHeight ?? 36
-      const top = area ? area.top + 4 : 4
-      // 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위에
-      const y = r.top - bh - 8 >= top ? r.top - bh - 8 : r.top + 8
-      const maxX = (area ? area.right : innerWidth) - bw - 8
-      const x = Math.max(area ? area.left + 8 : 8, Math.min(r.left, maxX))
+      const { x, y } = barSpot(r, barRef.current, canvasRef.current)
       setBar((p) => (p && p.x === x && p.y === y ? p : { x, y }))
       raf = requestAnimationFrame(tick)
     }

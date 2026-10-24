@@ -34,7 +34,7 @@ import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector, layoutPreview } from './Inspector'
 import { SaveStatus } from './SaveStatus'
-import { SelectionBar } from './SelectionBar'
+import { FloatTools, SelectionBar } from './SelectionBar'
 import { VariantMenu } from './VariantMenu'
 import { SlideList } from './SlideList'
 import { VersionPanel } from './Versions'
@@ -767,25 +767,14 @@ function SlideStage({
             {blocks.hint}
           </p>
         )}
-        {/* 레이아웃 장에서 고른 항목이나 옆 판의 도구 (부품 장은 부품마다 자기 도구가 있다) */}
+        {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판, 부품 장은 고른 컴포넌트나 이음표. 둘 다 그 바로 위에 뜬다 */}
         {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar deck={deck} slide={slide} canvasRef={canvasRef} />}
+        {!peek && blocks.toolbar && <FloatTools canvasRef={canvasRef}>{blocks.toolbar}</FloatTools>}
         <FitSlide
           padding={4}
           belowHeight={56}
           below={
-            <div ref={toolsRef} className={cx('stage-tools', !peek && !!blocks.toolbar && 'is-block')}>
-              {!peek && blocks.toolbar ? (
-                // 부품을 고르면 이 줄이 그 부품의 도구가 된다. 장의 도구는 고르기를 끝내면 돌아온다
-                <>
-                  <div className="stage-tools-l">{blocks.toolbar}</div>
-                  <div className="stage-tools-r">
-                    <button type="button" className="btn btn-sm" title="컴포넌트 고르기를 끝내요 (Esc)" onClick={() => blocks.select(null)}>
-                      완료
-                    </button>
-                  </div>
-                </>
-              ) : (
-              <>
+            <div ref={toolsRef} className="stage-tools">
               {peekSlide ? (
                 <div className="stage-tools-l">
                   <p className="stage-peek">‘{LAYOUTS[peekSlide.layout].name}’ 레이아웃으로 바꾸면 이렇게 보여요. 누르면 바뀌어요.</p>
@@ -885,8 +874,6 @@ function SlideStage({
                   <span className="btn-t">지우기</span>
                 </button>
               </div>
-              </>
-              )}
             </div>
           }
         >

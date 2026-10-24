@@ -4260,15 +4260,38 @@ body.is-block-resizing * {
   position: relative;
 }
 
-/* 장 아래 도구 줄에 놓인 부품 도구: 띄운 상자가 아니라 줄의 일부로. 메뉴는 위로 연다 */
-.stage-tools.is-block .bk-tools {
-  min-width: 0;
-  box-shadow: none;
+/* 고른 컴포넌트 위에 띄운 도구 (editor/SelectionBar.tsx의 FloatTools). 아래에 자리가 모자라면 메뉴를 위로 연다 */
+.float-tools {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 31;
 }
 
-.stage-tools.is-block .bk-menu {
+.float-tools .bk-tools {
+  border-color: var(--line-2);
+  border-radius: 10px;
+}
+
+.float-tools.is-tight .bk-tool:not(.bk-grip, .is-label) > span:not(.bk-look, .lk-tool-g) {
+  display: none;
+}
+
+.bk-menu.is-up {
   top: auto;
   bottom: calc(100% + 8px);
+}
+
+.bk-menu.is-variants {
+  width: 200px;
+}
+
+.bk-menu.is-variants .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bk-menu.is-variants .bk-menu-item > * {
+  grid-column: 1;
 }
 
 .bk-menu {

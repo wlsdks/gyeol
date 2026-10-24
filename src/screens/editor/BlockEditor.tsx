@@ -797,7 +797,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       )
     : null
 
-  // 고른 부품의 도구는 장 아래 도구 줄에 놓는다(Editor의 stage-tools). 부품 위에 띄우면 위 칸(제목, 위 줄 부품)을 덮는다
+  // 고른 부품의 도구는 그 부품 바로 위에 뜬다 (Editor의 FloatTools)
   const toolbar = selectedBlock && !drag && !landing && compose ? tools(selectedBlock) : compose ? links.toolbar : null
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
@@ -998,14 +998,19 @@ function BlockTools({
   onRemove(): void
 }) {
   const spec = BLOCKS[block.type]
-  const [menu, setMenu] = useState<'look' | 'motion' | 'fields' | null>(null)
+  const [menu, setMenu] = useState<'look' | 'motion' | 'variant' | 'fields' | null>(null)
   const menuRef = useRef<HTMLUListElement>(null)
-  // 도구가 장 아래에 있어서 메뉴는 위로 열린다. 위 끝(머리 띠 아래)까지 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤
-  // (노트북의 낮은 창에서 잘리지 않게)
+  // 메뉴는 도구 아래로 연다. 고른 부품이 장 아래쪽이라 아래에 자리가 모자라면 위로 (위 끝은 머리 띠 아래).
+  // 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
   useLayoutEffect(() => {
     const el = menuRef.current
-    if (!el) return
-    el.style.maxHeight = `${Math.max(160, Math.min(520, el.getBoundingClientRect().bottom - 64))}px`
+    const at = el?.parentElement?.getBoundingClientRect()
+    if (!el || !at) return
+    const below = innerHeight - at.bottom - 16
+    const above = at.top - 64
+    const up = below < 260 && above > below
+    el.classList.toggle('is-up', up)
+    el.style.maxHeight = `${Math.max(160, Math.min(520, up ? above : below))}px`
   }, [menu])
   // 메뉴 밖을 누르면 닫는다. Esc는 메뉴만 닫는다 (먼저 받아서 부품 고르기 닫기, 부품 고르기 끝내기로 넘기지 않는다)
   useEffect(() => {
@@ -1029,8 +1034,6 @@ function BlockTools({
   const variants = spec.variants ?? []
   const variant = variantOfBlock(block)
   const canAdd = !!spec.items && blockItems(block).length < spec.items.max
-  const nextVariant = variants.length > 1 ? variants[(variants.findIndex((v) => v.id === variant) + 1) % variants.length] : null
-  const nextIssue = nextVariant ? variantIssue(nextVariant.id) : null
   const tip = (r: NoRoom | null, ok: string) => (r ? noRoomText(r, block.type, 'change').why : ok)
   return (
     <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
@@ -1090,7 +1093,13 @@ function BlockTools({
         )}
       </div>
       <div className="bk-tool-menu">
-        <button type="button" className={cx('bk-tool', menu === 'motion' && 'is-on')} aria-expanded={menu === 'motion'} onClick={() => setMenu(menu === 'motion' ? null : 'motion')}>
+        <button
+          type="button"
+          className={cx('bk-tool', menu === 'motion' && 'is-on')}
+          aria-expanded={menu === 'motion'}
+          title="발표할 때의 움직임"
+          onClick={() => setMenu(menu === 'motion' ? null : 'motion')}
+        >
           <MotionIcon />
           <span>{BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
@@ -1124,17 +1133,46 @@ function BlockTools({
           </ul>
         )}
       </div>
-      {nextVariant && (
-        <button
-          type="button"
-          className={cx('bk-tool', nextIssue && 'is-blocked')}
-          aria-disabled={!!nextIssue}
-          title={tip(nextIssue, `다음 모양: ${nextVariant.name}`)}
-          onClick={() => (nextIssue ? onBlocked(nextIssue) : onVariant(nextVariant.id))}
-        >
-          <ShapesIcon />
-          <span>{variants.find((v) => v.id === variant)?.name}</span>
-        </button>
+      {/* 모양: 누를 때마다 다음 모양으로 넘기면 무엇이 나올지 몰라서, 이름을 늘어놓고 고른다 */}
+      {variants.length > 1 && (
+        <div className="bk-tool-menu">
+          <button
+            type="button"
+            className={cx('bk-tool', menu === 'variant' && 'is-on')}
+            aria-expanded={menu === 'variant'}
+            title="컴포넌트의 모양"
+            onClick={() => setMenu(menu === 'variant' ? null : 'variant')}
+          >
+            <ShapesIcon />
+            <span>{variants.find((v) => v.id === variant)?.name}</span>
+          </button>
+          {menu === 'variant' && (
+            <ul ref={menuRef} className="bk-menu is-variants" role="menu">
+              {variants.map((v) => {
+                const r = v.id === variant ? null : variantIssue(v.id)
+                return (
+                  <li key={v.id}>
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={v.id === variant}
+                      aria-disabled={!!r}
+                      className={cx('bk-menu-item', v.id === variant && 'is-on', r && 'is-blocked')}
+                      onClick={() => {
+                        if (r) onBlocked(r)
+                        else onVariant(v.id)
+                        setMenu(null)
+                      }}
+                    >
+                      <b>{v.name}</b>
+                      {r && <span className="bk-menu-d">{tip(r, '')}</span>}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
       )}
       {spec.items && (
         <button
