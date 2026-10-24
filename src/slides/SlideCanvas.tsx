@@ -101,6 +101,8 @@ export const SlideCanvas = memo(function SlideCanvas({
                 {sections.map((name, i) => (
                   <li key={i} className={cx(i === sectionIndex && 'is-on')}>
                     {name}
+                    {/* 지금 단락 표시: 따로 둔 요소라 장을 넘길 때 다음 단락 자리로 미끄러져 간다(motion.css) */}
+                    {i === sectionIndex && <span className="s-map-bar" aria-hidden="true" />}
                   </li>
                 ))}
               </ol>

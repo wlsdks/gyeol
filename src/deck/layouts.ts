@@ -282,7 +282,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '단계 흐름',
     description: '일이 어떤 순서로 흘러가는지 (업무 절차, 바뀌는 절차)',
     variants: [
-      { id: 'base', name: '화살표' },
+      { id: 'base', name: '선으로 잇기' },
       { id: 'cards', name: '칸' },
     ],
     highlight: { label: '강조할 단계', fallback: -1 },

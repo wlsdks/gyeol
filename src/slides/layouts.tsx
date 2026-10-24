@@ -896,10 +896,11 @@ function Share() {
     <>
       <Head />
       <div className={cx('s-body sh', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
-        {/* 띠는 합계를 위에, 도넛은 고리 가운데에. 단위 칸은 편집할 때만 오른쪽에 */}
-        {((!donut && totalText) || !final) && (
+        {/* 띠는 합계를 위에, 도넛은 고리 가운데에. 단위 칸은 편집할 때만: 띠는 오른쪽 위에, 도넛은 고리 가운데 합계 아래에
+            (도넛의 오른쪽 위는 이름표 목록이 차지해서 덮는다) */}
+        {!donut && (totalText || !final) && (
           <div className="sh-top">
-            <span className="sh-sum">{!donut && totalText && `합계 ${totalText}`}</span>
+            <span className="sh-sum">{totalText && `합계 ${totalText}`}</span>
             {!final && (
               <span className="sh-unit">
                 단위: <T k="unit" as="span" oneLine />
@@ -928,10 +929,15 @@ function Share() {
                 ) : null,
               )}
             </svg>
-            {totalText && (
+            {(totalText || !final) && (
               <div className="sh-total">
-                <span className="sh-total-k">합계</span>
-                <span className="sh-total-v">{totalText}</span>
+                {totalText && <span className="sh-total-k">합계</span>}
+                {totalText && <span className="sh-total-v">{totalText}</span>}
+                {!final && (
+                  <span className="sh-unit">
+                    단위: <T k="unit" as="span" oneLine />
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1025,7 +1031,9 @@ function Funnel() {
           // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다
           const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
           const rate = linked ? (values[i] / values[i - 1]) * 100 : null
-          const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2) } as CSSProperties
+          // 단계의 농담: 첫 단계가 가장 옅고 갈수록 진하게 (강조할 단계는 강조색 그대로)
+          const tint = items.length > 1 ? 24 + (46 * i) / (items.length - 1) : 46
+          const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2), '--t': tint.toFixed(0) } as CSSProperties
           return (
             <div key={it.id} className={cx('it fn-row', i === highlight && 'is-hl', !values[i] && 'is-blank')} style={style}>
               <div className="fn-label">
@@ -1036,10 +1044,10 @@ function Funnel() {
                 {linked && <span className="fn-link" />}
                 {rate !== null && <span className="fn-rate">{rateText(rate)}</span>}
                 <span className="fn-bar" />
-              </div>
-              <div className="fn-val">
-                <IT i={i} k="value" as="span" className="fn-num" oneLine />
-                {unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>}
+                <div className="fn-val">
+                  <IT i={i} k="value" as="span" className="fn-num" oneLine />
+                  {unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>}
+                </div>
               </div>
               <ItemTools i={i} />
             </div>

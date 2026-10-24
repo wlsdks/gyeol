@@ -232,15 +232,15 @@
   font-weight: 700;
 }
 
-.s-map li.is-on::before {
+/* 지금 단락 표시는 글 아래에. 위에 두면 바로 위의 출처 글에 밑줄처럼 붙어 보인다 */
+.s-map-bar {
   position: absolute;
-  top: -18px;
   right: 0;
+  bottom: -13px;
   left: 0;
-  height: 4px;
+  height: 3px;
   border-radius: 2px;
   background: var(--accent);
-  content: '';
 }
 
 .s-deck {
@@ -475,7 +475,8 @@
    text-box로 글자 위아래 빈자리를 잘라 내야 숫자 모양 그대로 줄이 맞는다 */
 .sc-num {
   flex: none;
-  margin-right: -0.04em;
+  /* 글자마다 오른쪽 여백이 달라서(1은 넓고 2, 3은 좁다) 반만 당겨 오른쪽 끝을 아래 선 끝과 비슷하게 */
+  margin-right: -0.02em;
   /* 아주 큰 글자라 강조색을 조금만 밝힌 색(--deep-mark). 반투명으로 겹치면 금빛이 남색과 섞여 탁한 올리브가 된다 */
   color: var(--deep-mark, var(--accent));
   font-size: 600px;
@@ -2024,17 +2025,23 @@
 }
 
 /* ---------- 증감 요인 (폭포) ----------
-   처음과 끝은 진한 글자색 막대, 더한 요인은 강조색, 뺀 요인은 옅은 회색. 좋고 나쁨이 아니라 방향만 보인다.
-   막대 위치는 --lo, --hi(0~100), 다음 막대로 잇는 점선 높이는 --link 로만 받는다. */
+   처음과 끝은 짙은 면 색 막대, 더한 요인은 강조색, 뺀 요인은 속이 빈 막대. 좋고 나쁨이 아니라 방향만 보인다.
+   막대 위치는 --lo, --hi(0~100), 다음 막대로 잇는 선 높이는 --link 로만 받는다. */
 
 .wf {
   --wf-gap: 16px;
+  --wf-total: var(--bold-bg);
 
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   grid-template-rows: minmax(0, 1fr) auto;
   column-gap: var(--wf-gap);
   margin-top: 24px;
+}
+
+/* 어두운 바탕에서는 짙은 면이 바탕과 가까워서 밝은 글자색 쪽으로 */
+.is-dark .wf {
+  --wf-total: color-mix(in srgb, var(--ink) 82%, var(--bg));
 }
 
 .wf-col {
@@ -2069,48 +2076,47 @@
 
 .wf-bar {
   position: absolute;
-  right: 20%;
+  right: 22%;
   bottom: calc(var(--area) * var(--lo) / 100);
-  left: 20%;
+  left: 22%;
   height: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100));
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--accent);
 }
 
 .wf-total .wf-bar {
-  border-radius: 8px 8px 0 0;
-  background: var(--ink);
+  border-radius: 10px 10px 0 0;
+  background: var(--wf-total);
 }
 
+/* 뺀 요인: 옅은 회색에 빗금. 칠한 더한 요인과 한눈에 갈리고, 얇아도 빈 칸처럼 보이지 않는다 */
 .wf-down .wf-bar {
-  background: color-mix(in srgb, var(--ink-3) 42%, var(--bg));
+  --wf-hatch: color-mix(in srgb, var(--ink-3) 30%, var(--bg));
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
+    color-mix(in srgb, var(--ink-3) 46%, var(--bg));
 }
 
 .is-dark .wf-down .wf-bar {
-  background: color-mix(in srgb, var(--ink-3) 70%, var(--bg));
+  --wf-hatch: color-mix(in srgb, var(--ink-3) 46%, var(--bg));
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
+    color-mix(in srgb, var(--ink-3) 72%, var(--bg));
 }
 
-/* 다음 막대로 잇는 점선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
+/* 다음 막대로 잇는 선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
 .wf-col:not(.wf-end) .wf-plot::after {
   position: absolute;
   bottom: calc(var(--area) * var(--link) / 100);
-  left: 80%;
-  width: calc(40% + var(--wf-gap));
-  border-top: 2px dashed var(--ink-3);
-  opacity: 0.55;
+  left: 78%;
+  width: calc(44% + var(--wf-gap));
+  border-top: 2px solid color-mix(in srgb, var(--ink-3) 45%, var(--bg));
   content: '';
 }
 
-/* 바닥을 올렸을 때: 처음과 끝 막대 아래쪽을 비스듬히 끊어 잘렸음을 보인다 */
-.wf.is-cut .wf-total .wf-bar::after {
-  position: absolute;
-  right: -2px;
-  bottom: 30px;
-  left: -2px;
-  height: 14px;
-  background: var(--bg);
-  transform: skewY(-10deg);
-  content: '';
+/* 바닥을 올렸을 때: 처음과 끝 막대가 바닥 쪽으로 흐려지며 사라져, 아래로 더 이어진다(잘랐다)는 것을 보인다 */
+.wf.is-cut .wf-total .wf-bar {
+  mask-image: linear-gradient(to top, transparent 0, rgb(0 0 0 / 0.35) 36px, #000 128px);
 }
 
 /* 값 자리는 막대 칸 너비라서, 한 줄로 줄이는 숫자(.one-line의 100cqi)의 기준으로 쓴다: 숫자가 칸보다 넓으면 칸에 맞게 작아진다.
@@ -2709,14 +2715,6 @@
   column-gap: 120px;
 }
 
-/* 도넛은 합계가 고리 안에 있어 위 줄에는 (편집할 때의) 단위 칸만 남는다. 줄을 차지하지 않게 오른쪽 위에 */
-.va-donut .sh-top {
-  position: absolute;
-  top: 0;
-  right: 0;
-  margin: 0;
-}
-
 .sh-ring {
   position: relative;
   width: 540px;
@@ -2764,6 +2762,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.sh-total .sh-unit {
+  margin-top: 10px;
+}
+
 .va-donut .sh-legend {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
@@ -2806,11 +2808,11 @@
 }
 
 /* ---------- 단계 흐름 ----------
-   화살표: 단계마다 꺾쇠 모양 면. 앞 단계의 뾰족한 끝이 다음 단계의 홈에 들어가 맞물리게
-   끝을 --tip 만큼 다음 칸으로 내민다(틈은 --tip - --overlap). 칸: 화살표로 이은 면. */
+   선으로 잇기: 단계마다 번호 점을 찍고 점 사이를 선으로 잇는다. 강조할 단계는 점을 칠하고 둘레를 옅게.
+   (꺾쇠 화살표 면은 예전 도표 모양이라 쓰지 않는다) 칸: 둥근 면을 화살표로 잇는다. */
 
 .pc {
-  --tip: 44px;
+  --pc-node: 64px;
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   align-content: center;
@@ -2824,66 +2826,61 @@
   min-width: 0;
 }
 
+/* 점 사이 선: 이 점의 오른쪽 끝에서 다음 칸의 점까지 (칸 사이 틈이 없어서 칸 끝까지 그으면 닿는다) */
+.pc-step:not(:last-child)::before {
+  position: absolute;
+  top: calc(var(--pc-node) / 2 - 1.5px);
+  right: 0;
+  left: var(--pc-node);
+  height: 3px;
+  background: var(--line);
+  content: '';
+}
+
 .pc-head {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 18px;
-  height: 176px;
-  margin-right: calc(var(--tip) * -1 + 12px);
-  padding: 0 calc(var(--tip) + 20px) 0 calc(var(--tip) + 28px);
-  background: var(--surface);
-  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%, var(--tip) 50%);
-}
-
-.pc-step:first-child .pc-head {
-  padding-left: 40px;
-  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
-}
-
-.pc-step:last-child .pc-head {
-  margin-right: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  padding-right: 40px;
 }
 
 .pc-n {
+  position: relative;
+  z-index: 1;
+  display: grid;
   flex: none;
-  color: var(--ink-3);
+  place-items: center;
+  width: var(--pc-node);
+  height: var(--pc-node);
+  box-sizing: border-box;
+  border: 3px solid var(--line);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--ink-2);
   font-family: var(--font-head);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
+.pc-step.is-hl .pc-n {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 0 12px var(--accent-soft);
+  color: var(--accent-ink);
+}
+
 .pc-title {
-  --fs: 34px;
+  --fs: 36px;
   min-width: 0;
   font-weight: 700;
   line-height: 1.25;
 }
 
-.l-process:not(.va-cards) .pc-step.is-hl .pc-head {
-  background: var(--accent);
-  color: var(--accent-ink);
-}
-
-/* 밝은 테마에서는 넓은 꺾쇠 면을 색 면으로 깊게 (안 비교의 추천안과 같은 방식). 어두운 테마의 색 면은
-   칸 면과 거의 같아 구분되지 않아서 강조색 그대로 둔다 */
-.slide:not(.is-dark).l-process:not(.va-cards) .pc-step.is-hl .pc-head {
-  background: var(--bold-bg);
-  color: var(--bold-ink);
-}
-
-.l-process:not(.va-cards) .pc-step.is-hl .pc-n {
-  color: inherit;
-  opacity: 0.72;
-}
-
 .pc-text {
-  padding: 36px 40px 0 var(--pc-text-x, var(--tip));
-}
-
-.pc-step:first-child {
-  --pc-text-x: 40px;
+  padding: 18px 40px 0 0;
 }
 
 .pc-meta {
@@ -2900,22 +2897,38 @@
   line-height: 1.5;
 }
 
+.pc:is([data-n='5'], [data-n='6']) {
+  --pc-node: 56px;
+}
+
 .pc:is([data-n='5'], [data-n='6']) .pc-title {
-  --fs: 28px;
+  --fs: 30px;
 }
 
 .pc:is([data-n='5'], [data-n='6']) .pc-body {
   --fs: 26px;
 }
 
-.pc:is([data-n='5'], [data-n='6']) .pc-text {
-  padding-right: 24px;
+.pc:is([data-n='5'], [data-n='6']) :is(.pc-head, .pc-text) {
+  padding-right: 28px;
 }
 
-/* 모양: 칸. 꺾쇠 대신 둥근 면, 사이에 화살표 */
+/* 모양: 칸. 둥근 면, 사이에 화살표 */
 .va-cards .pc {
   --pc-gap: 64px;
   gap: var(--pc-gap);
+}
+
+.va-cards .pc-step::before {
+  content: none;
+}
+
+.va-cards .pc-title {
+  --fs: 34px;
+}
+
+.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-title {
+  --fs: 28px;
 }
 
 .va-cards .pc:is([data-n='5'], [data-n='6']) {
@@ -2941,35 +2954,23 @@
 }
 
 .va-cards .pc-head {
-  flex-direction: column;
-  align-items: flex-start;
   gap: 20px;
-  height: auto;
-  margin: 0;
   padding: 0;
-  background: none;
-  clip-path: none;
-}
-
-.va-cards .pc-step:first-child .pc-head {
-  padding: 0;
-  clip-path: none;
 }
 
 .va-cards .pc-n {
-  display: grid;
-  place-items: center;
   width: 56px;
   height: 56px;
   border: 2px solid currentColor;
-  border-radius: 50%;
+  background: none;
   color: var(--accent);
-  font-size: 26px;
 }
 
 .va-cards .pc-step.is-hl .pc-n {
+  border-color: currentColor;
+  background: none;
+  box-shadow: none;
   color: inherit;
-  opacity: 1;
 }
 
 .va-cards .pc-text {
@@ -3011,11 +3012,15 @@
 
 /* ---------- 깔때기 ----------
    막대 너비는 --w(첫 단계 대비 0~100), 앞 단계 너비는 --pw. 막대 사이의 사다리꼴(.fn-link)은
-   두 너비로 clip-path를 잘라 앞 막대 아랫변과 이 막대 윗변을 잇는다. */
+   두 너비로 clip-path를 잘라 앞 막대 아랫변과 이 막대 윗변을 잇는다.
+   단계는 강조색의 농담(--t, 앞 단계일수록 옅게)으로 이어 칠하고, 강조할 단계만 강조색 그대로.
+   숫자는 막대 오른쪽 끝에 바로 붙인다: 오른쪽 끝에 몰아 두면 눈이 막대에서 숫자까지 먼 길을 건너야 한다 */
 
 .fn {
   --fn-gap: 48px;
   --fn-h: 88px;
+  /* 막대 양옆에 숫자 자리 */
+  --fn-side: 260px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -3035,9 +3040,9 @@
 .fn-row {
   position: relative;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr) 260px;
+  grid-template-columns: 320px minmax(0, 1fr);
   align-items: center;
-  gap: 48px;
+  gap: 40px;
 }
 
 .fn-name {
@@ -3054,18 +3059,25 @@
 }
 
 .fn-zone {
+  --fn-full: calc(100% - var(--fn-side) * 2);
   position: relative;
   height: var(--fn-h);
 }
 
 .fn-bar {
-  position: relative;
-  display: block;
-  width: calc(var(--w) * 1%);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(var(--fn-full) * var(--w) / 100);
   height: 100%;
-  margin-inline: auto;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--ink-3) 40%, var(--bg));
+  translate: -50% 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) calc(var(--t, 40) * 1%), var(--bg));
+}
+
+/* 어두운 바탕에서 강조색을 바탕에 섞으면 금빛이 갈색으로 탁해진다. 회색의 농담으로 잇고 강조할 단계만 강조색 */
+.is-dark .fn-bar {
+  background: color-mix(in srgb, var(--ink-2) calc(var(--t, 40) * 0.8%), var(--bg));
 }
 
 .fn-row.is-hl .fn-bar {
@@ -3076,13 +3088,17 @@
   visibility: hidden;
 }
 
+.is-dark .fn-link {
+  background: color-mix(in srgb, var(--ink-2) 7%, var(--bg));
+}
+
 .fn-link {
   position: absolute;
-  right: 0;
+  right: var(--fn-side);
   bottom: 100%;
-  left: 0;
+  left: var(--fn-side);
   height: var(--fn-gap);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
   clip-path: polygon(
     calc(50% - var(--pw) * 0.5%) 0,
     calc(50% + var(--pw) * 0.5%) 0,
@@ -3091,7 +3107,7 @@
   );
 }
 
-/* 단계 사이 전환율: 사다리꼴 한가운데 */
+/* 단계 사이 전환율: 사다리꼴 한가운데에 글자만 */
 .fn-rate {
   --fs: 22px;
   position: absolute;
@@ -3099,9 +3115,6 @@
   bottom: calc(100% + var(--fn-gap) / 2);
   left: 50%;
   translate: -50% 50%;
-  padding: 2px 14px;
-  border-radius: 99px;
-  background: var(--bg);
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
@@ -3109,12 +3122,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 숫자: 막대 오른쪽 끝에서 조금 띄워 */
 .fn-val {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + var(--fn-full) * var(--w) / 200 + 28px);
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
   gap: 6px;
-  min-width: 0;
+  max-width: calc(var(--fn-side) - 28px);
+  translate: 0 -50%;
+  white-space: nowrap;
 }
 
 .fn-num {
