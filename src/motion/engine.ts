@@ -122,8 +122,11 @@ export function motionEngine(): MotionEngine {
     return { words, restore: () => undo.forEach((u) => u()) }
   }
 
-  /** 큰 숫자를 0부터 올린다. 숫자가 하나만 있는 칸만. '3~4개월', 날짜는 그대로 둔다. */
-  function countUp(el: Element, at: number, duration: number, stops: (() => void)[]) {
+  /**
+   * 큰 숫자를 0부터 올린다. 숫자가 하나만 있는 칸만. '3~4개월', 날짜는 그대로 둔다.
+   * 다 올라가면 waits에 넣은 약속을 지킨다: 글이 원래 숫자로 돌아와야 움직임이 끝난 것이다(play의 끝 표시)
+   */
+  function countUp(el: Element, at: number, duration: number, stops: (() => void)[], waits: Promise<void>[]) {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     let node = walker.nextNode() as Text | null
     while (node && !/\d/.test(node.nodeValue || '')) node = walker.nextNode() as Text | null
@@ -149,17 +152,21 @@ export function motionEngine(): MotionEngine {
     const target_node = node
     const start = performance.now() + at
     let frame = 0
+    let done = () => {}
+    waits.push(new Promise<void>((r) => (done = r)))
     target_node.nodeValue = format(0)
     const tick = (now: number) => {
       const t = Math.min(1, Math.max(0, (now - start) / duration))
       // 처음엔 빠르게, 끝에서 천천히 멈춘다
       target_node.nodeValue = t >= 1 ? text : format(target * (1 - Math.pow(2, -10 * t)))
       if (t < 1) frame = requestAnimationFrame(tick)
+      else done()
     }
     frame = requestAnimationFrame(tick)
     stops.push(() => {
       cancelAnimationFrame(frame)
       target_node.nodeValue = text
+      done()
     })
   }
 
@@ -267,7 +274,13 @@ export function motionEngine(): MotionEngine {
     const anims: Animation[] = []
     const stops: (() => void)[] = []
     const restores: (() => void)[] = []
+    const waits: Promise<void>[] = []
     if (!slide || matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
+    // 움직이는 동안은 움직이는 것(root)에 표시를 붙인다. 그동안 글자와 막대는 옮겨지거나(translate) 커지는(scale) 중이고
+    // 숫자는 0부터 굴러가는 중이라, 부품 장의 글자 맞추기(slides/fitBlocks.ts)가 이때 재면 끝 모습과 다른 값이 나온다
+    // (움직이며 넘긴 장과 뒤로 돌아온 장의 글자 크기가 달랐다). 맞추기는 표시가 있으면 재지 않고 기다렸다가, 표시를 떼며
+    // 보내는 mo-end에 다시 잰다. 같은 것을 겹쳐 움직이면(편집기의 미리 보기) 겹친 수를 적어 마지막이 끝날 때 뗀다
+    root.setAttribute('data-mo-play', String(Number(root.getAttribute('data-mo-play') || 0) + 1))
     // 부품 하나를 움직이는 동안에는 그 칸 안에서만 찾고, 시간은 그 부품이 시작하는 때부터 센다
     let scope: Element = slide
     let t0 = 0
@@ -330,7 +343,7 @@ export function motionEngine(): MotionEngine {
       const lively = levelName === 'lively'
       // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
       if (!roll(el, s(at), lively ? 900 : 800, lively ? SPRINGS.bounce.easing : 'cubic-bezier(0.25, 0.8, 0.15, 1)', anims, restores))
-        countUp(el, s(at), lively ? 1000 : 800, stops)
+        countUp(el, s(at), lively ? 1000 : 800, stops, waits)
     }
     /** 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다 */
     const pulse = (el: HTMLElement | null, at: number) => {
@@ -1084,9 +1097,16 @@ export function motionEngine(): MotionEngine {
       if (restored) return
       restored = true
       restores.forEach((f) => f())
+      const left = Number(root.getAttribute('data-mo-play') || 1) - 1
+      if (left > 0) root.setAttribute('data-mo-play', String(left))
+      else {
+        root.removeAttribute('data-mo-play')
+        root.dispatchEvent(new Event('mo-end'))
+      }
     }
-    // 다 움직이고 나면 낱말로 나눈 제목을 원래 글자로 되돌린다. 화면을 그린 쪽(React)이 다시 다룰 수 있게.
-    Promise.all(anims.map((a) => a.finished)).then(restore, () => {})
+    // 다 움직이고 나면(숫자도 다 올라가면) 낱말로 나눈 제목을 원래 글자로 되돌린다. 화면을 그린 쪽(React)이 다시 다룰 수 있게.
+    // 중간에 멈춘 움직임(거절된 약속)도 끝난 것으로 본다: 끝 표시가 남으면 글자 맞추기가 그 장을 다시 재지 않는다
+    Promise.all([...anims.map((a) => a.finished.catch(() => {})), ...waits]).then(restore)
     return () => {
       anims.forEach((a) => a.finish())
       stops.forEach((f) => f())
