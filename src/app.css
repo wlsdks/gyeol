@@ -228,12 +228,6 @@ select {
   flex: 1;
 }
 
-.seg-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  align-self: flex-start;
-}
-
 /* 칸 너비를 다 쓰는 고르기: 단추를 같은 너비로 한 줄에 (넷이어도 두 줄로 꺾지 않는다) */
 .seg-fill {
   display: grid;
@@ -2903,9 +2897,6 @@ select {
   scrollbar-gutter: stable;
 }
 
-.seg-pad {
-  margin: 0 10px;
-}
 
 .theme-grid {
   display: grid;

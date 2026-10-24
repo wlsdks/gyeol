@@ -102,7 +102,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           </div>
           <p className="menu-h">글꼴</p>
           {/* 제목과 본문을 맞춰 본 짝 하나를 고른다. 단추 이름을 그 글꼴로 써서 고르기 전에 모양이 보이게 */}
-          <div className="seg seg-grid seg-pad" role="group" aria-label="글꼴">
+          <div className="seg seg-full" role="group" aria-label="글꼴">
             {FONTS.map((o) => (
               <button
                 key={o.id}
@@ -158,7 +158,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
             )}
           </p>
           <p className="menu-h">장 넘기기</p>
-          <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} wrap />
+          <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
         </div>
       )}
     </Popover>
@@ -171,17 +171,15 @@ function Choice<T extends string>({
   options,
   value,
   onPick,
-  wrap,
 }: {
   label: string
   options: { id: T; name: string; description: string }[]
   value: T
   onPick: (id: T) => void
-  wrap?: boolean
 }) {
   return (
     <>
-      <div className={cx('seg', wrap ? 'seg-wrap seg-pad' : 'seg-full')} role="group" aria-label={label}>
+      <div className="seg seg-full" role="group" aria-label={label}>
         {options.map((o) => (
           <button key={o.id} type="button" className={cx('seg-btn', value === o.id && 'is-on')} aria-pressed={value === o.id} onClick={() => onPick(o.id)}>
             {o.name}
