@@ -5476,6 +5476,13 @@ body.is-block-resizing * {
   pointer-events: none;
 }
 
+/* 제목 덩어리(표지, 섹션): 쓰는 중인 칸의 실선 테와 다른 것이 보이게 점선으로, 덩어리 밖에 띄워 */
+.sel-ring.is-group {
+  box-shadow: none;
+  outline: 1.5px dashed var(--sel);
+  border-radius: 10px;
+}
+
 .sel-bar {
   position: fixed;
   top: 0;

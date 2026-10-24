@@ -52,12 +52,17 @@ function placeAt(t: number): Place {
  * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
  * 슬라이드 위 여백까지 쓴다 (판이나 부품이 장 맨 위에 붙어 있어도 그 글을 가리지 않게)
  */
+/** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
+const GROUP_PAD = 10
+
 function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null) {
   const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
   const bw = bar?.offsetWidth ?? 0
   const bh = bar?.offsetHeight ?? 36
   const top = area ? area.top + 4 : 4
-  const y = r.top - bh - 8 >= top ? r.top - bh - 8 : r.top + 8
+  const bottom = area ? area.bottom - 4 : innerHeight - 4
+  // 위에 자리가 없으면(장 맨 위의 제목) 아래에 붙인다. 고른 것 위에 얹으면 고치려는 글을 가린다
+  const y = r.top - bh - 8 >= top ? r.top - bh - 8 : r.bottom + 8 + bh <= bottom ? r.bottom + 8 : r.top + 8
   const maxX = (area ? area.right : innerWidth) - bw - 8
   const x = Math.max(area ? area.left + 8 : 8, Math.min(r.left, maxX))
   return { x, y, room: area ? area.width - 16 : innerWidth }
@@ -195,7 +200,10 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     let raf = 0
     const tick = () => {
       if (!target.el.isConnected) return setTarget(null)
-      const r = target.el.getBoundingClientRect()
+      const box = target.el.getBoundingClientRect()
+      // 제목 덩어리는 쓰는 중인 칸의 테와 겹치지 않게 조금 넓게 두른다 (app.css의 .sel-ring.is-group)
+      const pad = target.kind === 'field' && target.place ? GROUP_PAD : 0
+      const r = new DOMRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
       const { x, y } = barSpot(r, barRef.current, canvasRef.current)
       setBar((p) => (p && p.x === x && p.y === y ? p : { x, y }))
@@ -371,7 +379,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     }
     return (
       <>
-        {placeSpec && <div className="sel-ring" style={{ translate: `${ring.x}px ${ring.y}px`, width: ring.w, height: ring.h }} aria-hidden="true" />}
+        {placeSpec && <div className="sel-ring is-group" style={{ translate: `${ring.x}px ${ring.y}px`, width: ring.w, height: ring.h }} aria-hidden="true" />}
         <div ref={barRef} className="sel-bar" role="toolbar" aria-label={`${target.label} 도구`} style={bar ? { translate: `${bar.x}px ${bar.y}px` } : { visibility: 'hidden' }}>
           {placeSpec ? (
             <button type="button" className="sel-name is-grip" title="위아래로 끌어 자리 옮기기" onPointerDown={startPlace}>
