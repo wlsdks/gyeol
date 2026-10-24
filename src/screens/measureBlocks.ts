@@ -99,7 +99,8 @@ function clashList(cell: HTMLElement, all: boolean): string[] {
 }
 
 const inner = (cell: HTMLElement) => cell.querySelector<HTMLElement>(':scope > .bk-in')
-const scrollOver = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2
+// fitBlocks가 줄일지 볼 때(over)와 같은 4px: 다르면 화면에서는 그대로 둔 글자를 여기서는 넘쳤다고 본다
+const scrollOver = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 4 || el.scrollWidth > el.clientWidth + 4
 
 /** 한 칸에서 넘치거나 겹친 글 (진단용). 칸 크기를 바꾼 뒤 부른다 */
 export function clashes(cell: HTMLElement): string[] {
@@ -109,8 +110,10 @@ export function clashes(cell: HTMLElement): string[] {
   const area = cell.closest<HTMLElement>('.bk-area')
   const was = area?.classList.contains('is-fitting')
   area?.classList.add('is-fitting')
-  if (el && el.scrollHeight > el.clientHeight + 2) out.push(`세로로 ${el.scrollHeight - el.clientHeight}px 넘침`)
-  if (el && el.scrollWidth > el.clientWidth + 2) out.push(`가로로 ${el.scrollWidth - el.clientWidth}px 넘침`)
+  if (el && scrollOver(el)) {
+    if (el.scrollHeight > el.clientHeight + 4) out.push(`세로로 ${el.scrollHeight - el.clientHeight}px 넘침`)
+    if (el.scrollWidth > el.clientWidth + 4) out.push(`가로로 ${el.scrollWidth - el.clientWidth}px 넘침`)
+  }
   if (el && !out.length && blockOverflows(el)) out.push('글자를 줄여야 함 (여백, 겹침, 옆 항목)')
   const list = clashList(cell, true)
   if (!was) area?.classList.remove('is-fitting')

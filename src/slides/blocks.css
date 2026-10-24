@@ -496,6 +496,9 @@
    전은 옅게, 후는 강조색. 크기가 다르면 두 숫자의 글자 밑줄이 어긋나고 서로 다른 것을 재는 것처럼 보인다 */
 
 .bk-dl {
+  /* 전과 후 숫자의 글자 크기와 화살표 둘레(화살표와 양쪽 사이). 칸 너비(.bk-dl-row)도 이것으로 센다 */
+  --dl-v: 90px;
+  --dl-gaps: 120px;
   display: flex;
   flex-direction: column;
   justify-content: safe center;
@@ -510,14 +513,18 @@
 }
 
 .bk-dl-row {
+  /* 숫자 하나의 폭: .one-line과 같은 식(글자 수 × 글꼴의 글자 폭 × 글자 크기) */
+  --dl-w: calc(var(--dl-units, 4) * var(--glyph-k, 1) * var(--dl-v) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* 전의 칸은 숫자 폭만큼, 남는 너비는 후의 칸(아래에 바뀐 만큼이 선다). 칸 너비로 똑같이 나누면 넓은 칸에서
+     앞 숫자('11분') 오른쪽이 비어 화살표가 뒤 숫자에만 붙어 보였다. 좁아서 숫자 폭이 안 나오면 똑같이 나눈다 */
+  grid-template-columns: minmax(0, min(var(--dl-w), (100% - var(--dl-gaps)) / 2)) auto minmax(0, 1fr);
   /* 이름표(전, 후)는 한 줄에, 값은 아래 줄에서 글자 밑줄을 맞추고, 그 아래 줄에 바뀐 만큼 */
   grid-template-rows: auto auto auto;
   align-items: end;
   gap: 4px 28px;
-  /* 넓은 칸에서 전과 후가 멀리 떨어지지 않게 */
-  max-width: 1040px;
+  /* 두 숫자와 화살표만큼만 넓게: 넓은 칸에서 전과 후가 멀리 떨어지지 않게. 바뀐 만큼이 들어갈 너비(480px)는 남긴다 */
+  max-width: min(1040px, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
   margin-top: 24px;
 }
 
@@ -543,7 +550,7 @@
 }
 
 .bk-dl-v {
-  --fs: 90px;
+  --fs: var(--dl-v);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
   font-weight: var(--display-weight);
@@ -625,18 +632,19 @@
     letter-spacing: var(--head-tracking);
   }
 
+  .bk-dl {
+    --dl-v: 184px;
+    --dl-gaps: 224px;
+  }
+
   .bk-dl-row {
     gap: 8px 64px;
-    max-width: 1480px;
+    max-width: min(1480px, max(720px, calc(2 * var(--dl-w) + var(--dl-gaps))));
     margin-top: 40px;
   }
 
   .bk-dl-k {
     --fs: var(--t-body);
-  }
-
-  .bk-dl-v {
-    --fs: 184px;
   }
 
   .bk-dl-arrow {
@@ -3624,8 +3632,10 @@
   background: none;
 }
 
-/* 칸마다 크기 상자: 칸 안 숫자는 칸이 숫자보다 높을 때만 보인다. 낮은 칸에서는 숫자가 칸 밖으로 넘쳐 이웃 칸을 덮는다 */
+/* 칸마다 크기 상자: 칸 안 숫자는 칸이 숫자보다 높을 때만 보인다. 낮은 칸에서는 숫자가 칸 밖으로 넘쳐 이웃 칸을 덮는다.
+   칸의 글자 크기를 숫자와 같게 두고(--fs) 그 배수(em)로 잰다: 30px처럼 정해 두면 글자 크기 '크게'에서 숫자가 칸보다 커져 잘렸다 */
 .bk-st-seg {
+  --fs: 22px;
   display: flex;
   flex-basis: 0;
   align-items: center;
@@ -3634,7 +3644,7 @@
   container-type: size;
 }
 
-@container (max-height: 30px) {
+@container (max-height: 1.4em) {
   .bk-st-n {
     visibility: hidden;
   }

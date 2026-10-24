@@ -92,13 +92,16 @@ export function blockFitter() {
       const text = (n.textContent || '').trim()
       const el = n.parentElement
       if (!text || !el || el.closest('[aria-hidden="true"]')) continue
+      // 일부러 숨긴 글(쌓은 막대에서 칸보다 큰 칸 안 숫자)은 그려지지 않으니 넘침으로 세지 않는다
+      const cs = getComputedStyle(el)
+      if (cs.visibility === 'hidden') continue
       const [up, down] = ink(el, text.slice(0, 60))
       range.selectNodeContents(n)
       const rects = range.getClientRects()
       // 편집 칸은 띄어쓰기를 그대로 두는 pre-wrap이라 줄 끝의 띄어쓰기가 칸 밖으로 걸려 있고 줄 상자도 그만큼 넓다.
       // 그것까지 글로 세면 편집 화면에서만 넘친 것으로 보여 글자가 한 단계 작아진다. 그래서 줄 끝의 띄어쓰기 자리를 뺀다
       const spaces: DOMRect[] = []
-      const ws = getComputedStyle(el).whiteSpace
+      const ws = cs.whiteSpace
       if (ws === 'pre-wrap' || ws === 'break-spaces') {
         const raw = n.textContent || ''
         for (let i = 0; i < raw.length; i++) {
@@ -127,8 +130,12 @@ export function blockFitter() {
    * 칸 안의 글이 안쪽 상자를 넘거나 다른 글과 겹치는지. 글이 안쪽 상자의 자식(가운데 맞춘 묶음 같은) 밖으로 넘치면
    * scrollHeight는 안쪽 여백만큼을 넘침으로 세지 않아서, 카드 아래 여백을 먹고 들어간 글을 놓친다. 그래서 글 줄의 자리로도 본다
    */
-  function over(inner: HTMLElement): boolean {
-    if (inner.scrollHeight > inner.clientHeight + 2 || inner.scrollWidth > inner.clientWidth + 2) return true
+  function over(inner: HTMLElement, tight = false): boolean {
+    // 줄일지 볼 때는 4px까지 봐준다: 명조처럼 글자 윗선·아랫선이 높은 글꼴은 큰 숫자의 줄 상자가 칸 끝에서 몇 px 비어져 나와도
+    // 글자는 칸 안에 있다(글자가 넘치는지는 아래에서 글 줄의 자리로 본다). 2px로 두면 핵심 숫자가 칸 높이 한 점(530px)에서만 한 단계 작아졌다.
+    // 키울 때(crowded)는 2px로 엄격하게: 4px까지 키우면 칸마다 끝에 닿도록 커진다
+    const slackPx = tight ? 2 : 4
+    if (inner.scrollHeight > inner.clientHeight + slackPx || inner.scrollWidth > inner.clientWidth + slackPx) return true
     const r = inner.getBoundingClientRect()
     // 편집 화면과 갤러리는 장을 줄여 그려서, 여백(캔버스 px)을 화면 px로 바꾼다
     const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
@@ -243,7 +250,7 @@ export function blockFitter() {
       for (let i = 0; i < n; i++) {
         const most = room - floor.reduce((a, m, j) => (j === i ? a : a + m), 0)
         const h = parseFloat(getComputedStyle(area).gridTemplateRows.split(' ')[i])
-        if (h >= most - 1 || !inners[i].some(over)) continue
+        if (h >= most - 1 || !inners[i].some((el) => over(el))) continue
         floor[i] = Math.min(most, h + 16)
         area.style.setProperty('--bk-r' + (i + 1), floor[i] + 'px')
         moved = true
@@ -277,7 +284,7 @@ export function blockFitter() {
    * 그림이 키우기 전의 반 밑으로 줄어도 넘친 것이다: 글자를 키우느라 그래프를 찌그러뜨리지 않는다
    */
   function crowded(inner: HTMLElement, shapes: Shape[] = []): boolean {
-    if (over(inner)) return true
+    if (over(inner, true)) return true
     const r = inner.getBoundingClientRect()
     const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
     const bottom = r.bottom - parseFloat(getComputedStyle(inner).paddingBottom) * k + 2 * k

@@ -129,7 +129,7 @@ function Delta() {
   return (
     <div className={cx('bk-dl', demo && 'is-demo')}>
       <T k="label" className="bk-dl-l" />
-      <div className="bk-dl-row">
+      <div className="bk-dl-row" style={{ '--dl-units': units.toFixed(2) } as CSSProperties}>
         <div className="bk-dl-side bk-dl-from">
           <span className="bk-dl-k">전</span>
           <div className="bk-dl-vbox">
