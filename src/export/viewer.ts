@@ -1,9 +1,9 @@
 // 내보낸 HTML 파일 안에서 쓰는 보기 화면. 열면 모든 장이 세로로 보이고, "발표 시작"으로 슬라이드쇼가 된다.
 // 발표할 때의 움직임은 앱의 발표 화면과 같은 엔진(motion/engine.ts)을 쓴다. 엔진은 소스를 그대로 넣는다.
-// 부품 장에서 넘치는 부품 맞추기(slides/fitBlocks.ts)도 같다. 처음에는 모든 장이 보이므로 열 때 한 번, 폰트가 오면 한 번 더.
+// 부품 장에서 넘치는 부품 맞추기(slides/fitBlocks.ts의 blockFitter)도 같다. 처음에는 모든 장이 보이므로 열 때 한 번, 폰트가 오면 한 번 더.
 
 import { motionEngine } from '../motion/engine'
-import { fitBlocks } from '../slides/fitBlocks'
+import { blockFitter } from '../slides/fitBlocks'
 
 /** 보기 화면에 쓰이는 글자 (폰트 묶음 고르기에 쓴다) */
 export const VIEWER_TEXT = 'PDF로 저장 발표 시작 0123456789 /'
@@ -47,7 +47,7 @@ body.is-present .v-blank.is-white{background:#fff}
 
 export const VIEWER_JS = `(function(){
 var engine=(${motionEngine.toString()})();
-var fitBlocks=(${fitBlocks.toString()});
+var fitBlocks=(${blockFitter.toString()})().fit;
 var slides=[].slice.call(document.querySelectorAll('.v-slide'));
 var body=document.body,root=document.documentElement,count=document.querySelector('.v-count'),blank=document.querySelector('.v-blank');
 var i=0,timer=0,stopMotion=null;
