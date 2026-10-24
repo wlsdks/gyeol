@@ -163,6 +163,88 @@ export function motionEngine(): MotionEngine {
     })
   }
 
+  /**
+   * 숫자를 자리마다 굴려서 맞춘다(주행 거리계처럼). 숫자가 하나만 있는 칸만, countUp과 같은 조건.
+   * 제자리 숫자는 투명하게 남겨 줄과 폭을 그대로 지키고, 자리마다 그 글자 상자와 같은 크기의 창을 덮어
+   * 0부터 그 숫자까지(한 바퀴 더) 굴린다. 왼쪽 자리부터 차례로 멈춘다. 다 굴러가면 창을 걷고 원래 글자로.
+   * 글자 상자를 잴 수 없으면(안 보이는 칸) false를 돌려준다. 그때는 0부터 올리기로.
+   */
+  function roll(el: Element, at: number, duration: number, easing: string, anims: Animation[], restores: (() => void)[]) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    let node = walker.nextNode() as Text | null
+    while (node && !/\d/.test(node.nodeValue || '')) node = walker.nextNode() as Text | null
+    const parent = node && node.parentElement
+    if (!node || !parent) return false
+    const text = node.nodeValue || ''
+    const all = text.match(/\d[\d,]*(\.\d+)?/g)
+    if (!all || all.length !== 1 || all[0].replace(/\D/g, '').length > 9) return false
+    const base = parent.getBoundingClientRect()
+    // 발표 화면은 장을 줄여 그린다. 잰 값을 장의 px로 되돌린다
+    const k = parent.offsetWidth ? base.width / parent.offsetWidth : 0
+    if (!k) return false
+    // 숫자마다 감싼다. 감싼 것은 글자 모양을 바꾸지 않는 보통 span이라 줄과 폭이 그대로다
+    const frag = document.createDocumentFragment()
+    const cells: HTMLElement[] = []
+    let plain = ''
+    for (const ch of text) {
+      if (ch >= '0' && ch <= '9') {
+        if (plain) frag.appendChild(document.createTextNode(plain))
+        plain = ''
+        const c = document.createElement('span')
+        c.textContent = ch
+        cells.push(c)
+        frag.appendChild(c)
+      } else plain += ch
+    }
+    if (plain) frag.appendChild(document.createTextNode(plain))
+    const parts = Array.prototype.slice.call(frag.childNodes) as Node[]
+    const original = node
+    parent.replaceChild(frag, original)
+    const covers: HTMLElement[] = []
+    const position = parent.style.position
+    // 나눈 조각과 덮은 창을 걷고 원래 글 하나로
+    const undo = () => {
+      covers.forEach((c) => c.remove())
+      if (parts[0].parentNode === parent) parent.insertBefore(original, parts[0])
+      parts.forEach((p) => p.parentNode === parent && parent.removeChild(p))
+      parent.style.position = position
+    }
+    const boxes = cells.map((c) => c.getBoundingClientRect())
+    if (boxes.some((b) => !b.width || !b.height)) {
+      undo()
+      return false
+    }
+    if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative'
+    const n = cells.length
+    cells.forEach((c, i) => {
+      const b = boxes[i]
+      const h = b.height / k
+      const digit = Number(c.textContent)
+      const strip = document.createElement('span')
+      strip.className = 'mo-odr'
+      const seq: string[] = []
+      for (let d = 0; d <= 9 + digit; d++) seq.push(String(d % 10))
+      strip.textContent = seq.join('\n')
+      strip.style.lineHeight = h + 'px'
+      strip.style.translate = `0 ${-(seq.length - 1) * h}px`
+      const cover = document.createElement('span')
+      cover.className = 'mo-od'
+      cover.setAttribute('aria-hidden', 'true')
+      cover.style.left = (b.left - base.left) / k - parent.clientLeft + 'px'
+      cover.style.top = (b.top - base.top) / k - parent.clientTop + 'px'
+      cover.style.width = b.width / k + 'px'
+      cover.style.height = h + 'px'
+      cover.appendChild(strip)
+      parent.appendChild(cover)
+      covers.push(cover)
+      c.className = 'mo-odc'
+      // 왼쪽 자리가 먼저 멈추고 오른쪽으로 갈수록 조금씩 늦게
+      run(anims, strip, [{ translate: '0 0' }], at, { easing, duration: duration + (n > 1 ? (i / (n - 1)) * duration * 0.35 : 0) })
+    })
+    restores.push(undo)
+    return true
+  }
+
   // ---------- 연출표 ----------
 
   /**
@@ -232,7 +314,35 @@ export function motionEngine(): MotionEngine {
     }
     const count = (el: Element | null, at: number) => {
       // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게)
-      if (el && !el.closest('.m-edit')) countUp(el, s(at), levelName === 'lively' ? 1400 : 900, stops)
+      if (!el || el.closest('.m-edit')) return
+      // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
+      const lively = levelName === 'lively'
+      if (!roll(el, s(at), lively ? 1300 : 950, lively ? SPRINGS.bounce.easing : 'cubic-bezier(0.25, 0.8, 0.15, 1)', anims, restores))
+        countUp(el, s(at), lively ? 1400 : 900, stops)
+    }
+    /** 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다 */
+    const pulse = (el: HTMLElement | null, at: number) => {
+      if (!el || el.closest('.m-edit')) return
+      const ring = document.createElement('span')
+      ring.className = 'mo-ring'
+      ring.setAttribute('aria-hidden', 'true')
+      // 점의 테두리 바깥에 맞춘다
+      ring.style.inset = -el.clientLeft + 'px'
+      el.appendChild(ring)
+      restores.push(() => ring.remove())
+      for (const k of [0, 1]) {
+        run(
+          anims,
+          ring,
+          [
+            { opacity: 0, scale: '1', offset: 0 },
+            { opacity: 0.6, scale: '1.15', offset: 0.1 },
+            { opacity: 0, scale: '2.6', offset: 1 },
+          ],
+          s(at) + k * d(900),
+          { easing: 'cubic-bezier(0.2, 0.6, 0.35, 1)', duration: d(1400) },
+        )
+      }
     }
     /** 감싼 줄이 따로 나타나지 않는 숫자: 올라가기 시작할 때 함께 나타난다. 아직 차례가 아닌 줄에 0이 미리 보이지 않게 */
     const countIn = (el: Element | null, at: number) => {
@@ -340,6 +450,7 @@ export function motionEngine(): MotionEngine {
         items('.tl-item', t, (el, at) => {
           grow(el, at, variant === 'steps' ? 'down' : 'x', '::before')
           pop(el.querySelector('.tl-dot'), at + 140)
+          if (el.classList.contains('is-now')) pulse(el.querySelector('.tl-dot'), at + 420)
           rise(el.querySelector('.tl-meta'), at + 60, L.y * 0.5)
           rise(el.querySelector('.tl-title'), at + 200, L.y * 0.6)
           rise(el.querySelector('.tl-body'), at + 260, L.y * 0.6)
@@ -485,6 +596,7 @@ export function motionEngine(): MotionEngine {
           const at = t + 100 + ((parseFloat(el.style.getPropertyValue('--x')) || 0) / 100) * draw
           pop(el.querySelector('.tn-dot'), at)
           if (el.classList.contains('is-hl')) {
+            pulse(el.querySelector('.tn-dot'), at + 300)
             rise(el.querySelector('.tn-val'), at + 60, L.y * 0.5)
             count(el.querySelector('.tn-num'), at + 60)
           } else fade(el.querySelector('.tn-val'), at + 40, 400)
@@ -542,12 +654,30 @@ export function motionEngine(): MotionEngine {
       }
       case 'process': {
         const t = head()
-        // 꺾쇠는 모양을 clip-path로 그려서 닦아 내기(wipe) 대신 왼쪽에서 밀려 들어온다
+        if (variant === 'cards') {
+          items('.pc-step', t, (el, at) => {
+            run(anims, el, [{ opacity: 0, translate: `${-L.y}px 0` }], s(at), L.move)
+            run(anims, el, [{ opacity: 0 }], s(at + 200), { easing: OUT, duration: 400 }, '::after')
+            rise(el.querySelector('.pc-text'), at + 140, L.y * 0.5)
+          }, L.step * 1.4)
+          break
+        }
+        // 선으로 잇기: 점이 맺히면 다음 점까지 선이 그어지고, 선이 닿을 때 다음 점이 맺힌다
+        const step = L.step * 1.7
         items('.pc-step', t, (el, at) => {
-          run(anims, variant === 'cards' ? el : el.querySelector('.pc-head') || el, [{ opacity: 0, translate: `${-L.y}px 0` }], s(at), L.move)
-          if (variant === 'cards') run(anims, el, [{ opacity: 0 }], s(at + 200), { easing: OUT, duration: 400 }, '::after')
-          rise(el.querySelector('.pc-text'), at + 140, L.y * 0.5)
-        }, L.step * 1.4)
+          pop(el.querySelector('.pc-n'), at)
+          if (el.classList.contains('is-hl')) pulse(el.querySelector('.pc-n'), at + 300)
+          rise(el.querySelector('.pc-title'), at + 80, L.y * 0.5)
+          rise(el.querySelector('.pc-text'), at + 160, L.y * 0.5)
+          run(
+            anims,
+            el,
+            [{ scale: '0 1', transformOrigin: 'left center' }, { scale: '1 1', transformOrigin: 'left center' }],
+            s(at + 90),
+            { easing: 'cubic-bezier(0.45, 0, 0.25, 1)', duration: d(step - 90) },
+            '::before',
+          )
+        }, step)
         break
       }
       case 'funnel': {

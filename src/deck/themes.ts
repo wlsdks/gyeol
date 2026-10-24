@@ -100,7 +100,7 @@ export const THEME_ORDER: ThemeId[] = ['white', 'navy', 'serif']
 export const MOTIONS: { id: Motion; name: string; description: string }[] = [
   { id: 'none', name: '없음', description: '넘기면 바로 다 보여요.' },
   { id: 'calm', name: '차분하게', description: '제목, 항목이 차례로 살짝 올라와요. 보고 자리에 어울려요.' },
-  { id: 'lively', name: '생동감', description: '더 크게 움직이고 숫자가 0부터 올라가요. 발표가 길 때 좋아요.' },
+  { id: 'lively', name: '생동감', description: '더 크게 움직이고, 숫자가 굴러가다 살짝 지나쳤다 맞춰져요. 발표가 길 때 좋아요.' },
 ]
 
 /** 고를 수 있는 것들. 이름과 설명은 테마 메뉴, 이 장 설정, AI 카탈로그에 함께 쓴다. */

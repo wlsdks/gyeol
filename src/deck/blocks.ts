@@ -119,7 +119,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
   number: {
     name: '큰 숫자',
     description: '숫자 하나를 크게',
-    motion: '0부터 숫자가 올라가요',
+    motion: '숫자가 자리마다 굴러가 맞춰져요',
     fields: [
       { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지' },
       { key: 'value', label: '숫자', hint: '4.8억 원' },
@@ -449,7 +449,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
 const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; weight: number; motion: string; look?: BlockLook }> = {
   summary: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '줄마다 차례로 들어와요' },
   points: { minSpan: 8, prefSpan: 12, weight: 1.3, motion: '하나씩 차례로 올라와요' },
-  kpi: { minSpan: 6, prefSpan: 12, weight: 1.1, motion: '0부터 숫자가 올라가요' },
+  kpi: { minSpan: 6, prefSpan: 12, weight: 1.1, motion: '숫자가 자리마다 굴러가 맞춰져요' },
   scorecard: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '실적 막대가 목표까지 자라요' },
   bars: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '막대가 차례로 자라요' },
   versus: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '두 막대가 나란히 자라고, 선은 차례로 그려져요' },
@@ -458,7 +458,7 @@ const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; 
   share: { minSpan: 6, prefSpan: 8, weight: 1.4, motion: '조각이 차례로 채워져요' },
   funnel: { minSpan: 6, prefSpan: 8, weight: 1.5, motion: '단계마다 줄어들며 내려와요' },
   progress: { minSpan: 8, prefSpan: 12, weight: 1.6, motion: '진행 막대가 차올라요' },
-  process: { minSpan: 8, prefSpan: 12, weight: 1.3, motion: '단계가 차례로 이어져요' },
+  process: { minSpan: 8, prefSpan: 12, weight: 1.3, motion: '점이 맺히고 다음 단계로 선이 이어져요' },
   timeline: { minSpan: 8, prefSpan: 12, weight: 1.2, motion: '선을 따라 차례로 나타나요' },
   compare: { minSpan: 8, prefSpan: 12, weight: 1.5, motion: '두 면이 차례로 들어와요' },
   matrix: { minSpan: 6, prefSpan: 8, weight: 1.8, motion: '네 칸이 차례로 나타나요' },
