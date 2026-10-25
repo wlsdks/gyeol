@@ -621,16 +621,41 @@
     justify-self: center;
   }
 
-  /* 비율 칸은 그 숫자 글자 크기로 정한다: 120px로 두면 '9.9%', '100%'가 칸을 넘어 이름에 닿는다.
-     보통의 비율(두세 자리와 %)은 2.9em 안이라 항목끼리 이름이 같은 자리에서 시작한다 */
-  .va-donut > .bk-in .sh-item {
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 20px;
-    padding-left: 28px;
+  /* 반 칸의 도넛 이름표는 값을 이름 아래로: 이름, 값, 비율을 한 줄에 두면 이름 칸이 두세 글자 너비만 남는다.
+     줄 높이는 줄마다 따로(auto): 줄이 두세 줄이 되는 반 칸에서 모든 줄을 가장 높은 줄(덧붙임이 있는 줄)에 맞추면
+     여섯 줄이 칸보다 높아져 반 칸에 들어가지 않았다 */
+  .va-donut > .bk-in .sh-legend {
+    grid-template-columns: 14px minmax(0, 1fr) auto;
+    grid-auto-rows: auto;
   }
 
-  .va-donut > .bk-in .sh-pct {
-    min-width: 2.9em;
+  .va-donut > .bk-in .sh-item {
+    grid-template-areas: 'dot name pct' '. value .' '. meta .';
+    column-gap: 20px;
+    padding-block: 16px;
+  }
+
+  /* 다섯, 여섯이면 값을 이름 아래로 내린 줄이 여섯 겹이 되어 반 칸보다 높았다(710px). 고리를 줄여 이름표에 자리를 더 주고
+     값을 이름과 비율 사이, 한 줄에 둔다 */
+  .va-donut > .bk-in .sh:is([data-n='5'], [data-n='6']) {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+
+  .va-donut > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-legend {
+    grid-template-columns: 14px minmax(0, 1fr) auto auto;
+  }
+
+  .va-donut > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-item {
+    grid-template-areas: 'dot name value pct' '. meta meta .';
+    padding-block: 10px;
+  }
+
+  .va-donut > .bk-in .sh:is([data-n='5'], [data-n='6']) .sh-value {
+    text-align: right;
+  }
+
+  .va-donut > .bk-in .sh-value {
+    text-align: left;
   }
 
   .va-base > .bk-in .sh-legend {
@@ -680,25 +705,53 @@
   }
 }
 
-/* 두 단으로 바꾸는 높이는 항목 수마다 한 단으로 들어가는 가장 낮은 높이 바로 위(목차와 같은 까닭) */
-.va-donut > .bk-in .sh-legend {
-  column-gap: 56px;
-}
-
+/* 비중 도넛이 넓고 낮은 줄에 있으면(넷 이상) 이름표를 고리 옆 한 줄로 늘어놓는다: 항목마다 한 단에 색 점과 이름, 큰 비율, 값.
+   예전에는 목록을 두 단으로 흘려서 오른쪽 단만 짧게 끝나고(셋과 둘) 위아래 선이 엇갈렸다. 구성비 띠의 이름표와 같은 짜임이다.
+   바꾸는 높이는 항목 수마다 한 단 목록이 들어가는 가장 낮은 높이 바로 위(목차와 같은 까닭) */
 @container bk (min-width: 1301px) and (max-height: 560px) {
-  .va-donut > .bk-in .sh[data-n='4'] .sh-legend {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .va-donut > .bk-in:has(> .sh[data-n='4']) {
+    --sh-row: 1;
   }
 }
 
 @container bk (min-width: 1301px) and (max-height: 640px) {
-  .va-donut > .bk-in .sh[data-n='5'] .sh-legend {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .va-donut > .bk-in:has(> .sh[data-n='5']) {
+    --sh-row: 1;
   }
 }
 
 @container bk (min-width: 1301px) and (max-height: 740px) {
-  .va-donut > .bk-in .sh[data-n='6'] .sh-legend {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .va-donut > .bk-in:has(> .sh[data-n='6']) {
+    --sh-row: 1;
+  }
+}
+
+@container style(--sh-row: 1) {
+  .va-donut > .bk-in > .sh > .sh-legend {
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    grid-auto-rows: auto;
+    column-gap: 40px;
+    border-top: 0;
+  }
+
+  .va-donut > .bk-in > .sh > .sh-legend > .sh-item {
+    grid-column: auto;
+    grid-template-columns: 14px minmax(0, 1fr);
+    grid-template-areas: 'pct pct' 'dot name' '. value' '. meta';
+    align-content: start;
+    column-gap: 14px;
+    padding: 24px 0 0;
+    border-top: var(--rule) solid var(--line);
+    border-bottom: 0;
+  }
+
+  .va-donut > .bk-in > .sh > .sh-legend > .sh-item > .sh-pct {
+    min-width: 0;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  .va-donut > .bk-in > .sh > .sh-legend > .sh-item .sh-value {
+    text-align: left;
   }
 }
