@@ -1669,6 +1669,13 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-rn-n'), 700, 500)
           break
         }
+        case 'status':
+          // 상태 표시가 먼저 맺히고(상태가 이 컴포넌트의 답) 이름이 뒤따른다. 할 일은 그 아래에서 올라온다
+          pop(one('.bk-ss-mark'), 80)
+          fade(one('.bk-ss-name'), 160, 400)
+          rise(one('.bk-ss-w'), 220, L.y * 0.4)
+          fade(one('.bk-ss-m'), 420, 500)
+          break
         default:
           rise(cell, 0)
       }

@@ -1,0 +1,112 @@
+/* ---------- 상태 ----------
+   상태 표시와 이름 한 줄, 그 아래 할 일(본문 크기, 글자색)과 언제·누가(--ink-3). 상태는 색이 아니라 꼴로 가른다:
+   완료는 꽉 찬 글자색 원, 진행 중은 오른쪽 반이 찬 강조색 원(강조색은 지금 움직이는 일에만), 예정은 빈 옅은 고리(--ink-3),
+   지연은 글자색 고리에 시계 바늘. 준비 상황처럼 좋음·나쁨 색(초록, 빨강)으로 가르지 않는다: 작은 칸 여럿이 각자 색을 띠면
+   장이 신호등처럼 시끄럽고, 강조색을 바꾸면 진행 중과 완료가 같은 색이 되기도 했다. 상태 이름은 표시 옆에 늘 글로 적는다 */
+
+.bk-ss {
+  --ss-c: var(--ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  height: 100%;
+}
+
+.bk-ss.is-doing {
+  --ss-c: var(--accent);
+}
+
+.bk-ss.is-todo {
+  --ss-c: var(--ink-3);
+}
+
+.bk-ss-st {
+  --fs: var(--t-small);
+  display: flex;
+  align-items: center;
+  column-gap: 0.45em;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* 줄의 글자선은 상태 이름의 것으로: 표시(svg)가 앞에 있으면 표시의 아래 끝이 글자선이 되어 넓은 칸에서 할 일과 어긋난다 */
+.bk-ss-name {
+  align-self: baseline;
+}
+
+/* 표시는 상태 이름 글자에 맞춘 크기: 글자 크기 단계를 따라 같이 줄고 커진다 */
+.bk-ss-mark {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.bk-ss-ring {
+  fill: none;
+  stroke: var(--ss-c);
+  stroke-width: 2.5;
+}
+
+.bk-ss-fill {
+  fill: var(--ss-c);
+}
+
+.bk-ss-hand {
+  fill: none;
+  stroke: var(--ss-c);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.bk-ss-w {
+  --fs: var(--t-body);
+  margin-top: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.bk-ss-m {
+  --fs: var(--t-small);
+  margin-top: 6px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+
+/* 넓은 칸: 한 줄로 눕힌다(준비 상황의 한 줄처럼). 상태는 왼쪽에 같은 너비로 두어 위아래로 쌓은 상태끼리 할 일의 왼쪽 끝이 맞고,
+   언제·누가는 오른쪽 끝에. 쌓아 두면 상태 이름만 왼쪽 위에 따로 떠 보인다 */
+@container bk (min-width: 1000px) {
+  .bk-ss {
+    grid-template-columns: minmax(180px, max-content) minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 32px;
+  }
+
+  .bk-ss-st {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .bk-ss-w {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .bk-ss-m {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+    text-align: right;
+  }
+}
+
+.bk.is-shared > .bk-in > .bk-ss {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  align-content: start;
+  padding-top: var(--bk-lift, 0px);
+}

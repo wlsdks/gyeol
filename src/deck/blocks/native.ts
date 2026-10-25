@@ -865,4 +865,22 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 4,
     sample: { fields: { label: '서버실 적정 온도', low: '18℃', high: '24℃', mark: '26℃', markName: '지난주 최고', note: '장비 제조사 권장' } },
   },
+  status: {
+    name: '상태',
+    description: '일 하나의 상태 (진행 중, 완료, 예정, 지연)',
+    motion: '상태 표시가 맺히고 할 일이 올라와요',
+    variants: [
+      { id: 'doing', name: '진행 중' },
+      { id: 'done', name: '완료' },
+      { id: 'todo', name: '예정' },
+      { id: 'late', name: '지연' },
+    ],
+    fields: [
+      { key: 'what', label: '할 일', hint: '무엇의 상태인지 (예: 신입 교육 자료 새로 쓰기)' },
+      { key: 'meta', label: '언제, 누가', hint: '언제까지, 누가 (예: 11월 둘째 주 · 인사팀)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { variant: 'doing', fields: { what: '신입 교육 자료 새로 쓰기', meta: '11월 둘째 주까지 · 인사팀' } },
+  },
 }
