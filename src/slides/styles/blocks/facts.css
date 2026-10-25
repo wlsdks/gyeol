@@ -63,13 +63,22 @@
   }
 }
 
-/* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄 선은 둘 다 진하게 */
+/* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄 선은 둘 다 진하게.
+   나란한 두 줄의 선은 단 사이를 건너 하나로 잇는다: 끊어 두면 소제목이 왼쪽 단에만 붙은 표 둘로 보이고
+   오른쪽 단의 진한 선 위가 비어 보였다. 이으면 '항목 내용 항목 내용'이 한 줄로 읽히는 표 하나다.
+   짝이 없는 마지막 줄(다섯 줄의 다섯째)은 잇지 않는다 */
 @container bk (min-width: 1300px) {
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
+    --fc-gap: 72px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--fc-gap);
   }
 
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(2)::before {
     background: var(--ink);
+  }
+
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(odd):not(:last-child)::before {
+    right: calc(-1 * var(--fc-gap));
   }
 }
