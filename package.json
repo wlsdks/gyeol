@@ -4,14 +4,17 @@
   "version": "0.3.0",
   "description": "결(gyeol): 회사에서 하는 발표를 고르고 채우기만 하면 만드는 HTML 발표 빌더",
   "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && vite build -c vite.node.config.ts",
+    "build": "npm run typecheck && vite build && vite build -c vite.node.config.ts",
     "start": "node dist-node/serve.mjs",
     "pack": "node scripts/pack.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.scripts.json",
     "mcp": "node dist-node/gyeol-mcp.mjs",
     "licenses": "node scripts/licenses.mjs"
   },

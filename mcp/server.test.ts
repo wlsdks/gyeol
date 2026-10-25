@@ -1,5 +1,5 @@
-import { execSync, spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { execFileSync, spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
@@ -16,6 +16,9 @@ import { sandboxArgs, sandboxTight } from './server'
 const repo = join(import.meta.dirname, '..')
 const base = mkdtempSync(join(tmpdir(), 'gyeol-mcp-'))
 const share = join(base, 'AI 공유')
+// 빌드는 시험용 폴더에. 예전에는 진짜 dist-node를 비우고 다시 써서, 묶어 둔 결과가 시험 도중의 것으로 바뀌었다
+const built = mkdtempSync(join(tmpdir(), 'gyeol-mcp-build-'))
+const entry = join(built, 'gyeol-mcp.mjs')
 let child: ChildProcessWithoutNullStreams
 let serverInfo: unknown
 let nextId = 1
@@ -44,7 +47,7 @@ async function tool(name: string, args: Record<string, unknown> = {}) {
 }
 
 beforeAll(async () => {
-  execSync('npx vite build -c vite.node.config.ts --logLevel error', { cwd: repo })
+  execFileSync(process.execPath, [join(repo, 'node_modules', 'vite', 'bin', 'vite.js'), 'build', '-c', 'vite.node.config.ts', '--outDir', built, '--logLevel', 'error'], { cwd: repo })
   for (const d of ['decks', 'requests', 'results']) mkdirSync(join(share, d), { recursive: true })
 
   // 공유 폴더 옆에 작업 파일(.deck)이 있다고 치자. 비밀이 들어 있다.
@@ -62,7 +65,7 @@ beforeAll(async () => {
   writeFileSync(join(base, 'outside-hard.json'), JSON.stringify(hard))
   linkSync(join(base, 'outside-hard.json'), join(share, 'decks', 'd11111111.json'))
 
-  child = spawn(process.execPath, [join(repo, 'dist-node', 'gyeol-mcp.mjs')], { env: { ...process.env, GYEOL_SHARE: share } })
+  child = spawn(process.execPath, [entry], { env: { ...process.env, GYEOL_SHARE: share } })
   createInterface({ input: child.stdout }).on('line', (line) => {
     raw.push(line)
     const msg = JSON.parse(line)
@@ -73,6 +76,7 @@ beforeAll(async () => {
 
 afterAll(() => {
   child?.kill()
+  for (const dir of [built, base]) rmSync(dir, { recursive: true, force: true })
 })
 
 describe('MCP 서버', () => {
@@ -211,8 +215,7 @@ describe('MCP 서버를 가두는 권한', () => {
   })
 
   it('넓은 권한으로 띄우면 시작하지 않고, 경로도 말하지 않는다', () => {
-    const entry = join(repo, 'dist-node', 'gyeol-mcp.mjs')
-    for (const extra of [['--allow-fs-read=*'], [`--allow-fs-read=${share}`, `--allow-fs-read=${join(repo, 'dist-node')}`, '--allow-child-process']]) {
+    for (const extra of [['--allow-fs-read=*'], [`--allow-fs-read=${share}`, `--allow-fs-read=${built}`, '--allow-child-process']]) {
       const res = spawnSync(process.execPath, ['--permission', ...extra, entry], { env: { ...process.env, GYEOL_SHARE: share }, input: '', encoding: 'utf8' })
       expect(res.status, extra.join(' ')).toBe(1)
       expect(res.stdout).toBe('')

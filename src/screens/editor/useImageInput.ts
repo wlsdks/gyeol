@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { allBlocks, composeAreaH, imageBlock, withImage } from '../../deck/blocks'
 import { LAYOUTS } from '../../deck/layouts'
-import { imageToDataUrl } from '../../lib/image'
+import { imageToDataUrl } from '../../lib/imageFile'
 import { useDeck } from '../../store/deckStore'
 import { dialogOpen } from '../ui'
 import type { BlockEditing } from './BlockEditor'

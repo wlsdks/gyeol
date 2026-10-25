@@ -14,9 +14,9 @@
 
 import { createHash } from 'node:crypto'
 import { execFileSync, execSync } from 'node:child_process'
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { zipDir } from './zip.mjs'
 
@@ -30,8 +30,11 @@ const withNode = !process.argv.includes('--no-node')
 const NODE_VERSION = 'v24.16.0'
 const NODE_DIST = `node-${NODE_VERSION}-win-x64`
 
-// 사내에서 써도 되는 라이선스가 아니면 여기서 멈춘다
-execSync('node scripts/licenses.mjs', { cwd: root, stdio: 'inherit' })
+// 사내에서 써도 되는 라이선스가 아니면 여기서 멈춘다. 나눠 줄 파일에 넣을 라이선스 전문도 이때 같이 모은다.
+// 경로는 셸을 거치지 않고 인자로 넘긴다(빈칸과 한글이 든 경로에서도 그대로 간다)
+const work = mkdtempSync(join(tmpdir(), 'gyeol-pack-'))
+const notices = join(work, 'notices.txt')
+execFileSync(process.execPath, [join(root, 'scripts', 'licenses.mjs'), '--notices', notices], { cwd: root, stdio: 'inherit' })
 execSync('npm run build', { cwd: root, stdio: 'inherit' })
 
 // 빌드 결과에 바깥 주소가 섞이면 멈춘다. SVG 네임스페이스와 문서 주소는 연결이 아니라서 뺀다.
@@ -45,10 +48,16 @@ const allowed = [
   /^http:\/\/(127\.0\.0\.1|\$\{HOST\}|\$\{req\.headers\.host\})/,
 ]
 const external = new Set()
-for (const file of execSync('find dist dist-node -type f', { cwd: root, encoding: 'utf8' }).trim().split('\n')) {
+// find는 윈도우에 없어서 Node로 훑는다
+const built = ['dist', 'dist-node'].flatMap((dir) =>
+  readdirSync(join(root, dir), { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => join(e.parentPath, e.name)),
+)
+for (const file of built) {
   if (!/\.(m?js|css|html)$/.test(file)) continue
-  for (const [url] of readFileSync(join(root, file), 'utf8').matchAll(/https?:\/\/[^\s"'`)<>\\]+/g)) {
-    if (!allowed.some((re) => re.test(url))) external.add(`${file}: ${url}`)
+  for (const [url] of readFileSync(file, 'utf8').matchAll(/https?:\/\/[^\s"'`)<>\\]+/g)) {
+    if (!allowed.some((re) => re.test(url))) external.add(`${relative(root, file)}: ${url}`)
   }
 }
 if (external.size) {
@@ -104,7 +113,8 @@ rmSync(out, { recursive: true, force: true })
 mkdirSync(out, { recursive: true })
 cpSync(join(root, 'dist'), join(out, 'dist'), { recursive: true })
 cpSync(join(root, 'dist-node'), join(out, 'dist-node'), { recursive: true })
-execSync(`node scripts/licenses.mjs --notices "${join(out, '오픈소스 라이선스.txt')}"`, { cwd: root, stdio: 'ignore' })
+cpSync(notices, join(out, '오픈소스 라이선스.txt'))
+rmSync(work, { recursive: true, force: true })
 for (const file of ['결 시작.command', '결 시작.bat', '사용법.txt']) {
   cpSync(join(root, 'launch', file), join(out, file))
 }

@@ -1,42 +1,6 @@
-const MAX_SIDE = 2000
-
-function readAsDataUrl(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
-
-/** 올린 이미지를 덱에 넣을 수 있는 크기로 줄여 data URL로 돌려준다. 이미지는 브라우저 밖으로 나가지 않는다. */
-export async function imageToDataUrl(file: File): Promise<string> {
-  if (file.type === 'image/svg+xml') return readAsDataUrl(file)
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height))
-  if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
-    bitmap.close()
-    return readAsDataUrl(file)
-  }
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-  bitmap.close()
-  // 로고처럼 투명 배경이 있을 수 있는 형식은 PNG로 유지한다
-  const keepAlpha = file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif'
-  return canvas.toDataURL(keepAlpha ? 'image/png' : 'image/jpeg', 0.86)
-}
-
-export function pickImage(): Promise<File | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.onchange = () => resolve(input.files?.[0] ?? null)
-    input.click()
-  })
-}
+// 이미지의 크기와 종류를 data URL에서 바로 읽는다. DOM을 쓰지 않는다.
+// 발표 모델(src/deck)이 이 파일을 가져오고, 로컬 서버와 MCP 서버도 발표 모델을 묶어 가므로 여기에 DOM 코드를
+// 두면 서버의 타입 확인(tsconfig.node.json)에서 막힌다. 파일을 고르고 줄이는 일은 imageFile.ts에.
 
 /**
  * data URL로 든 이미지의 그려지는 가로세로(px). 파일 머리만 읽어서 그 자리에서 바로 안다(불러오기를 기다리지 않는다).
