@@ -23,7 +23,9 @@ export function startIndex(deck: Deck, shown: Deck['slides'], startId?: string):
  */
 export function Present({ deck, startId, onExit }: { deck: Deck; startId?: string; onExit: () => void }) {
   const slides = useMemo(() => deck.slides.filter((s) => !s.hidden), [deck.slides])
-  const info = pageInfo(deck.slides)
+  // 장마다 넘기는 쪽 번호와 단락. 그릴 때마다 새로 만들면 단락 목록이 새 배열이라, 마우스를 움직이거나 멈출 때마다(아래 표시를
+  // 보이고 숨긴다) 지금 장을 통째로 다시 그렸다
+  const info = useMemo(() => pageInfo(deck.slides), [deck.slides])
   const engine = useMemo(() => motionEngine(), [])
   // play: 이 장을 움직일지 (앞으로 넘겨 온 장). 움직임이 없는 장도 엔진에 맡긴다: '누르면' 나오는 컴포넌트는 누를 때까지 감춘다
   const [view, setView] = useState(() => ({ index: startIndex(deck, slides, startId), play: true }))
@@ -39,6 +41,12 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
     stageRef.current = el
     if (el) setReady(true)
   }, [])
+  /**
+   * 미리 그려 둔 다음 장. 넘길 때 새 장을 처음 그리고 컴포넌트를 맞추는 일이 전환을 시작하기 전에 몰려 있어서(컴포넌트 장은
+   * 느린 PC에서 0.1초 넘게), 키를 누르고 장이 넘어가기 시작할 때까지 앞 장이 그만큼 멈춰 있었다. 지금 장의 움직임이 끝나고
+   * 한가할 때 다음 장을 보이지 않게 그려 두고, 넘기면 그것을 보이게만 한다 (React가 같은 key의 것을 그대로 옮긴다)
+   */
+  const [ahead, setAhead] = useState<string | null>(null)
   const startedAt = useRef(Date.now())
   const now = useRef({ index: view.index, blank })
   now.current = { index: view.index, blank }
@@ -55,7 +63,11 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
       const transition = transitionOf(deck, slides[dir > 0 ? to : from])
       engine.swap(
         () => {
-          flushSync(() => setView({ index: to, play: dir > 0 }))
+          flushSync(() => {
+            setView({ index: to, play: dir > 0 })
+            // 한 장 뒤로 가면 떠나는 장이 그대로 다음 장이 된다 (다시 넘길 때 새로 그리지 않게)
+            setAhead(to + 1 === from ? slides[from].id : null)
+          })
           // 새 장이 그려지고 움직임이 걸린 뒤에 알린다: 남은 차례 수는 그 장의 움직임이 정한다.
           // 발표자 화면에서 넘긴 것도 알린다. 발표자 화면은 이 수를 모른다
           link.current?.post({ type: 'state', index: to, blank: now.current.blank, left: playing.current?.left() ?? 0 })
@@ -165,8 +177,27 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
     }
   }, [view, ready, engine, level])
 
+  // 다음 장은 지금 장의 움직임이 끝나고(mo-end) 한가할 때 그린다. 움직이는 중에 그리면 굴러가는 숫자가 끊긴다
+  useEffect(() => {
+    const next = slides[view.index + 1]
+    const stage = stageRef.current
+    if (!ready || !next || next.id === ahead) return
+    let idle = 0
+    const draw = () => {
+      idle = requestIdleCallback(() => setAhead(next.id), { timeout: 3000 })
+    }
+    if (stage?.hasAttribute('data-mo-play')) stage.addEventListener('mo-end', draw, { once: true })
+    else draw()
+    return () => {
+      stage?.removeEventListener('mo-end', draw)
+      cancelIdleCallback(idle)
+    }
+  }, [view, slides, ahead, ready])
+
   const slide = slides[view.index]
   if (!slide) return null
+  const after = slides[view.index + 1]
+  const early = after && after.id === ahead ? after : null
 
   return (
     <div
@@ -178,6 +209,14 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
         <div key={slide.id} ref={attachStage} className="present-slide">
           <SlideCanvas deck={deck} slide={slide} mode="final" {...pageProps(info, slide.id)} />
         </div>
+        {/* 움직임 엔진과 전환은 .present-slide만 지금 장으로 본다 (engine.ts의 CURRENT).
+            aria-hidden은 붙이지 않는다: 그 안의 글은 컴포넌트 맞추기가 꾸밈 글자로 보고 넘침으로 세지 않는다 (fitBlocks.ts의 lines).
+            inert가 화면 읽기 프로그램과 키보드에서 뺀다 */}
+        {early && (
+          <div key={early.id} className="present-ahead" inert>
+            <SlideCanvas deck={deck} slide={early} mode="final" {...pageProps(info, early.id)} />
+          </div>
+        )}
       </FitSlide>
       {blank && <div className={cx('present-blank', `is-${blank}`)} />}
       <div className="present-bar" onClick={(e) => e.stopPropagation()}>

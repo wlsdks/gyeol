@@ -18,6 +18,19 @@
   height: 100%;
 }
 
+/* 지금 장과 미리 그려 둔 다음 장(.present-ahead)은 같은 자리에 겹친다. 넘길 때 보이게만 바꾸고 자리는 다시 재지 않게.
+   다음 장은 visibility로 숨기지 않는다: 숨긴 글은 컴포넌트 맞추기가 넘침으로 세지 않아 다른 크기로 맞춘다 (fitBlocks.ts) */
+.present-slide,
+.present-ahead {
+  position: absolute;
+  inset: 0;
+}
+
+.present-ahead {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .present-blank {
   position: fixed;
   inset: 0;
