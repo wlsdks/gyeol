@@ -316,7 +316,12 @@ function toolText(value: unknown, isError = false) {
   return { content: [{ type: 'text', text: JSON.stringify(value) }], isError }
 }
 
-export function handleMessage(dirs: Dirs, msg: Message): object | null {
+const INVALID = { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } }
+
+export function handleMessage(dirs: Dirs, value: unknown): object | null {
+  // null이나 숫자 같은 줄도 JSON으로는 맞다. 예전에는 null에서 msg.id를 읽다가 서버가 죽었다
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return INVALID
+  const msg = value as Message
   const id = typeof msg.id === 'string' || typeof msg.id === 'number' ? msg.id : null
   const reply = (result: unknown) => ({ jsonrpc: '2.0', id, result })
   const fail = (code: number, message: string) => ({ jsonrpc: '2.0', id, error: { code, message } })
@@ -374,13 +379,20 @@ function serve(shareRoot: string) {
     } catch {
       return write({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })
     }
-    if (Array.isArray(parsed)) {
-      const out = parsed.map((m) => handleMessage(dirs, m as Message)).filter(Boolean)
-      if (out.length) write(out)
-      return
+    try {
+      if (Array.isArray(parsed)) {
+        // 빈 묶음은 그 자체가 틀린 요청이다 (JSON-RPC 2.0)
+        if (!parsed.length) return write(INVALID)
+        const out = parsed.map((m) => handleMessage(dirs, m)).filter(Boolean)
+        if (out.length) write(out)
+        return
+      }
+      const out = handleMessage(dirs, parsed)
+      if (out) write(out)
+    } catch {
+      // 한 줄 때문에 서버가 꺼지면 AI는 그 뒤로 아무것도 못 한다. 받은 값은 다시 내보내지 않는다
+      write({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } })
     }
-    const out = handleMessage(dirs, parsed as Message)
-    if (out) write(out)
   })
   rl.on('close', () => process.exit(0))
 }

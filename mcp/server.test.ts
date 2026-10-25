@@ -24,6 +24,16 @@ function rpc(method: string, params: Record<string, unknown> = {}) {
   return new Promise<Parameters<NonNullable<ReturnType<typeof waiting.get>>>[0]>((resolve) => waiting.set(id, resolve))
 }
 
+/** 아무 줄이나 그대로 보내고 다음에 오는 답 한 줄을 받는다 */
+function sendLine(line: string) {
+  const at = raw.length
+  child.stdin.write(line + '\n')
+  return new Promise<unknown>((resolve) => {
+    const check = () => (raw.length > at ? resolve(JSON.parse(raw[at])) : setTimeout(check, 10))
+    check()
+  })
+}
+
 async function tool(name: string, args: Record<string, unknown> = {}) {
   const res = await rpc('tools/call', { name, arguments: args })
   return { isError: !!res.result?.isError, value: JSON.parse(res.result!.content[0].text) }
@@ -148,6 +158,15 @@ describe('MCP 서버', () => {
     const { value, isError } = await tool('get_result', { request: id })
     expect(isError).toBe(false)
     expect(value).toEqual({ request: id, status: 'applied', results })
+  })
+
+  it('객체가 아닌 요청에는 틀린 요청이라고 답하고 꺼지지 않는다', async () => {
+    const invalid = { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } }
+    expect(await sendLine('null')).toEqual(invalid)
+    expect(await sendLine('5')).toEqual(invalid)
+    expect(await sendLine('[]')).toEqual(invalid)
+    expect(await sendLine(JSON.stringify([null, { jsonrpc: '2.0', id: 'p1', method: 'ping' }]))).toEqual([invalid, { jsonrpc: '2.0', id: 'p1', result: {} }])
+    expect((await rpc('ping')).result).toEqual({})
   })
 
   it('칸의 글을 쓰려는 제안은 받지 않는다', async () => {
