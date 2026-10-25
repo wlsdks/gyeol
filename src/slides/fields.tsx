@@ -221,6 +221,7 @@ function Editable({
             e.preventDefault()
             e.currentTarget.blur()
           }
+          if (e.key === 'Tab' && !e.nativeEvent.isComposing && focusNextField(e.currentTarget, e.shiftKey ? -1 : 1)) e.preventDefault()
         }}
         onPaste={(e) => {
           e.preventDefault()
@@ -230,6 +231,28 @@ function Editable({
       />
     </Tag>
   )
+}
+
+/**
+ * Tab, Shift+Tab으로 같은 장의 다음(앞) 글 칸으로. 표에서 다음 칸으로 가듯 이어 쓸 수 있게.
+ * 그대로 두면 칸 사이의 항목 손잡이, 빼기 단추에 초점이 멈춰서, 이어 친 글이 엉뚱한 칸에 들어갔다(추이의 기간 이름).
+ * 옮긴 칸의 글은 모두 고른다(입력 칸에 Tab으로 들어갈 때처럼 바로 고쳐 쓰게). 장의 첫 칸, 마지막 칸에서는 브라우저에 맡긴다
+ */
+function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
+  const slide = from.closest('.slide')
+  if (!slide) return false
+  const all = [...slide.querySelectorAll<HTMLElement>('.ed-input')].filter((el) => el.getClientRects().length > 0)
+  const next = all[all.indexOf(from) + dir]
+  if (!next) return false
+  next.focus()
+  const sel = window.getSelection()
+  if (sel) {
+    const range = document.createRange()
+    range.selectNodeContents(next)
+    sel.removeAllRanges()
+    sel.addRange(range)
+  }
+  return true
 }
 
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
