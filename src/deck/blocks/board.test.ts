@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Block, BlockType } from '../types'
-import { allSpots, autoInsert, bandOf, BOARD_COLS, BOARD_ROWS, type Fit, guttersOf, insertBlock, insertGroup, isStacked, moveBlock, moveGutter, needRows, normalize, removeFromBoard, settle, share, swapBlocks, tiles, treeOf } from './board'
+import { allSpots, autoInsert, bandOf, BOARD_COLS, BOARD_ROWS, type Fit, guttersOf, insertBlock, insertGroup, isStacked, layTree, leaf, moveBlock, moveGutter, needRows, normalize, removeFromBoard, settle, share, split, swapBlocks, tiles, treeOf } from './board'
 
 // 시험용 크기 규칙: 부품 종류마다 가장 좁은 너비와 높이(네모). 좁을수록 높아지는 부품은 너비마다 다르게
 const RULES: Partial<Record<BlockType, { w: number; pref: number; h: (w: number) => number; stretchy?: boolean; fills?: boolean; small?: boolean }>> = {
@@ -143,6 +143,16 @@ describe('판', () => {
     expect(out).not.toBeNull()
     expect(tiles(out)).toBe(true)
     for (const x of out) expect(wide.minH(x, x.at!.w)).toBeLessThanOrEqual(x.at!.h)
+  })
+
+  it('넓을수록 더 높아지는 부품 하나만 든 줄은 판 너비에서 드는 높이를 받는다', () => {
+    // 구성비 띠처럼 6~8칸에서 7줄, 9칸부터 8줄. 혼자 든 줄은 12칸을 다 써야 해서 7줄로는 놓을 수 없다
+    const wide: Fit = { ...fit, minW: (b) => (b.type === 'trend' ? 6 : fit.minW(b)), minH: (b, w) => (b.type === 'trend' ? (w < 6 ? Infinity : w < 9 ? 7 : 8) : fit.minH(b, w)) }
+    const t = split('v', [split('h', [leaf(mk('m', 'text'), 12)], 99), split('h', [leaf(mk('s', 'trend'), 12)], 1)])
+    const out = layTree(t, wide)!
+    expect(out).not.toBeNull()
+    expect(out.find((b) => b.id === 's')!.at).toMatchObject({ w: 12, h: 8 })
+    expect(tiles(out)).toBe(true)
   })
 
   it('자리가 엉킨 파일도 판을 덮게 다시 짠다', () => {

@@ -149,15 +149,20 @@ class Measure {
     if (known !== undefined) return known
     let ok: boolean
     if (t.kind === 'leaf') ok = w >= this.fit.minW(t.block) && this.fit.minH(t.block, w) <= h
+    else if (t.dir === 'h') {
+      const lows = t.kids.map((k) => this.least(k, 'h', h, w))
+      const spare = w - lows.reduce((a, x) => a + x, 0)
+      // 거의 늘 한 자식이 남는 너비를 다 받아도 들어간다. 아닐 때만 모든 나눔을 따진다
+      ok = spare >= 0 && (t.kids.some((k, i) => this.fits(k, lows[i] + spare, h)) || sizesFor(t.kids, w, (i, n) => this.fits(t.kids[i], n, h), lows) !== null)
+    }
     else {
-      const total = t.dir === 'h' ? w : h
-      const cross = t.dir === 'h' ? h : w
+      // 높이는 늘려도 늘 들어가서(더 높은 칸은 늘 괜찮다) 가장 작은 높이의 합만 견주면 된다
       let sum = 0
       for (const k of t.kids) {
-        sum += this.least(k, t.dir, cross, total)
-        if (sum > total) break
+        sum += this.least(k, 'v', w, h)
+        if (sum > h) break
       }
-      ok = sum <= total
+      ok = sum <= h
     }
     m.set(key, ok)
     return ok
@@ -259,39 +264,69 @@ function lay(t: Tree, r: BlockAt, m: Measure, out: Block[]): boolean {
     t.kids.map((k) => k.want),
     t.kids.map((k) => m.takes(k)),
   )
-  if (!sizes || !refit(sizes, (i, n) => (t.dir === 'h' ? m.fits(t.kids[i], n, r.h) : m.fits(t.kids[i], r.w, n)), m, t.kids)) return false
+  if (!sizes) return false
+  const ok = (i: number, n: number) => (t.dir === 'h' ? m.fits(t.kids[i], n, r.h) : m.fits(t.kids[i], r.w, n))
+  // 나눈 크기에 모두 들어가면 그대로, 아니면 들어가는 나눔 가운데 가장 덜 다른 것
+  const fixed = sizes.every((n, i) => ok(i, n))
+    ? sizes
+    : sizesFor(
+        t.kids,
+        total,
+        ok,
+        t.kids.map((k) => m.least(k, t.dir, cross, total)),
+        sizes,
+        t.kids.map((k) => m.takes(k)),
+      )
+  if (!fixed) return false
   let at = t.dir === 'h' ? r.x : r.y
   for (let i = 0; i < t.kids.length; i++) {
-    const sub: BlockAt = t.dir === 'h' ? { x: at, y: r.y, w: sizes[i], h: r.h } : { x: r.x, y: at, w: r.w, h: sizes[i] }
+    const sub: BlockAt = t.dir === 'h' ? { x: at, y: r.y, w: fixed[i], h: r.h } : { x: r.x, y: at, w: r.w, h: fixed[i] }
     if (!lay(t.kids[i], sub, m, out)) return false
-    at += sizes[i]
+    at += fixed[i]
   }
   return true
 }
 
 /**
- * 나눠 받은 크기(sizes)에서 들어가지 않는 자식을 들어가는 가장 가까운 작은 크기로 줄이고, 남는 길이를 들어가는 다른 자식에게 준다.
- * share는 넓을수록 덜 든다고 보는데 글자 단계는 칸 너비로도 커져서, 3칸에서 4줄이면 되는 숫자 카드가 4칸에서는 5줄이 든다.
- * 그래서 '들어간다'(needRows)고 본 판을 놓지 못했다(settle이 null). 고친 크기를 sizes에 쓰고, 맞출 수 없으면 false
+ * 자식마다 들어가는 크기(ok)로 합이 total이 되게 나눈 크기. 바라는 크기(near, share가 나눈 것)를 주면 그와 가장 덜 다른 것,
+ * 같으면 남는 길이를 받는 차례(takes)가 높은 자식이 더 받는 것. 나눌 수 없으면 null.
+ * 가장 작은 크기의 합만 견주면 안 된다: 글자 단계가 칸 너비로도 커져서 넓을수록 더 높아지는 부품이 있다(3칸에서 4줄이면 되는
+ * 숫자 카드가 4칸에서는 5줄, 구성비 띠는 6~8칸에서 7줄, 9칸부터 8줄). 그런 부품 하나만 든 줄은 판 너비를 다 써야 해서
+ * '6칸이면 7줄에 든다'고 7줄을 주면 놓지 못했다(예전 줄을 판으로 바꿀 때 크기를 따지지 않고 놓아 띠가 한 줄로 찌그러졌다).
+ * 판이 12칸이라 모든 나눔을 따져도 가볍다 (자식 수 × total²). 크기는 가장 작은 크기(lows)와 남는 길이 사이만 본다
  */
-function refit(sizes: number[], ok: (i: number, n: number) => boolean, m: Measure, kids: Tree[]): boolean {
-  for (let i = 0; i < sizes.length; i++) {
-    if (ok(i, sizes[i])) continue
-    let n = sizes[i] - 1
-    while (n >= 1 && !ok(i, n)) n--
-    if (n < 1) return false
-    let spare = sizes[i] - n
-    sizes[i] = n
-    // 남는 길이는 받는 차례(차트 > 면 > 글)가 높은 자식부터, 한 칸씩 받아도 들어갈 때만
-    const takers = kids.map((_, j) => j).filter((j) => j !== i).sort((a, b) => m.takes(kids[b]) - m.takes(kids[a]))
-    while (spare > 0) {
-      const j = takers.find((x) => ok(x, sizes[x] + 1))
-      if (j === undefined) return false
-      sizes[j]++
-      spare--
+function sizesFor(kids: Tree[], total: number, ok: (i: number, n: number) => boolean, lows: number[], near?: number[], takes?: number[]): number[] | null {
+  // 자식마다 따져 볼 크기: 가장 작은 크기(lows)부터, 다른 자식들이 가장 작은 크기를 받고 남는 만큼까지
+  const low = lows.reduce((a, x) => a + x, 0)
+  if (low > total) return null
+  // best[i][a]: 앞의 자식 i개에 a를 나눴을 때 가장 작은 값, from[i][a]: 그때 i번째 자식의 크기
+  const best: number[][] = [Array.from({ length: total + 1 }, (_, a) => (a === 0 ? 0 : Infinity))]
+  const from: number[][] = []
+  for (let i = 0; i < kids.length; i++) {
+    const row = new Array<number>(total + 1).fill(Infinity)
+    const pick = new Array<number>(total + 1).fill(0)
+    for (let n = lows[i]; n <= total - (low - lows[i]); n++) {
+      if (!ok(i, n)) continue
+      // 바라는 크기에서 한 칸 다를 때마다 100, 더 받을 때는 받는 차례가 낮을수록 조금 더
+      const cost = near ? Math.abs(n - near[i]) * 100 + (n > near[i] ? 2 - (takes?.[i] ?? 0) : 0) : 0
+      for (let a = n; a <= total; a++) {
+        const v = best[i][a - n] + cost
+        if (v < row[a]) {
+          row[a] = v
+          pick[a] = n
+        }
+      }
     }
+    best.push(row)
+    from.push(pick)
   }
-  return true
+  if (best[kids.length][total] === Infinity) return null
+  const out = new Array<number>(kids.length)
+  for (let i = kids.length - 1, a = total; i >= 0; i--) {
+    out[i] = from[i][a]
+    a -= out[i]
+  }
+  return out
 }
 
 /** 나무를 판에 놓은 부품들 (차례는 blocks 그대로, 새로 넣은 부품은 끝에). 들어가지 않으면 null */
