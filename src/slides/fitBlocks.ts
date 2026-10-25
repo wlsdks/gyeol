@@ -349,7 +349,8 @@ export function blockFitter() {
   /**
    * 키울 때는 더 엄격하게: 글만이 아니라 항목(줄)의 상자까지 안쪽 여백 안에. 글만 보면 줄의 아래 여백과 선이
    * 카드 가장자리까지 내려가도 넘친 줄 모른다 (시장 규모의 목록이 카드 바닥에 선을 긋던 것).
-   * 그림이 키우기 전의 반 밑으로 줄어도 넘친 것이다: 글자를 키우느라 그래프를 찌그러뜨리지 않는다
+   * 그림이 키우기 전의 70% 밑으로 줄어도 넘친 것이다: 글자를 키우느라 그래프를 찌그러뜨리지 않는다(반까지 봐주던 때는 크게에서
+   * 좁은 카드의 비율 원이 170px에서 89px로 줄었다)
    */
   function crowded(inner: HTMLElement, shapes: Shape[] = []): boolean {
     if (over(inner, true)) return true
@@ -357,9 +358,23 @@ export function blockFitter() {
     const k = inner.offsetWidth ? r.width / inner.offsetWidth : 1
     const bottom = r.bottom - parseFloat(getComputedStyle(inner).paddingBottom) * k + 2 * k
     for (const it of inner.querySelectorAll<HTMLElement>('.it')) if (it.getBoundingClientRect().bottom > bottom) return true
+    // 면을 깐 항목(핵심 숫자의 카드 같은)은 그 안의 글도 항목의 안쪽 여백 안에. 항목 상자는 칸 높이로 정해져 있어서, 키운 글은
+    // 항목 밖으로 넘치지 않고 아래 여백만 먹었다(크게에서 키운 카드가 위 48px, 아래 27px)
+    const limit = new Map<Element, number>()
+    for (const q of lines(inner)) {
+      const own = q.n.parentElement?.closest('.it')
+      if (!own || !inner.contains(own)) continue
+      let b = limit.get(own)
+      if (b === undefined) {
+        const pb = parseFloat(getComputedStyle(own).paddingBottom)
+        b = pb >= 16 ? own.getBoundingClientRect().bottom - (pb - 8) * k : Infinity
+        limit.set(own, b)
+      }
+      if (q.b > b + 2 * k) return true
+    }
     for (const s of shapes) {
       const b = s.el.getBoundingClientRect()
-      if (b.width < s.w * 0.5 || b.height < s.h * 0.5) return true
+      if (b.width < s.w * 0.7 || b.height < s.h * 0.7) return true
     }
     return false
   }
