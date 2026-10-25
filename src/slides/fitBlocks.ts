@@ -16,6 +16,10 @@
  *    기준으로 묶음째 가운데로 내린다(--bk-lift, 캔버스 px). 위에만 붙여 두면 높은 줄에서 아래 절반이 통째로 빈다.
  *    칸 높이를 다 쓰는 부품(차트, 표, 바닥까지 채운 목록) 옆의 짧은 부품은 그것들끼리 묶어 가운데로, 그 가운데 숫자 부품은 그 전에 한두 단계 키운다.
  *
+ * 3-4. 부품마다 한 줄을 다 쓰며 위아래로만 쌓은 판에서 모두 바탕 없는 부품이면, 내용 묶음의 위, 사이, 아래를 같게 한다(--bk-dy, 캔버스 px).
+ *    칸마다 가운데에 두면 남는 높이가 칸마다 위아래로 나뉘어 부품 사이만 두 배로 벌어졌다(숫자 셋 아래 한 줄: 위 52px, 사이 222px, 아래 74px).
+ *    소제목 부품은 아래 부품과 한 덩어리라 사이를 좁게 둔다. 칸 밖으로는 옮기지 않는다.
+ *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
  * 발표할 때 움직이는 중인 장(motion/engine.ts가 data-mo-play를 붙인다)은 재지 않는다. 그동안 글자와 막대는 옮겨지거나 커지는 중이고
@@ -457,6 +461,62 @@ export function blockFitter() {
     })
   }
 
+  /**
+   * 위아래로 쌓은 판의 내용 사이를 고르게 (맨 위 설명 3-4). 나란한 줄(3-3이 맡는다), 이음표, 면이 있는 칸이 하나라도 있으면 그대로 둔다:
+   * 이음표는 칸 사이에 서고, 면은 칸째 그려져 안의 글만 옮기면 면 안의 여백이 어긋난다.
+   * 내용의 자리는 본문(.bk-in의 첫 보이는 자식)의 자식들이 그려진 범위다. 칸 높이를 다 쓰는 부품(차트, 바닥까지 채운 목록)은
+   * 옮길 자리가 없어 그대로이고, 나머지가 그 둘레에서 고르게 선다
+   */
+  const headGap = 32
+  function even(cells: HTMLElement[], area: HTMLElement): void {
+    if (cells.length < 2) return
+    if (cells.some((c) => c.classList.contains('is-shared') || c.classList.contains('is-slot') || !c.classList.contains('bk-look-plain') || /\blk-/.test(c.className))) return
+    const a = area.getBoundingClientRect()
+    const k = a.height / area.offsetHeight
+    if (!a.height || !k) return
+    const boxes: { c: HTMLElement; top: number; bottom: number; t: number; b: number }[] = []
+    for (const c of cells) {
+      const r = c.getBoundingClientRect()
+      // 판 너비를 다 쓰는 칸만 (옆에 부품이 없다)
+      if (r.width < a.width - 2 * k) return
+      const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)
+      if (!body) return
+      let t = Infinity
+      let b = -Infinity
+      for (const el of Array.from(body.children)) {
+        const e = el.getBoundingClientRect()
+        const es = getComputedStyle(el)
+        if (!e.height || es.position === 'absolute' || es.position === 'fixed') continue
+        t = Math.min(t, e.top)
+        b = Math.max(b, e.bottom)
+      }
+      if (t === Infinity) {
+        const e = body.getBoundingClientRect()
+        t = e.top
+        b = e.bottom
+      }
+      boxes.push({ c, top: r.top, bottom: r.bottom, t, b })
+    }
+    boxes.sort((x, y) => x.top - y.top)
+    // 소제목 아래는 좁게 고정하고, 남는 높이를 나머지 틈(위, 사이, 아래)에 고르게
+    const heads = boxes.slice(0, -1).filter((x) => x.c.dataset.type === 'heading').length
+    const used = boxes.reduce((n, x) => n + x.b - x.t, 0) + heads * headGap * k
+    const gaps = boxes.length + 1 - heads
+    const g = (a.height - used) / gaps
+    if (g <= 0) return
+    let at = a.top + g
+    const d = boxes.map((x) => {
+      const dy = Math.max(x.top - x.t, Math.min(x.bottom - x.b, at - x.t))
+      at += x.b - x.t + (x.c.dataset.type === 'heading' ? headGap * k : g)
+      return dy / k
+    })
+    // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게)
+    if (Math.max(...d.map(Math.abs)) < 8) return
+    boxes.forEach((x, i) => {
+      if (Math.abs(d[i]) >= 1) x.c.style.setProperty('--bk-dy', Math.round(d[i]) + 'px')
+    })
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -476,6 +536,7 @@ export function blockFitter() {
         c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')
         c.style.removeProperty('--bk-lift')
+        c.style.removeProperty('--bk-dy')
       }
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
@@ -501,6 +562,7 @@ export function blockFitter() {
       for (const c of cells) shrink(c, 0)
       if (cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) spread(cells, enlarge(cells))
       lift(cells)
+      even(cells, area)
       area.classList.remove('is-fitting')
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교)도

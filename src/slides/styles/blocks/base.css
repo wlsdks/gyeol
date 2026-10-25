@@ -38,6 +38,9 @@
 .bk-in {
   /* 회의실 뒷자리에서도 읽히게: 칸이 작아도 글자는 출처 글자(22px)보다 작아지지 않는다 */
   --fs-min: 22px;
+  /* 위아래로 쌓은 판에서 내용 사이를 고르게 하는 만큼 (--bk-dy, fitBlocks.ts 3-4). 칸 안의 빈 자리만큼만 옮긴다 */
+  position: relative;
+  top: var(--bk-dy, 0px);
   /* 한 줄로 줄이는 글(.one-line의 100cqi)이 칸이 아니라 안쪽 여백을 뺀 너비에 맞게. 칸 크기 단계(@container bk)와 cqh는 그대로 칸을 본다 */
   container-type: inline-size;
   height: 100%;
