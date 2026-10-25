@@ -86,10 +86,26 @@ export function motionEngine(): MotionEngine {
   /** 제목을 낱말로 나눈다. 낱말마다 아래에서 올라오게. 되돌리는 함수도 함께 돌려준다. */
   function splitWords(el: Element) {
     const words: HTMLElement[] = []
+    const outers: HTMLElement[] = []
     const undo: (() => void)[] = []
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     const texts: Text[] = []
     for (let n = walker.nextNode(); n; n = walker.nextNode()) texts.push(n as Text)
+    // 나누기 전에 낱말마다 원래 글에서의 자리를 잰다(아래에서 나눈 뒤의 자리와 맞춘다)
+    const range = document.createRange()
+    const was: { left: number; top: number }[] = []
+    for (const node of texts) {
+      let i = 0
+      for (const part of (node.nodeValue || '').split(/(\s+)/)) {
+        if (part.trim()) {
+          range.setStart(node, i)
+          range.setEnd(node, i + part.length)
+          const r = range.getClientRects()[0]
+          was.push(r ? { left: r.left, top: r.top } : { left: NaN, top: NaN })
+        }
+        i += part.length
+      }
+    }
     for (const node of texts) {
       const parts = (node.nodeValue || '').split(/(\s+)/)
       if (parts.every((p) => !p.trim())) continue
@@ -108,6 +124,7 @@ export function motionEngine(): MotionEngine {
         outer.appendChild(inner)
         made.push(outer)
         words.push(inner)
+        outers.push(outer)
       }
       const parent = node.parentNode
       if (!parent) continue
@@ -118,6 +135,21 @@ export function motionEngine(): MotionEngine {
         made[0].parentNode.insertBefore(node, made[0])
         for (const m of made) m.parentNode?.removeChild(m)
       })
+    }
+    // 낱말 사이를 원래 글과 같게. 낱말을 상자(inline-block)로 감싸면 상자 밖의 띄어쓰기와 짝을 이룬 자간(쉼표 뒤 같은)이
+    // 빠져서 낱말이 조금 넓어진다. 녹화해 보니 '사업, 12월'에서 쉼표 뒤가 3px 벌어져 있다가, 움직임이 끝나 원래 글로
+    // 돌아올 때 그 뒤의 낱말이 모두 왼쪽으로 튀었다. 같은 줄의 이웃 낱말 사이가 원래와 다르면 앞 낱말의 오른쪽 여백으로 맞춘다
+    const box = el.getBoundingClientRect()
+    const k = (el as HTMLElement).offsetWidth ? box.width / (el as HTMLElement).offsetWidth : 0
+    if (k && was.length === outers.length) {
+      const now = outers.map((o) => o.getBoundingClientRect())
+      for (let i = 0; i + 1 < outers.length; i++) {
+        const a = was[i]
+        const b = was[i + 1]
+        if (!(Math.abs(a.top - b.top) < 1 && Math.abs(now[i].top - now[i + 1].top) < 1)) continue
+        const gap = b.left - a.left - (now[i + 1].left - now[i].left)
+        if (Math.abs(gap) > 0.05 * k) outers[i].style.marginRight = gap / k + 'px'
+      }
     }
     return { words, restore: () => undo.forEach((u) => u()) }
   }
