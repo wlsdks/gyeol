@@ -377,8 +377,12 @@ export function motionEngine(): MotionEngine {
     /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
     const d = (ms: number) => ms * L.speed
 
+    // 오르는 만큼은 원래 자리에 더한다(composite: 'add'). 바꿔 끼우면 제자리를 잡으려고 translate를 쓰는 것(추이와 두 값 비교의 점 숫자는
+    // 점 가운데로 -50%, 증감 요인의 가로 값은 위아래 가운데로 -50%)이 0에서 출발해, 숫자가 비스듬히 미끄러져 들어왔다
     const rise = (el: Element | null, at: number, y = L.y, timing: Spring = L.move) => {
-      if (el) run(anims, el, [{ opacity: 0, translate: `0 ${y}px` }], s(at), timing)
+      if (!el) return
+      run(anims, el, [{ opacity: 0 }], s(at), timing)
+      run(anims, el, [{ translate: `0 ${y}px`, composite: 'add' }], s(at), timing)
     }
     const card = (el: Element | null, at: number) => {
       if (el) run(anims, el, [{ opacity: 0, translate: `0 ${L.y}px`, scale: String(L.scale) }], s(at), L.move)
