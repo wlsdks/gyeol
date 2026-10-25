@@ -17,6 +17,7 @@ import {
   effectOf,
   foldableFields,
   growAt,
+  fitPlaced,
   insertAt,
   lookChangeIssue,
   shownLook,
@@ -188,7 +189,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         // 놓을 자리가 없는 곳에 놓으면 원래 자리로 돌아간다
         const original = targetOf(s.rows ?? [], d.block.id)
         const t = d.plan === 'place' && d.target ? d.target : original
-        const next = t ? insertAt(d.base, t, d.block, uid(), d.room) : null
+        const placed = t ? insertAt(d.base, t, d.block, uid(), d.room) : null
+        const next = placed && fitPlaced(placed, d.block, d.room)
         if (next && t && !sameTarget(t, original)) store.setRows(s.id, next)
         land(d)
         return
@@ -199,10 +201,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         return
       }
       const block = d.block
+      // 이미지가 든 채로 들어온 이미지(붙여 넣기, 끌어다 놓기)는 그 줄의 칸 너비를 이미지 비율에 맞춘다
       if (d.plan === 'place' && d.target) {
-        store.setRows(s.id, insertAt(d.base, d.target, block, uid(), d.room)!)
+        store.setRows(s.id, fitPlaced(insertAt(d.base, d.target, block, uid(), d.room)!, block, d.room))
       } else if (d.plan === 'convert' && d.target && d.composed) {
-        store.replaceSlide(s.id, { ...d.composed, rows: insertAt(d.base, d.target, block, uid(), d.room)! })
+        store.replaceSlide(s.id, { ...d.composed, rows: fitPlaced(insertAt(d.base, d.target, block, uid(), d.room)!, block, d.room) })
         toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
         store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
@@ -622,7 +625,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const update = (id: string, fn: (b: Block) => Block) => store.updateBlock(slideRef.current.id, id, fn)
   const remove = (b: Block) => {
     const s = slideRef.current
-    store.setRows(s.id, removeBlock(s.rows ?? [], b.id))
+    store.setRows(s.id, removeBlock(s.rows ?? [], b.id, measureArea(areaEl.current)?.size.h))
     setSelected(null)
     toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, undoAction(toast))
   }
@@ -725,7 +728,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   let dragId: string | null = null
   if (drag) {
     if (drag.target && (drag.plan === 'place' || drag.plan === 'convert')) {
-      previewRows = insertAt(drag.base, drag.target, drag.block, `drop-${drag.block.id}`, drag.room)
+      // 놓은 뒤와 같은 모습으로: 이미지 옆이면 그 줄의 칸 너비를 이미지에 맞춘 것까지 (놓자마자 칸이 다시 움직이지 않게)
+      const placed = insertAt(drag.base, drag.target, drag.block, `drop-${drag.block.id}`, drag.room)
+      previewRows = placed && fitPlaced(placed, drag.block, drag.room)
       dragId = drag.block.id
     } else if (drag.kind === 'move') {
       // 장 밖으로 끌고 나가면 원래 자리를 비워 둔다. 놓으면 돌아온다

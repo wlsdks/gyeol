@@ -17,6 +17,8 @@ import {
   composeAreaH,
   composeFrom,
   dropTarget,
+  fitImage,
+  imageTarget,
   fitSpans,
   fitsHeight,
   fitsWith,
@@ -549,5 +551,50 @@ describe('이음표', () => {
       [null, null],
     ])
     expect(clean.map((r) => r.link ?? null)).toEqual(['equals', null])
+  })
+})
+
+describe('이미지에 맞춘 칸 너비', () => {
+  const img = (fields: Record<string, string> = {}) => ({ ...block('image', 'img'), fields: { image: 'data:image/png;base64,', ...fields } })
+
+  it('넓은 화면 캡처는 넓은 칸으로, 세로 사진은 좁은 칸으로', () => {
+    const rows = [row(img(), block('bullets', 't'))]
+    expect(spansOf(fitImage(rows, 'img', 16 / 10, 700)[0])).toEqual([8, 4])
+    expect(spansOf(fitImage(rows, 'img', 3 / 4, 700)[0])).toEqual([4, 8])
+  })
+
+  it('지금 너비가 이미 맞으면, 줄에 이미지 하나뿐이면 그대로', () => {
+    const wide = [{ ...row(img(), block('bullets', 't')), spans: [8, 4] }]
+    expect(fitImage(wide, 'img', 16 / 10, 700)).toBe(wide)
+    const alone = [row(img())]
+    expect(fitImage(alone, 'img', 3 / 4, 700)).toBe(alone)
+  })
+
+  it('고른 너비에서도 이웃이 제 가장 좁은 너비보다 좁아지지 않는다', () => {
+    for (const aspect of [0.4, 0.75, 1, 1.6, 3]) {
+      const next = fitImage([row(img(), block('points', 't'))], 'img', aspect, 700)
+      for (const r of next) expect(r.blocks.every((b, i) => spansOf(r)[i] >= minSpanOf(b))).toBe(true)
+    }
+  })
+
+  // 가로세로가 읽히는 PNG (IHDR까지만)
+  const png = (w: number, h: number) => {
+    const be32 = (n: number) => String.fromCharCode((n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255)
+    return `data:image/png;base64,${btoa(`\x89PNG\r\n\x1a\n${be32(13)}IHDR${be32(w)}${be32(h)}\x08\x06\x00\x00\x00`)}`
+  }
+
+  it('붙여 넣은 세로 이미지는 새 줄의 낮은 띠가 아니라 옆 칸으로, 이미 쓴 내용 뒤에', () => {
+    const rows = [row(block('bullets', 't'))]
+    const portrait = { ...img(), fields: { image: png(900, 1200) } }
+    expect(imageTarget(rows, portrait, 700)).toEqual({ kind: 'cell', row: 0, index: 1 })
+    expect(autoTarget(rows, portrait, 700)).toEqual({ kind: 'cell', row: 0, index: 1 })
+  })
+
+  it('이웃을 빼면 남은 줄을 이미지에 다시 맞춘다', () => {
+    const shot = { ...img(), fields: { image: png(1600, 1000) } }
+    const rows = [{ ...row(shot, block('bullets', 't'), block('number', 'n')), spans: [4, 4, 4] }]
+    expect(spansOf(removeBlock(rows, 'n', 700)[0])).toEqual([8, 4])
+    // 장 높이를 모르면 똑같이 나눈 너비 그대로
+    expect(spansOf(removeBlock(rows, 'n')[0])).toEqual([6, 6])
   })
 })
