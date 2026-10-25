@@ -152,7 +152,7 @@
     .s-title, .s-lead, .cv-title, .cv-lead, .cv-ask-text, .sc-title, .sc-lead, .ag-t, .ag-n,
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-h, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-client, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label, .lg-name,
-    .pr-name, .pr-price, .pr-meta, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .br-meta, .cl-title, .cl-step-t, .cl-step-b,
+    .pr-name, .pr-price, .pr-meta, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .br-meta, .cl-title, .cl-n, .cl-step-t, .cl-step-b,
     .sk-h, .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .mx-x, .mx-y, .wf-num, .wf-title, .wf-meta, .wf-unit, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .vs-key-t, .vs-unit, .vs-num, .vs-name, .vs-change, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
@@ -5116,24 +5116,23 @@
   grid-auto-rows: minmax(min-content, 260px);
 }
 
+/* 번호는 요청 제목과 같은 크기, 같은 글자선에 가늘고 옅게. 동그라미에 넣은 번호는 흔한 서식처럼 보였다(목차와 같은 말) */
 .cl-step {
   position: relative;
   display: grid;
-  grid-template-columns: 88px 1fr;
-  align-items: center;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: center;
+  align-items: first baseline;
+  column-gap: 40px;
   border-bottom: 2px solid var(--bold-line);
 }
 
 .cl-n {
-  display: grid;
-  place-items: center;
-  width: 60px;
-  height: 60px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
+  --fs: 36px;
+  min-width: 0.6em;
+  font-weight: 200;
+  line-height: 1.25;
+  opacity: var(--o-mute);
 }
 
 .cl-step-t {
@@ -5150,7 +5149,7 @@
 
 /* 요청이 셋 이하면 줄마다 높이가 300px 가까이 남아서, 36px 제목과 26px 설명이 줄 가운데에 작은 띠로만 보였다.
    한 단계씩 키운다 (넷 이상은 줄이 낮아 그대로) */
-.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) .cl-step-t {
+.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) :is(.cl-step-t, .cl-n) {
   --fs: 44px;
 }
 
@@ -5162,7 +5161,7 @@
   color: inherit;
 }
 
-/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에, 요청 번호만 강조색으로 채운다 */
+/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에 */
 .l-closing:not(.va-bold) {
   background: var(--bg);
   color: var(--ink);
@@ -5173,9 +5172,8 @@
 }
 
 .l-closing:not(.va-bold) .cl-n {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
+  color: var(--ink-3);
+  opacity: 1;
 }
 
 .l-closing:not(.va-bold) .cl-step-b {
@@ -5208,8 +5206,7 @@
   font-size: 26px;
 }
 
-/* 어두운 바탕의 짙은 면: 지금 단락과 다음 할 일 번호는 강조색으로 */
-.is-dark .sc-map li.is-on,
-.is-dark .cl-n {
+/* 어두운 바탕의 짙은 면: 지금 단락은 강조색으로 */
+.is-dark .sc-map li.is-on {
   color: var(--accent);
 }

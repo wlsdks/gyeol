@@ -888,9 +888,10 @@ export function motionEngine(): MotionEngine {
         fade(one('.cl-contact'), t)
         // 할 일 사이의 선도 할 일과 함께 (제목보다 먼저 빈 줄이 그어져 있지 않게)
         fade(one('.cl-steps'), Math.max(0, Math.min(t, 560) - 120), 360)
+        // 요청이 올라온 뒤 번호가 뜬다 (번호는 가늘고 옅은 글자라 튀어나오게 하지 않는다)
         items('.cl-step', Math.min(t, 560), (el, at) => {
-          pop(el.querySelector('.cl-n'), at)
-          rise(el.querySelector('.cl-step-text'), at + 60, L.y * 0.6)
+          rise(el.querySelector('.cl-step-text'), at, L.y * 0.6)
+          fade(el.querySelector('.cl-n'), at + 160, 700)
         })
         break
       }
