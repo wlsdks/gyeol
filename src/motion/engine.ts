@@ -1015,6 +1015,63 @@ export function motionEngine(): MotionEngine {
       run(anims, el, [{ scale: from, transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), { easing: CARRY, duration: d(duration) }, pseudo)
     }
 
+    /**
+     * 합계를 조각이 닿을 때마다 그만큼씩 올린다. marks는 닿는 때(ms)와 그때까지 모인 몫(0~1). 숫자가 하나만 있는 칸만(countUp과
+     * 같은 조건). 한 번에 0부터 굴리면 조각이 끼워지는 것과 숫자가 따로 놀아서, 끼워질 때마다 그 몫만큼 짧게 올라가 멈춘다
+     */
+    const tally = (el: Element | null, marks: { at: number; upto: number }[]) => {
+      if (!el || el.closest('.m-edit') || !marks.length) return
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      let node = walker.nextNode() as Text | null
+      while (node && !/\d/.test(node.nodeValue || '')) node = walker.nextNode() as Text | null
+      if (!node) return
+      const text = node.nodeValue || ''
+      const m = /^(\D*)(\d[\d,]*)(\.\d+)?(\D*)$/.exec(text)
+      if (!m) return
+      const target = parseFloat((m[2] + (m[3] || '')).replace(/,/g, ''))
+      if (!(target > 0) || target >= 1e12) return
+      const decimals = m[3] ? m[3].length - 1 : 0
+      const grouped = m[2].indexOf(',') >= 0
+      const format = (v: number) => {
+        const [whole, frac] = v.toFixed(decimals).split('.')
+        return m[1] + (grouped ? whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : whole) + (frac ? '.' + frac : '') + m[4]
+      }
+      const target_node = node
+      const climb = d(320)
+      const times = marks.map((k) => s(k.at))
+      // 시계: 아무것도 바꾸지 않는 움직임 하나의 시간을 읽는다. 다른 움직임과 같이 멈추고 넘겨져서(발표 화면의 멈춤, 녹화)
+      // 숫자가 조각과 어긋나지 않는다
+      const clock = el.animate([], { duration: times[times.length - 1] + climb })
+      anims.push(clock)
+      let frame = 0
+      let done = () => {}
+      waits.push(new Promise<void>((r) => (done = r)))
+      target_node.nodeValue = format(0)
+      const tick = () => {
+        const t = Number(clock.currentTime ?? 0)
+        let v = 0
+        let prev = 0
+        marks.forEach((k, i) => {
+          const p = Math.min(1, Math.max(0, (t - times[i]) / climb))
+          v += (k.upto - prev) * (1 - Math.pow(1 - p, 3))
+          prev = k.upto
+        })
+        if (clock.playState === 'finished' || t >= times[times.length - 1] + climb) {
+          target_node.nodeValue = text
+          done()
+          return
+        }
+        target_node.nodeValue = format(target * v)
+        frame = requestAnimationFrame(tick)
+      }
+      frame = requestAnimationFrame(tick)
+      stops.push(() => {
+        cancelAnimationFrame(frame)
+        target_node.nodeValue = text
+        done()
+      })
+    }
+
     /** 부품 장만의 부품이 알아서 움직이는 모습. 면이 있는 부품은 면이 먼저 자리 잡고 안의 글이 뒤따른다 */
     function nativeAuto(cell: HTMLElement, type: string) {
       if (!cell.classList.contains('bk-look-plain')) card(cell, 0)
@@ -1446,6 +1503,69 @@ export function motionEngine(): MotionEngine {
             rise(el, at, L.y * 0.5)
             countIn(el.querySelector('.bk-sg-v'), at + 40)
           })
+          break
+        }
+        case 'merge': {
+          // 값마다 줄이 차례로 나오며 조각이 제 자리(계단)에 그어지고, 합계 선이 그어진다. 그다음 조각이 하나씩 합계 막대의 제 자리로
+          // 내려가 끼워지고, 끼워질 때마다 합계가 그만큼 오른다. 끼워지는 조각은 줄의 조각과 같은 자리, 같은 크기에서 떠나 막대의
+          // 크기로 닿는다(움직이기 전에 두 자리를 재어 transform으로 되돌려 놓았다가 푼다)
+          const root = one('.bk-mg')
+          const sum = one('.bk-mg-sum')
+          const bar = one('.bk-mg-bar')
+          if (!root || !sum || !bar) break
+          const parts = $('.bk-mg-part')
+          const pieces = parts.map((p) => p.querySelector<HTMLElement>('.bk-mg-pc')).filter((p): p is HTMLElement => !!p)
+          const segs = $('.bk-mg-seg')
+          const moves = segs.map((seg, j) => {
+            const a = pieces[j] ? spot(pieces[j], root) : null
+            const b = spot(seg, root)
+            const w = b.r - b.l || 1
+            const h = b.b - b.t || 1
+            return a ? `translate(${a.l - b.l}px, ${a.t - b.t}px) scale(${(a.r - a.l) / w}, ${(a.b - a.t) / h})` : ''
+          })
+          const lively = levelName === 'lively'
+          const step = Math.min(lively ? 130 : 110, 560 / Math.max(1, parts.length))
+          parts.forEach((part, i) => {
+            const at = i * step
+            rise(part.querySelector('.bk-mg-name'), at, L.y * 0.4)
+            rise(part.querySelector('.bk-mg-num'), at + 40, L.y * 0.4)
+            draw(part.querySelector('.bk-mg-pc'), at + 120, 420, 'left center')
+          })
+          const line = parts.length * step + 120
+          draw(sum, line, 480, 'left center', '::before')
+          rise(sum.querySelector('.bk-mg-head'), line + 120, L.y * 0.4)
+          fade(sum.querySelector('.bk-mg-total'), line + 160, 260)
+          // 조각이 하나씩 내려간다: 위의 조각부터. 생동감은 막대에 닿으며 살짝 지나쳤다가 맞춰진다
+          const first = line + 420
+          const gap = lively ? 170 : 150
+          const travel = 560
+          const values = segs.map((seg) => parseFloat(seg.style.getPropertyValue('--p')) || 0)
+          let upto = 0
+          const marks = segs.map((seg, j) => {
+            const at = first + j * gap
+            if (moves[j]) {
+              run(
+                anims,
+                seg,
+                [
+                  { transform: moves[j], transformOrigin: '0 0', opacity: 0, offset: 0 },
+                  { opacity: 1, offset: 0.04 },
+                  { transform: 'none', transformOrigin: '0 0', opacity: 1, offset: 1 },
+                ],
+                s(at),
+                { easing: lively ? 'cubic-bezier(0.5, 0, 0.3, 1.25)' : CARRY, duration: d(travel) },
+              )
+            } else fade(seg, at, 240)
+            upto += values[j]
+            return { at: at + travel * 0.8, upto: Math.min(1, upto) }
+          })
+          // 끼워질 빈 자리: 합계 선이 그어질 때 흐리게 깔렸다가 마지막 조각이 닿으면 걷힌다
+          const end = first + Math.max(0, segs.length - 1) * gap + travel
+          const hold = end - line
+          run(anims, bar, [{ opacity: 0 }, { opacity: 1, offset: Math.min(0.3, 240 / hold) }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], s(line + 160), { easing: 'linear', duration: d(hold) }, '::before')
+          const total = sum.querySelector('.bk-mg-total')
+          if (marks.length) tally(total, marks)
+          else count(total, line + 160)
           break
         }
         default:

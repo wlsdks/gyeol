@@ -763,4 +763,34 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  merge: {
+    name: '모으기',
+    description: '여러 값을 하나로 모은 합계',
+    motion: '조각이 하나씩 내려가 합계 막대에 끼워져요',
+    fields: [
+      { key: 'label', label: '합계', hint: '무엇의 합계인지 (예: 연간 절감 효과)' },
+      { key: 'total', label: '합계 값', hint: '2.5억 원', optional: true },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '값',
+      min: 2,
+      max: 5,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '무엇의 값인지', hints: ['인건비 절감', '운영비 절감', '외주비 절감', '재고 비용 절감', '기타'] },
+        { key: 'value', label: '값', hint: '값', hints: ['1.2억', '0.8억', '0.5억', '0.3억', '0.1억'] },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 8,
+    sample: {
+      fields: { label: '연간 절감 효과' },
+      items: [
+        { title: '인건비 절감', value: '1.2억' },
+        { title: '운영비 절감', value: '0.8억' },
+        { title: '외주비 절감', value: '0.5억' },
+      ],
+    },
+  },
 }

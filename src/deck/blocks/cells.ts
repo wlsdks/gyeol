@@ -132,6 +132,7 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
   flow: { what: '무엇이 오가는지 맨 위에 한 줄 (예: 신청 데이터)', 'items.meta': '단계마다 어느 시스템, 누가 맡는지', 'items.value': '단계마다 오가는 양 (예: 320건)' },
   network: { 'items.meta': '이어진 것마다 무엇을 주고받는지 (예: 결재선)' },
   split: { total: '합계를 직접 적어요 (비우면 조각을 더한 값이 보여요)', unit: '값 뒤에 붙는 단위 (예: 억 원)' },
+  merge: { total: '합계를 직접 적어요 (비우면 값을 더한 값이 보여요)', unit: '값 뒤에 붙는 단위 (예: 억 원)' },
   kpi: { 'items.body': '숫자마다 아래 짧은 설명' },
   scorecard: { 'items.body': '지표마다 짧은 설명이나 원인' },
   bars: { 'items.meta': '막대마다 짧은 설명' },

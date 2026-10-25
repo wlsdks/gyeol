@@ -20,6 +20,7 @@ import { Diverge } from './blocks/Diverge'
 import { Facts } from './blocks/Facts'
 import { Flow } from './blocks/Flow'
 import { Network } from './blocks/Network'
+import { Merge } from './blocks/Merge'
 import { Split } from './blocks/Split'
 import { Faq } from './blocks/Faq'
 import { Gantt } from './blocks/Gantt'
@@ -76,6 +77,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   flow: Flow,
   network: Network,
   split: Split,
+  merge: Merge,
 }
 
 const FOLDS = new Map<BlockType, ReadonlySet<string>>()
