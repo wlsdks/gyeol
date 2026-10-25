@@ -2,21 +2,20 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { missingFields, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
-import { isDarkLook, MOTIONS, motionOf, PLACES, toneOf, TONES } from '../../deck/themes'
-import type { Deck, LayoutId, Motion, Slide } from '../../deck/types'
+import { isDarkLook, PLACES, toneOf, TONES } from '../../deck/themes'
+import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
-import { PREVIEW_MOTION } from './DeckMenus'
 import { useLook, type Look } from './look'
-import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Segmented, Toggle, useEscape } from '../ui'
+import { BackIcon, CheckIcon, ChevronIcon, Info, Segmented, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
 
 /**
- * 오른쪽 칸의 '이 장 설정'. 늘 보는 것(지금 레이아웃, 빈칸, 모양, 바탕, 움직임)만 한 화면에 두고
+ * 오른쪽 칸의 '이 장 설정'. 늘 보는 것(지금 레이아웃, 빈칸, 모양, 바탕)만 한 화면에 두고
  * 서른 가지가 넘는 레이아웃 목록은 '바꾸기'를 눌렀을 때만 따로 연다. 예전에는 한 칸에 다 늘어놓아
  * 3천 px 가까이 내려야 했고, 무엇을 고치는 칸인지 한눈에 들어오지 않았다.
  */
@@ -223,40 +222,19 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
   )
 }
 
-/** 이 장만의 바탕과 움직임 */
+/** 이 장만의 바탕. 움직임은 '움직임' 탭에 따로 둔다 (MotionPanel) */
 function LookSection({ deck, slide }: { deck: Deck; slide: Slide }) {
   const setOptions = useDeck((s) => s.setOptions)
-  const moving = motionOf(deck, slide) !== 'none'
+  if (BOLD_LAYOUTS.includes(slide.layout)) return null
   return (
     <section className="ins-sec">
       <h2 className="ins-h">꾸미기</h2>
-      {!BOLD_LAYOUTS.includes(slide.layout) && (
-        <Opt label="바탕">
-          <Segmented
-            label="바탕"
-            options={TONES.map((t) => ({ ...t, name: t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name }))}
-            value={toneOf(slide)}
-            onPick={(t) => setOptions(slide.id, { tone: t === 'base' ? undefined : t })}
-          />
-        </Opt>
-      )}
-      <Opt
-        label="움직임"
-        wide
-        extra={
-          moving && (
-            <button type="button" className="icon-btn ins-play" title="이 장의 움직임 미리 보기" aria-label="이 장의 움직임 미리 보기" onClick={() => window.dispatchEvent(new Event(PREVIEW_MOTION))}>
-              <PlayIcon />
-            </button>
-          )
-        }
-      >
-        <Segmented<Motion | undefined>
-          className="seg-fill"
-          label="이 장의 움직임"
-          options={[{ id: undefined, name: '기본', description: '테마 메뉴에서 정한 발표 전체의 움직임을 따라요.' }, ...MOTIONS]}
-          value={slide.options.motion ?? undefined}
-          onPick={(m) => setOptions(slide.id, { motion: m })}
+      <Opt label="바탕">
+        <Segmented
+          label="바탕"
+          options={TONES.map((t) => ({ ...t, name: t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name }))}
+          value={toneOf(slide)}
+          onPick={(t) => setOptions(slide.id, { tone: t === 'base' ? undefined : t })}
         />
       </Opt>
     </section>
@@ -267,7 +245,7 @@ function LookSection({ deck, slide }: { deck: Deck; slide: Slide }) {
  * 고르기 한 줄: 이름은 왼쪽, 고르는 단추는 오른쪽. 단추가 많으면(wide) 이름 아래 한 줄을 다 쓴다.
  * 고르는 단추는 줄을 바꾸지 않는다 (넷이 두 줄로 꺾이면 무엇끼리 고르는지 헷갈린다)
  */
-function Opt({ label, tip, wide, extra, children }: { label: string; tip?: string; wide?: boolean; extra?: ReactNode; children: ReactNode }) {
+export function Opt({ label, tip, wide, extra, children }: { label: string; tip?: string; wide?: boolean; extra?: ReactNode; children: ReactNode }) {
   return (
     <div className={cx('ins-opt', wide && 'is-wide')}>
       <span className="ins-opt-l">

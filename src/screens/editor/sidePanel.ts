@@ -5,13 +5,16 @@ import type { BlockEditing } from './BlockEditor'
 /** styles/narrow.css의 '좁은 화면'과 같은 너비: 이보다 좁으면 오른쪽 칸을 접는다 */
 const NARROW = '(max-width: 1100px)'
 
-/** 오른쪽 칸(이 장 설정, 컴포넌트)을 좁은 창에서 띄우고 닫는 일 */
+/** 오른쪽 칸(이 장 설정, 움직임, 컴포넌트)의 탭과, 좁은 창에서 띄우고 닫는 일 */
 export interface SidePanel {
   /** 좁은 창에서 띄워 두었는지 */
   shown: boolean
   /** 띄운 칸이 '이 장 설정'을 보이는지 */
   settingsShown: boolean
+  /** 보이는 탭. 컴포넌트 고르기가 열려 있으면 늘 컴포넌트 */
+  tab: 'settings' | 'motion' | 'library'
   settings(): void
+  motion(): void
   toggleSettings(): void
   toggleLibrary(): void
   close(): void
@@ -23,19 +26,29 @@ export interface SidePanel {
  */
 export function useSidePanel(blocks: Pick<BlockEditing, 'libraryOpen' | 'setLibraryOpen'>): SidePanel {
   const [sideOpen, setSideOpen] = useState(false)
+  // 움직임 탭을 보던 중인지. 컴포넌트 고르기를 열었다 닫으면 보던 탭으로 돌아간다
+  const [motionTab, setMotionTab] = useState(false)
   // 띄운 '이 장 설정'은 Esc로 닫는다 (컴포넌트 탭의 Esc는 BlockLibrary가 받아 '이 장 설정'으로 돌아간다)
   useEscape(() => setSideOpen(false), { active: sideOpen && !blocks.libraryOpen, typing: false })
   return {
     shown: sideOpen || blocks.libraryOpen,
-    settingsShown: sideOpen && !blocks.libraryOpen,
+    settingsShown: sideOpen && !blocks.libraryOpen && !motionTab,
+    tab: blocks.libraryOpen ? 'library' : motionTab ? 'motion' : 'settings',
     settings: () => {
       blocks.setLibraryOpen(false)
+      setMotionTab(false)
+      if (matchMedia(NARROW).matches) setSideOpen(true)
+    },
+    motion: () => {
+      blocks.setLibraryOpen(false)
+      setMotionTab(true)
       if (matchMedia(NARROW).matches) setSideOpen(true)
     },
     toggleSettings: () => {
-      if (sideOpen && !blocks.libraryOpen) setSideOpen(false)
+      if (sideOpen && !blocks.libraryOpen && !motionTab) setSideOpen(false)
       else {
         blocks.setLibraryOpen(false)
+        setMotionTab(false)
         setSideOpen(true)
       }
     },

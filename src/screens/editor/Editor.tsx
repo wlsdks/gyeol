@@ -22,6 +22,7 @@ import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PresentButton, ThemeMenu } from './DeckMenus'
 import { useExports } from './exports'
 import { Inspector } from './Inspector'
+import { MotionPanel } from './MotionPanel'
 import { PresentDialogs, usePresentLaunch } from './presentLaunch'
 import { SaveStatus } from './SaveStatus'
 import { useEditorShortcuts } from './shortcuts'
@@ -237,13 +238,16 @@ function EditorBody({ deck }: { deck: Deck }) {
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
           slide && (
-            // 오른쪽 칸은 탭 두 개: 이 장 설정과 컴포넌트. 컴포넌트를 고르는 동안에도 어디로 돌아가는지 보인다
+            // 오른쪽 칸은 탭 셋: 이 장 설정, 움직임, 컴포넌트. 컴포넌트를 고르는 동안에도 어디로 돌아가는지 보인다
             <aside className="side" aria-label="오른쪽 칸">
               <div className="side-tabs" role="tablist">
-                <button type="button" role="tab" className="side-tab" aria-selected={!blocks.libraryOpen} onClick={side.settings}>
+                <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'settings'} onClick={side.settings}>
                   이 장 설정
                 </button>
-                <button type="button" role="tab" className="side-tab" aria-selected={blocks.libraryOpen} onClick={() => blocks.setLibraryOpen(true)}>
+                <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'motion'} onClick={side.motion}>
+                  움직임
+                </button>
+                <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'library'} onClick={() => blocks.setLibraryOpen(true)}>
                   컴포넌트
                 </button>
                 {blocks.libraryOpen && (
@@ -256,8 +260,10 @@ function EditorBody({ deck }: { deck: Deck }) {
                   <CloseIcon />
                 </button>
               </div>
-              {blocks.libraryOpen ? (
+              {side.tab === 'library' ? (
                 <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
+              ) : side.tab === 'motion' ? (
+                <MotionPanel deck={deck} slide={slide} blocks={blocks} />
               ) : (
                 <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} onPeekLayout={setLayoutPeek} />
               )}
