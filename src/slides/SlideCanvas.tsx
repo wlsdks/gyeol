@@ -4,6 +4,7 @@ import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionO
 import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
+import { Compose } from './blocks'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
 import { useHalos } from './halos'
 import { BOLD_LAYOUTS, LAYOUT_VIEWS } from './layouts'
@@ -58,7 +59,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   sectionIndex = -1,
   solo,
 }: SlideCanvasProps) {
-  const View = LAYOUT_VIEWS[slide.layout]
+  const View = slide.layout === 'compose' ? Compose : LAYOUT_VIEWS[slide.layout]
   const spec = LAYOUTS[slide.layout]
   const bold = BOLD_LAYOUTS.includes(slide.layout)
   const canRemoveItem = !!spec.items && slide.items.length > spec.items.min

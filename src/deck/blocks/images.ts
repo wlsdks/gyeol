@@ -1,10 +1,9 @@
-// 이미지 부품: 이미지 비율에 맞는 칸 너비와 자리
+// 이미지 부품: 이미지 비율에 맞는 칸 너비와 보이는 법 (놓을 자리는 place.ts의 imageTarget)
 
 import { imageSize, isPhoto } from '../../lib/image'
 import { FRAME } from '../frame'
 import type { Block, BlockRow } from '../types'
 import { allBlocks, makeBlock } from './cells'
-import { type DropTarget, insertAt, validTargets } from './place'
 import { shownLook } from './rules'
 import { cellRects, changeRows, fitsHeight, spanChoices } from './sizing'
 
@@ -35,7 +34,7 @@ function imageBox(rows: BlockRow[], blockId: string, areaH: number): { w: number
 }
 
 /** 이미지 비율과 그려지는 상자 비율이 얼마나 다른지 (0이면 꼭 맞는다). 상자가 없으면 Infinity */
-function misfit(rows: BlockRow[], blockId: string, aspect: number, areaH: number): number {
+export function misfit(rows: BlockRow[], blockId: string, aspect: number, areaH: number): number {
   const box = imageBox(rows, blockId, areaH)
   return box ? Math.abs(Math.log(box.w / box.h / aspect)) : Infinity
 }
@@ -112,38 +111,4 @@ export function fitPlaced(rows: BlockRow[], block: Block, areaH?: number): Block
   if (!img) return rows
   const fitted = fitImage(rows, img.id, aspectOf(img)!, areaH)
   return img.id === block.id ? settleImage(fitted, img.id, areaH) : fitted
-}
-
-/**
- * 이미지가 든 이미지 부품을 넣을 자리: 넣을 수 있는 자리마다 칸 너비를 이미지에 맞춰 본 뒤 이미지 비율에 가장 잘 맞는 곳.
- * 세로 사진은 옆 칸으로, 넓은 화면 캡처는 넓은 줄로 간다. 위치를 받으면(끌어다 놓은 자리) 비슷하게 맞는 자리 가운데 가까운 곳.
- * 아래 새 줄에 놓아 세로 사진이 장 너비의 낮은 띠가 되면 가운데만 남거나 양옆이 크게 비었다
- */
-export function imageTarget(rows: BlockRow[], block: Block, areaH: number, near?: { x: number; y: number }): DropTarget | null {
-  const aspect = aspectOf(block)
-  if (!aspect) return null
-  let best: DropTarget | null = null
-  let bestScore = Infinity
-  const valid = validTargets(rows, block, areaH)
-  for (const [k, t] of valid.entries()) {
-    const placed = insertAt(rows, t, block, 'x', areaH)
-    if (!placed) continue
-    const fitted = fitImage(placed, block.id, aspect, areaH)
-    // 장의 다른 이미지도 함께 본다: 새 이미지가 잘 맞아도 옆의 화면 캡처가 좁은 칸에 눌리거나 새 줄 때문에 낮아지면 좋은 자리가 아니다
-    const off = allBlocks(fitted).reduce((a, b) => {
-      const ar = b.id === block.id ? aspect : aspectOf(b)
-      return ar ? a + misfit(fitted, b.id, ar, areaH) : a
-    }, 0)
-    if (!Number.isFinite(off)) continue
-    // 비율이 거의 같으면(로그 차 0.1은 10%쯤) 놓은 자리에 가까운 곳. 거리는 장 너비에 견준 몫
-    const at = near && cellRects(fitted, { w: AREA_W, h: areaH }).get(block.id)
-    const far = at ? Math.hypot(at.x + at.w / 2 - near.x, at.y + at.h / 2 - near.y) / AREA_W : 0
-    // 놓은 자리가 없으면(붙여 넣기) 비슷하게 맞는 자리끼리는 읽는 차례에서 뒤쪽: 앞에 끼우면 이미 쓴 내용의 차례가 밀린다
-    const score = off + far * 0.25 + (near ? 0 : (valid.length - 1 - k) * 0.01)
-    if (score < bestScore) {
-      best = t
-      bestScore = score
-    }
-  }
-  return best
 }

@@ -7,7 +7,6 @@ import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
 import { amountPair, formatNumber, isNumericCell, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
-import { Compose } from './blocks'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T, textUnits } from './fields'
 import { placeLabels } from './fitBlocks'
 
@@ -1441,7 +1440,9 @@ function Closing() {
   )
 }
 
-export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
+/** 레이아웃마다의 그리기. 부품 장(compose)은 여기 없다: 부품 장(blocks.tsx)이 레이아웃 부품을 그리려고 이 표를 쓰므로,
+ * 여기서 부품 장을 가져오면 두 파일이 서로를 가져온다. 장을 그리는 곳(SlideCanvas)이 부품 장을 따로 고른다 */
+export const LAYOUT_VIEWS: Record<Exclude<LayoutId, 'compose'>, () => ReactNode> = {
   cover: Cover,
   section: Section,
   agenda: Agenda,
@@ -1468,7 +1469,6 @@ export const LAYOUT_VIEWS: Record<LayoutId, () => ReactNode> = {
   bars: Bars,
   versus: Versus,
   closing: Closing,
-  compose: Compose,
 }
 
 export { BOLD_LAYOUTS } from '../deck/layouts'

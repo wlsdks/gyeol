@@ -1,10 +1,10 @@
-// 넣기, 빼기, 옮기기, 놓을 자리와 놓을 수 없는 까닭, 칸 너비 끌기
+// 넣기, 빼기, 옮기기, 놓을 자리(이미지는 비율에 맞는 자리)와 놓을 수 없는 까닭, 칸 너비 끌기
 
 import { uid } from '../generate'
 import type { Block, BlockRow, BlockType } from '../types'
 import { BLOCKS } from './catalog'
 import { allBlocks, blockCount } from './cells'
-import { aspectOf, fitImage, imageTarget } from './images'
+import { AREA_W, aspectOf, fitImage, misfit } from './images'
 import { tidyLinks } from './links'
 import { BLOCK_GAP, COMBOS, isSolo, MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS, settleLook } from './rules'
 import { blockMinH, type CellBox, cellBoxes, cellRects, fitsHeight, fitSpans, minSpanOf, needH, NO_FIT, type Rect, rowMinH, spanChoices, spansOf } from './sizing'
@@ -326,4 +326,38 @@ export function shiftBlock(rows: BlockRow[], blockId: string, dir: -1 | 1): Bloc
     const blocks = r.blocks.map(() => swapped[k++])
     return { ...r, blocks, spans: fitSpans(blocks, r.spans) ?? fitSpans(blocks) ?? undefined }
   })
+}
+
+/**
+ * 이미지가 든 이미지 부품을 넣을 자리: 넣을 수 있는 자리마다 칸 너비를 이미지에 맞춰 본 뒤 이미지 비율에 가장 잘 맞는 곳.
+ * 세로 사진은 옆 칸으로, 넓은 화면 캡처는 넓은 줄로 간다. 위치를 받으면(끌어다 놓은 자리) 비슷하게 맞는 자리 가운데 가까운 곳.
+ * 아래 새 줄에 놓아 세로 사진이 장 너비의 낮은 띠가 되면 가운데만 남거나 양옆이 크게 비었다
+ */
+export function imageTarget(rows: BlockRow[], block: Block, areaH: number, near?: { x: number; y: number }): DropTarget | null {
+  const aspect = aspectOf(block)
+  if (!aspect) return null
+  let best: DropTarget | null = null
+  let bestScore = Infinity
+  const valid = validTargets(rows, block, areaH)
+  for (const [k, t] of valid.entries()) {
+    const placed = insertAt(rows, t, block, 'x', areaH)
+    if (!placed) continue
+    const fitted = fitImage(placed, block.id, aspect, areaH)
+    // 장의 다른 이미지도 함께 본다: 새 이미지가 잘 맞아도 옆의 화면 캡처가 좁은 칸에 눌리거나 새 줄 때문에 낮아지면 좋은 자리가 아니다
+    const off = allBlocks(fitted).reduce((a, b) => {
+      const ar = b.id === block.id ? aspect : aspectOf(b)
+      return ar ? a + misfit(fitted, b.id, ar, areaH) : a
+    }, 0)
+    if (!Number.isFinite(off)) continue
+    // 비율이 거의 같으면(로그 차 0.1은 10%쯤) 놓은 자리에 가까운 곳. 거리는 장 너비에 견준 몫
+    const at = near && cellRects(fitted, { w: AREA_W, h: areaH }).get(block.id)
+    const far = at ? Math.hypot(at.x + at.w / 2 - near.x, at.y + at.h / 2 - near.y) / AREA_W : 0
+    // 놓은 자리가 없으면(붙여 넣기) 비슷하게 맞는 자리끼리는 읽는 차례에서 뒤쪽: 앞에 끼우면 이미 쓴 내용의 차례가 밀린다
+    const score = off + far * 0.25 + (near ? 0 : (valid.length - 1 - k) * 0.01)
+    if (score < bestScore) {
+      best = t
+      bestScore = score
+    }
+  }
+  return best
 }
