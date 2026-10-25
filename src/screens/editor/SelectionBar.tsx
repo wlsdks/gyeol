@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
 import { visibleItems } from '../../deck/fields'
 import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layouts'
 import { PLACES } from '../../deck/themes'
@@ -10,6 +10,7 @@ import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CopyIcon, GripIcon, Icon, TrashIcon } from '../ui'
+import { moving, useTrackRect } from './useTrackRect'
 import { VariantMenu } from './VariantMenu'
 
 /**
@@ -139,33 +140,31 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
   const full = useRef(0)
   const anchor = useRef<HTMLElement | null>(null)
   const texts = useRef<{ key: string; rects: TextRect[] }>({ key: '', rects: [] })
-  useLayoutEffect(() => {
-    let raf = 0
-    const tick = () => {
-      raf = requestAnimationFrame(tick)
+  useTrackRect(
+    () => canvasRef.current,
+    () => {
       const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area > .is-selected') ?? null
       const bar = ref.current
       if (!el || !bar) return setSpot(null)
-      // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다
+      // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다 (다음 프레임에)
       if (el !== anchor.current) {
         anchor.current = el
         full.current = 0
         setTight(false)
-        return
+        return true
       }
       const r = el.getBoundingClientRect()
       const slide = el.closest('.slide')
-      // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (매 프레임 장의 모든 글을 재지 않게)
+      // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게)
       const key = `${r.left},${r.top},${r.width},${r.height}`
       if (texts.current.key !== key) texts.current = { key, rects: contentRects(slide, canvasRef.current) }
       const s = barSpot(r, bar, canvasRef.current, texts.current.rects, slide?.getBoundingClientRect())
       if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
       setTight(full.current > s.room)
       setSpot((p) => (p && p.x === s.x && p.y === s.y ? p : { x: s.x, y: s.y }))
-    }
-    tick()
-    return () => cancelAnimationFrame(raf)
-  }, [canvasRef])
+      return moving(el)
+    },
+  )
   return (
     <div ref={ref} className={cx('float-tools', tight && 'is-tight')} style={spot ? { translate: `${spot.x}px ${spot.y}px` } : { visibility: 'hidden' }}>
       {children}
@@ -263,14 +262,14 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
   }, [canvasRef, startSession])
 
   // 고른 것의 자리를 따라간다 (글을 적어 카드가 커지거나 순서를 바꿔 옮겨 가도)
-  useLayoutEffect(() => {
-    if (!target) {
-      setRing(null)
-      setBar(null)
-      return
-    }
-    let raf = 0
-    const tick = () => {
+  useTrackRect(
+    () => canvasRef.current,
+    () => {
+      if (!target) {
+        setRing(null)
+        setBar(null)
+        return
+      }
       if (!target.el.isConnected) return setTarget(null)
       const box = target.el.getBoundingClientRect()
       // 제목 덩어리는 쓰는 중인 칸의 테와 겹치지 않게 조금 넓게 두른다 (app.css의 .sel-ring.is-group)
@@ -279,11 +278,9 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
       const { x, y } = barSpot(r, barRef.current, canvasRef.current)
       setBar((p) => (p && p.x === x && p.y === y ? p : { x, y }))
-      raf = requestAnimationFrame(tick)
-    }
-    tick()
-    return () => cancelAnimationFrame(raf)
-  }, [target, canvasRef])
+      return moving(target.el)
+    },
+  )
 
   // 옆 판을 고르면 판의 테와 판 사이 손잡이를 켜 두고, 판의 이름표는 막대의 이름이 맡는다.
   // 항목을 고르면 항목 모서리의 손잡이와 빼기 단추를 숨긴다 (막대에 같은 일이 있다). edit.css
