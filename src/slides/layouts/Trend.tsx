@@ -97,10 +97,12 @@ export function Trend() {
             })}
           </div>
         </div>
+        {/* 시기 이름은 점과 같은 칸(--n등분)에서 가운데. 한 줄로 묶지 않는다: 칸보다 긴 이름('10월 1주')이 한 줄로 넘치면
+            넘친 줄은 칸 왼쪽에 붙어 점보다 오른쪽으로 밀리고 옆 이름과 겹쳤다. 칸 안에서 띄어쓰기로 줄을 바꾼다 */}
         <div className="tn-x">
           {items.map((it, i) => (
             <div key={it.id} className={cx('it tn-col', i === highlight && 'is-hl')}>
-              <IT i={i} k="title" className="tn-name" oneLine />
+              <IT i={i} k="title" className="tn-name" />
               <ItemTools i={i} />
             </div>
           ))}
