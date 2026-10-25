@@ -82,3 +82,15 @@
     right: calc(-1 * var(--fc-gap));
   }
 }
+
+/* 옅은 면, 진한 면에서는 마지막 줄 아래의 틈을 뺀다: 줄 선이 줄 위에만 있어 마지막 줄 아래 틈은 선 없이 면의 아래 여백에 그대로
+   더해졌다(위 91px, 아래 143px). 빼면 남는 높이는 묶음째 면 가운데로 간다(base.css). 두 단이면 두 단의 마지막 줄 모두 */
+.bk:is(.bk-look-card, .bk-look-bold) .bk-fc-row:last-child {
+  padding-bottom: 0;
+}
+
+@container bk (min-width: 1300px) {
+  .bk:is(.bk-look-card, .bk-look-bold) .bk-fc-list:is([data-n='4'], [data-n='6']) .bk-fc-row:nth-last-child(2) {
+    padding-bottom: 0;
+  }
+}
