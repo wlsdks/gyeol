@@ -23,6 +23,7 @@ import { clashes, failingHeights, heightsSource, measureAll, measureAllFonts, me
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif|suit|myeongjo &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
 // &count=5 는 레이아웃 장의 항목 수를 그만큼(정한 범위 안에서). 예시 항목을 되풀이해 채운다.
+// &names=10월 1주,10월 2주 와 &values=900,60,40 은 레이아웃 장과 부품 장의 항목 이름과 값을 그 글로(쉼표로 나눠 되풀이). 긴 이름, 큰 차이를 볼 때.
 // &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
@@ -190,6 +191,18 @@ function withCount(s: Slide, n: number): Slide {
   return { ...s, items: Array.from({ length: k }, (_, i) => (i < s.items.length ? s.items[i] : { ...s.items[i % s.items.length], id: `${s.items[i % s.items.length].id}-${i}` })) }
 }
 
+/** &names, &values: 레이아웃 장과 부품 장의 항목 이름(값)을 쉼표로 나눈 글로 바꿔 본다. 모자라면 되풀이한다 */
+function withTexts(s: Slide, names?: string[], values?: string[]): Slide {
+  if (!names && !values) return s
+  const put = (items: Slide['items']) =>
+    items.map((it, i) => ({ ...it, ...(names ? { title: names[i % names.length] } : {}), ...(values ? { value: values[i % values.length] } : {}) }))
+  return {
+    ...s,
+    items: put(s.items),
+    ...(s.rows ? { rows: s.rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id.includes('-fill-') ? b : { ...b, items: put(b.items) })) })) } : {}),
+  }
+}
+
 /** 편집 보기에서 칸을 편집기처럼 그리려고 (적어도 바뀌지 않는다) */
 const NO_ACTIONS: SlideActions = { setField() {}, setItem() {}, removeItem() {}, updateBlock() {} }
 
@@ -236,7 +249,7 @@ export function Gallery() {
     ...base,
     theme: { ...base.theme, ...look },
     slides: slides.map((s) => ({
-      ...withCount(s, Number(params.get('count')) || 0),
+      ...withTexts(withCount(s, Number(params.get('count')) || 0), params.get('names')?.split(','), params.get('values')?.split(',')),
       options: {
         ...s.options,
         ...(tone ? { tone } : {}),
