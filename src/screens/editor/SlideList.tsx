@@ -12,7 +12,7 @@ import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideC
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
 import { AddSlide } from './AddSlide'
-import { useLook } from './look'
+import { useAfterPaint, useLook } from './look'
 
 export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string | null }) {
   const select = useDeck((s) => s.select)
@@ -143,6 +143,8 @@ interface ThumbProps {
 const Thumb = memo(function Thumb(props: ThumbProps) {
   const { meta, theme, title, slide, page, total, sections, sectionIndex, selected, missing, onSelect } = props
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
+  // 장 그림은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint)
+  const shown = useAfterPaint(slide)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 장' } })
   return (
     <div
@@ -165,7 +167,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         <ScaledSlide width={170}>
           <SlideCanvas
             deck={look}
-            slide={slide}
+            slide={shown}
             mode="preview"
             page={page}
             total={total}

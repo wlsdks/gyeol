@@ -8,7 +8,7 @@ import { cx } from '../../lib/cx'
 import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
-import { useLook, type Look } from './look'
+import { useAfterPaint, useLook, type Look } from './look'
 import { BackIcon, CheckIcon, ChevronIcon, Info, Segmented, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
@@ -36,6 +36,10 @@ export function Inspector({
   // 다른 장을 고르면 레이아웃 고르기를 닫는다
   useEffect(() => setPicking(false), [slide.id])
   const look = useLook(deck)
+  // 장 그림(지금 레이아웃, 모양 고르기)은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint).
+  // 다른 장을 골랐을 때는 바로 그 장으로 (앞 장 그림이 잠깐 남지 않게)
+  const later = useAfterPaint(slide)
+  const shown = later.id === slide.id ? later : slide
 
   if (picking) {
     const close = () => {
@@ -45,6 +49,7 @@ export function Inspector({
     return (
       <LayoutPicker
         slide={slide}
+        shown={shown}
         look={look}
         onPeek={onPeekLayout}
         onPick={(id) => {
@@ -60,7 +65,7 @@ export function Inspector({
       <section className="ins-sec ins-top">
         <button type="button" className="ins-cur" title="레이아웃 바꾸기" onClick={() => setPicking(true)}>
           <ScaledSlide width={104}>
-            <SlideCanvas deck={look} slide={slide} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
+            <SlideCanvas deck={look} slide={shown} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
           </ScaledSlide>
           <span className="ins-cur-t">
             <span className="ins-cur-k">레이아웃</span>
@@ -73,7 +78,7 @@ export function Inspector({
         </button>
         <Blanks deck={deck} slide={slide} onFocusField={onFocusField} />
       </section>
-      <ShapeSection slide={slide} look={look} />
+      <ShapeSection slide={slide} shown={shown} look={look} />
       <LookSection deck={deck} slide={slide} />
     </div>
   )
@@ -132,7 +137,7 @@ function Blanks({ deck, slide, onFocusField }: { deck: Deck; slide: Slide; onFoc
 }
 
 /** 레이아웃 안에서 고르는 것: 모양, 강조할 항목, 두 판의 자리와 너비, 그림 맞추기 */
-function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
+function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look: Look }) {
   const setOptions = useDeck((s) => s.setOptions)
   const setVariant = useDeck((s) => s.setVariant)
   const variants = LAYOUTS[slide.layout].variants ?? []
@@ -158,7 +163,7 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
               variant={v.id}
               name={v.name}
               look={look}
-              slide={slide}
+              slide={shown}
               width={86}
               on={current === v.id}
               onPick={() => setVariant(slide.id, v.id)}
@@ -265,12 +270,15 @@ export function Opt({ label, tip, wide, extra, children }: { label: string; tip?
 /** 레이아웃 바꾸기: 묶음마다 그림으로 고른다. 그림에 올리면 슬라이드 자리에서 미리 보인다 */
 function LayoutPicker({
   slide,
+  shown,
   look,
   onPeek,
   onPick,
   onBack,
 }: {
   slide: Slide
+  /** 그림에 그릴 장 (한 박자 늦게 고친다) */
+  shown: Slide
   look: Look
   onPeek: (layout: LayoutId | null) => void
   onPick: (layout: LayoutId) => void
@@ -296,7 +304,7 @@ function LayoutPicker({
                 id={id}
                 name={LAYOUTS[id].name}
                 look={look}
-                slide={slide}
+                slide={shown}
                 on={slide.layout === id}
                 onPick={() => onPick(id)}
                 onPeek={(on) => onPeek(on && id !== slide.layout ? id : null)}
