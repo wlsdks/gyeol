@@ -772,8 +772,10 @@
   line-height: 1;
 }
 
+/* 막대는 줄지 않는다: 세로로 쌓은 칸이 낮으면 막대가 먼저 높이 0까지 줄어 숫자만 남았다 */
 .bk-gl-bar {
   position: relative;
+  flex: none;
   height: 20px;
   margin-top: 28px;
   overflow: hidden;
@@ -956,6 +958,40 @@
 
 .bk-rg.is-demo .bk-rg-knob {
   opacity: 0.35;
+}
+
+/* 낮은 칸: 원을 왼쪽에, 이름과 덧붙임을 오른쪽에. 위아래로 쌓으면 이름과 덧붙임이 높이를 먼저 가져가 원이 지름 50px대로
+   줄고 안의 숫자를 읽을 수 없었다. 이름은 작은 이름표 크기 그대로 (넓은 칸처럼 키우면 좁은 글 자리에서 세 줄이 된다) */
+@container bk (min-aspect-ratio: 6 / 5) and (max-height: 440px) and (min-width: 380px) {
+  .bk-rg {
+    grid-template: minmax(0, 1fr) minmax(0, 1fr) / auto minmax(0, 1fr);
+    grid-template-areas: 'box l' 'box n';
+    justify-items: start;
+    gap: 12px 40px;
+    text-align: left;
+  }
+
+  .bk-rg-box {
+    grid-area: box;
+    width: min(calc(100cqh - var(--py) * 2), 44cqw);
+    height: 100%;
+  }
+
+  /* 반원은 가로로 길어서(100:58) 높이에 맞춘 너비를 준다. 원과 같은 너비면 반원이 그 반 높이로 작아진다.
+     칸 높이를 다 채우면 호 끝의 손잡이와 명조 숫자의 아래가 칸 밖으로 나가서 높이의 80%쯤에 맞춘다(100:72) */
+  .is-gauge .bk-rg-box {
+    width: min(calc((100cqh - var(--py) * 2) * 100 / 72), 50cqw);
+  }
+
+  .bk-rg-l {
+    grid-area: l;
+    align-self: end;
+  }
+
+  .bk-rg-n {
+    grid-area: n;
+    align-self: start;
+  }
 }
 
 @container bk (min-aspect-ratio: 3 / 2) and (min-width: 700px) {
