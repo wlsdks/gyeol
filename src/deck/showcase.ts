@@ -188,7 +188,7 @@ export function extraSlides(): Slide[] {
 export function nativeSample(type: BlockType, extra: Partial<Block> = {}): Block {
   const spec = BLOCKS[type]
   const items = (spec.sample?.items ?? Array.from({ length: spec.items?.default ?? 0 }, () => ({}))).map((it) => ({ ...emptyItem(), ...it }))
-  return { id: `sample-${type}`, type, fields: { ...spec.sample?.fields }, items, ...extra }
+  return { id: `sample-${type}`, type, fields: { ...spec.sample?.fields }, items, ...(spec.sample?.variant ? { variant: spec.sample.variant } : {}), ...extra }
 }
 
 /** 부품 장의 예시: 전과 후, 큰 숫자, 결정 요청을 한 줄에, 아래에 추이와 다음 단계 */

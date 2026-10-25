@@ -10,6 +10,7 @@
 import { imageSize, isPhoto } from '../lib/image'
 import { BLOCK_HEIGHTS } from './blockHeights'
 import { FRAME, TITLE_TRIM } from './frame'
+import { SAMPLE_IMAGE } from './sampleImage'
 import { emptyItem, uid, withDefaultOptions } from './generate'
 import { hintFor, LAYOUTS, logoColumns, type FieldSpec, type LayoutSpec, type VariantSpec } from './layouts'
 import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, NativeBlockType, Slide } from './types'
@@ -32,7 +33,8 @@ export interface BlockSpec {
   prefSpan: number
   look?: BlockLook
   /** 부품 고르기 그림과 장 모음 예시에 쓰는 지어낸 내용. 레이아웃 부품은 장 모음의 예시 장에서 가져온다 */
-  sample?: { fields: Record<string, string>; items?: Partial<Item>[] }
+  /** 예시 내용. variant는 예시가 가장 잘 보이는 모양 (없으면 첫째) */
+  sample?: { fields: Record<string, string>; items?: Partial<Item>[]; variant?: string }
 }
 
 /** 장의 머리(제목, 부제, 출처). 레이아웃 부품에서는 빼고, 부품 장의 머리로 쓴다 */
@@ -405,20 +407,21 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
   },
   image: {
-    name: '그림',
-    description: '화면, 현장 사진, 도면',
+    name: '이미지',
+    description: '화면 캡처, 현장 사진, 도면',
     motion: '걷히듯 나타나요',
     variants: [
       { id: 'cover', name: '꽉 채우기' },
       { id: 'contain', name: '전체 보이기' },
     ],
     fields: [
-      { key: 'image', label: '그림', hint: '보여 줄 그림', image: true },
-      { key: 'caption', label: '설명', hint: '그림 아래 한 줄', optional: true },
+      { key: 'image', label: '이미지', hint: '보여 줄 이미지', image: true },
+      { key: 'caption', label: '설명', hint: '이미지 아래 한 줄', optional: true },
     ],
     minSpan: 3,
     prefSpan: 6,
-    sample: { fields: { caption: '시범 라인에 단 검사 카메라' } },
+    // 예시는 화면 캡처라 전체 보이기로 (넣을 때도 화면 캡처는 전체 보이기로 고른다)
+    sample: { fields: { image: SAMPLE_IMAGE, caption: '새 분류 화면의 첫 화면' }, variant: 'contain' },
   },
   rating: {
     name: '평가표',
@@ -775,7 +778,7 @@ export const BLOCK_GROUPS: { name: string; short: string; description: string; t
   },
   { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 평가표, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'rating', 'matrix', 'position', 'pricing', 'table'] },
-  { name: '그림과 사람', short: '그림', description: '사진, 화면, 담당자, 고객사 로고', types: ['image', 'people', 'logos'] },
+  { name: '이미지와 사람', short: '이미지', description: '화면 캡처, 사진, 담당자, 로고', types: ['image', 'people', 'logos'] },
 ]
 
 export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
