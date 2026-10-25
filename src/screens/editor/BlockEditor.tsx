@@ -8,10 +8,8 @@ import {
   changeIssue,
   BLOCK_GAP,
   BLOCKS,
-  asCompose,
   canCompose,
   copyBlock,
-  dropTarget,
   foldableFields,
   growAt,
   fitPlaced,
@@ -20,7 +18,6 @@ import {
   lookChangeIssue,
   makeBlock,
   placeIssue,
-  pointerTarget,
   removeBlock,
   sameTarget,
   shiftBlock,
@@ -50,6 +47,7 @@ import { BlockTools } from './BlockTools'
 import { useLinkEditing } from './LinkEditor'
 import { useLook } from './look'
 import { narrowText, noRoomText } from './noRoom'
+import { dropRows, planDrop, type DropPlanKind } from './planDrop'
 import { RoomZone } from './RoomZone'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
@@ -71,7 +69,7 @@ interface Drag {
   /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
   blocked: NoRoom | null
   /** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 다음 장에 새로 만들기 */
-  plan: 'place' | 'convert' | 'next' | null
+  plan: DropPlanKind
   /** 끌고 있는 부품 그림의 크기 (캔버스 px)와 화면 크기 */
   canvas: { w: number; h: number }
   ghost: { w: number; h: number }
@@ -309,39 +307,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const track = useCallback((x: number, y: number) => {
     const d = dragRef.current
     if (!d) return
-    const s = slideRef.current
     const frame = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')
     const fr = frame?.getBoundingClientRect()
     const over = !!fr && x >= fr.left - 24 && x <= fr.right + 24 && y >= fr.top - 24 && y <= fr.bottom + 24
-    let plan: Drag['plan'] = null
-    let target: DropTarget | null = null
-    let blocked: NoRoom | null = null
-    let room = d.room
-    let composed = d.composed
-    if (over) {
-      if (s.layout === 'compose' || (d.kind === 'new' && canCompose(s.layout))) {
-        if (s.layout !== 'compose' && !composed) composed = asCompose(s)
-        // 아직 부품 장으로 바뀌기 전이면 바뀐 뒤의 본문 상자를 어림한다
-        const area = measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)
-        const base = s.layout === 'compose' ? d.base : (composed?.rows ?? [])
-        if (area) {
-          room = area.size.h
-          const p = { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }
-          target = dropTarget(base, d.block, p, area.size, undefined, d.target)
-          // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
-          if (target && d.target && !sameTarget(target, d.target)) {
-            const near = [-30, 30].flatMap((o) => [dropTarget(base, d.block, { x: p.x + o, y: p.y }, area.size), dropTarget(base, d.block, { x: p.x, y: p.y + o }, area.size)])
-            if (near.some((t) => sameTarget(t, d.target))) target = d.target
-          }
-          // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
-          const wanted = pointerTarget(base, p, area.size)
-          blocked = !target ? placeIssue(base, d.block, area.size.h) : sameTarget(wanted, target) ? null : whyNot(base, wanted, d.block, area.size.h)
-        }
-        plan = target ? (s.layout === 'compose' ? 'place' : 'convert') : d.kind === 'new' ? 'next' : null
-        if (d.kind === 'move' && !target) plan = null
-      } else if (d.kind === 'new') plan = 'next'
-    }
-    const base = s.layout === 'compose' ? d.base : (composed?.rows ?? d.base)
+    // 아직 부품 장으로 바뀌기 전이면 바뀐 뒤의 본문 상자를 어림한다
+    const area = over ? (measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)) : null
+    const at = area && { p: { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }, size: area.size }
+    const { plan, target, blocked, composed, base, room } = planDrop(slideRef.current, d, { by: 'pointer', over, at })
     if (
       over !== d.over ||
       plan !== d.plan ||
@@ -477,6 +449,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     [begin],
   )
 
+  /** 넣을 본문 높이: 부품 장은 잰 높이, 부품 장으로 바꿀 장은 바꿨을 때의 어림 */
+  const roomOf = (s: Slide) => {
+    if (s.layout === 'compose' || !canCompose(s.layout)) return measureArea(areaEl.current)?.size.h
+    const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
+    return fr ? guessArea(fr).size.h : undefined
+  }
+
   const newDrag = (block: Block, from: DOMRect | null, x: number, y: number): Drag => {
     const s = slideRef.current
     const spec = BLOCKS[block.type]
@@ -515,29 +494,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const s = slideRef.current
     const r = from?.getBoundingClientRect() ?? null
     const d = newDrag(block, r, r ? r.left + r.width / 2 : 0, r ? r.top + r.height / 2 : 0)
-    const area = measureArea(areaEl.current)
-    let plan: Drag['plan'] = 'next'
-    let target: DropTarget | null = null
-    let composed: Slide | null = null
-    let base = d.base
-    let blocked: NoRoom | null = null
-    let room = area?.size.h
-    if (s.layout === 'compose') {
-      target = autoTarget(base, d.block, area?.size.h)
-      plan = target ? 'place' : 'next'
-      if (!target) blocked = placeIssue(base, d.block, area?.size.h)
-    } else if (canCompose(s.layout)) {
-      composed = asCompose(s)
-      base = composed.rows ?? []
-      const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
-      const h = fr ? guessArea(fr).size.h : undefined
-      room = h
-      const bottom: DropTarget = { kind: 'row', index: base.length }
-      target = toBottom && !whyNot(base, bottom, d.block, h) ? bottom : autoTarget(base, d.block, h)
-      plan = target ? 'convert' : 'next'
-      if (!target) blocked = placeIssue(base, d.block, h)
-    }
-    const full = { ...d, plan, target, blocked, composed, base, room }
+    const full = { ...d, ...planDrop(s, d, { by: 'auto', h: roomOf(s), bottom: toBottom }) }
     if (!r) {
       finish(full)
       return
@@ -587,11 +544,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   /** 부품 고르기 카드마다: 지금 장 어디에도 넣을 수 없으면 그 까닭. 부품 장이 아닌 장은 부품 장으로 바꾼 모습으로 본다 */
   function issueFor(type: BlockType): NoRoom | null {
     const s = slideRef.current
-    const block = makeBlock(type)
-    if (s.layout === 'compose') return placeIssue(s.rows ?? [], block, measureArea(areaEl.current)?.size.h)
-    if (!canCompose(s.layout)) return null
-    const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
-    return placeIssue(asCompose(s).rows ?? [], block, fr ? guessArea(fr).size.h : undefined)
+    const at = dropRows(s)
+    return at && placeIssue(at.rows, makeBlock(type), roomOf(s))
   }
 
   // ---------- 칸 너비 ----------
@@ -859,7 +813,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
   const roomFits = (h: number) => {
-    const base = asCompose(slide).rows ?? []
+    const base = dropRows(slide)?.rows ?? []
     return !whyNot(base, { kind: 'row', index: base.length }, makeBlock('message'), h)
   }
   const room =
