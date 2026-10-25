@@ -74,6 +74,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 | `server/` | 로컬 서버, AI 공유 창구, ‘AI에게 부탁’으로 Claude Code 띄우기(`agent.ts`), CSP |
 | `mcp/` | MCP 서버 |
 | `scripts/`, `launch/` | 묶기, 라이선스 확인, 더블클릭 실행 파일 |
+| `site/` | 홍보 페이지(GitHub Pages, https://wlsdks.github.io/gyeol/). 바깥 주소에서 아무것도 불러오지 않는 정적 파일(글꼴도 안에 둠, CSP). 고친 뒤 올리기: `git subtree push --prefix site origin gh-pages` |
 
 ## 디자인
 
