@@ -103,14 +103,10 @@
   display: none;
 }
 
+/* 그림(slides/arrow.tsx)의 굵기와 모양은 그림이 정한다. 여기서는 크기만 */
 .cp-arrow svg {
   width: 48px;
   height: 48px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 3;
 }
 
 /* 모양: 표. 면 없이 줄로만. 두 쪽이 가운데로 모여 줄마다 짝을 짓는다: 왼쪽은 오른쪽 끝에, 오른쪽은 왼쪽 끝에 붙이고
@@ -166,7 +162,8 @@
   color: var(--ink-3);
 }
 
+/* 줄마다의 화살표: 꽉 찬 머리가 32px에서는 점처럼 뭉개져서 40px(걱정과 대책의 줄 화살표와 같은 크기) */
 .va-table .cp-arrow svg {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
 }

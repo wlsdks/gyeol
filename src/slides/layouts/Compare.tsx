@@ -1,15 +1,14 @@
 // 레이아웃: 비교 (compare). 모양은 styles/compare.css
 
+import { ArrowMark } from '../arrow'
 import { IT, ItemTools, T } from '../fields'
 import { Head, useItems } from './parts'
 
 function Arrow() {
   return (
     <span className="cp-arrow" aria-hidden="true">
-      {/* 컴포넌트 사이의 화살표 이음표(blocks.tsx의 LinkGlyph)와 같은 모양 */}
-      <svg viewBox="0 0 48 48">
-        <path d="M9 24h28M27 13l11 11-11 11" />
-      </svg>
+      {/* 컴포넌트 사이의 화살표 이음표(blocks.tsx의 LinkGlyph)와 같은 그림 */}
+      <ArrowMark />
     </span>
   )
 }

@@ -3,6 +3,7 @@
 import { readField } from '../../deck/fields'
 import { hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
+import { ArrowMark } from '../arrow'
 import { useSlide } from '../context'
 import { numberUnits, T } from '../fields'
 import { changeOf, formatNumber } from '../numbers'
@@ -44,9 +45,7 @@ export function Delta() {
           </div>
         </div>
         <span className="bk-dl-arrow" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 12h15M13 6l6 6-6 6" />
-          </svg>
+          <ArrowMark />
         </span>
         <div className="bk-dl-side bk-dl-to">
           <span className="bk-dl-k">후</span>

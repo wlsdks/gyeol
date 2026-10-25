@@ -53,14 +53,10 @@
   color: var(--ink-3);
 }
 
+/* 그림(slides/arrow.tsx)의 굵기와 모양은 그림이 정한다. 여기서는 크기만 */
 .bk-rk-arrow svg {
   width: 40px;
   height: 40px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
 }
 
 /* 좁은 칸: 걱정 아래에 대책을 들여서 */

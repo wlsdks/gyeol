@@ -98,14 +98,10 @@
   color: var(--ink-3);
 }
 
+/* 그림(slides/arrow.tsx)의 굵기와 모양은 그림이 정한다. 여기서는 크기만 */
 .bk-dl-arrow svg {
   width: calc(var(--dl-vs) * var(--dl-arrow-svg));
   height: calc(var(--dl-vs) * var(--dl-arrow-svg));
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
 }
 
 .bk-dl-chip {
