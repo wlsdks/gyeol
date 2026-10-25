@@ -371,8 +371,8 @@ export function blockFitter() {
    * 내릴 수 있는 부품(blocks.css의 --bk-lifts: 글, 목록, 숫자, 강조 상자)은 글이 시작하는 선 하나(T)를 같이 쓴다. 그 선은
    * 묶음 가운데 가장 긴 내용이 줄 가운데에 오는 자리이고, 어느 칸도 넘치지 않게 그 안에서만 옮긴다.
    * 칸마다 칸 위에서 재면 안 된다: 옅은 면, 진한 면은 안쪽 여백만큼 글이 아래에서 시작해서, 옆의 글은 칸 위에 붙고 면 안의 글만
-   * 내려가 있었다. 칸 높이를 다 쓴 글 칸을 차트처럼 묶음에서 빼도 안 된다: 가장 낮은 줄에서 긴 쪽은 늘 칸을 다 쓰니, 짧은 쪽만
-   * 내려가 나란한 소제목의 윗선이 어긋났다.
+   * 내려가 있었다. 칸 높이를 다 쓴 글 칸을 늘 차트처럼 묶음에서 빼도 안 된다: 가장 낮은 줄에서 긴 쪽은 늘 칸을 다 쓰니, 짧은 쪽만
+   * 내려가 나란한 소제목의 윗선이 어긋났다. 그래서 빼는 것은 옆에 소제목 없는 짧은 부품이 있을 때뿐이고, 그때도 그 짧은 부품만 내린다.
    * 차트, 표, 그림처럼 내리지 않는 부품은 묶음에 넣지 않는다. 그 옆의 짧은 부품은 자기들끼리 가운데로 내린다: 차트가 가장 길어
    * 기준이 되면 차트 옆의 숫자가 칸 위에 붙고 아래 절반이 통째로 비었다.
    * 칸 높이를 다 쓰는 그런 부품 옆의 숫자 부품(큰 숫자, 전과 후, 목표 대비)은 내리기 전에 한두 단계 키운다(boosts): 높은 칸에
@@ -406,15 +406,28 @@ export function blockFitter() {
       const key = c.style.gridRow || '1'
       rows.set(key, (rows.get(key) || []).concat(c))
     }
+    // 칸 높이를 다 쓰는지 (캔버스 16px까지는 다 쓴 것으로)
+    const fills = (c: HTMLElement) => {
+      const m = used(c)
+      return !!m && m.used >= m.room - 16 * m.k
+    }
+    // 칸 높이 가운데 내용이 쓰는 몫
+    const share = (c: HTMLElement) => {
+      const m = used(c)
+      return m && m.room > 0 ? m.used / m.room : 0
+    }
     rows.forEach((row) => {
-      const group = row.filter(liftable)
-      if (!group.length) return
-      const others = row.filter((c) => !group.includes(c))
-      // 칸 높이를 다 쓰는 차트, 표 (캔버스 16px까지는 다 쓴 것으로)
-      const tall = others.some((c) => {
-        const m = used(c)
-        return !!m && m.used >= m.room - 16 * m.k
-      })
+      const all = row.filter(liftable)
+      if (!all.length) return
+      // 칸을 거의 다 쓴(80%) 글 칸(목록, 준비 상황, 묻고 답하기)이 있고 그 옆에 소제목 없는 짧은 부품(인용, 숫자, 목표 대비)이
+      // 있으면 그 글 칸도 차트처럼 묶음에서 뺀다. 묶음에 두면 기준선이 칸 위가 되어 짧은 부품이 위 3분의 1에 몰리고 아래가
+      // 통째로 빈다. 소제목 있는 짧은 부품은 아래에서 그대로 위에 둬서 나란한 소제목의 윗선은 맞는다
+      const full = all.filter((c) => share(c) >= 0.8)
+      const loose = full.length > 0 && all.some((c) => !full.includes(c) && !headed(c) && share(c) <= 0.6)
+      const group = loose ? all.filter((c) => !full.includes(c)) : all
+      const others = row.filter((c) => !group.includes(c) && !full.includes(c))
+      // 칸 높이를 다 쓰는 차트, 표
+      const tall = others.some(fills)
       if (tall && !others.some((c) => figured.has(c.dataset.type || ''))) {
         for (const c of group) {
           if (!boostable.has(c.dataset.type || '')) continue
@@ -443,7 +456,7 @@ export function blockFitter() {
       }
       // 그런 차트 옆에서 소제목이 있는 부품(목록, 표, 준비 상황)은 내리지 않는다: 차트도 위에 소제목이 있어서, 내리면 나란한
       // 소제목의 윗선이 어긋난다. 소제목 없는 짧은 부품(숫자, 강조 상자, 핵심 한 줄)만 가운데로
-      const lifted = tall ? group.filter((c) => !headed(c)) : group
+      const lifted = tall || loose ? group.filter((c) => !headed(c)) : group
       if (!lifted.length) return
       const ms = lifted.map(span)
       if (ms.some((m) => !m)) return
