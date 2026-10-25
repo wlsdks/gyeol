@@ -1765,7 +1765,14 @@ export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): Drop
   if (ok(below)) return below
   // 새 줄이 들어가지 않으면 보기 좋은 너비가 아니어도 마지막 줄 끝에 (앞에 끼워 넣으면 읽는 차례가 뒤바뀐다)
   if (placed && ok(beside)) return beside
-  return valid[0] ?? null
+  // 그래도 안 되면 읽는 차례에서 가장 뒤의 자리(받는 줄이 보기 좋은 너비가 되는 곳 먼저). 예전에는 맨 앞 자리를 골라서
+  // 핵심 한 줄 아래 숫자와 막대가 있는 장에 강조 상자를 누르면 핵심 한 줄 앞(왼쪽 위)에 들어갔다
+  const roomy = (t: DropTarget) => {
+    if (t.kind === 'row') return true
+    const row = insertAt(rows, t, block, 'x', areaH)?.[t.row]
+    return !!row && row.blocks.every((b, i) => spansOf(row)[i] >= BLOCKS[b.type].prefSpan)
+  }
+  return valid.findLast(roomy) ?? valid.at(-1) ?? null
 }
 
 /**

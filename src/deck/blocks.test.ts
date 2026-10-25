@@ -175,6 +175,22 @@ describe('자리 정하기', () => {
     expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
   })
 
+  it('끝에도 새 줄에도 들어가지 않으면 읽는 차례에서 가장 뒤의 자리에 넣는다', () => {
+    // 핵심 한 줄 아래 숫자와 막대: 셋째 칸도, 셋째 줄도 들어가지 않는 높이에서 강조 상자를 누르면 핵심 한 줄 뒤로
+    const rows = [row(block('message', 'm')), row(block('kpi', 'k'), block('bars', 'b'))]
+    const c = block('callout', 'c')
+    const below = { kind: 'row', index: 2 } as const
+    const end = { kind: 'cell', row: 1, index: 2 } as const
+    const areaH = Array.from({ length: 80 }, (_, i) => needH(rows) + i * 10).find(
+      (h) => whyNot(rows, below, c, h) && whyNot(rows, end, c, h) && validTargets(rows, c, h).length,
+    )!
+    expect(areaH).toBeDefined()
+    const t = autoTarget(rows, c, areaH)!
+    expect(t).not.toBeNull()
+    const order = insertAt(rows, t, c, 'x', areaH)!.flatMap((r) => r.blocks.map((b) => b.id))
+    expect(order.indexOf('c')).toBeGreaterThan(order.indexOf('m'))
+  })
+
   it('줄 수, 줄마다 칸 수, 부품 수의 끝을 넘지 않는다', () => {
     let rows: BlockRow[] = []
     for (let i = 0; i < 12; i++) {
