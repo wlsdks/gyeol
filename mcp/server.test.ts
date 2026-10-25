@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { SECRET, secretDeck } from '../src/ai/share.test'
+import { OP_CODES } from '../src/ai/ops'
 import { toShape } from '../src/ai/share'
 import { createSampleDeck } from '../src/deck/sample'
 
@@ -126,6 +127,16 @@ describe('MCP 서버', () => {
     // 부품의 글을 쓰려는 키는 받지 않는다
     const bad = await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_block', slide: compose.id, block: first, text: '새 글' }] })
     expect(bad.isError).toBe(true)
+  })
+
+  it('앱이 남긴 결과 코드는 모두 AI에게 알려 준다', async () => {
+    // 정해진 말에 없는 코드가 하나라도 있으면 마지막 그물에 걸려 결과 대신 오류가 나간다
+    const id = 'r00000000c0de'
+    const results = OP_CODES.map((code) => ({ ok: code === 'applied', code }))
+    writeFileSync(join(share, 'results', `${id}.json`), JSON.stringify({ format: 'html-maker/result', version: 1, request: id, status: 'applied', decidedAt: 1, results }))
+    const { value, isError } = await tool('get_result', { request: id })
+    expect(isError).toBe(false)
+    expect(value).toEqual({ request: id, status: 'applied', results })
   })
 
   it('칸의 글을 쓰려는 제안은 받지 않는다', async () => {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createSampleDeck } from '../src/deck/sample'
-import { REQUEST_FORMAT } from '../src/ai/ops'
+import { OP_CODES, REQUEST_FORMAT } from '../src/ai/ops'
 import { toShape } from '../src/ai/share'
 import { HOST, createAppServer } from './serve'
 
@@ -130,6 +130,18 @@ describe('AI 공유 창구', () => {
     expect(res.status).toBe(204)
     expect(readdirSync(join(share, 'requests'))).toEqual([])
     expect(JSON.parse(readFileSync(join(share, 'results', `${id}.json`), 'utf8')).status).toBe('applied')
+  })
+
+  it('앱이 남기는 결과 코드는 모두 받는다', async () => {
+    // 받지 않는 코드가 있으면 제안 파일이 남아 다시 뜨고, 같은 제안을 두 번 적용하게 된다
+    const id = 'r0123456789cd'
+    const req = { format: REQUEST_FORMAT, version: 1, id, deck: shape.deck, createdAt: 2, note: '', ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] }
+    writeFileSync(join(share, 'requests', `${id}.json`), JSON.stringify(req))
+    const results = OP_CODES.map((code) => ({ ok: code === 'applied', code }))
+    const res = await call(`/__html-maker/ai/requests/${id}/result`, { method: 'POST', headers: AI, body: JSON.stringify({ status: 'applied', results }) })
+    expect(res.status).toBe(204)
+    expect(readdirSync(join(share, 'requests'))).toEqual([])
+    expect(JSON.parse(readFileSync(join(share, 'results', `${id}.json`), 'utf8')).results).toEqual(results)
   })
 
   it('공유를 끄면 모양 파일을 지운다', async () => {

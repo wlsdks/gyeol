@@ -161,6 +161,28 @@ export type OpCode =
   /** 한 장에는 면 한 가지만: 진한 면은 하나, 진한 면과 옅은 면은 섞지 않고, 혼자 한 줄을 다 쓰는 작은 부품은 면 없이 */
   | 'look_clash'
 
+/**
+ * 결과 파일에 쓸 수 있는 코드. 로컬 서버가 앱이 보낸 결과를 받을 때 이것으로 확인한다.
+ * 예전에는 서버가 목록을 따로 들고 있어서 새 코드(no_block 등)가 빠졌고, 그 결과를 받지 않아 제안이 다시 떴다.
+ * Record라서 OpCode에 코드를 더하면 여기도 채워야 컴파일된다.
+ */
+const OP_CODE_SET = {
+  applied: true,
+  no_slide: true,
+  has_content: true,
+  out_of_range: true,
+  not_for_layout: true,
+  last_slide: true,
+  unknown_role: true,
+  no_change: true,
+  not_reviewed: true,
+  no_block: true,
+  no_room: true,
+  look_clash: true,
+} as const satisfies Record<OpCode, true>
+export const OP_CODES = Object.keys(OP_CODE_SET) as OpCode[]
+export const isOpCode = (v: unknown): v is OpCode => typeof v === 'string' && Object.hasOwn(OP_CODE_SET, v)
+
 export interface OpResult {
   ok: boolean
   code: OpCode

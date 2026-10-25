@@ -64,9 +64,13 @@ export async function fetchRequests(): Promise<ChangeRequest[]> {
   }
 }
 
+/**
+ * 결과를 남긴다. 다시 보내도 소용없으면 true: 남겼거나(204), 이미 없는 제안(404)이거나, 받지 않는 꼴(400).
+ * 서버에 닿지 못했거나 서버가 처리하지 못했으면(5xx) false라서, 부르는 쪽이 나중에 다시 보낸다.
+ */
 export async function sendResult(id: string, status: 'applied' | 'rejected', results: OpResult[]): Promise<boolean> {
   const res = await call(`requests/${id}/result`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, results }) })
-  return res?.status === 204
+  return !!res && res.status < 500
 }
 
 // ---------- AI에게 부탁 ----------

@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, s
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
 import { validAsk, type AskError } from '../src/ai/asks'
-import { parseRequest, REQUEST_ID, type ChangeRequest, type OpCode } from '../src/ai/ops'
+import { isOpCode, parseRequest, REQUEST_ID, type ChangeRequest, type OpCode } from '../src/ai/ops'
 import { checkShape } from '../src/ai/share'
 import { ASK_RUN_ID, createAgent, type AgentCommand } from './agent'
 
@@ -24,7 +24,6 @@ export const RESULT_FORMAT = 'html-maker/result'
 const MAX_BODY = 512 * 1024
 const KEEP_RESULTS_MS = 7 * 24 * 60 * 60 * 1000
 const DECK_ID = /^d[0-9a-f]{8}$/
-const OP_CODES: OpCode[] = ['applied', 'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed']
 
 const README = `이 폴더는 결이 AI(Claude Code, Codex)와 주고받는 곳이에요.
 
@@ -116,7 +115,7 @@ function parseResultBody(v: unknown): { status: ResultStatus; results: { ok: boo
   if (!Array.isArray(o.results) || o.results.length > 40) return null
   const ok = o.results.every(
     (r) =>
-      r && typeof r === 'object' && Object.keys(r).length === 2 && typeof (r as { ok: unknown }).ok === 'boolean' && OP_CODES.includes((r as { code: OpCode }).code),
+      r && typeof r === 'object' && Object.keys(r).length === 2 && typeof (r as { ok: unknown }).ok === 'boolean' && isOpCode((r as { code: unknown }).code),
   )
   return ok ? { status: o.status, results: o.results as { ok: boolean; code: OpCode }[] } : null
 }

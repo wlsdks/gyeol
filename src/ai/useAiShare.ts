@@ -40,6 +40,9 @@ export function useAiShare(deck: Deck): AiShare {
   const published = useRef<string | null>(null)
   const latest = useRef(deck)
   latest.current = deck
+  // 사람이 적용하거나 거절한 제안. 결과를 아직 남기지 못했으면(서버가 꺼졌거나 폴더에 쓰지 못할 때) 값을 들고 있다가
+  // 다음에 가져올 때 다시 보낸다. 그동안 그 제안은 목록에 다시 넣지 않는다. 다시 보이면 같은 제안을 두 번 적용하게 된다.
+  const decided = useRef(new Map<string, { status: 'applied' | 'rejected'; results: OpResult[] } | null>())
 
   useEffect(() => {
     if (!ready) return
@@ -65,7 +68,8 @@ export function useAiShare(deck: Deck): AiShare {
     let alive = true
     const tick = async () => {
       if (document.hidden) return
-      const mine = (await fetchRequests()).filter((r) => requestFor(latest.current, r))
+      for (const [id, r] of decided.current) if (r && (await sendResult(id, r.status, r.results))) decided.current.set(id, null)
+      const mine = (await fetchRequests()).filter((r) => requestFor(latest.current, r) && !decided.current.has(r.id))
       if (!alive) return
       setRequests((prev) => (prev.map((r) => r.id).join() === mine.map((r) => r.id).join() ? prev : mine))
     }
@@ -80,8 +84,9 @@ export function useAiShare(deck: Deck): AiShare {
   const refresh = useCallback(() => setNudge((n) => n + 1), [])
 
   const resolve = useCallback(async (request: ChangeRequest, result: 'applied' | 'rejected', results: OpResult[]) => {
+    decided.current.set(request.id, { status: result, results })
     setRequests((prev) => prev.filter((r) => r.id !== request.id))
-    await sendResult(request.id, result, results)
+    if (await sendResult(request.id, result, results)) decided.current.set(request.id, null)
   }, [])
 
   return { status, requests, resolve, refresh }
