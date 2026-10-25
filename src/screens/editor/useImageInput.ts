@@ -3,7 +3,7 @@ import { allBlocks, composeAreaH, imageBlock, withImage } from '../../deck/block
 import { LAYOUTS } from '../../deck/layouts'
 import { imageToDataUrl } from '../../lib/imageFile'
 import { useDeck } from '../../store/deckStore'
-import { dialogOpen } from '../ui'
+import { dialogOpen, isTyping } from '../ui'
 import type { BlockEditing } from './BlockEditor'
 
 type Toast = { show(text: string, action?: { label: string; run: () => void }, ms?: number): void }
@@ -75,8 +75,7 @@ export function useImageInput(blocks: BlockEditing, toast: Toast): boolean {
       const file = [...e.clipboardData.files].find((f) => f.type.startsWith('image/'))
       if (!file) return
       // 글 칸에 글을 붙여 넣는 중이면 글로: 엑셀이나 문서에서 복사한 글에는 그 모습을 찍은 이미지도 함께 실려 온다
-      const typing = (e.target as HTMLElement | null)?.closest?.('input, textarea, [contenteditable]')
-      if (typing && e.clipboardData.getData('text/plain').trim()) return
+      if (isTyping(e) && e.clipboardData.getData('text/plain').trim()) return
       e.preventDefault()
       void put(file, null)
     }

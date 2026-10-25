@@ -9,7 +9,7 @@ import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { PREVIEW_MOTION } from './DeckMenus'
-import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Toggle } from '../ui'
+import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
@@ -335,11 +335,7 @@ function LayoutPicker({
   onPick: (layout: LayoutId) => void
   onBack: () => void
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && onBack()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onBack])
+  useEscape(onBack)
   return (
     <div className="ins ins-picker" role="tabpanel" aria-label="레이아웃 바꾸기" onPointerLeave={() => onPeek(null)}>
       <div className="ins-picker-h">

@@ -88,7 +88,7 @@ export function Toggle({ label, on, onChange }: { label: string; on: boolean; on
 }
 
 /**
- * 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다.
+ * 버튼 아래에 붙는 작은 창. 바깥을 누르거나 Esc로 닫힌다 (메뉴가 든 칸보다 먼저: useEscape).
  * flip: 스크롤되는 상자 안의 단추라서 아래로 열면 잘릴 수 있을 때. 아래에 자리가 없고 위에 있으면 위로 연다
  * (버전 기록 맨 아래 버전의 메뉴가 낮은 노트북 화면에서 잘리지 않게)
  */
@@ -128,14 +128,10 @@ export function Popover({
     const onDown = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => document.removeEventListener('pointerdown', onDown)
   }, [open])
+  useEscape(() => setOpen(false), { active: open })
 
   return (
     <div className="pop-wrap" ref={ref}>
@@ -154,6 +150,56 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 /** 대화 창(aria-modal)이 떠 있는지. 떠 있으면 뒤쪽 화면의 단축키(지우기, Esc로 닫기)는 쉰다 */
 export function dialogOpen(): boolean {
   return !!document.querySelector('[aria-modal="true"]')
+}
+
+/** 글 칸(입력 칸, 글 상자, 슬라이드의 칸)에서 온 키인지. 그때는 지우기, Esc 같은 화면의 단축키를 쉬고 글쓰기에 맡긴다 */
+export function isTyping(e: Event): boolean {
+  return !!(e.target as HTMLElement | null)?.closest?.('input, textarea, [contenteditable]')
+}
+
+/**
+ * Esc로 닫히는 것(메뉴, 버전 기록, 띄운 오른쪽 칸, 이 장 미리보기, 레이아웃 바꾸기)을 연 차례대로 쌓아 두고,
+ * Esc 한 번에 맨 나중에 연 것 하나만 닫는다.
+ * 예전에는 저마다 document에 Esc를 걸어서 먼저 건 쪽이 먼저 받았다: 버전 기록 안의 ⋯ 메뉴에서 Esc를 누르면
+ * 메뉴보다 먼저 열린 버전 기록이 받아 둘이 같이 닫혔다.
+ * 대화 창(useDialog)과 슬라이드의 글 칸은 같은 Esc를 먼저 받아 preventDefault로 표시하니 건너뛴다.
+ * 닫으면 preventDefault로 표시한다: window에 건 뒤쪽의 Esc(컴포넌트 고르기 끝내기, 컴포넌트 칸 닫기)가 같은 Esc를 또 쓰지 않게.
+ * 끄는 중(컴포넌트, 이음표)의 Esc는 끌기를 멈추는 키라서 여기에 넣지 않는다.
+ */
+interface EscapeLayer {
+  close: () => void
+  typing: boolean
+}
+const escapeLayers: EscapeLayer[] = []
+
+function onEscapeKey(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing || dialogOpen()) return
+  const top = escapeLayers[escapeLayers.length - 1]
+  if (!top || (!top.typing && isTyping(e))) return
+  e.preventDefault()
+  top.close()
+}
+
+/**
+ * active인 동안 Esc를 받는다. onClose는 그릴 때마다 새로 만들어져도 된다 (한 번만 쌓고 늘 최근 것을 부른다.
+ * 다시 쌓으면 뒤에 연 메뉴보다 위로 올라가 버린다).
+ * typing: false면 글 칸에서 누른 Esc는 받지 않는다 (입력 칸이 든 오른쪽 칸처럼, 글을 쓰다 누른 Esc로 칸이 닫히지 않게)
+ */
+export function useEscape(onClose: () => void, { active = true, typing = true }: { active?: boolean; typing?: boolean } = {}) {
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (!active) return
+    const layer: EscapeLayer = { close: () => close.current(), typing }
+    // 받는 곳은 하나만: React가 그리는 화면(#root)보다 위인 document의 거품 단계.
+    // 입력 칸이 onKeyDown에서 stopPropagation으로 막은 Esc(버전 이름 쓰기 취소)는 여기까지 오지 않는다
+    if (!escapeLayers.length) document.addEventListener('keydown', onEscapeKey)
+    escapeLayers.push(layer)
+    return () => {
+      escapeLayers.splice(escapeLayers.indexOf(layer), 1)
+      if (!escapeLayers.length) document.removeEventListener('keydown', onEscapeKey)
+    }
+  }, [active, typing])
 }
 
 /**

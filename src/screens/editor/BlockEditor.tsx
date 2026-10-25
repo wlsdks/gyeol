@@ -49,7 +49,7 @@ import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction } from '../ui'
+import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, isTyping, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction } from '../ui'
 import { useLinkEditing } from './LinkEditor'
 import { narrowText, noRoomText } from './noRoom'
 
@@ -768,8 +768,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   useEffect(() => {
     if (!selected) return
     const onKey = (e: KeyboardEvent) => {
-      const typing = (e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')
-      if (typing) return
+      if (isTyping(e)) return
       // 대화 창이 떠 있으면 그 창의 키다: 창을 닫는 Esc로 고르기를 끝내거나, 창 뒤의 컴포넌트를 지우지 않는다
       if (e.defaultPrevented || dialogOpen()) return
       if (e.key === 'Escape') setSelected(null)

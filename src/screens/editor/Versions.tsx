@@ -21,7 +21,7 @@ import {
   type DeckVersion,
 } from '../../store/versions'
 import { particle } from './noRoom'
-import { CloseIcon, dialogOpen, HistoryIcon, Info, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
+import { CloseIcon, HistoryIcon, Info, Modal, MoreIcon, Popover, SAVE_HELP, useDialog, useEscape } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -73,12 +73,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     return onVersionsChange(load)
   }, [deck.id])
 
-  useEffect(() => {
-    // 대화 창이 받은 Esc(defaultPrevented)로 버전 기록까지 닫지 않는다
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !preview && !restoring && !dialogOpen() && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose, preview, restoring])
+  // 미리 보기나 되돌릴지 묻는 창이 떠 있으면 그 창의 Esc다. 버전 안의 ⋯ 메뉴는 뒤에 열려서 먼저 닫힌다 (useEscape)
+  useEscape(onClose, { active: !preview && !restoring })
 
   const saveNamed = async () => {
     const label = name.trim() || `${fullFmt.format(Date.now())} 버전`

@@ -25,7 +25,7 @@ import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
-import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useToast } from '../ui'
+import { BackIcon, BlocksIcon, CloseIcon, CopyIcon, dialogOpen, EyeIcon, EyeOffIcon, HistoryIcon, Info, isTyping, Modal, PlayIcon, PlusIcon, RedoIcon, SAVE_HELP, ScreenIcon, SlidersIcon, takeNotice, TrashIcon, undoAction, UndoIcon, useEscape, useToast } from '../ui'
 import { applyOps, type ChangeRequest } from '../../ai/ops'
 import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
@@ -361,7 +361,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게), Ctrl+S 저장, Ctrl+P PDF
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = (e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')
+      const typing = isTyping(e)
       const mod = e.metaKey || e.ctrlKey
       // 한글 입력 상태에서는 Ctrl+Z가 'ㅋ'로 와서 글자 키는 자판 자리로 읽는다
       const k = presentKey(e).toLowerCase()
@@ -470,16 +470,7 @@ function EditorBody({ deck }: { deck: Deck }) {
     },
   }
   // 띄운 '이 장 설정'은 Esc로 닫는다 (컴포넌트 탭의 Esc는 BlockLibrary가 받아 '이 장 설정'으로 돌아간다)
-  useEffect(() => {
-    if (!sideOpen || blocks.libraryOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || dialogOpen()) return
-      if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable]')) return
-      setSideOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [sideOpen, blocks.libraryOpen])
+  useEscape(() => setSideOpen(false), { active: sideOpen && !blocks.libraryOpen, typing: false })
 
   if (presenting) return <Present deck={deck} startId={presenting.startId} onExit={() => setPresenting(null)} />
 
@@ -743,12 +734,7 @@ function SlideStage({
   // 발표를 시작하지 않고도 '윗분이 볼 모습'을 바로 확인하게. 슬라이드를 누르거나 Esc, 다른 장을 고르면 편집으로 돌아온다.
   const [peek, setPeek] = useState(false)
   useEffect(() => setPeek(false), [slide.id])
-  useEffect(() => {
-    if (!peek) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !e.defaultPrevented && !dialogOpen() && setPeek(false)
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [peek])
+  useEscape(() => setPeek(false), { active: peek })
   const startPeek = () => {
     setPeek(true)
     setPreview((n) => n + 1)
