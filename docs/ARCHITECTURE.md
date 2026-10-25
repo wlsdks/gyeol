@@ -33,7 +33,7 @@
 | 폴더 | 하는 일 | 가져와도 되는 것 |
 |---|---|---|
 | `lib/` | 어디에도 기대지 않는 작은 도구: 단축키 표기, 주소, 이미지 크기 읽기, 앱 버전 | 없음 |
-| `deck/` | 발표 모델: 꼴(`types.ts`), 구성(`blueprints.ts`, `generate.ts`), 레이아웃과 부품의 정의와 규칙, 테마 값, 예전 파일 읽기. 화면 없이 돈다 | `lib` |
+| `deck/` | 발표 모델: 꼴(`types.ts`), 구성(`blueprints.ts`와 발표 종류마다의 `blueprints/<id>.ts`, `generate.ts`), 레이아웃과 부품의 정의와 규칙, 테마 값, 예전 파일 읽기. 화면 없이 돈다 | `lib` |
 | `motion/` | 발표할 때의 움직임 엔진. 내보낸 HTML에 소스째 들어간다 | `lib` |
 | `present/` | 발표 화면과 발표자 화면 잇기 | `deck`, `lib` |
 | `slides/` | 장 그리기(React), 글자 칸, 숫자 읽기, 부품 장 맞추기 | `deck`, `lib`, `motion` |
