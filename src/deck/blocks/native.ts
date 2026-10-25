@@ -494,6 +494,11 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     name: '기간별 달성',
     description: '기간마다 실적 막대와 목표 표시. 못 미친 기간이 바로 보여요',
     motion: '막대가 차례로 자라고, 목표 표시가 그어져요',
+    // 목표와의 차이: 목표를 기준선으로 두고 넘은 만큼 위로, 모자란 만큼 아래로 (계획 대비 편차)
+    variants: [
+      { id: 'base', name: '실적과 목표' },
+      { id: 'gap', name: '목표와의 차이' },
+    ],
     fields: [
       { key: 'heading', label: '소제목', hint: '예: 월별 생산 달성', optional: true },
       { key: 'unit', label: '단위', hint: '만 개', optional: true },

@@ -1320,6 +1320,16 @@ export function motionEngine(): MotionEngine {
             }, 120)
             break
           }
+          // 기간별 달성의 목표와의 차이: 기준선이 먼저 그어지고, 기간마다 막대가 기준선에서 위나 아래로 뻗는다
+          if (one('.bk-ag-plot')) {
+            grow(one('.bk-ag-axis'), 120, 'x', '::before')
+            items('.bk-ag-col', 180, (el, at) => {
+              fade(el.querySelector('.bk-cc-label'), at, 400)
+              grow(el.querySelector('.bk-ag-fill'), at + 160, el.classList.contains('is-down') ? 'down' : 'up')
+              fade(el.querySelector('.bk-ag-v'), at + 380, 400)
+            }, 220)
+            break
+          }
           const end = items('.bk-cc-col', 180, (el, at) => {
             fade(el.querySelector('.bk-cc-label'), at, 400)
             const stack = el.querySelector('.bk-st-stack')

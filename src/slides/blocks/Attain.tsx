@@ -3,6 +3,7 @@
 import { BLOCKS } from '../../deck/blocks'
 import { readField } from '../../deck/fields'
 import { hintFor } from '../../deck/layouts'
+import type { Item } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
@@ -28,6 +29,7 @@ export function Attain() {
   const met = items.map((_, i) => (actual[i] === null || goal[i] === null || !series.ok ? null : actual[i]! >= goal[i]!))
   const judged = met.filter((m) => m !== null).length
   const hit = met.filter((m) => m === true).length
+  if (slide.variant === 'gap') return <AttainGap items={items} actual={actual} goal={goal} ok={series.ok} met={met} judged={judged} hit={hit} demo={demo} edit={mode === 'edit'} />
   return (
     <div
       className={cx('bk-cc bk-tg', demo && 'is-demo', items.length <= 6 && items.every((it) => [...it.title.trim()].length <= 4) && 'is-short')}
@@ -89,3 +91,98 @@ export function Attain() {
     </div>
   )
 }
+
+/** 목표보다 몇 % 더하거나 덜했는지: +5%, −12%, 딱 목표면 ±0% */
+function gapText(d: number): string {
+  const shown = Math.abs(d) < 10 ? Math.round(Math.abs(d) * 10) / 10 : Math.round(Math.abs(d))
+  if (shown === 0) return '±0%'
+  return `${d > 0 ? '+' : '−'}${formatNumber(shown)}%`
+}
+
+/**
+ * 목표와의 차이: 목표(100%)를 가로 기준선으로 두고, 기간마다 목표보다 더한 만큼은 위로, 모자란 만큼은 아래로 막대를 세운다
+ * (경영 보고에서 계획 대비 편차를 그리는 꼴). 실적 막대 끝의 목표 줄을 눈으로 견주지 않아도, 모자란 기간이 기준선 아래로
+ * 내려가 바로 보인다. 모두 목표를 넘었으면 기준선은 바닥에, 모두 모자랐으면 천장에 붙는다(빈 반쪽을 두지 않는다).
+ * 막대 끝에는 차이(+5%), 이름 아래에는 실적과 목표를 '42 / 40'으로 적는다
+ */
+function AttainGap({
+  items,
+  actual,
+  goal,
+  ok,
+  met,
+  judged,
+  hit,
+  demo,
+  edit,
+}: {
+  items: Item[]
+  actual: (number | null)[]
+  goal: (number | null)[]
+  ok: boolean
+  met: (boolean | null)[]
+  judged: number
+  hit: number
+  demo: boolean
+  edit: boolean
+}) {
+  const gaps = items.map((_, i) => (ok && actual[i] !== null && goal[i] ? (actual[i]! / goal[i]! - 1) * 100 : null))
+  const known = gaps.filter((g): g is number => g !== null)
+  const hi = Math.max(0, ...known)
+  const lo = Math.min(0, ...known)
+  // 눈금은 10%는 잡는다: 차이 범위만큼만 잡으면 +5%, +2%뿐인 장에서 +5% 막대가 그래프 높이를 다 채워 크게 넘은 것처럼 보였다
+  const span = Math.max(10, hi - lo)
+  const base = (-lo / span) * 100
+  return (
+    <div className={cx('bk-cc bk-tg bk-ag', demo && 'is-demo')} style={{ '--n': items.length }}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        sum={
+          judged > 1 ? (
+            <>
+              {judged}번 중 <b>{hit}번</b> 달성
+            </>
+          ) : undefined
+        }
+        keys={
+          <span className="bk-cc-lk is-goal">
+            <i aria-hidden="true" />
+            목표
+          </span>
+        }
+      />
+      <div className="bk-cc-plot bk-ag-plot" style={{ '--b': base.toFixed(2) }}>
+        <div className="bk-ag-axis" aria-hidden="true" />
+        {items.map((it, i) => {
+          const g = gaps[i]
+          return (
+            <div
+              key={it.id}
+              className={cx('it bk-cc-col bk-ag-col', met[i] === true && 'is-hl', met[i] === false && 'is-miss', g !== null && g < 0 && 'is-down')}
+              style={{ '--p': g === null ? '0' : ((Math.abs(g) / span) * 100).toFixed(2), gridColumn: i + 1 }}
+            >
+              <div className="bk-ag-track">
+                {g !== null && <span className="bk-ag-fill" />}
+                {g !== null && <span className="bk-ag-v">{gapText(g)}</span>}
+              </div>
+              <div className="bk-cc-label">
+                <IT i={i} k="title" className="bk-cc-name" />
+                <span className="bk-ag-nums">
+                  <IT i={i} k="value" as="span" className="bk-ag-a" oneLine />
+                  {(edit || items[i].meta.trim() || demo) && (
+                    <span className="bk-ag-g">
+                      {' / '}
+                      <IT i={i} k="meta" as="span" className="bk-ag-gv" oneLine />
+                    </span>
+                  )}
+                </span>
+              </div>
+              <ItemTools i={i} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
