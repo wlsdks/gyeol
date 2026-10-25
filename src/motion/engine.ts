@@ -402,12 +402,14 @@ export function motionEngine(): MotionEngine {
     // 머리: 제목 낱말 → 부제. 본문은 제목이 거의 다 올라왔을 때부터. 부품 안에서는 머리가 없다.
     // 본문 상자도 그때 함께 나타난다: 따로 움직이지 않는 줄(표의 선, 빈 막대 자리, 단위)이 장이 뜨자마자
     // 제목보다 먼저 보이면 빈 틀이 깔려 있다가 채워지는 것처럼 보인다 (녹화해 보니 그랬다)
+    // 장의 머리와 본문 상자는 장 바로 아래의 것만(:scope >). 부품 장에는 본문 상자가 없고 레이아웃 부품마다 제 본문 상자가 있어서,
+    // 그냥 찾으면 첫 레이아웃 부품의 본문 상자를 장 머리의 때에 흐리게 들였다(그 부품의 차례보다 먼저)
     const head = () => {
       if (scope !== slide) return 0
-      const t = words(one('.s-head .s-title'), 0)
-      rise(one('.s-head .s-lead'), Math.min(t, 420), L.y * 0.6)
+      const t = words(one(':scope > .s-head .s-title'), 0)
+      rise(one(':scope > .s-head .s-lead'), Math.min(t, 420), L.y * 0.6)
       const body = Math.min(t, 520)
-      fade(one('.s-body'), Math.max(0, body - 120), 360)
+      fade(one(':scope > .s-body'), Math.max(0, body - 120), 360)
       return body
     }
 
@@ -455,7 +457,7 @@ export function motionEngine(): MotionEngine {
       }
       case 'agenda': {
         const t = words(one('.ag-title'), 0)
-        fade(one('.ag-list'), Math.min(t, 360) - 120, 360)
+        fade(one('.ag-list'), Math.max(0, Math.min(t, 360) - 120), 360)
         items('.ag-item', Math.min(t, 360), (el, at) => {
           rise(el, at, L.y * 0.7)
           pop(el.querySelector('.ag-n'), at + 80)
@@ -824,7 +826,7 @@ export function motionEngine(): MotionEngine {
         const t = words(one('.cl-title'), 0, L.word * 1.2)
         fade(one('.cl-contact'), t)
         // 할 일 사이의 선도 할 일과 함께 (제목보다 먼저 빈 줄이 그어져 있지 않게)
-        fade(one('.cl-steps'), Math.min(t, 560) - 120, 360)
+        fade(one('.cl-steps'), Math.max(0, Math.min(t, 560) - 120), 360)
         items('.cl-step', Math.min(t, 560), (el, at) => {
           pop(el.querySelector('.cl-n'), at)
           rise(el.querySelector('.cl-step-text'), at + 60, L.y * 0.6)
