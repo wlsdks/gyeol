@@ -28,8 +28,10 @@ export function composeFrom(slide: Slide): Slide {
   let rows: Row[]
   switch (slide.layout) {
     case 'statement':
-      fields = {}
-      rows = [newRow(newBlock('message', { ...(f.title?.trim() ? { text: f.title } : {}), ...(f.lead?.trim() ? { sub: f.lead } : {}) }))]
+      // 한 문장은 장의 제목, 근거는 부제로 둔다. 핵심 한 줄 부품으로 옮기던 때는 컴포넌트를 끌어 넣으면(장이 바뀐다)
+      // 빈 제목 칸이 위에 남고 그 아래에 그 문장이 작게 서서, 같은 말을 두 번 쓰는 장처럼 보였다
+      fields = pick(f, ['title', 'lead'])
+      rows = []
       break
     case 'imageText': {
       fields = pick(f, ['title'])
