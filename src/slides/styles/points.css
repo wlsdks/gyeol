@@ -237,3 +237,8 @@
 .sz-large.l-points.va-tiles .pt[data-n='4'] .pt-body {
   --fs: 26px;
 }
+
+/* 큰 글자에서 넷이면 편집할 때 부제 칸의 안내가 한 줄을 차지해, 아래 줄 타일이 본문 상자를 13px 넘었다 */
+.sz-large.l-points.va-tiles .pt[data-n='4'] .pt-item {
+  padding-block: 36px 40px;
+}

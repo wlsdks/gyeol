@@ -205,9 +205,13 @@
   flex-basis: 100%;
 }
 
-/* 큰 글자에서 넷이면, 편집할 때 빈 덧붙임 칸의 안내 줄까지 더해 목록이 본문보다 높아졌다. 줄 위아래 틈을 줄인다 */
+/* 큰 글자에서 넷 이상이면, 편집할 때 빈 덧붙임 칸의 안내 줄까지 더해 목록이 본문보다 높아졌다. 줄 위아래 틈을 줄인다 */
 .sz-large.l-share.va-donut .sh[data-n='4'] .sh-item {
   padding-block: 12px;
+}
+
+.sz-large.l-share.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-item {
+  padding-block: 8px;
 }
 
 .sh.is-demo :is(.sh-band, .sh-ring svg) {
