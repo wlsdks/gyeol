@@ -1676,6 +1676,29 @@ export function motionEngine(): MotionEngine {
           rise(one('.bk-ss-w'), 220, L.y * 0.4)
           fade(one('.bk-ss-m'), 420, 500)
           break
+        case 'steps': {
+          // 옅은 선이 왼쪽부터 그어지고, 선이 닿는 차례로 점이 맺힌다. 지난 단계의 글자색 선이 뒤따라 지금 단계까지 가면 그 점이 커지며
+          // 들어오고 번호가 굴러 맞춰진다. 단계 이름은 제 점이 맺힌 뒤에
+          fade(one('.bk-stp-l'), 0, 500)
+          const list = one('.bk-stp-list')
+          const span = levelName === 'lively' ? 900 : 760
+          draw(list, 60, span, 'left center', '::before')
+          const dots = $('.bk-stp-dot')
+          const last = Math.max(dots.length - 1, 1)
+          const now = $('.bk-stp-it').findIndex((it) => it.classList.contains('is-now'))
+          dots.forEach((dot, i) => {
+            const at = 60 + (i / last) * span * 0.75
+            if (i === now) return
+            run(anims, dot, [{ opacity: 0, scale: '0.5' }], s(at), { easing: OUT, duration: d(320) })
+          })
+          const reach = now < 0 ? 0 : (now / last) * span
+          if (now > 0) draw(list, 180, Math.max(reach, 300), 'left center', '::after')
+          if (now >= 0) pop(dots[now], 180 + reach * 0.85)
+          rise(one('.bk-stp-now'), 120, L.y * 0.4)
+          count(one('.bk-stp-k'), 140)
+          $('.bk-stp-t').forEach((t, i) => fade(t, 160 + (i / last) * span * 0.75, 400))
+          break
+        }
         default:
           rise(cell, 0)
       }

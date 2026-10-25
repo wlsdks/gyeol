@@ -883,4 +883,24 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 4,
     sample: { variant: 'doing', fields: { what: '신입 교육 자료 새로 쓰기', meta: '11월 둘째 주까지 · 인사팀' } },
   },
+  steps: {
+    name: '단계 표시',
+    description: '지금 몇 번째 단계인지 (점을 이은 줄)',
+    motion: '선이 그어지며 점이 차례로 맺히고 지금 단계가 커져요',
+    fields: [{ key: 'label', label: '이름', hint: '무엇의 단계인지 (예: 새 근태 시스템 도입)', optional: true }],
+    items: {
+      label: '단계',
+      // 둘이면 단계가 아니라 전과 후다. 일곱부터는 좁은 칸에서 점 사이가 점보다 좁아진다
+      min: 3,
+      max: 6,
+      default: 4,
+      fields: [{ key: 'title', label: '단계', hint: '단계 이름', hints: ['계획', '준비', '진행', '점검', '확대', '정착'] }],
+    },
+    minSpan: 3,
+    prefSpan: 4,
+    sample: {
+      fields: { label: '새 근태 시스템 도입' },
+      items: [{ title: '요구 정리' }, { title: '개발' }, { title: '시범 운영' }, { title: '전 부서 적용' }, { title: '정착 점검' }],
+    },
+  },
 }

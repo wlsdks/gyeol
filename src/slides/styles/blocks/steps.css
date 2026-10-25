@@ -1,0 +1,259 @@
+/* ---------- 단계 표시 ----------
+   지금 몇 번째 단계인지 한눈에: 이름(이름표 크기, --ink-2) 아래 지금 단계의 번호(강조색, 숫자 한 줄의 숫자와 같은 크기)와 '/ 전체',
+   그 아래 단계마다 점 하나를 한 줄 위에. 지난 단계는 글자색으로 채운 점과 글자색 선, 지금 단계는 강조색의 큰 점, 남은 단계는 빈 고리와
+   옅은 선. 번호를 동그라미에 넣어 잇는 흔한 서식(단계 흐름의 머리말 참고)이 아니라 작은 점이라, 좁은 칸에 쌓아도 한 줄 높이다.
+
+   점은 줄의 양 끝에 닿는다: 단계마다 같은 너비의 칸(틈 포함)을 두고, 칸 안에서 점을 제 차례의 비율(--f = i / (n - 1))만큼 민다.
+   그러면 점의 가운데가 줄 전체의 f × (너비 - 점) + 점/2 에 서서 첫 점은 왼쪽 끝, 마지막 점은 오른쪽 끝에 닿고 사이는 고르다.
+   선은 그 식 그대로 줄에 긋는다(::before 옅은 선, ::after 지난 단계까지 글자색).
+   칸이 넓으면 단계 이름을 점 아래에 같은 비율로 둔다(첫 이름은 왼쪽 끝, 마지막은 오른쪽 끝). 좁으면 지금 단계 이름만 번호 옆에 */
+
+.bk-stp {
+  --stp-d: 14px;
+  --stp-now: 26px;
+  --stp-fh: calc(var(--hl) / (var(--n) - 1));
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-stp-l {
+  --fs: var(--t-label);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* 번호와 지금 단계 이름은 한 글자선에. 이름이 길어 옆에 들지 않으면 번호 아래로 내려간다 */
+.bk-stp-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 20px;
+  margin-top: 6px;
+}
+
+.bk-stp-c {
+  display: inline-flex;
+  align-items: baseline;
+  column-gap: 10px;
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bk-stp-k {
+  --fs: var(--t-title);
+  color: var(--accent);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.bk-stp-of {
+  --fs: var(--t-body);
+  color: var(--ink-3);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.bk-stp-cur {
+  --fs: var(--t-body);
+  min-width: 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-stp-cur.is-hint {
+  color: var(--ink-3);
+}
+
+.bk-stp-list {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  column-gap: 24px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 선은 점 줄의 가운데 높이에, 첫 점의 가운데에서 마지막 점의 가운데까지 */
+.bk-stp-list::before,
+.bk-stp-list::after {
+  position: absolute;
+  top: calc(var(--stp-now) / 2 - var(--rule) / 2);
+  left: calc(var(--stp-d) / 2);
+  height: var(--rule);
+  content: '';
+}
+
+.bk-stp-list::before {
+  right: calc(var(--stp-d) / 2);
+  background: var(--line);
+}
+
+/* 지난 단계까지의 선: 지금 단계 점의 가운데까지(그 점이 끝을 덮는다) */
+.bk-stp-list::after {
+  width: calc((100% - var(--stp-now)) * var(--stp-fh) + var(--stp-now) / 2 - var(--stp-d) / 2);
+  background: var(--ink);
+}
+
+.bk-stp.is-free .bk-stp-list::after {
+  display: none;
+}
+
+.bk-stp-it {
+  --f: calc(var(--i) / (var(--n) - 1));
+  display: grid;
+  grid-template-rows: var(--stp-now) auto;
+  min-width: 0;
+}
+
+.bk-stp-dot {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  align-self: center;
+  justify-self: start;
+  width: var(--stp-d);
+  height: var(--stp-d);
+  margin-left: calc((100% - var(--stp-d)) * var(--f));
+  border: 2px solid var(--ink-3);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.bk-stp-it.is-done > .bk-stp-dot {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.bk-stp-it.is-now > .bk-stp-dot {
+  width: var(--stp-now);
+  height: var(--stp-now);
+  margin-left: calc((100% - var(--stp-now)) * var(--f));
+  border: 0;
+  background: var(--accent);
+}
+
+/* 단계 이름: 좁은 칸에서는 숨기고(지금 단계 이름은 번호 옆에), 넓은 칸에서 점 아래에 */
+.bk-stp-t {
+  --fs: var(--t-small);
+  display: none;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@container (min-width: 700px) {
+  .bk-stp-cur {
+    display: none;
+  }
+
+  /* 이름의 같은 비율 자리가 점의 자리에 선다: 칸 안에서 f만큼 밀고 제 너비의 f만큼 당긴다 */
+  .bk-stp-t {
+    position: relative;
+    left: calc(100% * var(--f));
+    display: block;
+    grid-row: 2;
+    justify-self: start;
+    width: max-content;
+    max-width: 100%;
+    margin-top: 14px;
+    transform: translateX(calc(-100% * var(--f)));
+    text-wrap: balance;
+  }
+
+  .bk-stp-it:first-child > .bk-stp-t {
+    text-align: left;
+  }
+
+  .bk-stp-it:not(:first-child, :last-child) > .bk-stp-t {
+    text-align: center;
+  }
+
+  .bk-stp-it:last-child > .bk-stp-t {
+    text-align: right;
+  }
+
+  .bk-stp-it.is-done > .bk-stp-t {
+    color: var(--ink-2);
+  }
+
+  .bk-stp-it.is-now > .bk-stp-t {
+    --fs: var(--t-body);
+    color: var(--ink);
+    font-weight: 700;
+  }
+}
+
+/* 좁은 칸에서 편집할 때: 숨긴 단계 이름은 제 점의 칸 위에 겹쳐 두고, 올리거나 누를 때만 보인다(그림 위에서 고치는 칸처럼).
+   줄을 따로 차지하면 편집할 때만 높이가 늘어 컴포넌트의 글자를 줄이게 된다 */
+@container (max-width: 699px) {
+  .slide.m-edit .bk-stp .bk-stp-t {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .slide.m-edit .bk-stp .bk-stp-it:first-child > .bk-stp-t {
+    justify-content: flex-start;
+  }
+
+  .slide.m-edit .bk-stp .bk-stp-it:last-child > .bk-stp-t {
+    justify-content: flex-end;
+  }
+
+  .slide.m-edit .bk-stp .bk-stp-t > :is(.ed-input, .ed-hint) {
+    background: var(--bg);
+  }
+
+  .slide.m-edit .bk-stp .bk-stp-t:not(:hover, :focus-within) > :is(.ed-input, .ed-hint) {
+    opacity: 0;
+  }
+
+  .slide.m-edit .bk-stp-list:has(.bk-stp-t:is(:hover, :focus-within)) > .bk-stp-it > .bk-stp-dot,
+  .slide.m-edit .bk-stp-list:has(.bk-stp-t:is(:hover, :focus-within))::before,
+  .slide.m-edit .bk-stp-list:has(.bk-stp-t:is(:hover, :focus-within))::after {
+    opacity: 0.15;
+  }
+
+  /* 항목 단추(옮기기, 빼기)는 점 줄 아래로: 칸 모서리에 두면 작은 점 칸을 거의 다 덮어 이름을 고칠 자리가 없다 */
+  .slide.m-edit .bk-stp .bk-stp-it > :is(.it-remove, .it-grip) {
+    top: calc(100% + 8px);
+  }
+
+  :is(.slide.is-measuring, .bk-area.is-fitting) .bk-stp .bk-stp-t {
+    display: none;
+  }
+}
+
+/* 넓은 칸: 이름과 번호는 왼쪽 4칸에, 점 줄과 단계 이름은 나머지에. 위아래로 쌓으면 점 줄이 칸 너비를 다 써서 점 사이가 너무 벌어진다 */
+@container bk (min-width: 1000px) {
+  .bk-stp {
+    display: grid;
+    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    column-gap: var(--bk-gap);
+  }
+
+  .bk-stp-list {
+    margin-top: 0;
+  }
+}
+
+.bk.is-shared > .bk-in > .bk-stp {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  justify-content: start;
+  align-content: start;
+  padding-top: var(--bk-lift, 0px);
+}
