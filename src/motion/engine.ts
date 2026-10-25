@@ -984,6 +984,30 @@ export function motionEngine(): MotionEngine {
       run(anims, p, frames, s(at), { easing: CARRY, duration: d(duration) })
       run(anims, p, [{ opacity: 0, scale: '0.5' }, { opacity: 1, scale: '1', offset: 0.14 }, { opacity: 1, scale: '1', offset: 0.86 }, { opacity: 0, scale: '0.5' }], s(at), { easing: 'linear', duration: d(duration) })
     }
+    /** 부품 안 상자의 자리(host 기준, 장의 px). 장은 줄여 그려지기도 해서 화면 px를 host의 비율로 되돌린다 */
+    const spot = (el: Element, host: HTMLElement) => {
+      const h = host.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      const k = host.offsetWidth ? h.width / host.offsetWidth : 1
+      const l = (r.left - h.left) / k - host.clientLeft
+      const t = (r.top - h.top) / k - host.clientTop
+      return { l, t, r: l + r.width / k, b: t + r.height / k }
+    }
+    /**
+     * 꺾인 선(테두리 둘로 그린 꺾쇠)을 한쪽 끝에서 다른 끝으로 긋는다: 세로 토막(꺾이는 쪽의 띠)을 먼저 펼치고 가로 토막을 잇는다.
+     * from은 긋기 시작하는 끝(top, bottom), side는 세로 토막이 있는 쪽(left, right). 두 토막을 길이대로 나눠 같은 빠르기로
+     */
+    const bend = (el: HTMLElement, at: number, duration: number, from: 'top' | 'bottom' | 'none', side: 'left' | 'right', band: number) => {
+      const strip = `calc(100% - ${band}px)`
+      const keep = side === 'left' ? `0 ${strip} 0 0` : `0 0 0 ${strip}`
+      const flat = side === 'left' ? 'inset(0 100% 0 0)' : 'inset(0 0 0 100%)'
+      const v = from === 'none' ? 0 : Math.min(0.85, el.offsetHeight / (el.offsetHeight + el.offsetWidth))
+      const start = from === 'none' ? flat : side === 'left' ? (from === 'top' ? `inset(0 ${strip} 100% 0)` : `inset(100% ${strip} 0 0)`) : from === 'top' ? `inset(0 0 100% ${strip})` : `inset(100% 0 0 ${strip})`
+      const frames: Keyframe[] = [{ clipPath: start }]
+      if (v) frames.push({ clipPath: `inset(${keep})`, offset: v })
+      frames.push({ clipPath: 'inset(0 0 0 0)' })
+      run(anims, el, frames, s(at), { easing: CARRY, duration: d(duration) })
+    }
     /** 선 하나를 긋는다(요소나 가짜 요소). 조각과 같은 이징, 같은 시간이라 조각이 그어지는 선 끝을 탄다 */
     const draw = (el: Element | null, at: number, duration: number, origin: string, pseudo?: string) => {
       if (!el) return
@@ -1322,6 +1346,80 @@ export function motionEngine(): MotionEngine {
           const hl = one('.bk-fw-node.is-hl')
           // 부풀기는 transform으로: 나타날 때 쓴 scale과 같은 속성이면 늦게 만든 이것이 시작 전(fill backwards)부터 scale을 덮어 나타나기가 사라진다
           if (hl && links.length) run(anims, hl, [{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], s(again - 60), { easing: 'ease-in-out', duration: d(480) })
+          break
+        }
+        case 'network': {
+          // 가운데가 먼저 서고, 선이 가운데에서 하나씩 뻗어 나가 닿는 상자가 나타난다. 다 이어지면 데이터 조각이 상자마다 선을 따라
+          // 가운데로 모여든다(차분하게 한 번, 생동감 두 번). 되풀이하지 않는다
+          const map = one('.bk-nw-map')
+          const hub = one('.bk-nw-hub')
+          const nodes = $('.bk-nw-node')
+          if (!map || !hub || !nodes.length) break
+          const root = map.parentElement as HTMLElement
+          const tree = getComputedStyle(root).getPropertyValue('--nw-tree').trim() === '1'
+          const line = parseFloat(getComputedStyle(root).getPropertyValue('--nw-line')) || 3
+          const band = (parseFloat(getComputedStyle(root).getPropertyValue('--nw-r')) || 18) + line + 4
+          // 조각이 지나갈 길은 움직이기 전에 잰다(움직이기 시작하면 상자가 작아진 채로 잡힌다)
+          const H = spot(hub, map)
+          const paths = nodes.map((node) => {
+            const wire = node.querySelector('.bk-nw-wire')
+            if (!wire) return [] as [number, number][]
+            const w = spot(wire, map)
+            const half = line / 2
+            if (tree) return [[w.r, w.b - half], [w.l + half, w.b - half], [w.l + half, H.b]] as [number, number][]
+            const left = node.classList.contains('is-l')
+            const edge = left ? w.l : w.r
+            const trunk = left ? w.r - half : w.l + half
+            const into = left ? H.l : H.r
+            if (node.classList.contains('is-mid')) return [[edge, w.t + half], [into, w.t + half]] as [number, number][]
+            const up = node.classList.contains('is-up')
+            const y0 = up ? w.t + half : w.b - half
+            const y1 = up ? w.b - half : w.t + half
+            return [[edge, y0], [trunk, y0], [trunk, y1], [into, y1]] as [number, number][]
+          })
+          run(anims, hub, [{ opacity: 0, scale: '0.92' }], s(0), L.pop)
+          rise(hub.querySelector('.bk-nw-c'), 40, L.y * 0.4)
+          if (!tree) {
+            draw(hub, 200, 240, 'right center', '::before')
+            draw(hub, 200, 240, 'left center', '::after')
+          }
+          // 양옆에 둘 때는 왼쪽과 오른쪽을 번갈아(위에서부터), 쌓을 때는 위에서부터
+          const order = tree ? nodes : [...nodes].sort((a, b) => spot(a, map).t - spot(b, map).t || (a.classList.contains('is-l') ? -1 : 1))
+          const reach = tree ? 360 : 420
+          const step = Math.min(levelName === 'lively' ? 170 : 140, 700 / order.length)
+          let last = 0
+          order.forEach((node, k) => {
+            const at = (tree ? 260 : 400) + k * step
+            const wire = node.querySelector('.bk-nw-wire') as HTMLElement | null
+            if (tree) {
+              const prev = node.previousElementSibling?.querySelector('.bk-nw-run')
+              if (prev) draw(prev, at - 120, 140, 'center top')
+              if (wire) bend(wire, at, reach, 'top', 'left', band)
+            } else if (wire) {
+              const left = node.classList.contains('is-l')
+              // 가운데 쪽 끝에서 긋는다: 위의 상자는 줄기 아래 끝(가운데 높이)에서, 아래 상자는 줄기 위 끝에서
+              bend(wire, at, reach, node.classList.contains('is-mid') ? 'none' : node.classList.contains('is-up') ? 'bottom' : 'top', left ? 'right' : 'left', band)
+            }
+            // 선이 닿을 때 상자가 받아 나타난다
+            const got = at + reach - 90
+            run(anims, node, [{ opacity: 0, scale: String(L.scale) }], s(got), L.pop)
+            rise(node.querySelector('.bk-nw-t'), got + 30, L.y * 0.3)
+            rise(node.querySelector('.bk-nw-m'), got + 80, L.y * 0.3)
+            last = Math.max(last, got)
+          })
+          // 데이터 조각: 상자마다 하나씩 조금씩 엇갈려 가운데로. 마지막 조각이 닿을 때 가운데가 살짝 부풀었다 돌아온다
+          const rounds = levelName === 'lively' ? 2 : 1
+          const travel = 600
+          let arrive = 0
+          for (let r = 0; r < rounds; r++) {
+            nodes.forEach((_, k) => {
+              const at = last + 260 + r * 480 + k * 70
+              packet(map, paths[k], at, travel)
+              arrive = Math.max(arrive, at + travel)
+            })
+          }
+          // transform으로 (흐름의 끝 단계와 같은 까닭)
+          run(anims, hub, [{ transform: 'scale(1)' }, { transform: 'scale(1.025)' }, { transform: 'scale(1)' }], s(arrive - 120), { easing: 'ease-in-out', duration: d(420) })
           break
         }
         default:

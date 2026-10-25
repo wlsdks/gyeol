@@ -706,4 +706,31 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  network: {
+    name: '연결도',
+    description: '가운데 하나에 여러 시스템이나 팀이 이어진 모습',
+    motion: '가운데에서 선이 뻗어 나가고 데이터가 가운데로 모여요',
+    fields: [{ key: 'center', label: '가운데', hint: '가운데 둘 것 (예: 공통 직원 정보)' }],
+    items: {
+      label: '연결',
+      min: 3,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '이름', hint: '이어진 시스템이나 팀', hints: ['인사 시스템', '결재 시스템', '사내 포털', '교육 플랫폼', '메일', '출입 관리'] },
+        { key: 'meta', label: '설명', hint: '주고받는 것', hints: ['입사, 발령', '결재선', '조직도', '수강 이력', '주소록', '출입 권한'], optional: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 8,
+    sample: {
+      fields: { center: '공통 직원 정보' },
+      items: [
+        { title: '인사 시스템', meta: '입사, 발령' },
+        { title: '결재 시스템', meta: '결재선' },
+        { title: '사내 포털', meta: '조직도' },
+        { title: '교육 플랫폼', meta: '수강 이력' },
+      ],
+    },
+  },
 }

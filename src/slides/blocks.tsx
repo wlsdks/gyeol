@@ -19,6 +19,7 @@ import { Delta } from './blocks/Delta'
 import { Diverge } from './blocks/Diverge'
 import { Facts } from './blocks/Facts'
 import { Flow } from './blocks/Flow'
+import { Network } from './blocks/Network'
 import { Faq } from './blocks/Faq'
 import { Gantt } from './blocks/Gantt'
 import { Goal } from './blocks/Goal'
@@ -72,6 +73,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   heat: Heat,
   sparks: Sparks,
   flow: Flow,
+  network: Network,
 }
 
 const FOLDS = new Map<BlockType, ReadonlySet<string>>()
