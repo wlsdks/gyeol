@@ -1999,10 +1999,6 @@
   gap: var(--gap);
 }
 
-.pr[data-n='1'] {
-  grid-auto-columns: minmax(0, 760px);
-}
-
 .pr-plan {
   position: relative;
   container-type: inline-size;
@@ -2103,6 +2099,55 @@
 .tone-accent:not(.is-dark) .pr-plan.is-hl .pr-tag {
   background: var(--bold-ink);
   color: var(--bold-bg);
+}
+
+/* 안이 하나면 고를 것이 없으니 한 장을 다 쓰는 판 하나로: 왼쪽에 이름과 비용, 오른쪽에 내용. 판 하나를 760px로 두던 때는
+   장의 오른쪽 절반이 통째로 비었다. :where로 낮춰 두어 표 모양(.va-rows)의 줄 짜임이 이긴다 */
+:where(.pr[data-n='1']) > .pr-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  column-gap: 80px;
+  padding: 64px 80px;
+}
+
+:where(.pr[data-n='1']) .pr-top {
+  grid-column: 1;
+  justify-content: flex-start;
+}
+
+:where(.pr[data-n='1']) :is(.pr-price, .pr-meta) {
+  grid-column: 1;
+}
+
+/* 하나뿐인 안의 비용이 이 장의 답이라 큰 숫자처럼 크게. 판이 장을 다 쓰는데 글이 그대로면 판 가운데에 작게 떠 보였다 */
+:where(.pr[data-n='1']) .pr-name {
+  --fs: 36px;
+}
+
+:where(.pr[data-n='1']) .pr-price {
+  --fs: 90px;
+  margin-top: 28px;
+}
+
+:where(.pr[data-n='1']) .pr-meta {
+  --fs: 30px;
+}
+
+:where(.pr[data-n='1']) .pr-body {
+  grid-row: 1 / span 3;
+  grid-column: 2;
+  align-self: center;
+  margin: 0;
+  --fs: 30px;
+  padding: 8px 0 8px 80px;
+  border-top: 0;
+  border-left: var(--rule) solid var(--line);
+}
+
+:where(.pr[data-n='1']) .pr-plan.is-hl .pr-body {
+  border-color: var(--bold-line);
 }
 
 /* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄만 옅은 강조색 바탕 */
