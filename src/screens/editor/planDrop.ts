@@ -21,8 +21,17 @@ export const sameEditTarget = (a: EditTarget | null | undefined, b: EditTarget |
 export function dropBlocks(s: Slide, composed?: Slide | null): { blocks: Block[]; composed: Slide | null } | null {
   if (s.layout === 'compose') return { blocks: s.blocks ?? [], composed: null }
   if (!canCompose(s.layout)) return null
-  const c = composed ?? asCompose(s)
+  const c = composed ?? composedOf(s)
   return { blocks: c.blocks ?? [], composed: c }
+}
+
+// 장은 고칠 때마다 새 객체라 장마다 한 번만 바꾼다: 부품 고르기가 카드마다 물어서, 카드 수만큼 장을 부품 장으로 바꿨다.
+// 같은 판이라 자리 재기를 적어 둔 것(place.ts)도 카드 사이에 같이 쓴다
+const COMPOSED = new WeakMap<Slide, Slide>()
+function composedOf(s: Slide): Slide {
+  let c = COMPOSED.get(s)
+  if (!c) COMPOSED.set(s, (c = asCompose(s)))
+  return c
 }
 
 /** 끌거나 넣는 중인 컴포넌트에서 자리와 관계된 것 (useBlockEditing의 Drag가 이 꼴을 갖는다) */

@@ -186,9 +186,13 @@ export function validTargets(blocks: Block[], block: Block, areaH?: number): Dro
 export function placeIssue(blocks: Block[], block: Block, areaH?: number): NoRoom | null {
   const crowd = crowdIssue(blocks, [block])
   if (crowd) return crowd
-  const why = allSpots(blocks).map((s) => whyNot(blocks, spotTarget(s), block, areaH))
-  if (why.some((w) => !w)) return null
-  const all = why.filter((w): w is NoRoom => !!w)
+  // 들어가는 자리를 하나 찾으면 나머지는 재지 않는다 (부품 고르기는 카드마다 이것을 재서, 거의 모든 카드가 들어가는 장이 가장 흔하다)
+  const all: NoRoom[] = []
+  for (const s of allSpots(blocks)) {
+    const w = whyNot(blocks, spotTarget(s), block, areaH)
+    if (!w) return null
+    all.push(w)
+  }
   const tall = all.filter((w) => w.kind === 'height').sort((a, b) => a.need - b.need)[0]
   return tall ?? all.find((w) => w.kind === 'narrow') ?? all[0] ?? { kind: 'full' }
 }

@@ -95,6 +95,9 @@ export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview' 
 })
 
 /** 부품 고르기의 묶음 탭에 더하는 이음표 묶음 */
+/** 부품 고르기의 모든 카드 (묶음 차례대로) */
+const TYPES = BLOCK_GROUPS.flatMap((g) => g.types)
+
 const LINK_GROUP = { name: '이음표', short: '이음표', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
 
 export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
@@ -137,14 +140,16 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
     engine.play(cell, level === 'lively' ? 'lively' : 'calm')
   }
 
-  const types = BLOCK_GROUPS.flatMap((g) => g.types)
   const counted = slide.layout === 'compose' && (slide.blocks ?? []).length >= MAX_BLOCKS
   // 카드마다 이 장 어디에도 넣을 수 없는 까닭. 누를 때도 이것 하나로 정한다: 까닭이 있으면 바로 넣지 않고 까닭과
   // '다음 장에 새로 넣기'를 보인다. 예전에는 어느 카드도 들어가지 않는 장이면 까닭을 아예 재지 않아서, 누르면 묻지 않고
   // 다음 장을 만들었고 몇 카드만 막힌 장에서는 물었다 (같은 결과인데 흐름이 둘). 장이 바뀔 때마다 다시 본다
-  const issues = new Map(types.map((t) => [t, blocks.issueFor(t)]))
+  // 장과 본문 높이가 그대로면 다시 재지 않는다: 끄는 동안 목록이 포인터가 움직일 때마다 다시 그려지는데, 그때마다 카드마다
+  // 판의 모든 자리를 다시 재서 한 번에 150ms씩 걸려 끄는 것이 끊겼다
+  const areaH = blocks.areaHeight()
+  const issues = useMemo(() => new Map(TYPES.map((t) => [t, blocks.issueFor(t)])), [slide, areaH])
   // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 카드마다 표를 붙이지 않고 위에 한 번만 알린다
-  const full = counted || (slide.layout === 'compose' && types.every((t) => issues.get(t)))
+  const full = counted || (slide.layout === 'compose' && TYPES.every((t) => issues.get(t)))
   // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
   const note =
     slide.layout === 'compose'
