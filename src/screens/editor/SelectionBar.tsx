@@ -55,7 +55,7 @@ function placeAt(t: number): Place {
 /** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
 const GROUP_PAD = 10
 
-function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: DOMRect[] = []) {
+function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: TextRect[] = []) {
   const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
   const bw = bar?.offsetWidth ?? 0
   const bh = bar?.offsetHeight ?? 36
@@ -66,23 +66,32 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
   // 위와 아래 가운데 고른 것 밖의 글(others)을 덜 가리는 쪽, 같으면 위. 줄 사이(48px)와 제목 아래 여백은 막대보다 좁아서
   // 위로만 띄우면 아래 줄을 고를 때 윗줄 숫자의 설명을, 윗줄을 고를 때 장 제목을 가렸다. 둘 다 자리가 없으면 고른 것 안쪽 위
   const hit = (y: number) =>
-    others.reduce((a, o) => a + Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)), 0)
+    others.reduce(
+      (a, { r: o, w }) => a + w * Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)),
+      0,
+    )
   const spots = [r.top - bh - 8, r.bottom + 8].filter((y) => y >= top && y + bh <= bottom)
   const y = spots.length ? spots.reduce((best, y) => (hit(y) < hit(best) ? y : best)) : r.top + 8
   return { x, y, room: area ? area.width - 16 : innerWidth }
 }
 
+/** 글이 그려진 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다 */
+type TextRect = { r: DOMRect; w: number }
+const HINT_WEIGHT = 0.2
+
 /** 장 안에서 고른 것(skip) 밖의 글이 그려진 자리들. 칸의 네모로 견주면 글 없는 차트 윗부분도 가리는 것으로 쳐서 글자 줄로 잰다 */
-function textRects(slide: Element | null, skip: Element): DOMRect[] {
+function textRects(slide: Element | null, skip: Element): TextRect[] {
   if (!slide) return []
-  const out: DOMRect[] = []
+  const out: TextRect[] = []
   const range = document.createRange()
   for (const f of slide.querySelectorAll<HTMLElement>('.ed')) {
     if (skip.contains(f)) continue
-    const t = f.querySelector(f.classList.contains('is-empty') ? ':scope > .ed-hint' : ':scope > .ed-input')
+    const empty = f.classList.contains('is-empty')
+    const t = f.querySelector(empty ? ':scope > .ed-hint' : ':scope > .ed-input')
     if (!t) continue
     range.selectNodeContents(t)
-    for (const r of range.getClientRects()) if (r.width && r.height) out.push(r)
+    // 빈 부제의 안내를 피하느라 아래로 내려가 차트의 숫자를 가렸다(1366×650의 핵심 숫자 아래 추이)
+    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: empty ? HINT_WEIGHT : 1 })
   }
   return out
 }
@@ -98,7 +107,7 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
   const [tight, setTight] = useState(false)
   const full = useRef(0)
   const anchor = useRef<HTMLElement | null>(null)
-  const texts = useRef<{ key: string; rects: DOMRect[] }>({ key: '', rects: [] })
+  const texts = useRef<{ key: string; rects: TextRect[] }>({ key: '', rects: [] })
   useLayoutEffect(() => {
     let raf = 0
     const tick = () => {
