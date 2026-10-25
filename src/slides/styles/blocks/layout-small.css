@@ -70,7 +70,7 @@
   --cp-end: 28px;
 }
 
-.bk.va-table > .bk-in :is(.cp-l, .cp-r) {
+.bk:is(.va-table, .va-apart) > .bk-in :is(.cp-l, .cp-r) {
   padding-block: clamp(8px, 1.6cqh, 18px);
 }
 

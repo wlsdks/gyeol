@@ -424,6 +424,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     variants: [
       { id: 'base', name: '두 면' },
       { id: 'table', name: '표' },
+      { id: 'apart', name: '나란한 두 목록' },
     ],
     fields: [
       title('비교해서 보여줄 결론'),

@@ -45,6 +45,7 @@ export const kickoff: Blueprint = {
       layout: 'compare',
       purpose: '하는 일과 하지 않는 일',
       priority: 1,
+      variant: 'apart',
       guide: '하지 않는 일을 적어 두면 범위가 흔들리지 않아요.',
       fields: { leftTitle: '이번에 해요', rightTitle: '이번에는 안 해요' },
       hints: {
