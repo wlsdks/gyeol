@@ -1,0 +1,188 @@
+/* ---------- 막대 하나 ----------
+   이름과 숫자 한 줄 아래 가는 막대 하나. 목표 대비(goal)보다 조용하게: 숫자가 답이고 막대는 그 몫을 보이는 그림이다.
+   막대 자리는 옅은 선 색(--line), 채운 몫은 강조색이고 값이 닿은 끝만 4px 둥글다(시작은 자리에 붙어 있다).
+   목표는 막대를 위아래로 가로지르는 글자색 눈금(--rule)과 그 아래의 이름. 이름은 눈금 자리를 따라가되 칸 밖으로 나가지 않는다:
+   이름 앞뒤의 빈 몫을 눈금 자리의 비율(--t : 100 − --t)로 나눠서, 눈금이 늘 이름 안의 같은 비율 자리에 온다(0이면 이름 왼쪽 끝,
+   100이면 오른쪽 끝). 숫자를 읽을 수 없으면(.is-text) 막대 없이 글만 */
+
+.bk-mt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  align-items: baseline;
+  column-gap: 24px;
+  height: 100%;
+}
+
+.bk-mt-l {
+  --fs: var(--t-label);
+  grid-row: 1;
+  grid-column: 1;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.bk-mt-fig {
+  display: flex;
+  grid-row: 1;
+  grid-column: 2;
+  align-items: baseline;
+  column-gap: 8px;
+  white-space: nowrap;
+}
+
+.bk-mt-v {
+  --fs: 44px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.bk-mt-of {
+  --fs: var(--t-small);
+  display: inline-flex;
+  column-gap: 6px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.bk-mt-bar {
+  position: relative;
+  grid-row: 2;
+  grid-column: 1 / -1;
+  height: 12px;
+  margin-top: 18px;
+  border-radius: 0 4px 4px 0;
+  background: var(--line);
+}
+
+.bk-mt-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--p) * 1%);
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+
+/* 눈금: 막대 위아래로 8px씩 나온 글자색 선. 끝(0, 100)에서도 막대 밖으로 나가지 않게 */
+.bk-mt-tick {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: clamp(0px, calc(var(--t) * 1% - var(--rule) / 2), calc(100% - var(--rule)));
+  width: var(--rule);
+  background: var(--ink);
+}
+
+.bk-mt-tg {
+  display: flex;
+  grid-row: 3;
+  grid-column: 1 / -1;
+  margin-top: 16px;
+}
+
+.bk-mt-tg::before,
+.bk-mt-tg::after {
+  min-width: 0;
+  content: '';
+}
+
+.bk-mt-tg::before {
+  flex: var(--t) 1 0px;
+}
+
+.bk-mt-tg::after {
+  flex: calc(100 - var(--t)) 1 0px;
+}
+
+.bk-mt-tg.is-free::before {
+  flex-grow: 0;
+}
+
+.bk-mt-tl {
+  --fs: var(--t-small);
+  display: inline-flex;
+  flex: none;
+  column-gap: 8px;
+  max-width: 100%;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.bk-mt-tn {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.bk-mt-tv {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.bk-mt.is-demo :is(.bk-mt-fill, .bk-mt-tick) {
+  opacity: 0.35;
+}
+
+/* 좁은 칸(안쪽 420px 밑: 3칸, 면을 깐 4칸): 이름 아래에 숫자. 한 줄에 두면 숫자가 자리를 먼저 가져가 이름이 한두 글자씩 꺾인다 */
+@container (max-width: 420px) {
+  .bk-mt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bk-mt-fig {
+    grid-row: 2;
+    grid-column: 1;
+    margin-top: 4px;
+  }
+
+  .bk-mt-bar {
+    grid-row: 3;
+    margin-top: 14px;
+  }
+
+  .bk-mt-tg {
+    grid-row: 4;
+  }
+}
+
+/* 넓은 칸: 한 줄로 눕힌다. 이름은 격자의 왼쪽 4칸, 막대는 그 오른쪽을 다 쓰고, 숫자는 오른쪽 끝. 목표의 이름은 막대 아래.
+   좁을 때처럼 쌓으면 이름과 숫자 사이가 통째로 비고, 막대만 칸 너비로 길게 늘어난다 */
+@container bk (min-width: 1000px) {
+  .bk-mt {
+    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--bk-gap);
+  }
+
+  .bk-mt-l {
+    --fs: var(--t-body);
+  }
+
+  .bk-mt-bar {
+    grid-row: 1;
+    grid-column: 2;
+    margin-top: 0;
+  }
+
+  .bk-mt-fig {
+    grid-column: 3;
+  }
+
+  .bk-mt-tg {
+    grid-row: 2;
+    grid-column: 2;
+    margin-top: 12px;
+  }
+}
+
+.bk.is-shared > .bk-in > .bk-mt {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  align-content: start;
+  padding-top: var(--bk-lift, 0px);
+}

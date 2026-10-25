@@ -174,6 +174,11 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
   tiles: { of: '전체가 100이 아닐 때 (예: 60명). 100까지면 칸 하나가 하나예요', note: '숫자 아래 짧은 설명 (예: 남은 사람은 11월까지 마쳐요)' },
   heading: { note: '소제목 옆(좁으면 아래)에 작게 덧붙이는 한 줄' },
   stat: { change: '숫자 옆에 얼마나 달라졌는지 (예: 12% 늘었어요)', note: '숫자 아래 기준이나 기간' },
+  meter: {
+    of: '숫자가 %가 아닐 때 막대 끝의 값 (예: 5억 원)',
+    target: '막대 위에 눈금으로 긋는 목표나 기준',
+    targetName: '눈금 아래 이름을 목표 말고 다른 말로 (예: 작년, 기준)',
+  },
   kpi: { 'items.body': '숫자마다 아래 짧은 설명' },
   scorecard: { 'items.body': '지표마다 짧은 설명이나 원인' },
   bars: { 'items.meta': '막대마다 짧은 설명' },

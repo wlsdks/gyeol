@@ -1645,6 +1645,17 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-sl-n'), 600, 500)
           draw(one('.bk-sl-box'), 300, levelName === 'lively' ? 800 : 650, 'left center', '::after')
           break
+        case 'meter': {
+          // 막대 자리와 눈금이 먼저 놓이고, 채운 몫이 왼쪽부터 자라는 동안 숫자가 같이 올라간다. 눈금의 이름은 막대가 거의 닿을 때
+          fade(one('.bk-mt-l'), 60, 500)
+          fade(one('.bk-mt-of'), 120, 500)
+          const tick = one('.bk-mt-tick')
+          if (tick) run(anims, tick, [{ opacity: 0, scale: '1 0' }], s(120), L.pop)
+          grow(one('.bk-mt-fill'), 180)
+          countIn(one('.bk-mt-v'), 180)
+          fade(one('.bk-mt-tg'), 560, 500)
+          break
+        }
         default:
           rise(cell, 0)
       }

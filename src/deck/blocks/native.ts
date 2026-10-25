@@ -834,4 +834,19 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 4,
     sample: { fields: { label: '문의 평균 처리 시간', value: '2.4일', change: '1.1일 줄었어요', note: '9월 한 달, 고객 지원팀' } },
   },
+  meter: {
+    name: '막대 하나',
+    description: '숫자 하나가 전체나 목표의 얼마인지 가는 막대 하나로',
+    motion: '막대가 왼쪽부터 자라고 숫자가 같이 올라가요',
+    fields: [
+      { key: 'label', label: '이름', hint: '무엇의 몫인지 (예: 올해 교육 예산 집행)' },
+      { key: 'value', label: '숫자', hint: '72%' },
+      { key: 'of', label: '전체', hint: '5억 원', optional: true },
+      { key: 'target', label: '목표', hint: '80%', optional: true },
+      { key: 'targetName', label: '눈금 이름', hint: '목표', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { label: '올해 교육 예산 집행', value: '3.6억 원', of: '5억 원', target: '4억 원' } },
+  },
 }
