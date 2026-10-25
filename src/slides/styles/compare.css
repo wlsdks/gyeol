@@ -1,19 +1,31 @@
 /* ---------- 비교 ---------- */
 
-/* 두 면 사이는 두 면을 잇는 화살표가 혼자 쓰는 자리(--cp-mid). 화살표는 그 사이를 다 쓰고 두 면의 가장자리에 붙는다(아래 .cp > .cp-arrow) */
+/* 두 면 사이는 두 면을 잇는 화살표가 혼자 쓰는 자리(--cp-mid). 화살표는 그 사이를 다 쓰고 두 면의 가장자리에 붙는다(아래 .cp > .cp-arrow).
+   면 안의 위 여백과 아래 여백은 같다. 예전에는 줄이 높이를 나눠 갖고(1fr, 둘까지는 220px) 글이 줄 가운데에 서서 남는 높이의
+   절반이 마지막 줄 아래로 갔고, 머리 위는 48px 그대로였다: 장에서 위 57, 아래 97~114px. 줄을 220px에서 멈추면 남는 높이를
+   머리 줄이 받아 머리와 첫 줄 사이가 130px 넘게 떴다. 컴포넌트 칸이 낮으면 줄이 면의 아래 여백(20px)까지 내려와 마지막 줄이
+   면 바닥에 15px로 붙었는데, 그 여백이 칸 밖이 아니라서 맞추기(fitBlocks)도 몰랐다.
+   그래서 줄은 내용 높이에서 남는 높이를 똑같이 나눠 받고(flex-grow 1) 머리 줄은 그 절반을 받아 글을 아래에 둔다. 줄마다 글 위아래에
+   e/2가 더해지면 머리 위에도 e/2가 더해져, 머리 위 여백(줄 여백 + 면 아래 여백)이 마지막 줄 아래 여백과 늘 같다.
+   면 아래 여백은 마지막 줄 안에 둔다: 모자라면 칸 밖으로 넘쳐 맞추기가 글자를 줄인다 */
 .cp {
   --cp-mid: 96px;
+  /* 줄 글의 위아래 여백과 면 아래 여백 (머리 위 여백은 둘의 합) */
+  --cp-py: 12px;
+  --cp-end: 36px;
   position: relative;
-  display: grid;
-  grid-template-rows: auto;
-  grid-auto-rows: minmax(min-content, 1fr);
+  display: flex;
+  flex-direction: column;
   max-height: 100%;
-  padding-bottom: 20px;
 }
 
-.cp[data-n='1'],
-.cp[data-n='2'] {
-  grid-auto-rows: minmax(min-content, 220px);
+.cp > .cp-headrow {
+  flex: 0.5 0 auto;
+  align-items: end;
+}
+
+.cp > .it.cp-row {
+  flex: 1 0 auto;
 }
 
 .cp::before,
@@ -46,7 +58,7 @@
 
 .cp-h {
   --fs: 26px;
-  padding: 48px 64px 28px;
+  padding: calc(var(--cp-py) + var(--cp-end)) 64px 28px;
   font-weight: 700;
 }
 
@@ -63,8 +75,13 @@
   display: flex;
   align-items: center;
   margin: 0 64px;
+  padding-block: var(--cp-py);
   border-top: var(--rule) solid var(--line);
   line-height: 1.42;
+}
+
+.cp:not(.va-table .cp) > .cp-row:last-of-type > :is(.cp-l, .cp-r) {
+  padding-bottom: calc(var(--cp-py) + var(--cp-end));
 }
 
 .cp-l {
@@ -153,9 +170,22 @@
    그 사이 가운데에 줄마다 작은 화살표. 예전에는 두 쪽 모두 왼쪽에 붙여서, 짧은 글이면 쪽마다 오른쪽 절반이 비고
    왼쪽 쪽의 글과 오른쪽 쪽의 화살표 사이가 멀어 짝이 읽히지 않았다.
    머리 위의 선은 앞은 옅게, 바뀐 뒤는 글자색으로 (넓은 강조색 막대는 장식이라 쓰지 않는다) */
+/* 표는 면이 없어 줄이 높이를 나눠 갖는다(격자) */
 .va-table .cp {
   --cp-mid: 136px;
-  padding-bottom: 0;
+  display: grid;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(min-content, 1fr);
+}
+
+.va-table .cp[data-n='1'],
+.va-table .cp[data-n='2'] {
+  grid-auto-rows: minmax(min-content, 220px);
+}
+
+/* 머리는 맨 위 선 바로 아래 */
+.va-table .cp > .cp-headrow {
+  align-items: normal;
 }
 
 .va-table .cp::before,

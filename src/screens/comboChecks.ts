@@ -266,8 +266,13 @@ function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], lines: 
     const smaller = panels.filter((o) => o !== p && mine(o.el) && inside(o.box) && o.box.b - o.box.t < b.b - b.t - 2 * k).map((o) => o.box)
     // 면 끝에 붙여 긋는 선(면의 테두리, 면 맨 위의 머리 선)은 내용이 아니다
     const edge = (q: Box) => Math.abs(q.t - b.t) < 2 * k || Math.abs(q.b - b.b) < 2 * k
+    // 두 면이 항목의 줄을 같이 쓰면(비교의 두 면) 그 줄은 두 면에 걸친 한 묶음이다: 한쪽 글이 두 줄이면 다른 쪽의 한 줄 글은
+    // 줄 가운데에 서서 그 면만 아래가 반 줄 더 빈다. 그 줄의 다른 면 글도 같이 넣어 줄째 잰다
+    const rows = new Set(own.map((q) => q.el.closest('.it')).filter((it): it is Element => !!it && it !== p.el && mine(it)))
+    const paired = lines.filter((q) => !own.includes(q) && rows.has(q.el.closest('.it')!)).map((q) => ({ ...q, l: b.l, r: b.r }))
     const content = [
       ...own,
+      ...paired,
       ...figs.filter((f) => mine(f.el) && inside(f.box)).map((f) => f.box),
       ...rules.filter((g) => mine(g.el) && inside(g.box) && !edge(g.box)).map((g) => g.box),
       ...smaller,

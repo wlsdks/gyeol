@@ -58,7 +58,14 @@
   padding-block: clamp(10px, 2cqh, 24px);
 }
 
-.bk-in :is(.cp-l, .cp-r) {
+/* 비교의 두 면은 줄 여백(--cp-py)과 면 아래 여백(--cp-end)을 머리 위 여백에도 같이 써서(compare.css) 줄 글이 아니라 그 값을 바꾼다.
+   칸에서는 면 아래 여백도 조금 줄인다(장에서는 36px): 낮은 칸에서 줄이 들어갈 자리를 남긴다 */
+.bk-in .cp {
+  --cp-py: clamp(8px, 1.6cqh, 18px);
+  --cp-end: 28px;
+}
+
+.bk.va-table > .bk-in :is(.cp-l, .cp-r) {
   padding-block: clamp(8px, 1.6cqh, 18px);
 }
 
