@@ -4,7 +4,7 @@ import { pageInfo } from '../deck/fields'
 import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { pageProps, SlideCanvas } from '../slides/SlideCanvas'
-import { safeFileName } from '../store/deckFile'
+import { isDeck, safeFileName } from '../store/deckFile'
 import motionCss from '../motion/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
 import blocksCss from '../slides/blocks.css?inline'
@@ -60,7 +60,7 @@ async function sha256(text: string): Promise<string> {
  * 내보낸 파일은 메일로 오가며 어디서 열릴지 모른다. 어떤 주소로도 연결하지 못하게 막고,
  * 스크립트는 들어 있는 뷰어 하나만 돌게 한다.
  */
-async function exportCsp(): Promise<string> {
+export async function exportCsp(): Promise<string> {
   return [
     "default-src 'none'",
     `script-src 'sha256-${await sha256(VIEWER_JS)}'`,
@@ -130,15 +130,25 @@ export async function downloadHtml(deck: Deck): Promise<void> {
   window.setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
 
+/**
+ * HTML 파일에 넣어 둔 덱 데이터를 확인한다. 받은 파일이라 아무 값이나 있을 수 있어서 .deck 파일과 같은 isDeck을 쓴다.
+ * 예전에는 `as Deck`으로 받고 따로 몇 칸만 봐서, 같은 덱이라도 어느 파일로 여느냐에 따라 확인이 달랐다.
+ */
+export function parseDeckData(raw: string): Deck | null {
+  try {
+    const deck: unknown = JSON.parse(raw)
+    return isDeck(deck) ? { ...deck, id: uid(), updatedAt: Date.now() } : null
+  } catch {
+    return null
+  }
+}
+
 /** 내보낸 HTML 파일에서 덱을 되살린다. 새 발표로 저장된다. */
 export function readDeckFromHtml(html: string): Deck | null {
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const raw = doc.getElementById(DATA_ID)?.textContent
-    if (!raw) return null
-    const deck = JSON.parse(raw) as Deck
-    if (!Array.isArray(deck.slides) || !deck.meta || !deck.theme) return null
-    return { ...deck, id: uid(), updatedAt: Date.now() }
+    return raw ? parseDeckData(raw) : null
   } catch {
     return null
   }

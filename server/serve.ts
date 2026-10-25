@@ -12,9 +12,10 @@ import { dirname, extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { SHARE_DIR_NAME } from '../src/ai/protocol'
 import { createAiHandler } from './ai'
-import { CSP } from './csp'
+import { CSP, CSP_META } from './csp'
 
-export { CSP }
+// 묶는 스크립트(scripts/pack.mjs)가 빌드한 index.html의 CSP를 이것과 견준다
+export { CSP, CSP_META }
 export const HOST = '127.0.0.1'
 export const PORT = Number(process.env.GYEOL_PORT) || 41580
 const ORIGIN = `http://${HOST}:${PORT}`

@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createSampleDeck } from '../src/deck/sample'
 import { OP_CODES, REQUEST_FORMAT } from '../src/ai/ops'
 import { toShape } from '../src/ai/share'
-import { HOST, createAppServer } from './serve'
+import { CSP, CSP_META, HOST, createAppServer } from './serve'
 
 let server: Server
 let port: number
@@ -59,6 +59,19 @@ describe('로컬 서버', () => {
     expect(res.headers['content-security-policy']).toContain("connect-src 'self'")
     expect(res.headers['content-security-policy']).toContain("default-src 'self'")
     expect((await call('/assets/app.js')).headers['content-type']).toContain('javascript')
+  })
+
+  it('CSP는 이 PC 밖으로 연결하지 못하게 하고, index.html에 넣는 것도 같다', () => {
+    const rules = (csp: string) => new Map(csp.split('; ').map((r) => [r.split(' ')[0], r.split(' ').slice(1).join(' ')]))
+    const header = rules(CSP)
+    for (const [k, v] of Object.entries({ 'default-src': "'self'", 'script-src': "'self'", 'connect-src': "'self'", 'object-src': "'none'", 'base-uri': "'none'", 'form-action': "'none'", 'frame-ancestors': "'none'" })) {
+      expect(header.get(k), k).toBe(v)
+    }
+    expect(CSP).not.toMatch(/https?:|\*|'unsafe-eval'/)
+    // meta에서는 frame-ancestors가 무시되므로 그것만 빠지고 나머지는 같다
+    const meta = rules(CSP_META)
+    header.delete('frame-ancestors')
+    expect(meta).toEqual(header)
   })
 
   it('다른 이름으로 들어온 요청은 막는다', async () => {

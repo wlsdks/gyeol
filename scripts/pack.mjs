@@ -17,7 +17,7 @@ import { execFileSync, execSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { zipDir } from './zip.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -53,6 +53,14 @@ for (const file of execSync('find dist dist-node -type f', { cwd: root, encoding
 }
 if (external.size) {
   console.error('빌드 결과에 바깥 주소가 있어요. 확인해 주세요:\n' + [...external].join('\n'))
+  process.exit(1)
+}
+
+// 빌드한 화면에 서버와 같은 CSP가 들어갔는지. 서버 없이 파일로 열어도 이 PC 밖으로 연결하지 못하게 하는 장치다
+const { CSP_META } = await import(pathToFileURL(join(root, 'dist-node', 'serve.mjs')).href)
+const cspTag = `<meta http-equiv="Content-Security-Policy" content="${CSP_META}" />`
+if (!readFileSync(join(root, 'dist', 'index.html'), 'utf8').includes(cspTag)) {
+  console.error('dist/index.html에 CSP가 없거나 서버의 CSP와 달라요. vite.config.ts의 cspMeta를 확인해 주세요.')
   process.exit(1)
 }
 

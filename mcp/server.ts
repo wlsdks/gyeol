@@ -12,7 +12,7 @@
 
 import { spawn } from 'node:child_process'
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
-import { dirname, join, sep } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { version } from '../package.json'
@@ -408,26 +408,41 @@ function serve(shareRoot: string) {
   rl.on('close', () => process.exit(0))
 }
 
+/**
+ * 권한 모델 안에서 다시 띄울 때의 node 인자. 읽기는 'AI 공유' 폴더와 이 서버 코드, 쓰기는 'AI 공유' 폴더뿐이다.
+ * 다른 프로그램 실행(--allow-child-process), worker, 네이티브 애드온, WASI는 열지 않는다. 시험이 이 인자를 확인한다.
+ */
+export function sandboxArgs(share: string, here: string, entry: string): string[] {
+  return ['--permission', `--allow-fs-read=${share}`, `--allow-fs-write=${share}`, `--allow-fs-read=${here}`, entry]
+}
+
+/**
+ * 권한 모델이 정말 좁게 걸렸는지 스스로 확인한다. 누가 이 파일을 넓은 권한(--allow-fs-read=*, --allow-child-process)으로
+ * 띄웠으면 'AI 공유' 폴더 밖(.deck 작업 파일이 있는 곳)을 읽을 수 있게 되므로 돌지 않는다.
+ */
+export function sandboxTight(permission: Pick<NodeJS.ProcessPermission, 'has'>, share: string): boolean {
+  const outside = dirname(resolve(share))
+  return !permission.has('fs.read', outside) && !permission.has('fs.write', outside) && !permission.has('child') && !permission.has('worker')
+}
+
 /** 권한 모델 밖에서 시작했으면, 'AI 공유' 폴더와 이 서버 코드만 읽을 수 있게 스스로를 다시 띄운다. */
 function launch() {
   const here = dirname(fileURLToPath(import.meta.url))
   const share = process.env.GYEOL_SHARE || join(here, '..', SHARE_DIR_NAME)
-  const sandboxed = (process as { permission?: unknown }).permission !== undefined
+  const permission = (process as { permission?: NodeJS.ProcessPermission }).permission
 
-  if (sandboxed) return serve(share)
+  if (permission) {
+    if (sandboxTight(permission, share)) return serve(share)
+    // 정해진 말만 쓴다. 경로는 내보내지 않는다
+    process.stderr.write('gyeol: 권한이 넓게 열린 채로 띄워서 시작하지 않았어요. node에 권한 인자를 붙이지 말고 띄워 주세요.\n')
+    process.exit(1)
+  }
 
   for (const d of SHARE_SUBDIRS) mkdirSync(join(share, d), { recursive: true })
-  const child = spawn(
-    process.execPath,
-    [
-      '--permission',
-      `--allow-fs-read=${share}`,
-      `--allow-fs-write=${share}`,
-      `--allow-fs-read=${here}`,
-      fileURLToPath(import.meta.url),
-    ],
-    { stdio: 'inherit', env: { ...process.env, GYEOL_SHARE: share } },
-  )
+  const child = spawn(process.execPath, sandboxArgs(share, here, fileURLToPath(import.meta.url)), {
+    stdio: 'inherit',
+    env: { ...process.env, GYEOL_SHARE: share },
+  })
   for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => child.kill(sig))
   child.on('exit', (code) => process.exit(code ?? 0))
 }

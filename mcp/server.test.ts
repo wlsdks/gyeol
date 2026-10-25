@@ -1,4 +1,4 @@
-import { execSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { execSync, spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +10,7 @@ import { OP_CODES, OP_KEYS } from '../src/ai/ops'
 import { MCP_TOOLS, RESULT_FORMAT } from '../src/ai/protocol'
 import { toShape } from '../src/ai/share'
 import { createSampleDeck } from '../src/deck/sample'
+import { sandboxArgs, sandboxTight } from './server'
 
 // 빌드한 MCP 서버를 실제로 띄워서 Claude Code처럼 이야기해 본다.
 const repo = join(import.meta.dirname, '..')
@@ -184,5 +185,38 @@ describe('MCP 서버', () => {
     const { isError } = await tool('propose_changes', { deck: list.decks[0].deck, ops: [{ op: 'set_layout', slide: 's00000000', layout: 'points', text: '새 제목' }] })
     expect(isError).toBe(true)
     expect(readdirSync(join(share, 'requests'))).toHaveLength(before)
+  })
+})
+
+describe('MCP 서버를 가두는 권한', () => {
+  it('읽기는 공유 폴더와 서버 코드, 쓰기는 공유 폴더만 열고 다른 것은 열지 않는다', () => {
+    const args = sandboxArgs('/s/AI 공유', '/app/dist-node', '/app/dist-node/gyeol-mcp.mjs')
+    expect(args[0]).toBe('--permission')
+    expect(args.at(-1)).toBe('/app/dist-node/gyeol-mcp.mjs')
+    const flags = args.slice(0, -1)
+    expect(flags.filter((f) => f.startsWith('--allow-fs-read=')).sort()).toEqual(['--allow-fs-read=/app/dist-node', '--allow-fs-read=/s/AI 공유'])
+    expect(flags.filter((f) => f.startsWith('--allow-fs-write='))).toEqual(['--allow-fs-write=/s/AI 공유'])
+    // 다른 프로그램 실행, worker, 애드온, WASI, 모든 경로(*)는 열지 않는다
+    expect(flags.every((f) => f === '--permission' || f.startsWith('--allow-fs-'))).toBe(true)
+    expect(flags.join(' ')).not.toContain('*')
+  })
+
+  it('공유 폴더 밖을 읽거나 다른 프로그램을 띄울 수 있으면 좁지 않다고 본다', () => {
+    const only = (open: string[]) => ({ has: (scope: string, ref?: string) => open.includes(ref ? `${scope}:${ref}` : scope) })
+    expect(sandboxTight(only(['fs.read:/s/AI 공유']), '/s/AI 공유')).toBe(true)
+    expect(sandboxTight(only(['fs.read:/s']), '/s/AI 공유')).toBe(false)
+    expect(sandboxTight(only(['fs.write:/s']), '/s/AI 공유')).toBe(false)
+    expect(sandboxTight(only(['child']), '/s/AI 공유')).toBe(false)
+    expect(sandboxTight(only(['worker']), '/s/AI 공유')).toBe(false)
+  })
+
+  it('넓은 권한으로 띄우면 시작하지 않고, 경로도 말하지 않는다', () => {
+    const entry = join(repo, 'dist-node', 'gyeol-mcp.mjs')
+    for (const extra of [['--allow-fs-read=*'], [`--allow-fs-read=${share}`, `--allow-fs-read=${join(repo, 'dist-node')}`, '--allow-child-process']]) {
+      const res = spawnSync(process.execPath, ['--permission', ...extra, entry], { env: { ...process.env, GYEOL_SHARE: share }, input: '', encoding: 'utf8' })
+      expect(res.status, extra.join(' ')).toBe(1)
+      expect(res.stdout).toBe('')
+      expect(res.stderr).not.toContain(share)
+    }
   })
 })

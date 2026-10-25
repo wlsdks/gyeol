@@ -12,3 +12,6 @@ export const CSP = [
   "form-action 'none'",
   "frame-ancestors 'none'",
 ].join('; ')
+
+/** 빌드한 index.html의 meta에 넣는 CSP. frame-ancestors는 meta에서 무시되므로 뺀다(서버 헤더에는 있다) */
+export const CSP_META = CSP.replace(/; frame-ancestors 'none'/, '')
