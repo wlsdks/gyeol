@@ -81,7 +81,7 @@ export function MotionPanel({ deck, slide, blocks }: { deck: Deck; slide: Slide;
 function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: Pick<BlockEditing, 'selected' | 'select'> }) {
   const setOptions = useDeck((s) => s.setOptions)
   const order = useMemo(() => playOrder(slide), [slide])
-  const names = useMemo(() => blockNames(slide.rows ?? []), [slide.rows])
+  const names = useMemo(() => blockNames(slide.blocks ?? []), [slide.blocks])
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [said, setSaid] = useState('')
   const ids = order.map((b) => b.id)

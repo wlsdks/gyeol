@@ -1,7 +1,7 @@
 // 예전에 저장한 발표를 지금 꼴로 읽기. 저장 형식이나 정해진 이름(역할 이름, 테마 id)을 바꾸면 여기에 예전 것을
 // 지금 것으로 바꾸는 줄을 더한다. 편집기가 발표를 열 때(deckStore.open) 부른다. 여러 번 불러도 결과가 같다
 
-import { cleanDeckRows } from './blocks'
+import { boardAreaH, boardFit, boardFromRows, cleanDeckBlocks } from './blocks'
 import { LAYOUTS } from './layouts'
 import { plainTheme } from './themes'
 import type { Deck } from './types'
@@ -13,7 +13,17 @@ const RENAMED_ROLES: Record<string, string> = {
 }
 
 export function migrateDeck(raw: Deck): Deck {
-  const slides = raw.slides.map((s) => (Object.hasOwn(RENAMED_ROLES, s.purpose) ? { ...s, purpose: RENAMED_ROLES[s.purpose] } : s))
-  // 부품 장의 줄을 정해진 꼴로 맞추고, 예전 세리프 테마는 화이트에 명조 제목으로
-  return cleanDeckRows({ ...raw, slides, theme: plainTheme(raw.theme) })
+  const theme = plainTheme(raw.theme)
+  const look = { meta: raw.meta, theme }
+  const fitOf = (s: Deck['slides'][number]) => boardFit(boardAreaH(s, look))
+  const slides = raw.slides.map((s) => {
+    const named = Object.hasOwn(RENAMED_ROLES, s.purpose) ? { ...s, purpose: RENAMED_ROLES[s.purpose] } : s
+    // 판 전(0.4까지)의 부품 장: 줄(rows)을 판으로. 칸 너비와 줄 높이 비중은 바라는 크기로, 이음표도 따라간다
+    const old = named as typeof named & { rows?: unknown }
+    if (old.rows === undefined) return named
+    const { rows, ...rest } = old
+    return { ...rest, blocks: rest.blocks ?? boardFromRows(rows, fitOf(rest)) }
+  })
+  // 부품 장의 판을 정해진 꼴로 맞추고, 예전 세리프 테마는 화이트에 명조 제목으로
+  return cleanDeckBlocks({ ...raw, version: 2, slides, theme }, fitOf)
 }

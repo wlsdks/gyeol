@@ -6,16 +6,19 @@ import { cleanPart, type SavedPart } from '../deck/blocks'
 export const PARTS_EXT = '.components'
 const FORMAT = 'html-maker/components'
 
+/** 2: 판(blocks와 자리). 1(0.4까지)은 줄(rows)로 적었고, 읽을 때 판으로 바꾼다(cleanPart) */
+const VERSION = 2
+
 interface PartsFileData {
   format: typeof FORMAT
-  version: 1
+  version: number
   /** 목록을 마지막으로 바꾼 때 (브라우저의 목록과 폴더의 파일 가운데 새것을 고른다) */
   updatedAt: number
   parts: SavedPart[]
 }
 
 export function encodePartsFile(parts: SavedPart[], updatedAt = Date.now()): string {
-  const data: PartsFileData = { format: FORMAT, version: 1, updatedAt, parts }
+  const data: PartsFileData = { format: FORMAT, version: VERSION, updatedAt, parts }
   return JSON.stringify(data)
 }
 

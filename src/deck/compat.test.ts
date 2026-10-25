@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { useDeck } from '../store/deckStore'
-import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BLOCKS } from './blocks'
+import { autoPlace, BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BLOCKS, MAX_LARGE } from './blocks'
 import { sampleBlock } from './blockSamples'
 import { DECK_TYPES } from './blueprints'
 import { knownOnly, unknownParts } from './compat'
@@ -8,9 +8,15 @@ import { createDeck, makeSlide } from './generate'
 import { createSampleDeck } from './sample'
 import { showcaseSlides } from './showcase'
 import { FONTS, fontOf } from './themes'
-import type { Block, BlockRow, Deck, FontId, Slide } from './types'
+import type { Block, Deck, FontId, Slide } from './types'
 
-const compose = (...blocks: Block[]): Slide => ({ ...makeSlide('compose'), rows: [{ id: 'r1', blocks }] })
+/** 차례대로 눌러 넣은 부품 장. 아는 부품이 아니면(모르는 부품, 모양) 자리를 정하지 않고 그대로 둔다 */
+const compose = (...blocks: Block[]): Slide => ({
+  ...makeSlide('compose'),
+  blocks: blocks.reduce<Block[]>((out, b) => (BLOCK_TYPES.includes(b.type) && (autoPlace(out, b) ?? null)) || [...out, b], []),
+})
+/** 손으로 적은 판 (꼴을 따지지 않는다) */
+const boardOf = (...blocks: Record<string, unknown>[]) => withSlides({ ...makeSlide('compose'), blocks: blocks as unknown as Block[] })
 const withSlides = (...slides: Slide[]): Deck => ({ ...createSampleDeck(), slides })
 
 describe('새 버전에서 만든 발표 알아보기', () => {
@@ -44,19 +50,22 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), variant: 'cards3d' }))))).toBe(1)
     expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), items: [{ id: 'i', title: '하나', color: 'red' }] }))))).toBe(1)
     expect(unknownParts(withSlides({ ...makeSlide('kpi'), layout: 'roadmap' as Slide['layout'] }))).toBe(1)
-    expect(unknownParts({ ...createSampleDeck(), version: 2 as 1 })).toBe(1)
+    expect(unknownParts({ ...createSampleDeck(), version: 3 as 2 })).toBe(1)
     expect(unknownParts({ ...createSampleDeck(), theme: { id: 'forest' as 'white' } })).toBe(1)
-    // 정한 개수(한 줄에 셋)를 넘는 부품: 예전 버전이면 빼고 저장한다
-    expect(unknownParts(withSlides(compose(...[1, 2, 3, 4].map((n) => ({ ...text, id: `t${n}` })))))).toBe(1)
-    // 줄과 부품에 새로 더한 값: 예전 버전이 고치면 빼고 저장하게 된다. 줄 높이 비중은 이 버전이 아는 범위만
-    const rowsOf = (...rows: Record<string, unknown>[]) => withSlides({ ...makeSlide('compose'), rows: rows as unknown as BlockRow[] })
-    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], tilt: 3 }))).toBe(1)
+    // 정한 개수(큰 부품 MAX_LARGE)를 넘는 부품: 예전 버전이면 빼고 저장한다
+    const whole = { x: 0, y: 0, w: 12, h: 12 }
+    expect(unknownParts(boardOf(...Array.from({ length: MAX_LARGE + 1 }, (_, n) => ({ ...text, id: `t${n}`, at: whole }))))).toBe(1)
+    // 부품에 새로 더한 값: 예전 버전이 고치면 빼고 저장하게 된다. 자리는 바로잡을 수 있는 값이라 세지 않는다
     expect(unknownParts(withSlides(compose(raw({ ...text, glow: true }))))).toBe(1)
-    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 40 }, { id: 'r2', blocks: [{ ...text, id: 't2' }], grow: 60 }))).toBe(0)
-    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text], grow: 250 }))).toBe(1)
+    expect(unknownParts(boardOf({ ...text, at: { x: 0, y: 0, w: 99, h: -1 } }))).toBe(0)
     // 이음표는 이 버전이 아는 모양만
-    expect(unknownParts(rowsOf({ id: 'r1', blocks: [{ ...text, link: 'arrow' }, { ...text, id: 't2' }], link: 'plus' }, { id: 'r2', blocks: [{ ...text, id: 't3' }] }))).toBe(0)
-    expect(unknownParts(rowsOf({ id: 'r1', blocks: [{ ...text, link: 'spiral' }, { ...text, id: 't2' }] }))).toBe(1)
+    expect(unknownParts(boardOf({ ...text, at: { x: 0, y: 0, w: 6, h: 12 }, link: 'arrow' }, { ...text, id: 't2', at: { x: 6, y: 0, w: 6, h: 12 } }))).toBe(0)
+    expect(unknownParts(boardOf({ ...text, at: { x: 0, y: 0, w: 6, h: 12 }, link: 'spiral' }, { ...text, id: 't2', at: { x: 6, y: 0, w: 6, h: 12 } }))).toBe(1)
+    // 판 전(0.4까지)의 줄로 적은 발표도 연다: 열 때 판으로 바꾼다. 줄에 있던 모르는 값은 센다
+    const rowsOf = (...rows: Record<string, unknown>[]) => withSlides({ ...makeSlide('compose'), ...({ rows } as object) })
+    expect(unknownParts({ ...rowsOf({ id: 'r1', blocks: [{ ...text, link: 'arrow' }, { ...text, id: 't2' }], link: 'plus', grow: 40 }, { id: 'r2', blocks: [{ ...text, id: 't3' }], grow: 60 }), version: 1 as 2 })).toBe(0)
+    // 줄 안의 모르는 부품은 글을 잃으니 센다 (이음표 같은 값은 예전 버전이 쓴 그대로라 따지지 않는다)
+    expect(unknownParts(rowsOf({ id: 'r1', blocks: [text, { id: 'x', type: 'hologram', fields: { body: '글' }, items: [] }] }))).toBe(1)
     // 꼴이 망가진 값은 사람이 넣은 것이 아니라 세지 않는다
     expect(unknownParts(withSlides(compose(raw({ ...text, fields: { body: '글', bad: 3 } }))))).toBe(0)
   })
@@ -79,7 +88,7 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     const known = knownOnly(deck)
     expect(unknownParts(known)).toBe(0)
     expect(known.slides.map((s) => s.layout)).toEqual(['cover', 'compose'])
-    expect(known.slides[1].rows?.[0].blocks).toEqual([text])
+    expect(known.slides[1].blocks?.map(({ at: _, ...b }) => b)).toEqual([text].map(({ at: _, ...b }) => b))
     expect(deck).toEqual(before)
   })
 

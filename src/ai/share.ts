@@ -4,14 +4,46 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { allBlocks, blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_FROMS, BLOCK_FROM_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_SPEEDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHENS, BLOCK_WHEN_IDS, BLOCKS, effectOf, fromOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_LARGE, MAX_ROWS, MAX_SMALL_IN_ROW, MAX_STACK, speedOf, spansOf, variantOfBlock, weighted, whenOf } from '../deck/blocks'
+import {
+  blockItems,
+  BLOCK_EFFECTS,
+  BLOCK_EFFECT_IDS,
+  BLOCK_FROMS,
+  BLOCK_FROM_IDS,
+  BLOCK_LINKS,
+  BLOCK_LOOKS,
+  BLOCK_LOOK_IDS,
+  BLOCK_SPEEDS,
+  BLOCK_SPEED_IDS,
+  BLOCK_TYPES,
+  BLOCK_WHENS,
+  BLOCK_WHEN_IDS,
+  BLOCKS,
+  BOARD_COLS,
+  BOARD_ROWS,
+  byReading,
+  cleanBlocks,
+  effectOf,
+  fromOf,
+  isArea,
+  isLink,
+  kindOf,
+  lookOf,
+  looksFor,
+  MAX_BLOCKS,
+  MAX_LARGE,
+  speedOf,
+  tiles,
+  variantOfBlock,
+  whenOf,
+} from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
 import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, PLACES, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Audience, Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { hasKey, HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
-import { HIGHLIGHT_MAX, HIGHLIGHT_MIN, OPAQUE_ID, REQUEST_ID, SHAPE_FORMAT } from './protocol'
+import { HIGHLIGHT_MAX, HIGHLIGHT_MIN, OPAQUE_ID, REQUEST_ID, SHAPE_FORMAT, SHAPE_VERSION } from './protocol'
 
 export { SHAPE_FORMAT }
 
@@ -35,20 +67,19 @@ export interface ShapeSlide {
   options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[] }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
-  /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
-  blocks?: ShapeBlock[][]
-  /** 부품 장에서 사람이 줄 높이를 정했으면 줄마다의 비중(1~100, 위에서부터). 없으면 똑같이 나눈다 */
-  rowGrow?: number[]
-  /** 부품 장의 줄 사이 이음표(카탈로그 blockLinks). 줄 수보다 하나 적고, 없는 곳은 null. 하나도 없으면 빠진다 */
-  rowLinks?: (BlockLink | null)[]
+  /** 부품 장(layout 'compose')만: 판(12×12)에 놓인 부품들, 읽는 차례(위에서 아래, 왼쪽에서 오른쪽)로. 부품의 종류, 자리, 바탕, 움직임과 칸이 찼는지만 */
+  blocks?: ShapeBlock[]
 }
 
 export interface ShapeBlock {
   /** 부품을 가리키는 해시 id (b로 시작). 예전 앱이 쓴 모양 파일에는 없다 */
   id?: string
   type: BlockType
-  /** 칸 너비 (12 기준) */
-  span: number
+  /** 판의 자리: 왼쪽 위 칸(x, y, 0부터)과 너비, 높이(칸 수). 판은 가로 12칸, 세로 12칸이고 부품들이 빈틈없이 나눠 덮는다 */
+  x: number
+  y: number
+  w: number
+  h: number
   look: BlockLook
   effect: BlockEffect
   /** 아래 셋은 기본값이 아닐 때만: 언제 나오는지(blockWhens), 빠르기(blockSpeeds), 들어오는 쪽(blockFroms, 쪽이 있는 움직임만) */
@@ -59,17 +90,16 @@ export interface ShapeBlock {
   variant: string
   /** 강조할 항목을 고를 수 있는 부품만 (카탈로그 blocks[].highlight) */
   highlight?: number
-  /** 같은 줄의 오른쪽 부품과의 사이에 선 이음표 (카탈로그 blockLinks). 없으면 빠진다 */
+  /** 오른쪽 선(link)과 아래 선(linkBelow)에 선 이음표 (카탈로그 blockLinks). 선 건너편의 부품과 잇는다. 없으면 빠진다 */
   link?: BlockLink
+  linkBelow?: BlockLink
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  /** 같은 칸에서 이 부품 아래에 쌓은 부품들 (위에서부터, 너비는 이 부품과 같다). 쌓은 부품에는 이음표와 또 쌓은 부품이 없다. 없으면 빠진다 */
-  stack?: ShapeBlock[]
 }
 
 export interface ShapeDeck {
   format: typeof SHAPE_FORMAT
-  version: 1
+  version: typeof SHAPE_VERSION
   deck: string
   type: DeckType
   audience: Audience
@@ -165,9 +195,12 @@ export function catalog() {
         name: spec.name,
         description: spec.description,
         motion: spec.motion,
+        // 가장 좁은 너비(판의 칸 수). 12면 장 너비를 혼자 쓴다
         minSpan: spec.minSpan,
-        // 작은 부품: 한 칸에 쌓고, 작은 것끼리는 한 줄에 넷까지 놓이며, 큰 부품 수(blockRules.maxLarge)에 세지 않는다
+        // 작은 부품: 큰 부품 수(blockRules.maxLarge)에 세지 않는다
         small: !!spec.small,
+        // 이음표로 이을 때의 갈래 (number, words, list, chart, flow, table, image). 같은 갈래끼리 잇는다
+        kind: kindOf(type),
         looks: looksFor(type),
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
         highlight: (spec.layout && LAYOUTS[spec.layout].highlight?.label) || null,
@@ -182,24 +215,15 @@ export function catalog() {
           : null,
       }
     }),
-    // 부품 장의 짜임: 줄 수, 한 줄의 칸 수(작은 부품만이면 maxSmallInRow), 한 칸에 쌓는 부품 수, 한 장의 부품 수와 그 가운데
-    // 작은 부품(카탈로그 blocks[].small)이 아닌 부품 수, 한 줄에 고를 수 있는 너비 (12 기준, 칸 수마다)
-    blockRules: {
-      maxRows: MAX_ROWS,
-      maxInRow: MAX_IN_ROW,
-      maxSmallInRow: MAX_SMALL_IN_ROW,
-      maxStack: MAX_STACK,
-      maxBlocks: MAX_BLOCKS,
-      maxLarge: MAX_LARGE,
-      spans: [1, 2, 3, 4].map((n) => COMBOS[n]),
-    },
+    // 부품 장의 판: 가로, 세로 칸 수, 한 장의 부품 수와 그 가운데 작은 부품(blocks[].small)이 아닌 부품 수
+    blockRules: { cols: BOARD_COLS, rows: BOARD_ROWS, maxBlocks: MAX_BLOCKS, maxLarge: MAX_LARGE },
     blockLooks: BLOCK_LOOKS.map((m) => ({ id: m.id, name: m.name })),
     blockEffects: BLOCK_EFFECTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     // 부품이 언제 나오는지(이어서, 함께, 누르면), 빠르기, 들어오는 쪽(올라오기, 밀려오기, 펼치기만)
     blockWhens: BLOCK_WHENS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     blockSpeeds: BLOCK_SPEEDS.map((m) => ({ id: m.id, name: m.name })),
     blockFroms: BLOCK_FROMS.map((m) => ({ id: m.id, name: m.name })),
-    // 부품 사이에 끼우는 표시: 같은 줄의 두 부품 사이(link) 또는 두 줄 사이(rowLinks)
+    // 부품 사이의 선에 끼우는 표시: 부품의 오른쪽 선(link) 또는 아래 선(linkBelow)
     blockLinks: BLOCK_LINKS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
 }
@@ -258,7 +282,7 @@ function stateOf(text: string, multiline: boolean): FieldState {
 export function toShape(deck: Deck): ShapeDeck {
   return {
     format: SHAPE_FORMAT,
-    version: 1,
+    version: SHAPE_VERSION,
     deck: shapeDeckId(deck),
     type: ALL_TYPES.includes(deck.meta.type) ? deck.meta.type : 'blank',
     audience: AUDIENCES.some((a) => a.id === deck.meta.audience) ? deck.meta.audience : 'mixed',
@@ -317,29 +341,18 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     variant: variantOf(slide),
   }
   if (slide.layout === 'compose') {
-    // 가져온 파일일 수 있어서 꼴부터 맞춘다 (모르는 부품, 넘치는 개수는 뺀다)
-    const rows = cleanRows(slide.rows)
-    out.blocks = rows.map((r, ri) => {
-      const spans = spansOf(r)
-      return r.blocks.map((b, i) => {
-        const sb = shapeBlock(b, spans[i])
-        const link = linkAt(rows, { dir: 'h', row: ri, col: i })
-        const stack = (b.stack ?? []).map((m) => shapeBlock(m, spans[i]))
-        return { ...sb, ...(link ? { link } : {}), ...(stack.length ? { stack } : {}) }
-      })
-    })
-    if (weighted(rows)) out.rowGrow = rows.map((r) => r.grow!)
+    // 가져온 파일일 수 있어서 꼴부터 맞춘다 (모르는 부품, 넘치는 개수는 빼고, 판을 덮지 않는 자리는 다시 나눈다)
+    const blocks = byReading(cleanBlocks(slide.blocks))
+    out.blocks = blocks.map(shapeBlock)
     // 나오는 차례는 장에 있는 부품의 해시 id로만 (지운 부품의 id가 남아 있으면 뺀다)
-    const byId = new Map(allBlocks(rows).map((b) => [b.id, b]))
+    const byId = new Map(blocks.map((b) => [b.id, b]))
     const order = [...new Set(Array.isArray(o.order) ? o.order : [])].filter((id) => byId.has(id)).map((id) => shapeBlockId(byId.get(id)!))
     if (order.length) options.order = order
-    const rowLinks = rows.slice(0, -1).map((_, i) => linkAt(rows, { dir: 'v', row: i }))
-    if (rowLinks.some(Boolean)) out.rowLinks = rowLinks
   }
   return out
 }
 
-function shapeBlock(block: Block, span: number): ShapeBlock {
+function shapeBlock(block: Block): ShapeBlock {
   const spec = BLOCKS[block.type]
   const fields: Record<string, FieldState> = {}
   for (const f of blockFieldSpecs(block.type)) fields[f.key] = stateOf(block.fields[f.key] ?? '', !!f.multiline)
@@ -350,7 +363,10 @@ function shapeBlock(block: Block, span: number): ShapeBlock {
         return o
       })
     : []
-  const out: ShapeBlock = { id: shapeBlockId(block), type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
+  const { x, y, w, h } = block.at!
+  const out: ShapeBlock = { id: shapeBlockId(block), type: block.type, x, y, w, h, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
+  if (isLink(block.link)) out.link = block.link
+  if (isLink(block.linkBelow)) out.linkBelow = block.linkBelow
   if (whenOf(block) !== 'after') out.when = whenOf(block)
   if (speedOf(block) !== 'normal') out.speed = speedOf(block)
   if (block.from && fromOf(block)) out.from = fromOf(block)!
@@ -366,22 +382,19 @@ function checkStates(v: unknown, keys: string[]): boolean {
   return isObj(v) && Object.keys(v).length === keys.length && keys.every((k) => STATES.includes(v[k] as FieldState))
 }
 
-function checkBlock(v: unknown, top = true): boolean {
-  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link', 'fields', 'items', 'stack'])) return false
-  // 쌓은 부품: 칸 맨 위 부품에만, 둘 이상 셋 아래로, 너비는 맨 위와 같고 이음표와 또 쌓은 부품은 없다
-  if (v.stack !== undefined) {
-    if (!top || !Array.isArray(v.stack) || !v.stack.length || v.stack.length > MAX_STACK - 1) return false
-    if (!v.stack.every((m) => checkBlock(m, false) && isObj(m) && m.link === undefined && m.span === v.span)) return false
-  }
+function checkBlock(v: unknown): boolean {
+  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link', 'linkBelow', 'fields', 'items'])) return false
+  // 자리는 판 안의 칸이고, 이음표는 선 건너편에 부품이 있는 쪽에만 (판 끝에는 이을 부품이 없다)
+  if (!isArea({ x: v.x, y: v.y, w: v.w, h: v.h })) return false
+  if (v.link !== undefined && (!isLink(v.link) || (v.x as number) + (v.w as number) >= BOARD_COLS)) return false
+  if (v.linkBelow !== undefined && (!isLink(v.linkBelow) || (v.y as number) + (v.h as number) >= BOARD_ROWS)) return false
   if (v.when !== undefined && !BLOCK_WHEN_IDS.includes(v.when as BlockWhen)) return false
   if (v.speed !== undefined && !BLOCK_SPEED_IDS.includes(v.speed as BlockSpeed)) return false
   if (v.from !== undefined && !BLOCK_FROM_IDS.includes(v.from as BlockFrom)) return false
-  if (v.link !== undefined && !isLink(v.link)) return false
   if (v.id !== undefined && !(typeof v.id === 'string' && OPAQUE_ID.test(v.id) && v.id[0] === 'b')) return false
   if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return false
   if (!BLOCK_TYPES.includes(v.type as BlockType)) return false
   const spec = BLOCKS[v.type as BlockType]
-  if (!isInt(v.span, 1, 12)) return false
   if (!BLOCK_LOOK_IDS.includes(v.look as BlockLook) || !BLOCK_EFFECT_IDS.includes(v.effect as BlockEffect)) return false
   if (!(spec.variants ?? [{ id: 'base' }]).some((x) => x.id === v.variant)) return false
   if (!checkStates(v.fields, blockFieldSpecs(v.type as BlockType).map((f) => f.key))) return false
@@ -392,19 +405,12 @@ function checkBlock(v: unknown, top = true): boolean {
 
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
-  if (!onlyKeys(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks', 'rowGrow', 'rowLinks'])) return false
+  if (!onlyKeys(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks'])) return false
   if (v.blocks !== undefined) {
-    if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_ROWS) return false
-    if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_SMALL_IN_ROW && r.every((b) => checkBlock(b)))) return false
-    // 줄의 마지막 부품에는 오른쪽 이음표가 없다
-    if (!v.blocks.every((r) => !(r as Record<string, unknown>[])[r.length - 1].link)) return false
-  }
-  if (v.rowLinks !== undefined) {
-    if (!Array.isArray(v.blocks) || !Array.isArray(v.rowLinks) || v.rowLinks.length !== v.blocks.length - 1) return false
-    if (!v.rowLinks.every((x) => x === null || isLink(x)) || !v.rowLinks.some(Boolean)) return false
-  }
-  if (v.rowGrow !== undefined) {
-    if (!Array.isArray(v.blocks) || !Array.isArray(v.rowGrow) || v.rowGrow.length !== v.blocks.length || v.rowGrow.length < 2 || !v.rowGrow.every(isGrow)) return false
+    if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_BLOCKS || !v.blocks.every((b) => checkBlock(b))) return false
+    // 부품들이 판을 빈틈없이, 겹치지 않게 나눠 덮는다 (빈 장은 부품이 없다)
+    const at = (v.blocks as ShapeBlock[]).map((b, i) => ({ id: String(i), type: b.type, fields: {}, items: [], at: { x: b.x, y: b.y, w: b.w, h: b.h } }))
+    if (at.length && !tiles(at)) return false
   }
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
   if (!hasKey(LAYOUTS, v.layout)) return false
@@ -438,7 +444,7 @@ export function checkShape(v: unknown): v is ShapeDeck {
   if (!isObj(v)) return false
   if (!onlyKeys(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'updatedAt', 'slides']))
     return false
-  if (v.format !== SHAPE_FORMAT || v.version !== 1) return false
+  if (v.format !== SHAPE_FORMAT || v.version !== SHAPE_VERSION) return false
   if (typeof v.deck !== 'string' || !OPAQUE_ID.test(v.deck) || v.deck[0] !== 'd') return false
   if (!ALL_TYPES.includes(v.type as DeckType)) return false
   if (!AUDIENCES.some((a) => a.id === v.audience)) return false

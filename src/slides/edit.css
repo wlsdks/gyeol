@@ -496,7 +496,7 @@
 }
 
 /* 칸 너비나 줄 높이를 끄는 동안에는 손 아래를 지나는 컴포넌트의 이름표를 띄우지 않는다 (말풍선처럼 이웃 칸을 가린다) */
-:is(body.is-block-resizing, body.is-row-resizing) .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
+body.is-block-resizing .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 0;
   pointer-events: none;
 }
@@ -685,75 +685,82 @@ body.is-pane-sizing * {
   visibility: hidden;
 }
 
-/* 칸 사이 손잡이: 칸 사이 틈에 놓이고, 끌면 정해진 비율에 붙는다 */
-.bk-gutter {
-  position: relative;
+/* 판을 나누는 선의 손잡이: 칸 사이를 선이 그어진 범위만큼 덮고, 끌면 판의 칸에 붙는다 (blocks.tsx의 Lines).
+   자리 계산은 .bk와 같다: 칸 하나는 (본문 + 칸 사이) ÷ 12 */
+.bk-line {
+  position: absolute;
   z-index: 5;
-  justify-self: start;
-  width: var(--bk-col-gap);
-  margin-left: calc(var(--bk-col-gap) * -1);
-  cursor: col-resize;
   touch-action: none;
 }
 
-.bk-gutter-grip {
+.bk-line.is-h {
+  top: calc((100% + var(--bk-gap)) * var(--from) / 12);
+  left: calc((100% + var(--bk-col-gap)) * var(--at) / 12 - var(--bk-col-gap));
+  width: var(--bk-col-gap);
+  height: calc((100% + var(--bk-gap)) * (var(--to) - var(--from)) / 12 - var(--bk-gap));
+  cursor: col-resize;
+}
+
+.bk-line.is-v {
+  top: calc((100% + var(--bk-gap)) * var(--at) / 12 - var(--bk-gap));
+  left: calc((100% + var(--bk-col-gap)) * var(--from) / 12);
+  width: calc((100% + var(--bk-col-gap)) * (var(--to) - var(--from)) / 12 - var(--bk-col-gap));
+  height: var(--bk-gap);
+  cursor: row-resize;
+}
+
+.bk-line-grip {
   position: absolute;
+  border-radius: 2px;
+  background: var(--sel);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.bk-line.is-h .bk-line-grip {
   top: 18%;
   bottom: 18%;
   left: 50%;
   width: 4px;
-  border-radius: 2px;
-  background: var(--sel);
-  opacity: 0;
   translate: -50% 0;
   scale: calc(1 / var(--vs, 1)) 1;
-  transition: opacity 0.12s;
 }
 
-/* 줄 사이 손잡이: 줄 사이 틈에 놓이고, 끌면 위아래 줄이 높이를 나눠 갖는다 */
-.bk-rowgap {
-  position: relative;
-  z-index: 5;
-  align-self: start;
-  height: var(--bk-gap);
-  margin-top: calc(var(--bk-gap) * -1);
-  cursor: row-resize;
-  touch-action: none;
-}
-
-.bk-rowgap-grip {
-  position: absolute;
+.bk-line.is-v .bk-line-grip {
   top: 50%;
   right: 30%;
   left: 30%;
   height: 4px;
-  border-radius: 2px;
-  background: var(--sel);
-  opacity: 0;
   translate: 0 -50%;
   scale: 1 calc(1 / var(--vs, 1));
-  transition: opacity 0.12s;
 }
 
-/* 본문 위에 손을 올리면 칸 사이, 줄 사이 손잡이가 옅게 보여 끌 수 있는 곳을 알린다. 손잡이 위에서는 진하게 */
-.bk-area.is-live:hover .bk-gutter-grip,
-.bk-area.is-live:hover .bk-rowgap-grip {
+/* 본문 위에 손을 올리면 선의 손잡이가 옅게 보여 끌 수 있는 곳을 알린다. 손잡이 위에서는 진하게 */
+.bk-area.is-live:hover .bk-line-grip {
   opacity: 0.22;
 }
 
-.bk-gutter:hover .bk-gutter-grip,
-.bk-rowgap:hover .bk-rowgap-grip,
-body.is-block-resizing .bk-gutter-grip,
-body.is-row-resizing .bk-rowgap-grip {
+.bk-line:hover .bk-line-grip,
+.bk-line.is-active .bk-line-grip {
   opacity: 1;
 }
 
-.bk-gutter.has-link .bk-gutter-grip {
-  mask: linear-gradient(#000 0 calc(50% - 56px), transparent 0 calc(50% + 56px), #000 0);
+/* 판의 칸: 끌거나 크기를 바꾸는 동안 칸 사이마다 점을 찍어 부품이 붙는 자리를 보여 준다.
+   점은 칸 사이의 가운데(가로 36px, 세로 24px 앞)에, 칸 하나마다 하나씩 */
+.bk-board {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(circle at calc(100% - var(--bk-col-gap) / 2) calc(100% - var(--bk-gap) / 2), color-mix(in srgb, var(--sel) 55%, transparent) 0 calc(3px / var(--vs, 1)), transparent calc(3.5px / var(--vs, 1)));
+  background-size: calc((100% + var(--bk-col-gap)) / 12) calc((100% + var(--bk-gap)) / 12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
 }
 
-.bk-rowgap.has-link .bk-rowgap-grip {
-  mask: linear-gradient(90deg, #000 0 calc(50% - 56px), transparent 0 calc(50% + 56px), #000 0);
+.bk-area.is-dragging > .bk-board,
+body.is-block-resizing .bk-area.is-live > .bk-board {
+  opacity: 1;
 }
 
 /* 이음표: 편집할 때는 눌러 고르고 끌어 옮긴다. 칸 사이 손잡이보다 위에 */

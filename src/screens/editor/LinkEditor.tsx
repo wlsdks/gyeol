@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { BLOCK_LINKS, fitsHeight, linkAt, linkTargets, membersOf, placeOf, sameLinkTarget, withLink, type LinkTarget } from '../../deck/blocks'
-import type { Block, BlockLink, BlockRow, Slide } from '../../deck/types'
+import { across, behind, BLOCK_LINKS, BLOCKS, boardFit, BOARD_ROWS, linkAt, linkIssue, linkTargets, needRows, sameLinkTarget, withLink, type LinkTarget } from '../../deck/blocks'
+import type { Block, BlockLink, Slide } from '../../deck/types'
+import { josa } from '../../lib/josa'
 import { cx } from '../../lib/cx'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { LinkGlyph } from '../../slides/blocks'
@@ -10,15 +11,16 @@ import { dialogOpen, isTyping, TrashIcon, undoAction, type Toast } from '../ui'
 
 // 이음표(화살표, 더하기, 결과, 견주기)를 컴포넌트 사이에 끼우는 일.
 //
-// 이음표는 칸을 차지하지 않고 칸 사이에 선다(deck/blocks.ts의 이음표). 끌면 손에 든 이음표가 가장 가까운 칸 사이에 붙고,
-// 그 자리의 양쪽 칸이 비켜 나는 모습을 미리 보여 준다. 놓을 때 한 번만 저장해서 되돌리기 한 번으로 돌아온다.
+// 이음표는 칸을 차지하지 않고 부품 사이의 선 위에 선다(deck/blocks/links.ts). 끌면 손에 든 이음표가 가장 가까운 선에 붙고,
+// 그 자리의 양쪽 부품이 비켜 나는 모습을 미리 보여 준다. 놓을 때 한 번만 저장해서 되돌리기 한 번으로 돌아온다.
+// 뜻이 서지 않는 짝(진행 막대와 시장 원을 견주기 같은)에는 놓지 않고 까닭을 알린다 (links.ts의 linkFits)
 
-/** 이음표를 놓을 수 있는 자리의 화면 좌표. 칸 사이는 두 칸의 가운데, 줄 사이는 두 줄의 가운데 */
+/** 이음표를 놓을 수 있는 자리의 화면 좌표. 옆 선은 앞 부품 높이의 가운데, 아래 선은 앞 부품 너비의 가운데 */
 interface Spot {
   t: LinkTarget
   x: number
   y: number
-  /** 칸 사이는 그 줄의 위아래 끝, 줄 사이는 본문의 왼쪽 오른쪽 끝 (이 안이면 가깝다고 본다) */
+  /** 옆 선은 앞 부품의 위아래 끝, 아래 선은 왼쪽 오른쪽 끝 (이 안이면 가깝다고 본다) */
   lo: number
   hi: number
 }
@@ -27,49 +29,43 @@ interface LinkDrag {
   link: BlockLink
   /** 장에 있던 이음표를 옮길 때 원래 자리 */
   from: LinkTarget | null
-  /** 옮기는 이음표를 뺀 줄들. 놓을 자리는 늘 이것을 기준으로 */
-  base: BlockRow[]
+  /** 옮기는 이음표를 뺀 판. 놓을 자리는 늘 이것을 기준으로 */
+  base: Block[]
   spots: Spot[]
   target: LinkTarget | null
   /** 손 아래 자리에 놓을 수 없는 까닭 */
   blocked: string | null
 }
 
-const NO_HEIGHT = '줄 사이를 넓힐 높이가 모자라요. 컴포넌트를 빼거나 줄을 줄여 주세요.'
+const NO_HEIGHT = '컴포넌트 사이를 넓힐 높이가 모자라요. 컴포넌트를 빼거나 항목을 줄여 주세요.'
 const NO_PAIR = '컴포넌트가 둘 이상 있어야 그 사이에 이음표를 끼울 수 있어요.'
 
-/** 지금 그려진 칸들로 놓을 자리를 잰다. 양쪽 칸이 똑같이 비켜 나서, 미리 보기로 칸이 움직여도 가운데는 그대로다 */
-function measureSpots(area: HTMLElement, rows: BlockRow[]): Spot[] {
+/** 지금 그려진 부품들로 놓을 자리를 잰다. 양쪽 부품이 똑같이 비켜 나서, 미리 보기로 부품이 움직여도 가운데는 그대로다 */
+function measureSpots(area: HTMLElement, blocks: Block[]): Spot[] {
   const cells = new Map<string, DOMRect>()
-  for (const el of area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk')) cells.set(el.dataset.block!, el.getBoundingClientRect())
-  // 칸 하나가 차지한 상자: 쌓은 칸이면 맨 위 부품의 윗선부터 맨 아래 부품의 아랫선까지
-  const box = (cell: Block) => {
-    const rs = membersOf(cell).flatMap((m) => cells.get(m.id) ?? [])
-    if (!rs.length) return undefined
-    const top = Math.min(...rs.map((r) => r.top))
-    const bottom = Math.max(...rs.map((r) => r.bottom))
-    return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top, bottom }
-  }
-  const a = area.getBoundingClientRect()
+  for (const el of area.querySelectorAll<HTMLElement>(':scope > .bk')) cells.set(el.dataset.block!, el.getBoundingClientRect())
   const out: Spot[] = []
-  for (const t of linkTargets(rows)) {
-    const row = rows[t.row]
-    if (t.dir === 'h') {
-      const l = box(row.blocks[t.col])
-      const r = box(row.blocks[t.col + 1])
-      if (!l || !r) continue
-      const lo = Math.min(l.top, r.top)
-      const hi = Math.max(l.bottom, r.bottom)
-      out.push({ t, x: (l.right + r.left) / 2, y: (lo + hi) / 2, lo, hi })
-    } else {
-      const up = row.blocks.map(box).filter((r) => !!r)
-      const down = rows[t.row + 1].blocks.map(box).filter((r) => !!r)
-      if (!up.length || !down.length) continue
-      const y = (Math.max(...up.map((r) => r.bottom)) + Math.min(...down.map((r) => r.top))) / 2
-      out.push({ t, x: a.left + a.width / 2, y, lo: a.left, hi: a.right })
-    }
+  for (const t of linkTargets(blocks)) {
+    const b = blocks.find((x) => x.id === t.id)!
+    const r = cells.get(b.id)
+    const next = across(blocks, b, t.dir).flatMap((o) => cells.get(o.id) ?? [])
+    if (!r || !next.length) continue
+    if (t.dir === 'h') out.push({ t, x: (r.right + Math.min(...next.map((n) => n.left))) / 2, y: (r.top + r.bottom) / 2, lo: r.top, hi: r.bottom })
+    else out.push({ t, x: (r.left + r.right) / 2, y: (r.bottom + Math.min(...next.map((n) => n.top))) / 2, lo: r.left, hi: r.right })
   }
   return out
+}
+
+/**
+ * 뜻이 서지 않는 짝을 잇지 않는 까닭. 화살표와 더하기, 견주기는 같은 갈래끼리(숫자와 숫자, 목록과 목록, 차트와 차트),
+ * 결과(=)와 화살표는 무엇이든 숫자나 한마디로 이어요 (links.ts의 linkFits)
+ */
+function pairText(from: Block['type'], to: Block['type'], link: BlockLink): string {
+  const name = BLOCK_LINKS.find((l) => l.id === link)!.name
+  const a = BLOCKS[from].name
+  const b = BLOCKS[to].name
+  const rule = link === 'equals' ? '결과는 숫자나 한마디로 맺을 때 써요.' : link === 'arrow' ? '화살표는 같은 갈래끼리 잇거나, 숫자나 한마디로 맺을 때 써요.' : '숫자는 숫자끼리, 차트는 차트끼리처럼 같은 갈래를 이어요.'
+  return `${josa(a, '과', '와')} ${josa(b, '은', '는')} ${josa(name, '으로', '로')} 이으면 뜻이 서지 않아요. ${rule}`
 }
 
 /** 손 아래에서 가장 가까운 자리. 칸 사이는 옆으로 떨어진 만큼, 줄 사이는 위아래로 떨어진 만큼 (그 줄이나 본문 밖이면 그만큼 더) */
@@ -111,25 +107,28 @@ export function useLinkEditing({
 
   useEffect(() => setSelected(null), [slideRef.current.id])
 
-  /** 이 자리에 이음표를 둘 수 없는 까닭. 줄 사이는 위아래 줄이 비켜 나는 만큼 높이가 더 든다 */
-  const why = (rows: BlockRow[], t: LinkTarget, link: BlockLink): string | null => {
+  /** 이 자리에 이음표를 둘 수 없는 까닭: 뜻이 서지 않는 짝, 그리고 아래 선은 위아래 부품이 비켜 나는 만큼 높이가 더 든다 */
+  const why = (blocks: Block[], t: LinkTarget, link: BlockLink): string | null => {
+    const pair = linkIssue(blocks, t, link)
+    if (pair) return pairText(pair.from, pair.to, link)
     if (t.dir === 'h') return null
     const h = areaEl.current?.offsetHeight
-    return h && !fitsHeight(withLink(rows, t, link), h) ? NO_HEIGHT : null
+    const next = withLink(blocks, t, link)
+    return h && needRows(next, boardFit(h, next)) > BOARD_ROWS ? NO_HEIGHT : null
   }
 
   /** 놓은 이음표가 제자리에서 살짝 튀며 나타난다 */
   const pop = (t: LinkTarget) =>
     requestAnimationFrame(() => {
-      const key = t.dir === 'h' ? `h${t.row}-${t.col}` : `v${t.row}`
+      const key = `${t.dir}${t.id}`
       const el = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk-link[data-link="${key}"] > .bk-link-g`)
       if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return
       el.animate([{ scale: '0.4', opacity: 0 }, { scale: '1.12', opacity: 1, offset: 0.6 }, { scale: '1' }], { duration: 380, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' })
     })
 
-  const place = (rows: BlockRow[], t: LinkTarget, link: BlockLink) => {
+  const place = (blocks: Block[], t: LinkTarget, link: BlockLink) => {
     const s = slideRef.current
-    store.setRows(s.id, withLink(rows, t, link))
+    store.setBlocks(s.id, withLink(blocks, t, link))
     setSelected(t)
     deselectBlock()
     pop(t)
@@ -170,9 +169,9 @@ export function useLinkEditing({
 
   const begin = (link: BlockLink, from: LinkTarget | null, x: number, y: number) => {
     const s = slideRef.current
-    const rows = s.layout === 'compose' ? (s.rows ?? []) : []
-    const base = from ? withLink(rows, from, null) : rows
-    const spots = areaEl.current && s.layout === 'compose' ? measureSpots(areaEl.current, rows) : []
+    const blocks = s.layout === 'compose' ? (s.blocks ?? []) : []
+    const base = from ? withLink(blocks, from, null) : blocks
+    const spots = areaEl.current && s.layout === 'compose' ? measureSpots(areaEl.current, blocks) : []
     const d: LinkDrag = { link, from, base, spots, target: from, blocked: null }
     dragRef.current = d
     setDrag(d)
@@ -237,36 +236,47 @@ export function useLinkEditing({
 
   // ---------- 눌러서 넣기 ----------
 
-  /** 알아서 고른 자리: 고른 부품의 오른쪽, 그 줄 아래, 위. 고른 부품이 없으면 처음 빈 칸 사이, 그다음 줄 사이 */
-  function autoSpot(rows: BlockRow[], link: BlockLink): LinkTarget | null {
-    const free = (t: LinkTarget) => !linkAt(rows, t) && !why(rows, t, link)
-    const all = linkTargets(rows)
-    if (selectedBlock) {
-      const at = placeOf(rows, selectedBlock)
-      if (at) {
-        const { row, col } = at
-        const near: LinkTarget[] = [{ dir: 'h', row, col }, { dir: 'h', row, col: col - 1 }, { dir: 'v', row }, { dir: 'v', row: row - 1 }]
-        const t = near.find((n) => all.some((a) => sameLinkTarget(a, n)) && free(n))
-        if (t) return t
-      }
+  /** 알아서 고른 자리: 고른 부품의 오른쪽, 왼쪽, 아래, 위. 고른 부품이 없으면 처음 빈 옆 선, 그다음 아래 선 */
+  function autoSpot(blocks: Block[], link: BlockLink): LinkTarget | null {
+    const free = (t: LinkTarget) => !linkAt(blocks, t) && !why(blocks, t, link)
+    const all = linkTargets(blocks)
+    const self = selectedBlock && blocks.find((b) => b.id === selectedBlock)
+    if (self) {
+      const near: LinkTarget[] = [
+        { id: self.id, dir: 'h' },
+        ...behind(blocks, self, 'h').map((b) => ({ id: b.id, dir: 'h' as const })),
+        { id: self.id, dir: 'v' },
+        ...behind(blocks, self, 'v').map((b) => ({ id: b.id, dir: 'v' as const })),
+      ]
+      const t = near.find((n) => all.some((a) => sameLinkTarget(a, n)) && free(n))
+      if (t) return t
     }
     return all.find((t) => t.dir === 'h' && free(t)) ?? all.find(free) ?? null
   }
 
   function insert(link: BlockLink) {
     const s = slideRef.current
-    const rows = s.layout === 'compose' ? (s.rows ?? []) : []
-    const all = linkTargets(rows)
+    const blocks = s.layout === 'compose' ? (s.blocks ?? []) : []
+    const all = linkTargets(blocks)
     if (!all.length) {
       toast.show(NO_PAIR, undefined, 5000)
       return
     }
-    const t = autoSpot(rows, link)
+    const t = autoSpot(blocks, link)
     if (!t) {
-      toast.show(all.every((a) => linkAt(rows, a)) ? '모든 컴포넌트 사이에 이미 이음표가 있어요. 이음표를 눌러 모양을 바꿀 수 있어요.' : NO_HEIGHT, undefined, 6000)
+      const pair = all.map((a) => !linkAt(blocks, a) && linkIssue(blocks, a, link)).find(Boolean)
+      toast.show(
+        all.every((a) => linkAt(blocks, a))
+          ? '모든 컴포넌트 사이에 이미 이음표가 있어요. 이음표를 눌러 모양을 바꿀 수 있어요.'
+          : pair
+            ? pairText(pair.from, pair.to, link)
+            : NO_HEIGHT,
+        undefined,
+        6000,
+      )
       return
     }
-    place(rows, t, link)
+    place(blocks, t, link)
   }
 
   const pressCard = (e: ReactPointerEvent<HTMLElement>, link: BlockLink) => press(e, (x, y) => begin(link, null, x, y), () => insert(link))
@@ -277,21 +287,26 @@ export function useLinkEditing({
     if (e.button !== 0) return
     // 장 바탕을 누른 것으로 보고 고르기를 끝내지 않게
     e.stopPropagation()
-    const link = linkAt(slideRef.current.rows ?? [], t)
+    const link = linkAt(slideRef.current.blocks ?? [], t)
     if (!link) return
     setSelected(t)
     deselectBlock()
     press(e, (x, y) => begin(link, t, x, y), () => {})
   }
 
-  const selectedLink = selected && linkAt(slideRef.current.rows ?? [], selected) ? selected : null
+  const selectedLink = selected && linkAt(slideRef.current.blocks ?? [], selected) ? selected : null
 
   const change = (link: BlockLink | null) => {
     const s = slideRef.current
     if (!selectedLink) return
     const t = selectedLink
-    if (link && t.dir === 'v' && why(withLink(s.rows ?? [], t, null), t, link)) return
-    store.setRows(s.id, withLink(s.rows ?? [], t, link))
+    const blocks = s.blocks ?? []
+    const blockedBy = link && why(withLink(blocks, t, null), t, link)
+    if (blockedBy) {
+      toast.show(blockedBy, undefined, 6000)
+      return
+    }
+    store.setBlocks(s.id, withLink(blocks, t, link))
     if (!link) {
       setSelected(null)
       toast.show('이음표를 뺐어요', undoAction(toast))
@@ -315,7 +330,7 @@ export function useLinkEditing({
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  const current = selectedLink ? linkAt(slideRef.current.rows ?? [], selectedLink) : null
+  const current = selectedLink ? linkAt(slideRef.current.blocks ?? [], selectedLink) : null
   const toolbar =
     selectedLink && current && !drag ? (
       <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
@@ -368,8 +383,8 @@ export function useLinkEditing({
   return {
     selectedLink,
     selectLink: setSelected,
-    /** 끄는 동안 장에 보여 줄 줄들(옮기는 이음표를 뺀)과 놓일 자리 */
-    previewRows: drag ? drag.base : null,
+    /** 끄는 동안 장에 보여 줄 판(옮기는 이음표를 뺀)과 놓일 자리 */
+    previewBlocks: drag ? drag.base : null,
     preview: drag?.target ? { target: drag.target, link: drag.link } : null,
     dragging: !!drag,
     onLinkPointerDown,

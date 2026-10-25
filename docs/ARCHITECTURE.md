@@ -60,7 +60,7 @@
 | 새 버전에서 만든 발표 알아보기 | `src/deck/compat.ts` |
 | 브라우저와 보관 폴더 중 어느 쪽을 남길지 | `src/store/reconcile.ts` |
 | 장의 틀(여백, 제목 크기, 글자 크기 배율) | `src/deck/frame.ts`. CSS와 같은 값인지 `frame.test.ts`가 본다 |
-| 부품 장의 자리 규칙(줄 셋, 칸 셋, 한 칸에 쌓기, 너비 비율) | `src/deck/blocks/rules.ts`, `sizing.ts` |
+| 부품 장의 판(12×12칸을 자른 조각, 넣기·빼기·옮기기·맞바꾸기·선 끌기, 다시 맞추기) | `src/deck/blocks/board.ts`. 부품마다의 크기 규칙(`boardFit`)은 `sizing.ts`, 부품 수와 면은 `rules.ts`, 놓을 자리는 `place.ts` |
 | 부품이 잘리지 않는 높이 | `src/deck/blockHeights.ts`(갤러리에서 잰 값, 손으로 고치지 않는다) |
 | 칸의 글에서 숫자 읽기, 선 그래프의 축 | `src/slides/numbers.ts`(`seriesIn`, `amountPair`, `lineAxis`) |
 | 조각 색의 단계(구성비, 쌓은 막대) | `src/slides/tints.ts` |
@@ -130,7 +130,7 @@
 | `mcp/server.test.ts` | MCP 서버를 실제로 띄워 도구, 권한 모델, 내보내는 글자가 정해진 말뿐인지 본다 |
 | `server/serve.test.ts`, `server/agent.test.ts` | `127.0.0.1`, Host 검사, CSP, AI 창구, Claude Code를 띄우는 인자 |
 | `src/export/exportHtml.test.ts` | 내보낸 HTML의 CSP, 다시 열기 |
-| `src/deck/blocks.test.ts` | 부품 장으로 바꿔도 글을 잃지 않는다. 자리 규칙. 모든 부품의 높이를 쟀다 |
+| `src/deck/blocks.test.ts`, `src/deck/blocks/board.test.ts` | 부품 장으로 바꿔도 글을 잃지 않는다. 판이 늘 빈틈없이 덮이고 넣고 빼고 옮겨도 잘리지 않는다. 모든 부품의 높이를 쟀다 |
 | `src/deck/frame.test.ts`, `src/slides/css.test.ts` | TS의 값과 CSS의 값이 같다(틀, 글자 칸 목록, 부품 간격) |
 | `src/motion/engine.test.ts`, `src/slides/fitBlocks.test.ts` | 레이아웃과 부품마다 연출이 있고, 고를 수 있는 때, 빠르기, 쪽, 장 넘기기를 엔진이 안다. 엔진과 글자 맞추기가 바깥 이름 없이 소스만으로 다시 만들어진다(내보낸 HTML에 소스째 들어간다) |
 | `src/deck/generate.test.ts` | 구성 규칙(결론부터, 시간에 맞는 장 수, 듣는 사람). 레이아웃 묶음과 예시 |

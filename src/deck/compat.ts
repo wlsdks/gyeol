@@ -1,4 +1,4 @@
-import { cleanRows } from './blocks'
+import { boardFromRows, cleanBlocks, cleanList, LOOSE } from './blocks'
 import { LAYOUTS } from './layouts'
 import { THEMES } from './themes'
 import type { Deck } from './types'
@@ -13,11 +13,14 @@ import type { Deck } from './types'
 /** 이 버전이 모르는 것(새 버전에서 생긴 장, 부품, 부품의 모양과 움직임, 칸)의 개수. 0이면 그대로 열어도 잃는 것이 없다 */
 export function unknownParts(deck: Deck): number {
   const lost = { n: 0 }
-  if (deck.version !== 1) lost.n++
+  // 1은 판 전(0.4까지)의 발표: 열 때 판으로 바꾼다(migrate.ts)
+  if ((deck.version as number) !== 1 && deck.version !== 2) lost.n++
   if (!Object.hasOwn(THEMES, deck.theme.id)) lost.n++
   for (const s of deck.slides) {
     if (!Object.hasOwn(LAYOUTS, s.layout)) lost.n++
-    if (s.layout === 'compose' || s.rows !== undefined) cleanRows(s.rows, lost)
+    const rows = (s as typeof s & { rows?: unknown }).rows
+    if (rows !== undefined) boardFromRows(rows, LOOSE, lost)
+    else if (s.layout === 'compose' || s.blocks !== undefined) cleanList(s.blocks, lost)
   }
   return lost.n
 }
@@ -26,7 +29,7 @@ export function unknownParts(deck: Deck): number {
 export function knownOnly(deck: Deck): Deck {
   const slides = deck.slides
     .filter((s) => Object.hasOwn(LAYOUTS, s.layout))
-    .map((s) => (s.layout === 'compose' || s.rows !== undefined ? { ...s, rows: cleanRows(s.rows) } : s))
+    .map((s) => (s.layout === 'compose' || s.blocks !== undefined ? { ...s, blocks: cleanBlocks(s.blocks) } : s))
   const theme = Object.hasOwn(THEMES, deck.theme.id) ? deck.theme : { ...deck.theme, id: 'white' as const }
-  return { ...deck, version: 1, theme, slides }
+  return { ...deck, version: 2, theme, slides }
 }

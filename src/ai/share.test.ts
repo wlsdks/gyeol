@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { autoPlace, insertAt, makeBlock, tiles, withLink } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
-import { createDeck } from '../deck/generate'
+import { createDeck, makeSlide } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
 import { LAYOUTS } from '../deck/layouts'
-import type { LayoutId } from '../deck/types'
+import type { Block, LayoutId } from '../deck/types'
 import { parseOp } from './ops'
 import { HIGHLIGHT_MAX, HIGHLIGHT_MIN } from './protocol'
 import { SECRET, secretDeck } from './secretDeck'
@@ -22,21 +23,34 @@ describe('모양만 고르기', () => {
     expect(shape.accent).toBeNull()
   })
 
-  it('부품 장은 부품의 종류, 너비, 바탕, 움직임과 칸 상태만 보인다', () => {
+  it('부품 장은 부품의 종류, 판의 자리, 바탕, 움직임과 칸 상태만 보인다', () => {
     const shape = toShape(secretDeck())
     const compose = shape.slides.find((x) => x.layout === 'compose')!
-    expect(compose.blocks?.map((r) => r.map((b) => b.type))).toEqual([['message', 'bullets'], ['kpi']])
-    // 쌓은 부품도 종류와 칸 상태만, 너비는 칸과 같다 (모르는 종류, 쌓은 부품의 이음표와 또 쌓은 부품은 빠진다)
-    const stack = compose.blocks?.[0][0].stack
-    expect(stack?.map((b) => b.type)).toEqual(['number', 'delta'])
-    expect(stack?.every((b) => b.span === compose.blocks?.[0][0].span && !b.link && !b.stack && /^b/.test(b.id!))).toBe(true)
-    expect(compose.blocks?.[0][0]).toMatchObject({ look: 'plain', effect: 'auto', variant: 'base', fields: { text: 'filled' } })
-    expect(compose.blocks?.[0].reduce((a, b) => a + b.span, 0)).toBe(12)
-    // 이음표는 카탈로그의 말만: 맞지 않는 값과 설 데가 없는 것(줄의 끝, 마지막 줄 아래)은 빠진다
-    expect(compose.blocks?.[0].map((b) => b.link)).toEqual(['arrow', undefined])
-    expect(compose.blocks?.[1][0].link).toBeUndefined()
-    expect(compose.rowLinks).toEqual(['plus'])
+    const blocks = compose.blocks!
+    // 모르는 종류, 예전 꼴의 쌓은 부품과 줄(rows)은 빠진다
+    expect(blocks.map((b) => b.type).sort()).toEqual(['bullets', 'kpi', 'message', 'number'])
+    expect(blocks.every((b) => /^b/.test(b.id!))).toBe(true)
+    // 자리에 심은 비밀은 버리고 판을 다시 나눈다: 빈틈없이, 칸 수로만
+    expect(tiles(blocks.map((b, i) => ({ ...makeBlock(b.type), id: String(i), at: { x: b.x, y: b.y, w: b.w, h: b.h } })))).toBe(true)
+    expect(blocks.every((b) => [b.x, b.y, b.w, b.h].every(Number.isInteger))).toBe(true)
+    const message = blocks.find((b) => b.type === 'message')!
+    expect(message).toMatchObject({ look: 'plain', effect: 'auto', variant: 'base', fields: { text: 'filled' } })
+    // 이음표는 카탈로그의 말만: 맞지 않는 값과 설 데가 없는 것(판의 끝)은 빠진다
+    expect(blocks.map((b) => b.link ?? null).filter(Boolean)).toEqual(['arrow'])
+    expect(blocks.every((b) => b.linkBelow === undefined)).toBe(true)
     expect(checkShape(shape)).toBe(true)
+  })
+
+  it('판의 자리와 두 쪽 이음표는 칸 수와 카탈로그의 말로 보인다', () => {
+    const b = (type: Block['type'], id: string): Block => ({ ...makeBlock(type), id })
+    let blocks = insertAt(autoPlace([], b('number', 'n'))!, { at: 'n', side: 'right' }, b('delta', 'd'))!
+    blocks = withLink(withLink(insertAt(blocks, { at: null, side: 'below' }, b('text', 't'))!, { id: 'n', dir: 'h' }, 'plus'), { id: 'n', dir: 'v' }, 'equals')
+    const deck = { ...createSampleDeck(), slides: [{ ...makeSlide('compose'), blocks }] }
+    const shown = toShape(deck).slides[0].blocks!
+    expect(shown.map((x) => [x.type, x.x, x.y, x.w, x.h, x.link ?? null, x.linkBelow ?? null])).toEqual(
+      blocks.map((x) => [x.type, x.at!.x, x.at!.y, x.at!.w, x.at!.h, x.link ?? null, x.linkBelow ?? null]),
+    )
+    expect(checkShape(toShape(deck))).toBe(true)
   })
 
   it('원래 덱에서는 장 역할과 칸 상태가 보인다', () => {
@@ -89,14 +103,16 @@ describe('모양만 고르기', () => {
     expect(bad((v) => (v.slides[1].blocks = []))).toBe(false)
     const withBlocks = toShape(secretDeck())
     const badBlocks = (fn: (b: Record<string, unknown>) => void) => {
-      const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; blocks?: Record<string, unknown>[][] }[] }
-      fn(copy.slides.find((x) => x.layout === 'compose')!.blocks![0][0])
+      const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; blocks?: Record<string, unknown>[] }[] }
+      fn(copy.slides.find((x) => x.layout === 'compose')!.blocks![0])
       return checkShape(copy)
     }
     expect(badBlocks(() => {})).toBe(true)
     expect(badBlocks((b) => (b.type = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.look = SECRET))).toBe(false)
-    expect(badBlocks((b) => (b.span = 13))).toBe(false)
+    expect(badBlocks((b) => (b.x = 13))).toBe(false)
+    expect(badBlocks((b) => (b.w = 0))).toBe(false)
+    expect(badBlocks((b) => (b.h = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.note = SECRET))).toBe(false)
     expect(badBlocks((b) => ((b.fields as Record<string, string>).text = SECRET))).toBe(false)
     // 부품 id는 해시 id(b로 시작)만. 원래 id나 글이면 버린다. 예전 앱이 쓴 모양 파일처럼 없으면 받는다
@@ -107,15 +123,22 @@ describe('모양만 고르기', () => {
     expect(badBlocks((b) => (b.when = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.speed = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.from = SECRET))).toBe(false)
-    // 쌓은 부품: 글, 이음표, 또 쌓은 것, 칸과 다른 너비, 너무 많이 쌓은 것은 받지 않는다
-    const member = (b: Record<string, unknown>) => (b.stack as Record<string, unknown>[])[0]
-    expect(badBlocks((b) => ((member(b).fields as Record<string, string>).value = SECRET))).toBe(false)
-    expect(badBlocks((b) => (member(b).link = 'arrow'))).toBe(false)
-    expect(badBlocks((b) => (member(b).stack = [structuredClone(member(b))]))).toBe(false)
-    expect(badBlocks((b) => (member(b).span = (b.span as number) - 1))).toBe(false)
-    expect(badBlocks((b) => (b.stack = [...(b.stack as unknown[]), structuredClone(member(b))]))).toBe(false)
+    // 예전 꼴(쌓은 부품, 칸 너비)은 받지 않는다
     expect(badBlocks((b) => (b.stack = []))).toBe(false)
-    expect(badBlocks((b) => (b.stack = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.span = 4))).toBe(false)
+    // 판: 겹치거나 빈 곳이 있는 자리, 판 끝의 이음표, 넘치는 부품 수
+    const badBoard = (fn: (bs: Record<string, unknown>[]) => void) => {
+      const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; blocks?: Record<string, unknown>[] }[] }
+      fn(copy.slides.find((x) => x.layout === 'compose')!.blocks!)
+      return checkShape(copy)
+    }
+    expect(badBoard(() => {})).toBe(true)
+    expect(badBoard((bs) => (bs[1].x = bs[0].x))).toBe(false)
+    expect(badBoard((bs) => bs.pop())).toBe(false)
+    expect(badBoard((bs) => (bs.find((b) => (b.x as number) + (b.w as number) === 12)!.link = 'arrow'))).toBe(false)
+    expect(badBoard((bs) => (bs[0].linkBelow = 'arrow'))).toBe(false)
+    expect(badBoard((bs) => (bs[0].link = SECRET))).toBe(false)
+    expect(badBoard((bs) => bs.push(...Array.from({ length: 10 }, () => structuredClone(bs[0]))))).toBe(false)
     // 나오는 차례는 부품 장에만, 해시 id로만
     const badCompose = (fn: (o: Record<string, unknown>) => void) => {
       const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; options: Record<string, unknown> }[] }
@@ -130,9 +153,9 @@ describe('모양만 고르기', () => {
   it('비밀을 심은 덱의 나오는 차례는 있는 부품의 해시 id만 남는다', () => {
     const shape = toShape(secretDeck())
     const compose = shape.slides.find((x) => x.layout === 'compose')!
-    const ids = compose.blocks!.flat().map((b) => b.id)
-    // 심은 차례: 없는 id, 셋째 부품, 첫째 부품 → 셋째, 첫째의 해시 id
-    expect(compose.options.order).toEqual([ids[2], ids[0]])
+    const id = (type: string) => compose.blocks!.find((b) => b.type === type)!.id
+    // 심은 차례: 없는 id, 셋째 부품(핵심 숫자), 첫째 부품(한마디) → 그 둘의 해시 id
+    expect(compose.options.order).toEqual([id('kpi'), id('message')])
     expect(compose.options.transition).toBeUndefined()
     for (const s of shape.slides.filter((x) => x.layout !== 'compose')) expect(s.options.order).toBeUndefined()
   })
@@ -170,7 +193,7 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'rowLinks']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'linkBelow']
     expect(onlyKnownStrings(shape, words)).toBe(true)
     expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)

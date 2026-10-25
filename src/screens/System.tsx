@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { BLOCK_GROUPS, BLOCK_LINKS, BLOCK_TYPES, BLOCKS, mapMembers } from '../deck/blocks'
+import { BLOCK_GROUPS, BLOCK_LINKS, BLOCK_TYPES, BLOCKS } from '../deck/blocks'
 import { BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { emptyItem } from '../deck/generate'
@@ -74,7 +74,7 @@ function blankOf(slide: Slide): Slide {
     fields: {},
     items: slide.items.map(() => emptyItem()),
     // 부품 장은 부품의 자리는 두고 부품 안의 글만 비운다
-    ...(slide.rows ? { rows: slide.rows.map((r) => ({ ...r, blocks: r.blocks.map((cell) => mapMembers(cell, (b) => ({ ...b, fields: {}, items: b.items.map(() => emptyItem()) }))) })) } : {}),
+    ...(slide.blocks ? { blocks: slide.blocks.map((b) => ({ ...b, fields: {}, items: b.items.map(() => emptyItem()) })) } : {}),
   }
 }
 

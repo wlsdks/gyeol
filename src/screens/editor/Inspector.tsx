@@ -86,7 +86,7 @@ function Blanks({ deck, slide, onFocusField }: { deck: Deck; slide: Slide; onFoc
   const [next, setNext] = useState(0)
   useEffect(() => setNext(0), [slide.id])
   // 컴포넌트가 하나도 없는 장은 채울 칸이 없을 뿐이지 다 채운 것이 아니다
-  if (slide.layout === 'compose' && !slide.rows?.some((r) => r.blocks.length)) {
+  if (slide.layout === 'compose' && !slide.blocks?.length) {
     return <p className="ins-blank">아직 넣은 컴포넌트가 없어요</p>
   }
   if (!missing.length) {

@@ -1,6 +1,6 @@
 import { createStore, get, set } from 'idb-keyval'
 import { create } from 'zustand'
-import { SAVED_NAME_MAX, type SavedPart } from '../deck/blocks'
+import { cleanPart, SAVED_NAME_MAX, type SavedPart } from '../deck/blocks'
 import { readPartsFromFolder, writePartsToFolder } from './folder'
 import { decodePartsFile, encodePartsFile } from './partsFile'
 
@@ -26,9 +26,19 @@ export const useSaved = create<SavedState>(() => ({ parts: [], loaded: false }))
 
 let updatedAt = 0
 
+/**
+ * 브라우저에 둔 목록. 예전 버전(0.4까지)이 줄(rows)로 저장한 것도 있어서 파일과 같은 규칙(cleanPart)으로 맞춘다.
+ * id는 그대로 둔다: 이 브라우저 안에서는 겹치지 않고, 이름 바꾸기와 지우기가 id로 찾는다
+ */
 async function readBrowser(): Promise<SavedList | null> {
   try {
-    return (await get<SavedList>(KEY, store)) ?? null
+    const raw = await get<SavedList>(KEY, store)
+    if (!raw || !Array.isArray(raw.parts)) return null
+    const parts = raw.parts.flatMap((p) => {
+      const part = cleanPart(p)
+      return part ? [{ ...part, id: typeof p.id === 'string' && p.id ? p.id : part.id }] : []
+    })
+    return { updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0, parts }
   } catch {
     return null
   }

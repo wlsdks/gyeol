@@ -1,7 +1,9 @@
-// 부품 사이의 이음표(화살표, 같다, vs)와, 발표할 때 빈 부품을 빼고 그리는 줄
+// 부품 사이의 이음표(화살표, 더하기, 결과, 견주기)와, 발표할 때 빈 부품을 빼고 그리는 판.
+// 이음표는 부품의 오른쪽 선(link)이나 아래 선(linkBelow) 위, 그 부품의 가운데에 선다
 
-import type { Block, BlockLink, BlockRow } from '../types'
-import { asCell, membersOf } from './cells'
+import type { Block, BlockLink, BlockType } from '../types'
+import { BOARD_COLS, BOARD_ROWS, type Fit, LOOSE, removeFromBoard } from './board'
+import { BLOCKS } from './catalog'
 
 export const BLOCK_LINKS: { id: BlockLink; name: string; description: string }[] = [
   { id: 'arrow', name: '화살표', description: '앞의 것이 뒤의 것으로 이어지거나 바뀌어요' },
@@ -11,125 +13,153 @@ export const BLOCK_LINKS: { id: BlockLink; name: string; description: string }[]
 ]
 export const BLOCK_LINK_IDS = BLOCK_LINKS.map((l) => l.id)
 
-/** 이음표가 선 칸 사이에서 양쪽 칸이 비켜 주는 너비 (캔버스 px). 칸 사이(48)와 합쳐 96px에 이음표(44)가 혼자 선다 */
+/** 이음표가 선 선 양쪽에서 부품이 비켜 주는 너비 (캔버스 px). 위아래는 칸 사이(48)와 합쳐 96px에 이음표(44)가 혼자 선다 */
 export const LINK_PAD = 24
 
 export const isLink = (v: unknown): v is BlockLink => typeof v === 'string' && (BLOCK_LINK_IDS as string[]).includes(v)
 
-/** 이음표 자리: h는 row째 줄의 col째 칸과 그 오른쪽 칸 사이, v는 row째 줄과 그 아래 줄 사이 */
-export type LinkTarget = { dir: 'h'; row: number; col: number } | { dir: 'v'; row: number }
+/** 이음표 자리: 부품(id)의 오른쪽 선(h) 또는 아래 선(v) */
+export type LinkTarget = { id: string; dir: 'h' | 'v' }
 
-export const sameLinkTarget = (a: LinkTarget | null, b: LinkTarget | null) =>
-  !!a && !!b && a.dir === b.dir && a.row === b.row && (a.dir === 'v' || (b.dir === 'h' && a.col === b.col))
+export const sameLinkTarget = (a: LinkTarget | null | undefined, b: LinkTarget | null | undefined) => !!a && !!b && a.id === b.id && a.dir === b.dir
 
-/** 그 자리의 이음표. 줄의 마지막 칸 뒤, 마지막 줄 아래에는 없다 */
-export function linkAt(rows: BlockRow[], t: LinkTarget): BlockLink | null {
-  const row = rows[t.row]
-  if (!row) return null
-  if (t.dir === 'v') return t.row < rows.length - 1 && isLink(row.link) ? row.link : null
-  const b = row.blocks[t.col]
-  return b && t.col < row.blocks.length - 1 && isLink(b.link) ? b.link : null
+/** 부품의 그 쪽 선이 판 안쪽인지 (오른쪽 끝, 맨 아래 부품의 바깥 선에는 이음표가 서지 않는다) */
+const inner = (b: Block, dir: 'h' | 'v') => !!b.at && (dir === 'h' ? b.at.x + b.at.w < BOARD_COLS : b.at.y + b.at.h < BOARD_ROWS)
+
+/** 선 건너편에서 맞닿은 부품들 (오른쪽 선이면 오른쪽 이웃, 아래 선이면 아래 이웃) */
+export function across(blocks: readonly Block[], b: Block, dir: 'h' | 'v'): Block[] {
+  const a = b.at
+  if (!a) return []
+  return blocks.filter((o) => {
+    const c = o.at
+    if (!c || o.id === b.id) return false
+    return dir === 'h' ? c.x === a.x + a.w && c.y < a.y + a.h && a.y < c.y + c.h : c.y === a.y + a.h && c.x < a.x + a.w && a.x < c.x + c.w
+  })
 }
 
-/** 이음표를 놓을 수 있는 모든 자리: 한 줄 안의 칸 사이, 줄 사이 */
-export function linkTargets(rows: BlockRow[]): LinkTarget[] {
+/** 선 이쪽에서 맞닿은 부품들 (across의 거꾸로: 이 부품의 왼쪽이나 위에 있는 이웃) */
+export function behind(blocks: readonly Block[], b: Block, dir: 'h' | 'v'): Block[] {
+  return blocks.filter((o) => o.id !== b.id && across(blocks, o, dir).some((x) => x.id === b.id))
+}
+
+/** 그 자리의 이음표. 판 바깥 선에는 없다 */
+export function linkAt(blocks: readonly Block[], t: LinkTarget): BlockLink | null {
+  const b = blocks.find((x) => x.id === t.id)
+  if (!b || !inner(b, t.dir)) return null
+  const v = t.dir === 'h' ? b.link : b.linkBelow
+  return isLink(v) ? v : null
+}
+
+/** 이음표를 놓을 수 있는 모든 자리 (읽는 차례대로): 부품마다 오른쪽 선과 아래 선 가운데 판 안쪽인 것 */
+export function linkTargets(blocks: readonly Block[]): LinkTarget[] {
   const out: LinkTarget[] = []
-  rows.forEach((r, i) => {
-    for (let c = 0; c < r.blocks.length - 1; c++) out.push({ dir: 'h', row: i, col: c })
-    if (i < rows.length - 1) out.push({ dir: 'v', row: i })
-  })
+  for (const b of [...blocks].sort((p, q) => (p.at?.y ?? 0) - (q.at?.y ?? 0) || (p.at?.x ?? 0) - (q.at?.x ?? 0))) {
+    if (inner(b, 'h')) out.push({ id: b.id, dir: 'h' })
+    if (inner(b, 'v')) out.push({ id: b.id, dir: 'v' })
+  }
   return out
 }
 
-/** 그 자리에 이음표를 놓은(link가 null이면 뺀) 줄들 */
-export function withLink(rows: BlockRow[], t: LinkTarget, link: BlockLink | null): BlockRow[] {
-  return rows.map((r, i) => {
-    if (i !== t.row) return r
-    if (t.dir === 'v') {
-      const { link: _, ...rest } = r
-      return link ? { ...rest, link } : rest
+/** 그 자리에 이음표를 놓은(link가 null이면 뺀) 판 */
+export function withLink(blocks: Block[], t: LinkTarget, link: BlockLink | null): Block[] {
+  const key = t.dir === 'h' ? 'link' : 'linkBelow'
+  return blocks.map((b) => {
+    if (b.id !== t.id) return b
+    const { [key]: _, ...rest } = b
+    return link ? { ...rest, [key]: link } : rest
+  })
+}
+
+/** 설 자리가 없어진 이음표(판 바깥 선 위)를 뺀다. 부품을 옮기거나 빼면 생긴다. 바뀐 것이 없으면 그대로 */
+export function tidyLinks(blocks: Block[]): Block[] {
+  if (!blocks.some((b) => (b.link && !inner(b, 'h')) || (b.linkBelow && !inner(b, 'v')))) return blocks
+  return blocks.map((b) => {
+    let out = b
+    if (b.link && !inner(b, 'h')) {
+      const { link: _, ...rest } = out
+      out = rest
     }
-    return {
-      ...r,
-      blocks: r.blocks.map((b, c) => {
-        if (c !== t.col) return b
-        const { link: _, ...rest } = b
-        return link ? { ...rest, link } : rest
-      }),
+    if (b.linkBelow && !inner(b, 'v')) {
+      const { linkBelow: _, ...rest } = out
+      out = rest
     }
+    return out
   })
 }
 
 /**
- * 설 자리가 없어진 이음표(줄의 마지막 칸 뒤, 마지막 줄 아래, 칸 아래에 쌓은 부품)를 뺀다. 부품을 옮기거나 빼면 생긴다.
- * 바뀐 것이 없으면 그대로
+ * 이음표마다 뜻이 서는 짝. 화살표(이어진다, 바뀐다)와 견주기, 더하기는 같은 갈래의 것끼리:
+ * 숫자에서 숫자로, 목록과 목록, 차트와 차트. 결과(=)는 무엇이든 모여 숫자나 한마디가 된다.
+ * 진행 막대와 시장 원을 견주거나, 와플에서 화면 캡처로 화살표를 그으면 무엇을 말하는지 알 수 없다
  */
-export function tidyLinks(rows: BlockRow[]): BlockRow[] {
-  const stacked = rows.some((r) => r.blocks.some((b) => b.stack?.some((m) => m.link || m.stack)))
-  if (stacked) rows = rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.stack ? asCell(membersOf(b), b.link) : b)) }))
-  const stray = rows.some((r, i) => (r.link && i === rows.length - 1) || r.blocks.some((b, c) => b.link && c === r.blocks.length - 1))
-  if (!stray) return rows
-  return rows.map((r, i) => {
-    const { link, ...rest } = r
-    const blocks = r.blocks.map((b, c) => {
-      if (!b.link || c < r.blocks.length - 1) return b
-      const { link: _, ...bare } = b
-      return bare
-    })
-    return { ...(link && i < rows.length - 1 ? { ...rest, link } : rest), blocks }
-  })
+type Kind = 'number' | 'words' | 'list' | 'chart' | 'flow' | 'table' | 'image'
+const KINDS: Record<Kind, BlockType[]> = {
+  number: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'stat', 'meter', 'range', 'tiles', 'kpi'],
+  words: ['message', 'text', 'callout', 'quote', 'heading', 'note', 'summary'],
+  list: ['bullets', 'points', 'facts', 'risks', 'faq', 'checks', 'people', 'status', 'date', 'agenda'],
+  chart: ['bars', 'bridge', 'trend', 'versus', 'share', 'funnel', 'pareto', 'attain', 'diverge', 'stack', 'heat', 'sparks', 'market', 'split', 'merge', 'scorecard', 'progress'],
+  flow: ['flow', 'network', 'process', 'timeline', 'gantt', 'steps'],
+  table: ['table', 'compare', 'pricing', 'rating', 'matrix', 'position', 'swot'],
+  image: ['image', 'logos'],
+}
+export const kindOf = (type: BlockType): Kind | null => (Object.keys(KINDS) as Kind[]).find((k) => KINDS[k].includes(type)) ?? null
+
+/** 이 이음표로 이 두 부품(앞 → 뒤)을 이을 수 있는지. 숫자와 한마디는 결과(=)와 화살표로 무엇이든 받는다 */
+export function linkFits(link: BlockLink, from: BlockType, to: BlockType): boolean {
+  const a = kindOf(from)
+  const b = kindOf(to)
+  const result = b === 'number' || b === 'words'
+  if (link === 'equals') return result
+  if (link === 'arrow') return a === b || result
+  return a === b
 }
 
-/** 사람이 아무것도 적지 않은 부품: 칸의 글, 항목의 글, 그림이 모두 비었다 (그 부품 하나만. 쌓은 부품은 따로 본다) */
+/** 그 자리에 이 이음표를 놓을 수 없는 까닭: 선 건너편의 어떤 부품과도 뜻이 서지 않으면 그 둘. 놓을 수 있으면 null */
+export function linkIssue(blocks: readonly Block[], t: LinkTarget, link: BlockLink): { from: BlockType; to: BlockType } | null {
+  const b = blocks.find((x) => x.id === t.id)
+  if (!b || !BLOCKS[b.type]) return null
+  const next = across(blocks, b, t.dir)
+  if (!next.length || next.some((o) => linkFits(link, b.type, o.type))) return null
+  return { from: b.type, to: next[0].type }
+}
+
+/** 사람이 아무것도 적지 않은 부품: 칸의 글, 항목의 글, 그림이 모두 비었다 */
 export function blockIsBlank(b: Block): boolean {
   const blank = (v: unknown) => typeof v !== 'string' || !v.trim()
   return Object.values(b.fields).every(blank) && b.items.every((it) => (['title', 'body', 'value', 'meta', 'image'] as const).every((k) => blank(it[k])))
 }
 
-/** 칸에 쌓은 부품이 모두 비었다 */
-const cellIsBlank = (cell: Block) => membersOf(cell).every(blockIsBlank)
+/**
+ * 부품을 뺀 판(removeFromBoard)에 이음표 정리까지: 뺀 부품에 닿아 있던 이음표는 뗀다.
+ * 그대로 두면 옆 부품이 넓어져 다른 두 부품 사이에 서서 뜻이 바뀐다
+ */
+export function dropBlock(blocks: Block[], id: string, fit: Fit): Block[] {
+  const gone = blocks.find((b) => b.id === id)
+  if (!gone) return blocks
+  const unlinkH = new Set(behind(blocks, gone, 'h').map((b) => b.id))
+  const unlinkV = new Set(behind(blocks, gone, 'v').map((b) => b.id))
+  const cut = blocks.map((b) => {
+    let out = b
+    if (unlinkH.has(b.id) && b.link) {
+      const { link: _, ...rest } = out
+      out = rest
+    }
+    if (unlinkV.has(b.id) && b.linkBelow) {
+      const { linkBelow: _, ...rest } = out
+      out = rest
+    }
+    return out
+  })
+  return tidyLinks(removeFromBoard(cut, id, fit))
+}
 
 /**
- * 발표할 때 그리는 줄: 비워 둔 부품은 빼고, 남은 부품이 그 줄을 나눠 쓴다(고른 칸 너비는 부품 수가 바뀌면 다시 고른다).
- * 편집할 때 옆에 둔 빈 부품이 발표 화면에 구멍으로 남지 않게. 뺀 부품에 닿아 있던 이음표도 뗀다:
- * 그대로 두면 다른 두 부품 사이에 서서 뜻이 바뀐다
+ * 발표할 때 그리는 판: 비워 둔 부품은 빼고, 옆 부품이 그 자리를 넓혀 덮는다. 편집할 때 옆에 둔 빈 부품이
+ * 발표 화면에 구멍으로 남지 않게. 자리만 넓히므로(남은 부품은 커지기만 한다) 크기 규칙 없이 나눈다
  */
-export function shownRows(rows: BlockRow[]): BlockRow[] {
-  if (!rows.some((r) => r.blocks.some((c) => membersOf(c).some(blockIsBlank)))) return rows
-  const unlink = <T extends { link?: BlockLink }>(x: T): T => {
-    const { link: _, ...bare } = x
-    return bare as T
-  }
-  const out: BlockRow[] = []
-  for (const r of rows) {
-    const blocks: Block[] = []
-    let changed = false
-    for (const b of r.blocks) {
-      // 빈 칸의 이음표(오른쪽과 잇던 것)는 칸과 함께 빠지고, 왼쪽 칸이 이 칸과 잇던 이음표는 뗀다
-      if (cellIsBlank(b)) {
-        if (blocks.length) blocks[blocks.length - 1] = unlink(blocks[blocks.length - 1])
-        changed = true
-        continue
-      }
-      // 쌓은 칸은 빈 부품만 빼고 남은 부품이 칸을 나눠 쓴다 (맨 위가 비면 그 아래가 맨 위가 되어 이음표를 받는다)
-      const left = membersOf(b).filter((m) => !blockIsBlank(m))
-      if (left.length === membersOf(b).length) blocks.push(b)
-      else {
-        blocks.push(asCell(left, b.link))
-        changed = true
-      }
-    }
-    if (!blocks.length) {
-      // 줄이 통째로 빠지면 위 줄이 이 줄과 잇던 이음표도
-      if (out.length) out[out.length - 1] = unlink(out[out.length - 1])
-      continue
-    }
-    if (!changed) out.push(r)
-    else if (blocks.length === r.blocks.length) out.push({ ...r, blocks })
-    else {
-      const { spans: _, ...rest } = r
-      out.push({ ...rest, blocks })
-    }
-  }
-  return tidyLinks(out)
+export function shownBlocks(blocks: Block[]): Block[] {
+  if (!blocks.some(blockIsBlank)) return blocks
+  let out = blocks
+  for (const b of blocks) if (blockIsBlank(b)) out = dropBlock(out, b.id, LOOSE)
+  return out
 }

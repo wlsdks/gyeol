@@ -2,7 +2,8 @@
 
 import { withOneMore } from '../edits'
 import { emptyItem, uid, withDefaultOptions } from '../generate'
-import type { Block, BlockEffect, BlockFrom, BlockRow, BlockSpeed, BlockType, BlockWhen, Item, Slide } from '../types'
+import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockType, BlockWhen, Item, Slide } from '../types'
+import { byReading } from './board'
 import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_SPEED_IDS, BLOCK_WHEN_IDS, BLOCKS, EFFECT_FROM } from './catalog'
 
 export const effectOf = (b: Pick<Block, 'effect'>): BlockEffect => (b.effect && BLOCK_EFFECT_IDS.includes(b.effect) ? b.effect : 'auto')
@@ -19,8 +20,8 @@ export function fromOf(b: Pick<Block, 'effect' | 'from'>): BlockFrom | null {
  * 부품 장에서 발표할 때 부품이 나오는 차례. 장에 정한 차례(options.order)에 있는 부품이 먼저, 나머지는 읽는 차례로.
  * 없는 부품의 id는 건너뛴다(지운 부품이 남아 있어도 된다)
  */
-export function playOrder(slide: Pick<Slide, 'rows' | 'options'>): Block[] {
-  const all = allBlocks(slide.rows ?? [])
+export function playOrder(slide: Pick<Slide, 'blocks' | 'options'>): Block[] {
+  const all = allBlocks(slide.blocks ?? [])
   const byId = new Map(all.map((b) => [b.id, b]))
   const first = [...new Set(slide.options.order ?? [])].map((id) => byId.get(id)).filter((b): b is Block => !!b)
   return [...first, ...all.filter((b) => !first.includes(b))]
@@ -34,50 +35,12 @@ export function makeBlock(type: BlockType): Block {
   return { id: uid(), type, fields: {}, items: Array.from({ length: count }, emptyItem), ...(highlight !== undefined ? { highlight } : {}) }
 }
 
-/** 칸 하나의 부품들: 맨 위 부품(칸의 너비와 이음표를 갖는다)과 그 아래에 쌓은 부품, 위에서부터 */
-export const membersOf = (cell: Block): Block[] => (cell.stack?.length ? [cell, ...cell.stack] : [cell])
+/** 장의 모든 부품, 읽는 차례대로 (위에서 아래로, 같은 높이면 왼쪽부터) */
+export const allBlocks = (blocks: readonly Block[]): Block[] => byReading([...blocks])
 
-/**
- * 부품들을 한 칸으로: 첫째가 맨 위, 나머지는 그 아래에 쌓는다. 칸의 이음표(오른쪽 칸과 잇는 것)는 link로 받는다.
- * 쌓은 부품에는 이음표와 또 쌓은 부품을 두지 않는다
- */
-export function asCell(members: Block[], link = members[0]?.link): Block {
-  const bare = members.map(({ stack: _, link: __, ...b }) => b)
-  const [top, ...rest] = bare
-  return { ...top, ...(link ? { link } : {}), ...(rest.length ? { stack: rest } : {}) }
-}
-
-/** 칸 안의 부품을 하나씩 바꾼 칸. 쌓은 부품이 없으면 맨 위 부품만 */
-export const mapMembers = (cell: Block, fn: (b: Block) => Block): Block => {
-  const top = fn(cell)
-  return cell.stack?.length ? { ...top, stack: cell.stack.map(fn) } : top
-}
-
-/** 장의 모든 부품 수 (쌓은 부품까지) */
-export function blockCount(rows: BlockRow[]): number {
-  return rows.reduce((n, r) => n + r.blocks.reduce((m, b) => m + membersOf(b).length, 0), 0)
-}
-
-/** 장의 모든 부품, 읽는 차례대로 (줄마다 왼쪽 칸부터, 칸 안은 위에서부터) */
-export function allBlocks(rows: BlockRow[]): Block[] {
-  return rows.flatMap((r) => r.blocks.flatMap(membersOf))
-}
-
-/** 부품이 있는 자리: 몇째 줄, 줄 안의 몇째 칸, 칸 안의 몇째(맨 위가 0). 없으면 null */
-export function placeOf(rows: BlockRow[], blockId: string): { row: number; col: number; at: number } | null {
-  for (let r = 0; r < rows.length; r++)
-    for (let c = 0; c < rows[r].blocks.length; c++) {
-      const at = membersOf(rows[r].blocks[c]).findIndex((b) => b.id === blockId)
-      if (at >= 0) return { row: r, col: c, at }
-    }
-  return null
-}
-
-/** 부품 하나를 바꾼 줄들 (쌓은 부품이어도). 칸 너비는 그대로 */
-export function mapBlock(rows: BlockRow[], blockId: string, fn: (b: Block) => Block): BlockRow[] {
-  const at = placeOf(rows, blockId)
-  if (!at) return rows
-  return rows.map((r, i) => (i !== at.row ? r : { ...r, blocks: r.blocks.map((cell, c) => (c !== at.col ? cell : mapMembers(cell, (b) => (b.id === blockId ? fn(b) : b)))) }))
+/** 부품 하나를 바꾼 판. 자리는 그대로 (커진 부품에 자리를 주는 것은 sizing.ts의 changeBlocks) */
+export function mapBlock(blocks: Block[], blockId: string, fn: (b: Block) => Block): Block[] {
+  return blocks.some((b) => b.id === blockId) ? blocks.map((b) => (b.id === blockId ? fn(b) : b)) : blocks
 }
 
 /** 부품 장의 부품이 보이는 항목. 최대 개수를 넘는 항목은 지우지 않고 숨긴다 */
@@ -112,7 +75,7 @@ export function blockSlide(outer: Slide, block: Block): Slide {
     hints: layout ? (block.hints ?? {}) : nativeHints(block),
     variant: block.variant,
     options: { ...outer.options, highlight: block.highlight },
-    rows: undefined,
+    blocks: undefined,
   }
 }
 
@@ -245,11 +208,12 @@ export function withItem(b: Block): Block {
   return items === b.items ? b : { ...b, items }
 }
 
-/** 같은 내용의 부품 (새 id). 그 부품 하나만: 칸 아래에 쌓은 부품과 이음표는 따라가지 않는다 */
+/** 같은 내용의 부품 (새 id). 그 부품 하나만: 자리와 이음표는 따라가지 않는다 (놓을 자리에서 다시 정한다) */
 export function copyBlock(b: Block): Block {
-  const { stack: _, link: __, ...rest } = b
+  const { at: _, link: __, linkBelow: ___, ...rest } = b
   return { ...rest, id: uid(), fields: { ...b.fields }, items: b.items.map((it) => ({ ...it, id: uid() })), hints: b.hints && { ...b.hints } }
 }
 
-/** 같은 내용의 칸: 쌓은 부품과 이음표까지, 모두 새 id (장을 복사할 때) */
-export const copyCell = (cell: Block): Block => asCell(membersOf(cell).map(copyBlock), cell.link)
+/** 같은 내용의 판: 자리와 이음표까지, 모두 새 id (장을 복사할 때) */
+export const copyBlocks = (blocks: Block[]): Block[] =>
+  blocks.map((b) => ({ ...copyBlock(b), ...(b.at ? { at: { ...b.at } } : {}), ...(b.link ? { link: b.link } : {}), ...(b.linkBelow ? { linkBelow: b.linkBelow } : {}) }))

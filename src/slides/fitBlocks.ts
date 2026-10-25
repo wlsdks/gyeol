@@ -2,10 +2,9 @@
  * 부품 장에서 칸에 다 들어가지 않는 부품을 잘리지 않게 맞춘다.
  * 부품을 놓을 때는 잘리지 않는 자리만 고르지만, 놓은 뒤에 항목을 더하거나 글을 길게 쓰면 넘칠 수 있다.
  *
- * 1. 줄마다의 가장 낮은 높이를 더해도 본문 상자보다 높으면, 줄 높이를 같은 비율로 낮춘다(--bk-sq).
- * 2. 줄마다 잘리지 않을 높이에 남는 높이를 똑같이 나눠 더하지만(deck/blocks.ts의 areaStyle), 글이 넘치는 칸이 있는 줄은
- *    다른 줄이 잘리지 않을 높이까지 남는 높이를 더 가져온다(--bk-r1..). 잰 높이(blockHeights.ts)는 보통 글자 크기라, 크게나 명조에서 딱 그 높이면 모자랄 수 있다.
- * 3. 그래도 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
+ * 칸의 자리는 판(deck/blocks/board.ts)이 부품마다 잘리지 않는 크기로 나눠 두었다. 잰 높이(blockHeights.ts)는 보통 글자 크기라
+ * 크게나 명조에서는 모자랄 수 있고, 놓은 뒤에 글을 길게 쓰면 넘칠 수 있다.
+ * 3. 그래서 칸 안의 글이 넘치거나 서로 겹치는 부품은 글자를 단계로 줄인다(--bk-fit). 단계라서 같은 장의 비슷한 칸끼리 크기가 같다.
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
  * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
  *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
@@ -250,35 +249,6 @@ export function blockFitter() {
     }
   }
 
-  /**
-   * 글이 넘치는 칸이 있는 줄의 바닥을 조금씩 올린다. 다른 줄은 잘리지 않을 높이(data-mins)나 이미 올린 바닥 밑으로
-   * 내려가지 않게, 바닥을 다 더해도 본문 상자를 넘지 않는 데까지만. 넘치는 줄이 여럿이면 차례로 조금씩 나눠 가진다.
-   * 올린 만큼은 다른 줄이 똑같이 나눠 내준다(격자의 1fr)
-   */
-  function grow(area: HTMLElement, cells: HTMLElement[], room: number): void {
-    const floor = (area.dataset.mins || '').split(',').map(Number)
-    const n = getComputedStyle(area).gridTemplateRows.split(' ').length
-    if (n < 2 || floor.length !== n || floor.some((m) => !(m >= 0))) return
-    const inners = floor.map((_, i) =>
-      cells
-        // 남는 높이의 몫이 없는 쌓은 부품(차트 아래의 주석)은 줄을 높여도 커지지 않아서 넘쳐도 줄을 높이지 않는다
-        .filter((c) => c.dataset.row === String(i) && !(c.classList.contains('is-stacked') && c.style.getPropertyValue('--bk-g') === '0'))
-        .map((c) => c.querySelector<HTMLElement>(':scope > .bk-in'))
-        .filter((el): el is HTMLElement => !!el),
-    )
-    for (let moved = true; moved; ) {
-      moved = false
-      for (let i = 0; i < n; i++) {
-        const most = room - floor.reduce((a, m, j) => (j === i ? a : a + m), 0)
-        const h = parseFloat(getComputedStyle(area).gridTemplateRows.split(' ')[i])
-        if (h >= most - 1 || !inners[i].some((el) => over(el))) continue
-        floor[i] = Math.min(most, h + 16)
-        area.style.setProperty('--bk-r' + (i + 1), floor[i] + 'px')
-        moved = true
-      }
-    }
-  }
-
   /** 칸 안의 그림 하나와 키우기 전의 크기 (화면 px) */
   type Shape = { el: Element; w: number; h: number }
 
@@ -416,7 +386,7 @@ export function blockFitter() {
     for (const c of cells) {
       // 쌓은 부품은 칸 높이를 나눠 쓰므로 가운데로 내리지 않는다
       if (!c.classList.contains('is-shared') || c.classList.contains('lk-row') || c.classList.contains('is-stacked')) continue
-      const key = c.dataset.row || '0'
+      const key = c.dataset.band || '0'
       rows.set(key, (rows.get(key) || []).concat(c))
     }
     // 칸 높이를 다 쓰는지 (캔버스 16px까지는 다 쓴 것으로)
@@ -498,13 +468,10 @@ export function blockFitter() {
         later(area, mover, () => fit(area))
         continue
       }
-      // 쌓은 칸(.bk-stack) 안의 부품도 칸 하나로 맞춘다 (줄은 data-row로 본다)
-      const cells = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk'))
+      const cells = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk'))
       // 안 보이는 장(자리를 재지 못한다)은 맞춘 값을 지우지 않고 건너뛴다. 내보낸 파일은 발표하는 동안 다른 장을 숨겨 두는데,
       // 그때 글꼴이 와서 다시 맞추면 숨긴 장의 값이 모두 지워져 넘겨 보면 글자가 다른 크기였다
       if (!cells.length || !area.clientHeight) continue
-      area.style.removeProperty('--bk-sq')
-      for (let i = 1; i <= 3; i++) area.style.removeProperty('--bk-r' + i)
       for (const c of cells) {
         c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')
@@ -512,18 +479,7 @@ export function blockFitter() {
       }
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
-      // 줄 높이의 합으로 본다. 상자 전체의 scrollHeight는 칸 밖으로 넘친 글까지 세어서, 칸 하나가 조금 넘쳐도
-      // 모든 줄을 낮추게 된다 (넘친 칸은 아래에서 그 칸의 글자만 줄인다)
-      const style = getComputedStyle(area)
-      const tracks = style.gridTemplateRows.split(' ').map(parseFloat).filter((n) => n >= 0)
-      const gaps = (parseFloat(style.rowGap) || 0) * Math.max(0, tracks.length - 1)
-      const need = tracks.reduce((a, n) => a + n, 0)
-      const room = area.clientHeight - gaps
-      const squeezed = need > room + 1
-      if (squeezed) area.style.setProperty('--bk-sq', Math.max(0.4, room / need).toFixed(3))
-      // 보통 크기는 글자를 줄이기 전에 넘치는 줄이 다른 줄의 남는 높이를 먼저 가져온다(잰 높이는 줄이지 않고 들어가는 높이다).
-      // 크게(1.2배)는 먼저 한 단계 줄인다: 줄여도 보통과 같은 크기이고, 줄 높이를 먼저 바꾸면 조금만 넘쳐도 줄 높이가 들쭉날쭉해진다.
-      // 크게의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
+      // 크게(1.2배)의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
       const large = !!area.closest('.sz-large')
       const ladder = large ? [1 / 1.2, steps[1]] : steps
       const least = large ? ladder[0] : 1
@@ -542,9 +498,8 @@ export function blockFitter() {
         if (inner) place(inner)
         shrink(c, least)
       }
-      if (!squeezed) grow(area, cells, room)
       for (const c of cells) shrink(c, 0)
-      if (!squeezed && cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) spread(cells, enlarge(cells))
+      if (cells.every((c) => !c.style.getPropertyValue('--bk-fit'))) spread(cells, enlarge(cells))
       lift(cells)
       area.classList.remove('is-fitting')
     }

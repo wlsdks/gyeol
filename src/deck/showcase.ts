@@ -1,4 +1,4 @@
-import { BLOCKS, composeFrom } from './blocks'
+import { BLOCKS, boardAreaH, boardFit, boardFromRows, composeFrom } from './blocks'
 import { emptyItem, makeSlide } from './generate'
 import { createSampleDeck, SAMPLE_LOGOS } from './sample'
 import type { Block, BlockType, Item, Slide } from './types'
@@ -199,36 +199,38 @@ function composeExample(): Slide {
       ['3.2', '3.0', '2.1', '1.6', '1.3', '1.1'].map((value, i) => ({ title: `${i + 4}월`, value })),
       { unit: '%' },
     ),
-  ).rows![0].blocks[0]
-  return {
+  ).blocks![0]
+  const slide: Slide = {
     ...makeSlide('compose'),
     // 출처 줄은 빼 둔다: 위 줄(전과 후, 큰 숫자, 강조 상자)과 아래 줄(추이 차트의 바닥 높이)이 본문 높이를 다 써서,
     // 출처 한 줄만큼 줄 높이를 줄이면 전과 후의 덧붙임 글이 칸 밖으로 나왔다(편집기가 '글이 넘쳤어요'를 띄웠다)
     fields: { title: '시범 라인 석 달 만에 불량률이 3분의 1로 줄었어요' },
-    rows: [
-      {
-        id: 'sample-row-1',
-        blocks: [
-          { ...nativeSample('delta'), id: 'sample-delta', fields: { label: '불량률', before: '3.2%', after: '1.1%', note: '시범 라인 3개월 결과' } },
-          { ...nativeSample('number'), id: 'sample-number', fields: { label: '한 해 아끼는 비용', value: '2.4억 원', note: '불량 처리와 재검사 비용' } },
-          { ...nativeSample('callout'), id: 'sample-callout', fields: { label: '결정 요청', text: '12월까지 나머지 라인으로 넓히는 것을 승인해 주세요' } },
-        ],
-      },
-      {
-        id: 'sample-row-2',
-        spans: [8, 4],
-        blocks: [
-          { ...trend, id: 'sample-trend' },
-          {
-            ...nativeSample('bullets'),
-            id: 'sample-bullets',
-            fields: { heading: '다음 단계' },
-            items: ['11월 나머지 5개 라인 진단', '12월 카메라 설치', '1월 전 라인 가동'].map((title) => ({ ...emptyItem(), title })),
-          },
-        ],
-      },
-    ],
   }
+  // 줄로 적어 두고 판으로 옮긴다 (위 줄 셋, 아래 줄은 추이 차트가 3분의 2)
+  const rows = [
+    {
+      id: 'sample-row-1',
+      blocks: [
+        { ...nativeSample('delta'), id: 'sample-delta', fields: { label: '불량률', before: '3.2%', after: '1.1%', note: '시범 라인 3개월 결과' } },
+        { ...nativeSample('number'), id: 'sample-number', fields: { label: '한 해 아끼는 비용', value: '2.4억 원', note: '불량 처리와 재검사 비용' } },
+        { ...nativeSample('callout'), id: 'sample-callout', fields: { label: '결정 요청', text: '12월까지 나머지 라인으로 넓히는 것을 승인해 주세요' } },
+      ],
+    },
+    {
+      id: 'sample-row-2',
+      spans: [8, 4],
+      blocks: [
+        { ...trend, id: 'sample-trend' },
+        {
+          ...nativeSample('bullets'),
+          id: 'sample-bullets',
+          fields: { heading: '다음 단계' },
+          items: ['11월 나머지 5개 라인 진단', '12월 카메라 설치', '1월 전 라인 가동'].map((title) => ({ ...emptyItem(), title })),
+        },
+      ],
+    },
+  ]
+  return { ...slide, blocks: boardFromRows(rows, boardFit(boardAreaH(slide))) }
 }
 
 /** 예시 발표의 장과 덧붙인 예시 장. 모든 레이아웃이 적어도 한 번 나온다. */

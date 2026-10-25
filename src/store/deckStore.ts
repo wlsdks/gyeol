@@ -1,12 +1,12 @@
 import { create } from 'zustand'
-import { asCompose, cleanDeckRows, copyCell, mapBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
+import { asCompose, cleanDeckBlocks, copyBlocks, mapBlock, settleDeck, tidyLinks, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
 import { relayout, withOneMore } from '../deck/edits'
 import { makeSlide, uid } from '../deck/generate'
 import { followIndex, isMetaKey, moveIn } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
 import { migrateDeck } from '../deck/migrate'
-import type { Block, BlockRow, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
+import type { Block, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
 
 const HISTORY_LIMIT = 100
 /** 같은 칸을 이 시간 안에 이어서 고치면 되돌리기 한 단계로 묶는다 */
@@ -55,8 +55,8 @@ interface DeckState {
   /** 덱을 통째로 바꾼다 (AI 제안 적용). 되돌리기 한 번으로 돌아온다. */
   replaceDeck(next: Deck): void
 
-  /** 부품 장: 줄과 칸을 통째로 (끌어다 놓기, 칸 너비). key가 같으면 되돌리기 한 단계로 묶는다 */
-  setRows(slideId: string, rows: BlockRow[], key?: string): void
+  /** 부품 장: 판을 통째로 (끌어다 놓기, 선 끌기). key가 같으면 되돌리기 한 단계로 묶는다 */
+  setBlocks(slideId: string, blocks: Block[], key?: string): void
   /** 부품 장: 부품 하나를 고친다 (칸의 글, 바탕, 움직임) */
   updateBlock(slideId: string, blockId: string, fn: (b: Block) => Block, key?: string): void
   /** 이 장을 같은 내용의 부품 장으로. 이미 부품 장이거나 바꿀 수 없는 장이면 그대로 */
@@ -64,7 +64,7 @@ interface DeckState {
   /** 장 하나를 통째로 바꾼다 (부품 장으로 바꾸면서 부품을 넣을 때처럼 되돌리기 한 번으로 묶을 일) */
   replaceSlide(slideId: string, slide: Slide): void
   /** 부품을 넣은 부품 장을 새로 만들어 이 장 뒤에 */
-  addComposeSlide(rows: BlockRow[], afterId?: string): void
+  addComposeSlide(blocks: Block[], afterId?: string): void
   /** 만들어 둔 장(내 컴포넌트의 장 하나)을 이 장 뒤에 넣고 고른다 */
   insertSlide(slide: Slide, afterId?: string): void
 
@@ -83,7 +83,8 @@ export const useDeck = create<DeckState>((set, get) => {
   function commit(fn: (deck: Deck) => Deck, key?: string) {
     const { deck, past, lastKey, lastTime } = get()
     if (!deck) return
-    const next = { ...fn(deck), updatedAt: Date.now() }
+    // 부품 장의 판은 바뀐 부품, 제목, 글자 크기에 맞춰 다시 나눈다 (커진 부품이 옆에서 자리를 받는다)
+    const next = { ...settleDeck(fn(deck), deck), updatedAt: Date.now() }
     const now = Date.now()
     const coalesce = key !== undefined && key === lastKey && now - lastTime < COALESCE_MS
     set({
@@ -229,29 +230,21 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })), key)
     },
 
-    setRows(slideId, rows, key) {
-      // 부품을 옮기거나 빼서 설 자리가 없어진 이음표(줄 끝, 마지막 줄 아래)는 뺀다
-      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, rows: tidyLinks(rows) })), key)
+    setBlocks(slideId, blocks, key) {
+      // 부품을 옮기거나 빼서 설 자리가 없어진 이음표(판 끝)는 뺀다
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, blocks: tidyLinks(blocks) })), key)
     },
     updateBlock(slideId, blockId, fn, key) {
-      commit(
-        (d) =>
-          mapSlide(d, slideId, (s) => ({
-            ...s,
-            // 칸 아래에 쌓은 부품도 찾는다
-            rows: mapBlock(s.rows ?? [], blockId, fn),
-          })),
-        key,
-      )
+      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, blocks: mapBlock(s.blocks ?? [], blockId, fn) })), key)
     },
     toCompose(slideId) {
       commit((d) => mapSlide(d, slideId, (s) => asCompose(s)))
     },
     replaceSlide(slideId, slide) {
-      commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId, ...(slide.rows ? { rows: tidyLinks(slide.rows) } : {}) })))
+      commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId, ...(slide.blocks ? { blocks: tidyLinks(slide.blocks) } : {}) })))
     },
-    addComposeSlide(rows, afterId) {
-      get().insertSlide({ ...makeSlide('compose'), rows }, afterId)
+    addComposeSlide(blocks, afterId) {
+      get().insertSlide({ ...makeSlide('compose'), blocks }, afterId)
     },
     insertSlide(slide, afterId) {
       commit((d) => {
@@ -270,7 +263,7 @@ export const useDeck = create<DeckState>((set, get) => {
       if (deck) set({ deck: { ...deck, aiShare: on, updatedAt: Date.now() } })
     },
     replaceDeck(next) {
-      commit(() => cleanDeckRows(next))
+      commit(() => cleanDeckBlocks(next))
       const { deck, selectedId } = get()
       if (deck && !deck.slides.some((s) => s.id === selectedId)) set({ selectedId: deck.slides[0]?.id ?? null })
     },
@@ -295,7 +288,7 @@ export const useDeck = create<DeckState>((set, get) => {
         ...structuredClone(source),
         id: uid(),
         items: source.items.map((it) => ({ ...it, id: uid() })),
-        ...(source.rows ? { rows: source.rows.map((r) => ({ ...r, id: uid(), blocks: r.blocks.map(copyCell) })) } : {}),
+        ...(source.blocks ? { blocks: copyBlocks(source.blocks) } : {}),
       }
       commit((d) => {
         const slides = [...d.slides]

@@ -1,17 +1,13 @@
 import { memo, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import {
-  allBlocks,
   BLOCK_COL_GAP,
   BLOCKS,
-  blockCount,
   blockPrefH,
-  freshRows,
-  insertRows,
+  freshBlocks,
+  groupIssue,
+  insertParts,
   MAX_BLOCKS,
   MAX_LARGE,
-  MAX_ROWS,
-  needH,
-  rowsIssue,
   slideFromPart,
   type NoRoom,
   type SavedPart,
@@ -31,7 +27,7 @@ import { soloSlide, type BlockEditing } from './BlockEditor'
 import { CANVAS, COL_W } from './canvas'
 import { useLook, type Look } from './look'
 import { noRoomText, type NoRoomText } from './noRoom'
-import { dropRows } from './planDrop'
+import { dropBlocks } from './planDrop'
 
 // 컴포넌트 고르기의 '내 컴포넌트': 저장해 둔 컴포넌트 하나, 한 줄, 장 하나를 다시 넣는다.
 // 컴포넌트 하나는 기본 컴포넌트처럼 끌어다 놓거나 누르면 알맞은 자리에, 한 줄은 이 장 맨 아래에(자리가 없으면 까닭과
@@ -47,8 +43,8 @@ const KIND_NAMES: Record<SavedPart['kind'], string> = { block: '컴포넌트', r
 
 /** 카드 밑의 한 줄: 무엇을 저장했는지와 든 컴포넌트 수 (컴포넌트 하나는 이름을 바꿨을 때만 무슨 컴포넌트인지) */
 function kindText(p: SavedPart): string {
-  if (p.kind !== 'block') return `${KIND_NAMES[p.kind]}, 컴포넌트 ${blockCount(p.rows)}개`
-  const type = BLOCKS[p.rows[0].blocks[0].type].name
+  if (p.kind !== 'block') return `${KIND_NAMES[p.kind]}, 컴포넌트 ${p.blocks.length}개`
+  const type = BLOCKS[p.blocks[0].type].name
   return p.name === type ? '컴포넌트 하나' : type
 }
 
@@ -56,11 +52,12 @@ function kindText(p: SavedPart): string {
 const SavedThumb = memo(function SavedThumb({ deck, part }: { deck: Look; part: SavedPart }) {
   const { slide, canvas, padY, padX } = useMemo(() => {
     if (part.kind === 'slide') return { slide: slideFromPart(part), canvas: null, padY: 0, padX: 0 }
-    const first = part.rows[0].blocks[0]
-    const solo: Slide = { ...soloSlide(first), id: `saved-${part.id}`, rows: part.rows }
+    const first = part.blocks[0]
+    // 묶음 안의 자리를 그림 전체에 펼친다 (묶음 안의 짜임과 몫은 그대로)
+    const solo: Slide = { ...soloSlide(first), id: `saved-${part.id}`, blocks: insertParts([], { at: null, side: 'below' }, part.blocks) ?? [] }
     // 저장할 때의 크기가 있으면 그대로 (없으면 가져온 파일: 보기 좋은 너비와 잘리지 않는 높이로)
     const w0 = (part.size?.w ?? (part.kind === 'block' ? BLOCKS[first.type].prefSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP : ROW_W - 80)) + 80
-    const h0 = (part.size?.h ?? (part.kind === 'block' ? blockPrefH(first) : needH(part.rows))) + 80
+    const h0 = (part.size?.h ?? Math.max(...part.blocks.map(blockPrefH))) + 80
     // 너무 넓적하면 정한 비율 안으로. 줄 높이는 그대로 두고 위아래 여백만 늘린다
     // (줄이 높아지면 높이에 따라 짜임을 바꾸는 컴포넌트가 저장한 모습과 다르게 그려진다)
     const h = Math.max(h0, Math.round(w0 / MAX_RATIO))
@@ -93,12 +90,11 @@ const SavedThumb = memo(function SavedThumb({ deck, part }: { deck: Look; part: 
 
 /** 한 줄이나 장 하나를 이 장에 넣을 수 없는 까닭을 읽는 말로 */
 function rowsNoRoomText(r: NoRoom, part: SavedPart, slide: Slide): NoRoomText {
-  const rows = dropRows(slide)?.rows ?? []
+  const blocks = dropBlocks(slide)?.blocks ?? []
   const fix = '다음 장에 새로 넣거나, 이 장의 컴포넌트를 줄여 주세요.'
-  if (r.kind === 'full') return { why: `이 장의 컴포넌트 ${blockCount(rows)}개에 ${blockCount(part.rows)}개를 더하면 한 장에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
+  if (r.kind === 'full') return { why: `이 장의 컴포넌트 ${blocks.length}개에 ${part.blocks.length}개를 더하면 한 장에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
   if (r.kind === 'large') return { why: `차트나 표 같은 큰 컴포넌트는 한 장에 ${MAX_LARGE}개까지 넣어요.`, fix }
-  if (r.kind === 'rows') return { why: `이 장의 줄 ${rows.length}개에 ${part.rows.length}줄을 더하면 한 장에 두는 ${MAX_ROWS}줄을 넘어요.`, fix }
-  return { why: '넣으면 줄들이 장보다 높아져서 글이 잘려요.', fix }
+  return { why: '넣으면 컴포넌트들이 장보다 높아져서 글이 잘려요.', fix }
 }
 
 export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
@@ -112,7 +108,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
 
   /** 넣을 때마다 새 id로 (컴포넌트 하나는 그 컴포넌트) */
   const freshBlock = (part: SavedPart): Block => {
-    const { link: _, ...b } = freshRows(part.rows).rows[0].blocks[0]
+    const { link: _, linkBelow: __, at: ___, ...b } = freshBlocks(part.blocks).blocks[0]
     return b
   }
 
@@ -120,8 +116,8 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
   const issueOf = (part: SavedPart): NoRoom | null => {
     if (part.kind === 'slide') return null
     if (part.kind === 'block') return blocks.issueFor(freshBlock(part))
-    const at = dropRows(slide)
-    return at && rowsIssue(at.rows, part.rows, blocks.areaHeight())
+    const at = dropBlocks(slide)
+    return at && groupIssue(at.blocks, part.blocks, blocks.areaHeight())
   }
 
   /** 새로 들어온 컴포넌트가 제자리에서 한 번 움직여 들어온다 (끌어다 놓은 컴포넌트가 날아 들어가는 것처럼) */
@@ -150,20 +146,20 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
       toast.show(`‘${part.name}’${particle(part.name, '을', '를')} 이 장 다음에 새 장으로 넣었어요`, undoAction(toast), 6000)
       return
     }
-    const { rows } = freshRows(part.rows)
-    const ids = allBlocks(rows).map((b) => b.id)
-    const at = next ? null : dropRows(slide)
-    const placed = at && !rowsIssue(at.rows, rows, blocks.areaHeight()) ? insertRows(at.rows, at.rows.length, rows, blocks.areaHeight()) : null
+    const fresh = freshBlocks(part.blocks).blocks
+    const ids = fresh.map((b) => b.id)
+    const at = next ? null : dropBlocks(slide)
+    const placed = at && insertParts(at.blocks, { at: null, side: 'below' }, fresh, blocks.areaHeight())
     if (at && placed) {
       if (at.composed) {
-        store.replaceSlide(slide.id, { ...at.composed, rows: placed })
+        store.replaceSlide(slide.id, { ...at.composed, blocks: placed })
         toast.show('이 장을 컴포넌트 장으로 바꿔 맨 아래에 넣었어요', undoAction(toast), 6000)
-      } else store.setRows(slide.id, placed)
+      } else store.setBlocks(slide.id, placed)
       blocks.select(ids[0])
       playIn(ids)
       return
     }
-    store.addComposeSlide(rows, slide.id)
+    store.addComposeSlide(insertParts([], { at: null, side: 'below' }, fresh) ?? fresh, slide.id)
     toast.show(`‘${part.name}’${particle(part.name, '을', '를')} 다음 장에 새로 넣었어요`, undoAction(toast), 6000)
   }
 
@@ -197,7 +193,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     const part = why && parts.find((p) => p.id === why.id)
     const r = part && issueOf(part)
     if (!part || !r) return null
-    return { part, card: why.card, text: part.kind === 'block' ? noRoomText(r, part.rows[0].blocks[0].type, 'slide') : rowsNoRoomText(r, part, slide) }
+    return { part, card: why.card, text: part.kind === 'block' ? noRoomText(r, part.blocks[0].type, 'slide') : rowsNoRoomText(r, part, slide) }
   })()
 
   return (

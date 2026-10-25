@@ -1,16 +1,19 @@
 // 장을 부품 장으로, 부품 장을 다시 장으로. 사람이 적은 글은 하나도 버리지 않는다
 
 import { uid } from '../generate'
-import type { Block, BlockRow, BlockType, Item, LayoutBlockType, LayoutId, Slide } from '../types'
+import type { Block, BlockType, Item, LayoutBlockType, LayoutId, Slide } from '../types'
 import { HEAD_KEYS } from './catalog'
-import { allBlocks } from './cells'
+import { boardFromRows } from './legacy'
+import { boardFit, composeAreaH } from './sizing'
 
 /** 표지와 단락 장은 색 면과 자리가 정해진 장이라 부품 장으로 바꾸지 않는다 */
 export const canCompose = (layout: LayoutId) => layout !== 'cover' && layout !== 'section' && layout !== 'compose'
 
 const pick = (fields: Record<string, string>, keys: string[]) => Object.fromEntries(keys.filter((k) => fields[k]?.trim()).map((k) => [k, fields[k]]))
 const newBlock = (type: BlockType, fields: Record<string, string> = {}, items: Item[] = [], extra: Partial<Block> = {}): Block => ({ id: uid(), type, fields, items, ...extra })
-const newRow = (...blocks: (Block | null)[]): BlockRow => ({ id: uid(), blocks: blocks.filter((b): b is Block => !!b) })
+/** 부품을 늘어놓을 줄 하나 (판으로 바꾸기 전의 짜임: 줄마다 나란히. boardFromRows가 판으로 바꾼다) */
+type Row = { id: string; blocks: Block[] }
+const newRow = (...blocks: (Block | null)[]): Row => ({ id: uid(), blocks: blocks.filter((b): b is Block => !!b) })
 
 /**
  * 지금 장을 같은 내용의 부품 장으로. 사람이 적은 글은 하나도 버리지 않는다: 제목, 부제, 출처는 장의 머리로,
@@ -22,7 +25,7 @@ export function composeFrom(slide: Slide): Slide {
   const hintsOf = (keep: (k: string) => boolean) => Object.fromEntries(Object.entries(slide.hints).filter(([k]) => keep(k)))
   const headHints = hintsOf((k) => HEAD_KEYS.includes(k))
   let fields: Record<string, string>
-  let rows: BlockRow[]
+  let rows: Row[]
   switch (slide.layout) {
     case 'statement':
       fields = {}
@@ -64,6 +67,8 @@ export function composeFrom(slide: Slide): Slide {
     }
   }
   const { tone, motion } = slide.options
+  // 줄을 판으로: 바뀐 장의 제목과 부제로 본문 높이를 어림해 부품마다 잘리지 않는 크기로 나눈다
+  const blocks = boardFromRows(rows, boardFit(composeAreaH({ fields, hints: headHints }, undefined, true)))
   return {
     ...slide,
     layout: 'compose',
@@ -72,25 +77,25 @@ export function composeFrom(slide: Slide): Slide {
     hints: headHints,
     variant: undefined,
     options: { ...(tone ? { tone } : {}), ...(motion ? { motion } : {}) },
-    rows,
+    blocks,
   }
 }
 
 /**
  * 장을 부품 장으로 바꾼다. 편집기(레이아웃 바꾸기, 부품 장으로 바꾸기, 부품 끌어 넣기)와 AI 제안(set_layout)이 모두 이것을 쓴다.
- * 예전에 부품 장이었던 장은 다른 레이아웃으로 바꿔도 줄을 장에 남겨 두는데, 따로 composeFrom을 부르던 곳은 그 줄을 새 줄로
- * 덮어써서 그 안의 글이 지워졌다. 남겨 둔 줄이 있으면 그 줄을 다시 보여 주고(지금 레이아웃의 글은 장에 그대로 남는다),
+ * 예전에 부품 장이었던 장은 다른 레이아웃으로 바꿔도 판을 장에 남겨 두는데, 따로 composeFrom을 부르던 곳은 그 판을 새 판으로
+ * 덮어써서 그 안의 글이 지워졌다. 남겨 둔 판이 있으면 그 판을 다시 보여 주고(지금 레이아웃의 글은 장에 그대로 남는다),
  * 표지와 단락 장은 빈 부품 장으로, 나머지는 지금 내용을 부품으로 옮긴다
  */
 export function asCompose(slide: Slide): Slide {
   if (slide.layout === 'compose') return slide
-  if (slide.rows?.length || !canCompose(slide.layout)) return { ...slide, layout: 'compose', rows: slide.rows ?? [], variant: undefined }
+  if (slide.blocks?.length || !canCompose(slide.layout)) return { ...slide, layout: 'compose', blocks: slide.blocks ?? [], variant: undefined }
   return composeFrom(slide)
 }
 
 /** 레이아웃 부품 하나뿐인 부품 장을 그 레이아웃의 장으로 되돌린다. 그럴 수 없으면 null */
 export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
-  const blocks = allBlocks(slide.rows ?? [])
+  const blocks = slide.blocks ?? []
   if (slide.layout !== 'compose' || blocks.length !== 1 || blocks[0].type !== layout) return null
   const b = blocks[0]
   return {
@@ -101,6 +106,6 @@ export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
     hints: { ...slide.hints, ...b.hints },
     variant: b.variant,
     options: { ...slide.options, ...(b.highlight !== undefined ? { highlight: b.highlight } : {}) },
-    rows: undefined,
+    blocks: undefined,
   }
 }

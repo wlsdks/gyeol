@@ -55,8 +55,8 @@ export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
     if (!readField(slide, meta, f.key).trim()) out.push({ key: f.key, label: f.label })
   }
   if (slide.layout === 'compose') {
-    const names = blockNames(slide.rows ?? [])
-    for (const b of allBlocks(slide.rows ?? [])) for (const m of blockMissing(b, names.get(b.id))) out.push(m.item !== undefined ? { ...m, itemKey: m.key as ItemKey } : m)
+    const names = blockNames(slide.blocks ?? [])
+    for (const b of allBlocks(slide.blocks ?? [])) for (const m of blockMissing(b, names.get(b.id))) out.push(m.item !== undefined ? { ...m, itemKey: m.key as ItemKey } : m)
   }
   if (spec.items) {
     visibleItems(slide).forEach((item, i) => {

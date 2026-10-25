@@ -20,7 +20,7 @@ interface Ink {
   who: { l?: string; t?: string; r?: string; b?: string }
 }
 
-const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter, .bk-incoming'
+const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-line, .bk-board, .bk-incoming'
 
 const nameOf = (el: Element) => (typeof el.className === 'string' && el.className ? el.className.split(' ')[0] : el.tagName.toLowerCase())
 

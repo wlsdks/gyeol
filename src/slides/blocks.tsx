@@ -1,13 +1,13 @@
-// 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
+// 부품 장(compose). 부품의 자리(판의 칸 수)는 deck/blocks.ts가 정하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
 // 가짜 장(blockSlide)을 SlideContext로 한 번 더 감싸서, 레이아웃 부품은 그 레이아웃의 그리기를 그대로 쓴다.
 // 칸 둘 이상의 숫자로 계산하는 곳(비율, 합, 차이)은 단위까지 읽어 같은 기준으로 맞춘다 (numbers.ts의 seriesIn, amountPair)
 // 부품 장만의 부품 하나의 그리기는 blocks/<이름>.tsx, 여러 부품이 같이 쓰는 조각은 blocks/parts.tsx
 
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockSlide, cellBoxes, cellMinH, cellStyle, membersOf, effectOf, fromOf, knownRows, linkAt, playOrder, rowMins, sameLinkTarget, shownLook, shownRows, speedOf, spansOf, stackGrows, stackMins, variantOfBlock, whenOf, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
+import { behind, BLOCK_LINKS, BLOCKS, blockFieldPrefix, boardInfo, foldableFields, blockItems, blockSlide, effectOf, fromOf, guttersOf, isAlone, knownBlocks, linkAt, playOrder, sameLinkTarget, shownBlocks, shownLook, speedOf, variantOfBlock, whenOf, withLink, type Gutter, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn } from '../deck/fields'
-import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
+import type { Block, BlockLink, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { Attain } from './blocks/Attain'
@@ -163,17 +163,19 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
   )
 }
 
-/** 칸 둘레의 이음표: 그 쪽으로 칸이 비켜 이음표가 설 자리를 낸다 (blocks.css의 .lk-r, .lk-l, .lk-b, .lk-t) */
-function linkSides(rows: BlockRow[], box: CellBox): string[] {
+/** 부품 둘레의 이음표: 그 쪽으로 부품이 비켜 이음표가 설 자리를 낸다 (links.css의 .lk-r, .lk-l, .lk-b, .lk-t) */
+function linkSides(blocks: Block[], b: Block): string[] {
   const out: string[] = []
-  if (linkAt(rows, { dir: 'h', row: box.row, col: box.col })) out.push('lk-r')
-  if (box.col > 0 && linkAt(rows, { dir: 'h', row: box.row, col: box.col - 1 })) out.push('lk-l')
-  if (linkAt(rows, { dir: 'v', row: box.row })) out.push('lk-b')
-  if (box.row > 0 && linkAt(rows, { dir: 'v', row: box.row - 1 })) out.push('lk-t')
-  // 칸 사이에 이음표가 선 줄: 이음표가 줄 가운데에 서니 그 줄의 부품도 가운데에 (위에 붙이면 이음표만 아래에 떠 보인다)
-  if (rows[box.row]?.blocks.some((_, c) => linkAt(rows, { dir: 'h', row: box.row, col: c }))) out.push('lk-row')
+  const has = (o: Block, dir: 'h' | 'v') => !!linkAt(blocks, { id: o.id, dir })
+  if (has(b, 'h')) out.push('lk-r')
+  if (behind(blocks, b, 'h').some((o) => has(o, 'h'))) out.push('lk-l')
+  if (has(b, 'v')) out.push('lk-b')
+  if (behind(blocks, b, 'v').some((o) => has(o, 'v'))) out.push('lk-t')
   return out
 }
+
+/** 비켜 선 쪽 (위·아래 몫의 차): 옆 이음표는 부품이 그려진 높이의 가운데에, 아래 이음표는 그려진 너비의 가운데에 선다 */
+const shift = (sides: string[], a: string, b: string) => (sides.includes(a) ? 1 : 0) - (sides.includes(b) ? 1 : 0)
 
 /** 이음표의 모양. 줄 사이의 화살표는 아래를 본다 */
 export function LinkGlyph({ link }: { link: BlockLink }) {
@@ -196,27 +198,26 @@ export function LinkGlyph({ link }: { link: BlockLink }) {
 }
 
 /**
- * 칸 사이와 줄 사이의 이음표. 칸 사이는 왼쪽 칸의 자리에, 줄 사이는 위 줄의 자리에 붙여 그 바깥 간격 가운데에 세운다.
- * 떠 있는(absolute) 격자 자식은 끝 줄을 auto로 두면 격자 끝까지 늘어나서 끝을 span 1로 정한다
+ * 부품 사이의 이음표. 옆 이음표는 부품의 오른쪽 선 위(칸 사이 가운데), 아래 이음표는 아래 선 위(줄 사이 가운데)에,
+ * 저마다 그 부품이 그려진 쪽의 가운데에 선다 (blocks.css의 .bk-link가 판의 칸 수로 자리를 계산한다)
  */
-function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live: BlockEdit | null }) {
-  // after: 발표할 때 이 부품 다음에 나타난다 (칸 사이는 왼쪽 부품, 줄 사이는 위 줄의 마지막 부품)
-  const marks: { key: string; t: LinkTarget; link: BlockLink; area: React.CSSProperties; after: string; side?: string }[] = []
-  for (const b of boxes) {
-    const t: LinkTarget = { dir: 'h', row: b.row, col: b.col }
-    const link = linkAt(rows, t)
-    // 줄 사이에도 이음표가 있으면 칸이 위아래로 비켜 있어서, 칸 사이의 이음표도 칸의 가운데로 옮긴다
-    const below = !!linkAt(rows, { dir: 'v', row: b.row })
-    const above = b.row > 0 && !!linkAt(rows, { dir: 'v', row: b.row - 1 })
-    const side = below && !above ? 'lk-up' : above && !below ? 'lk-down' : undefined
-    // 쌓은 칸이면 칸의 마지막 부품 다음에
-    if (link) marks.push({ key: `h${b.rowId}-${b.col}`, t, link, area: { gridRow: `${b.row + 1} / span 1`, gridColumn: `${b.start + 1} / span ${b.span}` }, after: b.members[b.members.length - 1].id, side })
+function Links({ blocks, live }: { blocks: Block[]; live: BlockEdit | null }) {
+  // after: 발표할 때 이 부품 다음에 나타난다 (이음표 앞쪽의 부품)
+  const marks: { key: string; t: LinkTarget; link: BlockLink; style: React.CSSProperties }[] = []
+  for (const b of blocks) {
+    const a = b.at
+    if (!a) continue
+    const sides = linkSides(blocks, b)
+    for (const dir of ['h', 'v'] as const) {
+      const t: LinkTarget = { id: b.id, dir }
+      const link = linkAt(blocks, t)
+      if (!link) continue
+      const style = (
+        dir === 'h' ? { '--lx': a.x + a.w, '--ly': a.y + a.h / 2, '--ld': shift(sides, 'lk-t', 'lk-b') } : { '--lx': a.x + a.w / 2, '--ly': a.y + a.h, '--ld': shift(sides, 'lk-l', 'lk-r') }
+      ) as React.CSSProperties
+      marks.push({ key: `${dir}${b.id}`, t, link, style })
+    }
   }
-  rows.forEach((r, i) => {
-    const t: LinkTarget = { dir: 'v', row: i }
-    const link = linkAt(rows, t)
-    if (link) marks.push({ key: `v${r.id}`, t, link, area: { gridRow: `${i + 1} / span 1`, gridColumn: '1 / -1' }, after: membersOf(r.blocks[r.blocks.length - 1]).at(-1)!.id })
-  })
   return (
     <>
       {marks.map((m) => {
@@ -225,10 +226,10 @@ function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live
         return (
           <span
             key={m.key}
-            className={cx('bk-link', `lk-${m.t.dir}`, m.side, `is-${m.link}`, preview && 'is-preview', !!live && sameLinkTarget(live.selectedLink, m.t) && 'is-selected')}
-            style={m.area}
-            data-link={m.t.dir === 'h' ? `h${m.t.row}-${m.t.col}` : `v${m.t.row}`}
-            data-after={m.after}
+            className={cx('bk-link', `lk-${m.t.dir}`, `is-${m.link}`, preview && 'is-preview', !!live && sameLinkTarget(live.selectedLink, m.t) && 'is-selected')}
+            style={m.style}
+            data-link={`${m.t.dir}${m.t.id}`}
+            data-after={m.t.id}
             {...(live && !preview
               ? { role: 'button', 'aria-label': `이음표: ${name}`, title: `${name} (눌러서 바꾸거나 빼기)`, onPointerDown: (e: React.PointerEvent<HTMLElement>) => live.onLinkPointerDown(e, m.t) }
               : { 'aria-hidden': true })}
@@ -243,37 +244,39 @@ function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live
   )
 }
 
-/**
- * 칸 하나(또는 쌓은 칸 안의 부품 하나). 쌓은 칸이면 칸의 자리와 이음표의 비켜 서기는 묶음(.bk-stack)이 갖고,
- * 부품은 묶음 안에서 가장 낮은 높이(--bk-m)와 남는 높이의 몫(--bk-g)으로 칸 높이를 나눠 쓴다(deck/blocks.ts의 stackHeights와 같다)
- */
-function BlockCell({ box, block: b, live, rows, seq, at }: { box: CellBox; block: Block; live: BlockEdit | null; rows: BlockRow[]; seq?: number; at?: { min: number; grow: number } }) {
+/** 판의 자리 (칸 수). blocks.css의 .bk가 칸 사이를 빼고 그린다 */
+const atStyle = (b: Block) => ({ '--x': b.at?.x ?? 0, '--y': b.at?.y ?? 0, '--w': b.at?.w ?? 12, '--h': b.at?.h ?? 12 }) as React.CSSProperties
+
+/** 부품 하나 */
+function BlockCell({ block: b, blocks, live, seq, band, linked }: { block: Block; blocks: Block[]; live: BlockEdit | null; seq?: number; band?: { band: number; size: number; stacked: boolean }; linked: boolean }) {
   const spec = BLOCKS[b.type]
   const when = whenOf(b)
   const speed = speedOf(b)
   const from = fromOf(b)
-  const look = shownLook(b, box.cols)
+  const look = shownLook(b, isAlone(b))
   const slot = live?.dragId === b.id
   const selected = !!live && live.selected === b.id && !live.dragId
+  const sides = linkSides(blocks, b)
   return (
     <div
       className={cx(
         'bk',
-        ...(at ? linkSides(rows, box).filter((c) => c === 'lk-row') : linkSides(rows, box)),
-        at && 'is-stacked',
+        ...sides,
+        linked && 'lk-row',
+        band?.stacked && 'is-stacked',
         `bk-${b.type}`,
         `bk-look-${look}`,
         `fx-${effectOf(b)}`,
         spec.layout && 'bk-layout',
         `va-${variantOfBlock(b)}`,
-        box.cols > 1 && 'is-shared',
+        !!band && band.size > 1 && 'is-shared',
         selected && 'is-selected',
         slot && 'is-slot',
       )}
-      style={at ? ({ '--bk-m': at.min, '--bk-g': at.grow } as React.CSSProperties) : cellStyle(box)}
+      style={atStyle(b)}
       data-block={b.id}
       data-type={b.type}
-      data-row={box.row}
+      data-band={band?.band}
       // 발표할 때의 차례와 때, 빠르기, 들어오는 쪽 (motion/engine.ts가 읽는다). 기본값은 적지 않는다
       data-seq={seq}
       data-when={when === 'after' ? undefined : when}
@@ -281,7 +284,7 @@ function BlockCell({ box, block: b, live, rows, seq, at }: { box: CellBox; block
       data-from={from ?? undefined}
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
     >
-      {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} span={box.span} />}
+      {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} span={b.at?.w ?? 12} />}
       {/* 끌어서 옮기는 손잡이: 칸 왼쪽 위에 붙는 이름표. 글 칸이 부품을 거의 덮어도 잡을 데가 있게 */}
       {live && !slot && (
         <span className="bk-handle" title="끌어서 옮기기" aria-hidden="true">
@@ -295,47 +298,25 @@ function BlockCell({ box, block: b, live, rows, seq, at }: { box: CellBox; block
   )
 }
 
-/** 줄 안의 칸 사이마다 너비를 바꾸는 손잡이. 놓으면 정해진 비율 가운데 가장 가까운 것에 붙는다 */
-function Gutters({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live: BlockEdit }) {
+/**
+ * 판을 나누는 선마다의 손잡이. 끌면 선 양쪽이 크기를 주고받고 판의 칸에 붙는다. 선이 그어진 범위만큼 칸 사이를 덮는다
+ * (blocks.css의 .bk-line이 판의 칸 수로 자리를 계산한다)
+ */
+function Lines({ gutters, live }: { gutters: Gutter[]; live: BlockEdit }) {
   return (
     <>
-      {boxes
-        .filter((b) => b.col > 0)
-        .map((b) => (
-          <div
-            key={`${b.rowId}-${b.col}`}
-            // 이음표가 선 사이는 손잡이 선이 이음표를 가로지르지 않게 가운데를 비운다
-            className={cx('bk-gutter', linkAt(rows, { dir: 'h', row: b.row, col: b.col - 1 }) && 'has-link')}
-            style={{ gridRow: String(b.row + 1), gridColumn: `${b.start + 1} / span 1` }}
-            role="separator"
-            aria-label="컴포넌트 너비 바꾸기"
-            title="끌어서 컴포넌트 너비 바꾸기"
-            onPointerDown={(e) => live.onGutterPointerDown(e, b.rowId, b.col - 1)}
-          >
-            <span className="bk-gutter-grip" />
-          </div>
-        ))}
-    </>
-  )
-}
-
-/** 줄 사이마다 높이를 나누는 손잡이. 끌면 위아래 줄이 높이를 나눠 갖고(24분의 1에 붙는다), 두 번 누르면 똑같이 */
-function RowGaps({ rows, live }: { rows: BlockRow[]; live: BlockEdit }) {
-  return (
-    <>
-      {Array.from({ length: rows.length - 1 }, (_, i) => (
+      {gutters.map((g) => (
         <div
-          key={i}
-          className={cx('bk-rowgap', linkAt(rows, { dir: 'v', row: i }) && 'has-link')}
-          style={{ gridRow: String(i + 2), gridColumn: '1 / -1' }}
+          key={`${g.dir}${g.at}-${g.from}-${g.key}`}
+          className={cx('bk-line', `is-${g.dir}`)}
+          style={{ '--at': g.at, '--from': g.from, '--to': g.to } as React.CSSProperties}
           role="separator"
-          aria-orientation="horizontal"
-          aria-label="줄 높이 바꾸기"
-          title="끌어서 줄 높이 바꾸기 (두 번 누르면 똑같이)"
-          onPointerDown={(e) => live.onRowGapPointerDown(e, i)}
-          onDoubleClick={() => live.onRowGapReset()}
+          aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
+          aria-label={g.dir === 'h' ? '컴포넌트 너비 바꾸기' : '컴포넌트 높이 바꾸기'}
+          title={g.dir === 'h' ? '끌어서 너비 바꾸기' : '끌어서 높이 바꾸기'}
+          onPointerDown={(e) => live.onGutterPointerDown(e, g)}
         >
-          <span className="bk-rowgap-grip" />
+          <span className="bk-line-grip" />
         </div>
       ))}
     </>
@@ -344,8 +325,8 @@ function RowGaps({ rows, live }: { rows: BlockRow[]; live: BlockEdit }) {
 
 type Box = { x: number; y: number; w: number; h: number }
 
-/** 본문 상자 안의 모든 칸: 바로 아래의 칸과 쌓은 칸(.bk-stack) 안의 부품 */
-const CELLS = ':scope > .bk, :scope > .bk-stack > .bk'
+/** 본문 상자 안의 모든 부품 */
+const CELLS = ':scope > .bk'
 
 /** 칸들이 지금 화면에 보이는 자리 (움직이는 중이면 움직이는 중의 자리). 캔버스 px, 본문 상자 기준 */
 function visualBoxes(area: HTMLElement): Map<string, Box> {
@@ -376,9 +357,7 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key:
       const id = cell.dataset.block!
       const f = first.get(id)
       cell.getAnimations().forEach((a) => a.cancel())
-      // 쌓은 부품은 묶음 안의 자리라 묶음의 자리를 더한다 (visualBoxes처럼 본문 상자 기준으로 견준다)
-      const wrap = cell.parentElement !== el ? cell.parentElement! : null
-      const last = { x: cell.offsetLeft + (wrap?.offsetLeft ?? 0), y: cell.offsetTop + (wrap?.offsetTop ?? 0), w: cell.offsetWidth, h: cell.offsetHeight }
+      const last = { x: cell.offsetLeft, y: cell.offsetTop, w: cell.offsetWidth, h: cell.offsetHeight }
       if (!f) {
         cell.animate([{ opacity: 0, scale: '0.94' }, { opacity: 1, scale: '1' }], { duration: 420, easing: FLIP_EASING })
         continue
@@ -408,22 +387,19 @@ export function BlockArea() {
   const { slide, mode } = useSlide()
   const edit = useContext(BlockEditContext)
   const live = mode === 'edit' && edit ? edit : null
-  // 발표할 때는 비워 둔 부품을 빼고 그린다 (남은 부품이 줄을 채운다)
-  const known = knownRows(slide.rows ?? [])
-  const saved = live?.rows ?? (mode === 'final' ? shownRows(known) : known)
-  // 이음표를 끄는 동안에는 놓일 자리에 흐리게 미리 세운다 (양쪽 칸이 비켜 나는 것까지)
-  const rows = live?.linkPreview ? withLink(saved, live.linkPreview.target, live.linkPreview.link) : saved
-  const boxes = cellBoxes(rows)
+  // 발표할 때는 비워 둔 부품을 빼고 그린다 (옆 부품이 그 자리를 덮는다)
+  const known = knownBlocks(slide.blocks ?? [])
+  const saved = live?.blocks ?? (mode === 'final' ? shownBlocks(known) : known)
+  // 이음표를 끄는 동안에는 놓일 자리에 흐리게 미리 세운다 (양쪽 부품이 비켜 나는 것까지)
+  const blocks = live?.linkPreview ? withLink(saved, live.linkPreview.target, live.linkPreview.link) : saved
+  const info = boardInfo(blocks)
+  // 옆 이음표가 선 묶음: 이음표가 부품 가운데에 서니 묶음의 부품도 가운데에 (위에 붙이면 이음표만 아래에 떠 보인다)
+  const linked = new Set(blocks.filter((b) => linkAt(blocks, { id: b.id, dir: 'h' })).map((b) => info.get(b.id)?.band))
   // 발표할 때 나오는 차례 (움직임 탭에서 정한 차례, 없으면 읽는 차례). 엔진이 칸의 data-seq로 읽는다
-  const seq = new Map(playOrder({ rows, options: slide.options }).map((b, i) => [b.id, i]))
+  const seq = new Map(playOrder({ blocks, options: slide.options }).map((b, i) => [b.id, i]))
   const ref = useRef<HTMLDivElement | null>(null)
-  // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비
-  const key = rows
-    .map((r) => {
-      const spans = spansOf(r)
-      return `${r.blocks.map((b, i) => `${b.id}${(b.stack ?? []).map((m) => `+${m.id}`).join('')}:${cellMinH(b, spans[i])}:${b.link ?? ''}`).join(',')}|${spans.join(',')}|${r.link ?? ''}`
-    })
-    .join('/')
+  // 자리가 바뀔 때만: 부품마다 id, 자리, 이음표
+  const key = blocks.map((b) => `${b.id}:${b.at ? `${b.at.x},${b.at.y},${b.at.w},${b.at.h}` : ''}:${b.link ?? ''}:${b.linkBelow ?? ''}`).join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
   // 편집 화면이면 맞춘 뒤의 모습으로 부품마다 테두리 자리를 정한다 (blockFrame.ts)
   const fitAll = (el: HTMLElement) => {
@@ -452,29 +428,15 @@ export function BlockArea() {
     live?.areaRef(el)
   }
   return (
-    <div
-      ref={setRef}
-      className={cx('bk-area', live && 'is-live', live?.dragId && 'is-dragging', !rows.length && 'is-empty')}
-      style={rows.length ? areaStyle(rows) : undefined}
-      data-rows={rows.length}
-      data-mins={rows.length ? rowMins(rows) : undefined}
-    >
-      {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
-      {boxes.map((box) => {
-        if (box.members.length === 1) return <BlockCell key={box.block.id} box={box} block={box.block} live={live} rows={rows} seq={seq.get(box.block.id)} />
-        const mins = stackMins(box.block, box.span)
-        const grows = stackGrows(box.block)
-        return (
-          <div key={`stack-${box.rowId}-${box.col}`} className={cx('bk-stack', ...linkSides(rows, box).filter((c) => c !== 'lk-row'))} style={cellStyle(box)} data-row={box.row}>
-            {box.members.map((m, i) => (
-              <BlockCell key={m.id} box={box} block={m} live={live} rows={rows} seq={seq.get(m.id)} at={{ min: Math.round(mins[i]), grow: grows[i] }} />
-            ))}
-          </div>
-        )
-      })}
-      <Links rows={rows} boxes={boxes} live={live} />
-      {live && !live.dragId && <Gutters rows={rows} boxes={boxes} live={live} />}
-      {live && !live.dragId && rows.length > 1 && <RowGaps rows={rows} live={live} />}
+    <div ref={setRef} className={cx('bk-area', live && 'is-live', live?.dragId && 'is-dragging', !blocks.length && 'is-empty')}>
+      {!blocks.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
+      {/* 끌거나 크기를 바꾸는 동안 판의 칸을 점으로 보여 준다 (부품이 붙는 자리) */}
+      {live && blocks.length > 0 && <div className="bk-board" aria-hidden="true" />}
+      {blocks.map((b) => (
+        <BlockCell key={b.id} block={b} blocks={blocks} live={live} seq={seq.get(b.id)} band={info.get(b.id)} linked={(info.get(b.id)?.size ?? 1) > 1 && linked.has(info.get(b.id)?.band)} />
+      ))}
+      <Links blocks={blocks} live={live} />
+      {live && !live.dragId && <Lines gutters={guttersOf(blocks)} live={live} />}
       {live?.incoming && <div className="bk-incoming" aria-hidden="true" />}
     </div>
   )

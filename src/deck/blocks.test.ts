@@ -1,78 +1,64 @@
 import { BLOCK_HEIGHTS } from './blockHeights'
 import { describe, expect, it } from 'vitest'
 import {
-  BLOCK_GAP,
-  areaStyle,
-  allBlocks,
-  asCell,
-  cellMinH,
-  cellRects,
-  copyCell,
-  mapBlock,
-  MAX_STACK,
-  membersOf,
-  placeOf,
-  stackHeights,
-  stackIssue,
-  autoTarget,
+  autoPlace,
+  bandOf,
   BLOCK_GROUPS,
   BLOCK_TYPES,
   BLOCKS,
-  blockCount,
   blockMinH,
   blockMissing,
   blockNames,
+  boardFit,
+  boardFromRows,
+  BOARD_COLS,
+  BOARD_ROWS,
   canCompose,
-  cleanRows,
+  cleanBlocks,
   composeAreaH,
   composeFrom,
+  copyBlocks,
   dropTarget,
   fitImage,
-  imageTarget,
-  fitSpans,
-  fitsHeight,
   fitsWith,
   foldableFields,
   fromOf,
+  gutterLimit,
+  guttersOf,
+  imagePlace,
   insertAt,
   isLayoutBlock,
   isSolo,
-  LINK_PAD,
+  isStacked,
   linkAt,
+  linkFits,
+  linkIssue,
   linkTargets,
-  needH,
-  placeIssue,
-  playOrder,
-  tidyLinks,
-  withLink,
   lookIssue,
   lookOf,
   makeBlock,
+  mapBlock,
   MAX_BLOCKS,
   MAX_LARGE,
   minSpanOf,
-  MAX_IN_ROW,
-  MAX_ROWS,
+  moveAt,
+  needRows,
+  placeIssue,
+  playOrder,
   removeBlock,
-  rowHeights,
-  stretchRows,
-  shownRows,
-  growAt,
-  unweighted,
-  weighted,
+  resizeBlock,
+  shownBlocks,
   shownLook,
   slideName,
-  spanChoices,
   speedOf,
-  spansAt,
-  spanLimit,
-  spansOf,
-  targetOf,
+  tidyLinks,
+  tiles,
   unwrapCompose,
   validTargets,
   whenOf,
   whyNot,
   withItem,
+  withLink,
   withLook,
 } from './blocks'
 import { sampleBlock } from './blockSamples'
@@ -82,16 +68,26 @@ import { makeSlide } from './generate'
 import { LAYOUT_ORDER } from './layouts'
 import { showcaseSlides } from './showcase'
 import { transitionOf } from './themes'
-import type { Block, BlockRow, Slide } from './types'
+import type { Block, BlockType, Slide } from './types'
 
-const row = (...blocks: Block[]): BlockRow => ({ id: `r-${blocks.map((b) => b.id).join('-')}`, blocks })
 const block = (type: Block['type'], id: string = type): Block => ({ ...makeBlock(type), id })
+/** 제목이 있는 장의 본문 높이 (편집 화면과 같은 어림) */
+const H = composeAreaH({ fields: { title: '제목' } } as unknown as Slide)
+/** 차례대로 눌러 넣은 판 (편집기의 '넣기'와 같다) */
+const board = (...bs: Block[]): Block[] => bs.reduce<Block[]>((out, b) => autoPlace(out, b, H) ?? out, [])
+const areaOf = (bs: Block[], id: string) => bs.find((b) => b.id === id)!.at!
+
+/** 판이 빈틈없이 덮이고, 부품마다 잘리지 않는 크기인지 */
+function sound(bs: Block[], areaH = H): boolean {
+  const fit = boardFit(areaH, bs)
+  return tiles(bs) && bs.every((b) => b.at!.w >= fit.minW(b) && b.at!.h >= fit.minH(b, b.at!.w))
+}
 
 /** 장에 사람이 적은 글을 모두 모은다 (칸, 항목) */
 function texts(slide: Slide): string[] {
   const out = Object.values(slide.fields).filter((v) => v.trim())
   for (const it of slide.items) for (const k of ['title', 'body', 'value', 'meta', 'image'] as const) if (it[k].trim()) out.push(it[k])
-  for (const b of allBlocks(slide.rows ?? [])) {
+  for (const b of slide.blocks ?? []) {
     out.push(...Object.values(b.fields).filter((v) => v.trim()))
     for (const it of b.items) for (const k of ['title', 'body', 'value', 'meta', 'image'] as const) if (it[k].trim()) out.push(it[k])
   }
@@ -149,7 +145,7 @@ describe('부품 목록', () => {
 })
 
 describe('장을 부품 장으로', () => {
-  it('바꿀 수 있는 모든 장에서 적은 글이 하나도 빠지지 않는다', () => {
+  it('바꿀 수 있는 모든 장에서 적은 글이 하나도 빠지지 않고, 판을 빈틈없이 덮는다', () => {
     const slides = showcaseSlides().filter((s) => canCompose(s.layout))
     const layouts = new Set(slides.map((s) => s.layout))
     // 표지와 단락, 부품 장 말고는 모두 예시가 있어야 확인이 된다
@@ -158,14 +154,15 @@ describe('장을 부품 장으로', () => {
       const composed = composeFrom(s)
       expect(composed.layout).toBe('compose')
       expect(texts(composed)).toEqual(texts({ ...s, items: s.items.slice(0, 20) }))
-      expect(blockCount(composed.rows ?? [])).toBeLessThanOrEqual(MAX_BLOCKS)
+      expect((composed.blocks ?? []).length).toBeLessThanOrEqual(MAX_BLOCKS)
+      expect(tiles(composed.blocks ?? [])).toBe(true)
     }
   })
 
   it('레이아웃 부품 하나뿐이면 원래 레이아웃으로 그대로 되돌아간다', () => {
     for (const s of showcaseSlides().filter((x) => canCompose(x.layout))) {
       const composed = composeFrom(s)
-      const blocks = allBlocks(composed.rows ?? [])
+      const blocks = composed.blocks ?? []
       if (blocks.length !== 1 || blocks[0].type !== s.layout) continue
       const back = unwrapCompose(composed, s.layout)!
       expect(back.layout).toBe(s.layout)
@@ -182,472 +179,307 @@ describe('장을 부품 장으로', () => {
 })
 
 describe('자리 정하기', () => {
-  it('줄의 칸 너비는 늘 정해진 비율이고, 부품마다 가장 좁은 너비를 지킨다', () => {
+  it('어떤 두 부품을 차례로 넣어도 판은 빈틈없이 덮이고, 부품마다 잘리지 않는 크기를 지킨다', () => {
     for (const a of BLOCK_TYPES)
       for (const b of BLOCK_TYPES) {
-        const blocks = [block(a, 'a'), block(b, 'b')]
-        const spans = fitSpans(blocks)
-        if (!spans) {
-          expect(minSpanOf(blocks[0]) + minSpanOf(blocks[1])).toBeGreaterThan(12)
-          continue
-        }
-        expect(spans.reduce((x, y) => x + y, 0)).toBe(12)
-        spans.forEach((sp, i) => expect(sp).toBeGreaterThanOrEqual(minSpanOf(blocks[i])))
+        const bs = board(block(a, 'a'), block(b, 'b'))
+        expect(bs.length, `${a} ${b}`).toBeGreaterThan(0)
+        expect(sound(bs), `${a} ${b}`).toBe(true)
       }
   })
 
   it('넣고 빼면 원래대로', () => {
-    const rows = [row(block('number', 'n'), block('callout', 'c'))]
-    const t = autoTarget(rows, block('bullets', 'b'))!
-    const added = insertAt(rows, t, block('bullets', 'b'))!
-    expect(blockCount(added)).toBe(3)
-    const back = removeBlock(added, 'b')
-    expect(back.map((r) => r.blocks.map((b) => b.id))).toEqual([['n', 'c']])
-    expect(targetOf(added, 'b')).not.toBeNull()
-  })
-
-  it('눌러서 넣으면 새 줄이 들어가지 않을 때 마지막 줄 끝에 붙는다', () => {
-    // 원 두 개 줄(250) + 간격 + 새 줄(240)이 넘치는 낮은 본문
-    const areaH = 450
-    const rows = [row(block('ring', 'r'), block('ratio', 'q'))]
-    const t = autoTarget(rows, block('spark', 's'), areaH)
-    expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
+    const bs = board(block('number', 'n'), block('callout', 'c'))
+    const added = autoPlace(bs, block('bullets', 'b'), H)!
+    expect(added).toHaveLength(3)
+    const back = removeBlock(added, 'b', H)
+    expect(back.map((b) => b.id)).toEqual(['n', 'c'])
+    expect(back.map((b) => b.at)).toEqual(bs.map((b) => b.at))
   })
 
   it('장 추가로 만든 컴포넌트 장은 넣은 컴포넌트 이름으로 부른다', () => {
-    const s = { ...makeSlide('compose'), rows: [row(block('kpi', 'k')), row(block('trend', 't'), block('callout', 'c'), block('kpi', 'k2'))] }
+    const below = (bs: Block[], b: Block) => insertAt(bs, { at: null, side: 'below' }, b)!
+    const s = { ...makeSlide('compose'), blocks: below(below(board(block('kpi', 'k')), block('trend', 't')), block('callout', 'c')) }
     expect(slideName(s)).toBe('핵심 숫자, 추이 외 1')
-    expect(slideName({ ...s, rows: [row(block('kpi', 'k'))] })).toBe('핵심 숫자')
+    expect(slideName({ ...s, blocks: board(block('kpi', 'k')) })).toBe('핵심 숫자')
     // 보고 종류가 정해 준 이름과 빈 장은 그대로
     expect(slideName({ ...s, purpose: '주요 숫자' })).toBe('주요 숫자')
-    expect(slideName({ ...s, rows: [] })).toBe(s.purpose)
+    expect(slideName({ ...s, blocks: [] })).toBe(s.purpose)
   })
 
-  it('작은 컴포넌트를 잇달아 넣으면 새 줄에 혼자 두지 않고 앞의 것 옆에 둔다', () => {
-    // 깔때기 옆 큰 숫자에 큰 숫자를 하나 더: 8·4에 셋째 칸은 보기 좋은 너비가 아니지만(6·3·3) 숫자끼리 나란히
-    const rows = [row(block('funnel', 'f'), block('number', 'n1'))]
-    expect(autoTarget(rows, block('number', 'n2'))).toEqual({ kind: 'cell', row: 0, index: 2 })
-    // 다른 종류면 그대로 새 줄
-    expect(autoTarget(rows, block('ring', 'r'))).toEqual({ kind: 'row', index: 1 })
+  it('작은 컴포넌트를 잇달아 넣으면 혼자 두지 않고 앞의 것 곁에 둔다', () => {
+    const bs = board(block('funnel', 'f'), block('stat', 's1'), block('stat', 's2'))
+    const near = bandOf(bs, 's2').some((b) => b.id === 's1') || isStacked(bs, 's2')
+    expect(near).toBe(true)
+    expect(sound(bs)).toBe(true)
   })
 
-  it('끝에도 새 줄에도 들어가지 않으면 읽는 차례에서 가장 뒤의 자리에 넣는다', () => {
-    // 핵심 한 줄 아래 숫자와 막대: 셋째 칸도, 셋째 줄도 들어가지 않는 높이에서 강조 상자를 누르면 핵심 한 줄 뒤로
-    const rows = [row(block('message', 'm')), row(block('kpi', 'k'), block('bars', 'b'))]
-    const c = block('callout', 'c')
-    const below = { kind: 'row', index: 2 } as const
-    const end = { kind: 'cell', row: 1, index: 2 } as const
-    const areaH = Array.from({ length: 80 }, (_, i) => needH(rows) + i * 10).find(
-      (h) => whyNot(rows, below, c, h) && whyNot(rows, end, c, h) && validTargets(rows, c, h).length,
-    )!
-    expect(areaH).toBeDefined()
-    const t = autoTarget(rows, c, areaH)!
-    expect(t).not.toBeNull()
-    const order = insertAt(rows, t, c, 'x', areaH)!.flatMap((r) => r.blocks.map((b) => b.id))
-    expect(order.indexOf('c')).toBeGreaterThan(order.indexOf('m'))
-  })
-
-  it('칸 너비 손잡이를 더 끌 수 없으면 막는 부품을 알려 준다', () => {
-    // 막대 비교는 절반보다 좁아지지 않는다: 가운데 손잡이를 오른쪽 끝(8:4 쪽)으로 끌면 막대 비교 때문
-    const rows = row(block('kpi', 'k'), block('bars', 'b'))
-    expect(spanLimit(rows, 0, 0.7)).toEqual({ kind: 'block', type: 'bars', minSpan: 6 })
-    // 손이 붙은 비율 가까이에 있으면 알리지 않는다
-    expect(spanLimit(rows, 0, 0.52)).toBeNull()
-    // 막는 것이 없으면 알리지 않는다
-    expect(spanLimit(row(block('text', 't'), block('callout', 'c')), 0, 0.68)).toBeNull()
-  })
-
-  it('고를 비율이 하나뿐인 줄은 어느 쪽으로 끌어도 까닭을 알려 준다', () => {
-    // 핵심 포인트(3분의 2 이상)와 비율 원은 8:4 하나뿐. 왼쪽으로 끌면 핵심 포인트가 막고,
-    // 오른쪽으로 끌면 더 벌어진 비율이 없다: 비율 원이 이미 가장 좁은 칸
-    const rows = row(block('points', 'p'), block('ring', 'r'))
-    expect(spanChoices(rows)).toEqual([[8, 4]])
-    expect(spanLimit(rows, 0, 0.5)).toEqual({ kind: 'block', type: 'points', minSpan: 8 })
-    expect(spanLimit(rows, 0, 0.9)).toEqual({ kind: 'end', type: 'ring', span: 4 })
-    expect(spanLimit(rows, 0, 0.7)).toBeNull()
-    // 세 칸 줄의 끝(6:3:3)에서 더 끌어도 같다
-    const three = { ...row(block('text', 't'), block('number', 'a'), block('number', 'b')), spans: [6, 3, 3] }
-    expect(spanLimit(three, 0, 0.95)).toEqual({ kind: 'end', type: 'number', span: 3 })
+  it('작은 부품은 넓은 차트 옆에서 차트 높이만큼 늘어나지 않는다 (위아래로 비어 보였다)', () => {
+    // 강점과 약점 옆의 진행 막대 하나가 높은 칸 가운데 떠 있었다
+    const bs = board(block('swot', 'w'), block('meter', 'm'))
+    const m = areaOf(bs, 'm')
+    expect(m.w === BOARD_COLS || m.h < BOARD_ROWS).toBe(true)
   })
 
   it('눌러서 넣을 자리가 없는 것과 카드에 보이는 까닭이 늘 같다', () => {
-    // 부품 고르기의 카드 표시(placeIssue)와 누를 때(autoTarget)가 다르면, 표가 없는 카드를 눌렀는데 다음 장이 생기거나 그 반대가 된다
+    // 부품 고르기의 카드 표시(placeIssue)와 누를 때(autoPlace)가 다르면, 표가 없는 카드를 눌렀는데 다음 장이 생기거나 그 반대가 된다
     const areaH = 1080 - FRAME.y - FRAME.bottom
-    const layouts: BlockRow[][] = [
+    const boards: Block[][] = [
       [],
-      [row(block('points', 'p'), block('ring', 'r')), row(block('number', 'a'), block('number', 'b'), block('number', 'c'))],
-      [row(block('message', 'm')), row(block('kpi', 'k'), block('bars', 'b'))],
-      [row(block('table', 't'))],
-      [row(block('people', 'pp')), row(block('checks', 'ck'), block('risks', 'rk'))],
+      board(block('points', 'p'), block('ring', 'r'), block('number', 'a'), block('number', 'b')),
+      board(block('message', 'm'), block('kpi', 'k'), block('bars', 'b')),
+      board(block('table', 't')),
+      board(block('people', 'pp'), block('checks', 'ck'), block('risks', 'rk')),
     ]
-    for (const rows of layouts)
+    for (const bs of boards)
       for (const type of BLOCK_TYPES)
         for (const h of [areaH, areaH - 200, areaH - 400]) {
           const b = block(type, 'new')
-          expect([type, h, autoTarget(rows, b, h) === null]).toEqual([type, h, placeIssue(rows, b, h) !== null])
+          expect([type, h, autoPlace(bs, b, h) === null]).toEqual([type, h, placeIssue(bs, b, h) !== null])
         }
   })
 
-  it('한 줄을 다 쓰는 선 차트만 바닥 높이를 낮추고 막대 차트는 그대로 둔다', () => {
-    // 선은 넓으면 낮아도 오르내림이 보이지만, 막대는 위아래 글 자리가 그대로라 낮춘 만큼 막대가 눌린다
-    expect(blockMinH(block('trend', 't'), 12)).toBeLessThan(blockMinH(block('trend', 't'), 8))
-    expect(blockMinH(block('versus', 'v'), 12)).toBeGreaterThanOrEqual(360)
-    expect(blockMinH(block('bridge', 'g'), 12)).toBeGreaterThanOrEqual(380)
-  })
-
-  it('줄 수, 줄마다 칸 수, 부품 수의 끝을 넘지 않는다', () => {
-    let rows: BlockRow[] = []
+  it('부품 수의 끝을 넘지 않는다', () => {
+    let bs: Block[] = []
     for (let i = 0; i < 12; i++) {
-      const b = block('callout', `c${i}`)
-      const t = autoTarget(rows, b)
-      if (!t) break
-      rows = insertAt(rows, t, b)!
+      const next = autoPlace(bs, block('callout', `c${i}`))
+      if (!next) break
+      bs = next
     }
     // 강조 상자는 작은 부품이 아니라 큰 부품 수(MAX_LARGE)에서 멈춘다
-    expect(blockCount(rows)).toBe(MAX_LARGE)
-    expect(rows.length).toBeLessThanOrEqual(MAX_ROWS)
-    expect(rows.every((r) => r.blocks.length <= MAX_IN_ROW)).toBe(true)
-    expect(autoTarget(rows, block('callout', 'more'))).toBeNull()
+    expect(bs).toHaveLength(MAX_LARGE)
+    expect(autoPlace(bs, block('callout', 'more'))).toBeNull()
+    expect(placeIssue(bs, block('callout', 'more'))).toEqual({ kind: 'large' })
   })
 
-  it('새 줄이 들어갈 높이가 모자라면 다른 줄의 칸 너비를 다시 나눠 넣는다', () => {
-    // 짧은 글 옆의 4칸짜리 전과 후는 위아래로 쌓여 높고, 8칸이면 옆으로 놓여 낮다
-    const rows = [{ ...row(block('text', 't'), block('delta', 'd')), spans: [8, 4] }]
-    const chart = block('bars', 'c')
-    const below = { kind: 'row', index: 1 } as const
-    const stacked = needH(insertAt(rows, below, chart, 'x')!)
-    const areaH = stacked - 60
-    const placed = insertAt(rows, below, chart, 'x', areaH)!
-    expect(fitsHeight(placed, areaH)).toBe(true)
-    expect(spansOf(placed[0])).toEqual([4, 8])
-    expect(whyNot(rows, below, chart, areaH)).toBeNull()
-    expect(validTargets(rows, chart, areaH)).toContainEqual(below)
-    // 그대로 들어가면 사람이 고른 비율을 바꾸지 않는다
-    expect(spansOf(insertAt(rows, below, chart, 'x', stacked)![0])).toEqual([8, 4])
+  it('놓을 수 있는 자리는 모두 잘리지 않는 크기로 들어가고, whyNot과 같은 것을 말한다', () => {
+    const bs = board(block('message', 'm'), block('kpi', 'k'), block('bars', 'b'))
+    for (const type of ['callout', 'bullets', 'stat', 'trend', 'table'] as BlockType[]) {
+      const b = block(type, 'x')
+      for (const t of validTargets(bs, b, H)) {
+        expect(whyNot(bs, t, b, H)).toBeNull()
+        const next = t.kind === 'spot' ? insertAt(bs, t.spot, b, H) : null
+        expect(next && sound(next), `${type} ${JSON.stringify(t)}`).toBe(true)
+      }
+    }
   })
 
-  it('놓을 자리를 고르면 잘리지 않는 높이 안에서만 고른다', () => {
-    const areaH = 1080 - FRAME.y - FRAME.bottom
-    const rows = [row(block('table', 't'))]
-    for (const t of validTargets(rows, block('pricing', 'p'), areaH)) expect(fitsHeight(insertAt(rows, t, block('pricing', 'p'), 'x', areaH)!, areaH)).toBe(true)
-    const hs = rowHeights([row(block('message', 'm')), row(block('bars', 'b'))], areaH)
-    expect(hs.reduce((a, b) => a + b, 0) + 48).toBeLessThanOrEqual(areaH + 1)
-  })
-
-  it('표나 일정처럼 넓게 짜인 부품은 한 줄을 혼자 쓴다', () => {
-    const rows = [row(block('bullets', 'b'))]
-    // 점 목록 옆에 표를 놓을 수 없고, 표 옆에 점 목록도 놓을 수 없다. 새 줄로는 된다
-    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, block('table', 't'))).toEqual({ kind: 'solo', type: 'table' })
-    expect(whyNot([row(block('table', 't'))], { kind: 'cell', row: 0, index: 1 }, block('bullets', 'x'))).toEqual({ kind: 'solo', type: 'table' })
-    expect(whyNot(rows, { kind: 'row', index: 1 }, block('table', 't'))).toBeNull()
+  it('표나 일정처럼 넓게 짜인 부품은 장 너비를 혼자 쓴다', () => {
+    const bs = board(block('bullets', 'b'))
+    // 점 목록 옆에 표를 놓을 수 없고, 표 옆에 점 목록도 놓을 수 없다. 아래로는 된다
+    expect(whyNot(bs, { kind: 'spot', spot: { at: 'b', side: 'right' } }, block('table', 't'))).toEqual({ kind: 'solo', type: 'table' })
+    expect(whyNot(board(block('table', 't')), { kind: 'spot', spot: { at: 't', side: 'right' } }, block('bullets', 'x'))).toEqual({ kind: 'solo', type: 'table' })
+    expect(whyNot(bs, { kind: 'spot', spot: { at: 'b', side: 'below' } }, block('table', 't'))).toBeNull()
     for (const t of ['table', 'gantt', 'timeline', 'process', 'compare', 'pricing'] as const) expect(isSolo(t)).toBe(true)
     expect(isSolo('bars')).toBe(false)
   })
 
   it('한 장에는 면 한 가지만: 진한 면은 하나, 진한 면과 옅은 면은 섞지 않는다', () => {
-    const withLooks = (...looks: Block['look'][]) => [row(...looks.map((look, i) => ({ ...block('text', `k${i}`), look })))]
+    const withLooks = (...looks: Block['look'][]) => board(...looks.map((look, i) => ({ ...block('text', `k${i}`), look })))
     expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'one-bold' })
     expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'card')).toEqual({ kind: 'look', why: 'mix' })
     expect(lookIssue(withLooks('card', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'mix' })
     expect(lookIssue(withLooks('card', 'plain'), 'k1', 'card')).toBeNull()
-    // 혼자 한 줄을 다 쓰는 작은 부품은 면을 깔지 않는다 (그려질 때도 바탕 없이)
+    // 혼자 장 너비를 다 쓰는 작은 부품은 면을 깔지 않는다 (그려질 때도 바탕 없이)
     const ring = { ...block('ring', 'g'), look: 'card' as const }
-    expect(lookIssue([row(ring)], 'g', 'card')).toEqual({ kind: 'look', why: 'alone' })
-    expect(shownLook(ring, 1)).toBe('plain')
-    expect(shownLook(ring, 2)).toBe('card')
+    expect(lookIssue(board(ring), 'g', 'card')).toEqual({ kind: 'look', why: 'alone' })
+    expect(shownLook(ring, true)).toBe('plain')
+    expect(shownLook(ring, false)).toBe('card')
     // 강조 상자는 띠처럼 혼자 써도 된다
-    expect(lookIssue([row(block('callout', 'c'))], 'c', 'bold')).toBeNull()
+    expect(lookIssue(board(block('callout', 'c')), 'c', 'bold')).toBeNull()
   })
 
-  it('넣은 부품의 면이 장과 어긋나면 바탕 없이, 옅은 면은 같은 줄이 함께 바뀐다', () => {
+  it('넣은 부품의 면이 장과 어긋나면 바탕 없이, 옅은 면은 나란한 부품이 함께 바뀐다', () => {
     // 진한 면이 이미 있는 장에 강조 상자(처음엔 진한 면)를 넣으면 바탕 없이
-    const rows = [row({ ...block('text', 'a'), look: 'bold' })]
-    const next = insertAt(rows, { kind: 'row', index: 1 }, block('callout', 'c'))!
-    expect(lookOf(next[1].blocks[0])).toBe('plain')
-    // 옅은 면을 고르면 같은 줄의 다른 부품도 옅은 면, 다른 줄은 그대로
-    const two = [row(block('text', 'a'), block('bullets', 'b')), row(block('number', 'n'))]
+    const bs = board({ ...block('text', 'a'), look: 'bold' })
+    const next = insertAt(bs, { at: null, side: 'below' }, block('callout', 'c'))!
+    expect(lookOf(next.find((b) => b.id === 'c')!)).toBe('plain')
+    // 옅은 면을 고르면 나란한 부품도 옅은 면, 아래 묶음은 그대로
+    const two = insertAt(insertAt(board(block('text', 'a')), { at: 'a', side: 'right' }, block('bullets', 'b'))!, { at: null, side: 'below' }, block('number', 'n'))!
     const carded = withLook(two, 'a', 'card')
-    expect(carded[0].blocks.map(lookOf)).toEqual(['card', 'card'])
-    expect(lookOf(carded[1].blocks[0])).toBe('plain')
+    expect(['a', 'b'].map((id) => lookOf(carded.find((x) => x.id === id)!))).toEqual(['card', 'card'])
+    expect(lookOf(carded.find((x) => x.id === 'n')!)).toBe('plain')
     // 진한 면은 그 부품 하나만
-    expect(withLook(two, 'a', 'bold')[0].blocks.map(lookOf)).toEqual(['bold', 'plain'])
+    const bold = withLook(two, 'a', 'bold')
+    expect(['a', 'b'].map((id) => lookOf(bold.find((x) => x.id === id)!))).toEqual(['bold', 'plain'])
   })
 
   it('같은 장에 같은 부품이 둘이면 빈칸 목록에서 자리로 부른다', () => {
-    const rows = [row(block('kpi', 'k')), row(block('faq', 'f1'), block('faq', 'f2'))]
-    const names = blockNames(rows)
+    const bs = insertAt(insertAt(board(block('kpi', 'k')), { at: null, side: 'below' }, block('faq', 'f1'))!, { at: 'f1', side: 'right' }, block('faq', 'f2'))!
+    const names = blockNames(bs)
     expect(names.get('k')).toBe(BLOCKS.kpi.name)
     expect(names.get('f1')).toBe(`왼쪽 ${BLOCKS.faq.name}`)
     expect(names.get('f2')).toBe(`오른쪽 ${BLOCKS.faq.name}`)
-    // 줄이 다르면 위, 아래로
-    const stacked = blockNames([row(block('number', 'n1')), row(block('number', 'n2'), block('callout', 'c'))])
-    expect([stacked.get('n1'), stacked.get('n2'), stacked.get('c')]).toEqual([`위 ${BLOCKS.number.name}`, `아래 ${BLOCKS.number.name}`, BLOCKS.callout.name])
+    // 위아래로 놓이면 위, 아래로
+    const stacked = blockNames(insertAt(board(block('number', 'n1')), { at: 'n1', side: 'below' }, block('number', 'n2'))!)
+    expect([stacked.get('n1'), stacked.get('n2')]).toEqual([`위 ${BLOCKS.number.name}`, `아래 ${BLOCKS.number.name}`])
     // 빈칸 이름에도 붙는다
-    const labels = blockMissing(rows[1].blocks[1], names.get('f2')).map((m) => m.label)
+    const f2 = bs.find((b) => b.id === 'f2')!
+    const labels = blockMissing(f2, names.get('f2')).map((m) => m.label)
     expect(labels.every((l) => l.startsWith('오른쪽 '))).toBe(true)
-    expect(blockMissing(rows[1].blocks[0], names.get('f1')).some((m) => labels.includes(m.label))).toBe(false)
-  })
-
-  it('줄마다 잘리지 않을 높이를 주고, 남는 높이는 똑같이 나눠 더한다', () => {
-    // 자리가 없으면 줄마다 잘리지 않을 높이가 그대로 나온다
-    const tight = [row(block('message', 'm')), row(block('faq', 'f'))]
-    const [low, need] = rowHeights(tight, 0)
-    expect(low).toBeLessThan(need - 40)
-    // 남는 높이 200은 두 줄이 100씩: 핵심 문장 줄이 질문 줄만큼 높아지지 않고, 질문 줄만 장 끝까지 늘어나지도 않는다
-    const hs = rowHeights(tight, low + need + 48 + 200)
-    expect(hs[0]).toBeCloseTo(low + 100, 0)
-    expect(hs[1]).toBeCloseTo(need + 100, 0)
-    const three = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 1080 - FRAME.y - FRAME.bottom)
-    const mins = rowHeights([row(block('message', 'm')), row(block('faq', 'f')), row(block('callout', 'c'))], 0)
-    const extra = three.map((h, i) => h - mins[i])
-    expect(Math.max(...extra) - Math.min(...extra)).toBeLessThan(1)
-  })
-
-  it('차트, 표, 그림이 든 줄이 있으면 남는 높이는 그 줄끼리 나누고, 글과 숫자 줄은 잘리지 않을 높이 그대로', () => {
-    const areaH = 1080 - FRAME.y - FRAME.bottom
-    const free = areaH - BLOCK_GAP
-    const two = [row(block('message', 'm')), row(block('bars', 'b'))]
-    expect(stretchRows(two)).toEqual([false, true])
-    const [lowM] = rowHeights(two, 0)
-    const hs = rowHeights(two, areaH)
-    expect(hs[0]).toBeCloseTo(lowM, 0)
-    expect(hs[0] + hs[1]).toBeCloseTo(free, 0)
-    // 격자도 같은 계산: 글 줄은 높이 그대로, 차트 줄은 1fr
-    const rowsCss = areaStyle(two).gridTemplateRows
-    expect(rowsCss).toMatch(/^max\(.*\) minmax\(.*, 1fr\)$/)
-    // 차트가 같은 줄에 있으면 그 줄도 나눠 가진다
-    expect(stretchRows([row(block('delta', 'd'), block('versus', 'v')), row(block('text', 't'))])).toEqual([true, false])
-    // 글과 숫자뿐이면 모든 줄이 나눠 가진다 (위의 똑같이 나누기)
-    expect(stretchRows([row(block('message', 'm')), row(block('kpi', 'k'))])).toEqual([true, true])
-  })
-
-  it('사람이 줄 높이를 정하면 그 비중으로 나누되, 줄마다 잘리지 않을 높이는 지킨다', () => {
-    const two = [row(block('message', 'm')), row(block('bars', 'b'))]
-    const [lowM, lowB] = rowHeights(two, 0)
-    const areaH = 1080 - FRAME.y - FRAME.bottom
-    const free = areaH - BLOCK_GAP
-    // 비중이 하나라도 빠지면 예전처럼 똑같이 나눈다
-    expect(weighted([{ ...two[0], grow: 30 }, two[1]])).toBe(false)
-    const even = rowHeights([{ ...two[0], grow: 50 }, { ...two[1], grow: 50 }], areaH)
-    expect(even[0]).toBeCloseTo(free / 2, 0)
-    // 위 줄을 아주 작게 해도 잘리지 않을 높이 아래로는 내려가지 않는다
-    const squeezed = rowHeights([{ ...two[0], grow: 1 }, { ...two[1], grow: 99 }], areaH)
-    expect(squeezed[0]).toBeCloseTo(lowM, 0)
-    expect(squeezed[0] + squeezed[1]).toBeCloseTo(free, 0)
-    // 줄 사이를 끌면 위아래 두 줄이 나눠 갖고 24분의 1에 붙는다. 잘리지 않을 높이 밖으로는 못 끈다
-    const heights = rowHeights(two, areaH)
-    const mid = Math.round(((lowM / free + 1 - lowB / free) / 2) * 24) / 24
-    const g = growAt(two, heights, 0, mid + 0.01)
-    expect(g[0] / (g[0] + g[1])).toBeCloseTo(mid, 1)
-    const g2 = growAt(two, heights, 0, 0)
-    expect(g2[0] / (g2[0] + g2[1])).toBeCloseTo(lowM / free, 1)
-    expect(lowB).toBeGreaterThan(0)
-    // 파일에서 읽을 때 범위 밖의 비중은 버린다
-    const read = cleanRows([{ id: 'a', blocks: [block('message')], grow: 40 }, { id: 'b', blocks: [block('bars')], grow: 400 }])
-    expect(read.map((r) => r.grow)).toEqual([40, undefined])
-    expect(weighted(read)).toBe(false)
-    expect(unweighted([{ ...two[0], grow: 40 }]).every((r) => r.grow === undefined)).toBe(true)
   })
 
   it('로고가 많으면 넓은 칸에만 놓는다', () => {
     const logos = (n: number) => ({ ...block('logos', 'l'), items: Array.from({ length: n }, (_, i) => ({ ...block('logos').items[0], id: `l${i}` })) })
     expect([3, 6, 10].map((n) => minSpanOf(logos(n)))).toEqual([6, 8, 12])
-    const rows = [row(block('callout', 'c'))]
-    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, logos(4))).toBeNull()
-    expect(whyNot(rows, { kind: 'cell', row: 0, index: 1 }, logos(10))).toEqual({ kind: 'narrow', span: 12 })
-    expect(whyNot(rows, { kind: 'row', index: 1 }, logos(10))).toBeNull()
+    const bs = board(block('callout', 'c'))
+    expect(whyNot(bs, { kind: 'spot', spot: { at: 'c', side: 'right' } }, logos(4))).toBeNull()
+    expect(whyNot(bs, { kind: 'spot', spot: { at: 'c', side: 'right' } }, logos(10))).toEqual({ kind: 'narrow', span: 12 })
+    expect(whyNot(bs, { kind: 'spot', spot: { at: 'c', side: 'below' } }, logos(10))).toBeNull()
   })
 
   it('항목을 더하면 장을 넘칠 때는 더할 수 없다', () => {
-    const slide = { fields: { title: '제목' } } as unknown as Slide
-    const areaH = composeAreaH(slide)
-    // 점검 목록은 항목이 늘면 장보다 높아진다 (blockHeights.ts). 둘에서 시작한다
     const checks = block('checks', 'p')
-    let rows = [row(block('message', 'm')), row({ ...checks, items: checks.items.slice(0, 2) }, block('callout', 'c'))]
-    expect(fitsHeight(rows, areaH)).toBe(true)
-    // 더할 수 있는 동안 더하면, 마지막까지 잘리지 않는 높이 안에 있다
-    for (let i = 0; i < 20 && fitsWith(rows, 'p', withItem, areaH); i++) {
-      rows = rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id === 'p' ? withItem(b) : b)) }))
-    }
-    expect(fitsHeight(rows, areaH)).toBe(true)
-    expect(fitsWith(rows, 'p', withItem, areaH)).toBe(false)
+    let bs = board(block('message', 'm'), { ...checks, items: checks.items.slice(0, 2) }, block('callout', 'c'))
+    expect(sound(bs)).toBe(true)
+    // 더할 수 있는 동안 더하면, 마지막까지 잘리지 않는 크기 안에 있다
+    for (let i = 0; i < 20 && fitsWith(bs, 'p', withItem, H); i++) bs = mapBlock(bs, 'p', withItem)
+    expect(needRows(bs, boardFit(H, bs))).toBeLessThanOrEqual(BOARD_ROWS)
+    expect(fitsWith(bs, 'p', withItem, H)).toBe(false)
     // 제목과 부제를 비우면 본문 상자가 그만큼 높다
     expect(composeAreaH({ fields: {} } as unknown as Slide)).toBe(1080 - FRAME.y - FRAME.bottom)
   })
 
-  it('아무 데나 놓아도 정해진 자리 가운데 하나로 들어간다', () => {
-    const size = { w: 1680, h: 1080 - FRAME.y - FRAME.bottom - 200 }
-    const rows = [row(block('number', 'n')), row(block('bullets', 'b'))]
+  it('아무 데나 놓아도 놓을 수 있는 자리 가운데 하나로 들어간다', () => {
+    const size = { w: 1680, h: H }
+    const bs = board(block('number', 'n'), block('bullets', 'b'))
     const dragged = block('callout', 'c')
     for (let x = 0; x <= size.w; x += 120)
       for (let y = -100; y <= size.h + 100; y += 90) {
-        const t = dropTarget(rows, dragged, { x, y }, size)
+        const t = dropTarget(bs, dragged, { x, y }, size)
         expect(t).not.toBeNull()
-        expect(insertAt(rows, t!, dragged)).not.toBeNull()
+        expect(t!.kind === 'spot' && insertAt(bs, t!.spot, dragged, size.h)).toBeTruthy()
       }
-    // 첫 줄의 오른쪽 가운데에 놓으면 그 줄 옆자리
-    expect(dropTarget(rows, dragged, { x: size.w * 0.9, y: size.h * 0.25 }, size)).toEqual({ kind: 'cell', row: 0, index: 1 })
   })
 
-  it('손이 보이는 자리 안에 있으면 자리를 바꾸지 않는다 (보이는 것과 놓이는 곳이 어긋나지 않게)', () => {
-    const size = { w: 1680, h: 640 }
-    const rows = [row(block('number', 'n'))]
-    const dragged = block('callout', 'c')
-    const left = { kind: 'cell', row: 0, index: 0 } as const
-    // 끄는 부품을 뺀 모습으로는 큰 숫자의 윗선 둘레(새 줄)이지만, 보이는 모습에서는 왼쪽 옆자리 칸 안
-    const p = { x: size.w * 0.2, y: size.h * 0.03 }
-    expect(dropTarget(rows, dragged, p, size)).toEqual({ kind: 'row', index: 0 })
-    expect(dropTarget(rows, dragged, p, size, undefined, left)).toEqual(left)
-    // 그 칸을 벗어나면 다시 찾는다
-    expect(dropTarget(rows, dragged, { x: size.w * 0.9, y: size.h * 0.5 }, size, undefined, left)).toEqual({ kind: 'cell', row: 0, index: 1 })
+  it('옮길 때 다른 부품의 가운데에 놓으면 두 부품이 자리를 맞바꾼다', () => {
+    const size = { w: 1680, h: H }
+    const bs = board(block('number', 'n'), block('delta', 'd'))
+    const n = areaOf(bs, 'n')
+    const d = areaOf(bs, 'd')
+    const base = removeBlock(bs, 'n', H)
+    const mid = { x: ((d.x + d.w / 2) * (size.w + 72)) / BOARD_COLS - 36, y: ((d.y + d.h / 2) * (size.h + 48)) / BOARD_ROWS - 24 }
+    const t = dropTarget(base, bs[0], mid, size, null, bs)
+    expect(t).toEqual({ kind: 'swap', with: 'd' })
+    const swapped = moveAt(bs, 'n', t!, H)!
+    expect(areaOf(swapped, 'n')).toEqual(d)
+    expect(areaOf(swapped, 'd')).toEqual(n)
   })
 
-  it('칸 사이를 끌면 정해진 비율에 붙는다', () => {
-    const r = row(block('trend', 't'), block('bullets', 'b'))
-    expect(spansAt(r, 0, 0.66)).toEqual([8, 4])
-    expect(spansAt(r, 0, 0.52)).toEqual([6, 6])
-    // 차트는 6칸보다 좁아지지 않는다
-    expect(spansAt(r, 0, 0.2)[0]).toBeGreaterThanOrEqual(BLOCKS.trend.minSpan)
-    expect(spansOf({ ...r, spans: [1, 11] })).not.toEqual([1, 11])
+  it('나누는 선을 더 끌 수 없으면 막는 부품을 알려 준다', () => {
+    // 막대 비교는 절반보다 좁아지지 않는다: 가운데 선을 오른쪽 끝으로 끌면 막대 비교 때문
+    const bs = insertAt(board(block('kpi', 'k')), { at: 'k', side: 'right' }, block('bars', 'b'), H)!
+    const g = guttersOf(bs).find((x) => x.dir === 'h')!
+    expect(gutterLimit(bs, g, 11, H)).toEqual({ kind: 'block', type: 'bars', minSpan: BLOCKS.bars.minSpan })
+    // 끌 수 있는 데까지는 알리지 않는다
+    expect(gutterLimit(bs, g, g.at, H)).toBeNull()
+  })
+
+  it('부품의 크기를 칸 수로 정하면 닿은 선을 옮겨 옆 부품과 주고받는다', () => {
+    const bs = insertAt(board(block('text', 't')), { at: 't', side: 'right' }, block('bullets', 'b'), H)!
+    const wide = resizeBlock(bs, 't', 'w', 8, H)!
+    expect(areaOf(wide, 't').w).toBe(8)
+    expect(areaOf(wide, 'b').w).toBe(4)
+    // 오른쪽 끝 부품은 왼쪽 선을 옮긴다
+    expect(areaOf(resizeBlock(bs, 'b', 'w', 8, H)!, 'b').w).toBe(8)
+    // 잘리는 크기는 받지 않는다
+    expect(resizeBlock(bs, 't', 'w', 11, H)).toBeNull()
   })
 })
 
-describe('한 칸에 쌓기', () => {
-  const SIZE = { w: 1680, h: 640 }
-  const stackAt = (row: number, index: number, at: number) => ({ kind: 'stack', row, index, at }) as const
-
-  it('칸 위나 아래에 쌓으면 칸 너비는 그대로 두고, 칸의 가장 낮은 높이는 쌓은 부품의 높이와 그 사이 간격의 합이다', () => {
-    const rows = [{ ...row(block('number', 'n'), block('bars', 'c')), spans: [4, 8] }]
-    const next = insertAt(rows, stackAt(0, 0, 1), block('delta', 'd'))!
-    expect(membersOf(next[0].blocks[0]).map((b) => b.id)).toEqual(['n', 'd'])
-    expect(spansOf(next[0])).toEqual([4, 8])
-    expect(blockCount(next)).toBe(3)
-    expect(cellMinH(next[0].blocks[0], 4)).toBe(blockMinH(block('number'), 4) + blockMinH(block('delta'), 4) + BLOCK_GAP)
-    expect(placeOf(next, 'd')).toEqual({ row: 0, col: 0, at: 1 })
-    // 위에 쌓으면 맨 위가 바뀌어도 칸의 이음표는 칸에 남는다
-    const linked = withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow')
-    const top = insertAt(linked, stackAt(0, 0, 0), block('delta', 'd'))!
-    expect(membersOf(top[0].blocks[0]).map((b) => b.id)).toEqual(['d', 'n'])
-    expect(linkAt(top, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
-    expect(top[0].blocks[0].stack!.every((m) => !m.link)).toBe(true)
+describe('판에서 위아래로 놓기', () => {
+  it('부품 아래에 놓으면 그 부품의 너비를 나눠 쓰고 옆 부품은 그대로다', () => {
+    const bs = insertAt(board(block('number', 'n')), { at: 'n', side: 'right' }, block('bars', 'c'), H)!
+    const n = areaOf(bs, 'n')
+    const next = insertAt(bs, { at: 'n', side: 'below' }, block('delta', 'd'), H)!
+    expect(areaOf(next, 'd').x).toBe(n.x)
+    expect(areaOf(next, 'd').w).toBe(n.w)
+    expect(areaOf(next, 'c')).toEqual(areaOf(bs, 'c'))
+    expect(isStacked(next, 'd')).toBe(true)
+    expect(sound(next)).toBe(true)
   })
 
-  it('쌓을 수 없는 조합은 넣지 않고 까닭을 알린다: 큰 부품 둘, 이미지, 셋 넘게', () => {
-    const chart = [row(block('bars', 'c'))]
-    expect(stackIssue([block('bars'), block('table')])).toBe('large')
-    expect(whyNot(chart, stackAt(0, 0, 1), block('table', 't'))).toEqual({ kind: 'stack', why: 'large', type: 'bars' })
-    expect(insertAt(chart, stackAt(0, 0, 1), block('table', 't'))).toBeNull()
-    expect(whyNot(chart, stackAt(0, 0, 1), block('image', 'i'))).toEqual({ kind: 'stack', why: 'none', type: 'image' })
-    const three = [row(asCell([block('number', 'a'), block('delta', 'b'), block('callout', 'c')]))]
-    expect(MAX_STACK).toBe(3)
-    expect(whyNot(three, stackAt(0, 0, 3), block('number', 'd'))?.kind).toBe('stack')
-    // 쌓을 수 있는 자리 목록에도 들지 않는다
-    expect(validTargets(chart, block('table', 't'), SIZE.h).some((t) => t.kind === 'stack')).toBe(false)
+  it('글 목록을 아래에 넣으면 남는 높이는 면이 있는 윗줄이 받는다 (목록 위아래가 비지 않게)', () => {
+    const top = insertAt(board({ ...block('callout', 'c'), look: 'bold' }), { at: 'c', side: 'right' }, block('kpi', 'k'), H)!
+    const next = insertAt(top, { at: null, side: 'below' }, block('bullets', 'b'), H)!
+    const b = areaOf(next, 'b')
+    // 한 줄을 다 쓰는 점 목록 셋은 한 줄로 늘어서서 낮다: 가장 낮은 높이만 받는다
+    expect(b.h).toBe(boardFit(H, next).minH(next.find((x) => x.id === 'b')!, BOARD_COLS))
+    expect(areaOf(next, 'c').h).toBe(BOARD_ROWS - b.h)
+    expect(sound(next)).toBe(true)
   })
 
-  it('남는 높이는 차트가 받고, 차트가 없으면 똑같이 나눈다 (그린 칸과 끌어 놓을 때 재는 칸이 같다)', () => {
-    const withChart = asCell([block('number', 'n'), block('bars', 'c')])
-    const [n, c] = stackHeights(withChart, 6, 700)
-    expect(n).toBe(blockMinH(block('number'), 6))
-    expect(n + c + BLOCK_GAP).toBe(700)
-    const plain = asCell([block('number', 'n'), block('delta', 'd')])
-    const [a, b] = stackHeights(plain, 6, 700)
-    expect(a - blockMinH(block('number'), 6)).toBeCloseTo(b - blockMinH(block('delta'), 6))
-    const rects = cellRects([row(plain, block('text', 't'))], SIZE)
-    expect(rects.get('d')!.y).toBeCloseTo(rects.get('n')!.y + rects.get('n')!.h + BLOCK_GAP)
-  })
-
-  it('쌓은 부품을 빼면 칸은 남고, 맨 위를 빼면 그 아래 부품이 칸의 이음표를 받는다', () => {
-    const rows = withLink([{ ...row(asCell([block('number', 'n'), block('delta', 'd')]), block('text', 't')), spans: [4, 8] }], { dir: 'h', row: 0, col: 0 }, 'plus')
-    const next = removeBlock(rows, 'n')
-    expect(next[0].blocks.map((b) => b.id)).toEqual(['d', 't'])
-    expect(next[0].blocks[0].stack).toBeUndefined()
-    expect(linkAt(next, { dir: 'h', row: 0, col: 0 })).toBe('plus')
-    expect(spansOf(next[0])).toEqual([4, 8])
-  })
-
-  it('끌어 놓을 때: 칸의 맨 위·아래 가장자리는 새 줄, 그 안쪽 위·아래는 쌓기, 가운데는 옆 칸', () => {
-    const rows = [row(block('number', 'n'), block('delta', 'd'))]
-    const r = cellRects(rows, SIZE).get('n')!
-    const at = (u: number, v: number) => dropTarget(rows, block('callout', 'x'), { x: r.x + r.w * u, y: r.y + r.h * v }, SIZE)
-    expect(at(0.5, 0.05)).toEqual({ kind: 'row', index: 0 })
-    expect(at(0.5, 0.25)).toEqual(stackAt(0, 0, 0))
-    expect(at(0.5, 0.75)).toEqual(stackAt(0, 0, 1))
-    expect(at(0.5, 0.95)).toEqual({ kind: 'row', index: 1 })
-    expect(at(0.2, 0.5)).toEqual({ kind: 'cell', row: 0, index: 0 })
-    // 쌓을 수 없는 부품이면 같은 자리에서 새 줄로
-    const charts = [row(block('bars', 'c'), block('delta', 'd'))]
-    const cr = cellRects(charts, SIZE).get('c')!
-    expect(dropTarget(charts, block('table', 't'), { x: cr.x + cr.w / 2, y: cr.y + cr.h * 0.25 }, SIZE)?.kind).not.toBe('stack')
-  })
-
-  it('복사하면 쌓은 부품까지 새 id로, 글을 고치면 쌓은 부품도 찾는다', () => {
-    const cell = asCell([block('number', 'n'), block('delta', 'd')])
-    const copy = copyCell(cell)
-    expect(membersOf(copy).map((b) => b.type)).toEqual(['number', 'delta'])
-    expect(membersOf(copy).some((b) => b.id === 'n' || b.id === 'd')).toBe(false)
-    const rows = mapBlock([row(cell)], 'd', (b) => ({ ...b, fields: { ...b.fields, value: '12%' } }))
-    expect(rows[0].blocks[0].stack![0].fields.value).toBe('12%')
-  })
-
-  it('파일에서 읽을 때 쌓은 부품의 꼴을 맞춘다: 또 쌓은 것과 이음표는 빼고, 셋 넘는 것과 맞지 않는 조합은 버린 것으로 센다', () => {
-    const lost = { n: 0 }
-    const raw = [
-      {
-        id: 'r',
-        blocks: [
-          { ...block('number', 'n'), stack: [{ ...block('delta', 'd'), link: 'arrow', stack: [block('ring', 'x')] }, block('callout', 'c'), block('goal', 'g')] },
-          { ...block('bars', 'b'), stack: [block('table', 't')] },
-        ],
-      },
-    ]
-    const rows = cleanRows(raw, lost)
-    expect(membersOf(rows[0].blocks[0]).map((b) => b.id)).toEqual(['n', 'd', 'c'])
-    expect(rows[0].blocks[0].stack!.every((m) => !m.link && !m.stack)).toBe(true)
-    expect(membersOf(rows[0].blocks[1]).map((b) => b.id)).toEqual(['b'])
-    // 이음표, 또 쌓은 것, 넷째(goal), 큰 부품 둘(table)
-    expect(lost.n).toBe(4)
-    // 몇 번을 거쳐도 같다
-    expect(cleanRows(rows)).toEqual(rows)
-  })
-
-  it('발표할 때 비워 둔 쌓은 부품은 빠지고, 맨 위가 비면 그 아래가 맨 위가 된다', () => {
-    const filled = (b: Block): Block => ({ ...b, fields: { ...b.fields, value: '3' } })
-    const rows = withLink([row(asCell([block('number', 'n'), filled(block('delta', 'd'))]), filled(block('text', 't')))], { dir: 'h', row: 0, col: 0 }, 'arrow')
-    const shown = shownRows(rows)
-    expect(shown[0].blocks.map((b) => b.id)).toEqual(['d', 't'])
-    expect(linkAt(shown, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
-    // 쌓은 부품의 이음표는 설 데가 없어 tidyLinks가 뺀다
-    const stray = [row({ ...block('number', 'n'), stack: [{ ...block('delta', 'd'), link: 'arrow' }] })]
-    expect(tidyLinks(stray)[0].blocks[0].stack![0].link).toBeUndefined()
+  it('빼면 위아래 이웃이 자리를 덮고, 복사하면 자리와 이음표까지 새 id로 따라간다', () => {
+    const bs = withLink(insertAt(board(block('number', 'n')), { at: 'n', side: 'below' }, block('delta', 'd'), H)!, { id: 'n', dir: 'v' }, 'arrow')
+    const gone = removeBlock(bs, 'd', H)
+    expect(areaOf(gone, 'n').h).toBe(BOARD_ROWS)
+    expect(gone[0]).not.toHaveProperty('linkBelow')
+    const copy = copyBlocks(bs)
+    expect(copy.map((b) => b.type)).toEqual(['number', 'delta'])
+    expect(copy.some((b) => b.id === 'n' || b.id === 'd')).toBe(false)
+    expect(copy.map((b) => b.at)).toEqual(bs.map((b) => b.at))
+    expect(linkAt(copy, { id: copy[0].id, dir: 'v' })).toBe('arrow')
   })
 })
 
 describe('파일에서 읽은 부품 장', () => {
-  it('모르는 부품과 꼴이 틀린 값은 빼고 글은 남긴다', () => {
-    const rows = cleanRows([
-      { id: 'r1', blocks: [{ id: 'a', type: 'text', fields: { body: '본문', bad: 3 }, items: 'x', look: 'neon', effect: 'spin' }, { id: 'b', type: 'virus' }] },
-      { id: 'r2', blocks: [] },
+  it('모르는 부품과 꼴이 틀린 값은 빼고 글은 남긴다, 자리가 판을 덮지 않으면 다시 나눈다', () => {
+    const bs = cleanBlocks([
+      { id: 'a', type: 'text', fields: { body: '본문', bad: 3 }, items: 'x', look: 'neon', effect: 'spin', at: { x: 0, y: 0, w: 5, h: 5 } },
+      { id: 'b', type: 'virus' },
       'junk',
-      { blocks: [{ id: 'c', type: 'bullets', items: [{ title: '하나', body: 7 }], variant: 'nope', spans: [3] }], spans: [99] },
+      { id: 'c', type: 'bullets', items: [{ title: '하나', body: 7 }], variant: 'nope', at: { x: 'a', y: 0, w: 1, h: 1 } },
     ])
-    expect(rows).toHaveLength(2)
-    expect(rows[0].blocks).toEqual([{ id: 'a', type: 'text', fields: { body: '본문' }, items: [] }])
-    expect(rows[1].blocks[0].items[0]).toMatchObject({ title: '하나', body: '' })
-    expect(rows[1].spans).toBeUndefined()
-    expect(cleanRows(rows)).toEqual(rows)
-    expect(cleanRows(null)).toEqual([])
+    expect(bs.map((b) => b.id)).toEqual(['a', 'c'])
+    expect(bs[0]).toMatchObject({ id: 'a', type: 'text', fields: { body: '본문' }, items: [] })
+    expect(bs[0]).not.toHaveProperty('look')
+    expect(bs[1].items[0]).toMatchObject({ title: '하나', body: '' })
+    expect(tiles(bs)).toBe(true)
+    // 몇 번을 거쳐도 같다
+    expect(cleanBlocks(bs)).toEqual(bs)
+    expect(cleanBlocks(null)).toEqual([])
   })
 
   it('나오는 때, 빠르기, 들어오는 쪽은 아는 값만 남긴다', () => {
-    const [r] = cleanRows([{ id: 'r', blocks: [{ id: 'a', type: 'text', fields: {}, items: [], when: 'click', speed: 'slow', from: 'left' }, { id: 'b', type: 'text', fields: {}, items: [], when: 'later', speed: 9, from: 'up' }] }])
-    expect(r.blocks[0]).toMatchObject({ when: 'click', speed: 'slow', from: 'left' })
-    expect(r.blocks[1]).toEqual({ id: 'b', type: 'text', fields: {}, items: [] })
+    const [a, b] = cleanBlocks([
+      { id: 'a', type: 'text', fields: {}, items: [], when: 'click', speed: 'slow', from: 'left' },
+      { id: 'b', type: 'text', fields: {}, items: [], when: 'later', speed: 9, from: 'up' },
+    ])
+    expect(a).toMatchObject({ when: 'click', speed: 'slow', from: 'left' })
+    expect(b).not.toHaveProperty('when')
+    expect(b).not.toHaveProperty('speed')
+    expect(b).not.toHaveProperty('from')
+  })
+
+  it('예전(0.4까지)의 줄은 판으로 옮긴다: 칸 너비, 쌓은 부품, 이음표가 따라오고 글은 하나도 빠지지 않는다', () => {
+    const lost = { n: 0 }
+    const rows = [
+      {
+        id: 'r1',
+        spans: [4, 8],
+        blocks: [{ ...block('number', 'n'), fields: { value: '12%' }, link: 'arrow', stack: [{ ...block('delta', 'd'), fields: { before: '3' } }] }, block('bars', 'c')],
+        link: 'plus',
+      },
+      { id: 'r2', blocks: [{ ...block('text', 't'), fields: { body: '설명' } }, { id: 'x', type: 'virus' }] },
+    ]
+    const bs = boardFromRows(rows, boardFit(H), lost)
+    expect(bs.map((b) => b.id).sort()).toEqual(['c', 'd', 'n', 't'])
+    expect(tiles(bs)).toBe(true)
+    // 칸 너비는 그대로, 쌓은 부품은 같은 너비로 아래에
+    expect(areaOf(bs, 'n').w).toBe(4)
+    expect(areaOf(bs, 'd')).toMatchObject({ x: 0, w: 4 })
+    expect(areaOf(bs, 'd').y).toBeGreaterThan(areaOf(bs, 'n').y)
+    // 칸 사이 이음표는 맨 위 부품의 오른쪽 선에, 줄 사이 이음표는 판 가운데를 덮는 부품의 아래 선에
+    expect(linkAt(bs, { id: 'n', dir: 'h' })).toBe('arrow')
+    expect(linkAt(bs, { id: 'c', dir: 'v' })).toBe('plus')
+    expect(bs.find((b) => b.id === 'n')!.fields.value).toBe('12%')
+    expect(lost.n).toBe(1)
   })
 })
 
 describe('발표할 때 나오는 차례', () => {
-  const slide = (order?: string[]): Pick<Slide, 'rows' | 'options'> => ({ rows: [row(block('kpi', 'a'), block('callout', 'b')), row(block('faq', 'c'))], options: order ? { order } : {} })
+  const blocks = insertAt(insertAt(board(block('kpi', 'a')), { at: 'a', side: 'right' }, block('callout', 'b'))!, { at: null, side: 'below' }, block('faq', 'c'))!
+  const slide = (order?: string[]): Pick<Slide, 'blocks' | 'options'> => ({ blocks, options: order ? { order } : {} })
 
   it('정한 차례를 앞에, 빠진 부품은 놓인 차례(위에서 아래, 왼쪽에서 오른쪽)로 뒤에', () => {
     expect(playOrder(slide()).map((b) => b.id)).toEqual(['a', 'b', 'c'])
@@ -693,99 +525,99 @@ describe('항목 순서 바꾸기', () => {
 describe('발표할 때 비워 둔 부품', () => {
   const filled = (type: Block['type'], id: string): Block => ({ ...block(type, id), fields: { title: '적은 글' } })
 
-  it('빈 부품은 빠지고 남은 부품이 줄을 나눠 쓴다 (고른 칸 너비는 다시 고른다)', () => {
-    const rows = [{ ...row(filled('text', 'a'), block('text', 'b')), spans: [8, 4] }]
-    const shown = shownRows(rows)
-    expect(shown).toHaveLength(1)
-    expect(shown[0].blocks.map((b) => b.id)).toEqual(['a'])
-    expect(shown[0]).not.toHaveProperty('spans')
+  it('빈 부품은 빠지고 남은 부품이 그 자리를 덮는다', () => {
+    const bs = board(filled('text', 'a'), block('text', 'b'))
+    const shown = shownBlocks(bs)
+    expect(shown.map((b) => b.id)).toEqual(['a'])
+    expect(tiles(shown)).toBe(true)
   })
 
   it('빠진 부품에 닿아 있던 이음표도 뗀다: 남은 두 부품 사이에 서면 뜻이 바뀐다', () => {
-    const rows = [row({ ...filled('text', 'a'), link: 'arrow' }, { ...block('text', 'b'), link: 'plus' }, filled('text', 'c'))]
-    const shown = shownRows(rows)
-    expect(shown[0].blocks.map((b) => b.id)).toEqual(['a', 'c'])
-    expect(shown[0].blocks.every((b) => !b.link)).toBe(true)
-  })
-
-  it('줄이 통째로 비면 그 줄과 위 줄을 잇던 이음표도 뗀다', () => {
-    const rows = [{ ...row(filled('text', 'a')), link: 'plus' as const }, row(block('number', 'b'))]
-    const shown = shownRows(rows)
-    expect(shown).toHaveLength(1)
-    expect(shown[0]).not.toHaveProperty('link')
+    let bs = insertAt(insertAt(board(filled('number', 'a')), { at: 'a', side: 'right' }, block('number', 'b'))!, { at: 'b', side: 'right' }, filled('number', 'c'))!
+    bs = withLink(withLink(bs, { id: 'a', dir: 'h' }, 'arrow'), { id: 'b', dir: 'h' }, 'plus')
+    const shown = shownBlocks(bs)
+    expect(shown.map((b) => b.id)).toEqual(['a', 'c'])
+    expect(shown.every((b) => !b.link)).toBe(true)
   })
 
   it('빈 부품이 없으면 그대로, 사람이 적은 글은 하나도 빠지지 않는다', () => {
-    const rows = [row(filled('text', 'a'), filled('number', 'b'))]
-    expect(shownRows(rows)).toBe(rows)
-    const mixed = [row(filled('text', 'a'), block('quote', 'q')), row(block('number', 'n'))]
-    const kept = shownRows(mixed).flatMap((r) => r.blocks.map((b) => b.id))
-    expect(kept).toEqual(['a'])
+    const bs = board(filled('text', 'a'), filled('number', 'b'))
+    expect(shownBlocks(bs)).toBe(bs)
+    const mixed = board(filled('text', 'a'), block('quote', 'q'), block('number', 'n'))
+    expect(shownBlocks(mixed).map((b) => b.id)).toEqual(['a'])
   })
 })
 
 describe('이음표', () => {
-  const rows = [row(block('number', 'a'), block('number', 'b')), row(block('text', 'c'))]
+  // 위에 숫자 둘, 아래에 설명
+  const bs = insertAt(insertAt(board(block('number', 'a')), { at: 'a', side: 'right' }, block('number', 'b'))!, { at: null, side: 'below' }, block('text', 'c'))!
 
-  it('칸 사이와 줄 사이에만 선다', () => {
-    expect(linkTargets(rows)).toEqual([
-      { dir: 'h', row: 0, col: 0 },
-      { dir: 'v', row: 0 },
-    ])
-    const linked = withLink(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'), { dir: 'v', row: 0 }, 'plus')
-    expect(linkAt(linked, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
-    expect(linkAt(linked, { dir: 'v', row: 0 })).toBe('plus')
+  it('부품 사이의 선에만 선다: 오른쪽 선과 아래 선', () => {
+    expect(linkTargets(bs)).toEqual(
+      expect.arrayContaining([
+        { id: 'a', dir: 'h' },
+        { id: 'a', dir: 'v' },
+        { id: 'b', dir: 'v' },
+      ]),
+    )
+    expect(linkTargets(bs).some((t) => t.id === 'b' && t.dir === 'h')).toBe(false)
+    expect(linkTargets(bs).some((t) => t.id === 'c')).toBe(false)
+    const linked = withLink(withLink(bs, { id: 'a', dir: 'h' }, 'arrow'), { id: 'a', dir: 'v' }, 'equals')
+    expect(linkAt(linked, { id: 'a', dir: 'h' })).toBe('arrow')
+    expect(linkAt(linked, { id: 'a', dir: 'v' })).toBe('equals')
     // 빼면 값이 남지 않는다
-    expect(withLink(linked, { dir: 'h', row: 0, col: 0 }, null)[0].blocks[0]).not.toHaveProperty('link')
+    expect(withLink(linked, { id: 'a', dir: 'h' }, null).find((b) => b.id === 'a')).not.toHaveProperty('link')
   })
 
-  it('줄 사이의 이음표는 위아래 줄이 비켜 나는 만큼 높이가 더 든다. 칸 사이는 높이가 그대로', () => {
-    expect(needH(withLink(rows, { dir: 'v', row: 0 }, 'arrow'))).toBe(needH(rows) + LINK_PAD * 2)
-    expect(needH(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'))).toBe(needH(rows))
+  it('뜻이 서는 짝만 잇는다: 더하기와 견주기는 같은 갈래끼리, 결과는 숫자나 한마디로', () => {
+    expect(linkFits('plus', 'number', 'delta')).toBe(true)
+    expect(linkFits('versus', 'goal', 'market')).toBe(false)
+    expect(linkFits('arrow', 'bullets', 'message')).toBe(true)
+    expect(linkFits('equals', 'bullets', 'number')).toBe(true)
+    expect(linkFits('equals', 'bullets', 'bullets')).toBe(false)
+    expect(linkIssue(bs, { id: 'a', dir: 'h' }, 'plus')).toBeNull()
+    expect(linkIssue(bs, { id: 'a', dir: 'v' }, 'versus')).toEqual({ from: 'number', to: 'text' })
   })
 
-  it('설 데가 없어진 이음표는 빠진다: 오른쪽 부품을 빼거나, 아래 줄이 없어지면', () => {
-    const linked = withLink(withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow'), { dir: 'v', row: 0 }, 'plus')
-    expect(removeBlock(linked, 'b')[0].blocks[0]).not.toHaveProperty('link')
-    expect(removeBlock(linked, 'c')[0]).not.toHaveProperty('link')
+  it('이음표가 선 자리는 양쪽 부품이 비켜 나는 만큼 높이가 더 든다', () => {
+    const fit = boardFit(H, bs)
+    expect(needRows(withLink(bs, { id: 'a', dir: 'v' }, 'arrow'), fit)).toBeGreaterThanOrEqual(needRows(bs, fit))
+  })
+
+  it('설 데가 없어진 이음표는 빠진다: 건너편 부품을 빼면', () => {
+    const linked = withLink(withLink(bs, { id: 'a', dir: 'h' }, 'arrow'), { id: 'b', dir: 'v' }, 'equals')
+    expect(removeBlock(linked, 'b').find((b) => b.id === 'a')).not.toHaveProperty('link')
+    expect(removeBlock(linked, 'c').find((b) => b.id === 'b')).not.toHaveProperty('linkBelow')
     expect(tidyLinks(linked)).toBe(linked)
   })
 
   it('파일에서 읽을 때 아는 이음표만, 설 데가 있는 것만 남긴다', () => {
-    const raw = [
-      { id: 'r1', blocks: [{ ...block('number', 'a'), link: 'arrow' }, { ...block('number', 'b'), link: 'plus' }], link: 'equals' },
-      { id: 'r2', blocks: [{ ...block('text', 'c'), link: 'spiral' }, block('text', 'd')], link: 'versus' },
-    ]
-    const clean = cleanRows(raw)
-    expect(clean.map((r) => r.blocks.map((b) => b.link ?? null))).toEqual([
+    const raw = bs.map((b) => (b.id === 'a' ? { ...b, link: 'arrow', linkBelow: 'spiral' } : b.id === 'c' ? { ...b, link: 'plus', linkBelow: 'plus' } : b))
+    const clean = cleanBlocks(raw)
+    expect(clean.map((b) => [b.link ?? null, b.linkBelow ?? null])).toEqual([
       ['arrow', null],
       [null, null],
+      [null, null],
     ])
-    expect(clean.map((r) => r.link ?? null)).toEqual(['equals', null])
   })
 })
 
-describe('이미지에 맞춘 칸 너비', () => {
+describe('이미지에 맞춘 칸 크기', () => {
   const img = (fields: Record<string, string> = {}) => ({ ...block('image', 'img'), fields: { image: 'data:image/png;base64,', ...fields } })
+  const pair = () => insertAt(board(img()), { at: 'img', side: 'right' }, block('bullets', 't'), H)!
 
   it('넓은 화면 캡처는 넓은 칸으로, 세로 사진은 좁은 칸으로', () => {
-    const rows = [row(img(), block('bullets', 't'))]
-    expect(spansOf(fitImage(rows, 'img', 16 / 10, 700)[0])).toEqual([8, 4])
-    expect(spansOf(fitImage(rows, 'img', 3 / 4, 700)[0])).toEqual([4, 8])
+    expect(areaOf(fitImage(pair(), 'img', 16 / 10, H), 'img').w).toBeGreaterThan(6)
+    expect(areaOf(fitImage(pair(), 'img', 3 / 4, H), 'img').w).toBeLessThan(6)
   })
 
-  it('지금 너비가 이미 맞으면, 줄에 이미지 하나뿐이면 그대로', () => {
-    const wide = [{ ...row(img(), block('bullets', 't')), spans: [8, 4] }]
-    expect(fitImage(wide, 'img', 16 / 10, 700)).toBe(wide)
-    const alone = [row(img())]
-    expect(fitImage(alone, 'img', 3 / 4, 700)).toBe(alone)
+  it('판에 이미지 하나뿐이면 그대로', () => {
+    const alone = board(img())
+    expect(fitImage(alone, 'img', 3 / 4, H)).toBe(alone)
   })
 
-  it('고른 너비에서도 이웃이 제 가장 좁은 너비보다 좁아지지 않는다', () => {
-    for (const aspect of [0.4, 0.75, 1, 1.6, 3]) {
-      const next = fitImage([row(img(), block('points', 't'))], 'img', aspect, 700)
-      for (const r of next) expect(r.blocks.every((b, i) => spansOf(r)[i] >= minSpanOf(b))).toBe(true)
-    }
+  it('고른 크기에서도 이웃이 잘리지 않는다', () => {
+    for (const aspect of [0.4, 0.75, 1, 1.6, 3]) expect(sound(fitImage(insertAt(board(img()), { at: 'img', side: 'right' }, block('points', 't'), H)!, 'img', aspect, H))).toBe(true)
   })
 
   // 가로세로가 읽히는 PNG (IHDR까지만)
@@ -794,18 +626,18 @@ describe('이미지에 맞춘 칸 너비', () => {
     return `data:image/png;base64,${btoa(`\x89PNG\r\n\x1a\n${be32(13)}IHDR${be32(w)}${be32(h)}\x08\x06\x00\x00\x00`)}`
   }
 
-  it('붙여 넣은 세로 이미지는 새 줄의 낮은 띠가 아니라 옆 칸으로, 이미 쓴 내용 뒤에', () => {
-    const rows = [row(block('bullets', 't'))]
+  it('붙여 넣은 세로 이미지는 장 너비의 낮은 띠가 아니라 옆 칸으로', () => {
+    const bs = board(block('bullets', 't'))
     const portrait = { ...img(), fields: { image: png(900, 1200) } }
-    expect(imageTarget(rows, portrait, 700)).toEqual({ kind: 'cell', row: 0, index: 1 })
-    expect(autoTarget(rows, portrait, 700)).toEqual({ kind: 'cell', row: 0, index: 1 })
+    const t = imagePlace(bs, portrait, H)
+    expect(t?.kind === 'spot' && (t.spot.side === 'left' || t.spot.side === 'right')).toBe(true)
+    const placed = autoPlace(bs, portrait, H)!
+    expect(areaOf(placed, 'img').h).toBe(BOARD_ROWS)
   })
 
-  it('이웃을 빼면 남은 줄을 이미지에 다시 맞춘다', () => {
+  it('이웃을 빼면 남은 판을 이미지에 다시 맞춘다', () => {
     const shot = { ...img(), fields: { image: png(1600, 1000) } }
-    const rows = [{ ...row(shot, block('bullets', 't'), block('number', 'n')), spans: [4, 4, 4] }]
-    expect(spansOf(removeBlock(rows, 'n', 700)[0])).toEqual([8, 4])
-    // 장 높이를 모르면 똑같이 나눈 너비 그대로
-    expect(spansOf(removeBlock(rows, 'n')[0])).toEqual([6, 6])
+    const bs = insertAt(insertAt(board(shot), { at: 'img', side: 'right' }, block('bullets', 't'), H)!, { at: 't', side: 'right' }, block('number', 'n'), H)!
+    expect(areaOf(removeBlock(bs, 'n', H), 'img').w).toBeGreaterThan(6)
   })
 })

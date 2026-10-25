@@ -27,13 +27,14 @@ import {
   MCP_SERVER_NAME,
   REQUEST_FORMAT,
   REQUEST_ID,
+  REQUEST_VERSION,
   RESULT_STATUSES,
   SHARE_DIR_NAME,
   SHARE_SUBDIRS,
   type ShareSubdir,
 } from '../src/ai/protocol'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, GROW_MAX, GROW_MIN, MAX_BLOCKS, MAX_ROWS, MAX_SMALL_IN_ROW } from '../src/deck/blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BOARD_COLS, BOARD_ROWS, MAX_BLOCKS } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
@@ -62,10 +63,10 @@ const PROTOCOL_WORDS = [
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'pane', 'contain', 'place', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
   // 부품 장
-  'blocks', 'span', 'look', 'effect', 'when', 'speed', 'from', 'order', 'rowGrow', 'link', 'rowLinks', 'stack',
+  'blocks', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'linkBelow',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
-  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash',
+  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash', 'link_clash',
   ...OP_NAMES,
   ...Object.values(MESSAGES),
 ]
@@ -126,7 +127,7 @@ function pendingFor(dirs: Dirs, deck: string): ChangeRequest[] {
 class ToolError extends Error {}
 
 const refSchema = { type: 'string', description: '장 id(s로 시작하는 9글자) 또는 같은 제안에서 add_slide의 as로 붙인 이름(n1, n2...)' }
-const blockRefSchema = { type: 'string', description: '부품 id(get_shape의 blocks[][].id, b로 시작하는 9글자) 또는 같은 제안에서 add_block의 as로 붙인 이름(p1, p2...)' }
+const blockRefSchema = { type: 'string', description: '부품 id(get_shape의 blocks[].id, b로 시작하는 9글자) 또는 같은 제안에서 add_block의 as로 붙인 이름(p1, p2...)' }
 
 const TOOLS = [
   {
@@ -149,7 +150,7 @@ const TOOLS = [
     name: 'get_shape',
     description:
       '발표 하나의 모양: 장 순서, 장마다 레이아웃과 역할, 숨김 여부, 칸마다 비었는지(empty)/채웠는지(filled)/길어서 넘칠 수 있는지(long), 항목 수, 옵션, 테마. ' +
-      '부품 장(layout compose)은 부품을 줄과 칸에 놓아 꾸민 장으로, blocks에 줄마다 부품의 id(b로 시작), 종류, 너비(span, 12 기준), 모양, 바탕, 움직임, 칸 상태가 나온다. ' +
+      '부품 장(layout compose)은 가로 12칸, 세로 12칸의 판을 부품들이 빈틈없이 나눠 덮은 장으로, blocks에 부품마다 id(b로 시작), 종류, 자리(x, y는 왼쪽 위 칸, w, h는 너비와 높이의 칸 수), 모양, 바탕, 움직임, 이음표(link는 오른쪽 선, linkBelow는 아래 선), 칸 상태가 읽는 차례로 나온다. ' +
         '부품의 when/speed/from은 기본값이 아닐 때만 나오고, 장의 options.order는 부품이 나오는 차례를 정했을 때만 나온다. ' +
       '사람이 적은 글은 이 서버에 없다. 글의 내용을 추측하거나 사용자에게 붙여 달라고 하지 말고 모양만으로 판단한다.',
     inputSchema: {
@@ -178,21 +179,21 @@ const TOOLS = [
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
       '- set_hint {slide, block?, field, item?, text} 칸의 안내 문구 (80자 이내, 한 줄). item을 빼면 장의 칸, 장에 없는 칸이면 모든 항목의 그 칸. block이 있으면 부품 장의 그 부품 칸(카탈로그 blocks[].fields, items.fields).',
-      '부품 장(compose): 줄은 위에서 아래로, 한 줄에 칸이 왼쪽에서 오른쪽으로 놓이고, 한 칸에는 부품을 위아래로 쌓을 수 있다(모양의 blocks[][].stack: 맨 위 부품 아래에 쌓은 부품들). ' +
-        '줄 수, 한 줄의 칸 수(작은 부품만이면 maxSmallInRow), 한 칸에 쌓는 수, 한 장의 부품 수와 작은 부품(blocks[].small)이 아닌 부품 수, 고를 수 있는 너비는 카탈로그 blockRules. ' +
-        '한 칸에 차트나 표 같은 큰 부품은 하나까지, 이미지는 쌓지 않는다. 부품마다 가장 좁은 너비는 blocks[].minSpan(12면 그 부품은 한 줄을 혼자 쓴다). 장에 자리가 모자라면 no_room으로 건너뛴다. ' +
+      '부품 장(compose): 본문은 가로 12칸, 세로 12칸의 판이고 부품들이 빈틈없이 나눠 덮는다(빈 칸은 없다). 부품을 넣으면 옆이나 위아래 부품이 자리를 나눠 주고, 빼면 이웃이 그 자리를 덮는다. ' +
+        '높이는 앱이 글이 잘리지 않게 맞추고, 넓은 부품은 남는 높이를 받는다. 한 장의 부품 수와 작은 부품(blocks[].small)이 아닌 부품 수는 카탈로그 blockRules. ' +
+        '부품마다 가장 좁은 너비는 blocks[].minSpan(12면 그 부품은 장 너비를 혼자 쓴다). 장에 자리가 모자라면 no_room으로 건너뛴다. ' +
         '면(look)은 부품마다 고를 수 있는 것(blocks[].looks)에서, 한 장에 한 가지만: 옅은 면(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. ' +
-        '옅은 면은 같은 줄의 부품이 함께 바뀌고, 혼자 한 줄을 다 쓰는 부품은 면 없이 그려진다. 어긋나면 look_clash로 건너뛴다.',
-      '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: row(그 차례에 새 줄, 0이 맨 위) 또는 beside(그 부품)와 side(before|after는 그 부품의 칸 앞이나 뒤에 새 칸, above|below는 그 부품과 같은 칸의 위나 아래에 쌓기, 기본 after). 자리를 빼면 알아서 놓는다.',
+        '옅은 면은 나란한 부품이 함께 바뀌고, 혼자 장 너비를 다 쓰는 부품은 면 없이 그려진다. 어긋나면 look_clash로 건너뛴다. ' +
+        '뜻이 이어지는 것끼리 둔다: 숫자 옆에 그 숫자의 추이 차트, 목록 옆에 그 결론 한마디처럼. 서로 관계없는 차트 둘을 나란히 두지 않는다.',
+      '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: beside(그 부품)와 side(before는 왼쪽, after는 오른쪽, above는 위, below는 아래; 기본 after. 그 부품이 자리를 나눠 준다) 또는 edge(top은 판 맨 위, bottom은 맨 아래에 장 너비로). 자리를 빼면 앱의 넣기처럼 알아서 놓는다.',
       '- remove_block {slide, block} 빈 부품만 뺀다. 내용이 있으면 has_content.',
-      '- move_block {slide, block, 자리} 부품을 옮긴다. 글은 부품과 함께 간다. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다.',
+      '- move_block {slide, block, 자리 또는 swap} 부품을 옮긴다. 글은 부품과 함께 간다. 자리는 옮기는 부품을 뺀 판에서 센다. swap(부품 id)이면 두 부품이 자리를 맞바꾼다(이음표는 자리에 남는다).',
       '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, when?: 언제 나오는지(blockWhens), speed?: blockSpeeds, from?: 들어오는 쪽(blockFroms; effect가 rise, slide, wipe일 때만), count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
       '- set_order {slide, order} 부품 장의 부품이 나오는 차례. 먼저 나올 부품의 id부터 적고, 빠진 부품은 그 뒤에 놓인 차례대로 나온다. 빈 배열이면 놓인 차례(위에서 아래, 왼쪽에서 오른쪽)로. ' +
         'when이 click인 부품은 발표하는 사람이 누를 때 나오니, 짚어 가며 말할 부품에만 쓴다. 모든 부품을 click으로 하면 발표가 느려진다.',
-      '- set_spans {slide, block, spans} 그 부품이 있는 줄의 칸 너비. blockRules.spans에서 그 줄의 칸 수에 맞는 것을 고른다(쌓은 부품은 칸 너비를 같이 쓴다).',
-      '- set_row_grow {slide, grow} 부품 장의 줄 높이 비중(1~100의 정수, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다. 지금 비중은 모양의 rowGrow(없으면 똑같이). 비중대로면 잘리는 줄은 잘리지 않을 높이로 묶인다.',
-      '- set_link {slide, block, side, link} 이음표(카탈로그 blockLinks)를 부품 사이에 끼운다. side가 right면 그 부품과 같은 줄의 오른쪽 부품 사이, below면 그 부품의 줄과 아래 줄 사이. link가 null이면 뺀다. 지금 이음표는 모양의 blocks[][].link와 rowLinks. ' +
-        '두 부품이 이어지거나(화살표), 함께이거나(더하기), 모여 결과가 되거나(결과), 견줄 때(견주기)만 쓴다. 줄 사이 이음표는 높이가 더 들어서 모자라면 no_room.',
+      '- set_size {slide, block, w?, h?} 부품의 너비와 높이(칸 수, 1~12). 그 부품에 닿은 선을 옮겨 옆 부품과 크기를 주고받는다. 그 크기가 되지 않으면(어느 부품이 잘리면) no_room.',
+      '- set_link {slide, block, side, link} 이음표(카탈로그 blockLinks)를 부품 사이의 선에 끼운다. side가 right면 그 부품의 오른쪽 선, below면 아래 선에 서서 선 건너편 부품과 잇는다. link가 null이면 뺀다. 지금 이음표는 모양의 blocks[].link와 linkBelow. ' +
+        '두 부품이 이어지거나(화살표), 함께이거나(더하기), 모여 결과가 되거나(결과), 견줄 때(견주기)만 쓴다. 더하기와 견주기는 같은 갈래(blocks[].kind)끼리, 화살표는 같은 갈래끼리이거나 숫자(number)나 한마디(words)로 맺을 때, 결과는 숫자나 한마디로 맺을 때만. 어긋나면 link_clash. 이음표는 높이가 더 들어서 모자라면 no_room.',
     ].join('\n'),
     inputSchema: {
       type: 'object',
@@ -239,12 +240,13 @@ const TOOLS = [
               speed: { type: 'string', enum: BLOCK_SPEED_IDS },
               from: { type: 'string', enum: BLOCK_FROM_IDS },
               order: { type: 'array', maxItems: MAX_BLOCKS, items: blockRefSchema },
-              row: { type: 'integer', minimum: 0, maximum: 3 },
               beside: blockRefSchema,
               side: { type: 'string', enum: ['before', 'after', 'above', 'below', 'right'] },
+              edge: { type: 'string', enum: ['top', 'bottom'] },
+              swap: blockRefSchema,
+              w: { type: 'integer', minimum: 1, maximum: BOARD_COLS },
+              h: { type: 'integer', minimum: 1, maximum: BOARD_ROWS },
               link: { anyOf: [{ type: 'string', enum: BLOCK_LINK_IDS }, { type: 'null' }] },
-              spans: { type: 'array', minItems: 1, maxItems: MAX_SMALL_IN_ROW, items: { type: 'integer', minimum: 1, maximum: 12 } },
-              grow: { type: 'array', maxItems: MAX_ROWS, items: { type: 'integer', minimum: GROW_MIN, maximum: GROW_MAX } },
             },
             required: ['op'],
             additionalProperties: false,
@@ -296,7 +298,7 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
       if (!readShape(dirs, deck)) throw new ToolError(MESSAGES.noDeck)
       if (pendingFor(dirs, deck).length >= MAX_PENDING_PER_DECK) throw new ToolError(MESSAGES.tooMany)
       const id = requestId()
-      const request = parseRequest({ format: REQUEST_FORMAT, version: 1, id, deck, createdAt: Date.now(), note: args.note ?? '', ops: args.ops })
+      const request = parseRequest({ format: REQUEST_FORMAT, version: REQUEST_VERSION, id, deck, createdAt: Date.now(), note: args.note ?? '', ops: args.ops })
       if (!request) throw new ToolError(MESSAGES.badRequest)
       const file = join(dirs.requests, `${id}.json`)
       const tmp = join(dirs.requests, `.${id}.tmp`)

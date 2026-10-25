@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createSampleDeck } from '../src/deck/sample'
 import { OP_CODES, REQUEST_FORMAT } from '../src/ai/ops'
+import { REQUEST_VERSION } from '../src/ai/protocol'
 import { toShape } from '../src/ai/share'
 import { CSP, CSP_META, HOST, createAppServer } from './serve'
 
@@ -151,7 +152,7 @@ describe('AI 공유 창구', () => {
 
   it('제안을 넘겨주고, 결과를 남기면 제안은 지운다', async () => {
     const id = 'r0123456789ab'
-    const req = { format: REQUEST_FORMAT, version: 1, id, deck: shape.deck, createdAt: 1, note: '목차를 뺐어요', ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] }
+    const req = { format: REQUEST_FORMAT, version: REQUEST_VERSION, id, deck: shape.deck, createdAt: 1, note: '목차를 뺐어요', ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] }
     writeFileSync(join(share, 'requests', `${id}.json`), JSON.stringify(req))
     writeFileSync(join(share, 'requests', 'r111111111111.json'), JSON.stringify({ ...req, id: 'r111111111111', ops: [{ op: 'set_field', slide: shape.slides[2].id, text: 'x' }] }))
 
@@ -173,7 +174,7 @@ describe('AI 공유 창구', () => {
   it('앱이 남기는 결과 코드는 모두 받는다', async () => {
     // 받지 않는 코드가 있으면 제안 파일이 남아 다시 뜨고, 같은 제안을 두 번 적용하게 된다
     const id = 'r0123456789cd'
-    const req = { format: REQUEST_FORMAT, version: 1, id, deck: shape.deck, createdAt: 2, note: '', ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] }
+    const req = { format: REQUEST_FORMAT, version: REQUEST_VERSION, id, deck: shape.deck, createdAt: 2, note: '', ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] }
     writeFileSync(join(share, 'requests', `${id}.json`), JSON.stringify(req))
     const results = OP_CODES.map((code) => ({ ok: code === 'applied', code }))
     const res = await call(`/__html-maker/ai/requests/${id}/result`, { method: 'POST', headers: AI, body: JSON.stringify({ status: 'applied', results }) })

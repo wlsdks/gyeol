@@ -145,20 +145,30 @@ describe('MCP 서버', () => {
     const { value: list } = await tool('list_decks')
     const { value: shape } = await tool('get_shape', { deck: list.decks[0].deck })
     const compose = shape.slides.find((x: { layout: string }) => x.layout === 'compose')
-    const first = compose.blocks[0][0].id
+    const first = compose.blocks[0].id
     expect(first).toMatch(/^b[0-9a-f]{8}$/)
+    // 판의 자리는 칸 수로 보인다
+    expect(compose.blocks.every((b: Record<string, unknown>) => ['x', 'y', 'w', 'h'].every((k) => Number.isInteger(b[k])))).toBe(true)
     const { value, isError } = await tool('propose_changes', {
       deck: shape.deck,
       ops: [
-        { op: 'add_block', slide: compose.id, type: 'number', row: 2, as: 'p1' },
+        { op: 'add_block', slide: compose.id, type: 'number', edge: 'bottom', as: 'p1' },
         { op: 'set_block', slide: compose.id, block: 'p1', look: 'card' },
         { op: 'move_block', slide: compose.id, block: first, beside: 'p1', side: 'after' },
-        { op: 'set_spans', slide: compose.id, block: first, spans: [6, 6] },
-        { op: 'set_row_grow', slide: compose.id, grow: [] },
+        { op: 'set_size', slide: compose.id, block: first, w: 6 },
+        { op: 'move_block', slide: compose.id, block: first, swap: 'p1' },
+        { op: 'set_link', slide: compose.id, block: 'p1', side: 'right', link: 'arrow' },
       ],
     })
     expect(isError).toBe(false)
     expect(value.status).toBe('pending')
+    // 예전 줄로 가리키는 동작은 받지 않는다
+    for (const op of [
+      { op: 'set_spans', slide: compose.id, block: first, spans: [6, 6] },
+      { op: 'set_row_grow', slide: compose.id, grow: [] },
+      { op: 'add_block', slide: compose.id, type: 'number', row: 2 },
+    ])
+      expect((await tool('propose_changes', { deck: shape.deck, ops: [op] })).isError, op.op).toBe(true)
     // 부품의 글을 쓰려는 키는 받지 않는다
     const bad = await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_block', slide: compose.id, block: first, text: '새 글' }] })
     expect(bad.isError).toBe(true)

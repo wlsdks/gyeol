@@ -13,7 +13,7 @@ export function sampleBlock(type: BlockType): Block {
     fromLayouts = new Map()
     for (const s of showcaseSlides()) {
       if (!isLayoutBlock(s.layout) || fromLayouts.has(s.layout)) continue
-      const b = composeFrom(s).rows?.[0]?.blocks[0]
+      const b = composeFrom(s).blocks?.[0]
       if (b) fromLayouts.set(s.layout, { ...b, id: `sample-${s.layout}` })
     }
   }

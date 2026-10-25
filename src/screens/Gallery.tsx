@@ -1,11 +1,11 @@
-import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, composeAreaH, fitsHeight } from '../deck/blocks'
+import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, BOARD_ROWS, boardFit, boardFromRows, composeAreaH, needRows } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { pageInfo } from '../deck/fields'
 import { createDeck, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
 import { createSampleDeck } from '../deck/sample'
 import { extraSlides, withItems, withOptions } from '../deck/showcase'
-import type { BlockLook, BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
+import type { Block, BlockLook, BlockType, Deck, DeckTheme, DeckType, Slide, ThemeId, Tone } from '../deck/types'
 import type { SlideMode } from '../slides/context'
 import type { SlideActions } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
@@ -100,9 +100,9 @@ function edgeSlides(): Slide[] {
 }
 
 /**
- * 부품마다 편집기에서 실제로 나올 수 있는 크기로: 혼자 한 줄을 다 쓸 때, 가장 좁은 칸에 줄을 가장 낮게 끌어내렸을 때,
- * 한 줄을 다 쓰면서 가장 낮을 때, 셋이 나란히. 낮은 줄은 사람이 줄 사이를 끌어 정한 비중(grow)으로 만든다:
- * 다른 줄이 남는 높이를 다 가져가서 그 줄은 편집기가 허락하는 가장 낮은 높이(blockMinH)가 된다.
+ * 부품마다 편집기에서 실제로 나올 수 있는 크기로: 혼자 판을 다 쓸 때, 가장 좁은 칸에 가장 낮게 끌어내렸을 때,
+ * 장 너비를 다 쓰면서 가장 낮을 때, 셋이 나란히. 줄로 적어 판으로 옮긴다(boardFromRows). 낮은 줄은 높이 비중(grow)으로 만든다:
+ * 다른 줄이 남는 높이를 다 가져가서 그 줄은 판이 허락하는 가장 낮은 높이(blockMinH)가 된다.
  * 편집기가 넣지 않는 자리(더 좁거나 더 낮은 칸)는 그리지 않는다. 그런 칸은 쓰는 사람도 볼 일이 없다.
  * 핵심 한 줄과 같이 들어가지 않는 부품은 혼자 둔다(편집기도 그 장에는 넣지 않는다).
  * 함께 놓는 부품(fill-)은 높이를 잴 때(measureBlocks) 건너뛴다.
@@ -130,9 +130,13 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
     const b = (id: string) => ({ ...sample, ...v, ...lk, items, id: `${type}-${id}` })
     const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), look: 'plain' as BlockLook, id: `${type}-fill-${id}` })
     const narrow = 12 - spec.minSpan
-    const slide = (id: string, title: string, rows: NonNullable<Slide['rows']>): Slide => {
-      const s: Slide = { ...makeSlide('compose'), id: `bk-${n}-${id}`, fields: { title: `${spec.name}: ${title}` }, rows }
-      return fitsHeight(rows, composeAreaH(s)) ? s : { ...s, rows: rows.filter((r) => !r.blocks.every((x) => x.id.includes('-fill-m'))).map(({ grow: _, ...r }) => r) }
+    const slide = (id: string, title: string, rows: { id: string; blocks: Block[]; spans?: number[]; grow?: number }[]): Slide => {
+      const s: Slide = { ...makeSlide('compose'), id: `bk-${n}-${id}`, fields: { title: `${spec.name}: ${title}` } }
+      const fit = boardFit(composeAreaH(s))
+      const blocks = boardFromRows(rows, fit)
+      // 위 줄과 같이 들어가지 않으면 그 부품만
+      if (needRows(blocks, fit) <= BOARD_ROWS) return { ...s, blocks }
+      return { ...s, blocks: boardFromRows(rows.filter((r) => !r.blocks.every((x) => x.id.includes('-fill-m'))).map(({ grow: _, ...r }) => r), fit) }
     }
     return [
       slide('a', '한 줄을 다 쓸 때', [{ id: 'r1', blocks: [b('a')] }]),
@@ -199,7 +203,7 @@ function withTexts(s: Slide, names?: string[], values?: string[]): Slide {
   return {
     ...s,
     items: put(s.items),
-    ...(s.rows ? { rows: s.rows.map((r) => ({ ...r, blocks: r.blocks.map((b) => (b.id.includes('-fill-') ? b : { ...b, items: put(b.items) })) })) } : {}),
+    ...(s.blocks ? { blocks: s.blocks.map((b) => (b.id.includes('-fill-') ? b : { ...b, items: put(b.items) })) } : {}),
   }
 }
 

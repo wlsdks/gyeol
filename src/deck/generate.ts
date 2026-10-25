@@ -69,7 +69,7 @@ export function makeSlide(layout: LayoutId, recipe?: Partial<Recipe>): Slide {
     notes: '',
     options: withDefaultOptions(layout, { ...recipe?.options }, count),
     ...(recipe?.variant ? { variant: recipe.variant } : {}),
-    ...(layout === 'compose' ? { rows: [] } : {}),
+    ...(layout === 'compose' ? { blocks: [] } : {}),
   }
 }
 
@@ -126,7 +126,7 @@ export function createDeck(input: DeckInput): Deck {
   const now = Date.now()
   return {
     id: uid(),
-    version: 1,
+    version: 2,
     title,
     createdAt: now,
     updatedAt: now,

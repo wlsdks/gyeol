@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ASKS, askPrompt } from '../src/ai/asks'
 import { REQUEST_FORMAT, requestId } from '../src/ai/ops'
+import { REQUEST_VERSION } from '../src/ai/protocol'
 import { catalogStrings, toShape } from '../src/ai/share'
 import { createSampleDeck } from '../src/deck/sample'
 import { agentArgs, type AgentCommand } from './agent'
@@ -26,7 +27,7 @@ let port: number
 
 function fakeAgent(): AgentCommand {
   const script = join(base, `fake-${plan}.mjs`)
-  const req = { format: REQUEST_FORMAT, version: 1, id: requestId(), deck: shape.deck, createdAt: Date.now(), note: '표지 다음 장을 빼요', ops: [{ op: 'set_hidden', slide: shape.slides[1].id, hidden: true }] }
+  const req = { format: REQUEST_FORMAT, version: REQUEST_VERSION, id: requestId(), deck: shape.deck, createdAt: Date.now(), note: '표지 다음 장을 빼요', ops: [{ op: 'set_hidden', slide: shape.slides[1].id, hidden: true }] }
   writeFileSync(
     script,
     `import { writeFileSync } from 'node:fs'

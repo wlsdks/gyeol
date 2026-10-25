@@ -1,5 +1,5 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react'
-import { blockCount, blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
+import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
@@ -138,7 +138,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   }
 
   const types = BLOCK_GROUPS.flatMap((g) => g.types)
-  const counted = slide.layout === 'compose' && blockCount(slide.rows ?? []) >= MAX_BLOCKS
+  const counted = slide.layout === 'compose' && (slide.blocks ?? []).length >= MAX_BLOCKS
   // 카드마다 이 장 어디에도 넣을 수 없는 까닭. 누를 때도 이것 하나로 정한다: 까닭이 있으면 바로 넣지 않고 까닭과
   // '다음 장에 새로 넣기'를 보인다. 예전에는 어느 카드도 들어가지 않는 장이면 까닭을 아예 재지 않아서, 누르면 묻지 않고
   // 다음 장을 만들었고 몇 카드만 막힌 장에서는 물었다 (같은 결과인데 흐름이 둘). 장이 바뀔 때마다 다시 본다
@@ -165,7 +165,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
     { id: LINK_GROUP.name, name: LINK_GROUP.short, title: `${LINK_GROUP.name}: ${LINK_GROUP.description}` },
   ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
-  const linkable = slide.layout === 'compose' && linkTargets(slide.rows ?? []).length > 0
+  const linkable = slide.layout === 'compose' && linkTargets(slide.blocks ?? []).length > 0
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (

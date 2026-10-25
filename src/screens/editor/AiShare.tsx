@@ -5,7 +5,7 @@ import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { allBlocks, BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES, TRANSITIONS } from '../../deck/themes'
@@ -30,6 +30,7 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_block: '그 컴포넌트가 지금은 없어요',
   no_room: '장에 자리가 모자라요',
   look_clash: '이 장의 다른 컴포넌트와 면이 어울리지 않아요',
+  link_clash: '이으면 뜻이 서지 않는 두 컴포넌트예요',
 }
 
 const ASK_STEP: Record<AskStep, string> = {
@@ -328,12 +329,20 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
   // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
   const blockName = (ref: string) => {
     if (/^p\d+$/.test(ref)) return named.get(ref) ?? '새 컴포넌트'
-    const b = deck.slides.flatMap((s) => allBlocks(s.rows ?? [])).find((x) => shapeBlockId(x) === ref)
+    const b = deck.slides.flatMap((s) => s.blocks ?? []).find((x) => shapeBlockId(x) === ref)
     return b ? `‘${BLOCKS[b.type].name}’ 컴포넌트` : '없는 컴포넌트'
   }
-  const SIDE_TEXT = { before: '앞에', after: '옆에', above: '위에 쌓아', below: '아래에 쌓아' } as const
-  const placeText = (p: { row?: number; beside?: string; side?: keyof typeof SIDE_TEXT }) =>
-    p.row !== undefined ? `${p.row + 1}번째 줄로` : p.beside ? `${blockName(p.beside)} ${SIDE_TEXT[p.side ?? 'after']}` : '빈자리에'
+  const SIDE_TEXT = { before: '왼쪽에', after: '오른쪽에', above: '위에', below: '아래에' } as const
+  const placeText = (p: { beside?: string; side?: keyof typeof SIDE_TEXT; edge?: 'top' | 'bottom'; swap?: string }) =>
+    p.swap
+      ? `${blockName(p.swap)}와 자리 바꾸기`
+      : p.edge
+        ? p.edge === 'top'
+          ? '맨 위에 장 너비로'
+          : '맨 아래에 장 너비로'
+        : p.beside
+          ? `${blockName(p.beside)} ${SIDE_TEXT[p.side ?? 'after']}`
+          : '빈자리에'
   const slide =
     'slide' in op
       ? /^n\d+$/.test(op.slide)
@@ -399,7 +408,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 옮기기`, detail: placeText(op) }
     case 'set_block': {
       const parts: string[] = []
-      const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => allBlocks(s.rows ?? [])).find((x) => shapeBlockId(x) === op.block)
+      const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => s.blocks ?? []).find((x) => shapeBlockId(x) === op.block)
       if (op.variant) parts.push(`모양: ${(b && BLOCKS[b.type].variants?.find((v) => v.id === op.variant)?.name) ?? op.variant}`)
       if (op.look) parts.push(`바탕: ${BLOCK_LOOKS.find((l) => l.id === op.look)?.name}`)
       if (op.effect) parts.push(`움직임: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)
@@ -410,17 +419,17 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.highlight !== undefined) parts.push(op.highlight < 0 ? '강조 없음' : `${op.highlight + 1}번째를 강조`)
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 모양 바꾸기`, detail: parts.join(', ') }
     }
-    case 'set_spans':
-      return { text: `${name(op.slide)}의 컴포넌트 너비 바꾸기`, detail: `${blockName(op.block)}가 있는 줄을 ${op.spans.join(' : ')}로` }
+    case 'set_size': {
+      const parts = [op.w !== undefined && `너비 ${op.w}칸`, op.h !== undefined && `높이 ${op.h}칸`].filter(Boolean)
+      return { text: `${name(op.slide)}의 ${blockName(op.block)} 크기 바꾸기`, detail: `${parts.join(', ')} (장 너비와 높이를 12칸으로 볼 때)` }
+    }
     case 'set_link': {
-      const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}의 줄과 아래 줄 사이`
+      const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}와 아래 컴포넌트 사이`
       const kind = BLOCK_LINKS.find((l) => l.id === op.link)?.name
       return op.link ? { text: `${name(op.slide)}에 이음표 ‘${kind}’ 넣기`, detail: where } : { text: `${name(op.slide)}에서 이음표 빼기`, detail: where }
     }
     case 'set_order':
       return { text: `${name(op.slide)}의 컴포넌트 나오는 차례 바꾸기`, detail: op.order.length ? op.order.map(blockName).join(' → ') : '놓인 차례대로' }
-    case 'set_row_grow':
-      return { text: `${name(op.slide)}의 줄 높이 바꾸기`, detail: op.grow.length ? `위에서부터 ${op.grow.join(' : ')}로` : '줄 높이를 똑같이' }
     case 'set_hint': {
       if (op.block) return { text: `${name(op.slide)}의 ${blockName(op.block)} 안내 문구`, detail: op.text }
       const spec = slide && LAYOUTS[slide.layout]

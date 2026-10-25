@@ -206,6 +206,14 @@ export type BlockFrom = 'below' | 'above' | 'left' | 'right'
 /** 컴포넌트 사이에 끼우는 이음표: 이어진다(바뀐다), 더한다, 결과, 견준다 */
 export type BlockLink = 'arrow' | 'plus' | 'equals' | 'versus'
 
+/** 부품 장의 판(가로 12칸, 세로 6칸의 네모)에서 부품이 차지하는 자리. 네모 단위, 왼쪽 위가 0 */
+export interface BlockAt {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 export interface Block {
   id: string
   type: BlockType
@@ -227,27 +235,12 @@ export interface Block {
   variant?: string
   /** 강조할 항목 (0부터, -1은 없음). 없으면 부품마다 정한 기본 */
   highlight?: number
-  /** 이 부품과 같은 줄의 오른쪽 부품 사이의 이음표. 줄의 마지막 부품에는 없다 */
+  /** 판에서 차지하는 자리. 장의 부품들이 판 전체를 빈틈없이 덮는다 (deck/blocks/board.ts) */
+  at?: BlockAt
+  /** 이 부품과 오른쪽 부품 사이의 이음표 (판을 옆으로 나누는 선 위). 오른쪽 끝 부품에는 없다 */
   link?: BlockLink
-  /**
-   * 같은 칸에서 이 부품 아래에 쌓은 부품들 (위에서부터). 칸의 너비와 이음표는 맨 위 부품(이 부품)이 갖고,
-   * 쌓은 부품에는 이음표와 또 쌓은 부품이 없다. 없으면 칸에 이 부품 하나
-   */
-  stack?: Block[]
-}
-
-/** 부품 장의 한 줄. 칸 너비는 12를 나눈 값(spans)이고, 없거나 맞지 않으면 알아서 정한다 */
-export interface BlockRow {
-  id: string
-  blocks: Block[]
-  spans?: number[]
-  /**
-   * 줄 높이의 비중(1~100). 사람이 줄 사이를 끌어 정한다. 모든 줄에 있을 때만 이 비중으로 나누고,
-   * 줄이 늘거나 줄어 하나라도 없으면 예전처럼 잘리지 않을 높이에 남는 높이를 똑같이 나눈다
-   */
-  grow?: number
-  /** 이 줄과 아래 줄 사이의 이음표. 마지막 줄에는 없다 */
-  link?: BlockLink
+  /** 이 부품과 아래 부품 사이의 이음표 (판을 위아래로 나누는 선 위). 맨 아래 부품에는 없다 */
+  linkBelow?: BlockLink
 }
 
 export interface Slide {
@@ -268,8 +261,11 @@ export interface Slide {
   /** 같은 레이아웃 안의 모양. 레이아웃마다 정해 둔 것 중 하나이고, 없으면 첫째 모양 */
   variant?: string
   hidden?: boolean
-  /** 부품 장(compose)의 줄들. 다른 레이아웃에는 없다 */
-  rows?: BlockRow[]
+  /**
+   * 부품 장(compose)의 부품들. 자리(at)는 판의 칸 단위. 부품 장에서 다른 레이아웃으로 바꾼 장도 남겨 둔다
+   * (부품 장으로 되돌리면 다시 보이게). 예전 파일의 줄(rows)은 열 때 판으로 바꾼다(blocks/legacy.ts)
+   */
+  blocks?: Block[]
 }
 
 export interface DeckMeta {
@@ -287,7 +283,8 @@ export interface DeckMeta {
 
 export interface Deck {
   id: string
-  version: 1
+  /** 저장 형식. 2부터 부품 장이 줄 대신 판(blocks)이다 (compat.ts, migrate.ts) */
+  version: 2
   title: string
   createdAt: number
   updatedAt: number

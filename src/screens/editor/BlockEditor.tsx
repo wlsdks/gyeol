@@ -1,45 +1,40 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  allBlocks,
-  autoTarget,
-  blockCount,
+  autoPlace,
+  bandOf,
   blockFieldPrefix,
   blockItems,
   blockPrefH,
   changeIssue,
   BLOCK_COL_GAP,
+  BLOCK_GAP,
   BLOCKS,
+  BOARD_COLS,
+  BOARD_ROWS,
   canCompose,
   copyBlock,
+  dragGutter,
   foldableFields,
-  growAt,
-  fitPlaced,
-  imageTarget,
-  insertAt,
+  gutterLimit,
+  imagePlace,
   lookChangeIssue,
   makeBlock,
   partFrom,
   placeIssue,
   removeBlock,
-  sameTarget,
   shiftBlock,
-  spansAt,
-  spanLimit,
-  targetOf,
-  unweighted,
-  weighted,
+  WHOLE,
   whyNot,
   withItem,
   withLook,
-  type DropTarget,
+  type Gutter,
   type NoRoom,
   type SavedKind,
 } from '../../deck/blocks'
 import { FRAME } from '../../deck/frame'
-import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
-import type { Block, BlockEffect, BlockLink, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
+import type { Block, BlockEffect, BlockLink, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { particle } from '../../lib/josa'
 import { usePointerSessions } from '../../lib/pointerSession'
@@ -54,24 +49,28 @@ import { CANVAS, COL_W } from './canvas'
 import { useLinkEditing } from './LinkEditor'
 import { useLook } from './look'
 import { narrowText, noRoomText } from './noRoom'
-import { dropRows, planDrop, type DropPlanKind } from './planDrop'
+import { dropBlocks, dropResult, planDrop, sameEditTarget, type DropPlanKind, type EditTarget } from './planDrop'
 import { RoomZone } from './RoomZone'
 
-// 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
+// 부품 장 편집: 부품을 고르고, 끌어다 놓고, 판을 나누는 선을 끌어 크기를 바꾸는 일.
 //
-// 놓을 자리는 deck/blocks.ts가 정한다(정해진 줄과 칸 비율 가운데 하나). 여기서는 끄는 동안 놓일 자리를
+// 놓을 자리와 크기는 판(deck/blocks/board.ts)이 정한다. 여기서는 끄는 동안 놓일 자리를
 // 미리 보여 주고(그 자리에 빈 칸이 생기고 다른 부품이 비켜 난다), 놓으면 끌던 부품이 그 칸으로 날아가 맞춰진다.
 // 끄는 중에는 저장하지 않는다. 놓을 때 한 번만 바꿔서 되돌리기 한 번으로 돌아온다.
 
 interface Drag {
   kind: 'move' | 'new'
   block: Block
-  /** 끄는 부품을 뺀 줄들. 놓을 자리는 늘 이것을 기준으로 찾는다 (움직이는 화면을 재지 않아서 자리가 떨리지 않는다) */
-  base: BlockRow[]
+  /** 끄는 부품을 뺀 판. 놓을 자리는 늘 이것을 기준으로 찾는다 (움직이는 화면을 재지 않아서 자리가 떨리지 않는다) */
+  base: Block[]
+  /** 옮기는 중이면 옮기기 전의 판 (맞바꾸기, 그대로 두기) */
+  moving: Block[] | null
   /** 부품 장이 아닌 장에 놓을 때: 같은 내용으로 바꾼 부품 장 */
   composed: Slide | null
-  target: DropTarget | null
-  /** 자리를 고를 때 잰 본문 높이. 넣을 때도 이 높이로 칸 너비를 다시 나눠야(insertAt) 끄는 동안 보인 모습 그대로 놓인다 */
+  target: EditTarget | null
+  /** 놓은 뒤의 판. 끄는 동안 이 모습을 보여 주고, 놓으면 이것을 저장한다 */
+  result: Block[] | null
+  /** 자리를 고를 때 잰 본문 높이. 넣을 때도 이 높이로 판을 나눠야 끄는 동안 보인 모습 그대로 놓인다 */
   room?: number
   /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
   blocked: NoRoom | null
@@ -98,7 +97,7 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** 부품 하나만 그린 장 (끌고 있는 부품, 부품 고르기 카드) */
 export function soloSlide(block: Block): Slide {
-  return { id: `solo-${block.id}`, layout: 'compose', purpose: '', section: '', fields: {}, items: [], hints: {}, guide: '', notes: '', options: {}, rows: [{ id: 'solo', blocks: [block] }] }
+  return { id: `solo-${block.id}`, layout: 'compose', purpose: '', section: '', fields: {}, items: [], hints: {}, guide: '', notes: '', options: {}, blocks: [{ ...block, at: WHOLE }] }
 }
 
 /** 본문 상자(.bk-area)의 화면 자리와 캔버스 크기 */
@@ -125,15 +124,15 @@ function guessArea(frame: DOMRect) {
 export type LibraryView = 'base' | 'mine'
 
 /**
- * 고른 부품에서 내 컴포넌트로 저장할 수 있는 것과 든 컴포넌트 수: 이 컴포넌트, 옆에 다른 컴포넌트가 있으면 이 줄,
+ * 고른 부품에서 내 컴포넌트로 저장할 수 있는 것과 든 컴포넌트 수: 이 컴포넌트, 옆에 다른 컴포넌트가 있으면 나란한 묶음,
  * 그리고 이 장(제목 칸과 장 설정까지)
  */
 function saveChoices(slide: Slide, blockId: string): { kind: SavedKind; count: number }[] {
-  const rows = slide.rows ?? []
-  const row = rows.find((r) => allBlocks([r]).some((b) => b.id === blockId))
+  const blocks = slide.blocks ?? []
+  const band = bandOf(blocks, blockId)
   const out: { kind: SavedKind; count: number }[] = [{ kind: 'block', count: 1 }]
-  if (row && blockCount([row]) > 1) out.push({ kind: 'row', count: blockCount([row]) })
-  out.push({ kind: 'slide', count: blockCount(rows) })
+  if (band.length > 1 && band.length < blocks.length) out.push({ kind: 'row', count: band.length })
+  out.push({ kind: 'slide', count: blocks.length })
   return out
 }
 
@@ -226,11 +225,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       setDrag(null)
       if (d.kind === 'move') {
         // 놓을 자리가 없는 곳에 놓으면 원래 자리로 돌아간다
-        const original = targetOf(s.rows ?? [], d.block.id)
-        const t = d.plan === 'place' && d.target ? d.target : original
-        const placed = t ? insertAt(d.base, t, d.block, uid(), d.room) : null
-        const next = placed && fitPlaced(placed, d.block, d.room)
-        if (next && t && !sameTarget(t, original)) store.setRows(s.id, next)
+        if (d.plan === 'place' && d.result && d.target?.kind !== 'stay') store.setBlocks(s.id, d.result)
         land(d)
         return
       }
@@ -240,14 +235,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         return
       }
       const block = d.block
-      // 이미지가 든 채로 들어온 이미지(붙여 넣기, 끌어다 놓기)는 그 줄의 칸 너비를 이미지 비율에 맞춘다
-      if (d.plan === 'place' && d.target) {
-        store.setRows(s.id, fitPlaced(insertAt(d.base, d.target, block, uid(), d.room)!, block, d.room))
-      } else if (d.plan === 'convert' && d.target && d.composed) {
-        store.replaceSlide(s.id, { ...d.composed, rows: fitPlaced(insertAt(d.base, d.target, block, uid(), d.room)!, block, d.room) })
+      if (d.plan === 'place' && d.result) {
+        store.setBlocks(s.id, d.result)
+      } else if (d.plan === 'convert' && d.result && d.composed) {
+        store.replaceSlide(s.id, { ...d.composed, blocks: d.result })
         toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
-        store.addComposeSlide([{ id: uid(), blocks: [block] }], s.id)
+        store.addComposeSlide(autoPlace([], block) ?? [{ ...block, at: WHOLE }], s.id)
         const why = d.blocked && (canCompose(s.layout) || s.layout === 'compose') ? noRoomText(d.blocked, block.type, 'slide').why : null
         toast.show(
           why ? `${why} 그래서 다음 장에 새로 넣었어요` : canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 컴포넌트 장을 새로 만들어 넣었어요',
@@ -345,16 +339,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     // 아직 부품 장으로 바뀌기 전이면 바뀐 뒤의 본문 상자를 어림한다
     const area = over ? (measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)) : null
     const at = area && { p: { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }, size: area.size }
-    const { plan, target, blocked, composed, base, room } = planDrop(slideRef.current, d, { by: 'pointer', over, at })
+    const { plan, target, result, blocked, composed, base, room } = planDrop(slideRef.current, d, { by: 'pointer', over, at })
     if (
       over !== d.over ||
       plan !== d.plan ||
-      !sameTarget(target, d.target) ||
+      !sameEditTarget(target, d.target) ||
       composed !== d.composed ||
       room !== d.room ||
       JSON.stringify(blocked) !== JSON.stringify(d.blocked)
     ) {
-      const next = { ...d, plan, target, blocked, composed, base, room, over }
+      const next = { ...d, plan, target, result, blocked, composed, base, room, over }
       // 놓는 순간에도 바로 읽을 수 있게 그리기를 기다리지 않고 맞춘다
       dragRef.current = next
       setDrag(next)
@@ -396,7 +390,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         session.end()
         const cur = dragRef.current
         if (!cur) return
-        finish(cancel ? { ...cur, plan: null, target: null, blocked: null } : cur)
+        finish(cancel ? { ...cur, plan: null, target: null, result: null, blocked: null } : cur)
       }
       session.on('pointermove', (e) => {
         moveGhost(e.clientX, e.clientY)
@@ -456,15 +450,17 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const canvas = { w: cell.offsetWidth + 80, h: cell.offsetHeight + 80 }
       const ghost = ghostSize(canvas, area.k)
       const grab = { x: Math.min(1, Math.max(0, (x - r.left) / r.width)), y: Math.min(1, Math.max(0, (y - r.top) / r.height)) }
-      // 옆 부품과 잇던 이음표와 그 아래에 쌓은 부품은 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
-      const { link: _, stack: __, ...bare } = block
+      const blocks = s.blocks ?? []
       begin(
         {
           kind: 'move',
-          block: bare,
-          base: removeBlock(s.rows ?? [], block.id),
+          block,
+          // 옆 부품이 빈자리를 덮은 판. 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
+          base: removeBlock(blocks, block.id, area.size.h),
+          moving: blocks,
           composed: null,
-          target: targetOf(s.rows ?? [], block.id),
+          target: { kind: 'stay' },
+          result: blocks,
           blocked: null,
           plan: 'place',
           canvas,
@@ -496,7 +492,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const canvas = { w: spec.prefSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
     const ghost = ghostSize(canvas, k)
     const grab = from ? { x: Math.min(1, Math.max(0, (x - from.left) / from.width)), y: Math.min(1, Math.max(0, (y - from.top) / from.height)) } : { x: 0.5, y: 0.5 }
-    return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from, over: false }
+    return { kind: 'new', block, base: s.blocks ?? [], moving: null, composed: null, target: null, result: null, blocked: null, plan: null, canvas, ghost, grab, source: from, over: false }
   }
 
   const pressCard = useCallback(
@@ -558,8 +554,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     if ((full.plan === 'place' || full.plan === 'convert') && full.room !== undefined) {
       const area = measureArea(areaEl.current)
       const near = area ? { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k } : undefined
-      const t = imageTarget(full.base, block, full.room, near)
-      if (t) full = { ...full, target: t, blocked: null }
+      const t = imagePlace(full.base, block, full.room, near)
+      const result = t && dropResult(full, full.base, t, full.room)
+      if (t && result) full = { ...full, target: t, result, blocked: null }
     }
     pointer.current = { x, y, vx: 0, tilt: 0 }
     setDrag(full)
@@ -576,106 +573,77 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   /** 부품 고르기 카드마다: 지금 장 어디에도 넣을 수 없으면 그 까닭. 부품 장이 아닌 장은 부품 장으로 바꾼 모습으로 본다 */
   function issueFor(what: BlockType | Block): NoRoom | null {
     const s = slideRef.current
-    const at = dropRows(s)
-    return at && placeIssue(at.rows, typeof what === 'string' ? makeBlock(what) : what, roomOf(s))
+    const at = dropBlocks(s)
+    return at && placeIssue(at.blocks, typeof what === 'string' ? makeBlock(what) : what, roomOf(s))
   }
 
-  // ---------- 칸 너비 ----------
+  // ---------- 판을 나누는 선 ----------
 
   const onGutterPointerDown = useCallback(
-    (e: ReactPointerEvent<HTMLElement>, rowId: string, gutter: number) => {
+    (e: ReactPointerEvent<HTMLElement>, gutter: Gutter) => {
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
-      const s = slideRef.current
       // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
       let told = false
+      let g = gutter
       const session = startSession('is-block-resizing')
       session.on('pointermove', (ev) => {
         const cur = slideRef.current
-        const row = (cur.rows ?? []).find((r) => r.id === rowId)
         const area = measureArea(areaEl.current)
-        if (!row || !area) return
-        const frac = (ev.clientX - area.rect.left) / area.rect.width
-        const limit = told ? null : spanLimit(row, gutter, frac)
+        if (!area) return
+        // 손의 자리를 판의 칸 수로: 선은 칸 사이의 가운데에 선다
+        const x = (ev.clientX - area.rect.left) / area.k
+        const y = (ev.clientY - area.rect.top) / area.k
+        const to =
+          g.dir === 'h'
+            ? Math.round(((x + BLOCK_COL_GAP / 2) * BOARD_COLS) / (area.size.w + BLOCK_COL_GAP))
+            : Math.round(((y + BLOCK_GAP / 2) * BOARD_ROWS) / (area.size.h + BLOCK_GAP))
+        if (to === g.at) return
+        const blocks = cur.blocks ?? []
+        const limit = told ? null : gutterLimit(blocks, g, to, area.size.h)
         if (limit) {
           told = true
           toast.show(narrowText(limit), undefined, 4000)
         }
-        const spans = spansAt(row, gutter, frac)
-        if (row.spans && row.spans.join() === spans.join()) return
-        store.setRows(cur.id, (cur.rows ?? []).map((r) => (r.id === rowId ? { ...r, spans } : r)), `${s.id}.spans.${rowId}`)
+        const next = dragGutter(blocks, g, to, area.size.h)
+        if (!next) return
+        // 옮긴 뒤의 선 (선 앞쪽 첫 부품은 그대로라 그것으로 다시 찾는다)
+        const moved = next.find((b) => b.id === g.key)!.at!
+        g = { ...g, at: g.dir === 'h' ? moved.x + moved.w : moved.y + moved.h }
+        store.setBlocks(cur.id, next, `${cur.id}.line.${g.dir}${g.key}`)
       })
       session.on('pointerup', () => session.end())
     },
     [store, toast, startSession],
   )
 
-  // ---------- 줄 높이 ----------
-
-  const onRowGapPointerDown = useCallback(
-    (e: ReactPointerEvent<HTMLElement>, between: number) => {
-      const el = areaEl.current
-      if (e.button !== 0 || !el) return
-      e.preventDefault()
-      e.stopPropagation()
-      // 지금 그려진 줄 높이와 줄 사이(격자가 나눈 값, 캔버스 px). 끄는 동안은 이 값을 기준으로 위아래 두 줄만 나눈다
-      const css = getComputedStyle(el)
-      const heights = css.gridTemplateRows.split(' ').map(parseFloat)
-      const gap = parseFloat(css.rowGap) || 0
-      const top = heights.slice(0, between).reduce((a, h) => a + h + gap, 0)
-      const pair = heights[between] + heights[between + 1]
-      const startY = e.clientY
-      let moved = false
-      const session = startSession('is-row-resizing')
-      session.on('pointermove', (ev) => {
-        if (!moved && Math.abs(ev.clientY - startY) < 3) return
-        moved = true
-        const cur = slideRef.current
-        const rows = cur.rows ?? []
-        const rect = el.getBoundingClientRect()
-        const k = el.offsetHeight ? rect.height / el.offsetHeight : 1
-        const y = (ev.clientY - rect.top) / k
-        const grow = growAt(rows, heights, between, (y - top - gap / 2) / pair)
-        if (rows.every((r, i) => r.grow === grow[i])) return
-        store.setRows(cur.id, rows.map((r, i) => ({ ...r, grow: grow[i] })), `${cur.id}.grow`)
-      })
-      session.on('pointerup', () => session.end())
-    },
-    [store, startSession],
-  )
-  const onRowGapReset = useCallback(() => {
-    const s = slideRef.current
-    if (weighted(s.rows ?? [])) store.setRows(s.id, unweighted(s.rows ?? []))
-  }, [store])
-
   // ---------- 고른 부품의 도구 ----------
 
   const update = (id: string, fn: (b: Block) => Block) => store.updateBlock(slideRef.current.id, id, fn)
   const remove = (b: Block) => {
     const s = slideRef.current
-    store.setRows(s.id, removeBlock(s.rows ?? [], b.id, measureArea(areaEl.current)?.size.h))
+    store.setBlocks(s.id, removeBlock(s.blocks ?? [], b.id, measureArea(areaEl.current)?.size.h))
     setSelected(null)
     toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, undoAction(toast))
   }
   const duplicate = (b: Block) => {
     const s = slideRef.current
-    const { link: _, ...copy } = copyBlock(b)
+    const copy = copyBlock(b)
     const area = measureArea(areaEl.current)
-    const t = autoTarget(s.rows ?? [], copy, area?.size.h)
-    if (!t) {
+    const next = autoPlace(s.blocks ?? [], copy, area?.size.h)
+    if (!next) {
       toast.show('이 장에는 더 넣을 자리가 없어요. 컴포넌트를 빼거나 다음 장에 넣어 주세요.')
       return
     }
-    store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid(), area?.size.h)!)
+    store.setBlocks(s.id, next)
     setSelected(copy.id)
   }
-  /** 저장할 컴포넌트(하나, 또는 그 줄)가 장에서 차지한 크기 (캔버스 px). 목록의 작은 그림을 그 비율로 그린다 */
+  /** 저장할 컴포넌트(하나, 또는 나란한 묶음)가 장에서 차지한 크기 (캔버스 px). 목록의 작은 그림을 그 비율로 그린다 */
   const savedSize = (b: Block, kind: SavedKind) => {
     const area = measureArea(areaEl.current)
-    const row = (slideRef.current.rows ?? []).find((r) => allBlocks([r]).some((x) => x.id === b.id))
-    if (!area || !row || kind === 'slide') return undefined
-    const ids = kind === 'block' ? [b.id] : allBlocks([row]).map((x) => x.id)
+    if (!area || kind === 'slide') return undefined
+    const ids = kind === 'block' ? [b.id] : bandOf(slideRef.current.blocks ?? [], b.id).map((x) => x.id)
     const rects = ids.flatMap((id) => {
       const cell = areaEl.current?.querySelector<HTMLElement>(`.bk[data-block="${CSS.escape(id)}"]`)
       return cell ? [cell.getBoundingClientRect()] : []
@@ -728,26 +696,25 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     cell.classList.add(...old)
   }
 
-  const selectedBlock = selected ? allBlocks(slide.rows ?? []).find((x) => x.id === selected) : undefined
+  const selectedBlock = selected ? (slide.blocks ?? []).find((x) => x.id === selected) : undefined
   /** 부품을 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 본문 상자는 화면에서 잰다 */
   const issue = (b: Block, fn: (x: Block) => Block) => {
     const area = measureArea(areaEl.current)
-    return area ? changeIssue(slide.rows ?? [], b.id, fn, area.size.h) : null
+    return area ? changeIssue(slide.blocks ?? [], b.id, fn, area.size.h) : null
   }
   const tools = (b: Block) => (
     <BlockTools
       block={b}
-      inRow={(slide.rows ?? []).find((r) => allBlocks([r]).some((x) => x.id === b.id))?.blocks.length ?? 1}
       itemIssue={issue(b, withItem)}
       variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}
-      lookIssue={(lk) => lookChangeIssue(slide.rows ?? [], b.id, lk ?? 'plain', measureArea(areaEl.current)?.size.h)}
+      lookIssue={(lk) => lookChangeIssue(slide.blocks ?? [], b.id, lk ?? 'plain', measureArea(areaEl.current)?.size.h)}
       onBlocked={(r) => {
         const t = noRoomText(r, b.type, 'change')
         toast.show(`${t.why} ${t.fix}`, undefined, 6000)
       }}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
-      onShift={(dir) => store.setRows(slideRef.current.id, shiftBlock(slideRef.current.rows ?? [], b.id, dir))}
-      onLook={(lk) => store.setRows(slideRef.current.id, withLook(slideRef.current.rows ?? [], b.id, lk ?? 'plain'))}
+      onShift={(dir) => store.setBlocks(slideRef.current.id, shiftBlock(slideRef.current.blocks ?? [], b.id, dir, measureArea(areaEl.current)?.size.h))}
+      onLook={(lk) => store.setBlocks(slideRef.current.id, withLook(slideRef.current.blocks ?? [], b.id, lk ?? 'plain'))}
       onEffect={(fx) => {
         update(b.id, (x) => ({ ...x, effect: fx }))
         requestAnimationFrame(() => preview(b, fx))
@@ -773,7 +740,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       if (e.defaultPrevented || dialogOpen()) return
       if (e.key === 'Escape') setSelected(null)
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        const b = allBlocks(slideRef.current.rows ?? []).find((x) => x.id === selected)
+        const b = (slideRef.current.blocks ?? []).find((x) => x.id === selected)
         if (b) {
           e.preventDefault()
           remove(b)
@@ -788,24 +755,23 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   const showConverted = !!drag && drag.plan === 'convert' && !!drag.composed
   const stageSlide = showConverted ? drag!.composed! : slide
-  const stageRows = stageSlide.rows ?? []
-  let previewRows: BlockRow[] | null = null
+  const stageBlocks = stageSlide.blocks ?? []
+  let previewBlocks: Block[] | null = null
   let dragId: string | null = null
   if (drag) {
-    if (drag.target && (drag.plan === 'place' || drag.plan === 'convert')) {
-      // 놓은 뒤와 같은 모습으로: 이미지 옆이면 그 줄의 칸 너비를 이미지에 맞춘 것까지 (놓자마자 칸이 다시 움직이지 않게)
-      const placed = insertAt(drag.base, drag.target, drag.block, `drop-${drag.block.id}`, drag.room)
-      previewRows = placed && fitPlaced(placed, drag.block, drag.room)
+    if (drag.result && (drag.plan === 'place' || drag.plan === 'convert')) {
+      // 놓은 뒤와 같은 모습으로: 이미지 옆이면 이미지에 맞춘 크기까지 (놓자마자 칸이 다시 움직이지 않게)
+      previewBlocks = drag.result
       dragId = drag.block.id
     } else if (drag.kind === 'move') {
       // 장 밖으로 끌고 나가면 원래 자리를 비워 둔다. 놓으면 돌아온다
-      previewRows = stageRows
+      previewBlocks = stageBlocks
       dragId = drag.block.id
     }
   }
 
   const edit: BlockEdit = {
-    rows: previewRows ?? links.previewRows,
+    blocks: previewBlocks ?? links.previewBlocks,
     dragId,
     selected: drag ? null : selected,
     opened,
@@ -824,8 +790,6 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       press(e, (x, y) => startMove(b, x, y))
     },
     onGutterPointerDown,
-    onRowGapPointerDown,
-    onRowGapReset,
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
@@ -846,7 +810,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     ? links.hint
     : !drag
     ? null
-    : drag.blocked && drag.target && (drag.plan === 'place' || drag.plan === 'convert')
+    : drag.blocked && drag.target && drag.target.kind !== 'stay' && (drag.plan === 'place' || drag.plan === 'convert')
       ? `${noRoomText(drag.blocked, drag.block.type, 'here').why} 가장 가까운 자리에 놓을게요.`
     : drag.plan === 'convert'
       ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
@@ -882,8 +846,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
   const roomFits = (h: number) => {
-    const base = dropRows(slide)?.rows ?? []
-    return !whyNot(base, { kind: 'row', index: base.length }, makeBlock('message'), h)
+    const base = dropBlocks(slide)?.blocks ?? []
+    return !whyNot(base, { kind: 'spot', spot: { at: null, side: 'below' } }, makeBlock('message'), h)
   }
   const room =
     !compose && canCompose(slide.layout) && !drag && !landing

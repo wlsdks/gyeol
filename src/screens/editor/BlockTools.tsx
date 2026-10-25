@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, shownLook, variantOfBlock, type NoRoom, type SavedKind } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, isAlone, shownLook, variantOfBlock, type NoRoom, type SavedKind } from '../../deck/blocks'
 import type { Block, BlockEffect } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { BookmarkIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
@@ -19,7 +19,6 @@ const LOOK_NOTES: Record<Block['look'] & string, string> = {
 
 export function BlockTools({
   block,
-  inRow,
   itemIssue,
   variantIssue,
   lookIssue,
@@ -42,8 +41,6 @@ export function BlockTools({
   /** 항목을 더하거나 모양, 바탕을 바꾸면 장에 들어가지 않을 때 그 까닭 */
   itemIssue: NoRoom | null
   variantIssue(variant: string): NoRoom | null
-  /** 이 부품의 줄에 놓인 부품 수 (혼자 한 줄을 다 쓰는 작은 부품은 면 없이 그려진다) */
-  inRow: number
   lookIssue(look: Block['look']): NoRoom | null
   /** 그런 단추를 눌렀을 때 (막아 두되, 누르면 까닭을 보여 준다) */
   onBlocked(r: NoRoom): void
@@ -94,8 +91,8 @@ export function BlockTools({
       window.removeEventListener('keydown', onKey, true)
     }
   }, [menu])
-  // 그려지는 면을 보인다: 혼자 한 줄을 다 쓰는 작은 부품은 고른 면이 있어도 바탕 없이 그려진다
-  const look = shownLook(block, inRow)
+  // 그려지는 면을 보인다: 혼자 장 너비를 다 쓰는 작은 부품은 고른 면이 있어도 바탕 없이 그려진다
+  const look = shownLook(block, isAlone(block))
   const effect = effectOf(block)
   const variants = spec.variants ?? []
   const variant = variantOfBlock(block)

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { composeAreaH, withImage } from '../../deck/blocks'
+import { boardAreaH, boardTight, withImage } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { motionOf } from '../../deck/themes'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
@@ -53,7 +53,7 @@ export function SlideStage({
   const canvasRef = useRef<HTMLDivElement>(null)
   const look = useLook(deck)
   // 테마, 글꼴, 글자 크기, 발표 정보(아래 표시의 이름, 소속)를 바꿔도 다시 잰다
-  const overflow = useOverflow(canvasRef, slide, look)
+  const overflow = useOverflow(canvasRef, slide, look, deck)
 
   const actions = useMemo<SlideActions>(
     () => ({
@@ -68,7 +68,7 @@ export function SlideStage({
         const st = useDeck.getState()
         const cur = st.deck?.slides.find((s) => s.id === slide.id)
         if (!cur || !st.deck) return
-        st.setRows(cur.id, withImage(cur.rows ?? [], blockId, url, composeAreaH(cur, st.deck, true)))
+        st.setBlocks(cur.id, withImage(cur.blocks ?? [], blockId, url, boardAreaH(cur, st.deck)))
       },
     }),
     [slide.id],
@@ -181,19 +181,20 @@ export function SlideStage({
 }
 
 /**
- * 슬라이드 안의 글이 영역을 넘치는지('over') 확인한다. 부품 장은 넘치지 않게 줄 높이를 낮춰 맞추는데(fitBlocks의 --bk-sq),
- * 그렇게 눌러 담은 것도('tight') 알린다. 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도
- * 자리가 줄어서, 알리지 않으면 글자와 차트가 조용히 작아진다
+ * 슬라이드 안의 글이 영역을 넘치는지('over') 확인한다. 부품 장은 모든 부품이 잘리지 않을 자리가 판에 없는 것도('tight') 알린다.
+ * 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도 자리가 줄어서, 알리지 않으면 글자와 차트가
+ * 조용히 작아진다 (판은 고칠 때마다 다시 나누고, 그래도 안 될 때만)
  */
-function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): 'over' | 'tight' | null {
-  const [overflow, setOverflow] = useState<'over' | 'tight' | null>(null)
+function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown, deck: Deck): 'over' | 'tight' | null {
+  const [overflow, setOverflow] = useState<'over' | null>(null)
+  const tight = boardTight(slide, deck)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
     if (!root) return
     let wait = 0
     const check = () => {
       // 칸 너비나 줄 높이를 끄는 동안에는 바뀐 너비에 맞춰 다시 맞추기 전의 모습이 잠깐 넘쳐 보인다. 손을 뗀 뒤에 본다
-      if (document.body.matches('.is-block-resizing, .is-row-resizing, .is-block-dragging')) {
+      if (document.body.matches('.is-block-resizing, .is-block-dragging')) {
         window.clearTimeout(wait)
         wait = window.setTimeout(check, 300)
         return
@@ -209,5 +210,5 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
       window.clearTimeout(wait)
     }
   }, [ref, slide, look])
-  return overflow
+  return overflow ?? (tight ? 'tight' : null)
 }

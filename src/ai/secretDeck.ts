@@ -2,7 +2,7 @@
 // 시험 파일에서 가져오면 그 파일의 시험까지 한 번 더 돌아서 따로 둔다
 
 import { createSampleDeck } from '../deck/sample'
-import type { Block, BlockRow, Deck } from '../deck/types'
+import type { Block, Deck } from '../deck/types'
 
 export const SECRET = '기밀7731'
 
@@ -61,20 +61,16 @@ function composeSecret(s: (k: string) => string): Deck['slides'] {
       options: { transition: s('transition'), order: [s('order'), s('block-3'), s('block-1')] } as unknown as Deck['slides'][number]['options'],
       fields: { title: s('ct'), lead: s('cl') },
       items: [],
-      // 이음표 자리에도: 첫 줄은 맞는 이음표, 둘째 줄과 마지막 부품은 비밀.
-      // 첫 칸에는 부품을 쌓았다: 쌓은 부품의 글과 id, 쌓은 부품의 이음표와 또 쌓은 부품, 모르는 종류에도 비밀
-      rows: [
-        {
-          id: s('row-1'),
-          spans: [s('span')] as unknown as number[],
-          blocks: [
-            { ...block('message', 1), link: 'arrow', stack: [{ ...block('number', 5), link: s('link'), stack: [block('ring', 7)] } as unknown as Block, block(s('type'), 8), block('delta', 6)] },
-            { ...block('bullets', 2), link: s('link') } as unknown as Block,
-          ],
-          link: 'plus',
-        },
-        { id: s('row-2'), blocks: [{ ...block('kpi', 3), link: s('link') } as unknown as Block, block(s('type'), 4)], link: s('rowlink') } as unknown as BlockRow,
+      // 판의 자리와 이음표 자리에도: 첫 부품은 맞는 자리와 이음표, 나머지는 비밀이 든 자리, 이음표, 모르는 종류.
+      // 예전 꼴의 줄(rows)도 남겨 둔다: 열어 바꾸기 전의 파일을 모양으로 읽어도 그 안의 글이 나가면 안 된다
+      blocks: [
+        { ...block('message', 1), at: { x: 0, y: 0, w: 6, h: 6 }, link: 'arrow', linkBelow: 'plus' },
+        { ...block('number', 5), at: { x: 6, y: 0, w: 6, h: 6 }, link: s('link'), linkBelow: s('below') } as unknown as Block,
+        { ...block('bullets', 2), at: { x: s('x'), y: 6, w: 4, h: 6 }, stack: [block('ring', 7)] } as unknown as Block,
+        { ...block('kpi', 3), at: { x: 4, y: 6, w: 4, h: s('h') }, link: s('link') } as unknown as Block,
+        { ...block(s('type'), 4), at: { x: 8, y: 6, w: 4, h: 6 } },
       ],
+      ...({ rows: [{ id: s('row-1'), spans: [s('span')], blocks: [block('delta', 6)], link: s('rowlink') }] } as object),
     },
   ]
 }
