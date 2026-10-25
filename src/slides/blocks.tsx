@@ -10,7 +10,7 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
+import { changeOf, colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -103,17 +103,18 @@ function BigNumber() {
   )
 }
 
-/** 전과 후의 차이. 둘 다 %면 %p로, 아니면 전 값에 대한 % */
+/**
+ * 전과 후의 차이. 둘 다 %면 %p로, 아니면 전 값에 대한 %. 단위까지 읽어서 '6분 → 40초'는 ▼ 89%,
+ * 견줄 수 없는 단위('3건 → 40%')면 보이지 않는다 (numbers.ts의 changeOf)
+ */
 function deltaOf(before: string, after: string): { text: string; dir: -1 | 0 | 1 } | null {
-  const a = numberOrNull(before)
-  const b = numberOrNull(after)
-  if (a === null || b === null) return null
-  const d = b - a
-  const dir = d > 0 ? 1 : d < 0 ? -1 : 0
+  const c = changeOf(before, after)
+  if (!c) return null
   const round = (n: number) => (Math.abs(n) < 10 ? Math.round(n * 10) / 10 : Math.round(n))
-  if (before.includes('%') && after.includes('%')) return { text: `${formatNumber(Math.abs(round(d)))}%p`, dir }
-  if (a === 0) return null
-  return { text: `${formatNumber(Math.abs(round((d / Math.abs(a)) * 100)))}%`, dir }
+  const shown = Math.abs(round(c.value))
+  // 반올림해 0이면 바뀐 쪽을 가리키지 않는다 (▲ 0%가 되지 않게)
+  const dir = shown === 0 ? 0 : c.value > 0 ? 1 : -1
+  return { text: `${formatNumber(shown)}${c.pp ? '%p' : '%'}`, dir }
 }
 
 /**
