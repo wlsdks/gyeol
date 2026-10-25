@@ -124,6 +124,8 @@ export interface BlockEditing {
   /** 부품 고르기 카드를 누르기 시작할 때. 끌면 끌어다 놓기, 그냥 떼면 알아서 넣기 (onTap을 주면 그것을) */
   pressCard(e: ReactPointerEvent<HTMLElement>, type: BlockType, onTap?: () => void): void
   insert(type: BlockType, from?: HTMLElement | null): void
+  /** 미리 채운 부품 하나를 알아서 고른 자리에 (자리가 없으면 다음 장에) */
+  insertBlock(block: Block, from?: HTMLElement | null): void
   /** 이 부품을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
   issueFor(type: BlockType): NoRoom | null
   /** 이음표 카드를 누르기 시작할 때. 끌면 컴포넌트 사이에 놓고, 그냥 떼면 알아서 고른 사이에 넣는다 */
@@ -446,10 +448,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     [begin],
   )
 
-  const newDrag = (type: BlockType, from: DOMRect | null, x: number, y: number): Drag => {
+  const newDrag = (block: Block, from: DOMRect | null, x: number, y: number): Drag => {
     const s = slideRef.current
-    const block = makeBlock(type)
-    const spec = BLOCKS[type]
+    const spec = BLOCKS[block.type]
     const area = measureArea(areaEl.current)
     const k = area?.k ?? (document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect().width ?? 960) / 1920
     const colW = (1680 - 11 * BLOCK_GAP) / 12
@@ -466,7 +467,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         e,
         (x, y) => {
           const from = card.getBoundingClientRect()
-          begin(newDrag(type, from, x, y), x, y, from)
+          begin(newDrag(makeBlock(type), from, x, y), x, y, from)
         },
         onTap ?? (() => insert(type, card)),
       )
@@ -477,9 +478,14 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   /** 눌러서 넣기: 알아서 고른 자리에, 카드에서 날아와 맞춰진다 */
   function insert(type: BlockType, from?: HTMLElement | null) {
+    insertBlock(makeBlock(type), from)
+  }
+
+  /** 미리 채운 부품(붙여 넣은 이미지 같은)을 눌러서 넣기와 같은 길로: 알아서 고른 자리, 없으면 다음 장에 */
+  function insertBlock(block: Block, from?: HTMLElement | null) {
     const s = slideRef.current
     const r = from?.getBoundingClientRect() ?? null
-    const d = newDrag(type, r, r ? r.left + r.width / 2 : 0, r ? r.top + r.height / 2 : 0)
+    const d = newDrag(block, r, r ? r.left + r.width / 2 : 0, r ? r.top + r.height / 2 : 0)
     const area = measureArea(areaEl.current)
     let plan: Drag['plan'] = 'next'
     let target: DropTarget | null = null
@@ -844,6 +850,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     setLibraryOpen,
     pressCard,
     insert,
+    insertBlock,
     issueFor,
     pressLinkCard: links.pressCard,
     insertLink: links.insert,
