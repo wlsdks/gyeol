@@ -55,43 +55,72 @@ function placeAt(t: number): Place {
 /** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
 const GROUP_PAD = 10
 
-function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: TextRect[] = []) {
+function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: TextRect[] = [], slide?: DOMRect | null) {
   const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
   const bw = bar?.offsetWidth ?? 0
   const bh = bar?.offsetHeight ?? 36
   const top = area ? area.top + 4 : 4
   const bottom = area ? area.bottom - 4 : innerHeight - 4
+  const minX = area ? area.left + 8 : 8
   const maxX = (area ? area.right : innerWidth) - bw - 8
-  const x = Math.max(area ? area.left + 8 : 8, Math.min(r.left, maxX))
-  // 위와 아래 가운데 고른 것 밖의 글(others)을 덜 가리는 쪽, 같으면 위. 줄 사이(48px)와 제목 아래 여백은 막대보다 좁아서
-  // 위로만 띄우면 아래 줄을 고를 때 윗줄 숫자의 설명을, 윗줄을 고를 때 장 제목을 가렸다. 둘 다 자리가 없으면 고른 것 안쪽 위
-  const hit = (y: number) =>
+  const clampX = (x: number) => Math.max(minX, Math.min(x, maxX))
+  const hit = (x: number, y: number) =>
     others.reduce(
       (a, { r: o, w }) => a + w * Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)),
       0,
     )
-  const spots = [r.top - bh - 8, r.bottom + 8].filter((y) => y >= top && y + bh <= bottom)
-  const y = spots.length ? spots.reduce((best, y) => (hit(y) < hit(best) ? y : best)) : r.top + 8
-  return { x, y, room: area ? area.width - 16 : innerWidth }
+  // 놓을 자리들 (앞의 것일수록 먼저): 고른 것 바로 위, 바로 아래. 장(slide)을 주면 장 위 여백, 장 아래 여백, 고른 것 안쪽 위도.
+  // 줄 사이(48px)와 제목 아래 여백은 막대보다 좁아서, 위아래만 견주면 윗줄을 고를 때 위로는 장 제목을, 아래로는
+  // 아랫줄 숫자를 통째로 가렸다(1280×600의 핵심 포인트 아래 숫자 줄). 장 위 여백은 장 밖 회색 띠와 장의 위 틀(--pad-y)이라
+  // 글이 없다. 가로는 고른 것의 왼쪽 끝에 맞추거나, 왼쪽 위의 제목을 피해 오른쪽 끝에 맞춘다
+  const ys = [r.top - bh - 8, r.bottom + 8]
+  if (slide) ys.push(Math.max(top, slide.top - bh - 8), Math.min(bottom - bh, slide.bottom + 8))
+  const xs = slide ? [clampX(r.left), clampX(r.right - bw)] : [clampX(r.left)]
+  const spots = ys.filter((y) => y >= top && y + bh <= bottom).flatMap((y) => xs.map((x) => ({ x, y })))
+  if (slide) spots.push({ x: clampX(r.right - bw - 8), y: Math.max(top, r.top + 8) })
+  if (!spots.length) return { x: clampX(r.left), y: r.top + 8, room: area ? area.width - 16 : innerWidth }
+  // 가리는 글(others)의 넓이에, 고른 것에서 떨어진 만큼을 조금 더한다. 그래서 빈칸 안내를 조금 가리는 바로 아래가
+  // 아무것도 가리지 않는 먼 장 위 여백보다 낫고, 장 제목을 가리는 바로 위보다는 장 위 여백이 낫다
+  const away = (y: number) => Math.max(0, r.top - 8 - (y + bh), y - (r.bottom + 8))
+  const score = ({ x, y }: { x: number; y: number }) => hit(x, y) + away(y) * AWAY_COST
+  const best = spots.reduce((b, s) => (score(s) < score(b) - 1 ? s : b))
+  return { x: best.x, y: best.y, room: area ? area.width - 16 : innerWidth }
 }
 
-/** 글이 그려진 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다 */
+/** 고른 것에서 1px 떨어질 때마다 더하는 값 (가린 넓이 px²와 같은 단위). 한 줄 글(20px)을 다 가리는 것보다 100px 떨어지는 게 낫게 */
+const AWAY_COST = 6
+
+/** 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다 */
 type TextRect = { r: DOMRect; w: number }
 const HINT_WEIGHT = 0.2
+/** 차트와 원 같은 그림: 그림의 네모에는 빈 곳도 있어서 글보다 덜 친다 */
+const ART_WEIGHT = 0.5
+/** 장 아래 도구(미리 보기, 복제 같은): 고른 것을 다 고치고 나서 쓰는 것이라 잠깐 가려도 된다 */
+const TOOL_WEIGHT = 0.3
 
-/** 장 안에서 고른 것(skip) 밖의 글이 그려진 자리들. 칸의 네모로 견주면 글 없는 차트 윗부분도 가리는 것으로 쳐서 글자 줄로 잰다 */
-function textRects(slide: Element | null, skip: Element): TextRect[] {
+/**
+ * 장 안의 글과 그림이 그려진 자리들 (고른 것 안의 것도: 장 위 여백이나 안쪽 위에 둘 때 그 글을 가리지 않게).
+ * 칸의 네모로 견주면 글 없는 차트 윗부분도 가리는 것으로 쳐서 글자 줄로 잰다. 장 아래 도구도 가벼운 무게로 넣는다
+ */
+function contentRects(slide: Element | null, canvas: Element | null): TextRect[] {
   if (!slide) return []
   const out: TextRect[] = []
   const range = document.createRange()
-  for (const f of slide.querySelectorAll<HTMLElement>('.ed')) {
-    if (skip.contains(f)) continue
-    const empty = f.classList.contains('is-empty')
-    const t = f.querySelector(empty ? ':scope > .ed-hint' : ':scope > .ed-input')
-    if (!t) continue
-    range.selectNodeContents(t)
+  const walk = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT)
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (!n.nodeValue?.trim()) continue
     // 빈 부제의 안내를 피하느라 아래로 내려가 차트의 숫자를 가렸다(1366×650의 핵심 숫자 아래 추이)
-    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: empty ? HINT_WEIGHT : 1 })
+    const hint = !!n.parentElement?.closest('.ed-hint, .ed.is-empty')
+    range.selectNodeContents(n)
+    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: hint ? HINT_WEIGHT : 1 })
+  }
+  for (const g of slide.querySelectorAll('svg, img')) {
+    const r = g.getBoundingClientRect()
+    if (r.width && r.height && !g.closest('button')) out.push({ r, w: ART_WEIGHT })
+  }
+  for (const b of canvas?.querySelectorAll('.stage-tools button') ?? []) {
+    const r = b.getBoundingClientRect()
+    if (r.width && r.height) out.push({ r, w: TOOL_WEIGHT })
   }
   return out
 }
@@ -123,10 +152,11 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
         return
       }
       const r = el.getBoundingClientRect()
+      const slide = el.closest('.slide')
       // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (매 프레임 장의 모든 글을 재지 않게)
       const key = `${r.left},${r.top},${r.width},${r.height}`
-      if (texts.current.key !== key) texts.current = { key, rects: textRects(el.closest('.slide'), el) }
-      const s = barSpot(r, bar, canvasRef.current, texts.current.rects)
+      if (texts.current.key !== key) texts.current = { key, rects: contentRects(slide, canvasRef.current) }
+      const s = barSpot(r, bar, canvasRef.current, texts.current.rects, slide?.getBoundingClientRect())
       if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
       setTight(full.current > s.room)
       setSpot((p) => (p && p.x === s.x && p.y === s.y ? p : { x: s.x, y: s.y }))
