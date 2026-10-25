@@ -17,6 +17,7 @@ import { BlockEditContext } from '../../slides/blockEdit'
 import type { SlideActions } from '../../slides/context'
 import { motionEngine } from '../../motion/engine'
 import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, presenterAuto, screensPermission, type Placement } from '../../present/link'
+import { slideOverflow } from '../../slides/overflow'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
 import { downloadDeckFile } from '../../store/deckFile'
@@ -942,14 +943,7 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, 
         wait = window.setTimeout(check, 300)
         return
       }
-      const boxes = [root, ...root.querySelectorAll<HTMLElement>('.s-body, .ix-text, .cs-main, .cs-side, .cl-main, .cv-main, .ag, .bk-in')]
-      // 빈칸의 옅은 면(.ed-halo)은 글보다 조금 넓게 깔려서 맨 아래 칸이면 상자 밖으로 나온다. 글이 넘친 것이 아니니 재는 동안만 숨긴다
-      root.classList.add('is-measuring')
-      // 항목 빼기 버튼이 칸 오른쪽으로 살짝 나와 있어서, 가로 넘침은 슬라이드 전체만 본다.
-      const over = root.scrollWidth - root.clientWidth > 4 || boxes.some((el) => el.scrollHeight - el.clientHeight > 4)
-      root.classList.remove('is-measuring')
-      const tight = [...root.querySelectorAll<HTMLElement>('.bk-area')].some((a) => a.style.getPropertyValue('--bk-sq'))
-      setOverflow(over ? 'over' : tight ? 'tight' : null)
+      setOverflow(slideOverflow(root))
     }
     check()
     document.fonts?.ready.then(check)

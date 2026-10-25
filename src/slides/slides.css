@@ -999,6 +999,13 @@
   align-content: end;
 }
 
+/* 띠가 본문 바닥에 앉으므로, 명조처럼 글자 상자가 줄 높이보다 큰 글꼴이면 이름 줄이 상자 아래로 몇 px 나온다.
+   그만큼을 안쪽 여백으로 받아 둔다(편집기가 '글이 넘쳤어요'를 띄우지 않게). 부품 칸 안의 목차는 칸이 재므로 장에서만 */
+.l-agenda.va-columns > .ag {
+  margin-bottom: -16px;
+  padding-bottom: 16px;
+}
+
 .l-agenda.va-columns .ag-list:is([data-n='2'], [data-n='3'], [data-n='4']) .ag-t {
   --fs: min(62px, 24cqi);
 }
@@ -5148,6 +5155,10 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 0;
+  /* 연락처의 마지막 값은 글자 아랫선을 아래 틀선에 맞추느라 상자 아래로 조금 나온다(아래 margin-bottom).
+     그만큼을 안쪽 여백으로 받아 둔다: 받지 않으면 편집기가 모든 마지막 장에 '글이 넘쳤어요'를 띄웠다 */
+  margin-bottom: -16px;
+  padding-bottom: 16px;
 }
 
 .cl-title {

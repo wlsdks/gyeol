@@ -1,8 +1,10 @@
 import { placeHalos } from '../slides/halos'
+import { slideOverflow } from '../slides/overflow'
 
 /*
  * 개발용: 편집 화면의 칸 점검. #/gallery?mode=edit … → 콘솔에서 checkEdit()
- * 칸끼리 겹치는 것(레이아웃이 칸 자리를 잘못 잡은 것)과, 칸에 두른 면끼리 겹치는 것(halos.ts가 못 막은 것)을 찾는다.
+ * 칸끼리 겹치는 것(레이아웃이 칸 자리를 잘못 잡은 것)과, 칸에 두른 면끼리 겹치는 것(halos.ts가 못 막은 것),
+ * 편집기가 '글이 넘쳤어요'를 띄울 장(글이 정말 넘쳤거나, 틀선 맞추기처럼 일부러 상자 밖에 둔 글을 넘쳤다고 잘못 본 것)을 찾는다.
  */
 export async function checkEdit(): Promise<{ slides: number; fields: number; problems: string[] }> {
   await document.fonts.ready
@@ -14,6 +16,7 @@ export async function checkEdit(): Promise<{ slides: number; fields: number; pro
     const boxes = placeHalos(slide)
     fields += boxes.length
     const name = [...slide.classList].filter((c) => c.startsWith('l-') || c.startsWith('va-')).join(' ')
+    if (slideOverflow(slide) === 'over') problems.push(`${i + 1}번 장 ${name}: 편집기가 '글이 넘쳤어요'를 띄워요`)
     const label = (el: HTMLElement) => el.querySelector('.ed-hint')?.textContent?.slice(0, 16) || [...el.classList].find((c) => c !== 'ed' && c !== 'is-empty') || '?'
     for (let a = 0; a < boxes.length; a++) {
       for (let b = a + 1; b < boxes.length; b++) {
