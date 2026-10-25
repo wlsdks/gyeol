@@ -1225,6 +1225,28 @@
   }
 }
 
+/* 면(카드, 진한 면) 위의 반원은 좁은 칸(424px 밑)에서 옆으로 두지 않고 위아래로 쌓는다. 면 여백(양옆 52)을 빼면 옆으로 둔
+   반원 자리가 칸의 반인 140px로 줄어 숫자를 읽기 어려웠다. 쌓을 높이가 없는 자리는 편집기가 고르지 않는다(blockHeights.ts) */
+@container bk (max-width: 423px) {
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge {
+    grid-template: auto minmax(0, 58cqw) auto / none;
+    grid-template-areas: none;
+    justify-items: center;
+    gap: 22px;
+    text-align: center;
+  }
+
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge :is(.bk-rg-box, .bk-rg-l, .bk-rg-n) {
+    grid-area: auto;
+    align-self: auto;
+  }
+
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge .bk-rg-box {
+    width: 100%;
+    height: auto;
+  }
+}
+
 /* ---------- 몇 중 몇 ---------- */
 
 .bk-rt {
