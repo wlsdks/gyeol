@@ -60,7 +60,7 @@ export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(AP
   root = normalize(root)
   const ai = createAiHandler(share, { mcpPath: join(HERE, 'gyeol-mcp.mjs') })
 
-  return createServer(async (req: IncomingMessage, res: ServerResponse) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
     // 다른 이름으로 들어온 요청은 받지 않는다 (DNS 리바인딩 방어).
     // localhost로 들어오면 127.0.0.1로 모은다. 주소가 다르면 브라우저 저장소도 달라서 발표가 안 보인다.
     const port = req.socket.localPort
@@ -93,7 +93,18 @@ export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(AP
     const cache = file.endsWith('index.html') ? 'no-cache' : 'public, max-age=31536000, immutable'
     res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': type, 'Cache-Control': cache })
     if (req.method === 'HEAD') return res.end()
-    createReadStream(file).pipe(res)
+    // 읽다가 실패하면(그새 지웠거나 막혔으면) 오류 이벤트를 받을 곳이 없어 서버가 꺼졌다
+    createReadStream(file)
+      .on('error', () => res.destroy())
+      .pipe(res)
+  }
+
+  return createServer((req: IncomingMessage, res: ServerResponse) => {
+    // 처리하다 던진 예외가 그대로 나가면 처리되지 않은 거부로 서버가 꺼진다. 정해진 말로만 답한다(경로를 내보내지 않게)
+    handle(req, res).catch(() => {
+      if (!res.headersSent) send(res, 500, 'internal error')
+      else res.destroy()
+    })
   })
 }
 
@@ -150,7 +161,7 @@ function openBrowser(url: string) {
 
 /**
  * 켜지 못한 이유를 보여 주고 끝낸다. 윈도우에서는 작게 내린 창에서 돌기 때문에
- * 바로 닫히면 이유를 볼 수 없어서, 키를 누를 때까지 창을 남긴다.
+ * 바로 닫히면 이유를 볼 수 없어서, 키를 누를 때까지 창을 남긴다. 그때는 돌아오므로 부르는 곳은 return fail(...)로 끝낸다.
  */
 function fail(message: string): never {
   console.error(`\n  ${message}\n`)
@@ -165,17 +176,23 @@ function fail(message: string): never {
 }
 
 async function main() {
-  if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
+  if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) return fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
   if (await alreadyRunning()) {
     console.log(`결이 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
     openBrowser(ORIGIN)
     return
   }
-  const server = createAppServer()
+  let server: ReturnType<typeof createAppServer>
+  try {
+    server = createAppServer()
+  } catch {
+    // 'AI 공유' 폴더를 만들지 못했을 때. 읽기만 되는 곳(압축 파일 안, 막힌 폴더)에서 켜면 그렇다
+    return fail("'AI 공유' 폴더를 만들지 못했어요. 받은 zip 파일을 바탕 화면이나 문서 폴더에 풀고 그 안에서 다시 실행해 주세요.")
+  }
   server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') fail(`${PORT}번 포트를 다른 프로그램이 쓰고 있어요. 그 프로그램을 끄고 다시 실행해 주세요.`)
+    if (err.code === 'EADDRINUSE') return fail(`${PORT}번 포트를 다른 프로그램이 쓰고 있어요. 그 프로그램을 끄고 다시 실행해 주세요.`)
     // 윈도우는 Hyper-V, WSL, Docker가 포트 묶음을 미리 잡아 두면 EACCES가 난다
-    if (err.code === 'EACCES') fail(`이 PC가 ${PORT}번 포트를 쓰지 못하게 막고 있어요. 회사 IT 담당자에게 이 메시지를 보여 주세요.`)
+    if (err.code === 'EACCES') return fail(`이 PC가 ${PORT}번 포트를 쓰지 못하게 막고 있어요. 회사 IT 담당자에게 이 메시지를 보여 주세요.`)
     fail(err.message)
   })
   server.listen(PORT, HOST, () => {

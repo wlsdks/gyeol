@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { request, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -147,5 +147,35 @@ describe('AI 공유 창구', () => {
   it('공유를 끄면 모양 파일을 지운다', async () => {
     expect((await call(`/__html-maker/ai/decks/${shape.deck}`, { method: 'DELETE', headers: AI })).status).toBe(204)
     expect(readdirSync(join(share, 'decks'))).toEqual([])
+  })
+})
+
+describe('AI 공유 폴더가 없어지거나 쓸 수 없을 때', () => {
+  const shape = toShape(createSampleDeck())
+  const put = () => call(`/__html-maker/ai/decks/${shape.deck}`, { method: 'PUT', headers: AI, body: JSON.stringify(shape) })
+
+  it('폴더를 지워도 답하고, 다시 공유하면 폴더를 새로 만든다', async () => {
+    // 폴더의 안내 파일이 지워도 된다고 한다
+    rmSync(share, { recursive: true, force: true })
+    expect((await call('/__html-maker/ai/status', { headers: AI })).status).toBe(200)
+    expect(JSON.parse((await call('/__html-maker/ai/requests', { headers: AI })).body)).toEqual({ requests: [] })
+    const result = { method: 'POST', headers: AI, body: JSON.stringify({ status: 'rejected', results: [] }) }
+    expect((await call('/__html-maker/ai/requests/r0123456789ab/result', result)).status).toBe(404)
+    expect((await call(`/__html-maker/ai/decks/${shape.deck}`, { method: 'DELETE', headers: AI })).status).toBe(204)
+    expect((await put()).status).toBe(204)
+    expect(existsSync(join(share, 'decks', `${shape.deck}.json`))).toBe(true)
+    expect(existsSync(join(share, '읽어 주세요.txt'))).toBe(true)
+  })
+
+  it('쓰지 못하면 정해진 500으로 답하고 계속 돈다', async () => {
+    // decks 자리에 파일이 있으면 폴더를 만들 수도, 그 안에 쓸 수도 없다
+    rmSync(join(share, 'decks'), { recursive: true, force: true })
+    writeFileSync(join(share, 'decks'), '')
+    const res = await put()
+    expect(res.status).toBe(500)
+    expect(res.body).toBe('')
+    expect((await call('/__html-maker/ai/status', { headers: AI })).status).toBe(200)
+    expect((await call('/')).status).toBe(200)
+    rmSync(join(share, 'decks'))
   })
 })

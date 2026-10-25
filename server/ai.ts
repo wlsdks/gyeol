@@ -12,7 +12,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { validAsk, type AskError } from '../src/ai/asks'
 import { isOpCode, parseRequest, REQUEST_ID, type ChangeRequest, type OpCode } from '../src/ai/ops'
 import { checkShape } from '../src/ai/share'
@@ -55,11 +55,21 @@ export function ensureShareDir(root: string): ShareDirs {
   return dirs
 }
 
-/** 반쯤 쓴 파일을 읽지 않게, 임시 이름으로 쓴 뒤 바꾼다 */
+/**
+ * 반쯤 쓴 파일을 읽지 않게, 임시 이름으로 쓴 뒤 바꾼다.
+ * 'AI 공유' 폴더는 지워도 된다고 안내하므로 쓸 폴더부터 만든다. 바꾸지 못하면(윈도우에서 다른 프로그램이
+ * 파일을 열고 있으면 EPERM) 임시 파일을 치우고 오류를 그대로 던진다. 처리기가 정해진 500으로 답한다.
+ */
 export function writeJsonAtomic(file: string, value: unknown) {
+  mkdirSync(dirname(file), { recursive: true })
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`
   writeFileSync(tmp, JSON.stringify(value, null, 2))
-  renameSync(tmp, file)
+  try {
+    renameSync(tmp, file)
+  } catch (e) {
+    rmSync(tmp, { force: true })
+    throw e
+  }
 }
 
 function readJson(file: string): unknown {
@@ -79,6 +89,17 @@ export function pruneResults(dirs: ShareDirs, now = Date.now()) {
     } catch {
       // 다른 쪽이 먼저 지웠으면 그만
     }
+  }
+}
+
+/** 모양 파일이 있는 발표. 폴더를 읽지 못하면 없는 것으로 친다 (앱은 공유가 꺼진 것으로 본다) */
+function sharedDecks(dirs: ShareDirs): string[] {
+  try {
+    return readdirSync(dirs.decks)
+      .filter((n) => /^d[0-9a-f]{8}\.json$/.test(n))
+      .map((n) => n.slice(0, -5))
+  } catch {
+    return []
   }
 }
 
@@ -136,6 +157,17 @@ function readBody(req: IncomingMessage): Promise<string | null> {
   })
 }
 
+/** 몸통을 JSON으로 읽는다. 너무 크거나, 끊기거나, JSON이 아니면 undefined */
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const body = await readBody(req)
+  if (body === null) return undefined
+  try {
+    return JSON.parse(body)
+  } catch {
+    return undefined
+  }
+}
+
 export interface AiSetup {
   /** MCP 서버 파일의 경로. Claude Code, Codex 설정에 넣는다. */
   mcpPath: string
@@ -178,13 +210,32 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
       const shape = readJson(join(dirs.decks, `${deck}.json`))
       return checkShape(shape) && shape.deck === deck && (slide === null || shape.slides.some((s) => s.id === slide))
     },
-    requestIds: (deck) => pendingRequests(dirs).filter((r) => r.deck === deck).map((r) => r.id),
+    // Claude Code가 끝날 때(요청 밖에서) 부르므로 여기서 던지면 서버가 꺼진다. 읽지 못하면 없는 것으로 친다
+    requestIds(deck) {
+      try {
+        return pendingRequests(dirs).filter((r) => r.deck === deck).map((r) => r.id)
+      } catch {
+        return []
+      }
+    },
   })
   process.once('exit', () => agent.stopAll())
 
   return async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1')
     if (!url.pathname.startsWith(AI_PREFIX)) return false
+    try {
+      await route(req, res, url)
+    } catch {
+      // 폴더를 지웠거나 쓰지 못할 때. 예전에는 이 예외가 처리되지 않아 서버가 꺼졌다.
+      // 오류 메시지에는 경로가 들어 있어서 내보내지 않는다
+      if (!res.headersSent) empty(res, 500)
+      else res.destroy()
+    }
+    return true
+  }
+
+  async function route(req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
     const origin = req.headers.origin
     if (req.headers['x-html-maker'] !== '1' || (origin !== undefined && origin !== `http://${req.headers.host}`)) {
       empty(res, 403)
@@ -194,19 +245,13 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
     const method = req.method ?? 'GET'
 
     if (method === 'GET' && path.join('/') === 'status') {
-      const shared = existsSync(dirs.decks) ? readdirSync(dirs.decks).filter((n) => /^d[0-9a-f]{8}\.json$/.test(n)).map((n) => n.slice(0, -5)) : []
+      const shared = sharedDecks(dirs)
       json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath, agent: agent.available() })
       return true
     }
 
     if (method === 'POST' && path.join('/') === 'asks') {
-      const body = await readBody(req)
-      let v: unknown
-      try {
-        v = body === null ? undefined : JSON.parse(body)
-      } catch {
-        v = undefined
-      }
+      const v = await readJsonBody(req)
       const o = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
       const keysOk = !!o && Object.keys(o).every((k) => k === 'ask' || k === 'deck' || k === 'slide')
       if (!o || !keysOk || !validAsk(o.ask, o.deck, o.slide ?? null)) {
@@ -235,17 +280,13 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
     if (path[0] === 'decks' && path.length === 2 && DECK_ID.test(path[1])) {
       const file = join(dirs.decks, `${path[1]}.json`)
       if (method === 'PUT') {
-        const body = await readBody(req)
-        let shape: unknown
-        try {
-          shape = body === null ? undefined : JSON.parse(body)
-        } catch {
-          shape = undefined
-        }
+        const shape = await readJsonBody(req)
         if (!checkShape(shape) || shape.deck !== path[1]) {
           empty(res, 400)
           return true
         }
+        // 폴더를 지웠으면 안내 파일까지 다시 만든다 (안내 파일이 그렇게 약속한다)
+        ensureShareDir(shareRoot)
         writeJsonAtomic(file, shape)
         empty(res, 204)
         return true
@@ -270,13 +311,7 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
 
     if (method === 'POST' && path[0] === 'requests' && path.length === 3 && REQUEST_ID.test(path[1]) && path[2] === 'result') {
       const file = join(dirs.requests, `${path[1]}.json`)
-      const body = await readBody(req)
-      let parsed: ReturnType<typeof parseResultBody> = null
-      try {
-        parsed = body === null ? null : parseResultBody(JSON.parse(body))
-      } catch {
-        parsed = null
-      }
+      const parsed = parseResultBody(await readJsonBody(req))
       if (!parsed || !existsSync(file)) {
         empty(res, parsed ? 404 : 400)
         return true
