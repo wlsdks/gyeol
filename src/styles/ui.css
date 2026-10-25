@@ -209,11 +209,6 @@
   font-weight: 600;
 }
 
-.field-opt {
-  color: var(--ink-3);
-  font-weight: 500;
-}
-
 .input {
   width: 100%;
   min-height: 44px;

@@ -43,7 +43,6 @@
 }
 
 @media (max-width: 860px) {
-  .wz-types,
   .wz-split,
   .wz-fields {
     grid-template-columns: 1fr;
@@ -55,10 +54,6 @@
 
   .wz-steps {
     display: none;
-  }
-
-  .wz-themes {
-    grid-template-columns: 1fr;
   }
 
   .wz-main,
