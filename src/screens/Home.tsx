@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { BLUEPRINTS } from '../deck/blueprints'
 import { knownOnly, unknownParts } from '../deck/compat'
-import { uid } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
 import type { Deck } from '../deck/types'
 import { readDeckFromHtml } from '../export/exportHtml'
 import { go, timeAgo } from '../lib/router'
 import { APP_VERSION } from '../lib/version'
 import { FitSlide, SlideCanvas } from '../slides/SlideCanvas'
+import { copyDeck } from '../store/copy'
 import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
 import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
@@ -39,8 +39,7 @@ export function Home() {
   }, [])
 
   const duplicate = async (deck: Deck) => {
-    const now = Date.now()
-    const copy: Deck = { ...structuredClone(deck), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
+    const copy = copyDeck(deck, `${deck.title} 사본`)
     if (!(await persistNow(copy))) toast.show(`사본을 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
     refresh()
   }

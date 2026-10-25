@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
-import { uid } from '../../deck/generate'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { go } from '../../lib/router'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
+import { copyDeck } from '../../store/copy'
 import { persistNow, useStorage } from '../../store/persist'
 import {
   deckSignature,
@@ -119,9 +119,8 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
   const openCopy = async (version: DeckVersion) => {
     const d = await loadVersionDeck(version.id)
     if (!d) return notify(loadFailed())
-    const now = Date.now()
     // 새 발표는 AI 공유를 끈 채로 시작한다 (공유는 발표마다 사람이 켠다)
-    const copy: Deck = { ...d, id: uid(), title: `${d.title} (${fullFmt.format(version.createdAt)})`, createdAt: now, updatedAt: now, aiShare: false }
+    const copy = copyDeck(d, `${d.title} (${fullFmt.format(version.createdAt)})`)
     // 저장하지 못한 채 가면 편집기가 '찾을 수 없는 발표'로 보인다
     if (!(await persistNow(copy))) return notify(`새 발표로 꺼내지 못했어요. ${SAVE_HELP}`)
     go({ name: 'edit', id: copy.id })

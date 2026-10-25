@@ -20,8 +20,8 @@ import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, p
 import { slideOverflow } from '../../slides/overflow'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck, useSelectedSlide } from '../../store/deckStore'
+import { copyDeck } from '../../store/copy'
 import { downloadDeckFile } from '../../store/deckFile'
-import { uid } from '../../deck/generate'
 import { loadBestDeck, persistNow, saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
 import { AUTO_INTERVAL, saveVersion, type VersionReason } from '../../store/versions'
 import { Present, presentKey } from '../Present'
@@ -80,8 +80,7 @@ function NewerDeck({ deck }: { deck: Deck }) {
   const known = knownOnly(deck)
   const toast = useToast()
   const openCopy = async () => {
-    const now = Date.now()
-    const copy: Deck = { ...structuredClone(known), id: uid(), title: `${deck.title} 사본`, createdAt: now, updatedAt: now, aiShare: false }
+    const copy = copyDeck(known, `${deck.title} 사본`)
     if (!(await persistNow(copy))) {
       toast.show(`사본을 만들지 못했어요. ${SAVE_HELP}`, undefined, 8000)
       return
