@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- 이 페이지도 결처럼 바깥 주소로 연결하지 않는다. 글꼴, 그림, 스크립트는 모두 이 폴더 안에 있다 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>결 · 내용만 채우면 발표가 돼요</title>
+  <meta name="description" content="결은 회사에서 PPT로 하던 발표를 HTML로 만드는 오픈소스 도구예요. 발표 종류와 듣는 사람, 시간을 고르면 장 구성이 잡히고, 내용만 채우면 돼요. 내 PC 안에서만 돌아요.">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="결 · 내용만 채우면 발표가 돼요">
+  <meta property="og:description" content="발표 종류와 듣는 사람, 시간을 고르면 장 구성이 잡혀요. 내 PC 안에서만 돌고, 적은 내용은 밖으로 나가지 않아요.">
+  <meta property="og:url" content="https://wlsdks.github.io/gyeol/">
+  <meta property="og:image" content="https://wlsdks.github.io/gyeol/images/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/pretendard.css" as="style">
+  <link rel="stylesheet" href="fonts/pretendard.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">본문으로 건너뛰기</a>
+
+  <header class="top">
+    <div class="wrap top-in">
+      <a class="brand" href="#top" aria-label="결, 맨 위로">
+        <svg class="logo" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-width="2.2" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6.5" fill="#191c22"/><path d="M5.75 8.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff"/><path d="M5.75 12.4q3.13-2.1 6.25 0t6.25 0" stroke="#5b86ff"/><path d="M5.75 16.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff" opacity="0.5"/></svg>
+        <span>결</span>
+      </a>
+      <nav class="nav" aria-label="페이지 안">
+        <a class="nav-link" href="#how">쓰는 법</a>
+        <a class="nav-link" href="#features">다른 점</a>
+        <a class="nav-link" href="#safety">안전</a>
+        <a class="nav-cta" href="#download">내려받기</a>
+        <a class="nav-gh" href="https://github.com/wlsdks/gyeol" aria-label="GitHub 저장소">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="wrap">
+        <div class="hero-head">
+          <h1 class="hero-title">내용만 채우면<br>발표가 돼요</h1>
+          <div class="hero-side">
+            <p class="hero-lede">발표 종류와 듣는 사람, 시간을 고르면 장 구성이 잡혀요. 칸을 채우면 간격과 글자 크기는 결이 맞춰요. 내 PC 안에서만 돌아서, 적은 내용은 어디로도 나가지 않아요.</p>
+            <div class="cta">
+              <a class="btn btn-dark" href="https://github.com/wlsdks/gyeol/releases/latest/download/gyeol-windows.zip">
+                <svg class="btn-i" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9.5m0 0 3.75-3.75M10 12.5 6.25 8.75M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                윈도우용 내려받기
+              </a>
+              <a class="btn btn-line" href="https://github.com/wlsdks/gyeol/releases/latest/download/gyeol-mac.zip">
+                <svg class="btn-i" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9.5m0 0 3.75-3.75M10 12.5 6.25 8.75M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                맥용 내려받기
+              </a>
+            </div>
+            <p class="cta-note">설치 없이 압축만 풀면 돼요. 크롬이나 엣지에서 열려요.</p>
+          </div>
+        </div>
+
+        <figure class="hero-shot">
+          <div class="window">
+            <div class="window-bar" aria-hidden="true">
+              <span class="addr"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 13.5h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>127.0.0.1:41580</span>
+            </div>
+            <picture>
+              <source media="(max-width: 640px)" srcset="images/hero-m.webp" width="1000" height="572">
+              <img src="images/hero.webp" width="2400" height="1500" alt="결의 편집 화면. 왼쪽에 장 목록, 가운데에 불량률 전과 후, 아끼는 비용, 결정 요청, 추이 차트를 컴포넌트로 놓은 장, 오른쪽에 끌어다 놓을 컴포넌트 목록이 있어요." fetchpriority="high">
+            </picture>
+          </div>
+          <figcaption class="visually-hidden">예시 발표의 회사, 사람, 숫자는 모두 지어낸 것이에요.</figcaption>
+        </figure>
+
+        <dl class="facts">
+          <div class="fact">
+            <dt>발표 종류</dt>
+            <dd class="fact-n">13<span>가지</span></dd>
+            <dd class="fact-note">보고와 제안부터 공유, 교육, 팀 소개까지</dd>
+          </div>
+          <div class="fact">
+            <dt>컴포넌트</dt>
+            <dd class="fact-n">60<span>가지</span></dd>
+            <dd class="fact-note">큰 숫자, 차트, 일정, 비교, 담당자</dd>
+          </div>
+          <div class="fact">
+            <dt>내용을 보내는 곳</dt>
+            <dd class="fact-n">0<span>곳</span></dd>
+            <dd class="fact-note">적은 글은 이 PC 밖으로 나가지 않아요</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="how-title">고르고, 채우고, 발표해요</h2>
+          <p>빈 슬라이드에서 시작하지 않아요. 묻는 말 몇 가지에 답하면 장이 만들어지고, 사람은 내용만 채우면 돼요.</p>
+        </div>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-text">
+              <span class="step-n" aria-hidden="true">1</span>
+              <h3>어떤 발표인지 골라요</h3>
+              <p>사업 제안, 주간 업무 보고, 문제·장애 보고, 지식 공유, 팀 소개까지 열세 가지를 회사에서 발표하는 자리대로 묶어 두었어요.</p>
+            </div>
+            <figure class="step-shot">
+              <img src="images/step-kind.webp" width="1538" height="763" loading="lazy" alt="새 발표 만들기 첫 화면. 제안하고 결정받기, 진행과 결과 보고하기, 알리고 나누기 세 묶음에 발표 종류가 있고, 오른쪽에 고른 종류로 만들어질 장이 보여요.">
+            </figure>
+          </li>
+          <li class="step">
+            <div class="step-text">
+              <span class="step-n" aria-hidden="true">2</span>
+              <h3>구성이 바로 잡혀요</h3>
+              <p>듣는 사람과 발표 시간을 고르면 몇 장으로, 어떤 순서로 갈지 바로 보여요. 본부장 앞이면 결론과 숫자 위주로, 팀 동료 앞이면 할 일과 진행 방법까지 넣어요.</p>
+            </div>
+            <figure class="step-shot">
+              <img src="images/step-plan.webp" width="1538" height="569" loading="lazy" alt="듣는 사람으로 팀장, 발표 시간으로 20분을 고르자 오른쪽에 ‘8장으로 만들어요’와 표지부터 요청 사항까지 장 여덟 개가 보여요.">
+            </figure>
+          </li>
+          <li class="step">
+            <div class="step-text">
+              <span class="step-n" aria-hidden="true">3</span>
+              <h3>내용만 채워요</h3>
+              <p>칸마다 무엇을 쓰면 되는지 흐린 글씨로 적혀 있어요. 글자를 눌러 바로 고치고, 남은 빈칸은 ‘다음 빈칸’으로 찾아가요. 고칠 때마다 저절로 저장돼요.</p>
+            </div>
+            <figure class="step-shot">
+              <img src="images/step-fill.webp" width="1541" height="976" loading="lazy" alt="제목과 첫 숫자를 채운 장. 아직 채우지 않은 숫자 두 개는 흐린 예시 글씨로 남아 있어요.">
+            </figure>
+          </li>
+          <li class="step">
+            <div class="step-text">
+              <span class="step-n" aria-hidden="true">4</span>
+              <h3>그대로 발표해요</h3>
+              <p>F5를 누르면 전체 화면으로 발표해요. 방향키나 클리커로 넘기고, B나 W를 누르면 화면을 잠시 가려요.</p>
+            </div>
+            <figure class="step-shot step-shot-screen">
+              <img src="images/step-present.webp" width="1280" height="719" loading="lazy" alt="전체 화면으로 띄운 표지. 왼쪽에 발표 제목, 오른쪽 짙은 면에 결정 요청과 발표자, 소속, 날짜가 있어요.">
+            </figure>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section-tint" aria-labelledby="slides-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="slides-title">다 채우면 이렇게 나와요</h2>
+          <p>숫자는 크게, 장식은 적게. 흰 바탕과 검은 바탕, 강조색 아홉 가지 가운데 고르면 모든 장이 같은 결로 맞춰져요.</p>
+        </div>
+        <ul class="slides">
+          <li><figure><img src="images/slide-bridge.webp" width="1280" height="719" loading="lazy" alt="증감 요인 장. 목표 117억 원에서 전기료 절감 9, 물류 통합 7을 더하고 원자재 값 인상 2를 빼서 실적 131억 원이 돼요."><figcaption>증감 요인</figcaption></figure></li>
+          <li><figure><img src="images/slide-trend.webp" width="1280" height="719" loading="lazy" alt="검은 바탕의 추이 장. 4월 96명에서 9월 131명까지 수강이 늘어 목표선 115를 넘었어요."><figcaption>추이</figcaption></figure></li>
+          <li><figure><img src="images/slide-progress.webp" width="1280" height="719" loading="lazy" alt="진행 현황 장. 과제 다섯 개의 진행률 막대가 있고, 승인 단계 줄이기는 2주 늦어져 붉은색으로 보여요."><figcaption>진행 현황</figcaption></figure></li>
+          <li><figure><img src="images/slide-scorecard.webp" width="1280" height="719" loading="lazy" alt="검은 바탕의 목표 대비 실적 장. 채용, 교육 시간, 근속률은 목표를 넘었고 경력 채용은 80%예요."><figcaption>목표 대비 실적</figcaption></figure></li>
+          <li><figure><img src="images/slide-process.webp" width="1280" height="719" loading="lazy" alt="단계 흐름 장. 요청 접수, 업체 고르기, 검토와 승인, 주문 넣기 네 단계가 이어져 있어요."><figcaption>단계 흐름</figcaption></figure></li>
+          <li><figure><img src="images/slide-versus.webp" width="1280" height="719" loading="lazy" alt="검은 바탕의 두 값 비교 장. 분기마다 작년과 올해 막대를 나란히 놓아 3분기부터 20% 넘게 늘어난 것을 보여요."><figcaption>두 값 비교</figcaption></figure></li>
+        </ul>
+        <p class="slides-note">모든 레이아웃과 모양은 앱 안의 ‘장 모음’에서 한눈에 볼 수 있어요.</p>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="features-title">모양 잡는 데 시간을 쓰지 않아요</h2>
+          <p>글상자를 밀고 당기지 않아요. 배치와 간격, 글자 크기는 결이 정하고, 사람은 고르기만 해요.</p>
+        </div>
+
+        <article class="feature feature-wide">
+          <div class="feature-text">
+            <h3>컴포넌트를 놓으면 알아서 맞춰져요</h3>
+            <p>큰 숫자, 전과 후, 차트, 일정, 비교 같은 컴포넌트를 장 위로 끌어다 놓으면 12칸에 맞춰 붙어요. 경계를 끌어 너비를 바꾸면 간격과 글자 크기가 따라 바뀌어요.</p>
+            <p>칸이 좁아지면 글자를 줄이는 대신 여러 단으로 흘리거나 쌓아서, 어느 크기에서도 읽기 좋게 맞춰요.</p>
+          </div>
+          <figure class="grid-shot">
+            <div class="grid-frame">
+              <img src="images/compose.webp" width="1280" height="719" loading="lazy" alt="컴포넌트로 꾸민 장. 위 줄에 불량률 전과 후, 한 해 아끼는 비용, 결정 요청이, 아래 줄에 추이 차트와 다음 단계 목록이 12칸에 맞춰 놓여 있어요.">
+              <div class="grid-cols" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <figcaption>컴포넌트는 12칸 격자의 정해진 자리에만 들어가요.</figcaption>
+          </figure>
+        </article>
+
+        <div class="feature-pair">
+          <article class="feature">
+            <div class="panel panel-demo">
+              <div class="demo" data-demo>
+                <div class="mini" role="img" aria-label="발표할 때 막대가 차례로 자라는 막대 비교 장. 1분기 96, 2분기 104, 3분기 131, 목표 117이에요.">
+                  <p class="mini-title">3분기 생산이 목표보다 12% 많았어요</p>
+                  <p class="mini-lead">2공장, 출하 검사 통과 기준</p>
+                  <p class="mini-unit">단위: 만 개</p>
+                  <div class="mini-rows">
+                    <div class="mini-row"><span class="mini-name">1분기</span><span class="mini-track"><span class="mini-fill"></span></span><span class="mini-v" data-to="96">96</span></div>
+                    <div class="mini-row"><span class="mini-name">2분기</span><span class="mini-track"><span class="mini-fill"></span></span><span class="mini-v" data-to="104">104</span></div>
+                    <div class="mini-row is-hl"><span class="mini-name">3분기<small>새 설비 2대 반영</small></span><span class="mini-track"><span class="mini-fill"></span></span><span class="mini-v" data-to="131">131</span></div>
+                    <div class="mini-row"><span class="mini-name">목표</span><span class="mini-track"><span class="mini-fill"></span></span><span class="mini-v" data-to="117">117</span></div>
+                  </div>
+                </div>
+              </div>
+              <button class="replay" type="button" data-replay hidden>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg>
+                다시 보기
+              </button>
+            </div>
+            <h3>발표할 때 움직여요</h3>
+            <p>숫자는 굴러가며 맞춰지고, 막대는 차례로 자라요. 움직임 정도를 없음, 차분하게, 생동감 가운데 고르면 장마다 짜인 순서대로 나와요. 같은 컴포넌트가 다음 장에도 있으면 새 자리로 미끄러져 가요.</p>
+          </article>
+
+          <article class="feature">
+            <div class="panel panel-dark">
+              <img src="images/presenter.webp" width="1440" height="900" loading="lazy" alt="발표자 화면. 지금 장, 다음 장, 큰 글씨의 발표자 노트, 지난 시간 6분 44초와 남은 시간, 아래쪽에 모든 장의 작은 그림이 있어요.">
+            </div>
+            <h3>발표자 화면이 따로 떠요</h3>
+            <p>큰 화면에는 슬라이드만, 노트북에는 지금 장과 다음 장, 노트, 지난 시간이 보여요. 따로 설치하지 않아도 크롬이나 엣지가 두 창을 화면마다 띄우고, 어느 창에서 넘겨도 같이 넘어가요.</p>
+          </article>
+        </div>
+
+        <div class="feature-pair">
+          <article class="feature">
+            <div class="panel panel-menu">
+            <ul class="menu" aria-label="내보내기 메뉴">
+              <li><strong>발표 파일 (HTML)</strong><span>파일 하나로 열리고, 인터넷이 없어도 글꼴까지 그대로예요. 발표자 노트는 들어가지 않아요.</span></li>
+              <li><strong>PDF</strong><span>인쇄 창에서 ‘PDF로 저장’을 고르면 장마다 한 쪽으로 나와요.</span></li>
+              <li><strong>PPT (그림)</strong><span>장마다 그림 한 장으로 들어가고, 발표자 노트는 PowerPoint의 노트 칸에 들어가요.</span></li>
+            </ul>
+            </div>
+            <h3>파일로 보내요</h3>
+            <p>미리 보내 두거나 다른 분이 다시 볼 수 있게 파일로 만들어요. 받는 분은 결이 없어도 열 수 있어요.</p>
+          </article>
+
+          <article class="feature">
+            <div class="panel panel-menu">
+            <ul class="menu menu-versions" aria-label="버전 기록">
+              <li><strong>고치는 중</strong><span>오늘 10:20</span></li>
+              <li><strong>발표하기 전</strong><span>오늘 09:58</span></li>
+              <li class="is-named"><strong>본부장 보고본</strong><span>10월 23일 15:12</span></li>
+              <li><strong>열었을 때</strong><span>10월 23일 14:31</span></li>
+            </ul>
+            </div>
+            <h3>버전이 남아요</h3>
+            <p>고칠 때마다 저절로 저장되고, 고치는 중과 발표하기 전에 버전이 남아요. ‘본부장 보고본’처럼 이름을 붙여 두면 언제든 그때로 돌아가요.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="safety" id="safety" aria-labelledby="safety-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="safety-title">적은 내용은 이 PC 밖으로<br class="br-wide"> 나가지 않아요</h2>
+          <p>보안 자료로 발표를 만드는 자리를 생각하고 만들었어요.</p>
+        </div>
+
+        <ul class="safe-list">
+          <li>
+            <h3>이 PC에서만 열려요</h3>
+            <p>결은 이 PC의 127.0.0.1에서만 돌아요. 같은 네트워크의 다른 PC에서는 들어올 수 없어요.</p>
+          </li>
+          <li>
+            <h3>바깥으로 연결하지 않아요</h3>
+            <p>화면과 내보낸 파일 모두 바깥 주소로 연결하지 못하게 막아 두었어요. 글꼴과 이미지도 안에 들어 있어서 인터넷이 없어도 돼요.</p>
+          </li>
+          <li>
+            <h3>저장은 두 곳뿐이에요</h3>
+            <p>이 브라우저 안과 직접 고른 보관 폴더예요. 어느 서버에도 올리지 않아요.</p>
+          </li>
+        </ul>
+
+        <div class="ai">
+          <div class="ai-text">
+            <h3>AI는 모양만 봐요</h3>
+            <p>Claude Code나 Codex에게 장 구성과 모양을 다듬어 달라고 할 수 있어요. 발표마다 직접 켜야 보이고, AI는 제안만 해요. 바뀌는 모습을 미리 보고 ‘적용하기’를 눌러야 바뀌고, 적용 전 상태는 버전으로 남아요.</p>
+          </div>
+          <div class="ai-lists">
+            <div>
+              <h4>AI에게 보이는 것</h4>
+              <ul class="ai-yes">
+                <li>발표 종류와 시간</li>
+                <li>장 순서와 레이아웃</li>
+                <li>칸이 비었는지</li>
+                <li>테마와 강조색</li>
+              </ul>
+            </div>
+            <div>
+              <h4>보이지 않는 것</h4>
+              <ul class="ai-no">
+                <li>제목과 적은 글</li>
+                <li>숫자와 이미지</li>
+                <li>발표자 노트</li>
+                <li>소속, 이름, 연락처</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="oss">
+          <h3>MIT 라이선스의 오픈소스예요</h3>
+          <p>소스는 모두 GitHub에 공개되어 있어 누구나 확인할 수 있어요. 함께 쓰는 패키지와 글꼴도 <span class="nw">MIT</span>, <span class="nw">Apache-2.0</span>, <span class="nw">BSD</span>, <span class="nw">OFL</span>처럼 회사에서 써도 되는 라이선스예요.</p>
+          <p class="oss-links">
+            <a href="https://github.com/wlsdks/gyeol/blob/main/LICENSE">라이선스 보기</a>
+            <a href="https://github.com/wlsdks/gyeol/blob/main/docs/OPEN-SOURCE.md">쓰는 오픈소스 목록</a>
+            <a href="https://github.com/wlsdks/gyeol">소스 코드</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download" aria-labelledby="download-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="download-title">내려받기</h2>
+          <p>설치할 것이 없어요. 실행에 필요한 것이 모두 들어 있어서, 크롬이나 엣지만 있으면 돼요.</p>
+        </div>
+
+        <div class="os">
+          <article class="os-col" aria-labelledby="os-win">
+            <div class="os-head">
+              <h3 id="os-win">윈도우</h3>
+              <a class="btn btn-dark" href="https://github.com/wlsdks/gyeol/releases/latest/download/gyeol-windows.zip">
+                <svg class="btn-i" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9.5m0 0 3.75-3.75M10 12.5 6.25 8.75M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                윈도우용 내려받기
+              </a>
+            </div>
+            <ol class="howto">
+              <li>받은 파일을 마우스 오른쪽 버튼으로 눌러 <b>압축 풀기</b>를 해요. 압축 파일 안에서 바로 열면 켜지지 않아요.</li>
+              <li>푼 폴더에서 <span class="file">결 시작.bat</span>을 두 번 눌러요.</li>
+              <li>크롬이나 엣지에 <span class="file">127.0.0.1:41580</span>이 열려요. 작업 표시줄에 내려간 서버 창을 닫으면 꺼져요.</li>
+            </ol>
+            <div class="first">
+              <h4>처음 한 번만</h4>
+              <p>‘Windows의 PC 보호’ 창이 뜨면 <b>추가 정보</b>를 누르고 <b>실행</b>을 눌러요. 인터넷이나 메신저로 받은 파일에 붙는 표시라서 그래요.</p>
+            </div>
+          </article>
+
+          <article class="os-col" aria-labelledby="os-mac">
+            <div class="os-head">
+              <h3 id="os-mac">맥</h3>
+              <a class="btn btn-dark" href="https://github.com/wlsdks/gyeol/releases/latest/download/gyeol-mac.zip">
+                <svg class="btn-i" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9.5m0 0 3.75-3.75M10 12.5 6.25 8.75M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                맥용 내려받기
+              </a>
+            </div>
+            <ol class="howto">
+              <li>받은 파일을 두 번 눌러 압축을 풀어요.</li>
+              <li>푼 폴더에서 <span class="file">결 시작.command</span>를 두 번 눌러요.</li>
+              <li>크롬이나 엣지에 <span class="file">127.0.0.1:41580</span>이 열려요. 함께 뜬 터미널 창을 닫으면 꺼져요.</li>
+            </ol>
+            <div class="first">
+              <h4>처음 한 번만</h4>
+              <p>서명하지 않은 앱이라 처음에는 macOS가 열지 않아요. <b>시스템 설정 › 개인정보 보호 및 보안</b>에서 아래쪽의 <b>그래도 열기</b>를 누르고, 한 번 더 확인해요.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="needs" aria-labelledby="needs-title">
+          <h3 id="needs-title">필요한 것</h3>
+          <dl>
+            <div><dt>컴퓨터</dt><dd>윈도우 PC나 맥</dd></div>
+            <div><dt>브라우저</dt><dd>크롬이나 엣지. 다른 브라우저는 지원하지 않아요.</dd></div>
+            <div><dt>설치</dt><dd>필요 없어요. 관리자 권한도 없어도 돼요.</dd></div>
+            <div><dt>인터넷</dt><dd>받을 때만 있으면 돼요.</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div class="foot-brand">
+        <svg class="logo" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-width="2.2" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6.5" fill="#191c22"/><path d="M5.75 8.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff"/><path d="M5.75 12.4q3.13-2.1 6.25 0t6.25 0" stroke="#5b86ff"/><path d="M5.75 16.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff" opacity="0.5"/></svg>
+        <p><b>결</b> 회사에서 하는 발표를 HTML로 만드는 도구</p>
+      </div>
+      <nav class="foot-links" aria-label="더 보기">
+        <a href="https://github.com/wlsdks/gyeol">GitHub</a>
+        <a href="https://github.com/wlsdks/gyeol/blob/main/LICENSE">MIT 라이선스</a>
+        <a href="https://github.com/wlsdks/gyeol/blob/main/docs/OPEN-SOURCE.md">쓰는 오픈소스</a>
+        <a href="https://github.com/wlsdks/gyeol/issues">문제 알리기</a>
+      </nav>
+      <p class="foot-small">예시 화면의 회사, 사람, 숫자는 모두 지어낸 것이에요. 글꼴은 <a href="fonts/LICENSE.txt">Pretendard (SIL OFL 1.1)</a>를 써요.</p>
+    </div>
+  </footer>
+</body>
+</html>
