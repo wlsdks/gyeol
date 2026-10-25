@@ -1,0 +1,681 @@
+// 부품 장에만 있는 부품의 정의와 예시 내용
+
+import { SAMPLE_IMAGE } from '../sampleImage'
+import type { NativeBlockType } from '../types'
+import type { BlockSpec } from './catalog'
+
+export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
+  message: {
+    name: '핵심 한 줄',
+    description: '듣는 분이 기억할 한 문장을 크게',
+    motion: '낱말마다 차례로 올라와요',
+    fields: [
+      { key: 'text', label: '핵심 문장', hint: '듣는 분이 기억할 한 문장', multiline: true },
+      { key: 'sub', label: '덧붙이는 말', hint: '뒷받침하는 한 줄', optional: true, multiline: true },
+    ],
+    minSpan: 6,
+    prefSpan: 12,
+    sample: { fields: { text: '주간 보고를 한 양식으로 맞추면 회의가 20분 줄어요', sub: '기획팀 시범 3개월 결과 기준' } },
+  },
+  text: {
+    name: '제목과 글',
+    description: '소제목 아래 두세 문장',
+    motion: '소제목, 글 차례로 올라와요',
+    fields: [
+      { key: 'label', label: '머리말', hint: '작은 머리말 (예: 대상)', optional: true },
+      { key: 'heading', label: '소제목', hint: '요점 한 줄', optional: true, multiline: true },
+      { key: 'body', label: '글', hint: '설명을 두세 문장으로', multiline: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    sample: { fields: { heading: '배포 시간을 줄여요', body: '사람이 손으로 하던 배포 전 점검을 자동 시험이 먼저 걸러요. 개발자는 실패한 항목만 다시 봐요.' } },
+  },
+  bullets: {
+    name: '점 목록',
+    description: '요점을 줄마다 하나씩',
+    motion: '줄마다 차례로 들어와요',
+    fields: [{ key: 'heading', label: '소제목', hint: '목록의 요점 한 줄', optional: true }],
+    items: {
+      label: '줄',
+      min: 1,
+      max: 6,
+      default: 3,
+      fields: [
+        { key: 'title', label: '요점', hint: '요점 한 줄', multiline: true },
+        { key: 'body', label: '설명', hint: '덧붙이는 설명', optional: true, multiline: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 6,
+    sample: {
+      fields: { heading: '먼저 바꿀 것' },
+      items: [{ title: '주문이 많은 3개 품목부터' }, { title: '단가 기록을 한곳에 모아요' }, { title: '분기마다 효과를 다시 봐요' }],
+    },
+  },
+  quote: {
+    name: '인용',
+    description: '동료나 현장에서 들은 한마디',
+    motion: '따옴표가 먼저, 글이 뒤따라요',
+    fields: [
+      { key: 'quote', label: '인용할 말', hint: '그대로 옮길 한마디', multiline: true },
+      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)', optional: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    sample: { fields: { quote: '신청이 한곳에 모이니 교육 일정 잡기가 훨씬 편해졌어요', by: '시범 부서 교육 담당' } },
+  },
+  callout: {
+    name: '강조 상자',
+    description: '결정 요청이나 꼭 알아야 할 것',
+    motion: '면이 펼쳐지고 글이 올라와요',
+    fields: [
+      { key: 'label', label: '머리말', hint: '예: 결정 요청, 주의할 점', optional: true },
+      { key: 'text', label: '강조할 내용', hint: '꼭 전할 내용을 한두 문장으로', multiline: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    look: 'bold',
+    sample: { fields: { label: '결정 요청', text: '신입 교육 담당 2명을 11월부터 지원해 주세요' } },
+  },
+  number: {
+    name: '큰 숫자',
+    description: '숫자 하나를 크게',
+    motion: '숫자가 자리마다 굴러가 맞춰져요',
+    fields: [
+      { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지' },
+      { key: 'value', label: '숫자', hint: '3.6억 원' },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 3년이면 10.8억 원)', optional: true, multiline: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { value: '3.6억 원', label: '줄어드는 전기료', note: '3년이면 10.8억 원' } },
+  },
+  delta: {
+    name: '전과 후',
+    description: '바뀌기 전과 뒤의 숫자, 얼마나 달라지는지',
+    motion: '전에서 후로, 차이가 튀어나와요',
+    fields: [
+      { key: 'label', label: '무엇이 바뀌는지', hint: '무엇이 바뀌는지 (예: 이직률)' },
+      { key: 'before', label: '전', hint: '8.4%' },
+      { key: 'after', label: '후', hint: '5.1%' },
+      { key: 'note', label: '덧붙임', hint: '기준 (예: 도입 1년 뒤)', optional: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    sample: { fields: { label: '이직률', before: '8.4%', after: '5.1%', note: '새 제도 도입 1년 결과' } },
+  },
+  goal: {
+    name: '목표 대비',
+    description: '목표에 얼마나 왔는지 막대로',
+    motion: '막대가 목표를 향해 자라요',
+    fields: [
+      { key: 'label', label: '무엇의 목표', hint: '무엇의 목표인지 (예: 연간 절감)' },
+      { key: 'value', label: '지금', hint: '7.2' },
+      { key: 'target', label: '목표', hint: '10' },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명', optional: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    sample: { fields: { label: '연간 절감', value: '7.2', target: '10', unit: '억 원', note: '4분기 과제 3건이 남았어요' } },
+  },
+  ring: {
+    name: '비율 원',
+    description: '비율 하나를 원으로 크게 (달성률, 만족도)',
+    motion: '원이 차오르며 숫자가 올라가요',
+    variants: [
+      { id: 'base', name: '원' },
+      { id: 'gauge', name: '반원 게이지' },
+    ],
+    fields: [
+      { key: 'label', label: '무엇의 비율', hint: '무엇의 비율인지 (예: 첫 상담 해결률)' },
+      { key: 'value', label: '비율', hint: '72%' },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 지난해 41%)', optional: true, multiline: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { label: '상담원 한 번에 끝낸 문의', value: '72%', note: '지난해에는 41%였어요' } },
+  },
+  ratio: {
+    name: '몇 중 몇',
+    description: '전체 가운데 몇인지 점으로 (10곳 중 7곳)',
+    motion: '점이 하나씩 채워져요',
+    fields: [
+      { key: 'label', label: '무엇을 센 것', hint: '무엇을 센 것인지 (예: 새 점검표를 쓰는 공장)' },
+      { key: 'value', label: '몇', hint: '7' },
+      { key: 'total', label: '전체', hint: '10' },
+      { key: 'unit', label: '단위', hint: '곳', optional: true },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명', optional: true, multiline: true },
+    ],
+    minSpan: 4,
+    prefSpan: 6,
+    sample: { fields: { label: '점검표를 새로 바꾼 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 바꿔요' } },
+  },
+  spark: {
+    name: '숫자와 흐름',
+    description: '지금 숫자와 그동안의 흐름을 작은 선으로',
+    motion: '선이 그려지고 숫자가 올라가요',
+    fields: [
+      { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지 (예: 월 오류율)' },
+      { key: 'value', label: '지금 숫자', hint: '1.1%' },
+      { key: 'series', label: '흐름', hint: '3.2, 3.0, 2.1, 1.6, 1.1' },
+      { key: 'note', label: '덧붙임', hint: '기간이나 기준 (예: 5월부터 9월까지)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { label: '월 오류율', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
+  },
+  facts: {
+    name: '개요',
+    description: '기간, 예산, 담당처럼 항목과 내용을 짝지어',
+    motion: '줄마다 선이 그어지며 들어와요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 과제 개요', optional: true }],
+    items: {
+      label: '줄',
+      min: 1,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목', hints: ['기간', '예산', '대상', '담당', '효과', '다음 보고'] },
+        { key: 'body', label: '내용', hint: '내용 한 줄', multiline: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 6,
+    sample: {
+      fields: { heading: '이전 개요' },
+      items: [
+        { title: '기간', body: '11월부터 1월까지, 3개월' },
+        { title: '예산', body: '2.4억 원 (공사 1.6억, 이사 0.8억)' },
+        { title: '대상', body: '본사 사무실 3개 층' },
+        { title: '담당', body: '총무팀 2명, 정보보안팀 1명' },
+      ],
+    },
+  },
+  risks: {
+    name: '걱정과 대책',
+    description: '걱정할 만한 점과 막는 방법을 짝지어',
+    motion: '걱정 다음에 대책이 따라 들어와요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 걱정되는 점과 대책', optional: true }],
+    items: {
+      label: '걱정',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '걱정되는 점', hint: '걱정되는 점', multiline: true },
+        { key: 'body', label: '대책', hint: '이렇게 막아요', multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: {},
+      items: [
+        { title: '옮기는 동안 시스템이 멈춰요', body: '주말 이틀씩 나눠 옮겨 평일 업무는 그대로' },
+        { title: '옮긴 자료 일부가 빠질 수 있어요', body: '첫 달은 예전 시스템과 같이 돌려 빠진 것을 맞춰 봐요' },
+        { title: '직원들이 새 화면을 낯설어해요', body: '부서마다 담당 1명을 먼저 가르쳐 옆에서 돕게 해요' },
+      ],
+    },
+  },
+  swot: {
+    name: '강점과 약점',
+    description: '강점, 약점, 기회, 위협을 네 칸에 (SWOT)',
+    motion: '네 칸이 차례로 나타나요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 새 제도의 강점과 약점', optional: true }],
+    items: {
+      label: '칸',
+      min: 4,
+      max: 4,
+      default: 4,
+      fields: [
+        { key: 'title', label: '칸 이름', hint: '칸 이름', hints: ['강점', '약점', '기회', '위협'] },
+        {
+          key: 'body',
+          label: '내용',
+          hint: '한두 줄로',
+          hints: ['우리가 잘하는 것', '우리가 모자란 것', '밖에서 오는 좋은 일', '밖에서 오는 걱정거리'],
+          multiline: true,
+        },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: { heading: '새 근무제의 강점과 약점' },
+      items: [
+        { title: '강점', body: '출퇴근 시간을 고를 수 있는 곳이 드물어요' },
+        { title: '약점', body: '팀끼리 회의 시간을 맞추기가 더 어려워요' },
+        { title: '기회', body: '채용 공고에 내세우면 지원자가 늘 수 있어요' },
+        { title: '위협', body: '경쟁사도 같은 제도를 낼 수 있어요' },
+      ],
+    },
+  },
+  faq: {
+    name: '예상 질문',
+    description: '받을 만한 질문과 짧은 답을 미리',
+    motion: '질문이 먼저, 답이 뒤따라요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 예상 질문', optional: true }],
+    items: {
+      label: '질문',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '질문', hint: '받을 만한 질문', hints: ['왜 지금 해야 하나요?', '비용은 언제 되찾나요?', '다른 부서에도 쓸 수 있나요?', '안 하면 어떻게 되나요?'], multiline: true },
+        { key: 'body', label: '답', hint: '짧은 답', multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: {},
+      items: [
+        { title: '왜 지금 해야 하나요?', body: '1분기에 외부 감사가 있어서 그 전에 증빙 기록을 갖춰야 해요' },
+        { title: '비용은 언제 되찾나요?', body: '정산하는 시간이 줄어 14개월이면 도입비를 되찾아요' },
+        { title: '다른 부서에도 쓸 수 있나요?', body: '같은 시스템을 써서 설정만 바꾸면 돼요' },
+      ],
+    },
+  },
+  checks: {
+    name: '준비 상황',
+    description: '할 일마다 완료, 진행 중, 지연, 예정을 표시',
+    motion: '줄마다 표시가 찍혀요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 준비 상황', optional: true }],
+    items: {
+      label: '할 일',
+      min: 1,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['예산 승인', '업체 고르기', '참석자 초대', '자료 준비', '효과 점검', '결과 보고'] },
+        { key: 'body', label: '상태', hint: '완료, 진행 중, 지연, 예정', hints: ['완료', '완료', '진행 중', '예정', '예정', '예정'], optional: true },
+        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 6,
+    sample: {
+      fields: { heading: '준비 상황' },
+      items: [
+        { title: '예산 승인', body: '완료', meta: '경영기획팀, 10월' },
+        { title: '행사장 업체 고르기', body: '완료', meta: '총무팀, 10월' },
+        { title: '참석자 초대하기', body: '진행 중', meta: '마케팅팀, 11월' },
+        { title: '자료 준비', body: '1주 지연', meta: '기획팀, 11월' },
+      ],
+    },
+  },
+  gantt: {
+    name: '추진 일정',
+    description: '할 일마다 언제부터 언제까지 하는지 막대로 (간트 차트)',
+    motion: '막대가 차례로 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 추진 일정', optional: true },
+      // 안내 문구가 편집할 때의 예시 칸이기도 해서, 설명 대신 쉼표로 나눈 꼴을 보여 준다 ('10월 1주, 10월 2주'처럼 띄어 쓴 이름도 되게)
+      { key: 'cols', label: '기간 칸', hint: '11월, 12월, 1월, 2월, 3월' },
+      { key: 'now', label: '지금', hint: '지금이 어느 칸인지 (예: 12월)', optional: true },
+    ],
+    items: {
+      label: '할 일',
+      // 할 일이 하나면 일정표가 아니라 한 줄 글이다
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['업체 고르기', '화면 만들기', '직원 교육', '효과 점검', '결과 보고', '넓히기'] },
+        { key: 'body', label: '기간', hint: '예: 12월~2월', hints: ['11월', '11월~12월', '1월', '2월~3월', '3월', '3월'] },
+        { key: 'meta', label: '담당', hint: '담당', optional: true },
+      ],
+    },
+    minSpan: 12,
+    prefSpan: 12,
+    sample: {
+      fields: { heading: '추진 일정', cols: '11월 12월 1월 2월 3월', now: '12월' },
+      items: [
+        { title: '개발 업체 고르기', body: '11월', meta: '구매팀' },
+        { title: '새 화면 만들기', body: '11월~12월', meta: '정보기술팀' },
+        { title: '직원 교육', body: '1월', meta: '인사팀' },
+        { title: '효과 점검과 보고', body: '2월~3월', meta: '경영기획팀' },
+      ],
+    },
+  },
+  people: {
+    name: '맡은 사람',
+    description: '누가 무엇을 맡는지 (추진 체계)',
+    motion: '사람마다 차례로 나타나요',
+    variants: [
+      { id: 'row', name: '나란히' },
+      { id: 'list', name: '목록' },
+      { id: 'tree', name: '체계도' },
+    ],
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 추진 체계', optional: true }],
+    items: {
+      label: '사람',
+      min: 1,
+      max: 4,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '이름과 직급' },
+        { key: 'meta', label: '역할', hint: '역할', hints: ['과제 총괄', '챗봇 설정', '상담 품질', '예산 관리'] },
+        { key: 'body', label: '맡은 일', hint: '맡은 일 한 줄', optional: true, multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: {},
+      items: [
+        { title: '한도윤 책임', meta: '과제 총괄', body: '일정과 예산, 윗분 보고' },
+        { title: '서지우 선임', meta: '챗봇 설정', body: '질문마다 챗봇 답을 넣고 시험' },
+        { title: '문하린 선임', meta: '상담 품질', body: '상담원 답과 결과 맞춰 보기' },
+      ],
+    },
+  },
+  image: {
+    name: '이미지',
+    description: '화면 캡처, 현장 사진, 도면',
+    motion: '걷히듯 나타나요',
+    variants: [
+      { id: 'cover', name: '꽉 채우기' },
+      { id: 'contain', name: '전체 보이기' },
+    ],
+    fields: [
+      { key: 'image', label: '이미지', hint: '보여 줄 이미지', image: true },
+      { key: 'caption', label: '설명', hint: '이미지 아래 한 줄', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 6,
+    // 예시는 화면 캡처라 전체 보이기로 (넣을 때도 화면 캡처는 전체 보이기로 고른다)
+    sample: { fields: { image: SAMPLE_IMAGE, caption: '새 분류 화면의 첫 화면' }, variant: 'contain' },
+  },
+  rating: {
+    name: '평가표',
+    description: '기준마다 여러 안을 좋음, 보통, 나쁨으로 견주어 (대안 평가)',
+    motion: '기준마다 표시가 차례로 찍혀요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 세 안 견주기', optional: true },
+      { key: 'opts', label: '안', hint: 'A안 B안 C안' },
+      { key: 'pick', label: '추천', hint: '추천하는 안 (예: B안)', optional: true },
+    ],
+    items: {
+      label: '기준',
+      // 기준이 하나면 표가 아니라 한 줄 글이다
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '기준', hint: '견주는 기준', hints: ['첫해 비용', '시간 줄이는 효과', '도입 기간', '익히는 부담', '다른 부서로 넓히기', '업체 지원'] },
+        {
+          key: 'body',
+          label: '평가',
+          hint: '안마다 좋음, 보통, 나쁨 (○ △ ×도 돼요)',
+          hints: ['좋음 보통 나쁨', '나쁨 좋음 좋음', '좋음 좋음 나쁨', '보통 좋음 나쁨', '나쁨 좋음 보통', '보통 보통 좋음'],
+        },
+        { key: 'meta', label: '설명', hint: '기준 설명 한 줄', optional: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '세 안 견주기', opts: 'A안 B안 C안', pick: 'B안' },
+      items: [
+        { title: '첫해 비용', body: '좋음 보통 나쁨', meta: '1.9억, 2.4억, 3.1억 원' },
+        { title: '시간 줄이는 효과', body: '나쁨 좋음 좋음' },
+        { title: '도입 기간', body: '좋음 좋음 나쁨', meta: '2개월, 3개월, 6개월' },
+        { title: '다른 부서로 넓히기', body: '나쁨 좋음 보통' },
+      ],
+    },
+  },
+  market: {
+    name: '시장 규모',
+    description: '전체 시장, 공략할 시장, 목표를 겹친 원으로 (TAM, SAM, SOM)',
+    motion: '큰 원부터 차례로 겹쳐져요',
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 시장 규모', optional: true }],
+    items: {
+      label: '단계',
+      min: 2,
+      max: 3,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '시장 이름', hints: ['전체 시장', '공략할 시장', '3년 안 목표'] },
+        { key: 'value', label: '규모', hint: '규모 (예: 2.4조 원)', hints: ['2.4조 원', '3,200억 원', '180억 원'] },
+        { key: 'body', label: '설명', hint: '어떤 시장인지 한 줄', optional: true, multiline: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '시장 규모' },
+      items: [
+        { title: '전체 시장', value: '2.4조 원', body: '국내 기업 직무 교육 전체' },
+        { title: '공략할 시장', value: '3,200억 원', body: '직원 300명이 넘는 중견기업' },
+        { title: '3년 안 목표', value: '180억 원', body: '공략할 시장의 5.6%' },
+      ],
+    },
+  },
+  pareto: {
+    name: '원인 순위',
+    description: '많은 것부터 막대로, 누적 비율을 선으로 (파레토)',
+    motion: '막대가 차례로 자라고, 누적 비율 선이 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 9월 불량 원인', optional: true },
+      { key: 'unit', label: '단위', hint: '건', optional: true },
+    ],
+    items: {
+      label: '원인',
+      // 둘이면 순위가 아니라 비교다
+      min: 3,
+      max: 8,
+      default: 5,
+      fields: [
+        { key: 'title', label: '원인', hint: '많은 것부터', hints: ['납땜 불량', '부품 누락', '이물질', '치수 오차', '기타', '포장 파손', '라벨 오류', '도장 불량'] },
+        { key: 'value', label: '수', hint: '412', hints: ['412', '236', '118', '64', '40', '28', '16', '9'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '9월 불량 원인 (870건)', unit: '건' },
+      items: [
+        { title: '납땜 불량', value: '412' },
+        { title: '부품 누락', value: '236' },
+        { title: '이물질', value: '118' },
+        { title: '치수 오차', value: '64' },
+        { title: '기타', value: '40' },
+      ],
+    },
+  },
+  attain: {
+    name: '기간별 달성',
+    description: '기간마다 실적 막대와 목표 표시. 못 미친 기간이 바로 보여요',
+    motion: '막대가 차례로 자라고, 목표 표시가 그어져요',
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 월별 생산 달성', optional: true },
+      { key: 'unit', label: '단위', hint: '만 개', optional: true },
+    ],
+    items: {
+      label: '기간',
+      min: 2,
+      max: 8,
+      default: 6,
+      fields: [
+        { key: 'title', label: '기간', hint: '기간', hints: ['4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월'] },
+        { key: 'value', label: '실적', hint: '48', hints: ['42', '45', '39', '48', '51', '49', '53', '55'] },
+        { key: 'meta', label: '목표', hint: '46', hints: ['40', '44', '46', '46', '50', '52', '52', '54'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '월별 생산 달성', unit: '만 개' },
+      items: [
+        { title: '4월', value: '42', meta: '40' },
+        { title: '5월', value: '45', meta: '44' },
+        { title: '6월', value: '39', meta: '46' },
+        { title: '7월', value: '48', meta: '46' },
+        { title: '8월', value: '51', meta: '50' },
+        { title: '9월', value: '49', meta: '52' },
+      ],
+    },
+  },
+  diverge: {
+    name: '항목별 증감',
+    description: '늘어난 것은 오른쪽, 줄어든 것은 왼쪽으로. 0을 가운데 두고 견줘요',
+    motion: '막대가 가운데 선에서 양쪽으로 뻗어요',
+    variants: [
+      { id: 'up', name: '늘어난 쪽 강조' },
+      { id: 'down', name: '줄어든 쪽 강조' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 부서별 야근 증감', optional: true },
+      { key: 'basis', label: '기준', hint: '예: 작년 같은 분기 대비', optional: true },
+    ],
+    items: {
+      label: '항목',
+      min: 2,
+      max: 8,
+      default: 5,
+      fields: [
+        { key: 'title', label: '항목', hint: '항목', hints: ['생산', '영업', '연구', '지원', '품질', '구매', '재무', '인사'] },
+        { key: 'value', label: '증감', hint: '+12% 또는 −3%', hints: ['+12%', '+8%', '−3%', '+5%', '−9%', '+2%', '−1%', '+4%'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '부서별 야근 증감', basis: '작년 같은 분기 대비' },
+      items: [
+        { title: '생산', value: '+12%' },
+        { title: '영업', value: '+8%' },
+        { title: '연구', value: '−3%' },
+        { title: '지원', value: '+5%' },
+        { title: '품질', value: '−9%' },
+      ],
+    },
+  },
+  stack: {
+    name: '쌓은 막대',
+    description: '기간마다 합계와 그 구성을 막대 하나에 쌓아요',
+    motion: '막대가 아래부터 한 칸씩 쌓여요',
+    variants: [
+      { id: 'sum', name: '값 그대로' },
+      { id: 'pct', name: '100%로' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 분기별 비용 구성', optional: true },
+      { key: 'parts', label: '나눈 것', hint: '인건비, 시설 임차료, 운영비' },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '기간',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '기간', hint: '기간', hints: ['1분기', '2분기', '3분기', '4분기', '내년 1분기', '내년 2분기'] },
+        { key: 'value', label: '값', hint: '나눈 것마다 쉼표로 (예: 12, 6, 3)', hints: ['12, 6, 3', '14, 7, 3', '15, 9, 4', '18, 11, 5', '20, 12, 6', '22, 14, 6'] },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '분기별 비용 구성', parts: '인건비, 시설 임차료, 운영비', unit: '억 원' },
+      items: [
+        { title: '1분기', value: '12, 6, 3' },
+        { title: '2분기', value: '14, 7, 3' },
+        { title: '3분기', value: '15, 9, 4' },
+        { title: '4분기', value: '18, 11, 5' },
+      ],
+    },
+  },
+  heat: {
+    name: '색 표',
+    description: '지점×월처럼 줄과 칸으로 놓인 값을 색의 진하기로. 가장 높은 칸과 낮은 칸을 짚어 줘요 (히트맵)',
+    motion: '칸이 왼쪽 위부터 차례로 물들고, 가장 높은 칸과 낮은 칸이 짚여요',
+    variants: [
+      { id: 'all', name: '표 전체에서 견주기' },
+      { id: 'rows', name: '줄마다 견주기' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 센터별 월 출고', optional: true },
+      { key: 'cols', label: '칸 이름', hint: '4월 5월 6월 7월 8월 9월' },
+      { key: 'unit', label: '단위', hint: '천 건', optional: true },
+    ],
+    items: {
+      label: '줄',
+      // 한 줄이면 색으로 견줄 이웃이 없다
+      min: 2,
+      max: 8,
+      default: 4,
+      fields: [
+        { key: 'title', label: '이름', hint: '줄 이름', hints: ['서울', '경기', '부산', '대구', '광주', '대전', '울산', '강원'] },
+        {
+          key: 'value',
+          label: '값',
+          hint: '칸마다 쉼표로 (예: 42, 45, 48)',
+          hints: [
+            '42, 45, 48, 51, 55, 58',
+            '38, 40, 39, 44, 47, 49',
+            '21, 22, 20, 24, 26, 25',
+            '18, 17, 19, 18, 21, 23',
+            '12, 13, 11, 14, 15, 16',
+            '15, 14, 16, 17, 17, 19',
+            '9, 10, 9, 11, 12, 12',
+            '6, 7, 6, 8, 9, 9',
+          ],
+        },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 12,
+    sample: {
+      fields: { heading: '센터별 월 출고', cols: '4월 5월 6월 7월 8월 9월', unit: '천 건' },
+      items: [
+        { title: '서울', value: '42, 45, 48, 51, 55, 58' },
+        { title: '경기', value: '38, 40, 39, 44, 47, 49' },
+        { title: '부산', value: '21, 22, 20, 24, 26, 25' },
+        { title: '대구', value: '18, 17, 19, 18, 21, 23' },
+      ],
+    },
+  },
+  sparks: {
+    name: '지표 흐름표',
+    description: '지표마다 그동안의 흐름을 작은 선으로, 지금 값과 바뀐 만큼을 나란히',
+    motion: '줄마다 선이 그려지고 지금 값이 올라가요',
+    variants: [
+      { id: 'prev', name: '바로 앞과 견주기' },
+      { id: 'first', name: '처음과 견주기' },
+    ],
+    fields: [
+      { key: 'heading', label: '소제목', hint: '예: 월간 핵심 지표', optional: true },
+      { key: 'period', label: '기간', hint: '예: 4월~9월', optional: true },
+    ],
+    items: {
+      label: '지표',
+      min: 2,
+      max: 6,
+      default: 4,
+      fields: [
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['문의', '포기율', '상담 인력', '첫 해결률', '처리 기간', '만족도'] },
+        {
+          key: 'value',
+          label: '흐름',
+          hint: '앞에서부터 쉼표로 (예: 3.2, 2.8, 2.1)',
+          hints: ['42, 45, 48, 51, 55, 58', '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', '12, 15, 14, 18, 21, 24', '61, 63, 62, 65, 67, 68', '4.2, 4.0, 3.6, 3.1, 2.9, 2.6', '4.1, 4.2, 4.2, 4.4, 4.5, 4.6'],
+        },
+        { key: 'meta', label: '단위', hint: '단위', hints: ['백 건', '%', '명', '%', '일', '점'], optional: true },
+      ],
+    },
+    minSpan: 6,
+    prefSpan: 8,
+    sample: {
+      fields: { heading: '월간 핵심 지표', period: '4월~9월' },
+      items: [
+        { title: '문의', value: '42, 45, 48, 51, 55, 58', meta: '백 건' },
+        { title: '포기율', value: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', meta: '%' },
+        { title: '상담 인력', value: '12, 15, 14, 18, 21, 24', meta: '명' },
+        { title: '첫 해결률', value: '61, 63, 62, 65, 67, 68', meta: '%' },
+      ],
+    },
+  },
+}
