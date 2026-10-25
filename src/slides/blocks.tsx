@@ -44,6 +44,7 @@ import { Swot } from './blocks/Swot'
 import { Text } from './blocks/Text'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { T } from './fields'
+import { frameCells } from './blockFrame'
 import { fitBlocks } from './fitBlocks'
 import { LAYOUT_VIEWS } from './layouts'
 
@@ -404,12 +405,17 @@ export function BlockArea() {
     })
     .join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
+  // 편집 화면이면 맞춘 뒤의 모습으로 부품마다 테두리 자리를 정한다 (blockFrame.ts)
+  const fitAll = (el: HTMLElement) => {
+    fitBlocks(el)
+    frameCells(el)
+  }
   useLayoutEffect(() => {
-    if (ref.current) fitBlocks(ref.current)
+    if (ref.current) fitAll(ref.current)
   })
   useEffect(() => {
     let on = true
-    const fit = () => on && ref.current && fitBlocks(ref.current)
+    const fit = () => on && ref.current && fitAll(ref.current)
     document.fonts?.ready.then(fit)
     // 그릴 때 안 보이던 장이 보이게 되거나, 제목이 두 줄이 되어 본문 상자가 낮아지면 다시 맞춘다.
     // 맞추기는 칸 안만 바꾸고 본문 상자의 크기는 바꾸지 않아서 되풀이되지 않는다

@@ -6,6 +6,7 @@ import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { josa } from '../../lib/josa'
+import { frameRect } from '../../slides/blockFrame'
 import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
@@ -159,7 +160,8 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
         setTight(false)
         return true
       }
-      const r = el.getBoundingClientRect()
+      // 칸이 아니라 부품의 테두리(그린 것 둘레) 바로 위에: 칸 위에 두면 짧은 내용 위로 빈 데를 건너 떠 보인다
+      const r = frameRect(el)
       const slide = el.closest('.slide')
       // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게)
       const key = `${r.left},${r.top},${r.width},${r.height}`
