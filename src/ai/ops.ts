@@ -212,10 +212,34 @@ function refOrNull(v: unknown): SlideRef | null | undefined {
   return typeof v === 'string' && REF.test(v) ? v : undefined
 }
 
-const only = (v: Record<string, unknown>, keys: string[]) => Object.keys(v).every((k) => keys.includes(k))
+const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every((k) => keys.includes(k))
 const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && LAYOUT_ORDER.includes(v as LayoutId)
 const blockRef = (v: unknown): BlockRef | undefined => (typeof v === 'string' && BLOCK_REF.test(v) ? v : undefined)
 const isInt = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max
+
+/**
+ * op마다 받는 키. parseOp가 이것으로 모르는 키를 거르고, MCP 서버가 AI에게 보여 주는 꼴(inputSchema)도 이것과 같아야 한다(시험이 확인).
+ * 예전에는 두 곳에 따로 적어서 set_row_grow의 grow가 꼴에서 빠졌고, 설명대로 보낸 제안이 거절됐다.
+ */
+export const OP_KEYS = {
+  add_slide: ['op', 'after', 'layout', 'role', 'as'],
+  remove_slide: ['op', 'slide'],
+  move_slide: ['op', 'slide', 'after'],
+  set_layout: ['op', 'slide', 'layout', 'variant'],
+  set_hidden: ['op', 'slide', 'hidden'],
+  set_item_count: ['op', 'slide', 'count'],
+  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'],
+  set_theme: ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'],
+  set_guide: ['op', 'slide', 'text'],
+  set_hint: ['op', 'slide', 'block', 'field', 'item', 'text'],
+  add_block: ['op', 'slide', 'type', 'variant', 'look', 'effect', 'as', 'row', 'beside', 'side'],
+  remove_block: ['op', 'slide', 'block'],
+  move_block: ['op', 'slide', 'block', 'row', 'beside', 'side'],
+  set_block: ['op', 'slide', 'block', 'variant', 'look', 'effect', 'count', 'highlight'],
+  set_spans: ['op', 'slide', 'block', 'spans'],
+  set_row_grow: ['op', 'slide', 'grow'],
+  set_link: ['op', 'slide', 'block', 'side', 'link'],
+} as const satisfies { [K in OpName]: readonly (keyof Extract<Op, { op: K }>)[] }
 
 /** 놓을 자리. 꼴이 틀리면 null, 없으면 빈 자리({}) */
 function parsePlace(v: Record<string, unknown>): Place | null {
@@ -240,7 +264,7 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
   if (!slide) return null
   switch (v.op) {
     case 'add_block': {
-      if (!only(v, ['op', 'slide', 'type', 'variant', 'look', 'effect', 'as', 'row', 'beside', 'side'])) return null
+      if (!only(v, OP_KEYS.add_block)) return null
       if (!BLOCK_TYPES.includes(v.type as BlockType) || !parseLooks(v)) return null
       if (v.as !== undefined && !(typeof v.as === 'string' && NEW_BLOCK.test(v.as))) return null
       const place = parsePlace(v)
@@ -258,18 +282,18 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     }
     case 'remove_block': {
       const block = blockRef(v.block)
-      return only(v, ['op', 'slide', 'block']) && block ? { op: 'remove_block', slide, block } : null
+      return only(v, OP_KEYS.remove_block) && block ? { op: 'remove_block', slide, block } : null
     }
     case 'move_block': {
       const block = blockRef(v.block)
-      if (!only(v, ['op', 'slide', 'block', 'row', 'beside', 'side']) || !block) return null
+      if (!only(v, OP_KEYS.move_block) || !block) return null
       const place = parsePlace(v)
       if (!place || (place.row === undefined && place.beside === undefined)) return null
       return { op: 'move_block', slide, block, ...place }
     }
     case 'set_block': {
       const block = blockRef(v.block)
-      if (!only(v, ['op', 'slide', 'block', 'variant', 'look', 'effect', 'count', 'highlight']) || !block || !parseLooks(v)) return null
+      if (!only(v, OP_KEYS.set_block) || !block || !parseLooks(v)) return null
       if (v.count !== undefined && !isInt(v.count, 0, 20)) return null
       if (v.highlight !== undefined && !isInt(v.highlight, -1, 19)) return null
       if ([v.variant, v.look, v.effect, v.count, v.highlight].every((x) => x === undefined)) return null
@@ -286,13 +310,13 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     }
     case 'set_spans': {
       const block = blockRef(v.block)
-      if (!only(v, ['op', 'slide', 'block', 'spans']) || !block) return null
+      if (!only(v, OP_KEYS.set_spans) || !block) return null
       if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > 3 || !v.spans.every((x) => isInt(x, 1, 12))) return null
       return { op: 'set_spans', slide, block, spans: v.spans as number[] }
     }
     case 'set_link': {
       const block = blockRef(v.block)
-      if (!only(v, ['op', 'slide', 'block', 'side', 'link']) || !block) return null
+      if (!only(v, OP_KEYS.set_link) || !block) return null
       if (v.side !== 'right' && v.side !== 'below') return null
       if (v.link !== null && !isLink(v.link)) return null
       return { op: 'set_link', slide, block, side: v.side, link: v.link as BlockLink | null }
@@ -314,12 +338,12 @@ export function parseOp(v: unknown): Op | null {
       return parseBlockOp(v)
     case 'set_row_grow': {
       const slide = refOrNull(v.slide)
-      if (!only(v, ['op', 'slide', 'grow']) || !slide) return null
+      if (!only(v, OP_KEYS.set_row_grow) || !slide) return null
       if (!Array.isArray(v.grow) || v.grow.length > MAX_ROWS || !v.grow.every(isGrow)) return null
       return { op: 'set_row_grow', slide, grow: v.grow as number[] }
     }
     case 'add_slide': {
-      if (!only(v, ['op', 'after', 'layout', 'role', 'as'])) return null
+      if (!only(v, OP_KEYS.add_slide)) return null
       const after = refOrNull(v.after ?? null)
       if (after === undefined) return null
       if (v.layout !== undefined && !isLayout(v.layout)) return null
@@ -339,30 +363,30 @@ export function parseOp(v: unknown): Op | null {
     case 'set_hint': {
       const slide = refOrNull(v.slide)
       if (!slide) return null
-      if (v.op === 'remove_slide') return only(v, ['op', 'slide']) ? { op: v.op, slide } : null
+      if (v.op === 'remove_slide') return only(v, OP_KEYS.remove_slide) ? { op: v.op, slide } : null
       if (v.op === 'set_layout') {
-        if (!only(v, ['op', 'slide', 'layout', 'variant']) || !isLayout(v.layout)) return null
+        if (!only(v, OP_KEYS.set_layout) || !isLayout(v.layout)) return null
         if (v.variant !== undefined && !variantIds(v.layout).includes(v.variant as string)) return null
         return { op: v.op, slide, layout: v.layout, variant: v.variant as string | undefined }
       }
       if (v.op === 'set_hidden') {
-        return only(v, ['op', 'slide', 'hidden']) && typeof v.hidden === 'boolean' ? { op: v.op, slide, hidden: v.hidden } : null
+        return only(v, OP_KEYS.set_hidden) && typeof v.hidden === 'boolean' ? { op: v.op, slide, hidden: v.hidden } : null
       }
       if (v.op === 'set_item_count') {
-        return only(v, ['op', 'slide', 'count']) && Number.isInteger(v.count) && (v.count as number) >= 0 && (v.count as number) <= 20
+        return only(v, OP_KEYS.set_item_count) && Number.isInteger(v.count) && (v.count as number) >= 0 && (v.count as number) <= 20
           ? { op: v.op, slide, count: v.count as number }
           : null
       }
       if (v.op === 'set_guide') {
         const text = cleanText(v.text, GUIDE_MAX, true)
-        return only(v, ['op', 'slide', 'text']) && text ? { op: v.op, slide, text } : null
+        return only(v, OP_KEYS.set_guide) && text ? { op: v.op, slide, text } : null
       }
       if (v.op === 'move_slide') {
         const after = refOrNull(v.after ?? null)
-        return only(v, ['op', 'slide', 'after']) && after !== undefined ? { op: v.op, slide, after } : null
+        return only(v, OP_KEYS.move_slide) && after !== undefined ? { op: v.op, slide, after } : null
       }
       if (v.op === 'set_options') {
-        if (!only(v, ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'])) return null
+        if (!only(v, OP_KEYS.set_options)) return null
         if (v.pane !== undefined && v.pane !== null && !(Number.isInteger(v.pane) && (v.pane as number) >= 1 && (v.pane as number) <= 12)) return null
         if (v.highlight !== undefined && !(Number.isInteger(v.highlight) && (v.highlight as number) >= -1 && (v.highlight as number) < 20)) return null
         if (v.flip !== undefined && typeof v.flip !== 'boolean') return null
@@ -384,7 +408,7 @@ export function parseOp(v: unknown): Op | null {
         }
       }
       // set_hint
-      if (!only(v, ['op', 'slide', 'block', 'field', 'item', 'text'])) return null
+      if (!only(v, OP_KEYS.set_hint)) return null
       const text = cleanText(v.text, HINT_MAX)
       if (!text || typeof v.field !== 'string' || !/^[a-zA-Z]{1,20}$/.test(v.field)) return null
       if (v.item !== undefined && !(Number.isInteger(v.item) && (v.item as number) >= 0 && (v.item as number) < 20)) return null
@@ -392,7 +416,7 @@ export function parseOp(v: unknown): Op | null {
       return { op: 'set_hint', slide, ...(v.block !== undefined ? { block: v.block as string } : {}), field: v.field, item: v.item as number | undefined, text }
     }
     case 'set_theme': {
-      if (!only(v, ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'])) return null
+      if (!only(v, OP_KEYS.set_theme)) return null
       if (v.theme !== undefined && !THEME_ORDER.includes(v.theme as ThemeId)) return null
       if (v.accent !== undefined && v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return null
       if (v.motion !== undefined && !oneOf(MOTIONS, v.motion)) return null

@@ -17,7 +17,7 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, REQUEST_FORMAT, REQUEST_ID, requestId, type ChangeRequest } from '../src/ai/ops'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { BLOCK_EFFECT_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES } from '../src/deck/blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, GROW_MAX, GROW_MIN, MAX_ROWS } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
@@ -224,6 +224,7 @@ const TOOLS = [
               side: { type: 'string', enum: ['before', 'after', 'right', 'below'] },
               link: { anyOf: [{ type: 'string', enum: BLOCK_LINK_IDS }, { type: 'null' }] },
               spans: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'integer', minimum: 1, maximum: 12 } },
+              grow: { type: 'array', maxItems: MAX_ROWS, items: { type: 'integer', minimum: GROW_MIN, maximum: GROW_MAX } },
             },
             required: ['op'],
             additionalProperties: false,

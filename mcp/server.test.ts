@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { SECRET, secretDeck } from '../src/ai/share.test'
-import { OP_CODES } from '../src/ai/ops'
+import { OP_CODES, OP_KEYS } from '../src/ai/ops'
 import { toShape } from '../src/ai/share'
 import { createSampleDeck } from '../src/deck/sample'
 
@@ -68,6 +68,16 @@ describe('MCP 서버', () => {
     expect(names).toEqual(['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'])
   })
 
+  it('제안의 꼴은 앱이 받는 키와 같다', async () => {
+    // 꼴에 없는 키는 AI가 보낼 수 없고(additionalProperties: false), 꼴에만 있는 키는 보내도 거절된다
+    const res = await rpc('tools/list')
+    const propose = (res.result!.tools as { name: string; inputSchema: any }[]).find((t) => t.name === 'propose_changes')!
+    const items = propose.inputSchema.properties.ops.items
+    expect(items.additionalProperties).toBe(false)
+    expect(Object.keys(items.properties).sort()).toEqual([...new Set(Object.values(OP_KEYS).flat())].sort())
+    expect([...items.properties.op.enum].sort()).toEqual(Object.keys(OP_KEYS).sort())
+  })
+
   it('공유 폴더 밖 파일로 가는 링크는 읽지 않는다', async () => {
     const { value } = await tool('list_decks')
     expect(value.decks.map((d: { deck: string }) => d.deck)).not.toContain('d00000000')
@@ -120,6 +130,7 @@ describe('MCP 서버', () => {
         { op: 'set_block', slide: compose.id, block: 'p1', look: 'card' },
         { op: 'move_block', slide: compose.id, block: first, beside: 'p1', side: 'after' },
         { op: 'set_spans', slide: compose.id, block: first, spans: [6, 6] },
+        { op: 'set_row_grow', slide: compose.id, grow: [] },
       ],
     })
     expect(isError).toBe(false)
