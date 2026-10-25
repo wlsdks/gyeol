@@ -153,7 +153,7 @@
     .sm-label, .sm-body, .st-title, .st-lead, .kp-value, .kp-label, .kp-body, .pt-title, .pt-body, .cp-h, .cp-l, .cp-r,
     .tl-title, .tl-body, .tl-meta, .cs-client, .cs-title, .cs-body, .cs-quote, .cs-value, .cs-label, .lg-name,
     .pr-name, .pr-price, .pr-meta, .pr-body, .ix-body, .br-name, .br-value, .br-unit, .br-meta, .cl-title, .cl-n, .cl-step-t, .cl-step-b,
-    .sk-h, .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .mx-x, .mx-y, .wf-num, .wf-title, .wf-meta, .wf-unit, .tb-cell,
+    .sk-h, .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .mx-x, .mx-y, .wf-num, .wf-title, .wf-meta, .wf-unit, .tb-h, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .vs-key-t, .vs-unit, .vs-num, .vs-name, .vs-change, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
     .pc-n, .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total, .pm-name, .pm-body, .pm-nums, .pm-x, .pm-y,
@@ -4276,9 +4276,11 @@
   border-bottom: 3px solid var(--ink);
 }
 
+/* 크기는 글자 칸 목록(--fs)으로: 따로 잡으면 부품 칸의 맞추기(--bk-fit, --bk-w)를 받지 않아, 크게(1.2배)에서
+   본문은 줄어도 머리줄만 그대로라 표가 칸을 넘었다 */
 .tb-h {
+  --fs: var(--t-label);
   color: var(--ink-3);
-  font-size: calc(var(--t-label) * var(--scale, 1));
   font-weight: 600;
 }
 
