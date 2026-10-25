@@ -54,6 +54,8 @@ function placeAt(t: number): Place {
 
 /** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
 const GROUP_PAD = 10
+/** 면이 없는 항목의 테를 옆으로 띄우는 너비(화면 px) */
+const ITEM_PAD = 8
 
 /**
  * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
@@ -293,7 +295,11 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       const box = target.el.getBoundingClientRect()
       // 제목 덩어리는 쓰는 중인 칸의 테와 겹치지 않게 조금 넓게 두른다 (styles/selection.css의 .sel-ring.is-group)
       const pad = target.kind === 'field' && target.place ? GROUP_PAD : 0
-      const r = new DOMRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
+      // 면이 없는 항목(줄로 나뉜 목록의 한 줄)은 글이 상자 끝에서 시작해서, 테를 상자에 딱 두르면 이름 글자가 테에 붙었다.
+      // 옆으로만 조금 띄운다(위아래는 줄 선이라 띄우면 옆 줄을 덮는다)
+      const flat = target.kind === 'item' && !target.across && getComputedStyle(target.el).backgroundColor === 'rgba(0, 0, 0, 0)'
+      const padX = flat ? ITEM_PAD : pad
+      const r = new DOMRect(box.left - padX, box.top - pad, box.width + padX * 2, box.height + pad * 2)
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
       // 부품 장의 막대(FloatTools)와 같이, 가리는 글과 장 위아래 여백까지 보고 자리를 고른다. 위에 자리만 있으면 늘 위로
       // 가서 윗줄 항목에 적은 글을 가렸고, 장 맨 위 항목은 아래로 내려가 다음 항목의 빈칸을 덮어 누를 수 없었다(마지막 장의 요청)
