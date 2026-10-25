@@ -77,13 +77,14 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   cover: {
     id: 'cover',
     name: '표지',
-    description: '보고 제목과 결정 요청, 발표자',
+    description: '발표 제목과 발표자, 결정받을 것',
+    // 모양과 옆 판의 이름은 결정 요청이 없는 발표(공유, 소개)에서도 맞게 자리로 부른다
     variants: [
-      { id: 'base', name: '옆에 결정 요청' },
+      { id: 'base', name: '옆 면' },
       { id: 'band', name: '아래 띠' },
       { id: 'full', name: '색 면' },
     ],
-    panes: { name: '결정 요청', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
+    panes: { name: '옆 면', el: '.cv-side', sides: [3, 4, 5], base: 4, variants: ['base'], below: 'band' },
     place: { name: '제목', el: '.cv-text', base: 'bottom' },
     fields: [
       { key: 'title', label: '발표 제목', hint: '발표 제목', multiline: true },

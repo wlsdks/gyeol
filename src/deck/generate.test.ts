@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIENCES, BLUEPRINTS, DECK_GROUPS, DECK_TYPES, DURATIONS } from './blueprints'
+import { asksDecision, AUDIENCES, BLUEPRINTS, DECK_GROUPS, DECK_TYPES, DURATIONS } from './blueprints'
 import { createDeck, planRecipes, priorityFor, targetCount } from './generate'
 import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER, LAYOUTS, logoColumns } from './layouts'
 import { showcaseSlides } from './showcase'
@@ -139,6 +139,17 @@ describe('createDeck', () => {
     expect(deck.meta.org).toBe('영업 2팀')
     const agenda = deck.slides.find((s) => s.layout === 'agenda')
     expect(agenda?.items.map((i) => i.title)).toEqual(['배경', '제안', '효과와 비용', '실행 계획'])
+  })
+
+  it('결정을 받지 않는 발표의 표지는 결정 요청 자리가 없는 아래 띠 모양으로 만든다', () => {
+    const plain = DECK_TYPES.filter((t) => !asksDecision(t))
+    expect(plain).toEqual(['weekly', 'kickoff', 'study', 'intro'])
+    for (const type of DECK_TYPES) {
+      const cover = createDeck({ ...input, type, ask: '', lead: '' }).slides[0]
+      expect(cover.variant, type).toBe(asksDecision(type) ? undefined : 'band')
+      // 결정 요청 칸이 없는데 그 칸의 안내만 남지 않게
+      if (!asksDecision(type)) expect(cover.hints.ask, type).toBeUndefined()
+    }
   })
 
   it('한 장 요약은 줄 이름을 미리 넣고 줄마다 다른 안내를 단다', () => {

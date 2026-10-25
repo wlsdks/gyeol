@@ -25,9 +25,11 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
   const size = deck.theme.size ?? 'normal'
   const footer = footerOf(deck)
   const transition = deck.theme.transition ?? 'auto'
+  // 테마 견본은 이 발표의 표지 모양 그대로, 제목만 넣어서
   const cover = useMemo(() => {
-    const s = makeSlide('cover')
-    s.fields.title = deck.slides.find((x) => x.layout === 'cover')?.fields.title || deck.title
+    const real = deck.slides.find((x) => x.layout === 'cover')
+    const s = makeSlide('cover', { variant: real?.variant, options: real?.options })
+    s.fields.title = real?.fields.title || deck.title
     return s
   }, [deck.slides, deck.title])
   const accent = accentOf(deck.theme)

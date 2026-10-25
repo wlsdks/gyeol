@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { BLOCK_GAP } from '../deck/blocks'
+import { asksDecision } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
@@ -46,8 +47,10 @@ function useSharedUnits(key: 'value', skip?: (i: number) => boolean) {
 }
 
 function Cover() {
-  const { slide, mode } = useSlide()
-  const showAsk = mode !== 'final' || !!slide.fields.ask?.trim()
+  const { slide, meta, mode } = useSlide()
+  // 결정 요청 칸은 결정을 받는 발표에서만 편집할 때 안내와 함께 보인다. 공유, 교육, 소개 같은 발표는 묻지 않으니
+  // 칸을 두지 않는다(예전에 적어 둔 결정 요청은 그대로 보인다)
+  const showAsk = !!slide.fields.ask?.trim() || (mode !== 'final' && asksDecision(meta.type))
   return (
     <>
       <div className="cv-main">
@@ -57,7 +60,7 @@ function Cover() {
           <T k="lead" as="p" className="cv-lead" multiline />
         </div>
       </div>
-      <div className="cv-side">
+      <div className={cx('cv-side', !showAsk && 'no-ask')}>
         {showAsk ? (
           <div className="cv-ask">
             <span className="cv-label">결정 요청</span>

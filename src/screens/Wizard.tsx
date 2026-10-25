@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { AUDIENCES, BLUEPRINTS, DECK_GROUPS, DURATIONS, METHODS } from '../deck/blueprints'
+import { asksDecision, AUDIENCES, BLUEPRINTS, DECK_GROUPS, DURATIONS, METHODS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { createDeck, formatDate, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
@@ -71,7 +71,7 @@ export function Wizard() {
 
   const blueprint = BLUEPRINTS[type]
   // 결정을 받는 자리가 아닌 발표(나누고 알리는 발표)는 결정 요청 대신 부제를 묻는다. 다른 종류에서 적어 둔 것은 넣지 않는다
-  const askOn = !!blueprint.examples.ask
+  const askOn = asksDecision(type)
   const strip = useMedia(LOW) ? STRIP_LOW : STRIP
   // 2단계 오른쪽에 보여 줄 구성. 고르는 대로 바로 바뀐다
   const preview = useMemo(
@@ -452,13 +452,14 @@ function CoverPreview(props: {
   mode: 'preview' | 'final'
 }) {
   const { id, type, title, org, presenter, ask, lead, mode } = props
+  // 만들어질 표지와 같은 모양으로 (나누고 알리는 발표는 아래 띠)
   const slide = useMemo(() => {
-    const s = makeSlide('cover')
+    const s = makeSlide('cover', { variant: BLUEPRINTS[type].recipes.find((r) => r.layout === 'cover')?.variant })
     s.fields.title = title
     s.fields.ask = ask
     s.fields.lead = lead
     return s
-  }, [title, ask, lead])
+  }, [type, title, ask, lead])
   const meta: DeckMeta = {
     type,
     audience: 'mixed',

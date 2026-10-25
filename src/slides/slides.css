@@ -532,6 +532,19 @@
   border-left: 2px solid var(--bold-line);
 }
 
+/* 결정 요청이 없는 표지(나누고 알리는 발표): 발표자 줄이 띠의 왼쪽, 제목과 같은 선에서 시작한다.
+   오른쪽 끝에 두면 띠의 왼쪽이 통째로 빈다. 띠도 결정 요청 자리만큼 높게 두지 않는다 */
+.l-cover:is(.va-band, .va-full) .cv-side.no-ask {
+  justify-content: flex-start;
+  gap: 0;
+  min-height: 0;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-side.no-ask .cv-meta {
+  padding-left: 0;
+  border-left: 0;
+}
+
 /* 모양: 색 면. 장 전체를 색 면으로, 결정 요청은 아래에 줄로 나눠 */
 .l-cover.va-full {
   background: var(--bold-bg);

@@ -85,8 +85,11 @@ function section(title: string, lead: string): Recipe {
 
 const cover: Recipe = { layout: 'cover', purpose: '표지', priority: 1, guide: '제목과 결정받을 것을 한 줄씩 적어요.' }
 
-/** 결정을 받는 자리가 아닌 발표(나누고 알리는 발표)의 표지. 결정 요청 칸은 비워 두면 발표할 때 빠진다 */
-const plainCover: Recipe = { ...cover, guide: '무엇에 관한 발표인지 제목에 담아요.', hints: { ask: '있으면 한 줄로, 없으면 비워 둬요' } }
+/**
+ * 결정을 받는 자리가 아닌 발표(나누고 알리는 발표)의 표지. 결정 요청 칸이 없어서(asksDecision) 아래 띠 모양으로 연다:
+ * 옆 면은 위쪽이 결정 요청 자리라서, 결정 요청이 없으면 짙은 면의 위쪽이 통째로 빈다
+ */
+const plainCover: Recipe = { ...cover, guide: '무엇에 관한 발표인지 제목에 담아요.', variant: 'band' }
 
 /** 한 장 요약: 바쁜 분이 이 장만 보고도 판단할 수 있게 */
 function summary(conclusion: string, labels: string[], bodies: string[]): Recipe {
@@ -1217,9 +1220,9 @@ const kickoff: Blueprint = {
   storyline: ['목표', '범위', '일정', '역할'],
   showcase: ['목표', '하는 일과 하지 않는 일', '일정', '역할과 담당'],
   defaultTitle: '프로젝트 착수 보고',
-  examples: { title: '견적 자동화 프로젝트 착수 보고', ask: '추진 일정과 투입 인력 확정' },
+  examples: { title: '견적 자동화 프로젝트 착수 보고', lead: '함께할 네 팀이 목표와 일정을 맞춰요' },
   recipes: [
-    cover,
+    plainCover,
     summary(
       '한 줄 요약 (예: 6개월 안에 견적 시간을 절반으로 줄여요)',
       ['왜', '목표', '범위', '일정'],
@@ -1634,6 +1637,14 @@ export const DECK_GROUPS: { name: string; types: DeckType[] }[] = [
   { name: '진행과 결과 보고하기', types: ['weekly', 'report', 'result', 'issue'] },
   { name: '알리고 나누기', types: ['kickoff', 'research', 'study', 'intro'] },
 ]
+
+/**
+ * 결정을 받는 발표인지. 마법사는 결정을 받는 발표에만 결정 요청을 묻고, 표지도 그런 발표에만 결정 요청 칸을 둔다.
+ * 나누고 알리는 발표(examples에 ask가 없는 것)에 그 칸이 있으면 무엇을 적을지 헷갈리고, 비워 두면 표지에 빈자리가 남는다
+ */
+export function asksDecision(type: DeckType): boolean {
+  return !!(BLUEPRINTS[type] ?? BLUEPRINTS.blank).examples.ask
+}
 
 /** 빈 발표를 뺀 모든 종류. 마법사의 묶음 순서 그대로 */
 export const DECK_TYPES: DeckType[] = DECK_GROUPS.flatMap((g) => g.types)
