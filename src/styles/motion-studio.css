@@ -1,0 +1,810 @@
+/* ---------- 모션 스튜디오 (screens/editor/studio/) ---------- */
+/* 편집기 위에 덮는 화면: 위 줄, 가운데 무대, 아래 시간표, 오른쪽 고르는 칸. 무대가 가장 크게 보이도록 둘레는 조용하게 */
+
+.ms {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 52px minmax(0, 1fr);
+  background: var(--app-bg);
+  animation: ms-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ms-in {
+  from {
+    opacity: 0;
+    scale: 0.985;
+  }
+}
+
+.ms-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.ms-back {
+  flex: none;
+  padding-left: 6px;
+}
+
+.ms-title {
+  flex: none;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ms-nav {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.ms-nav .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.ms-prev .icon-chevron {
+  rotate: 180deg;
+}
+
+.ms-count {
+  min-width: 44px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ms-slide-name {
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-present {
+  flex: none;
+}
+
+.ms-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+/* ---------- 무대 ---------- */
+
+.ms-stage {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ms-stage .slide-frame {
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgb(16 20 31 / 0.06), 0 12px 36px rgb(16 20 31 / 0.12);
+}
+
+.ms-stage .bk {
+  cursor: pointer;
+}
+
+/* 컴포넌트마다 나오는 차례. 장의 px로 그리고 굵기와 글자만 축소를 되돌린다(--vs) */
+.ms-marks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  pointer-events: none;
+}
+
+.ms-mark {
+  position: absolute;
+  border-radius: calc(6px / var(--vs, 1));
+  outline: calc(1.5px / var(--vs, 1)) solid transparent;
+  outline-offset: calc(4px / var(--vs, 1));
+  transition: opacity 0.2s, outline-color 0.15s;
+}
+
+.ms-mark.is-hot {
+  outline-color: color-mix(in srgb, var(--sel) 45%, transparent);
+}
+
+.ms-mark.is-on {
+  outline: calc(2px / var(--vs, 1)) solid var(--sel);
+}
+
+/* 번호는 내용의 왼쪽 위 모서리 바깥에 걸친다(첫 글자를 가리지 않게) */
+.ms-mark-n {
+  position: absolute;
+  top: calc(-16px / var(--vs, 1));
+  left: calc(-17px / var(--vs, 1));
+  display: grid;
+  place-items: center;
+  width: calc(20px / var(--vs, 1));
+  height: calc(20px / var(--vs, 1));
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 calc(2px / var(--vs, 1)) var(--panel);
+  color: #fff;
+  font-size: calc(11px / var(--vs, 1));
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ms-mark.is-on .ms-mark-n {
+  background: var(--sel);
+}
+
+/* 움직이는 동안에는 번호와 고른 표시를 숨긴다: 발표할 때의 모습을 그대로 보게. 멈추면 다시 */
+.ms-stage.is-playing .ms-mark {
+  opacity: 0;
+  transition: none;
+}
+
+/* ---------- 시간표 ---------- */
+
+.ms-tl {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  max-height: min(300px, 36vh);
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.ms-tl-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 16px;
+}
+
+.ms-play {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.12s, scale 0.12s;
+}
+
+.ms-play:hover {
+  background: #2c313b;
+}
+
+.ms-play:active {
+  scale: 0.94;
+}
+
+.ms-play .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.ms-time {
+  margin: 0 0 0 4px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ms-total {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.ms-tl-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 0 0 auto;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-tl-note .icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.ms-tl-grid {
+  --lane-l: 188px;
+  --lane-r: 24px;
+  position: relative;
+  min-height: 0;
+  padding: 0 0 8px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.ms-tl-row {
+  display: grid;
+  grid-template-columns: var(--lane-l) minmax(0, 1fr);
+  align-items: center;
+  height: 32px;
+  padding-right: var(--lane-r);
+}
+
+.ms-tl-ruler {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  height: 26px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.ms-ruler-l {
+  padding-left: 16px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ms-track {
+  position: relative;
+  height: 100%;
+}
+
+.ms-scrub {
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.ms-scrub:focus-visible {
+  outline-offset: -2px;
+}
+
+.ms-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 5px 0 0 5px;
+  border-left: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ms-click {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 18px;
+  padding: 0 6px 0 4px;
+  border-radius: 9px;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  translate: -50% 0;
+}
+
+.ms-click .icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* 바늘의 손잡이 */
+.ms-head {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: -1px;
+  left: calc(var(--p) * 100%);
+  width: 2px;
+  background: var(--sel);
+  translate: -50% 0;
+}
+
+.ms-head::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 12px;
+  height: 10px;
+  border-radius: 2px 2px 6px 6px;
+  background: var(--sel);
+  content: '';
+  translate: -50% 0;
+}
+
+.ms-tl-body {
+  position: relative;
+}
+
+.ms-needle,
+.ms-cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.ms-needle {
+  z-index: 2;
+  left: calc(var(--lane-l) + (100% - var(--lane-l) - var(--lane-r)) * var(--p));
+  width: 2px;
+  background: var(--sel);
+  translate: -50% 0;
+}
+
+.ms-cut {
+  left: calc(var(--lane-l) + (100% - var(--lane-l) - var(--lane-r)) * var(--x));
+  border-left: 1px dashed color-mix(in srgb, var(--warn-ink) 45%, transparent);
+}
+
+.ms-tl-body .ms-tl-row {
+  border-radius: 6px;
+}
+
+.ms-tl-body .ms-tl-row:not(.is-fixed):hover,
+.ms-tl-body .ms-tl-row.is-hot {
+  background: var(--hover);
+}
+
+.ms-tl-body .ms-tl-row.is-on {
+  background: var(--sel-soft);
+}
+
+.ms-tl-row.is-dragging {
+  position: relative;
+  z-index: 4;
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+}
+
+.ms-lane-l {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px 0 6px;
+}
+
+.ms-tl-row.is-fixed .ms-lane-l {
+  padding-left: 24px;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ms-grip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 24px;
+  color: var(--ink-3);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.ms-tl-row:hover .ms-grip,
+.ms-tl-row.is-dragging .ms-grip {
+  opacity: 1;
+}
+
+.ms-grip .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ms-lane-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px 0 2px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ms-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.ms-n.is-on,
+.ms-tl-row.is-on .ms-n {
+  background: var(--sel);
+}
+
+.ms-tl-row .ms-track {
+  cursor: pointer;
+}
+
+.ms-bar {
+  position: absolute;
+  top: 50%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  translate: 0 -50%;
+}
+
+/* 바늘이 지나간 만큼 짙게 */
+.ms-bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(clamp(0, (var(--p) - var(--s)) / (var(--e) - var(--s)), 1) * 100%);
+  background: var(--ink-2);
+  content: '';
+}
+
+.ms-tl-row.is-on .ms-bar {
+  background: color-mix(in srgb, var(--sel) 22%, transparent);
+}
+
+.ms-tl-row.is-on .ms-bar::after {
+  background: var(--sel);
+}
+
+.ms-tl-row.is-fixed .ms-bar {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.ms-tl-row.is-fixed .ms-bar::after {
+  background: var(--ink-3);
+}
+
+/* 하나만 움직이는 동안: 다른 줄은 옅게 (그 줄 안에서만 바늘이 움직인다) */
+.ms-tl.is-solo .ms-tl-body .ms-tl-row:not(.is-solo) .ms-track {
+  opacity: 0.35;
+}
+
+.ms-still {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  translate: 0 -50%;
+}
+
+.ms-tl-empty {
+  margin: 0;
+  padding: 14px 24px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+/* ---------- 오른쪽 칸 ---------- */
+
+.ms-side {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-gutter: stable;
+}
+
+.ms-sec {
+  padding: 16px 18px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ms-h {
+  margin: 0 0 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 연출: 첫 줄 셋, 둘째 줄 둘 (빈 칸 없이 줄을 채운다) */
+.ms-presets {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ms-preset {
+  display: flex;
+  flex-direction: column;
+  grid-column: span 2;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 4px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.14s, color 0.14s;
+}
+
+.ms-preset:nth-child(n + 4) {
+  grid-column: span 3;
+}
+
+.ms-preset:hover:not(:disabled) {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+
+.ms-preset.is-on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--ink);
+}
+
+.ms-preset:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ms-glyph {
+  width: 60px;
+  height: 32px;
+}
+
+.ms-glyph rect {
+  fill: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.ms-preset.is-on .ms-glyph rect {
+  fill: var(--ink-2);
+}
+
+.ms-glyph rect.is-key,
+.ms-preset.is-on .ms-glyph rect.is-key {
+  fill: var(--sel);
+}
+
+.ms-glyph .is-cut {
+  stroke: var(--warn-ink);
+  stroke-dasharray: 2 2;
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.ms-none {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ms-block-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ms-block-h .ms-h {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-one {
+  flex: none;
+  gap: 5px;
+}
+
+.ms-one .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ms-fxs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ms-fx {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 8px 0 5px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.14s, color 0.14s;
+}
+
+.ms-fx .fx-demo {
+  flex: none;
+  width: 34px;
+  height: 28px;
+}
+
+.ms-fx:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+
+.ms-fx.is-on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--ink);
+}
+
+.ms-fx-n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-convert p {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ms-from-prev {
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+/* 낮은 창(노트북 150%): 시간표를 줄여 무대를 지킨다 */
+@media (max-height: 700px) {
+  .ms {
+    grid-template-rows: 48px minmax(0, 1fr);
+  }
+
+  .ms-tl {
+    max-height: 190px;
+  }
+
+  .ms-tl-bar {
+    padding: 6px 16px;
+  }
+
+  .ms-tl-row {
+    height: 28px;
+  }
+}
+
+/* 좁은 창: 오른쪽 칸을 줄인다 */
+@media (max-width: 1360px) {
+  .ms-body {
+    grid-template-columns: minmax(0, 1fr) 296px;
+  }
+
+  .ms-tl-grid {
+    --lane-l: 164px;
+  }
+}
+
+/* ---------- 움직임 탭의 스튜디오 입구 ---------- */
+
+.mp-studio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% - 36px);
+  margin: 16px 18px 0;
+  padding: 11px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s, box-shadow 0.14s;
+}
+
+.mp-studio:hover {
+  border-color: var(--ink-3);
+  box-shadow: 0 1px 2px rgb(16 20 31 / 0.06), 0 4px 14px rgb(16 20 31 / 0.06);
+}
+
+.mp-studio b {
+  display: block;
+  font-size: 14px;
+}
+
+.mp-studio-d {
+  display: block;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.mp-studio > .icon-chevron {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+.mp-studio-i {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  border-radius: 8px;
+  background: var(--sel-soft);
+  color: var(--sel);
+}

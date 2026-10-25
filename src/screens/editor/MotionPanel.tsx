@@ -9,30 +9,49 @@ import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
 import { motionEngine } from '../../motion/engine'
 import { useDeck } from '../../store/deckStore'
-import { GripIcon, PlayIcon, Segmented } from '../ui'
+import { ChevronIcon, GripIcon, Icon, PlayIcon, Segmented } from '../ui'
 import type { BlockEditing } from './BlockEditor'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { Opt } from './Inspector'
 
 /** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '기본' 하나로 묶는다 */
-const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
+export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
   { id: undefined, name: '기본', description: '테마 메뉴에서 정한 장 넘기기를 따라요.' },
   ...TRANSITIONS.filter((t) => t.id !== 'auto'),
 ]
 
 /** 들어오는 쪽은 짧게 (네 단추가 한 줄에 들어가게) */
-const FROM_SHORT: Record<BlockFrom, string> = { below: '아래', above: '위', left: '왼쪽', right: '오른쪽' }
+export const FROM_SHORT: Record<BlockFrom, string> = { below: '아래', above: '위', left: '왼쪽', right: '오른쪽' }
 
 /**
  * 오른쪽 칸의 '움직임'. 이 장이 넘어올 때의 모습과 움직임 정도, 그리고 부품 장이면 컴포넌트가 나오는 차례를 정한다.
  * 시간 막대를 그리는 편집기가 아니라 고르는 방식이다: 컴포넌트마다 움직임, 언제(이어서, 함께, 누르면), 들어오는 쪽, 빠르기를 고르고
  * 목록을 끌어 차례를 바꾼다. 차례는 장의 options.order에, 나머지는 부품에 적고 발표 화면과 내보낸 HTML이 같은 엔진으로 움직인다
  */
-export function MotionPanel({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: Pick<BlockEditing, 'selected' | 'select' | 'convert'> }) {
+export function MotionPanel({
+  deck,
+  slide,
+  blocks,
+  onOpenStudio,
+}: {
+  deck: Deck
+  slide: Slide
+  blocks: Pick<BlockEditing, 'selected' | 'select' | 'convert'>
+  onOpenStudio(): void
+}) {
   const setOptions = useDeck((s) => s.setOptions)
   const moving = motionOf(deck, slide) !== 'none'
   return (
     <div className="ins mp" role="tabpanel" aria-label="움직임">
+      {/* 크게 보며 고치는 곳: 장을 발표 화면처럼 움직이고 시간표로 차례와 때를 본다 */}
+      <button type="button" className="mp-studio" onClick={onOpenStudio}>
+        <StudioIcon />
+        <span>
+          <b>모션 스튜디오</b>
+          <span className="mp-studio-d">크게 보면서 차례와 움직임을 고쳐요</span>
+        </span>
+        <ChevronIcon />
+      </button>
       <section className="ins-sec">
         <div className="mp-head">
           <h2 className="ins-h">이 장</h2>
@@ -259,3 +278,6 @@ function Row({
     </li>
   )
 }
+
+/** 모션 스튜디오: 차례로 나오는 막대 셋 (시간표의 모습) */
+const StudioIcon = () => <Icon className="mp-studio-i" d="M4 7h8M8 12h8M12 17h8" />

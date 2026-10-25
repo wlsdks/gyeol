@@ -23,6 +23,7 @@ import { ExportMenu, PresentButton, ThemeMenu } from './DeckMenus'
 import { useExports } from './exports'
 import { Inspector } from './Inspector'
 import { MotionPanel } from './MotionPanel'
+import { MotionStudio } from './studio/MotionStudio'
 import { PresentDialogs, usePresentLaunch } from './presentLaunch'
 import { SaveStatus } from './SaveStatus'
 import { useEditorShortcuts } from './shortcuts'
@@ -111,6 +112,8 @@ function EditorBody({ deck }: { deck: Deck }) {
   const canRedo = useDeck((s) => s.future.length > 0)
   const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  // 모션 스튜디오: 편집기 위에 덮어 연다. 발표하고 돌아오면 다시 그 자리
+  const [studio, setStudio] = useState<{ from: string | null } | null>(null)
   // '레이아웃 바꾸기'에서 그림에 올린 레이아웃. 슬라이드 자리에 그 모습으로 미리 보인다
   const [layoutPeek, setLayoutPeek] = useState<LayoutId | null>(null)
   useEffect(() => setLayoutPeek(null), [slide?.id])
@@ -263,7 +266,16 @@ function EditorBody({ deck }: { deck: Deck }) {
               {side.tab === 'library' ? (
                 <BlockLibrary deck={deck} slide={slide} blocks={blocks} toast={toast} />
               ) : side.tab === 'motion' ? (
-                <MotionPanel deck={deck} slide={slide} blocks={blocks} />
+                <MotionPanel
+                  deck={deck}
+                  slide={slide}
+                  blocks={blocks}
+                  onOpenStudio={() => {
+                    // 편집기에서 고른 것은 스튜디오가 이어받는다. 편집기 쪽 고르기는 끈다(지우기 키가 그 컴포넌트를 지우지 않게)
+                    setStudio({ from: blocks.selected })
+                    blocks.select(null)
+                  }}
+                />
               ) : (
                 <Inspector deck={deck} slide={slide} onFocusField={(m) => focusField(slide.id, m)} onPeekLayout={setLayoutPeek} />
               )}
@@ -272,6 +284,16 @@ function EditorBody({ deck }: { deck: Deck }) {
         )}
       </div>
 
+      {studio && slide && (
+        <MotionStudio
+          deck={deck}
+          slide={slide}
+          initial={studio.from}
+          onClose={() => setStudio(null)}
+          onConvert={blocks.convert}
+          onPresent={(id) => void launch.start(id)}
+        />
+      )}
       <PresentDialogs launch={launch} onFillBlanks={focusFirstMissing} />
       {exporting.print}
       {!reviewing && (job ? <AskStatus deck={deck} job={job} onCancel={ask.cancel} /> : <AiInbox ai={ai} onOpen={setReviewing} />)}

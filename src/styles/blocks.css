@@ -444,7 +444,7 @@ body.is-block-resizing * {
   line-height: 1.4;
 }
 
-/* 움직임 메뉴의 작은 그림: 부품 하나(면 위에 줄 셋). 올리면 고른 움직임을 1.6초마다 되풀이한다 */
+/* 움직임 메뉴와 모션 스튜디오의 작은 그림: 부품 하나(면 위에 줄 셋). 올리면 고른 움직임을 1.6초마다 되풀이한다 */
 .fx-demo {
   grid-row: 1 / span 2;
   display: grid;
@@ -483,53 +483,53 @@ body.is-block-resizing * {
   background: #b3b9c3;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
   animation: 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-rise {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-rise {
   animation-name: fx-rise;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-fade {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-fade {
   animation-name: fx-fade;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-wipe {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-wipe {
   animation-name: fx-wipe;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-slide {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-slide {
   animation-name: fx-slide;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-pop {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-pop {
   animation-name: fx-pop;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-zoom {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-zoom {
   animation-name: fx-zoom;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-flip {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-flip {
   animation-name: fx-flip;
   transform-origin: 50% 100%;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-blur {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-blur {
   animation-name: fx-blur;
 }
 
 /* 알아서: 부품마다 짠 움직임이라 줄이 차례로 자라는 모습으로 대신 보인다 */
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-auto i {
   animation: fx-grow 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(2) {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(2) {
   animation-delay: 0.12s;
 }
 
-.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(3) {
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(3) {
   animation-delay: 0.24s;
 }
 
