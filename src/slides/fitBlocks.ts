@@ -350,13 +350,35 @@ export function blockFitter() {
 
   /**
    * 줄마다 부품 내용의 묶음을 가운데로 (맨 위 설명 3-3). 이음표가 선 줄은 부품마다 가운데에 두어서(blocks.css) 건너뛴다.
-   * 칸 높이를 다 쓰는 부품(차트, 표) 옆의 짧은 부품은 그 부품들끼리 묶어 가운데로 내린다: 줄에서 가장 긴 내용을 기준으로 하면
-   * 차트가 가장 길어 내리지 않아서, 차트 옆의 숫자가 칸 위에 붙고 아래 절반이 통째로 비었다.
-   * 그 가운데 숫자 부품(큰 숫자, 전과 후, 목표 대비)은 내리기 전에 한두 단계 키운다(boosts): 높은 칸에 작은 숫자가 떠 있으면
-   * 칸이 비어 보인다. 글 부품은 키우지 않는다(장 제목과 크기가 가까워진다)
+   * 내릴 수 있는 부품(blocks.css의 --bk-lifts: 글, 목록, 숫자, 강조 상자)은 글이 시작하는 선 하나(T)를 같이 쓴다. 그 선은
+   * 묶음 가운데 가장 긴 내용이 줄 가운데에 오는 자리이고, 어느 칸도 넘치지 않게 그 안에서만 옮긴다.
+   * 칸마다 칸 위에서 재면 안 된다: 옅은 면, 진한 면은 안쪽 여백만큼 글이 아래에서 시작해서, 옆의 글은 칸 위에 붙고 면 안의 글만
+   * 내려가 있었다. 칸 높이를 다 쓴 글 칸을 차트처럼 묶음에서 빼도 안 된다: 가장 낮은 줄에서 긴 쪽은 늘 칸을 다 쓰니, 짧은 쪽만
+   * 내려가 나란한 소제목의 윗선이 어긋났다.
+   * 차트, 표, 그림처럼 내리지 않는 부품은 묶음에 넣지 않는다. 그 옆의 짧은 부품은 자기들끼리 가운데로 내린다: 차트가 가장 길어
+   * 기준이 되면 차트 옆의 숫자가 칸 위에 붙고 아래 절반이 통째로 비었다.
+   * 칸 높이를 다 쓰는 그런 부품 옆의 숫자 부품(큰 숫자, 전과 후, 목표 대비)은 내리기 전에 한두 단계 키운다(boosts): 높은 칸에
+   * 작은 숫자가 떠 있으면 칸이 비어 보인다. 글 부품은 키우지 않는다(장 제목과 크기가 가까워진다)
    */
   const boosts = [1.44, 1.2]
   const boostable = new Set(['number', 'delta', 'goal'])
+  /** 내용(첫 보이는 자식)이 --bk-lift로 내려가는 부품인지 (blocks.css가 정한다) */
+  function liftable(c: HTMLElement): boolean {
+    const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)
+    return !!body && getComputedStyle(body).getPropertyValue('--bk-lifts').trim() === '1'
+  }
+  /** 내용에 보이는 소제목(.bk-h)이 있는지 */
+  function headed(c: HTMLElement): boolean {
+    return Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in .bk-h')).some((h) => h.offsetHeight > 0)
+  }
+  /** 내용의 위아래 자리 (화면 px): 글이 시작할 수 있는 선, 끝나야 하는 선, 내용 높이 */
+  function span(c: HTMLElement): { top: number; bottom: number; used: number; k: number } | null {
+    const m = used(c)
+    if (!m) return null
+    const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)!
+    const top = body.getBoundingClientRect().top + parseFloat(getComputedStyle(body).paddingTop) * m.k
+    return { top, bottom: top + m.room, used: m.used, k: m.k }
+  }
   function lift(cells: HTMLElement[]): void {
     const rows = new Map<string, HTMLElement[]>()
     for (const c of cells) {
@@ -365,15 +387,16 @@ export function blockFitter() {
       rows.set(key, (rows.get(key) || []).concat(c))
     }
     rows.forEach((row) => {
-      const ms = row.map(used)
-      if (ms.some((m) => !m)) return
-      const room = Math.min(...ms.map((m) => m!.room))
-      const k = ms[0]!.k
-      // 칸 높이를 다 쓰는 부품 (캔버스 16px까지는 다 쓴 것으로)
-      const full = ms.map((m) => m!.used >= room - 16 * k)
-      const short = row.filter((_, i) => !full[i])
-      if (full.some(Boolean) && short.length) {
-        for (const c of short) {
+      const group = row.filter(liftable)
+      if (!group.length) return
+      const others = row.filter((c) => !group.includes(c))
+      // 칸 높이를 다 쓰는 차트, 표 (캔버스 16px까지는 다 쓴 것으로)
+      const tall = others.some((c) => {
+        const m = used(c)
+        return !!m && m.used >= m.room - 16 * m.k
+      })
+      if (tall) {
+        for (const c of group) {
           if (!boostable.has(c.dataset.type || '')) continue
           const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
           if (!inner) continue
@@ -386,7 +409,7 @@ export function blockFitter() {
             c.style.setProperty('--bk-fit', String(f))
             place(inner)
             const m = used(c)
-            if (m && m.used <= room && !crowded(inner, shapes)) {
+            if (m && m.used <= m.room && !crowded(inner, shapes)) {
               ok = true
               break
             }
@@ -397,15 +420,28 @@ export function blockFitter() {
             place(inner)
           }
         }
-        const most = Math.max(...short.map((c) => used(c)?.used ?? room))
-        const d = (room - most) / 2 / k
-        if (d >= 8) for (const c of short) c.style.setProperty('--bk-lift', Math.round(d) + 'px')
-        return
       }
+      // 그런 차트 옆에서 소제목이 있는 부품(목록, 표, 준비 상황)은 내리지 않는다: 차트도 위에 소제목이 있어서, 내리면 나란한
+      // 소제목의 윗선이 어긋난다. 소제목 없는 짧은 부품(숫자, 강조 상자, 핵심 한 줄)만 가운데로
+      const lifted = tall ? group.filter((c) => !headed(c)) : group
+      if (!lifted.length) return
+      const ms = lifted.map(span)
+      if (ms.some((m) => !m)) return
+      const k = ms[0]!.k
+      // 줄의 위아래: 칸의 테두리 상자 (면이 있으면 면의 바깥)
+      const boxes = lifted.map((c) => c.getBoundingClientRect())
+      const top = Math.min(...boxes.map((b) => b.top))
+      const bottom = Math.max(...boxes.map((b) => b.bottom))
       const most = Math.max(...ms.map((m) => m!.used))
-      // 캔버스 8px 밑으로 남으면 그대로 (내려 봐야 보이지 않고, 글을 적을 때마다 조금씩 움직인다)
-      const d = (room - most) / 2 / k
-      if (d >= 8) for (const c of row) c.style.setProperty('--bk-lift', Math.round(d) + 'px')
+      const lo = Math.max(...ms.map((m) => m!.top))
+      const hi = Math.min(...ms.map((m) => m!.bottom - m!.used))
+      const T = Math.max(lo, Math.min(hi, top + (bottom - top - most) / 2))
+      const d = ms.map((m) => Math.max(0, Math.min(T - m!.top, m!.bottom - m!.used - m!.top)) / k)
+      // 모두 캔버스 8px 밑으로 내려가면 그대로 (내려 봐야 보이지 않고, 글을 적을 때마다 조금씩 움직인다)
+      if (Math.max(...d) < 8) return
+      lifted.forEach((c, i) => {
+        if (d[i] >= 1) c.style.setProperty('--bk-lift', Math.round(d[i]) + 'px')
+      })
     })
   }
 

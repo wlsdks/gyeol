@@ -79,8 +79,10 @@
 
 /* 한 줄에 부품이 둘 이상이면 모두 위에서부터: 가운데에 두면 내용이 적은 부품이 옆 부품과 다른 높이에 떠서
    소제목의 윗선이 칸마다 어긋나 보인다. 대신 줄 안에서 가장 긴 내용을 기준으로 묶음째 가운데로 내린다(--bk-lift, fitBlocks.ts):
-   윗선은 맞으면서 높은 줄의 아래 절반이 통째로 비지 않는다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에 */
+   윗선은 맞으면서 높은 줄의 아래 절반이 통째로 비지 않는다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에.
+   --bk-lifts는 fitBlocks가 내릴 수 있는 부품을 알아보는 표시다(목록을 두 곳에 따로 두지 않게) */
 .bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
+  --bk-lifts: 1;
   box-sizing: border-box;
   justify-content: flex-start;
   padding-top: var(--bk-lift, 0px);
