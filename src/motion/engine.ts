@@ -506,11 +506,14 @@ export function motionEngine(): MotionEngine {
         break
       }
       case 'agenda': {
-        const t = words(one('.ag-title'), 0)
-        fade(one('.ag-list'), Math.max(0, Math.min(t, 360) - 120), 360)
-        items('.ag-item', Math.min(t, 360), (el, at) => {
-          rise(el, at, L.y * 0.7)
-          pop(el.querySelector('.ag-n'), at + 80)
+        // 선을 왼쪽부터 긋고(목록은 맨 위 굵은 선 다음 줄마다, 나란히는 칸마다 위의 선이 이어서) 이름이 올라온 뒤 번호가 뜬다
+        const t = Math.min(words(one('.ag-title'), 0), 360)
+        const list = one('.ag-list')
+        if (list && getComputedStyle(list, '::before').content !== 'none') grow(list, Math.max(0, t - 120), 'x', '::before')
+        items('.ag-item', t, (el, at) => {
+          grow(el, at, 'x', '::after')
+          rise(el.querySelector('.ag-t'), at + 60, L.y * 0.6)
+          fade(el.querySelector('.ag-n'), at + 200, 700)
         })
         break
       }

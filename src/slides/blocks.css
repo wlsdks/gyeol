@@ -3078,6 +3078,18 @@
   }
 }
 
+/* 나란히 목차가 좁은 칸에서 다섯, 여섯이면 셋씩 두 줄로: 한 줄로 늘어놓으면 반 칸에서 칸 하나가 83px라 이름이
+   바닥 글자(22px)로 줄고 글자마다 줄이 바뀌었다. 칸이 더 높아 줄로 쌓을 때(아래 --ag-stack)는 그 짜임을 쓴다 */
+@container bk (max-width: 1299px) {
+  @container style(not (--ag-stack: 1)) {
+    .bk-agenda.va-columns .ag-list:is([data-n='5'], [data-n='6']) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-flow: row;
+      row-gap: 48px;
+    }
+  }
+}
+
 /* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
 .bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
   padding-block: calc(clamp(12px, 2.4cqh, 30px) + var(--bk-air, 0px));
@@ -3627,8 +3639,8 @@
   }
 }
 
-/* 목차 나란히, 좁고 높은 칸: 줄로 쌓아 칸 높이를 채운다(큰 번호 왼쪽, 이름 오른쪽). 나란히 두면 칸 높이 가운데에 번호와 이름의
-   낮은 띠만 남는다. 번호 크기는 줄 높이로(번호는 한두 자라 너비는 넉넉하다), 단계(slides.css 맨 위)에서 */
+/* 목차 나란히, 좁고 높은 칸: 목록 모양처럼 줄로 쌓아 칸 높이를 채운다(이름 왼쪽, 번호 오른쪽). 나란히 두면 칸 높이 가운데에
+   번호와 이름의 낮은 띠만 남는다 */
 @container bk (max-width: 1200px) and (min-height: 240px) {
   .va-columns > .bk-in:has(> .ag > .ag-list[data-n='2']) {
     --ag-stack: 1;
@@ -3661,67 +3673,40 @@
 
 @container style(--ag-stack: 1) {
   .va-columns > .bk-in > .ag > .ag-list:is([data-n]) {
-    --ag-row: calc((100cqh - 3px) / var(--ag-n, 3));
-    grid-auto-flow: row;
-    grid-template-columns: max-content minmax(0, 1fr);
     grid-auto-columns: auto;
-    grid-auto-rows: minmax(0, 1fr);
+    grid-auto-flow: row;
+    grid-auto-rows: minmax(min-content, 1fr);
     align-content: stretch;
-    column-gap: 56px;
-    border-top: 3px solid var(--ink);
   }
 
-  .va-columns > .bk-in > .ag > .ag-list[data-n='2'] {
-    --ag-n: 2;
-  }
-
-  .va-columns > .bk-in > .ag > .ag-list[data-n='4'] {
-    --ag-n: 4;
-  }
-
-  .va-columns > .bk-in > .ag > .ag-list[data-n='5'] {
-    --ag-n: 5;
-  }
-
-  .va-columns > .bk-in > .ag > .ag-list[data-n='6'] {
-    --ag-n: 6;
+  .va-columns > .bk-in > .ag > .ag-list:is([data-n])::before {
+    content: '';
   }
 
   .va-columns > .bk-in > .ag > .ag-list > .ag-item {
     display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-    align-items: center;
-    min-height: 0;
+    align-items: baseline;
+    gap: 0 48px;
     padding: 0;
-    border-bottom: var(--rule) solid var(--line);
     container-type: normal;
   }
 
-  .va-columns > .bk-in > .ag > .ag-list > .ag-item::before {
-    content: none;
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item::after {
+    top: auto;
+    bottom: 0;
+    border-top: 0;
+    border-bottom: var(--rule) solid var(--line);
   }
 
-  /* 번호: 줄 높이의 0.6배까지, 단계에서 고른다 (번호 글자의 키는 글자 크기의 0.72 남짓) */
   .va-columns > .bk-in > .ag > .ag-list > .ag-item > .ag-n {
-    --ag-a: min(154px, var(--ag-row) * 0.6);
-    min-width: 0.62em;
-    font-size: max(
-      36px,
-      clamp(0px, (var(--ag-a) - 153px) * 999, 154px),
-      clamp(0px, (var(--ag-a) - 127px) * 999, 128px),
-      clamp(0px, (var(--ag-a) - 107px) * 999, 108px),
-      clamp(0px, (var(--ag-a) - 89px) * 999, 90px),
-      clamp(0px, (var(--ag-a) - 73px) * 999, 74px),
-      clamp(0px, (var(--ag-a) - 61px) * 999, 62px),
-      clamp(0px, (var(--ag-a) - 51px) * 999, 52px),
-      clamp(0px, (var(--ag-a) - 43px) * 999, 44px)
-    );
-    font-variant-numeric: tabular-nums;
+    --fs: 52px;
+    font-weight: 200;
+    line-height: 1.25;
   }
 
   .va-columns > .bk-in > .ag > .ag-list > .ag-item > .ag-t {
     --fs: 52px;
+    text-wrap: wrap;
   }
 }
 
