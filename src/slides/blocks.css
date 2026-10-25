@@ -846,6 +846,12 @@
   text-align: center;
 }
 
+/* 반원 게이지는 가로로 길어서(100:58) 원 자리도 그 높이만큼만. 원처럼 칸 너비만큼 높게 두면 반원 위아래가 비어
+   이름과 덧붙임이 반원에서 멀리 떨어져 흩어져 보였다. 낮은 칸, 넓은 칸의 짜임이 뒤에서 덮도록 같은 무게로(:where) */
+.bk-rg:where(.is-gauge) {
+  grid-template-rows: auto minmax(0, 58cqw) auto;
+}
+
 .bk-look-plain .bk-rg {
   --py: 0px;
 }
