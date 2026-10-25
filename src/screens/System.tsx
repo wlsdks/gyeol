@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { BLOCK_GROUPS, BLOCK_LINKS, BLOCK_TYPES, BLOCKS } from '../deck/blocks'
 import { BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
@@ -253,7 +253,7 @@ export function System() {
             <p className="sys-group-desc">장마다 같은 색과 글자 크기를 써요. 강조색은 답에만 써서 보는 분의 눈이 한곳에 모이게 해요.</p>
             <Tokens deckTheme={deckTheme} />
             {thumbW > 0 && (
-              <div className="sys-thumbs" style={{ '--cols': cols, '--gap': `${gap}px` } as CSSProperties}>
+              <div className="sys-thumbs" style={{ '--cols': cols, '--gap': `${gap}px` }}>
                 <figure className="sys-thumb sys-thumb-wide">
                   <TypeScale deckTheme={deckTheme} width={thumbW * 2 + gap} />
                   <figcaption>
@@ -267,7 +267,7 @@ export function System() {
             <p className="sys-group-desc">테마 메뉴에서 제목과 본문의 글꼴 짝 하나를 골라요. 모두 앱과 내보낸 파일에 들어 있어서 어느 PC에서 열어도 같아요.</p>
             {/* 넷을 둘씩: 셋씩 놓으면 하나가 혼자 남고, 글꼴은 크게 봐야 차이가 보인다 */}
             {width > 0 && examples.get(FONT_SAMPLE) && (
-              <div className="sys-thumbs" style={{ '--cols': 2, '--gap': `${gap}px` } as CSSProperties}>
+              <div className="sys-thumbs" style={{ '--cols': 2, '--gap': `${gap}px` }}>
                 {FONTS.map((f) => {
                   const s = examples.get(FONT_SAMPLE)!
                   return (
@@ -286,7 +286,7 @@ export function System() {
             )}
             <h3 className="sys-h3 sys-tones-h">장의 바탕</h3>
             {width > 0 && examples.get('statement') && (
-              <div className="sys-thumbs" style={{ '--cols': 3, '--gap': `${gap}px` } as CSSProperties}>
+              <div className="sys-thumbs" style={{ '--cols': 3, '--gap': `${gap}px` }}>
                 {TONES.map((t) => {
                   const s = examples.get('statement')!
                   return (
@@ -322,7 +322,7 @@ export function System() {
                     <p className="sys-layout-desc">{spec.description}</p>
                     <p className="sys-layout-use">{usedIn(id)}</p>
                     {slide && thumbW > 0 && (
-                      <div className="sys-thumbs" style={{ '--cols': cols, '--gap': `${gap}px` } as CSSProperties}>
+                      <div className="sys-thumbs" style={{ '--cols': cols, '--gap': `${gap}px` }}>
                         {variants.map((v) => (
                           <figure key={v.id} className="sys-thumb">
                             <ScaledSlide width={thumbW}>
@@ -352,7 +352,7 @@ export function System() {
               BLOCK_GROUPS.map((g) => (
                 <div key={g.name} className="sys-parts">
                   <h3 className="sys-h3">{g.name}</h3>
-                  <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` } as CSSProperties}>
+                  <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` }}>
                     {g.types.map((type) => (
                       <PartCard key={type} look={look} type={type} blank={view === 'blank'} />
                     ))}
@@ -363,7 +363,7 @@ export function System() {
               <div className="sys-parts">
                 <h3 className="sys-h3">이음표</h3>
                 <p className="sys-group-desc">컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요. 컴포넌트 사이의 빈자리에 혼자 서서 컴포넌트를 가리지 않아요.</p>
-                <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` } as CSSProperties}>
+                <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` }}>
                   {BLOCK_LINKS.map((l) => (
                     <figure key={l.id} className="sys-thumb sys-part">
                       <LinkThumb deck={look} link={l.id} mode="final" />

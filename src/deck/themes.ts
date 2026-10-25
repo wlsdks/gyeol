@@ -387,5 +387,5 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--tall': f.tall,
     '--head-box': f.box,
     '--head-gap': f.gap,
-  } as CSSProperties
+  }
 }

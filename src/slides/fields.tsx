@@ -86,7 +86,7 @@ interface TextProps {
 
 function oneLineProps(text: string, oneLine?: boolean, units?: number, numeral?: boolean) {
   if (!oneLine) return { cls: '', style: undefined }
-  return { cls: 'one-line', style: { '--units': (units ?? (numeral ? numberUnits(text) : textUnits(text))).toFixed(2) } as CSSProperties }
+  return { cls: 'one-line', style: { '--units': (units ?? (numeral ? numberUnits(text) : textUnits(text))).toFixed(2) } }
 }
 
 /** 발표 화면의 글: 빼기 기호를 바로 쓰고, 큰 숫자면 단위를 작은 글자로 떼어 낸다 */

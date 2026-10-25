@@ -1,4 +1,4 @@
-import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, linkAt, rowMins, sameLinkTarget, shownLook, shownRows, spansOf, variantOfBlock, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn, readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
@@ -127,7 +127,7 @@ function Delta() {
   return (
     <div className={cx('bk-dl', demo && 'is-demo')}>
       <T k="label" className="bk-dl-l" />
-      <div className="bk-dl-row" style={{ '--dl-units': units.toFixed(2) } as CSSProperties}>
+      <div className="bk-dl-row" style={{ '--dl-units': units.toFixed(2) }}>
         <div className="bk-dl-side bk-dl-from">
           <span className="bk-dl-k">전</span>
           <div className="bk-dl-vbox">
@@ -163,7 +163,7 @@ function Goal() {
   const pair = amountPair(read('value'), read('target'), read('unit'))
   const pct = pair && pair.b.base > 0 ? (pair.a.base / pair.b.base) * 100 : null
   return (
-    <div className={cx('bk-gl', demo && 'is-demo', pct !== null && pct >= 100 && 'is-met')} style={{ '--p': Math.min(100, Math.max(0, pct ?? 0)).toFixed(1) } as CSSProperties}>
+    <div className={cx('bk-gl', demo && 'is-demo', pct !== null && pct >= 100 && 'is-met')} style={{ '--p': Math.min(100, Math.max(0, pct ?? 0)).toFixed(1) }}>
       <div className="bk-gl-top">
         <T k="label" className="bk-gl-l" />
         {/* 큰 숫자처럼 단위(%)는 두 단계 작게: 같은 장의 전과 후, 큰 숫자와 꼴이 같다 */}
@@ -209,7 +209,7 @@ function Ring() {
   const p = v === null ? 0 : Math.min(100, Math.max(0, v))
   if (slide.variant === 'gauge')
     return (
-      <div className={cx('bk-rg is-gauge', demo && 'is-demo')} style={{ '--p': p.toFixed(1) } as CSSProperties}>
+      <div className={cx('bk-rg is-gauge', demo && 'is-demo')} style={{ '--p': p.toFixed(1) }}>
         <T k="label" className="bk-rg-l" />
         <div className="bk-rg-box">
           <div className="bk-rg-sq">
@@ -232,7 +232,7 @@ function Ring() {
       </div>
     )
   return (
-    <div className={cx('bk-rg', demo && 'is-demo')} style={{ '--p': p.toFixed(1) } as CSSProperties}>
+    <div className={cx('bk-rg', demo && 'is-demo')} style={{ '--p': p.toFixed(1) }}>
       <T k="label" className="bk-rg-l" />
       <div className="bk-rg-box">
         <div className="bk-rg-sq">
@@ -285,7 +285,7 @@ function Ratio() {
     <div
       className={cx('bk-rt', demo && 'is-demo')}
       // 점 칸의 높이(blocks.css의 .bk-rt-box)도 줄 수로 정해서 위에 둔다
-      style={{ '--cols': cols, '--rows': Math.ceil(n / cols), '--cols-t': tall, '--rows-t': Math.ceil(n / tall) } as CSSProperties}
+      style={{ '--cols': cols, '--rows': Math.ceil(n / cols), '--cols-t': tall, '--rows-t': Math.ceil(n / tall) }}
     >
       <div className="bk-rt-text">
         <T k="label" className="bk-rt-l" />
@@ -350,7 +350,7 @@ function Spark() {
             <svg className="bk-sp-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <path d={line} />
             </svg>
-            <span className="bk-sp-dot" style={{ '--x': last.x, '--y': last.y } as CSSProperties} aria-hidden="true" />
+            <span className="bk-sp-dot" style={{ '--x': last.x, '--y': last.y }} aria-hidden="true" />
           </>
         )}
         {/* 흐름 숫자는 편집할 때 그림 자리에서 고친다(올리거나 누르면 숫자가 보인다). 발표 화면에는 선만.
@@ -543,7 +543,7 @@ function Gantt() {
   // 기간이 비어 있으면 편집할 때만 안내 기간으로 흐린 막대를 보인다
   const periodOf = (i: number) => items[i].body.trim() || (mode === 'final' ? '' : hintFor(slide.layout, slide.hints, 'body', 'body', i))
   return (
-    <div className={cx('bk-gt', demo && 'is-demo')} style={{ '--n': Math.max(1, cols.length), '--now': now } as CSSProperties}>
+    <div className={cx('bk-gt', demo && 'is-demo')} style={{ '--n': Math.max(1, cols.length), '--now': now }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <div className="bk-gt-grid">
         {now >= 0 && <span className="bk-gt-now" aria-hidden="true" />}
@@ -585,7 +585,7 @@ function Gantt() {
                 </div>
                 {/* 편집할 때 기간은 막대 자리에서 고친다 (위의 기간 칸 이름과 같이) */}
                 <div className="bk-gt-track">
-                  {span && <span className="bk-gt-bar" style={{ '--s': span[0], '--e': span[1] + 1 } as CSSProperties} />}
+                  {span && <span className="bk-gt-bar" style={{ '--s': span[0], '--e': span[1] + 1 }} />}
                   {mode === 'edit' && <IT i={i} k="body" className="bk-gt-p on-chart" oneLine />}
                 </div>
                 <ItemTools i={i} />
@@ -663,7 +663,7 @@ function Rating() {
   const marksOf = (i: number) => gradesOf(items[i].body.trim() || (mode === 'final' ? '' : hintFor(slide.layout, slide.hints, 'body', 'body', i)))
   const graded = items.some((_, i) => marksOf(i).some((g) => gradeOf(g)))
   return (
-    <div className={cx('bk-ev', demo && 'is-demo')} style={{ '--n': Math.max(1, opts.length), '--pick': pick } as CSSProperties}>
+    <div className={cx('bk-ev', demo && 'is-demo')} style={{ '--n': Math.max(1, opts.length), '--pick': pick }}>
       <div className="bk-ev-top">
         <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
         {graded && (
@@ -745,13 +745,13 @@ function Market() {
         <div className="bk-mk-box" aria-hidden="true">
           <div className="bk-mk-fig">
             {items.map((it, i) => (
-              <span key={it.id} className="bk-mk-c" style={{ '--i': i } as CSSProperties} />
+              <span key={it.id} className="bk-mk-c" style={{ '--i': i }} />
             ))}
           </div>
         </div>
         <ol className="bk-mk-list">
           {items.map((it, i) => (
-            <li key={it.id} className="it bk-mk-row" style={{ '--i': i } as CSSProperties}>
+            <li key={it.id} className="it bk-mk-row" style={{ '--i': i }}>
               <span className="bk-mk-sw" aria-hidden="true" />
               <div className="bk-mk-text">
                 <IT i={i} k="title" className="bk-mk-t" />
@@ -831,7 +831,7 @@ function Pareto() {
       </>
     ) : undefined
   return (
-    <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n } as CSSProperties}>
+    <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ChartKey
         sum={sum}
@@ -849,7 +849,7 @@ function Pareto() {
               <polyline points={line} />
             </svg>
             {cum.map((c, i) => (
-              <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) } as CSSProperties}>
+              <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) }}>
                 {i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
               </span>
             ))}
@@ -857,7 +857,7 @@ function Pareto() {
         )}
         {items.map((it, i) => (
           // 칸 자리를 적어 둔다: 선 그림이 첫 줄 전체를 차지해서, 적지 않으면 막대 칸이 그 옆 새 칸으로 밀려난다
-          <div key={it.id} className={cx('it bk-cc-col', i < vital && 'is-hl')} style={{ '--p': share[i].toFixed(2), gridColumn: i + 1 } as CSSProperties}>
+          <div key={it.id} className={cx('it bk-cc-col', i < vital && 'is-hl')} style={{ '--p': share[i].toFixed(2), gridColumn: i + 1 }}>
             <div className="bk-cc-bar">
               <span className="bk-cc-v">
                 <IT i={i} k="value" as="span" className="bk-cc-num" oneLine />
@@ -897,7 +897,7 @@ function Attain() {
   return (
     <div
       className={cx('bk-cc bk-tg', demo && 'is-demo', items.length <= 6 && items.every((it) => [...it.title.trim()].length <= 4) && 'is-short')}
-      style={{ '--n': items.length } as CSSProperties}
+      style={{ '--n': items.length }}
     >
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ChartKey
@@ -928,7 +928,7 @@ function Attain() {
             <div
               key={it.id}
               className={cx('it bk-cc-col', met[i] === true && 'is-hl', met[i] === false && 'is-miss')}
-              style={{ '--p': y(actual[i]).toFixed(2), '--g': y(goal[i]).toFixed(2), '--m': Math.max(y(actual[i]), y(goal[i])).toFixed(2) } as CSSProperties}
+              style={{ '--p': y(actual[i]).toFixed(2), '--g': y(goal[i]).toFixed(2), '--m': Math.max(y(actual[i]), y(goal[i])).toFixed(2) }}
             >
               <div className="bk-cc-bar bk-tg-bar">
                 <span className="bk-cc-fill" />
@@ -994,14 +994,14 @@ function Stack() {
   const top = Math.max(0, ...totals)
   const tint = (j: number) => `color-mix(in srgb, var(--accent) ${STACK_TINTS[j]}%, var(--bg))`
   return (
-    <div className={cx('bk-cc bk-st', demo && 'is-demo')} style={{ '--n': items.length } as CSSProperties}>
+    <div className={cx('bk-cc bk-st', demo && 'is-demo')} style={{ '--n': items.length }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ChartKey
         keys={
           <span className="bk-st-keywrap">
             <span className="bk-st-keys">
               {parts.map((p, j) => (
-                <span key={j} className="bk-cc-lk" style={{ '--c': tint(j) } as CSSProperties}>
+                <span key={j} className="bk-cc-lk" style={{ '--c': tint(j) }}>
                   <i aria-hidden="true" />
                   {p}
                 </span>
@@ -1017,7 +1017,7 @@ function Stack() {
           const sum = totals[i]
           const p = pct ? (sum > 0 ? 100 : 0) : top > 0 ? (sum / top) * 100 : 0
           return (
-            <div key={it.id} className="it bk-cc-col" style={{ '--p': p.toFixed(2) } as CSSProperties}>
+            <div key={it.id} className="it bk-cc-col" style={{ '--p': p.toFixed(2) }}>
               <div className="bk-cc-bar bk-st-bar">
                 <span className="bk-cc-v">
                   {/* 단위는 그래프 위에 한 번만 (막대마다 되풀이하지 않는다). 단위가 서로 다른 값을 더한 합은 보이지 않는다 */}
@@ -1029,7 +1029,7 @@ function Stack() {
                     // 칸 안 숫자는 그 칸이 막대 높이에서 차지하는 몫이 충분할 때만. 칸이 숫자보다 낮으면 CSS가 숨긴다
                     const room = (of * p) / 100 >= 6 && series.ok
                     return v > 0 ? (
-                      <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: tint(j) } as CSSProperties}>
+                      <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: tint(j) }}>
                         {room && <span className="bk-st-n">{pct ? pctText(of) : formatNumber(v)}</span>}
                       </span>
                     ) : null
@@ -1067,7 +1067,7 @@ function Diverge() {
   const z = (neg / range) * 100
   const down = slide.variant === 'down'
   return (
-    <div className={cx('bk-dv', demo && 'is-demo', neg > 0 && 'has-neg', pos > 0 && 'has-pos')} style={{ '--z': z.toFixed(2) } as CSSProperties}>
+    <div className={cx('bk-dv', demo && 'is-demo', neg > 0 && 'has-neg', pos > 0 && 'has-pos')} style={{ '--z': z.toFixed(2) }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ChartKey unitKey="basis" />
       <ul className="bk-dv-list" data-n={items.length}>
@@ -1079,7 +1079,7 @@ function Diverge() {
             <li
               key={it.id}
               className={cx('it bk-dv-row', side && `is-${side}`, hl && 'is-hl', v === null && 'is-blank')}
-              style={{ '--p': v === null ? 0 : ((Math.abs(v) / range) * 100).toFixed(2) } as CSSProperties}
+              style={{ '--p': v === null ? 0 : ((Math.abs(v) / range) * 100).toFixed(2) }}
             >
               <IT i={i} k="title" className="bk-dv-name" />
               <div className="bk-dv-track">
@@ -1179,7 +1179,7 @@ function Heat() {
   const topAt = where(top)
   const lowAt = where(low)
   return (
-    <div className={cx('bk-cc bk-hm', demo && 'is-demo')} style={{ '--c': c } as CSSProperties}>
+    <div className={cx('bk-cc bk-hm', demo && 'is-demo')} style={{ '--c': c }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
       <ChartKey
         sum={
@@ -1198,7 +1198,7 @@ function Heat() {
             {Array.from({ length: c }, (_, j) => (
               <span key={j} className="bk-hm-cn">
                 {names[j] && (
-                  <span className="bk-hm-ct one-line" style={{ '--units': textUnits(names[j]).toFixed(2) } as CSSProperties}>
+                  <span className="bk-hm-ct one-line" style={{ '--units': textUnits(names[j]).toFixed(2) }}>
                     {names[j]}
                   </span>
                 )}
@@ -1216,9 +1216,9 @@ function Heat() {
                 const text = rows[i][j] ?? ''
                 const mark = is(top, i, j) ? 'is-max' : is(low, i, j) ? 'is-min' : null
                 return (
-                  <span key={j} className={cx('bk-hm-cell', v === null && 'is-empty', mark)} style={v === null ? undefined : ({ '--t': v.toFixed(3) } as CSSProperties)}>
+                  <span key={j} className={cx('bk-hm-cell', v === null && 'is-empty', mark)} style={v === null ? undefined : ({ '--t': v.toFixed(3) })}>
                     {v !== null && (
-                      <span className="bk-hm-v one-line" style={{ '--units': numberUnits(text).toFixed(2) } as CSSProperties}>
+                      <span className="bk-hm-v one-line" style={{ '--units': numberUnits(text).toFixed(2) }}>
                         <Numeral text={text} />
                       </span>
                     )}
@@ -1309,7 +1309,7 @@ function Sparks() {
                       <path d={line} />
                     </svg>
                   )}
-                  {end && <span className="bk-sx-dot" style={{ '--x': end.x.toFixed(2), '--y': end.y.toFixed(2) } as CSSProperties} aria-hidden="true" />}
+                  {end && <span className="bk-sx-dot" style={{ '--x': end.x.toFixed(2), '--y': end.y.toFixed(2) }} aria-hidden="true" />}
                   {/* 흐름 숫자는 선 자리에서 고친다 (올리거나 누르면 숫자가 보인다) */}
                   {mode === 'edit' && <IT i={i} k="value" className="bk-sx-in on-chart" oneLine />}
                 </div>
@@ -1342,7 +1342,7 @@ function Picture() {
   const contain = slide.variant === 'contain'
   const size = contain ? imageSize(slide.fields.image ?? '') : null
   return (
-    <figure className={cx('bk-img', size && 'is-fit')} style={size ? ({ '--ar': size.w / size.h } as CSSProperties) : undefined}>
+    <figure className={cx('bk-img', size && 'is-fit')} style={size ? ({ '--ar': size.w / size.h }) : undefined}>
       <ImageSlot k="image" className="bk-img-i" contain={contain} />
       <T k="caption" as="figcaption" className="bk-img-c" />
     </figure>

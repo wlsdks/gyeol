@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { asksDecision, AUDIENCES, BLUEPRINTS, DECK_GROUPS, DURATIONS, METHODS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { createDeck, formatDate, makeSlide } from '../deck/generate'
@@ -316,7 +316,7 @@ export function Wizard() {
               </span>
               {/* 표지 뒤에 이어질 장을 작게: 표지만 크게 두면 칸 아래가 비고, 무엇이 더 만들어지는지도 보인다 */}
               {rest.length > 0 && (
-                <ol className="wz-strip wz-real" style={{ '--n': strip } as CSSProperties} aria-label={`표지 뒤에 ${rest.length}장이 더 만들어져요`}>
+                <ol className="wz-strip wz-real" style={{ '--n': strip }} aria-label={`표지 뒤에 ${rest.length}장이 더 만들어져요`}>
                   {rest.slice(0, rest.length > strip ? strip - 1 : strip).map((s) => (
                     <li key={s.id} className="wz-shot" aria-hidden="true">
                       <FitSlide>

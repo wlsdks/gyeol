@@ -76,7 +76,7 @@ export const SlideCanvas = memo(function SlideCanvas({
   const place = placeOf(slide)
   const side = sideOf(slide)
   const themed = themeStyle(deck.theme, tone)
-  const style: CSSProperties = side !== null ? ({ ...themed, '--side-w': `${side * PANE_UNIT}px` } as CSSProperties) : themed
+  const style: CSSProperties = side !== null ? { ...themed, '--side-w': `${side * PANE_UNIT}px` } : themed
 
   return (
     <SlideContext.Provider value={{ slide, meta: deck.meta, mode, actions, canRemoveItem, sections, sectionIndex }}>
@@ -181,7 +181,7 @@ export function FitSlide({
   const frame = (
     <div className="slide-frame" style={{ width: w, height: h }}>
       {/* --vs: 슬라이드 안의 편집 도구(부품 도구)가 축소와 상관없이 같은 크기로 보이게 */}
-      <div className="slide-scale" style={{ transform: `scale(${scale})`, '--vs': scale } as CSSProperties}>
+      <div className="slide-scale" style={{ transform: `scale(${scale})`, '--vs': scale }}>
         {children}
       </div>
     </div>

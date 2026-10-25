@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { BLOCK_GAP } from '../deck/blocks'
 import { asksDecision } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
@@ -150,7 +150,7 @@ function Kpi() {
   return (
     <>
       <Head />
-      <div className="s-body kp" data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+      <div className="s-body kp" data-n={items.length} style={{ '--n': items.length }}>
         {items.map((it, i) => (
           <div key={it.id} className="it kp-item">
             <IT i={i} k="title" className="kp-label" />
@@ -339,7 +339,7 @@ function Logos() {
   return (
     <>
       <Head lead />
-      <div className="s-body lg" data-n={items.length} data-rows={rows} style={{ '--lg-half': cols * 2, '--n': items.length } as CSSProperties}>
+      <div className="s-body lg" data-n={items.length} data-rows={rows} style={{ '--lg-half': cols * 2, '--n': items.length }}>
         {items.map((it, i) => (
           <div key={it.id} className="it lg-cell" style={last < cols && i === (rows - 1) * cols ? { gridColumnStart: cols - last + 1 } : undefined}>
             <ImageSlot i={i} className="lg-img" contain />
@@ -404,7 +404,7 @@ function Bars() {
               <div
                 key={it.id}
                 className={cx('it br-row', highlight === i && 'is-hl', demo && 'is-demo')}
-                style={{ '--p': pct.toFixed(2) } as CSSProperties}
+                style={{ '--p': pct.toFixed(2) }}
               >
                 <div className="br-label">
                   <IT i={i} k="title" className="br-name" />
@@ -476,7 +476,7 @@ function Versus() {
       .map((v, i) => (v === null ? null : `${x(i).toFixed(2)},${(100 - y(v)).toFixed(2)}`))
       .filter(Boolean)
       .join(' ')
-  const at = (v: number, i: number) => ({ '--x': x(i).toFixed(2), '--y': y(v).toFixed(2) }) as CSSProperties
+  const at = (v: number, i: number) => ({ '--x': x(i).toFixed(2), '--y': y(v).toFixed(2) })
   // 좁은 막대에서 숫자는 막대 너비에 맞게 줄어드는데(.one-line), 숫자마다 제 길이로 줄이면 '96'은 크고 '104'는 작아
   // 막대마다 크기가 달랐다. 앞 값끼리, 뒤 값끼리는 가장 긴 숫자에 맞춘 한 크기로
   const shown = (k: 'meta' | 'value', i: number) => items[i][k].trim() || (final ? '' : hintFor(slide.layout, slide.hints, k, k, i))
@@ -485,7 +485,7 @@ function Versus() {
   return (
     <>
       <Head lead />
-      <div className={cx('s-body vs', demo && 'is-demo', highlight >= 0 && 'has-hl')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+      <div className={cx('s-body vs', demo && 'is-demo', highlight >= 0 && 'has-hl')} data-n={items.length} style={{ '--n': items.length }}>
         {/* 무엇과 무엇의 비교인지는 그래프 위에 한 번. 선과 막대의 색, 모양이 같은 표시로 */}
         <div className="vs-top">
           <span className="vs-key is-a">
@@ -514,7 +514,7 @@ function Versus() {
                 ...(pa !== null ? { '--a': pa.toFixed(2) } : {}),
                 ...(pb !== null ? { '--b': pb.toFixed(2) } : {}),
                 ...(pa !== null && pb !== null ? { '--lo': Math.min(pa, pb).toFixed(2), '--hi': Math.max(pa, pb).toFixed(2) } : {}),
-              } as CSSProperties
+              }
               return (
                 <div key={it.id} className={cx('it vs-row', i === highlight && 'is-hl', pa !== null && pb !== null && pb < pa && 'is-down')} style={style}>
                   <div className="vs-label">
@@ -540,7 +540,7 @@ function Versus() {
         <div className="vs-plot">
           {lines && (
             <div className="vs-canvas">
-              {floor < 0 && <span className="vs-zero" style={{ '--y': y(0).toFixed(2) } as CSSProperties} />}
+              {floor < 0 && <span className="vs-zero" style={{ '--y': y(0).toFixed(2) }} />}
               <svg className="vs-svg is-a" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                 <polyline className="vs-line" points={path(a)} />
               </svg>
@@ -582,13 +582,13 @@ function Versus() {
             <div key={it.id} className={cx('it vs-col', i === highlight && 'is-hl')}>
               {!lines && (
                 <div className="vs-bars">
-                  <div className="vs-bar is-a" style={{ '--p': bar(a[i]).toFixed(2) } as CSSProperties}>
+                  <div className="vs-bar is-a" style={{ '--p': bar(a[i]).toFixed(2) }}>
                     <span className="vs-val">
                       <IT i={i} k="meta" as="span" className="vs-num" oneLine units={ua} />
                     </span>
                     <span className="vs-fill" />
                   </div>
-                  <div className="vs-bar is-b" style={{ '--p': bar(b[i]).toFixed(2) } as CSSProperties}>
+                  <div className="vs-bar is-b" style={{ '--p': bar(b[i]).toFixed(2) }}>
                     <span className="vs-val">
                       <IT i={i} k="value" as="span" className="vs-num" oneLine units={ub} />
                     </span>
@@ -648,7 +648,7 @@ function Scorecard() {
           const rate = lower ? (actual > 0 ? target / actual : 0) : actual / target
           // 목표와 실적 중 큰 쪽이 막대 끝. 목표를 넘으면 목표 줄이 막대 안으로 들어간다.
           const scale = Math.max(target, actual) || 1
-          const bar = { '--a': known ? ((actual / scale) * 100).toFixed(2) : '0', '--t': known ? ((target / scale) * 100).toFixed(2) : '0' } as CSSProperties
+          const bar = { '--a': known ? ((actual / scale) * 100).toFixed(2) : '0', '--t': known ? ((target / scale) * 100).toFixed(2) : '0' }
           return (
             <div key={it.id} className={cx('it sk-row', highlight === i && 'is-hl', known && (met ? 'is-met' : 'is-miss'), demo && 'is-demo')}>
               <div className="sk-name">
@@ -703,14 +703,14 @@ function Bridge() {
   const pct = (v: number) => (((v - floor) / (top - floor || 1)) * 100).toFixed(2)
   const base = cut ? floor : 0
   const col = (a: number, b: number, link?: number) =>
-    ({ '--lo': pct(Math.min(a, b)), '--hi': pct(Math.max(a, b)), ...(link !== undefined ? { '--link': pct(link) } : {}) }) as CSSProperties
+    ({ '--lo': pct(Math.min(a, b)), '--hi': pct(Math.max(a, b)), ...(link !== undefined ? { '--link': pct(link) } : {}) })
   const known = demo || (!!startText.trim() && series.values[0] !== null && series.ok)
   // 끝 값의 단위: 단위 칸이 비었으면 처음 값에 붙여 쓴 자리와 단위('117억'이면 억)
   const endUnit = unit || (demo ? hintFor(slide.layout, slide.hints, 'unit') : series.suffix)
   return (
     <>
       <Head />
-      <div className={cx('s-body wf', demo && 'is-demo', cut && 'is-cut')} style={{ '--n': items.length + 2 } as CSSProperties}>
+      <div className={cx('s-body wf', demo && 'is-demo', cut && 'is-cut')} style={{ '--n': items.length + 2 }}>
         <div className="wf-col wf-total" style={col(base, start, start)}>
           <div className="wf-plot">
             <span className="wf-bar" />
@@ -800,11 +800,11 @@ function Trend() {
     const [a, v, b] = [values[i - 1], values[i], values[i + 1]]
     return i !== highlight && v !== null && a != null && b != null && v < a && v < b && y(v) > 30
   }
-  const at = (p: { x: number; y: number }) => ({ '--x': p.x.toFixed(2), '--y': p.y.toFixed(2) }) as CSSProperties
+  const at = (p: { x: number; y: number }) => ({ '--x': p.x.toFixed(2), '--y': p.y.toFixed(2) })
   return (
     <>
       <Head lead />
-      <div className={cx('s-body tn', demo && 'is-demo')} style={{ '--n': items.length } as CSSProperties}>
+      <div className={cx('s-body tn', demo && 'is-demo')} style={{ '--n': items.length }}>
         {/* 단위와 목표는 그래프 위 따로 둔 줄에. 선 끝에 이름표를 달면 최근 시기의 점(대개 강조한 점)과 부딪힌다 */}
         {(unitOpen || target !== null) && (
           <div className="tn-meta">
@@ -831,9 +831,9 @@ function Trend() {
         )}
         <div className="tn-plot">
           <div className="tn-canvas">
-            {floor < 0 && <span className="tn-zero" style={{ '--y': y(0).toFixed(2) } as CSSProperties} />}
+            {floor < 0 && <span className="tn-zero" style={{ '--y': y(0).toFixed(2) }} />}
             {target !== null && (
-              <div className="tn-target" style={{ '--y': y(target).toFixed(2) } as CSSProperties} />
+              <div className="tn-target" style={{ '--y': y(target).toFixed(2) }} />
             )}
             <svg className="tn-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               {area && <polygon className="tn-area" points={area} />}
@@ -917,7 +917,7 @@ function Progress() {
           const r = rows[i]
           const derived = final && !it.body.trim()
           return (
-            <div key={it.id} className={cx('it ps-row', r.status && `is-${r.status}`)} style={{ '--p': (r.pct ?? 0).toFixed(1) } as CSSProperties}>
+            <div key={it.id} className={cx('it ps-row', r.status && `is-${r.status}`)} style={{ '--p': (r.pct ?? 0).toFixed(1) }}>
               <div className="ps-name">
                 <IT i={i} k="title" className="ps-title" />
                 <IT i={i} k="meta" className="ps-meta" />
@@ -986,7 +986,7 @@ function Share() {
   return (
     <>
       <Head />
-      <div className={cx('s-body sh', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+      <div className={cx('s-body sh', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length }}>
         {/* 띠는 합계를 위에, 도넛은 고리 가운데에. 단위 칸은 편집할 때만: 띠는 오른쪽 위에, 도넛은 고리 가운데 합계 아래에
             (도넛의 오른쪽 위는 이름표 목록이 차지해서 덮는다) */}
         {!donut && (totalText || (!final && unitOpen)) && (
@@ -1041,7 +1041,7 @@ function Share() {
         )}
         <div className="sh-legend">
           {items.map((it, i) => (
-            <div key={it.id} className={cx('it sh-item', i === highlight && 'is-hl')} style={{ '--c': colors[i] } as CSSProperties}>
+            <div key={it.id} className={cx('it sh-item', i === highlight && 'is-hl')} style={{ '--c': colors[i] }}>
               <span className="sh-pct">
                 {typedPct ? <IT i={i} k="value" as="span" oneLine /> : final && !texts[i] ? '–' : pctText(pcts[i])}
               </span>
@@ -1073,7 +1073,7 @@ function Process() {
   return (
     <>
       <Head lead />
-      <ol className="s-body pc" data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+      <ol className="s-body pc" data-n={items.length} style={{ '--n': items.length }}>
         {items.map((it, i) => (
           <li key={it.id} className={cx('it pc-step', i === highlight && 'is-hl')}>
             <div className="pc-head">
@@ -1125,7 +1125,7 @@ function Funnel() {
   return (
     <>
       <Head />
-      <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
+      <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length }}>
         {items.map((it, i) => {
           // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다. 앞 단계보다 늘어난 단계는 전환율이 아니라(1,333%) 적지 않는다
           const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
@@ -1135,7 +1135,7 @@ function Funnel() {
               key={it.id}
               className={cx('it fn-row', i === highlight && 'is-hl', !values[i] && 'is-blank')}
               // --pw: 앞 단계의 길이. 이 단계에서 빠진 만큼(앞 길이에서 이 길이까지)을 막대 뒤에 옅게 깐다
-              style={{ '--w': widths[i].toFixed(2), '--pw': (linked ? widths[i - 1] : widths[i]).toFixed(2) } as CSSProperties}
+              style={{ '--w': widths[i].toFixed(2), '--pw': (linked ? widths[i - 1] : widths[i]).toFixed(2) }}
             >
               <div className="fn-val">
                 <IT i={i} k="value" as="span" className="fn-num" oneLine numeral />
@@ -1191,7 +1191,7 @@ function Table() {
     const filled = items.map((it) => it[key].trim()).filter(Boolean)
     return filled.length > 0 && filled.every(isNumericCell)
   }
-  const style = { '--cols': cols.map((c) => `minmax(0, ${c.fr}fr)`).join(' ') } as CSSProperties
+  const style = { '--cols': cols.map((c) => `minmax(0, ${c.fr}fr)`).join(' ') }
   return (
     <>
       <Head />
@@ -1380,7 +1380,7 @@ function Position() {
             const placed = x !== null && y !== null
             if (!placed && final) return null
             // 점수를 아직 적지 않은 점(편집할 때만)은 판 위쪽에 차례로 늘어세운다
-            const style = { '--x': placed ? at(x) : String(4 + i * 17), '--y': placed ? at(y) : '100' } as CSSProperties
+            const style = { '--x': placed ? at(x) : String(4 + i * 17), '--y': placed ? at(y) : '100' }
             const side = cx(sides[i].left && 'is-left', sides[i].v && `is-${sides[i].v}`)
             return (
               <div
