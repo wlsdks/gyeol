@@ -22,7 +22,7 @@
 
   --maxw: 1200px;
   --gutter: clamp(16px, 4vw, 40px);
-  --section: clamp(80px, 9vw, 128px);
+  --section: clamp(72px, 8vw, 112px);
 
   color-scheme: light;
 }
@@ -49,7 +49,7 @@ body {
   background: var(--bg);
   color: var(--ink-2);
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.7;
   letter-spacing: -0.004em;
   word-break: keep-all;
@@ -142,7 +142,7 @@ figure {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 72px;
+  height: 64px;
 }
 
 .brand {
@@ -150,7 +150,7 @@ figure {
   align-items: center;
   gap: 10px;
   color: var(--ink);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-decoration: none;
@@ -158,8 +158,8 @@ figure {
 
 .logo {
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   flex: none;
 }
 
@@ -209,10 +209,10 @@ figure {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 52px;
-  padding: 0 22px 0 18px;
+  min-height: 48px;
+  padding: 0 20px 0 16px;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -222,8 +222,8 @@ figure {
 }
 
 .btn-i {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex: none;
 }
 
@@ -286,29 +286,36 @@ figure {
 .grid-shot figcaption {
   margin-top: 12px;
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 /* ---------- 첫 화면 ---------- */
 
 .hero {
-  padding: clamp(40px, 6vw, 80px) 0 0;
+  padding: clamp(32px, 5vw, 64px) 0 0;
 }
 
 .hero h1 {
   max-width: 24em;
-  font-size: 52px;
+  font-size: 44px;
   font-weight: 700;
-  line-height: 1.24;
+  line-height: 1.26;
   letter-spacing: -0.032em;
 }
 
 .lede {
-  max-width: 36em;
-  margin-top: 22px;
-  font-size: 20px;
+  max-width: 50em;
+  margin-top: 18px;
+  font-size: 18px;
   line-height: 1.65;
+}
+
+/* 넓은 화면에서는 문장마다 한 줄. 좁으면 그냥 흘린다 */
+@media (min-width: 861px) {
+  .lede span {
+    display: block;
+  }
 }
 
 .cta {
@@ -316,17 +323,17 @@ figure {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
 .cta-note {
   margin-left: 10px;
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .hero-shot {
-  margin-top: clamp(40px, 5vw, 64px);
+  margin-top: clamp(36px, 4.5vw, 56px);
 }
 
 /* ---------- 구역 공통 ---------- */
@@ -339,19 +346,19 @@ figure {
 }
 
 h2 {
-  font-size: 36px;
+  font-size: 30px;
   line-height: 1.3;
   letter-spacing: -0.028em;
 }
 
 .section-lede {
-  max-width: 36em;
-  margin-top: 16px;
-  font-size: 19px;
+  max-width: 44em;
+  margin-top: 12px;
+  font-size: 17px;
 }
 
 h3 {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.4;
   letter-spacing: -0.022em;
 }
@@ -367,12 +374,12 @@ h3 {
   display: grid;
   flex: none;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--button);
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -381,7 +388,7 @@ h3 {
 .step-text {
   max-width: 30em;
   margin-top: 10px;
-  padding-left: 40px;
+  padding-left: 38px;
 }
 
 /* ---------- 만드는 순서: 고르면 구성이 바뀌는 판 ---------- */
@@ -395,15 +402,15 @@ h3 {
   grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
   gap: 48px clamp(32px, 4vw, 56px);
   align-items: start;
-  margin-top: 48px;
+  margin-top: 40px;
 }
 
 .step-head-2 {
-  margin-top: 44px;
+  margin-top: 40px;
 }
 
 .pick {
-  padding-left: 40px;
+  padding-left: 38px;
 }
 
 .choice {
@@ -421,7 +428,7 @@ h3 {
   margin-bottom: 10px;
   padding: 0;
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -446,12 +453,12 @@ h3 {
 .choice span {
   display: inline-flex;
   align-items: center;
-  height: 38px;
-  padding: 0 15px;
+  height: 36px;
+  padding: 0 14px;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px var(--line-2);
   color: var(--ink);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -496,19 +503,19 @@ h3 {
 
 .sim-type strong {
   color: var(--ink);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.022em;
 }
 
 .sim-type span {
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .sim-count {
   color: var(--ink);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -542,7 +549,7 @@ h3 {
   gap: 8px;
   margin-top: 8px;
   color: var(--ink-2);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -558,7 +565,7 @@ h3 {
 .sim-note {
   margin-top: 20px;
   color: var(--ink-3);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -567,7 +574,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 48px clamp(32px, 4vw, 56px);
-  margin-top: clamp(72px, 8vw, 104px);
+  margin-top: clamp(64px, 7vw, 88px);
 }
 
 .later-step .shot {
@@ -587,7 +594,7 @@ h3 {
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: 32px clamp(32px, 4vw, 64px);
   align-items: center;
-  margin-top: 48px;
+  margin-top: 40px;
 }
 
 .grid-frame {
@@ -637,7 +644,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 32px clamp(24px, 3vw, 40px);
-  margin: clamp(64px, 7vw, 96px) 0 0;
+  margin: clamp(56px, 6vw, 80px) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -648,14 +655,14 @@ h3 {
 }
 
 .extras h3 {
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.45;
   letter-spacing: -0.018em;
 }
 
 .extras p {
   margin-top: 8px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.65;
 }
 
@@ -667,7 +674,7 @@ h3 {
 }
 
 .summary {
-  margin-top: 48px;
+  margin-top: 40px;
   border-top: 2px solid var(--ink);
 }
 
@@ -675,12 +682,12 @@ h3 {
   display: grid;
   grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
   gap: 8px clamp(32px, 4vw, 56px);
-  padding: 26px 0;
+  padding: 22px 0;
   border-bottom: 1px solid var(--line-2);
 }
 
 .row h3 {
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.5;
   letter-spacing: -0.02em;
 }
@@ -693,7 +700,7 @@ h3 {
   width: 100%;
   margin-top: 22px;
   border-collapse: collapse;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.45;
   table-layout: fixed;
 }
@@ -702,7 +709,7 @@ h3 {
   padding: 0 16px 10px 0;
   border-bottom: 1px solid var(--ink);
   color: var(--ink);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   text-align: left;
 }
@@ -778,7 +785,7 @@ h3 {
 
 .dl-ver {
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -793,13 +800,13 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 48px clamp(32px, 5vw, 80px);
-  margin-top: 48px;
+  margin-top: 40px;
 }
 
 .os-col {
   display: flex;
   flex-direction: column;
-  padding-top: 28px;
+  padding-top: 24px;
   border-top: 1px solid rgb(255 255 255 / 0.28);
 }
 
@@ -809,11 +816,11 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .os-head h3 {
-  font-size: 30px;
+  font-size: 26px;
   line-height: 1.2;
   letter-spacing: -0.03em;
 }
@@ -826,7 +833,7 @@ h3 {
 
 .os-mine {
   color: rgb(255 255 255 / 0.62);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -835,10 +842,10 @@ h3 {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 4px 20px;
-  margin: 0 0 28px;
-  padding-bottom: 24px;
+  margin: 0 0 24px;
+  padding-bottom: 20px;
   border-bottom: 1px solid rgb(255 255 255 / 0.18);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .os-meta div {
@@ -907,12 +914,12 @@ h3 {
 }
 
 .first h4 {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .first p {
   margin-top: 6px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.68;
 }
 
@@ -921,18 +928,18 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 32px clamp(32px, 5vw, 80px);
-  margin-top: 72px;
+  margin-top: 56px;
   padding-top: 32px;
   border-top: 1px solid rgb(255 255 255 / 0.28);
 }
 
 .dl-more h4 {
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .dl-more p {
   margin-top: 8px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.68;
 }
 
@@ -1012,7 +1019,7 @@ h3 {
 
 @media (max-width: 1080px) {
   .hero h1 {
-    font-size: 44px;
+    font-size: 38px;
   }
 
   .sim {
@@ -1036,11 +1043,11 @@ h3 {
 
 @media (max-width: 640px) {
   body {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .top-in {
-    height: 64px;
+    height: 56px;
   }
 
   .nav-link:not(.nav-link-dl) {
@@ -1048,13 +1055,13 @@ h3 {
   }
 
   .hero h1 {
-    font-size: 30px;
-    line-height: 1.3;
+    font-size: 28px;
+    line-height: 1.32;
   }
 
   .lede {
-    margin-top: 16px;
-    font-size: 17px;
+    margin-top: 14px;
+    font-size: 16px;
   }
 
   .cta {
@@ -1070,15 +1077,15 @@ h3 {
   }
 
   h2 {
-    font-size: 30px;
+    font-size: 26px;
   }
 
   .section-lede {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   h3 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .sim {
@@ -1100,7 +1107,7 @@ h3 {
   }
 
   .sim-type strong {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .extras {
