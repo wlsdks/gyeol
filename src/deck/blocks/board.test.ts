@@ -134,6 +134,17 @@ describe('판', () => {
     expect(settle([...grown, mk('z', 'table', { x: 0, y: 0, w: 1, h: 1 })], fit)).toBeNull()
   })
 
+  it('넓으면 더 높아지는 부품(글자 단계가 칸 너비로도 커진다)도 들어가는 너비를 찾아 놓는다', () => {
+    // 숫자 카드: 3칸에서는 4줄, 4~7칸에서는 5줄, 8칸부터 3줄. 위에 6줄짜리 표가 있으면 아래 줄은 높이 6까지
+    const wide: Fit = { ...fit, minH: (b, w) => (b.type === 'number' ? (w < 3 ? Infinity : w === 3 ? 4 : w < 8 ? 5 : 3) : fit.minH(b, w)) }
+    const b = [mk('t', 'table', { x: 0, y: 0, w: 12, h: 8 }), mk('n', 'number', { x: 0, y: 8, w: 4, h: 4 }), mk('m', 'number', { x: 4, y: 8, w: 8, h: 4 })]
+    expect(needRows(b, wide)).toBe(10)
+    const out = settle(b, wide)!
+    expect(out).not.toBeNull()
+    expect(tiles(out)).toBe(true)
+    for (const x of out) expect(wide.minH(x, x.at!.w)).toBeLessThanOrEqual(x.at!.h)
+  })
+
   it('자리가 엉킨 파일도 판을 덮게 다시 짠다', () => {
     const messy = [mk('a', 'text', { x: 0, y: 0, w: 12, h: 12 }), mk('c', 'text', { x: 0, y: 0, w: 6, h: 3 })]
     expect(treeOf(messy)).toBeNull()

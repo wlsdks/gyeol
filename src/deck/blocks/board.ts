@@ -259,12 +259,37 @@ function lay(t: Tree, r: BlockAt, m: Measure, out: Block[]): boolean {
     t.kids.map((k) => k.want),
     t.kids.map((k) => m.takes(k)),
   )
-  if (!sizes) return false
+  if (!sizes || !refit(sizes, (i, n) => (t.dir === 'h' ? m.fits(t.kids[i], n, r.h) : m.fits(t.kids[i], r.w, n)), m, t.kids)) return false
   let at = t.dir === 'h' ? r.x : r.y
   for (let i = 0; i < t.kids.length; i++) {
     const sub: BlockAt = t.dir === 'h' ? { x: at, y: r.y, w: sizes[i], h: r.h } : { x: r.x, y: at, w: r.w, h: sizes[i] }
     if (!lay(t.kids[i], sub, m, out)) return false
     at += sizes[i]
+  }
+  return true
+}
+
+/**
+ * 나눠 받은 크기(sizes)에서 들어가지 않는 자식을 들어가는 가장 가까운 작은 크기로 줄이고, 남는 길이를 들어가는 다른 자식에게 준다.
+ * share는 넓을수록 덜 든다고 보는데 글자 단계는 칸 너비로도 커져서, 3칸에서 4줄이면 되는 숫자 카드가 4칸에서는 5줄이 든다.
+ * 그래서 '들어간다'(needRows)고 본 판을 놓지 못했다(settle이 null). 고친 크기를 sizes에 쓰고, 맞출 수 없으면 false
+ */
+function refit(sizes: number[], ok: (i: number, n: number) => boolean, m: Measure, kids: Tree[]): boolean {
+  for (let i = 0; i < sizes.length; i++) {
+    if (ok(i, sizes[i])) continue
+    let n = sizes[i] - 1
+    while (n >= 1 && !ok(i, n)) n--
+    if (n < 1) return false
+    let spare = sizes[i] - n
+    sizes[i] = n
+    // 남는 길이는 받는 차례(차트 > 면 > 글)가 높은 자식부터, 한 칸씩 받아도 들어갈 때만
+    const takers = kids.map((_, j) => j).filter((j) => j !== i).sort((a, b) => m.takes(kids[b]) - m.takes(kids[a]))
+    while (spare > 0) {
+      const j = takers.find((x) => ok(x, sizes[x] + 1))
+      if (j === undefined) return false
+      sizes[j]++
+      spare--
+    }
   }
   return true
 }
