@@ -1267,8 +1267,21 @@
   border-top: 0;
 }
 
-.va-grid .sm:is([data-n='3'], [data-n='5']) {
+.va-grid .sm[data-n='3'] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* 다섯이면 윗줄 셋, 아랫줄 둘. 세 칸 격자에 두면 아랫줄 오른쪽 한 칸이 비어 덜 채운 장처럼 보인다 */
+.va-grid .sm[data-n='5'] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.va-grid .sm[data-n='5'] > .sm-row {
+  grid-column: span 2;
+}
+
+.va-grid .sm[data-n='5'] > .sm-row:nth-child(n + 4) {
+  grid-column: span 3;
 }
 
 .va-grid .sm-row {
