@@ -43,3 +43,8 @@
   box-sizing: border-box;
   padding-top: var(--bk-lift, 0px);
 }
+
+/* 옅은 면, 진한 면에 두면 면 안 가운데에: 위에 붙이면 면의 아래 여백만 넓다 (띠를 나눠 쓰는 칸은 base.css) */
+.bk:is(.bk-look-card, .bk-look-bold) > .bk-in > .bk-nt {
+  align-content: safe center;
+}

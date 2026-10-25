@@ -89,3 +89,15 @@
 .bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
   justify-content: center;
 }
+
+/* 옅은 면, 진한 면은 면이 곧 묶음이라, 옆 칸과 윗선을 맞추기보다 면 안의 위 여백과 아래 여백을 같게 둔다. 위에서부터 그리면
+   내용이 짧은 면은 위 44~53px, 아래 90~110px로 아래만 비었다(위아래로 쌓은 부품은 내리지도 않아서 더 그랬다).
+   그래서 면 안 가운데에 두고 내리는 묶음(--bk-lifts)에서도 뺀다: 옆의 면 없는 부품끼리는 그대로 윗선을 맞춰 내린다.
+   몸통이 flex면 justify-content, 격자면 align-content가 위아래를 정해서 둘 다 둔다(격자의 열은 칸 너비를 다 써서 옆으로는 그대로다).
+   내릴 수 있는 부품이 늘면 여기에도 더한다 */
+.bk.is-shared:is(.bk-look-card, .bk-look-bold) > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx, .bk-ss, .bk-mt, .bk-sp, .bk-sl, .bk-stp, .bk-dt, .bk-rn, .bk-hd, .bk-nt) {
+  --bk-lifts: 0;
+  justify-content: safe center;
+  align-content: safe center;
+  padding-top: 0;
+}
