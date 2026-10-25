@@ -81,7 +81,7 @@
    소제목의 윗선이 칸마다 어긋나 보인다. 대신 줄 안에서 가장 긴 내용을 기준으로 묶음째 가운데로 내린다(--bk-lift, fitBlocks.ts):
    윗선은 맞으면서 높은 줄의 아래 절반이 통째로 비지 않는다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에.
    --bk-lifts는 fitBlocks가 내릴 수 있는 부품을 알아보는 표시다(목록을 두 곳에 따로 두지 않게) */
-.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
+.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
   --bk-lifts: 1;
   box-sizing: border-box;
   justify-content: flex-start;
@@ -89,7 +89,7 @@
 }
 
 /* 칸 사이에 이음표가 선 줄은 이음표와 같이 가운데에: '앞 → 뒤'가 한 줄로 읽힌다 */
-.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
+.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
   justify-content: center;
 }
 
@@ -1003,7 +1003,8 @@
 .bk-rt {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  justify-content: safe center;
+  gap: 32px;
   height: 100%;
 }
 
@@ -1074,29 +1075,46 @@
   line-height: 1.45;
 }
 
-/* 점은 남는 자리에 맞춰 크기를 정한다: 가로로 cols개, 세로로 rows개가 사이(점의 0.3)와 함께 들어가게 */
+/* 점은 남는 자리에 맞춰 크기를 정한다: 가로로 cols개, 세로로 rows개가 사이(점의 0.3)와 함께 들어가게.
+   점 칸은 점이 가장 클 때(72px)의 높이까지만 잡고 모자라면 줄어든다. 남는 높이를 다 가져가면 점이 칸 아래에 붙어
+   위의 숫자와 한참 떨어졌다. 숫자와 점을 한 덩어리로 칸 가운데에 둔다(한 줄에 여럿이면 옆과 윗선을 맞춘다, --bk-lift) */
 .bk-rt-box {
   display: grid;
-  flex: 1;
-  align-content: end;
+  flex: 0 1 calc(72px * (var(--rows-t) * 1.3 - 0.3));
+  align-content: start;
   container-type: size;
   min-height: 40px;
 }
 
 .bk-rt-dots {
-  --c: var(--cols);
-  --r: var(--rows);
+  --c: var(--cols-t);
+  --r: var(--rows-t);
   --d: min(calc(100cqw / (var(--c) * 1.3 - 0.3)), calc(100cqh / (var(--r) * 1.3 - 0.3)), 72px);
   display: grid;
   grid-template-columns: repeat(var(--c), var(--d));
   gap: calc(var(--d) * 0.3);
 }
 
-/* 남는 자리가 납작하지 않으면(가로가 세로의 세 배 아래) 줄을 늘린 배치가 점이 훨씬 커진다 */
-@container (max-aspect-ratio: 3 / 1) {
-  .bk-rt-dots {
-    --c: var(--cols-t);
-    --r: var(--rows-t);
+/* 점 칸이 납작하면 한 줄로 늘어놓는다(cols). 어디서부터 납작한지는 점 수마다 달라서(열 개면 5.5:1, 다섯 개면 2.7:1)
+   blocks.tsx가 계산한 비율(data-flat)을 넘는 칸에서만. 하나로 정하면(예전의 3:1) 열 개짜리가 덜 납작한 칸에서도 한 줄로 서서
+   점이 줄을 늘렸을 때보다 작았다 */
+@container (min-aspect-ratio: 1 / 1) { .bk-rt-dots[data-flat='1'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 3 / 2) { .bk-rt-dots[data-flat='1.5'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 2 / 1) { .bk-rt-dots[data-flat='2'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 5 / 2) { .bk-rt-dots[data-flat='2.5'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 3 / 1) { .bk-rt-dots[data-flat='3'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 7 / 2) { .bk-rt-dots[data-flat='3.5'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 4 / 1) { .bk-rt-dots[data-flat='4'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 9 / 2) { .bk-rt-dots[data-flat='4.5'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 5 / 1) { .bk-rt-dots[data-flat='5'] { --c: var(--cols); --r: var(--rows); } }
+@container (min-aspect-ratio: 11 / 2) { .bk-rt-dots[data-flat='5.5'] { --c: var(--cols); --r: var(--rows); } }
+
+/* 한 줄로 늘어놓아도 점이 가장 큰(72px) 너비면 한 줄로: 둘 다 72px이면 줄을 늘린 배치는 칸 너비의 반도 쓰지 않아
+   점 옆이 통째로 빈다. 열 개까지(전체가 20개까지면 한 줄에 열 개)는 914px이면 한 줄로도 72px이다 */
+@container (min-width: 914px) {
+  .bk-rt-dots:not(.is-pct) {
+    --c: var(--cols);
+    --r: var(--rows);
   }
 }
 
@@ -1132,6 +1150,8 @@
   opacity: 0.4;
 }
 
+/* 넓은 칸: 숫자 옆에 점. 글 칸은 글만큼만 넓게(44%까지) 두고 점이 바로 옆에 선다. 글 칸을 44%로 잡으면
+   짧은 이름 옆이 비고 점은 칸 가운데쯤에 떠 있었다 */
 @container bk (min-aspect-ratio: 16 / 9) and (min-width: 900px) {
   .bk-rt {
     flex-direction: row;
@@ -1140,12 +1160,14 @@
   }
 
   .bk-rt-text {
-    flex: 0 1 44%;
+    flex: 0 1 auto;
+    max-width: 44%;
   }
 
   .bk-rt-box {
+    flex: 1 1 0;
+    align-self: stretch;
     align-content: center;
-    height: 100%;
   }
 }
 

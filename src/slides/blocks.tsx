@@ -275,10 +275,17 @@ function Ratio() {
   const cols = n <= 10 ? n : n <= 20 ? Math.ceil(n / 2) : 20
   // 높이가 남는 칸에서는 줄을 늘려 점을 키운다 (10개면 다섯씩 두 줄, 100개면 열씩 열 줄)
   const tall = n <= 10 ? Math.ceil(n / 2) : n <= 20 ? Math.ceil(n / 4) : 10
+  // 한 줄로 늘어놓는 배치(cols)가 줄을 늘린 배치(tall)보다 점이 커지는 칸의 가로세로 비율. 둘 다 칸에 맞춰 점 크기를 정하니
+  // (가로 cols개와 사이 0.3) ÷ (세로 줄 수와 사이 0.3)에서 갈린다. 칸의 컨테이너 쿼리가 고르게 0.5 단계로 (blocks.css)
+  const flat = Math.min(5.5, Math.max(1, Math.round(((cols * 1.3 - 0.3) / (Math.ceil(n / tall) * 1.3 - 0.3)) * 2) / 2))
   // 사람을 센 것이면 점 대신 사람 모양
   const person = /^(명|분|사람|인)$/.test(unit)
   return (
-    <div className={cx('bk-rt', demo && 'is-demo')}>
+    <div
+      className={cx('bk-rt', demo && 'is-demo')}
+      // 점 칸의 높이(blocks.css의 .bk-rt-box)도 줄 수로 정해서 위에 둔다
+      style={{ '--cols': cols, '--rows': Math.ceil(n / cols), '--cols-t': tall, '--rows-t': Math.ceil(n / tall) } as CSSProperties}
+    >
       <div className="bk-rt-text">
         <T k="label" className="bk-rt-l" />
         <p className="bk-rt-of">
@@ -297,11 +304,7 @@ function Ratio() {
       </div>
       {n > 0 && (
         <div className="bk-rt-box" aria-hidden="true">
-          <div
-            className="bk-rt-dots"
-            data-kind={person ? 'person' : 'dot'}
-            style={{ '--cols': cols, '--rows': Math.ceil(n / cols), '--cols-t': tall, '--rows-t': Math.ceil(n / tall) } as CSSProperties}
-          >
+          <div className={cx('bk-rt-dots', !exact && 'is-pct')} data-kind={person ? 'person' : 'dot'} data-flat={flat}>
             {Array.from({ length: n }, (_, i) => (
               <span key={i} className={cx('bk-rt-d', i < on && 'is-on')}>
                 {person && <PersonIcon />}
