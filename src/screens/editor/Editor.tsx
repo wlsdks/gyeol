@@ -825,11 +825,17 @@ function SlideStage({
                     <span className="btn-t">{spec.items.label} 추가</span>
                   </button>
                 )}
-                {overflow && (
+                {overflow === 'over' && (
                   // 자리가 모자라면 짧은 말만 (말줄임으로 '글이 슬...'처럼 잘리면 무슨 뜻인지 모른다)
                   <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.">
                     <span className="stage-warn-l">글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.</span>
                     <span className="stage-warn-s">글이 넘쳤어요</span>
+                  </p>
+                )}
+                {overflow === 'tight' && (
+                  <p className="stage-warn" role="status" title="컴포넌트가 들어갈 높이가 모자라 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 하나 빼 주세요.">
+                    <span className="stage-warn-l">높이가 모자라 컴포넌트를 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 빼 주세요.</span>
+                    <span className="stage-warn-s">자리가 모자라요</span>
                   </p>
                 )}
               </div>
@@ -907,9 +913,13 @@ function SlideStage({
   )
 }
 
-/** 슬라이드 안의 글이 영역을 넘치는지 확인한다 */
-function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): boolean {
-  const [overflow, setOverflow] = useState(false)
+/**
+ * 슬라이드 안의 글이 영역을 넘치는지('over') 확인한다. 부품 장은 넘치지 않게 줄 높이를 낮춰 맞추는데(fitBlocks의 --bk-sq),
+ * 그렇게 눌러 담은 것도('tight') 알린다. 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도
+ * 자리가 줄어서, 알리지 않으면 글자와 차트가 조용히 작아진다
+ */
+function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): 'over' | 'tight' | null {
+  const [overflow, setOverflow] = useState<'over' | 'tight' | null>(null)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
     if (!root) return
@@ -927,7 +937,8 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, 
       // 항목 빼기 버튼이 칸 오른쪽으로 살짝 나와 있어서, 가로 넘침은 슬라이드 전체만 본다.
       const over = root.scrollWidth - root.clientWidth > 4 || boxes.some((el) => el.scrollHeight - el.clientHeight > 4)
       root.classList.remove('is-measuring')
-      setOverflow(over)
+      const tight = [...root.querySelectorAll<HTMLElement>('.bk-area')].some((a) => a.style.getPropertyValue('--bk-sq'))
+      setOverflow(over ? 'over' : tight ? 'tight' : null)
     }
     check()
     document.fonts?.ready.then(check)
