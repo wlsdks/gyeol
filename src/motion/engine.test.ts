@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BLOCK_EFFECT_IDS, BLOCK_TYPES, isLayoutBlock } from '../deck/blocks'
+import { LAYOUTS } from '../deck/layouts'
 import { motionEngine } from './engine'
 
 describe('움직임 엔진', () => {
@@ -16,5 +17,11 @@ describe('움직임 엔진', () => {
     // (변환을 거친 소스라 따옴표 꼴은 가리지 않는다)
     for (const type of BLOCK_TYPES.filter((t) => !isLayoutBlock(t))) expect(src, type).toMatch(new RegExp(`case ["']${type}["']`))
     for (const id of BLOCK_EFFECT_IDS.filter((e) => e !== 'auto' && e !== 'none')) expect(src, id).toMatch(new RegExp(`effect === ["']${id}["']`))
+  })
+
+  it('레이아웃마다 짠 연출이 있다 (없으면 소리 없이 기본 연출로 떨어진다)', () => {
+    const src = motionEngine.toString()
+    const choreo = src.slice(src.indexOf('function choreo'), src.indexOf('function nativeAuto'))
+    for (const id of Object.keys(LAYOUTS)) expect(choreo, id).toMatch(new RegExp(`case ["']${id}["']`))
   })
 })
