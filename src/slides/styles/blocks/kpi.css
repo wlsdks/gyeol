@@ -378,51 +378,108 @@
   }
 }
 
+/* 하나 크게의 큰 숫자는 줄 상자 위쪽(숫자 윗선 위의 빈 키)을 잘라 낸다(text-box). 큰 숫자는 그 빈 키만 25px라, 면 안에서
+   위 여백이 아래 여백보다 그만큼 넓어 보였다(넓은 칸에서는 숫자를 가운데에 두어도 숫자가 그만큼 아래로 처져 보였다).
+   숫자는 대문자 윗선보다 조금(0.06em) 높아서 그만큼 내린다: 마지막 줄 글의 아래 빈 키(6px 남짓)와 맞는다.
+   편집할 때는 숫자가 칸(.ed, 격자) 안의 글상자에 들어 있어 그 글상자도 자른다(격자는 text-box가 먹지 않는다) */
+.va-focus > .bk-in .kp:not([data-n='1']) > .kp-item:first-child > .kp-value {
+  margin-top: 0.06em;
+}
+
+.va-focus > .bk-in .kp:not([data-n='1']) > .kp-item:first-child > .kp-value,
+.va-focus > .bk-in .kp:not([data-n='1']) > .kp-item:first-child > .kp-value > :is(.ed-input, .ed-hint) {
+  text-box: trim-start cap alphabetic;
+}
+
 /* 하나 크게, 좁고 높은 칸: 큰 숫자는 위에 그대로, 나머지는 그 아래에 줄로 쌓아 남은 높이를 나눠 채운다(숫자 왼쪽, 이름 오른쪽).
    나란히 두면 나머지가 큰 숫자 바로 밑 한 줄에 몰려 칸 아래쪽 절반이 빈다 */
 @container bk (max-width: 1200px) and (min-height: 360px) {
-  .va-focus > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
     --kp-fstack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 400px) {
-  .va-focus > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
     --kp-fstack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 460px) {
-  .va-focus > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
     --kp-fstack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 520px) {
-  .va-focus > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
     --kp-fstack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 560px) {
-  .va-focus > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
     --kp-fstack: 1;
   }
 }
 
 @container bk (max-width: 1200px) and (min-height: 640px) {
-  .va-focus > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+  .va-focus:not(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+/* 옅은 면, 진한 면은 안쪽 여백(위아래 44px)만큼 칸이 더 높아야 줄로 쌓을 수 있다. 같은 높이에서 바꾸면 면 안이 88px 모자라
+   줄이 내용보다 낮게 눌려 이름과 설명이 줄 선에 올라탔다(옅은 면, 반 칸, 684px에서 줄마다 76px) */
+@container bk (max-width: 1200px) and (min-height: 448px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 488px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 548px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 608px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 648px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='4']):not(:has(.kp-body)) {
+    --kp-fstack: 1;
+  }
+}
+
+@container bk (max-width: 1200px) and (min-height: 728px) {
+  .va-focus:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .kp[data-n='4'] .kp-body) {
     --kp-fstack: 1;
   }
 }
 
 @container style(--kp-fstack: 1) {
+  /* 줄은 내용 높이 그대로 두고, 남는 높이는 줄 사이(--bk-air, fitBlocks가 넘치지 않는 데까지 넓힌다)와 묶음 위아래로 나눈다.
+     예전에는 줄이 남는 높이를 나눠 가졌는데(minmax(0, 1fr)) 칸이 모자라면 0까지 눌려 이름과 설명이 줄 선 위에 올라탔고,
+     줄 상자 안에서만 넘쳐서 칸은 넘치지 않은 것으로 보였다(글자 맞추기도, 잘리지 않는 높이 재기도 몰랐다).
+     칸이 넉넉할 때는 마지막 줄 아래에만 남는 높이의 반이 남아 면 안의 위 여백보다 아래 여백이 넓었다.
+     줄 높이의 바닥은 내용(min-content): 칸(.kp-item)의 min-height가 0이라 auto만 두면 모자랄 때 줄이 내용보다 낮게 눌린다 */
   .bk.va-focus > .bk-in > .kp:not([data-n='1']) {
     --kp-w: 100cqi;
     container: kp / inline-size;
     grid-template-columns: max-content minmax(0, 1fr);
-    grid-template-rows: auto;
-    grid-auto-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(min-content, auto);
+    grid-auto-rows: minmax(min-content, auto);
+    align-content: center;
     gap: 0 40px;
   }
 
@@ -443,8 +500,13 @@
     grid-template-rows: auto auto;
     align-content: center;
     min-height: 0;
-    padding: 12px 0;
+    padding: calc(12px + var(--bk-air, 0px)) 0;
     border-top: var(--rule) solid var(--line);
+  }
+
+  /* 마지막 줄 아래는 면의 안쪽 여백만: 줄 아래 여백까지 두면 위(큰 숫자 윗선)보다 아래가 그만큼 넓다 */
+  .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:last-child {
+    padding-bottom: 0;
   }
 
   .bk.va-focus > .bk-in > .kp:not([data-n='1']) > .kp-item:not(:first-child) > .kp-value {
@@ -567,10 +629,12 @@
     --kp-rest: 3;
   }
 
+  /* 묶음은 칸 높이 가운데에: 나머지 줄이 남는 높이를 다 가져가 위에 붙어 있으면 면 바닥만 비어 보였다(옅은 면에서 위 여백 42px, 아래 93px) */
   .va-focus > .bk-in .kp:not([data-n='1']) {
     grid-template-columns: repeat(var(--kp-rest), minmax(0, 1fr));
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-auto-rows: auto;
+    grid-template-rows: minmax(min-content, auto) minmax(min-content, auto);
+    grid-auto-rows: minmax(min-content, auto);
+    align-content: center;
     column-gap: 40px;
     row-gap: 28px;
   }
@@ -585,16 +649,25 @@
     margin-bottom: 24px;
   }
 
+  /* 나란한 나머지는 모두 위에 같은 줄 선: 장의 '하나 크게'는 오른쪽 목록의 첫 줄에만 선을 빼서, 칸에서는 첫 칸만 선이 없었다 */
   .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:not(:first-child) {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     padding-top: 24px;
+    border-top: var(--rule) solid var(--line);
   }
 
+  /* 큰 숫자의 이름과 설명은 한 묶음으로 붙인다 (장에서처럼 36px를 띄우면 설명이 따로 떠 보인다) */
+  .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:first-child .kp-body {
+    margin-top: 12px;
+  }
+
+  /* 숫자는 이름과 같은 왼쪽 선에 (장의 '하나 크게'는 숫자를 줄 가운데에 세워서 그 규칙이 남아 있으면 숫자만 칸 가운데로 갔다) */
   .va-focus > .bk-in .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
     --fs: 62px;
     order: -1;
+    align-self: flex-start;
     margin: 0 0 12px;
   }
 
