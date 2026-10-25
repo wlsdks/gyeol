@@ -46,6 +46,7 @@ import {
   weighted,
   shownLook,
   slideName,
+  spanChoices,
   spansAt,
   spanLimit,
   spansOf,
@@ -216,11 +217,24 @@ describe('자리 정하기', () => {
   it('칸 너비 손잡이를 더 끌 수 없으면 막는 부품을 알려 준다', () => {
     // 막대 비교는 절반보다 좁아지지 않는다: 가운데 손잡이를 오른쪽 끝(8:4 쪽)으로 끌면 막대 비교 때문
     const rows = row(block('kpi', 'k'), block('bars', 'b'))
-    expect(spanLimit(rows, 0, 0.7)).toEqual({ type: 'bars', minSpan: 6 })
+    expect(spanLimit(rows, 0, 0.7)).toEqual({ kind: 'block', type: 'bars', minSpan: 6 })
     // 손이 붙은 비율 가까이에 있으면 알리지 않는다
     expect(spanLimit(rows, 0, 0.52)).toBeNull()
     // 막는 것이 없으면 알리지 않는다
     expect(spanLimit(row(block('text', 't'), block('callout', 'c')), 0, 0.68)).toBeNull()
+  })
+
+  it('고를 비율이 하나뿐인 줄은 어느 쪽으로 끌어도 까닭을 알려 준다', () => {
+    // 핵심 포인트(3분의 2 이상)와 비율 원은 8:4 하나뿐. 왼쪽으로 끌면 핵심 포인트가 막고,
+    // 오른쪽으로 끌면 더 벌어진 비율이 없다: 비율 원이 이미 가장 좁은 칸
+    const rows = row(block('points', 'p'), block('ring', 'r'))
+    expect(spanChoices(rows)).toEqual([[8, 4]])
+    expect(spanLimit(rows, 0, 0.5)).toEqual({ kind: 'block', type: 'points', minSpan: 8 })
+    expect(spanLimit(rows, 0, 0.9)).toEqual({ kind: 'end', type: 'ring', span: 4 })
+    expect(spanLimit(rows, 0, 0.7)).toBeNull()
+    // 세 칸 줄의 끝(6:3:3)에서 더 끌어도 같다
+    const three = { ...row(block('text', 't'), block('number', 'a'), block('number', 'b')), spans: [6, 3, 3] }
+    expect(spanLimit(three, 0, 0.95)).toEqual({ kind: 'end', type: 'number', span: 3 })
   })
 
   it('한 줄을 다 쓰는 선 차트만 바닥 높이를 낮추고 막대 차트는 그대로 둔다', () => {

@@ -625,7 +625,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const limit = told ? null : spanLimit(row, gutter, frac)
         if (limit) {
           told = true
-          toast.show(narrowText(limit.type, limit.minSpan), undefined, 4000)
+          toast.show(narrowText(limit), undefined, 4000)
         }
         const spans = spansAt(row, gutter, frac)
         if (row.spans && row.spans.join() === spans.join()) return

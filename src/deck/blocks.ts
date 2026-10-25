@@ -2020,22 +2020,36 @@ export function spansAt(row: BlockRow, gutter: number, frac: number): number[] {
   return best
 }
 
+/** 칸 사이 손잡이를 더 끌 수 없는 까닭 (spanLimit) */
+export type SpanLimit =
+  /** 손에 더 가까운 비율에서는 이 부품이 너무 좁아진다. minSpan은 그 부품의 가장 좁은 너비, null이면 그 너비로는 글이 잘린다 */
+  | { kind: 'block'; type: BlockType; minSpan: number | null }
+  /** 손 쪽으로 더 벌어진 비율이 아예 없다: 줄어드는 쪽 부품(type)이 이 줄에서 가장 좁은 칸(span)에 이미 있다 */
+  | { kind: 'end'; type: BlockType; span: number }
+
 /**
- * 칸 사이 손잡이를 frac까지 끌었는데 붙은 비율이 손에서 한 칸 넘게 떨어져 있으면, 손에 더 가까운 비율을 막는 부품.
- * 그 부품이 좁은 칸에 들어가지 못하는 까닭: minSpan은 그 부품의 가장 좁은 너비, 아니면 그 너비로는 글이 잘린다(null)
+ * 칸 사이 손잡이를 frac까지 끌었는데 붙은 비율이 손에서 한 칸 넘게 떨어져 있으면 그 까닭. 가까이 있으면 null.
+ * 손에 더 가까운 비율이 있으면 그것을 막는 부품, 없으면(8:4 줄에서 오른쪽으로) 손 쪽에서 줄어드는 부품.
+ * 예전에는 뒤의 경우에 null을 돌려줘서, 고를 비율이 하나뿐인 줄(핵심 포인트와 비율 원)의 손잡이를 오른쪽으로 끌면
+ * 왼쪽으로 끌 때와 달리 꿈쩍도 않고 아무 말이 없었다
  */
-export function spanLimit(row: BlockRow, gutter: number, frac: number): { type: BlockType; minSpan: number | null } | null {
+export function spanLimit(row: BlockRow, gutter: number, frac: number): SpanLimit | null {
   const edge = (c: number[]) => c.slice(0, gutter + 1).reduce((a, b) => a + b, 0) / 12
-  const got = Math.abs(edge(spansAt(row, gutter, frac)) - frac)
+  const now = spansAt(row, gutter, frac)
+  const got = Math.abs(edge(now) - frac)
   if (got <= 1 / 12) return null
   const closer = (COMBOS[row.blocks.length] ?? [])
     .filter((c) => Math.abs(edge(c) - frac) < got - 1e-6)
     .sort((a, b) => Math.abs(edge(a) - frac) - Math.abs(edge(b) - frac))[0]
-  if (!closer) return null
+  if (!closer) {
+    const k = frac > edge(now) ? gutter + 1 : gutter
+    const b = row.blocks[k]
+    return b ? { kind: 'end', type: b.type, span: now[k] } : null
+  }
   const i = closer.findIndex((s, k) => s < minSpanOf(row.blocks[k]) || blockMinH(row.blocks[k], s) >= NO_FIT)
   if (i < 0) return null
   const b = row.blocks[i]
-  return { type: b.type, minSpan: closer[i] < minSpanOf(b) ? minSpanOf(b) : null }
+  return { kind: 'block', type: b.type, minSpan: closer[i] < minSpanOf(b) ? minSpanOf(b) : null }
 }
 
 /**

@@ -1,4 +1,4 @@
-import { BLOCKS, MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS, type NoRoom } from '../../deck/blocks'
+import { BLOCKS, MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS, type NoRoom, type SpanLimit } from '../../deck/blocks'
 import type { BlockType } from '../../deck/types'
 
 // 부품을 넣을 수 없는 까닭(deck/blocks.ts의 NoRoom)을 쓰는 사람이 읽는 말로.
@@ -29,10 +29,11 @@ export function particle(word: string, withFinal: string, without: string): stri
 const WIDTH: Record<number, string> = { 3: '4분의 1', 4: '3분의 1', 6: '절반', 8: '3분의 2', 12: '전체' }
 
 /** 칸 너비 손잡이를 더 끌 수 없을 때 (deck/blocks.ts의 spanLimit) */
-export function narrowText(type: BlockType, minSpan: number | null): string {
-  const name = josa(BLOCKS[type].name, '은', '는')
-  return minSpan
-    ? `${name} 장 너비의 ${WIDTH[minSpan] ?? '절반'} 이상이 있어야 해서 더 좁힐 수 없어요.`
+export function narrowText(limit: SpanLimit): string {
+  const name = josa(BLOCKS[limit.type].name, '은', '는')
+  if (limit.kind === 'end') return `${name} 이 줄에서 가장 좁은 칸(장 너비의 ${WIDTH[limit.span] ?? '4분의 1'})이라 더 좁힐 수 없어요.`
+  return limit.minSpan
+    ? `${name} 장 너비의 ${WIDTH[limit.minSpan] ?? '절반'} 이상이 있어야 해서 더 좁힐 수 없어요.`
     : `${name} 더 좁으면 글이 잘려서 더 좁힐 수 없어요.`
 }
 
