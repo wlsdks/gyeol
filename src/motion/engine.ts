@@ -1707,6 +1707,10 @@ export function motionEngine(): MotionEngine {
           rise(one('.bk-dt-w'), 220, L.y * 0.4)
           fade(one('.bk-dt-n'), 400, 500)
           break
+        case 'note':
+          // 주석은 본문보다 물러나 있는 글이라 움직임도 조용히: 올라오지 않고 흐려지듯만, 위의 것이 다 나온 뒤에
+          fade(one('.bk-nt'), 120, 700)
+          break
         default:
           rise(cell, 0)
       }

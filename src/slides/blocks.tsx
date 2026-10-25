@@ -30,6 +30,7 @@ import { Range } from './blocks/Range'
 import { Status } from './blocks/Status'
 import { Steps } from './blocks/Steps'
 import { DateBlock } from './blocks/DateBlock'
+import { Note } from './blocks/Note'
 import { Faq } from './blocks/Faq'
 import { Gantt } from './blocks/Gantt'
 import { Goal } from './blocks/Goal'
@@ -95,6 +96,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   status: Status,
   steps: Steps,
   date: DateBlock,
+  note: Note,
 }
 
 const FOLDS = new Map<BlockType, ReadonlySet<string>>()

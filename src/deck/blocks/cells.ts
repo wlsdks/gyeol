@@ -179,6 +179,7 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
     target: '막대 위에 눈금으로 긋는 목표나 기준',
     targetName: '눈금 아래 이름을 목표 말고 다른 말로 (예: 작년, 기준)',
   },
+  note: { kind: '주석 앞에 굵게 거는 이름 (예: 출처, 기준, 주의)' },
   date: { note: '날짜와 하는 일 아래 덧붙임 (예: 남은 기간 2주)' },
   steps: { label: '점 줄 위에 무엇의 단계인지 (예: 새 근태 시스템 도입)' },
   status: { meta: '할 일 아래 언제까지, 누가 (예: 11월 둘째 주 · 인사팀)' },

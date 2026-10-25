@@ -916,4 +916,16 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 4,
     sample: { fields: { date: '11월 8일 (금)', what: '연말 행사 장소 확정', note: '총무팀 · 남은 기간 2주' } },
   },
+  note: {
+    name: '주석',
+    description: '표나 그림 아래 붙이는 작은 글 (출처, 기준, 주의)',
+    motion: '조용히 흐려지듯 나타나요',
+    fields: [
+      { key: 'kind', label: '이름', hint: '기준', optional: true },
+      { key: 'text', label: '주석', hint: '덧붙여 둘 말 (예: 9월 말 사내 집계예요)', multiline: true },
+    ],
+    minSpan: 3,
+    prefSpan: 12,
+    sample: { fields: { kind: '기준', text: '9월 말 인사 시스템 집계예요. 파견 인력은 빼고 셌어요.' } },
+  },
 }

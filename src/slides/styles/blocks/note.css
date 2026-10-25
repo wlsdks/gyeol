@@ -1,0 +1,40 @@
+/* ---------- 주석 ----------
+   표나 그림 아래, 또는 쌓은 단의 맨 아래에 두는 작은 글: 이름표 크기의 --ink-3 글과, 그 앞에 굵게 건 이름(출처, 기준, 주의, --ink-2).
+   이름은 왼쪽에 제 너비만큼의 칸을 잡고 글은 그 옆에서 줄을 바꿔도 같은 왼쪽 끝으로 내려간다(이름 밑으로 파고들면
+   두 줄째부터 이름이 글의 첫 낱말처럼 읽힌다). 왼쪽 세로 막대, 강조색 띠, 아이콘은 쓰지 않는다: 주석은 본문보다
+   한 걸음 물러나 있어야 하는데 표시가 붙으면 오히려 눈이 먼저 간다. 칸 안에서는 위에 붙는다: 위의 표나 그림 바로 아래에 이어 읽히게 */
+
+.bk-nt {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: start;
+  align-items: baseline;
+  column-gap: 16px;
+  height: 100%;
+}
+
+.bk-nt-k {
+  --fs: var(--t-small);
+  max-width: 8em;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.bk-nt-t {
+  --fs: var(--t-small);
+  color: var(--ink-3);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* 이름이 없으면 글이 칸 너비를 다 쓴다 */
+.bk-nt-t:only-child {
+  grid-column: 1 / -1;
+}
+
+.bk.is-shared > .bk-in > .bk-nt {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  padding-top: var(--bk-lift, 0px);
+}

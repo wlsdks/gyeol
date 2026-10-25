@@ -165,7 +165,8 @@
     .bk-rn-l, .bk-rn-ends, .bk-rn-ml, .bk-rn-n,
     .bk-ss-st, .bk-ss-w, .bk-ss-m,
     .bk-stp-l, .bk-stp-k, .bk-stp-of, .bk-stp-cur, .bk-stp-t,
-    .bk-dt-day, .bk-dt-mo, .bk-dt-txt, .bk-dt-w, .bk-dt-n
+    .bk-dt-day, .bk-dt-mo, .bk-dt-txt, .bk-dt-w, .bk-dt-n,
+    .bk-nt-k, .bk-nt-t
   ) {
   /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 한두 단계 작게(둘 가운데 작은 쪽). 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css)
      --bk-up: 큰 칸에 혼자 있는 숫자 같은 부품을 한 단계 크게. --bk-fit: 놓은 뒤 내용이 늘어 칸을 넘치면 slides/fitBlocks.ts가 단계로 줄인다 */
