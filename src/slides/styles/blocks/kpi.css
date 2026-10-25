@@ -785,3 +785,14 @@
     text-align: left;
   }
 }
+
+/* 한 줄로 눕힌 이름표가 여섯이고 줄이 높으면 셋씩 두 줄로: 여섯을 한 줄에 두면 비율 숫자끼리 붙고, 고리(칸) 옆의 목록이
+   가운데 한 줄만 차서 위아래가 비었다 */
+@container style(--sh-row: 1) {
+  @container bk (min-height: 521px) {
+    :is(.va-donut, .va-units) > .bk-in > .sh[data-n='6'] > .sh-legend {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      row-gap: 40px;
+    }
+  }
+}
