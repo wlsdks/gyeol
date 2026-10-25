@@ -27,6 +27,7 @@ import {
   sameTarget,
   shiftBlock,
   spansAt,
+  spanLimit,
   targetOf,
   unweighted,
   variantOfBlock,
@@ -48,7 +49,7 @@ import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction } from '../ui'
 import { useLinkEditing } from './LinkEditor'
-import { noRoomText } from './noRoom'
+import { narrowText, noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
 //
@@ -537,6 +538,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       e.preventDefault()
       e.stopPropagation()
       const s = slideRef.current
+      // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
+      let told = false
       document.body.classList.add('is-block-resizing')
       const onMove = (ev: PointerEvent) => {
         const cur = slideRef.current
@@ -544,6 +547,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const area = measureArea(areaEl.current)
         if (!row || !area) return
         const frac = (ev.clientX - area.rect.left) / area.rect.width
+        const limit = told ? null : spanLimit(row, gutter, frac)
+        if (limit) {
+          told = true
+          toast.show(narrowText(limit.type, limit.minSpan), undefined, 4000)
+        }
         const spans = spansAt(row, gutter, frac)
         if (row.spans && row.spans.join() === spans.join()) return
         store.setRows(cur.id, (cur.rows ?? []).map((r) => (r.id === rowId ? { ...r, spans } : r)), `${s.id}.spans.${rowId}`)
@@ -556,7 +564,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
     },
-    [store],
+    [store, toast],
   )
 
   // ---------- 줄 높이 ----------

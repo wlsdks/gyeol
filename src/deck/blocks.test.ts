@@ -44,6 +44,7 @@ import {
   weighted,
   shownLook,
   spansAt,
+  spanLimit,
   spansOf,
   targetOf,
   unwrapCompose,
@@ -189,6 +190,16 @@ describe('자리 정하기', () => {
     expect(t).not.toBeNull()
     const order = insertAt(rows, t, c, 'x', areaH)!.flatMap((r) => r.blocks.map((b) => b.id))
     expect(order.indexOf('c')).toBeGreaterThan(order.indexOf('m'))
+  })
+
+  it('칸 너비 손잡이를 더 끌 수 없으면 막는 부품을 알려 준다', () => {
+    // 막대 비교는 절반보다 좁아지지 않는다: 가운데 손잡이를 오른쪽 끝(8:4 쪽)으로 끌면 막대 비교 때문
+    const rows = row(block('kpi', 'k'), block('bars', 'b'))
+    expect(spanLimit(rows, 0, 0.7)).toEqual({ type: 'bars', minSpan: 6 })
+    // 손이 붙은 비율 가까이에 있으면 알리지 않는다
+    expect(spanLimit(rows, 0, 0.52)).toBeNull()
+    // 막는 것이 없으면 알리지 않는다
+    expect(spanLimit(row(block('text', 't'), block('callout', 'c')), 0, 0.68)).toBeNull()
   })
 
   it('줄 수, 줄마다 칸 수, 부품 수의 끝을 넘지 않는다', () => {

@@ -1863,6 +1863,24 @@ export function spansAt(row: BlockRow, gutter: number, frac: number): number[] {
   return best
 }
 
+/**
+ * 칸 사이 손잡이를 frac까지 끌었는데 붙은 비율이 손에서 한 칸 넘게 떨어져 있으면, 손에 더 가까운 비율을 막는 부품.
+ * 그 부품이 좁은 칸에 들어가지 못하는 까닭: minSpan은 그 부품의 가장 좁은 너비, 아니면 그 너비로는 글이 잘린다(null)
+ */
+export function spanLimit(row: BlockRow, gutter: number, frac: number): { type: BlockType; minSpan: number | null } | null {
+  const edge = (c: number[]) => c.slice(0, gutter + 1).reduce((a, b) => a + b, 0) / 12
+  const got = Math.abs(edge(spansAt(row, gutter, frac)) - frac)
+  if (got <= 1 / 12) return null
+  const closer = (COMBOS[row.blocks.length] ?? [])
+    .filter((c) => Math.abs(edge(c) - frac) < got - 1e-6)
+    .sort((a, b) => Math.abs(edge(a) - frac) - Math.abs(edge(b) - frac))[0]
+  if (!closer) return null
+  const i = closer.findIndex((s, k) => s < minSpanOf(row.blocks[k]) || blockMinH(row.blocks[k], s) >= NO_FIT)
+  if (i < 0) return null
+  const b = row.blocks[i]
+  return { type: b.type, minSpan: closer[i] < minSpanOf(b) ? minSpanOf(b) : null }
+}
+
 /** 읽는 차례대로 한 칸 앞이나 뒤로 (끌기 어려울 때) */
 export function shiftBlock(rows: BlockRow[], blockId: string, dir: -1 | 1): BlockRow[] {
   const flat = allBlocks(rows)

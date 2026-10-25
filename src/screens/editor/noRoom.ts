@@ -28,6 +28,14 @@ export function particle(word: string, withFinal: string, without: string): stri
 /** 12칸 가운데 몇 칸인지를 장 너비의 몫으로 */
 const WIDTH: Record<number, string> = { 3: '4분의 1', 4: '3분의 1', 6: '절반', 8: '3분의 2', 12: '전체' }
 
+/** 칸 너비 손잡이를 더 끌 수 없을 때 (deck/blocks.ts의 spanLimit) */
+export function narrowText(type: BlockType, minSpan: number | null): string {
+  const name = josa(BLOCKS[type].name, '은', '는')
+  return minSpan
+    ? `${name} 장 너비의 ${WIDTH[minSpan] ?? '절반'} 이상이 있어야 해서 더 좁힐 수 없어요.`
+    : `${name} 더 좁으면 글이 잘려서 더 좁힐 수 없어요.`
+}
+
 export interface NoRoomText {
   /** 무엇이 안 되는지 */
   why: string
