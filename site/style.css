@@ -257,6 +257,18 @@ figure {
   background: #e9edf8;
 }
 
+/* 남색 면 위에서 보고 있는 컴퓨터가 아닌 쪽의 단추 (main.js) */
+.btn-ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.42);
+  color: #fff;
+}
+
+.btn-ghost:hover {
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.7);
+}
+
 /* ---------- 화면 그림 ---------- */
 
 /* 앱 화면을 찍은 그림. 그림자 대신 얇은 테두리 하나: 화면이 종이 위에 놓인 것처럼 */
@@ -755,6 +767,28 @@ h3 {
   outline-color: #fff;
 }
 
+/* 제목 줄 오른쪽에 지금 받는 판 */
+.dl-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.dl-ver {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dl-ver span {
+  margin-left: 12px;
+  color: rgb(255 255 255 / 0.6);
+  font-weight: 500;
+}
+
 .os {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -782,6 +816,43 @@ h3 {
   font-size: 30px;
   line-height: 1.2;
   letter-spacing: -0.03em;
+}
+
+.os-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.os-mine {
+  color: rgb(255 255 255 / 0.62);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* 맞는 컴퓨터와 받는 파일. 이름 칸 너비를 두 줄이 같이 써서 값의 첫 글자가 맞는다 */
+.os-meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 20px;
+  margin: 0 0 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.18);
+  font-size: 16px;
+}
+
+.os-meta div {
+  display: contents;
+}
+
+.os-meta dt {
+  color: rgb(255 255 255 / 0.6);
+}
+
+.os-meta dd {
+  margin: 0;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
 }
 
 .howto {
@@ -843,6 +914,39 @@ h3 {
   margin-top: 6px;
   font-size: 16px;
   line-height: 1.68;
+}
+
+/* 두 쪽 아래에 새 판으로 바꾸는 법. 차례가 아니라서 번호 없이, 위의 두 쪽과 같은 칸에 나란히 */
+.dl-more {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px clamp(32px, 5vw, 80px);
+  margin-top: 72px;
+  padding-top: 32px;
+  border-top: 1px solid rgb(255 255 255 / 0.28);
+}
+
+.dl-more h4 {
+  font-size: 17px;
+}
+
+.dl-more p {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.68;
+}
+
+.dl-more a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgb(255 255 255 / 0.4);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.dl-more a:hover {
+  text-decoration-color: #fff;
 }
 
 /* ---------- 바닥줄 ---------- */
@@ -924,7 +1028,8 @@ h3 {
   .compose,
   .row,
   .later,
-  .os {
+  .os,
+  .dl-more {
     grid-template-columns: minmax(0, 1fr);
   }
 }

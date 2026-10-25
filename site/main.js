@@ -64,3 +64,31 @@ const DECKS = {
   // 뒤로 가기로 돌아오면 브라우저가 고른 단추를 되살린다. HTML에 적힌 기본 구성과 다를 때만 다시 그린다
   render()
 })()
+
+// 내려받기: 보고 있는 컴퓨터의 단추를 먼저 보인다. 맨 위에서는 그 단추를 앞에 짙게 두고, 내려받기 구역에서는
+// 그 쪽에 '이 컴퓨터'를 붙이고 다른 쪽 단추를 테두리만 둔다. 알 수 없으면(휴대폰, 태블릿, 다른 운영체제) HTML 그대로 둔다
+;(() => {
+  const platform = navigator.userAgentData?.platform || navigator.platform || ''
+  // 아이패드는 platform이 MacIntel이라 손가락 터치로 가른다
+  const mine = /^mac/i.test(platform) && navigator.maxTouchPoints < 2 ? 'mac' : /^win/i.test(platform) ? 'win' : null
+  if (!mine) return
+
+  const cta = document.querySelector('.cta')
+  const first = cta?.querySelector(`a[data-os="${mine}"]`)
+  if (cta && first) {
+    cta.prepend(first)
+    for (const a of cta.querySelectorAll('a[data-os]')) {
+      a.classList.toggle('btn-dark', a === first)
+      a.classList.toggle('btn-line', a !== first)
+    }
+  }
+
+  for (const col of document.querySelectorAll('.os-col[data-os]')) {
+    const yours = col.dataset.os === mine
+    const label = col.querySelector('.os-mine')
+    if (label) label.hidden = !yours
+    const btn = col.querySelector('.btn')
+    btn?.classList.toggle('btn-light', yours)
+    btn?.classList.toggle('btn-ghost', !yours)
+  }
+})()
