@@ -1,7 +1,7 @@
 {
   "name": "gyeol",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "결(gyeol): 회사에서 하는 발표를 고르고 채우기만 하면 만드는 HTML 발표 빌더",
   "type": "module",
   "engines": {
