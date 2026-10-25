@@ -246,8 +246,10 @@
   grid-template-columns: 148px minmax(0, 1fr);
   width: 760px;
   max-width: calc(100vw - 40px);
-  /* 1280×600에서도 위 머리 줄 아래로 들어오게 */
-  max-height: calc(100vh - 120px);
+  /* 묶음마다 장 수가 달라도 높이는 같게: 아래에 붙여 여는 창이라 높이가 바뀌면 위 끝이 오르내려, 누른 묶음 이름이
+     마우스 밑에서 100px 넘게 내려갔다. 가장 많은 묶음(세 줄)이 스크롤 없이 들어가는 높이.
+     1280×600에서도 위 머리 줄 아래로 들어오게 */
+  height: min(440px, calc(100vh - 120px));
 }
 
 .add-slide-nav {
