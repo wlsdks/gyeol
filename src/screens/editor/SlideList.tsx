@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { keys } from '../../lib/keys'
 import { josa } from './noRoom'
+import { slideName } from '../../deck/blocks'
 import { missingFields, pageInfo } from '../../deck/fields'
 import { LAYOUTS, LAYOUT_GROUPS } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
@@ -31,7 +32,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
 
   const nameOf = (id: UniqueIdentifier) => {
     const i = deck.slides.findIndex((s) => s.id === id)
-    return i < 0 ? '장' : `${i + 1}번째 장 ‘${deck.slides[i].purpose}’`
+    return i < 0 ? '장' : `${i + 1}번째 장 ‘${slideName(deck.slides[i])}’`
   }
   const placeOf = (id: UniqueIdentifier) => deck.slides.findIndex((s) => s.id === id) + 1
   const announcements: Announcements = {
@@ -172,7 +173,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         id={`thumb-${slide.id}`}
         className="thumb-btn"
         aria-current={selected || undefined}
-        aria-label={`${page || '숨김'}. ${slide.purpose}${missing ? `, 빈칸 ${missing}곳` : ''}`}
+        aria-label={`${page || '숨김'}. ${slideName(slide)}${missing ? `, 빈칸 ${missing}곳` : ''}`}
         onClick={() => onSelect(slide.id)}
         {...attributes}
         {...listeners}
@@ -192,7 +193,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         {/* 이 장에 무엇을 쓰면 되는지는 이름에 마우스를 올리면 (오른쪽 칸에 늘 펼쳐 두지 않는다) */}
         <span className="thumb-label" title={slide.guide || undefined}>
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}
-          {slide.purpose}
+          {slideName(slide)}
         </span>
       </button>
     </div>

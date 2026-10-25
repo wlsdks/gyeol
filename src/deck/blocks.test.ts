@@ -43,6 +43,7 @@ import {
   unweighted,
   weighted,
   shownLook,
+  slideName,
   spansAt,
   spanLimit,
   spansOf,
@@ -56,6 +57,7 @@ import {
 import { sampleBlock } from './blockSamples'
 import { followIndex, moveIn } from './fields'
 import { FRAME } from './frame'
+import { makeSlide } from './generate'
 import { LAYOUT_ORDER } from './layouts'
 import { showcaseSlides } from './showcase'
 import type { Block, BlockRow, Slide } from './types'
@@ -174,6 +176,15 @@ describe('자리 정하기', () => {
     const rows = [row(block('ring', 'r'), block('ratio', 'q'))]
     const t = autoTarget(rows, block('spark', 's'), areaH)
     expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
+  })
+
+  it('장 추가로 만든 컴포넌트 장은 넣은 컴포넌트 이름으로 부른다', () => {
+    const s = { ...makeSlide('compose'), rows: [row(block('kpi', 'k')), row(block('trend', 't'), block('callout', 'c'), block('kpi', 'k2'))] }
+    expect(slideName(s)).toBe('핵심 숫자, 추이 외 1')
+    expect(slideName({ ...s, rows: [row(block('kpi', 'k'))] })).toBe('핵심 숫자')
+    // 보고 종류가 정해 준 이름과 빈 장은 그대로
+    expect(slideName({ ...s, purpose: '주요 숫자' })).toBe('주요 숫자')
+    expect(slideName({ ...s, rows: [] })).toBe(s.purpose)
   })
 
   it('작은 컴포넌트를 잇달아 넣으면 새 줄에 혼자 두지 않고 앞의 것 옆에 둔다', () => {

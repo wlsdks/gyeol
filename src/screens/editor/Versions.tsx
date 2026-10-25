@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { uid } from '../../deck/generate'
 import type { Deck } from '../../deck/types'
@@ -390,7 +391,7 @@ function VersionPreview({
               </ScaledSlide>
               <figcaption className="vpp-cap">
                 <span>{i + 1}</span>
-                {s.purpose}
+                {slideName(s)}
                 {note && <em>{note}</em>}
               </figcaption>
             </figure>

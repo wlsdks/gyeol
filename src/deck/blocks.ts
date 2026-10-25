@@ -1887,6 +1887,17 @@ export function spanLimit(row: BlockRow, gutter: number, frac: number): { type: 
   return { type: b.type, minSpan: closer[i] < minSpanOf(b) ? minSpanOf(b) : null }
 }
 
+/**
+ * 장 목록, 버전 기록, 제안 미리 보기에 쓰는 장 이름. 보고 종류가 정해 준 이름(주요 숫자, 다음 할 일)은 그대로 두고,
+ * '장 추가'로 만든 컴포넌트 장은 모두 '컴포넌트로 꾸미기'라 서로 구별되지 않아서 넣은 컴포넌트의 이름으로 부른다
+ */
+export function slideName(slide: Slide): string {
+  if (slide.layout !== 'compose' || slide.purpose !== LAYOUTS.compose.name) return slide.purpose
+  const names = [...new Set(allBlocks(slide.rows ?? []).map((b) => BLOCKS[b.type].name))]
+  if (!names.length) return slide.purpose
+  return names.length > 2 ? `${names.slice(0, 2).join(', ')} 외 ${names.length - 2}` : names.join(', ')
+}
+
 /** 읽는 차례대로 한 칸 앞이나 뒤로 (끌기 어려울 때) */
 export function shiftBlock(rows: BlockRow[], blockId: string, dir: -1 | 1): BlockRow[] {
   const flat = allBlocks(rows)

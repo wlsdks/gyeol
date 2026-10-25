@@ -1,4 +1,5 @@
 import { createStore, del, entries, get, set } from 'idb-keyval'
+import { slideName } from '../deck/blocks'
 import { uid } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { writeVersionToFolder } from './folder'
@@ -75,7 +76,7 @@ export function deckSignature(deck: Deck): string {
 
 /** 장마다의 비교 값 */
 export function slideSignatures(deck: Deck): DeckVersion['slides'] {
-  return deck.slides.map((s) => ({ id: s.id, purpose: s.purpose, sig: hash(JSON.stringify(s)) }))
+  return deck.slides.map((s) => ({ id: s.id, purpose: slideName(s), sig: hash(JSON.stringify(s)) }))
 }
 
 function hash(text: string): string {

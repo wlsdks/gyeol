@@ -5,7 +5,7 @@ import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { BLOCK_EFFECTS, BLOCK_LINKS, BLOCK_LOOKS, BLOCKS } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_LINKS, BLOCK_LOOKS, BLOCKS, slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES } from '../../deck/themes'
@@ -141,7 +141,7 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
 /** 부탁을 맡긴 뒤 오른쪽 아래에 뜨는 진행 상황. 제안이 오면 미리 보기가 바로 열린다 */
 export function AskStatus({ deck, job, onCancel }: { deck: Deck; job: AskJob; onCancel: () => void }) {
   const i = job.slideId ? deck.slides.findIndex((s) => s.id === job.slideId) : -1
-  const target = i >= 0 ? `${i + 1}장 ‘${deck.slides[i].purpose}’` : '발표 전체'
+  const target = i >= 0 ? `${i + 1}장 ‘${slideName(deck.slides[i])}’` : '발표 전체'
   if (job.state === 'no_change') {
     return (
       <div className="ai-inbox" role="status">
@@ -323,7 +323,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     if (ref === null) return '맨 앞'
     if (/^n\d+$/.test(ref)) return named.get(ref) ?? '새 장'
     const i = deck.slides.findIndex((s) => shapeSlideId(s) === ref)
-    return i < 0 ? '없는 장' : `${i + 1}장 ‘${deck.slides[i].purpose}’`
+    return i < 0 ? '없는 장' : `${i + 1}장 ‘${slideName(deck.slides[i])}’`
   }
   // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
   const blockName = (ref: string) => {
@@ -509,7 +509,7 @@ export function AiReview({
                   </ScaledSlide>
                   <figcaption className="vpp-cap">
                     <span>{n}</span>
-                    {was.purpose}: 지금
+                    {slideName(was)}: 지금
                   </figcaption>
                 </figure>
                 <span className="air-arrow" aria-hidden="true">
@@ -521,7 +521,7 @@ export function AiReview({
                   </ScaledSlide>
                   <figcaption className="vpp-cap">
                     <span>{n}</span>
-                    {s.purpose}
+                    {slideName(s)}
                     <em>적용하면</em>
                   </figcaption>
                 </figure>
@@ -538,7 +538,7 @@ export function AiReview({
                 </ScaledSlide>
                 <figcaption className="vpp-cap">
                   <span>{i + 1}</span>
-                  {s.purpose}
+                  {slideName(s)}
                   {note && <em>{note}</em>}
                 </figcaption>
               </figure>
