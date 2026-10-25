@@ -11,3 +11,20 @@ export const FRAME = { x: 120, y: 72, bottom: 187, gap: 72 } as const
  * 어림은 넉넉하게(본문 상자를 낮게) 잡으려고 작은 쪽
  */
 export const TITLE_TRIM = 0.155
+
+/**
+ * 장의 머리(제목, 부제). slides.css의 --t-title, --t-lead(보내는 자료 .d-read는 한 단계 작다), .s-head와 .s-lead의 너비,
+ * 줄 높이, 제목과 부제 사이와 같은 값이다(frame.test.ts가 본다). 부품 장의 본문 높이를 어림할 때 쓴다(composeAreaH)
+ */
+export const HEAD = {
+  present: { title: 62, lead: 36 },
+  read: { title: 52, lead: 30 },
+  titleW: 1560,
+  leadW: 1320,
+  titleLine: 1.2,
+  leadLine: 1.48,
+  between: 28,
+} as const
+
+/** 발표 전체의 글자 크기(작게, 크게)의 배율. slides.css의 .sz-small, .sz-large의 --scale과 같다 */
+export const TEXT_SCALE = { small: 0.92, large: 1.2 } as const

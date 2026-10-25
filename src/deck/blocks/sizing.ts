@@ -1,7 +1,7 @@
 // 칸 너비와 줄 높이: 부품마다 잰 높이, 남는 높이 나누기, CSS 격자 값, 본문 상자 높이 어림
 
 import { BLOCK_HEIGHTS } from '../blockHeights'
-import { FRAME, TITLE_TRIM } from '../frame'
+import { FRAME, HEAD, TEXT_SCALE, TITLE_TRIM } from '../frame'
 import { hintFor, logoColumns } from '../layouts'
 import type { Block, BlockLook, BlockRow, BlockType, Slide } from '../types'
 import { BLOCK_GROUPS, BLOCKS } from './catalog'
@@ -330,11 +330,6 @@ export function fitsWith(rows: BlockRow[], blockId: string, fn: (b: Block) => Bl
   return !changeIssue(rows, blockId, fn, areaH)
 }
 
-/** 제목, 부제 한 줄의 높이와 한 줄에 드는 너비 (slides.css의 .s-title, .s-lead). 보내는 자료(d-read)는 한 단계 작다 */
-const HEAD_TYPE = {
-  present: { title: 62, lead: 36 },
-  read: { title: 52, lead: 30 },
-}
 /** 글자 하나의 평균 너비(글자 크기의 몫). 한글과 띄어쓰기를 섞은 제목을 재어 정한 값이다 */
 const EM_PER_CHAR = 0.67
 
@@ -344,7 +339,7 @@ const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.
 /**
  * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다. edit면 편집 화면 기준).
  * 슬라이드가 그려져 있지 않아 잴 수 없을 때(문서 보기, 시험) 쓴다. 제목은 길이에 따라 글자가 작아지고(fields.tsx의 fit, 24자와 40자)
- * 1560px을 넘으면 줄이 바뀐다. 부제는 1320px, 제목과 부제 사이 28, 머리 아래 FRAME.gap(72). 발표 설정(글자 크기, 보내는 자료)도 본다.
+ * 머리 너비(HEAD.titleW)를 넘으면 줄이 바뀐다. 부제 너비, 제목과 부제 사이, 머리 아래 FRAME.gap도 틀(frame.ts)의 값이다. 발표 설정(글자 크기, 보내는 자료)도 본다.
  * 장의 틀(frame.ts)에서 제목은 글자 윗선을 맞추느라 조금 올라간다
  */
 export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }, edit?: boolean): number {
@@ -352,14 +347,14 @@ export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; 
   // 자리를 밀지 않는다(edit.css)
   const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
   const lead = slide.fields.lead?.trim() ?? ''
-  const type = look?.meta?.method === 'send' ? HEAD_TYPE.read : HEAD_TYPE.present
-  const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.2 : 1
+  const type = look?.meta?.method === 'send' ? HEAD.read : HEAD.present
+  const scale = look?.theme?.size === 'small' ? TEXT_SCALE.small : look?.theme?.size === 'large' ? TEXT_SCALE.large : 1
   const n = [...title].length
   const tfs = type.title * scale * (n > 40 ? 0.7 : n > 24 ? 0.84 : 1)
   const lfs = type.lead * scale
-  const titleH = title ? lineCount(title, tfs, 1560) * tfs * 1.2 : 0
-  const leadH = lead ? lineCount(lead, lfs, 1320) * lfs * 1.48 : 0
-  const head = titleH - (title ? tfs * TITLE_TRIM : 0) + leadH + (title && lead ? 28 : 0)
+  const titleH = title ? lineCount(title, tfs, HEAD.titleW) * tfs * HEAD.titleLine : 0
+  const leadH = lead ? lineCount(lead, lfs, HEAD.leadW) * lfs * HEAD.leadLine : 0
+  const head = titleH - (title ? tfs * TITLE_TRIM : 0) + leadH + (title && lead ? HEAD.between : 0)
   return Math.floor(1080 - FRAME.y - FRAME.bottom - (head ? head + FRAME.gap : 0))
 }
 
