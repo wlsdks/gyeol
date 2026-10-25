@@ -2266,9 +2266,11 @@
 
 /* ---------- 로고 모음 ---------- */
 
+/* 한 줄의 로고 수는 logoColumns(deck/layouts.ts). 칸은 반 칸(--lg-half = 로고 수 × 2)으로 나누고 로고 하나가 반 칸 둘을 쓴다:
+   덜 찬 마지막 줄을 반 칸만큼 밀어 가운데에 둘 수 있게 */
 .lg {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--lg-half, 8), minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
   gap: 20px;
   max-height: 100%;
@@ -2278,19 +2280,8 @@
   grid-auto-rows: minmax(0, 320px);
 }
 
-.lg:is([data-n='1'], [data-n='2']) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.lg:is([data-n='3'], [data-n='6']) {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.lg:is([data-n='9'], [data-n='10'], [data-n='11'], [data-n='12']) {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
 .lg-cell {
+  grid-column-end: span 2;
   position: relative;
   display: flex;
   flex-direction: column;

@@ -328,12 +328,16 @@ function ImageText() {
 
 function Logos() {
   const items = useItems()
+  const cols = logoColumns(items.length)
+  const rows = Math.ceil(items.length / cols)
+  // 덜 찬 마지막 줄은 가운데로: 칸을 반 칸으로 나눠 두고(로고 하나가 반 칸 둘), 마지막 줄의 첫 로고를 빈 만큼 뒤에서 시작한다
+  const last = items.length - (rows - 1) * cols
   return (
     <>
       <Head lead />
-      <div className="s-body lg" data-n={items.length} data-rows={Math.ceil(items.length / logoColumns(items.length))}>
+      <div className="s-body lg" data-n={items.length} data-rows={rows} style={{ '--lg-half': cols * 2 } as CSSProperties}>
         {items.map((it, i) => (
-          <div key={it.id} className="it lg-cell">
+          <div key={it.id} className="it lg-cell" style={last < cols && i === (rows - 1) * cols ? { gridColumnStart: cols - last + 1 } : undefined}>
             <ImageSlot i={i} className="lg-img" contain />
             <IT i={i} k="title" className="lg-name" />
             <ItemTools i={i} />

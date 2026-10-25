@@ -766,10 +766,10 @@ export function highlightOf(slide: Pick<Slide, 'layout' | 'options' | 'items'>):
   return spec.highlight.fallback
 }
 
-/** 로고 모음의 한 줄에 놓는 로고 수 (2개까지 둘, 3·6개는 셋, 9개부터 여섯, 나머지 넷). 줄이 짝 맞게 차도록 */
+/**
+ * 로고 모음의 한 줄에 놓는 로고 수: 다섯까지는 한 줄에 모두, 그보다 많으면 두 줄로 나눠 윗줄에 하나 더 (7개는 4·3, 9개는 5·4).
+ * 한 줄에 넷을 두던 때는 5개가 4·1로, 10개가 6·4로 마지막 줄이 비어 보였다. 덜 찬 마지막 줄은 가운데에 둔다(layouts.tsx)
+ */
 export function logoColumns(n: number): number {
-  if (n <= 2) return 2
-  if (n === 3 || n === 6) return 3
-  if (n >= 9) return 6
-  return 4
+  return n <= 5 ? Math.max(2, n) : Math.ceil(n / 2)
 }

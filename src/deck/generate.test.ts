@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AUDIENCES, BLUEPRINTS, DECK_GROUPS, DECK_TYPES, DURATIONS } from './blueprints'
 import { createDeck, planRecipes, priorityFor, targetCount } from './generate'
-import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER, LAYOUTS } from './layouts'
+import { hintFor, LAYOUT_GROUPS, LAYOUT_ORDER, LAYOUTS, logoColumns } from './layouts'
 import { showcaseSlides } from './showcase'
 
 describe('planRecipes', () => {
@@ -183,5 +183,15 @@ describe('레이아웃 묶음과 예시', () => {
   it('모든 레이아웃에 내용을 채운 예시 장이 있다 (장 모음 화면)', () => {
     const shown = new Set(showcaseSlides().map((s) => s.layout))
     expect(LAYOUT_ORDER.filter((id) => !shown.has(id))).toEqual([])
+  })
+
+  it('로고 모음은 두 줄까지, 마지막 줄이 윗줄보다 하나 넘게 모자라지 않는다 (5개가 4·1로 남던 것)', () => {
+    const { min, max } = LAYOUTS.logos.items!
+    for (let n = min; n <= max; n++) {
+      const cols = logoColumns(n)
+      const rows = Math.ceil(n / cols)
+      expect(rows).toBeLessThanOrEqual(2)
+      expect(cols - (n - (rows - 1) * cols)).toBeLessThanOrEqual(1)
+    }
   })
 })
