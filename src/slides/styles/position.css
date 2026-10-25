@@ -17,9 +17,23 @@
   line-height: 1.2;
 }
 
+/* 축 이름 옆의 화살표: 글자(↑ →)는 화살표 글자를 쳐 넣은 것처럼 보여서, 다른 화살표(slides/arrow.tsx)와 같은 선과 꽉 찬
+   세모 머리를 그린다. 축 이름의 글자 크기를 따라 커진다(em). 2×2 우선순위(matrix.css)와 같은 꼴 */
+.pm-y::before,
+.pm-x::after {
+  /* 선 굵기의 반: 흐름의 잇는 선, 두 면 사이의 화살표와 같은 굵기(줄 선의 1.5배) */
+  --ax-s: calc(var(--rule) * 0.75);
+  display: inline-block;
+  background: currentColor;
+  content: '';
+}
+
 .pm-y::before {
+  width: 0.58em;
+  height: 1em;
   margin-right: 12px;
-  content: '↑';
+  clip-path: polygon(50% 0, 100% 0.58em, calc(50% + var(--ax-s)) 0.58em, calc(50% + var(--ax-s)) 100%, calc(50% - var(--ax-s)) 100%, calc(50% - var(--ax-s)) 0.58em, 0 0.58em);
+  vertical-align: -0.12em;
 }
 
 .pm-x {
@@ -27,8 +41,11 @@
 }
 
 .pm-x::after {
+  width: 1em;
+  height: 0.58em;
   margin-left: 12px;
-  content: '→';
+  clip-path: polygon(100% 50%, calc(100% - 0.58em) 100%, calc(100% - 0.58em) calc(50% + var(--ax-s)), 0 calc(50% + var(--ax-s)), 0 calc(50% - var(--ax-s)), calc(100% - 0.58em) calc(50% - var(--ax-s)), calc(100% - 0.58em) 0);
+  vertical-align: 0.04em;
 }
 
 .pm-plot {

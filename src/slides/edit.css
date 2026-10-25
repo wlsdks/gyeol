@@ -136,8 +136,10 @@
   grid-area: 1 / 2;
 }
 
+/* 화살표는 그린 그림이라(matrix.css) 격자에서는 글줄의 가운데에 세운다: 글줄에 놓일 때의 vertical-align이 격자에서는 먹지 않아 위로 붙었다 */
 .slide.m-edit :is(.mx-y, .pm-y).ed::before {
   grid-area: 1 / 1;
+  align-self: center;
 }
 
 .slide.m-edit :is(.mx-x, .pm-x).ed {
@@ -160,6 +162,7 @@
 
 .slide.m-edit :is(.mx-x, .pm-x).ed::after {
   grid-area: 1 / 2;
+  align-self: center;
 }
 
 /* 항목 빼기 단추: 화면에서 늘 22px (--vs). 장을 줄여도 커다란 검은 원이 항목을 덮지 않게, 흰 원에 회색 ×,
