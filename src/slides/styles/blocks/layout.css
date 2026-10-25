@@ -116,3 +116,14 @@
   flex: 0 1 auto;
   padding-bottom: 0;
 }
+
+/* 한 장 요약의 칸 모양: 이름은 면 위에, 설명은 면 아래 끝에 둔다(점 목록의 타일과 같은 꼴). 설명을 이름 바로 아래에 붙이면
+   면이 글보다 높을 때 아래만 비었고(위 23px, 아래 46~50px), 면의 위아래 여백도 줄 모양의 낮은 줄 여백(18px)을 그대로 썼다.
+   위아래 끝에 두면 면마다 위아래 여백이 같고, 이름끼리 설명 끝끼리 줄이 맞는다 */
+.bk-summary.va-grid > .bk-in .sm:is([data-n]) .sm-row {
+  padding-block: calc(clamp(28px, 4cqh, 44px) + var(--bk-air, 0px));
+}
+
+.bk-summary.va-grid .sm-body {
+  align-self: end;
+}
