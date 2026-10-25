@@ -1636,6 +1636,15 @@ export function motionEngine(): MotionEngine {
           rise(one('.bk-hd-t'), 160, L.y * 0.5)
           fade(one('.bk-hd-n'), 360, 500)
           break
+        case 'stat':
+          // 이름이 먼저 흐려지듯 나오고 숫자가 올라오며 굴러 맞춰진다. 아래 선은 숫자가 거의 맞춰질 때 왼쪽부터 그어져 줄을 닫는다
+          fade(one('.bk-sl-l'), 60, 500)
+          rise(one('.bk-sl-v'), 120, L.y * 0.4)
+          count(one('.bk-sl-v'), 140)
+          fade(one('.bk-sl-c'), 520, 400)
+          fade(one('.bk-sl-n'), 600, 500)
+          draw(one('.bk-sl-box'), 300, levelName === 'lively' ? 800 : 650, 'left center', '::after')
+          break
         default:
           rise(cell, 0)
       }

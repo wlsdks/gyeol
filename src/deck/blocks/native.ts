@@ -820,4 +820,18 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 12,
     sample: { fields: { text: '지금 방식', note: '구매 요청에서 물품을 받기까지' } },
   },
+  stat: {
+    name: '숫자 한 줄',
+    description: '이름과 숫자 하나를 한 줄로. 좁은 칸에 여럿 쌓으면 목록이 돼요',
+    motion: '숫자가 굴러 맞춰지고 아래 선이 그어져요',
+    fields: [
+      { key: 'label', label: '이름', hint: '무엇의 숫자인지 (예: 평균 처리 시간)' },
+      { key: 'value', label: '숫자', hint: '2.4일' },
+      { key: 'change', label: '변화', hint: '변화 (예: 12% 늘었어요)', optional: true },
+      { key: 'note', label: '덧붙임', hint: '기준이나 기간 (예: 9월 한 달)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { label: '문의 평균 처리 시간', value: '2.4일', change: '1.1일 줄었어요', note: '9월 한 달, 고객 지원팀' } },
+  },
 }

@@ -173,6 +173,7 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
   merge: { total: '합계를 직접 적어요 (비우면 값을 더한 값이 보여요)', unit: '값 뒤에 붙는 단위 (예: 억 원)' },
   tiles: { of: '전체가 100이 아닐 때 (예: 60명). 100까지면 칸 하나가 하나예요', note: '숫자 아래 짧은 설명 (예: 남은 사람은 11월까지 마쳐요)' },
   heading: { note: '소제목 옆(좁으면 아래)에 작게 덧붙이는 한 줄' },
+  stat: { change: '숫자 옆에 얼마나 달라졌는지 (예: 12% 늘었어요)', note: '숫자 아래 기준이나 기간' },
   kpi: { 'items.body': '숫자마다 아래 짧은 설명' },
   scorecard: { 'items.body': '지표마다 짧은 설명이나 원인' },
   bars: { 'items.meta': '막대마다 짧은 설명' },
