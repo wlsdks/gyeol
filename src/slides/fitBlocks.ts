@@ -253,6 +253,70 @@ export function blockFitter() {
     }
   }
 
+  /**
+   * 추이의 점 숫자 자리를 그려진 크기로 다시 고른다. 그릴 때 어림한 자리(골짜기는 점 아래, Trend.tsx의 data-tn-side)를 먼저 보고,
+   * 숫자가 선(앞뒤 점으로 가는 선)이나 다른 점, 앞의 숫자를 덮거나 그림 밖(위는 숫자 띠까지, 아래는 바닥줄)으로 나가면
+   * 위, 점 오른쪽 위, 왼쪽 위, 아래 차례로 겹치지 않는 자리를 찾는다. 없으면 가장 덜 겹치는 자리.
+   * 앞 점보다 한참 낮은 마지막 점은 내리꽂히는 선이 점 위의 숫자를 그대로 지나갔다(바닥에 붙어 아래에 둘 자리도 없다)
+   */
+  function trendPlace(canvas: HTMLElement): void {
+    const plot = canvas.parentElement
+    if (!plot || !canvas.clientWidth) return
+    const P = plot.getBoundingClientRect()
+    const k = canvas.offsetWidth ? canvas.getBoundingClientRect().width / canvas.offsetWidth : 1
+    const pts = Array.from(canvas.children).filter((c) => c instanceof HTMLElement && c.classList.contains('tn-pt') && !c.classList.contains('is-blank')) as HTMLElement[]
+    const SIDES = ['is-below', 'is-after', 'is-before']
+    // 옆으로 비키기를 아래보다 먼저: 숫자가 모두 선 위에 있어야 읽기 쉽고, 아래는 바닥줄과 시기 이름에 붙기 쉽다
+    const tries = [[], ['is-after'], ['is-before'], ['is-below'], ['is-below', 'is-after'], ['is-below', 'is-before']]
+    const set = (el: HTMLElement, on: string[]) => SIDES.forEach((c) => el.classList.toggle(c, on.indexOf(c) >= 0))
+    const gap = 8 * k
+    const dots = pts.map((p) => p.querySelector<HTMLElement>('.tn-dot')?.getBoundingClientRect() ?? null)
+    const mid = dots.map((d) => (d ? { x: (d.left + d.right) / 2, y: (d.top + d.bottom) / 2 } : null))
+    // 숫자 상자(떨어져야 할 틈까지)를 지나는 선의 길이를 점 24개로 어림한다
+    const crossed = (r: DOMRect) => {
+      let n = 0
+      for (let j = 1; j < mid.length; j++) {
+        const a = mid[j - 1]
+        const b = mid[j]
+        if (!a || !b) continue
+        for (let t = 0; t <= 24; t++) {
+          const x = a.x + ((b.x - a.x) * t) / 24
+          const y = a.y + ((b.y - a.y) * t) / 24
+          if (x > r.left - gap && x < r.right + gap && y > r.top - gap && y < r.bottom + gap) n++
+        }
+      }
+      return n
+    }
+    const meet = (a: DOMRect, b: DOMRect) =>
+      Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left) + gap) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + gap)
+    // 위는 그림 판(숫자 띠까지), 아래는 바닥줄, 양옆은 판 끝까지
+    const outside = (r: DOMRect) => Math.max(0, P.top - r.top) + Math.max(0, r.bottom - (P.bottom - 4 * k)) + Math.max(0, P.left - r.left) + Math.max(0, r.right - P.right)
+    const taken: DOMRect[] = []
+    pts.forEach((p, i) => {
+      const label = p.querySelector<HTMLElement>('.tn-val')
+      if (!label) return
+      const first = (p.dataset.tnSide ?? '').split(' ').filter(Boolean)
+      let pick = first
+      let best = Infinity
+      for (const o of [first, ...tries]) {
+        set(p, o)
+        const r = label.getBoundingClientRect()
+        let cost = (crossed(r) + outside(r)) * r.height * 40
+        for (const t of taken) cost += meet(r, t)
+        dots.forEach((d, j) => {
+          if (j !== i && d) cost += meet(r, d) * 2
+        })
+        if (cost < best) {
+          best = cost
+          pick = o
+        }
+        if (cost === 0) break
+      }
+      set(p, pick)
+      taken.push(label.getBoundingClientRect())
+    })
+  }
+
   /** 칸 안의 그림 하나와 키우기 전의 크기 (화면 px) */
   type Shape = { el: Element; w: number; h: number }
 
@@ -556,7 +620,10 @@ export function blockFitter() {
       }
       for (const c of cells) {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
-        if (inner) place(inner)
+        if (inner) {
+          place(inner)
+          for (const canvas of Array.from(inner.querySelectorAll<HTMLElement>('.tn-canvas'))) trendPlace(canvas)
+        }
         shrink(c, least)
       }
       for (const c of cells) shrink(c, 0)
@@ -565,17 +632,23 @@ export function blockFitter() {
       even(cells, area)
       area.classList.remove('is-fitting')
     }
-    // 부품 장 밖(한 장을 다 쓰는 위치 비교)도
-    for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot'))) if (!plot.closest('.bk-area')) labels(plot)
+    // 부품 장 밖(한 장을 다 쓰는 위치 비교, 추이)도
+    for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot, .tn-canvas'))) if (!plot.closest('.bk-area')) labels(plot)
   }
 
-  /** 이름표 자리 고르기의 바깥 입구: 움직이는 중인 판(점이 내려앉는 중이다)은 끝난 뒤에 */
+  /** 이름표 자리 고르기의 바깥 입구: 움직이는 중인 판(점이 내려앉는 중이다)은 끝난 뒤에. 추이의 점 숫자도 같다 */
   function labels(scope: ParentNode): void {
     const plots = scope instanceof HTMLElement && scope.classList.contains('pm-plot') ? [scope] : Array.from(scope.querySelectorAll<HTMLElement>('.pm-plot'))
     for (const plot of plots) {
       const mover = moving(plot)
       if (mover) later(plot, mover, () => place(plot))
       else place(plot)
+    }
+    const canvases = scope instanceof HTMLElement && scope.classList.contains('tn-canvas') ? [scope] : Array.from(scope.querySelectorAll<HTMLElement>('.tn-canvas'))
+    for (const canvas of canvases) {
+      const mover = moving(canvas)
+      if (mover) later(canvas, mover, () => trendPlace(canvas))
+      else trendPlace(canvas)
     }
   }
 
@@ -589,7 +662,7 @@ const shared = () => (fitter ??= blockFitter())
 export const fitBlocks = (root: ParentNode) => shared().fit(root)
 /** 칸 안쪽의 글 줄마다 글자가 그려지는 자리 (부품 높이 재기에서 겹침과 잘림을 볼 때) */
 export const blockTextLines = (inner: HTMLElement) => shared().lines(inner)
-/** 위치 비교의 이름표 자리를 그려진 크기로 다시 고른다 (scope 안의 판 모두, scope가 판이면 그것만) */
+/** 위치 비교의 이름표와 추이의 점 숫자 자리를 그려진 크기로 다시 고른다 (scope 안의 판 모두, scope가 판이면 그것만) */
 export const placeLabels = (scope: ParentNode) => shared().labels(scope)
 /** 칸 안쪽이 넘치거나 글이 겹치는지 (fitBlocks가 글자를 줄이는 기준. 진단용) */
 export const blockOverflows = (inner: HTMLElement) => shared().over(inner)

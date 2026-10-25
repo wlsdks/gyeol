@@ -1,10 +1,12 @@
 // 레이아웃: 추이 (trend). 모양은 styles/trend.css
 
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { readField } from '../../deck/fields'
 import { highlightOf, hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
+import { placeLabels } from '../fitBlocks'
 import { lineAxis, readNumber, seriesIn } from '../numbers'
 import { Head, useItems, useUnitOpen } from './parts'
 
@@ -40,6 +42,18 @@ export function Trend() {
     return i !== highlight && v !== null && a != null && b != null && v < a && v < b && y(v) > 30
   }
   const at = (p: { x: number; y: number }) => ({ '--x': p.x.toFixed(2), '--y': p.y.toFixed(2) })
+  // 어림한 자리를 그려진 크기로 다시 고른다(선이 숫자를 지나가면 비킨다). 글꼴이 늦게 오면 한 번 더 (부품 장 안이면 fitBlocks도 한다)
+  const canvas = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    if (canvas.current) placeLabels(canvas.current)
+  })
+  useEffect(() => {
+    let on = true
+    document.fonts?.ready.then(() => on && canvas.current && placeLabels(canvas.current))
+    return () => {
+      on = false
+    }
+  }, [])
   return (
     <>
       <Head lead />
@@ -69,7 +83,7 @@ export function Trend() {
           </div>
         )}
         <div className="tn-plot">
-          <div className="tn-canvas">
+          <div className="tn-canvas" ref={canvas}>
             {floor < 0 && <span className="tn-zero" style={{ '--y': y(0).toFixed(2) }} />}
             {target !== null && (
               <div className="tn-target" style={{ '--y': y(target).toFixed(2) }} />
@@ -86,6 +100,7 @@ export function Trend() {
                 <div
                   key={it.id}
                   className={cx('tn-pt', i === highlight && 'is-hl', dip(i) && 'is-below', !p && 'is-blank')}
+                  data-tn-side={dip(i) ? 'is-below' : undefined}
                   style={at(p ?? { x: x(i), y: 0 })}
                 >
                   <span className="tn-dot" />

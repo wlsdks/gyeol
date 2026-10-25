@@ -114,6 +114,16 @@
   bottom: auto;
 }
 
+/* 선이 숫자를 지나가면(그린 뒤에 fitBlocks.ts가 고른다) 숫자를 점의 오른쪽 위나 왼쪽 위로 비킨다: 숫자 상자의 한쪽 끝이
+   점 가운데에 오게. 그림 끝에서는 다른 점처럼 그림 안쪽으로 민다 */
+.tn-pt.is-after .tn-val {
+  translate: clamp(calc(var(--x) * -1cqi), 0px, calc((100 - var(--x)) * 1cqi - 100%)) 0;
+}
+
+.tn-pt.is-before .tn-val {
+  translate: clamp(calc(var(--x) * -1cqi), -100%, calc((100 - var(--x)) * 1cqi - 100%)) 0;
+}
+
 /* 그림이 낮으면 골짜기 아래에 숫자를 둘 자리가 없다(아래 시기 이름과 부딪힌다). 다른 점처럼 위에 */
 @container (max-height: 200px) {
   .tn-pt.is-below .tn-val {
@@ -135,6 +145,12 @@
 
 .tn-pt.is-hl .tn-val {
   bottom: 40px;
+}
+
+/* 강조한 점의 숫자를 점 아래로 내릴 때(fitBlocks.ts): 위의 bottom을 풀지 않으면 위아래가 다 잡혀 숫자 상자의 높이가 0이 됐다 */
+.tn-pt.is-hl.is-below .tn-val {
+  top: 40px;
+  bottom: auto;
 }
 
 .tn-pt.is-hl .tn-num {
