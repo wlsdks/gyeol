@@ -395,10 +395,12 @@ export function motionEngine(): MotionEngine {
       if (el) run(anims, el, [{ opacity: 0, scale: '0.3' }], s(at), L.pop, pseudo)
     }
     /** x: 왼쪽에서 (가로 막대), down: 위에서 (세로 일정의 선), up: 바닥에서 (세로 막대) */
-    const grow = (el: Element | null, at: number, axis: 'x' | 'down' | 'up' = 'x', pseudo?: string) => {
+    /** 막대가 자란다. x는 왼쪽에서 오른쪽으로, back은 오른쪽에서 왼쪽으로, up과 down은 아래와 위에서 */
+    const grow = (el: Element | null, at: number, axis: 'x' | 'back' | 'down' | 'up' = 'x', pseudo?: string) => {
       if (!el) return
-      const origin = axis === 'x' ? 'left center' : axis === 'down' ? 'center top' : 'center bottom'
-      run(anims, el, [{ scale: axis === 'x' ? '0 1' : '1 0', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), L.grow, pseudo)
+      const origin = { x: 'left center', back: 'right center', down: 'center top', up: 'center bottom' }[axis]
+      const across = axis === 'x' || axis === 'back'
+      run(anims, el, [{ scale: across ? '0 1' : '1 0', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), L.grow, pseudo)
     }
     const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom' | 'top', duration = 1000) => {
       if (!el) return
@@ -778,10 +780,12 @@ export function motionEngine(): MotionEngine {
       case 'bridge': {
         const t = head()
         // 처음 막대부터 차례로: 더한 요인은 아래에서 솟고, 뺀 요인은 위에서 내려온다. 잇는 점선은 막대가 선 뒤에.
+        // 가로 모양은 더한 요인이 왼쪽에서 뻗고, 뺀 요인은 앞 막대가 끝난 오른쪽에서 왼쪽으로 줄어든다
+        const across = variant === 'across'
         const end = items('.wf-col', t, (el, at) => {
           const down = el.classList.contains('wf-down')
           fade(el.querySelector('.wf-label') || el.querySelector(':scope > .wf-title'), at, 500)
-          grow(el.querySelector('.wf-bar'), at + 80, down ? 'down' : 'up')
+          grow(el.querySelector('.wf-bar'), at + 80, across ? (down ? 'back' : 'x') : down ? 'down' : 'up')
           // 축을 끊은 표시는 막대가 솟기 시작할 때 그 아래에 놓인다
           fade(el.querySelector('.wf-cut'), at + 80, 300)
           rise(el.querySelector('.wf-val'), at + 220, L.y * 0.4)

@@ -10,6 +10,7 @@ import { Head, Label, useItems } from './parts'
 
 /**
  * 증감 요인(폭포): 처음 값 → 요인마다 더하고 뺀 만큼 뜬 막대 → 끝 값. 끝 값은 계산한다(따로 적으면 서로 안 맞을 수 있어서).
+ * 세로(기본)는 막대를 바닥에서 위로, 가로는 왼쪽 축에서 오른쪽으로 세운다(요인 이름이 길거나 요인이 많을 때).
  * 처음과 끝이 증감보다 훨씬 크면 바닥부터 세운 막대 때문에 증감이 안 보이므로, 바닥을 올리고 처음과 끝 막대 아래에 축을 끊은 표시(//)를 둔다.
  */
 export function Bridge() {
@@ -44,7 +45,7 @@ export function Bridge() {
   return (
     <>
       <Head />
-      <div className={cx('s-body wf', demo && 'is-demo', cut && 'is-cut')} style={{ '--n': items.length + 2 }}>
+      <div className={cx('s-body wf', demo && 'is-demo', cut && 'is-cut')} data-n={items.length + 2} style={{ '--n': items.length + 2 }}>
         <div className="wf-col wf-total" style={col(base, start, start)}>
           <div className="wf-plot">
             <span className="wf-bar" />

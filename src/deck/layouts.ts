@@ -204,6 +204,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'bridge',
     name: '증감 요인',
     description: '처음 값에서 끝 값까지, 무엇이 얼마나 더하고 뺐는지',
+    variants: [
+      { id: 'base', name: '세로' },
+      { id: 'across', name: '가로' },
+    ],
     fields: [
       title('증감을 요약하는 한 문장'),
       { key: 'startTitle', label: '처음 이름', hint: '목표', optional: true, named: true },

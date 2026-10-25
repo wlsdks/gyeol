@@ -195,3 +195,113 @@
 .wf.is-demo .wf-end .wf-val {
   opacity: 0.45;
 }
+
+/* 모양: 가로. 요인 이름이 길거나 요인이 많을 때. 줄마다 왼쪽에 이름, 가운데에 왼쪽 축에서부터 뜬 막대, 오른쪽 끝에 값.
+   값을 막대 끝에 붙이면 끝 값이 큰 줄에서 값이 칸 밖으로 나가서, 막대 비교(가로 막대)처럼 오른쪽 한 줄에 모은다.
+   막대 사이를 잇는 선은 이 막대가 끝난 자리에서 아래 줄 막대가 시작하는 자리로 세로로 내려간다. 줄 사이 틈이 없어야
+   (row-gap 0) 왼쪽 축과 잇는 선이 끊기지 않아서, 줄 사이 여백은 줄 높이 안에 둔다 */
+.va-across .wf {
+  --wf-bh: 44px;
+  /* 값 자리. 막대 칸(.wf-plot) 너비를 기준으로 줄어서, 좁은 부품 칸에서도 막대 자리가 남는다 */
+  --wf-vw: min(200px, 24%);
+
+  grid-template-columns: minmax(0, min(360px, 28%)) minmax(0, 1fr);
+  grid-template-rows: none;
+  grid-auto-rows: minmax(min-content, 168px);
+  align-content: safe center;
+  column-gap: 48px;
+  row-gap: 0;
+  margin-top: 0;
+}
+
+.va-across .wf:is([data-n='7'], [data-n='8']) {
+  --wf-bh: 36px;
+}
+
+.va-across .wf-col {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  grid-template-columns: subgrid;
+  grid-template-rows: none;
+  align-items: center;
+}
+
+.va-across .wf-plot {
+  grid-row: 1;
+  grid-column: 2;
+  align-self: stretch;
+  min-height: calc(var(--wf-bh) + 40px);
+  border-bottom: 0;
+  border-left: var(--rule) solid var(--line);
+}
+
+.va-across .wf-col > .wf-title,
+.va-across .wf-label {
+  grid-row: 1;
+  grid-column: 1;
+  padding: 12px 0;
+  text-align: left;
+}
+
+/* 세로 모양의 바닥줄 잇기는 쓰지 않는다 (왼쪽 축이 줄마다 이어진다) */
+.va-across .wf-col:not(:last-child) .wf-plot::before {
+  content: none;
+}
+
+/* 부품 칸의 '값이 두 줄이 되는 자리'(layout-small.css의 --area)보다 앞서게 .wf를 한 번 더 */
+.va-across .wf .wf-bar,
+.va-across .wf .wf-val,
+.va-across .wf .wf-plot::after {
+  --area: calc(100% - var(--wf-vw) - 24px);
+}
+
+.va-across .wf-bar {
+  top: calc(50% - var(--wf-bh) / 2);
+  right: auto;
+  bottom: auto;
+  left: calc(var(--area) * var(--lo) / 100);
+  width: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100));
+  height: var(--wf-bh);
+}
+
+.va-across .wf-total .wf-bar {
+  border-radius: 0 10px 10px 0;
+}
+
+/* 잇는 선: 이 막대가 끝난 자리(--link)에서 아래 줄 막대의 윗변까지 */
+.va-across .wf-col:not(.wf-end) .wf-plot::after {
+  top: calc(50% + var(--wf-bh) / 2);
+  bottom: auto;
+  left: calc(var(--area) * var(--link) / 100);
+  width: 0;
+  height: calc(100% - var(--wf-bh));
+  border-top: 0;
+  border-left: 2px solid color-mix(in srgb, var(--ink-3) 45%, var(--bg));
+  translate: -1px 0;
+}
+
+.va-across .wf-val {
+  top: 50%;
+  right: 0;
+  bottom: auto;
+  left: auto;
+  width: var(--wf-vw);
+  justify-content: flex-end;
+  translate: 0 -50%;
+  text-align: right;
+}
+
+/* 바닥을 올렸을 때: 처음과 끝 막대를 왼쪽 축에서 띄우고 그 틈에 축을 끊은 표시를 둔다 */
+.va-across .wf.is-cut .wf-total .wf-bar {
+  bottom: auto;
+  left: var(--wf-cut);
+  width: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100 - var(--wf-cut)));
+  height: var(--wf-bh);
+}
+
+.va-across .wf-cut {
+  top: calc(50% - var(--wf-bh) / 2);
+  bottom: auto;
+  left: calc(var(--wf-cut) / 2);
+  height: var(--wf-bh);
+}
