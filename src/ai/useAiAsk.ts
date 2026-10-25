@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Deck, Slide } from '../deck/types'
-import { useDeck } from '../store/deckStore'
 import type { AskError, AskId, AskRun } from './asks'
 import { askRun, cancelAsk, publishShape, startAsk } from './client'
 import { shapeDeckId, shapeSlideId, toShape } from './share'
@@ -21,11 +20,16 @@ export interface AiAsk {
   dismiss(): void
 }
 
-/** 'AI에게 부탁'. 로컬 서버가 이 PC의 Claude Code를 띄워 부탁을 전하고, 제안이 오면 알려 준다 */
-export function useAiAsk(deck: Deck): AiAsk {
+/**
+ * 'AI에게 부탁'. 로컬 서버가 이 PC의 Claude Code를 띄워 부탁을 전하고, 제안이 오면 알려 준다.
+ * share는 발표의 AI 공유를 켜는 법(편집 상태가 넘겨 준다). ai/는 편집 상태(store)를 가져오지 않는다
+ */
+export function useAiAsk(deck: Deck, share: () => void): AiAsk {
   const [job, setJob] = useState<AskJob | null>(null)
   const latest = useRef(deck)
   latest.current = deck
+  const shareRef = useRef(share)
+  shareRef.current = share
   // 서버가 받기 전에 그만두기를 누르면, 늦게 돌아온 응답이 부탁을 되살리지 않게
   const turn = useRef(0)
 
@@ -36,7 +40,7 @@ export function useAiAsk(deck: Deck): AiAsk {
     const fail = (error: AskError) => mine === turn.current && setJob({ ...base, id: '', state: 'failed', step: 'starting', error })
     setJob({ ...base, id: '', state: 'running', step: 'starting' })
     // AI가 부탁을 들어주려면 모양을 봐야 한다. 부탁을 누른 것이 보여 주겠다는 뜻이라 공유를 켠다 (끄기는 위쪽 AI 단추에서)
-    if (!d.aiShare) useDeck.getState().setAiShare(true)
+    if (!d.aiShare) shareRef.current()
     if (!(await publishShape(toShape(d)))) return void fail('not_shared')
     const run = await startAsk(ask, shapeDeckId(d), slide ? shapeSlideId(slide) : null)
     if (typeof run === 'string') return void fail(run)

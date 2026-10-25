@@ -229,7 +229,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   const [reviewing, setReviewing] = useState<ChangeRequest | null>(null)
   const toast = useToast()
   const ai = useAiShare(deck)
-  const ask = useAiAsk(deck)
+  const ask = useAiAsk(deck, () => useDeck.getState().setAiShare(true))
   const blocks = useBlockEditing(deck, slide, toast)
   const fileOver = useImageInput(blocks, toast)
 
