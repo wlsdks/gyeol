@@ -648,6 +648,11 @@
   line-height: 1.4;
 }
 
+/* 바뀐 만큼(▼ 2.1%p)은 한 덩어리: 좁은 칸에서 화살표와 숫자가 두 줄로 갈렸다 */
+.slide .bk-dl-chip {
+  white-space: nowrap;
+}
+
 .bk-dl.is-demo :is(.bk-dl-chip) {
   opacity: 0.45;
 }
