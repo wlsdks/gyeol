@@ -2,8 +2,20 @@
 # 더블클릭하면 결을 켜고 크롬(없으면 엣지)으로 엽니다. 이 PC 안에서만 열려요.
 cd "$(dirname "$0")" || exit 1
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js가 설치되어 있지 않아요. https://nodejs.org 에서 LTS 버전을 설치한 뒤 다시 실행해 주세요."
+# 함께 들어 있는 Node.js를 이 맥에 맞게 고른다 (애플 실리콘은 arm64, 인텔은 x64). 없으면 설치된 Node.js를 쓴다
+case "$(uname -m)" in
+  arm64) NODE="node/arm64/node" ;;
+  *) NODE="node/x64/node" ;;
+esac
+if [ -x "$NODE" ]; then
+  # 인터넷에서 받은 zip을 풀면 안의 파일마다 '받은 파일' 표시가 붙어, 함께 넣은 Node.js도 처음에 막힐 수 있다.
+  # 이 파일을 열어 주셨으면 같이 받은 Node.js도 연다 (nodejs.org의 공식 파일을 묶을 때 체크섬으로 확인해 두었다)
+  xattr -d com.apple.quarantine "$NODE" 2>/dev/null
+elif command -v node >/dev/null 2>&1; then
+  NODE="node"
+else
+  echo "Node.js를 찾지 못했어요. 받은 zip 파일을 통째로 다시 풀어 주세요."
+  echo "node 폴더가 없는 판이라면 https://nodejs.org 에서 LTS 버전을 설치한 뒤 다시 실행해 주세요."
   read -r -p "창을 닫으려면 Enter를 누르세요."
   exit 1
 fi
@@ -19,4 +31,5 @@ if [ ! -f dist/index.html ] || [ ! -f dist-node/serve.mjs ]; then
   fi
 fi
 
-node dist-node/serve.mjs
+echo "결을 켜고 있어요. 발표를 만드는 동안 이 창은 닫지 말고 내려 두세요 (닫으면 결이 꺼져요)."
+"$NODE" dist-node/serve.mjs

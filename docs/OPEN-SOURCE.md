@@ -8,7 +8,7 @@
 - 강한 카피레프트(GPL, LGPL, AGPL)나 사용 제한 라이선스(SSPL, BUSL, Elastic, 비상업 CC)는 **하나도 없습니다**.
 - 약한 카피레프트인 MPL-2.0이 하나 있지만(lightningcss), **만들 때만 쓰는 도구**이고 나눠 주는 파일에는 들어가지 않습니다.
 - 로컬 서버와 MCP 서버는 외부 패키지 없이 **Node.js 내장 기능만** 씁니다.
-- 윈도우 배포본에는 Node.js(MIT) 공식 실행 파일을 같이 넣어서, 받는 사람이 아무것도 설치하지 않아도 됩니다.
+- 윈도우용과 맥용 배포본에는 Node.js(MIT) 공식 실행 파일을 같이 넣어서, 받는 사람이 아무것도 설치하지 않아도 됩니다.
 
 ## 나눠 주는 파일에 들어가는 것 (16개)
 
@@ -40,7 +40,7 @@
 
 | 이름 | 라이선스 | 비고 |
 |---|---|---|
-| Node.js 24 (`node\node.exe`) | MIT | 윈도우 배포본에 공식 배포 파일을 고치지 않고 넣음. Node.js에 들어 있는 OpenSSL(Apache-2.0), ICU, libuv 등의 라이선스는 함께 넣는 `node\LICENSE.txt`에 모두 있음. 맥에서는 설치된 Node.js를 씀 |
+| Node.js 24 (윈도우 `node\node.exe`, 맥 `node/arm64/node`·`node/x64/node`) | MIT | 배포본에 공식 배포 파일을 고치지 않고 넣음. Node.js에 들어 있는 OpenSSL(Apache-2.0), ICU, libuv 등의 라이선스는 함께 넣는 `node/LICENSE.txt`에 모두 있음 |
 | 크롬, 엣지 | 각 회사 약관 | 사용자가 이미 쓰는 브라우저. 이 저장소가 나눠 주지 않음 |
 | Codex CLI | Apache-2.0 (오픈소스) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음 |
 | Claude Code | Anthropic 상용 약관 (오픈소스 아님) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음. 회사의 AI 도구 사용 정책을 따름 |
@@ -65,7 +65,7 @@
 
 ## 나눠 줄 때 지킬 것
 
-- **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣고, Node.js의 `LICENSE`는 `node\LICENSE.txt`로 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.
+- **MIT, BSD, ISC, 0BSD, Apache-2.0:** 저작권 표시와 라이선스 전문을 함께 둡니다. `npm run pack`이 `오픈소스 라이선스.txt`에 묶여 나가는 패키지의 라이선스 전문을 모아 넣고, Node.js의 `LICENSE`는 `node/LICENSE.txt`로 넣습니다. Apache-2.0 패키지(idb-keyval)에는 따로 둘 NOTICE 파일이 없습니다.
 - **글꼴(OFL-1.1):** 글꼴만 따로 팔 수 없고, 문서에 넣는 것은 자유입니다. 내보낸 HTML에는 글꼴 원작자가 미리 나눠 둔 부분 파일(unicode-range 조각)이나 굵기마다 나뉜 파일을 **고치지 않고** 넣으므로 수정본이 아니며, 'Pretendard', 'SUIT' 같은 예약 글꼴 이름 조항에 걸리지 않습니다. SUIT는 CSS에서 굵기마다 한 단계 굵은 파일을 이어 쓰는데(`src/fonts/suit.css`), 글꼴 파일은 그대로라 수정본이 아닙니다. 글꼴 파일 안의 저작권 정보도 그대로 남습니다. PPT(그림)에는 글꼴 파일이 들어가지 않고 글꼴로 그린 그림만 들어갑니다.
 - **글꼴을 고를 때 본 것:** 패키지와 글꼴 모두 OFL-1.1이고, 만든 곳이 직접 올렸거나(Pretendard, SUIT) Fontsource(Google Fonts 원본)인 것, woff2라 묶음이 크지 않은 것. 보고 자료에 어울리는지는 같은 장을 글꼴마다 그려 보고 골랐습니다. 보고 뺀 것: Wanted Sans(OFL, 프리텐다드와 거의 같아 보임), IBM Plex Sans KR(OFL, Fontsource 패키지가 woff를 함께 묶어 굵기 넷에 10MB가 넘고 글꼴 높이가 달라 틀 맞춤을 따로 해야 함), Noto Sans KR(OFL, 한글이 프리텐다드와 같은 바탕), 나눔스퀘어(OFL이지만 npm에는 만든 곳이 아닌 사람이 올린 패키지뿐), Spoqa Han Sans Neo(OFL이지만 npm 패키지의 라이선스 표시가 없어 `npm run licenses`를 통과하지 못함).
 

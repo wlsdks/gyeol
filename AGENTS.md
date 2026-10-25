@@ -96,7 +96,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 - 화면 크기: 1920×1080을 150%로 키운 노트북은 브라우저 안이 **1280×600** 남짓입니다. 이 크기에서 잘리거나 가로 스크롤이 생기면 안 됩니다. 1366×650, 1536×730도 봅니다.
 - 스크롤바가 자리를 차지합니다. 맥에서 볼 때는 스크롤바를 항상 보이게 흉내 내서 봅니다. 스크롤되는 상자는 `minmax(0, 1fr)`, `overflow-x: hidden`, `scrollbar-gutter`로 가로로 넘치지 않게 합니다.
 - 파일 이름은 `safeFileName`으로 만듭니다(금지 문자, CON 같은 예약어, 끝의 점, 긴 경로, NFC).
-- 배포본: `.bat`은 CRLF(.gitattributes), 안내 `.txt`는 BOM이 있는 UTF-8, zip은 `scripts/zip.mjs`(UTF-8 이름 표시). 윈도우용 node.exe가 들어갑니다.
+- 배포본은 윈도우용과 맥용 두 가지입니다(`npm run pack`, `release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 윈도우용은 `.bat`이 CRLF(.gitattributes), 안내 `.txt`가 BOM이 있는 UTF-8이고 node.exe가 들어갑니다. 맥용에는 애플 실리콘과 인텔 맥의 node가 들어가고 `결 시작.command`가 맞는 쪽을 고릅니다. zip은 `scripts/zip.mjs`(UTF-8 이름 표시)로 만들고, 이름에 버전을 넣지 않습니다(홍보 페이지의 내려받기 주소가 늘 최신 판).
 - 서버 오류는 창이 바로 닫히지 않게 `fail()`로 보여 줍니다(윈도우에서는 서버 창이 작게 내려가 있다).
 
 ## 화면 문구
