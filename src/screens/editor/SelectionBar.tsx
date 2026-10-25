@@ -67,18 +67,22 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
   const minX = area ? area.left + 8 : 8
   const maxX = (area ? area.right : innerWidth) - bw - 8
   const clampX = (x: number) => Math.max(minX, Math.min(x, maxX))
+  // 고른 것 안의 글은 더 무겁게 친다: 지금 고치는 것이라 다음에 누를 칸이다 (막대 비교에서 줄을 고르면 막대가 그 줄의 숫자를 덮어 누를 수 없었다)
+  const own = (o: DOMRect) => (o.left >= r.left - 1 && o.right <= r.right + 1 && o.top >= r.top - 1 && o.bottom <= r.bottom + 1 ? OWN_WEIGHT : 1)
   const hit = (x: number, y: number) =>
     others.reduce(
-      (a, { r: o, w }) => a + w * Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)),
+      (a, { r: o, w }) =>
+        a + w * own(o) * Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)),
       0,
     )
   // 놓을 자리들 (앞의 것일수록 먼저): 고른 것 바로 위, 바로 아래. 장(slide)을 주면 장 위 여백, 장 아래 여백, 고른 것 안쪽 위도.
   // 줄 사이(48px)와 제목 아래 여백은 막대보다 좁아서, 위아래만 견주면 윗줄을 고를 때 위로는 장 제목을, 아래로는
   // 아랫줄 숫자를 통째로 가렸다(1280×600의 핵심 포인트 아래 숫자 줄). 장 위 여백은 장 밖 회색 띠와 장의 위 틀(--pad-y)이라
-  // 글이 없다. 가로는 고른 것의 왼쪽 끝에 맞추거나, 왼쪽 위의 제목을 피해 오른쪽 끝에 맞춘다
+  // 글이 없다. 가로는 고른 것의 왼쪽 끝에 맞추거나, 왼쪽 위의 제목을 피해 오른쪽 끝에, 아니면 가운데에 맞춘다
+  // (막대 비교의 줄처럼 양 끝에 이름과 숫자가 있고 가운데가 그림이면, 가운데가 윗줄의 글을 가리지 않는다)
   const ys = [r.top - bh - 8, r.bottom + 8]
   if (slide) ys.push(Math.max(top, slide.top - bh - 8), Math.min(bottom - bh, slide.bottom + 8))
-  const xs = slide ? [clampX(r.left), clampX(r.right - bw)] : [clampX(r.left)]
+  const xs = slide ? [clampX(r.left), clampX(r.right - bw), clampX(r.left + (r.width - bw) / 2)] : [clampX(r.left)]
   const spots = ys.filter((y) => y >= top && y + bh <= bottom).flatMap((y) => xs.map((x) => ({ x, y })))
   if (slide) spots.push({ x: clampX(r.right - bw - 8), y: Math.max(top, r.top + 8) })
   if (!spots.length) return { x: clampX(r.left), y: r.top + 8, room: area ? area.width - 16 : innerWidth }
@@ -92,6 +96,8 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
 
 /** 고른 것에서 1px 떨어질 때마다 더하는 값 (가린 넓이 px²와 같은 단위). 한 줄 글(20px)을 다 가리는 것보다 100px 떨어지는 게 낫게 */
 const AWAY_COST = 6
+/** 고른 것 안의 글을 가릴 때 곱하는 값 */
+const OWN_WEIGHT = 4
 
 /** 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다 */
 type TextRect = { r: DOMRect; w: number }
@@ -215,6 +221,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
   /** 제목 덩어리를 위아래로 끄는 중: 덩어리가 놓이는 칸의 자리와 지금 붙을 자리 (세 자리를 그 위에 보인다) */
   const [placing, setPlacing] = useState<{ rect: Rect; at: Place } | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
+  const texts = useRef<{ key: string; rects: TextRect[] }>({ key: '', rects: [] })
   const slideRef = useRef(slide)
   slideRef.current = slide
 
@@ -276,7 +283,12 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       const pad = target.kind === 'field' && target.place ? GROUP_PAD : 0
       const r = new DOMRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
-      const { x, y } = barSpot(r, barRef.current, canvasRef.current)
+      // 부품 장의 막대(FloatTools)와 같이, 가리는 글과 장 위아래 여백까지 보고 자리를 고른다. 위에 자리만 있으면 늘 위로
+      // 가서 윗줄 항목에 적은 글을 가렸고, 장 맨 위 항목은 아래로 내려가 다음 항목의 빈칸을 덮어 누를 수 없었다(마지막 장의 요청)
+      const slideEl = target.el.closest('.slide')
+      const key = `${r.left},${r.top},${r.width},${r.height}`
+      if (texts.current.key !== key) texts.current = { key, rects: contentRects(slideEl, canvasRef.current) }
+      const { x, y } = barSpot(r, barRef.current, canvasRef.current, texts.current.rects, slideEl?.getBoundingClientRect())
       setBar((p) => (p && p.x === x && p.y === y ? p : { x, y }))
       return moving(target.el)
     },
