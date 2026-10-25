@@ -224,3 +224,8 @@
   font-size: calc(1em / 1.44);
   letter-spacing: -0.01em;
 }
+
+/* 숫자 앞의 덧말('약', '하루', '월'): 단위처럼 작게. 띄어쓰기가 작은 글자의 틈이라 숫자와 조금만 뗀다 */
+.slide .u-pre {
+  margin-left: 0;
+}

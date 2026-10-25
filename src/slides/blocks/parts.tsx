@@ -88,8 +88,9 @@ export function Numeral({ text }: { text: string }) {
   if (!p) return <>{t}</>
   return (
     <>
+      {p.pre && <span className="u u-pre">{p.pre}</span>}
       {p.num}
-      <span className="u">{p.unit}</span>
+      {p.unit && <span className="u">{p.unit}</span>}
     </>
   )
 }

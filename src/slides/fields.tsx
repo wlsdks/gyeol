@@ -53,14 +53,20 @@ export function minusSigns(text: string): string {
   return text.replace(/(^|[\s(~∼/])[-–](?=\d)/g, '$1−')
 }
 
-/** 숫자 하나(범위 '2~3'까지)와 그 뒤의 짧은 단위. 앞에는 부호나 화폐 기호만. 이 꼴이 아니면 나누지 않고 그대로 그린다 */
-const NUMBER_PARTS = /^([+\-−–±▲▼△▽$₩€£¥]?\s?\d[\d,]*(?:\.\d+)?(?:\s?[~∼–-]\s?[+\-−]?\d[\d,]*(?:\.\d+)?)?)(\D{1,8})$/
+/**
+ * 숫자 하나(범위 '2~3'까지)와 그 뒤의 짧은 단위. 앞에는 부호나 화폐 기호, 또는 띄어 쓴 짧은 한글 덧말('약', '하루', '월')만.
+ * 이 꼴이 아니면 나누지 않고 그대로 그린다
+ */
+const NUMBER_PARTS = /^([가-힣]{1,3} )?([+\-−–±▲▼△▽$₩€£¥]?\s?\d[\d,]*(?:\.\d+)?(?:\s?[~∼–-]\s?[+\-−]?\d[\d,]*(?:\.\d+)?)?)(\D{0,8})$/
 
-/** '1,200시간' → 숫자 '1,200', 단위 '시간'. 단위가 없거나 숫자 하나의 꼴이 아니면 null */
-export function splitNumber(text: string): { num: string; unit: string } | null {
+/**
+ * '1,200시간' → 숫자 '1,200', 단위 '시간'. '하루 10분' → 앞말 '하루 ', 숫자 '10', 단위 '분'.
+ * 앞말도 단위도 없거나 숫자 하나의 꼴이 아니면 null
+ */
+export function splitNumber(text: string): { pre?: string; num: string; unit: string } | null {
   const m = NUMBER_PARTS.exec(text)
-  if (!m || !m[2].trim()) return null
-  return { num: m[1], unit: m[2] }
+  if (!m || (!m[1] && !m[3].trim())) return null
+  return m[1] ? { pre: m[1], num: m[2], unit: m[3] } : { num: m[2], unit: m[3] }
 }
 
 /** 단위를 작게 그리는 큰 숫자의 폭(em). 나란한 숫자들이 같은 크기를 고를 때 쓴다 */
@@ -68,7 +74,7 @@ export function numberUnits(text: string): number {
   const t = text.trim()
   const parts = splitNumber(t)
   if (!parts) return textUnits(t)
-  return Math.max(1, glyphWidth(parts.num) + glyphWidth(parts.unit) * UNIT_K)
+  return Math.max(1, glyphWidth(parts.num) + glyphWidth((parts.pre ?? '') + parts.unit) * UNIT_K)
 }
 
 interface TextProps {
@@ -96,10 +102,22 @@ function Shown({ text, numeral }: { text: string; numeral?: boolean }) {
   if (!parts) return <>{t}</>
   return (
     <>
+      {parts.pre && <span className="u u-pre">{parts.pre}</span>}
       {parts.num}
-      <span className="u">{parts.unit}</span>
+      {parts.unit && <span className="u">{parts.unit}</span>}
     </>
   )
+}
+
+/** 큰 숫자의 앞말, 숫자, 단위를 칸에 넣을 조각으로 (앞말과 단위는 작은 글자) */
+function numberNodes(parts: { pre?: string; num: string; unit: string }): (Node | string)[] {
+  const span = (text: string, cls: string) => {
+    const el = document.createElement('span')
+    el.className = cls
+    el.textContent = text
+    return el
+  }
+  return [...(parts.pre ? [span(parts.pre, 'u u-pre')] : []), parts.num, ...(parts.unit ? [span(parts.unit, 'u')] : [])]
 }
 
 /**
@@ -118,12 +136,15 @@ function paint(el: HTMLElement, value: string, numeral?: boolean) {
     if (el.innerText !== value || el.querySelector(':scope > .u')) el.innerText = value
     return
   }
-  const u = el.lastElementChild
-  if (el.childNodes.length === 2 && el.firstChild?.nodeValue === parts.num && u?.className === 'u' && u.textContent === parts.unit) return
-  const span = document.createElement('span')
-  span.className = 'u'
-  span.textContent = parts.unit
-  el.replaceChildren(parts.num, span)
+  const next = numberNodes(parts)
+  const same =
+    el.childNodes.length === next.length &&
+    next.every((n, i) => {
+      const c = el.childNodes[i]
+      return typeof n === 'string' ? c.nodeType === Node.TEXT_NODE && c.nodeValue === n : c instanceof HTMLElement && c.className === (n as HTMLElement).className && c.textContent === n.textContent
+    })
+  if (same) return
+  el.replaceChildren(...next)
 }
 
 interface FieldProps extends TextProps {

@@ -14,10 +14,19 @@ describe('숫자의 꼴', () => {
     expect(splitNumber('2~3배')).toEqual({ num: '2~3', unit: '배' })
   })
 
+  it('숫자 앞에 띄어 쓴 짧은 덧말도 단위처럼 뗀다', () => {
+    expect(splitNumber('하루 10분')).toEqual({ pre: '하루 ', num: '10', unit: '분' })
+    expect(splitNumber('약 30억 원')).toEqual({ pre: '약 ', num: '30', unit: '억 원' })
+    expect(splitNumber('월 1.2억 원')).toEqual({ pre: '월 ', num: '1.2', unit: '억 원' })
+    expect(splitNumber('약 30')).toEqual({ pre: '약 ', num: '30', unit: '' })
+    // 덧말이 길거나 숫자가 둘이면 그대로
+    expect(splitNumber('작년보다 −12.5%')).toBeNull()
+    expect(splitNumber('하루 3시간 20분')).toBeNull()
+  })
+
   it('숫자 하나와 단위의 꼴이 아니면 나누지 않는다', () => {
     expect(splitNumber('1200')).toBeNull()
     expect(splitNumber('3년 6개월')).toBeNull()
-    expect(splitNumber('약 30억 원')).toBeNull()
     expect(splitNumber('미정')).toBeNull()
     expect(splitNumber('')).toBeNull()
   })
