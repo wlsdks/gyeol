@@ -489,7 +489,6 @@ export function Compose() {
         <T k="lead" as="p" className="s-lead" multiline />
       </header>
       <BlockArea />
-      <T k="source" className="s-source" />
     </>
   )
 }

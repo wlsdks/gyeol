@@ -31,60 +31,56 @@
   margin-top: var(--body-gap);
 }
 
-/* 숫자 장의 출처·기준: 가장 작고 흐리게, 쪽 번호 바로 위에 */
-.s-source {
-  position: absolute;
-  bottom: calc(var(--pad-y) + var(--foot-h) + 14px);
-  left: var(--pad-x);
-  max-width: 1280px;
-  color: var(--ink-3);
-  font-size: var(--t-source);
-  line-height: 1.3;
-}
-
-/* 하단: 발표의 단락 지도와 쪽 번호 */
-/* 아래쪽 틀선에 닿는 것은 단락 밑줄의 아랫선. 밑줄 자리(13)를 상자 안에 두어 상자 아래가 틀선이다 */
+/* 아래 띠: 한 줄. 왼쪽에 숫자 장의 출처·기준, 오른쪽에 단락 지도와 쪽 번호.
+   글자 아랫선이 아래 틀선(--pad-y)에 닿는다. 출처가 길면 위로 두 줄까지 늘어난다(본문과는 --body-gap만큼 떨어져 있다) */
 .s-foot {
   position: absolute;
   right: var(--pad-x);
   bottom: var(--pad-y);
   left: var(--pad-x);
-  padding-bottom: 13px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 48px;
+  gap: 64px;
   color: var(--ink-3);
-  font-size: 21px;
+  font-size: var(--t-source);
   line-height: 1;
   letter-spacing: -0.005em;
 }
 
+/* 줄 높이 1.3의 위아래 남는 자리만큼 아래를 당겨 단락 지도와 같은 아랫선에 */
+.s-source {
+  min-width: 0;
+  max-width: 1120px;
+  margin-bottom: -0.15em;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+
+.s-mark {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 48px;
+  margin-left: auto;
+  min-width: 0;
+}
+
 .s-map {
   display: flex;
-  gap: 44px;
+  gap: 36px;
   min-width: 0;
 }
 
 .s-map li {
-  position: relative;
   white-space: nowrap;
+  transition: color 0.4s ease;
 }
 
+/* 지금 단락은 글자색과 굵기로만: 밑줄 막대를 두면 화면의 탭처럼 보였다 */
 .s-map li.is-on {
   color: var(--ink);
   font-weight: 700;
-}
-
-/* 지금 단락 표시는 글 아래에. 위에 두면 바로 위의 출처 글에 밑줄처럼 붙어 보인다 */
-.s-map-bar {
-  position: absolute;
-  right: 0;
-  bottom: -13px;
-  left: 0;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--accent);
 }
 
 .s-deck {

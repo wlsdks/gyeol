@@ -3,7 +3,7 @@
 import { highlightOf, hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
-import { IT, ItemTools, T } from '../fields'
+import { IT, ItemTools } from '../fields'
 import { amountPair, lowerIsBetter } from '../numbers'
 import { Head, Label, useItems } from './parts'
 
@@ -65,7 +65,6 @@ export function Scorecard() {
           )
         })}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

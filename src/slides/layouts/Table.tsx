@@ -55,7 +55,6 @@ export function Table() {
           </div>
         ))}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

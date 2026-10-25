@@ -108,7 +108,6 @@ export function Trend() {
           ))}
         </div>
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

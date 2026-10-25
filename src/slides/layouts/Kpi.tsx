@@ -2,7 +2,7 @@
 
 import { variantOf } from '../../deck/layouts'
 import { useSlide } from '../context'
-import { IT, ItemTools, T } from '../fields'
+import { IT, ItemTools } from '../fields'
 import { Head, useItems, useSharedUnits } from './parts'
 
 export function Kpi() {
@@ -24,7 +24,6 @@ export function Kpi() {
           </div>
         ))}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

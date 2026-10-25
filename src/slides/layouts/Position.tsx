@@ -164,7 +164,6 @@ export function Position() {
         </div>
         <T k="xAxis" className="pm-x" />
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

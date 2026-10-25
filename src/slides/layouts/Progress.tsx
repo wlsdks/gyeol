@@ -3,7 +3,7 @@
 import { hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
-import { IT, ItemTools, T } from '../fields'
+import { IT, ItemTools } from '../fields'
 import { statusOf, STATUS_NAMES, type Status } from '../numbers'
 import { Head, numberOrNull, useItems } from './parts'
 
@@ -73,7 +73,6 @@ export function Progress() {
           )
         })}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

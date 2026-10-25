@@ -180,7 +180,6 @@ export function Versus() {
         </div>
         )}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

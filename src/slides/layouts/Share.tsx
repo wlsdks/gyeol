@@ -122,7 +122,6 @@ export function Share() {
           ))}
         </div>
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

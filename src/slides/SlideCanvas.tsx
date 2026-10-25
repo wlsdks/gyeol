@@ -5,6 +5,7 @@ import type { PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { Compose } from './blocks'
+import { T } from './fields'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
 import { useHalos } from './halos'
 import { BOLD_LAYOUTS, LAYOUT_VIEWS } from './layouts'
@@ -68,6 +69,10 @@ export const SlideCanvas = memo(function SlideCanvas({
   const tone = bold ? 'base' : toneOf(slide)
   const size = deck.theme.size === 'small' || deck.theme.size === 'large' ? `sz-${deck.theme.size}` : null
   const footer = footerOf(deck)
+  // 아래 띠 한 줄: 왼쪽에 이 장의 출처(숫자 장), 오른쪽에 단락 지도와 쪽 번호. 예전에는 출처를 단락 지도 바로 위에
+  // 따로 얹어서 작은 회색 글 두 줄이 왼쪽 아래에 쌓였다
+  const source = spec.fields.some((f) => f.key === 'source')
+  const mark = !bold && page > 0 && footer !== 'none'
   const ref = useRef<HTMLDivElement>(null)
   useHalos(ref, mode === 'edit')
   // 두 판으로 나뉜 장: 옆 판의 자리(왼쪽, 오른쪽)와 너비. 레이아웃 CSS가 --side-w를 쓴다
@@ -106,28 +111,29 @@ export const SlideCanvas = memo(function SlideCanvas({
       >
         <View />
         {mode === 'edit' && spec.panes && !solo && <PaneTools />}
-        {!bold && !solo && page > 0 && footer !== 'none' && (
+        {!solo && (source || mark) && (
           <footer className="s-foot">
-            {footer === 'page' ? (
-              <span />
-            ) : sections.length > 1 && sectionIndex >= 0 ? (
-              <ol className="s-map">
-                {sections.map((name, i) => (
-                  <li key={i} className={cx(i === sectionIndex && 'is-on')}>
-                    {name}
-                    {/* 지금 단락 표시: 따로 둔 요소라 장을 넘길 때 다음 단락 자리로 미끄러져 간다(motion.css) */}
-                    {i === sectionIndex && <span className="s-map-bar" aria-hidden="true" />}
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <span className="s-deck">{deck.title}</span>
-            )}
-            {footer !== 'section' && (
-              <span className="s-page">
-                {page}
-                <span className="s-total"> / {total}</span>
-              </span>
+            {source ? <T k="source" className="s-source" /> : <span />}
+            {mark && (
+              <div className="s-mark">
+                {footer === 'page' ? null : sections.length > 1 && sectionIndex >= 0 ? (
+                  <ol className="s-map">
+                    {sections.map((name, i) => (
+                      <li key={i} className={cx(i === sectionIndex && 'is-on')}>
+                        {name}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <span className="s-deck">{deck.title}</span>
+                )}
+                {footer !== 'section' && (
+                  <span className="s-page">
+                    {page}
+                    <span className="s-total"> / {total}</span>
+                  </span>
+                )}
+              </div>
             )}
           </footer>
         )}

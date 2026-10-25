@@ -87,7 +87,6 @@ export function Bridge() {
           <Label k="endTitle" fallback="결과" className="wf-title" />
         </div>
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

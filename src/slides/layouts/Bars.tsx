@@ -72,7 +72,6 @@ export function Bars() {
           })}
         </div>
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }

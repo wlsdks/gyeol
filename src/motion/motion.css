@@ -193,27 +193,16 @@
     animation: mo-vt-zoom-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
   }
 
-  /* 아래 띠(단락 지도와 쪽 번호)는 장을 바꾸는 동안 제자리에 있고, 지금 단락 표시는 다음 단락으로 미끄러진다.
+  /* 아래 띠의 오른쪽(단락 지도와 쪽 번호)은 장을 바꾸는 동안 제자리에 있고, 지금 단락은 글자색만 바뀐다.
+     왼쪽의 출처는 그 장의 내용이라 장과 함께 넘어간다.
      앱의 발표 화면(.present-slide)과 내보낸 HTML의 지금 장(.v-slide.is-current)에만 이름을 붙인다(이름이 겹치면 전환이 멈춘다) */
-  html[data-mo-swap] :is(.present-slide, .v-slide.is-current) .s-foot {
+  html[data-mo-swap] :is(.present-slide, .v-slide.is-current) .s-mark {
     view-transition-name: mo-foot;
   }
 
-  html[data-mo-swap] :is(.present-slide, .v-slide.is-current) .s-map-bar {
-    view-transition-name: mo-map-bar;
-  }
-
-  html[data-mo-swap]::view-transition-group(mo-foot),
-  html[data-mo-swap]::view-transition-group(mo-map-bar) {
+  html[data-mo-swap]::view-transition-group(mo-foot) {
     animation-duration: 560ms;
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-
-  /* 두 장 모두에 표시가 있으면 겹친 채로 옮겨 가기만 한다(흐려졌다 나타나지 않게) */
-  html[data-mo-swap]::view-transition-old(mo-map-bar):not(:only-child),
-  html[data-mo-swap]::view-transition-new(mo-map-bar):not(:only-child) {
-    height: 100%;
-    animation: none;
   }
 
   html[data-mo-dir='prev'] {

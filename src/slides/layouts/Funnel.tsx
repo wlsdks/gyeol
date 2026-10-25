@@ -79,7 +79,6 @@ export function Funnel() {
           </p>
         )}
       </div>
-      <T k="source" className="s-source" />
     </>
   )
 }
