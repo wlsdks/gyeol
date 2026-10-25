@@ -202,6 +202,13 @@ describe('자리 정하기', () => {
     expect(spanLimit(row(block('text', 't'), block('callout', 'c')), 0, 0.68)).toBeNull()
   })
 
+  it('한 줄을 다 쓰는 선 차트만 바닥 높이를 낮추고 막대 차트는 그대로 둔다', () => {
+    // 선은 넓으면 낮아도 오르내림이 보이지만, 막대는 위아래 글 자리가 그대로라 낮춘 만큼 막대가 눌린다
+    expect(blockMinH(block('trend', 't'), 12)).toBeLessThan(blockMinH(block('trend', 't'), 8))
+    expect(blockMinH(block('versus', 'v'), 12)).toBeGreaterThanOrEqual(360)
+    expect(blockMinH(block('bridge', 'g'), 12)).toBeGreaterThanOrEqual(380)
+  })
+
   it('줄 수, 줄마다 칸 수, 부품 수의 끝을 넘지 않는다', () => {
     let rows: BlockRow[] = []
     for (let i = 0; i < 12; i++) {

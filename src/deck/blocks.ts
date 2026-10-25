@@ -1305,12 +1305,14 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
 const LIST_FLOOR = 240
 
 /**
- * 가로축이 있는 차트(막대, 선)는 한 줄을 다 쓰면(1680px) 바닥 높이를 이만큼 낮춘다. 납작해 보이는 것은 높이가 아니라
- * 너비와 높이의 비율이라, 넓은 칸에서는 낮아도 막대와 선의 오르내림이 보인다. 이 덕에 핵심 숫자 한 줄 아래에
- * 추이 한 줄이 들어간다(예전에는 편집 화면에서 장 높이를 18px 넘어 막혔다). 원, 점 판, 네 칸은 높이가 곧 크기라 그대로
+ * 선 차트는 한 줄을 다 쓰면(1680px) 바닥 높이를 이만큼 낮춘다. 납작해 보이는 것은 높이가 아니라 너비와 높이의
+ * 비율이라, 넓은 칸에서는 낮아도 선의 오르내림이 보인다. 이 덕에 핵심 숫자 한 줄 아래에 추이 한 줄이 들어간다
+ * (예전에는 편집 화면에서 장 높이를 18px 넘어 막혔다).
+ * 막대 차트는 낮추지 않는다: 막대 위 숫자, 아래 이름과 증감 같은 글 자리는 너비와 상관없이 그대로라 낮춘 만큼이
+ * 다 막대에서 빠진다(두 값 비교 아래 증감을 쌓으면 막대가 20px로 눌렸다). 원, 점 판, 네 칸은 높이가 곧 크기라 그대로
  */
 const WIDE_CUT = 80
-const AXIS_CHARTS = new Set<BlockType>(['bars', 'versus', 'bridge', 'trend', 'pareto', 'attain', 'stack'])
+const lineChart = (type: BlockType, variant: string) => type === 'trend' || (type === 'versus' && variant === 'lines')
 
 /** 로고 모음: 로고 판 한 줄이 150px는 되어야 로고를 알아본다. 그림은 칸에 맞춰 줄어서 글처럼 잘리지 않으니 잰 높이로는 모른다 */
 const logoFloor = (n: number) => {
@@ -1336,7 +1338,7 @@ export function blockMinH(block: Block, span: number): number {
   const measured = hs?.length ? hs[Math.min(n, hs.length - 1)] : 400
   if (measured >= NO_FIT) return measured
   const base = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
-  const floor = span >= 12 && base && AXIS_CHARTS.has(block.type) ? base - WIDE_CUT : base
+  const floor = span >= 12 && base && lineChart(block.type, variant) ? base - WIDE_CUT : base
   return Math.max(measured, floor, n >= 3 && block.type !== 'logos' ? LIST_FLOOR : 0)
 }
 
