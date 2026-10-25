@@ -118,6 +118,15 @@ describe('createDeck', () => {
     }
   })
 
+  it('2×2 우선순위는 미리 채운 두 축과 함께 네 칸의 이름도 채운다 (안내로만 두면 발표할 때 칸 이름이 빠진다)', () => {
+    const matrices = DECK_TYPES.flatMap((type) => BLUEPRINTS[type].recipes.filter((r) => r.layout === 'matrix'))
+    expect(matrices.length).toBeGreaterThan(0)
+    for (const r of matrices) {
+      expect(r.fields?.yAxis && r.fields?.xAxis).toBeTruthy()
+      expect(r.prefill?.map((it) => it.title?.trim())).toEqual(['틈틈이 하기', '바로 하기', '미루기', '계획해서 하기'])
+    }
+  })
+
   it('마법사의 묶음은 빈 발표를 뺀 모든 종류를 한 번씩 담는다', () => {
     const grouped = DECK_GROUPS.flatMap((g) => g.types)
     expect(new Set(grouped).size).toBe(grouped.length)

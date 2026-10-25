@@ -110,6 +110,25 @@ export function options(purpose: string, priority: Recipe['priority'], sectionNa
   }
 }
 
+/**
+ * 2×2 우선순위. 두 축(하기 쉬운 정도, 효과)을 미리 채우므로 그 축으로 정해지는 네 칸의 이름도 채워 둔다.
+ * 안내로만 두면 편집할 때는 흐리게 보여 채운 줄 알고, 발표할 때는 칸 이름이 빠진 채 나갔다
+ */
+export function priorities(sectionName: string): Recipe {
+  const names = ['틈틈이 하기', '바로 하기', '미루기', '계획해서 하기']
+  return {
+    layout: 'matrix',
+    purpose: '과제 우선순위',
+    priority: 3,
+    focus: 'detail',
+    section: sectionName,
+    guide: '효과와 하기 쉬운 정도로 나눠 무엇부터 할지 보여요.',
+    fields: { yAxis: '실행하기 쉬움', xAxis: '효과가 큼' },
+    prefill: names.map((title) => ({ title })),
+    hints: { title: '쉽고 효과가 큰 것부터 시작해요', ...rows('title', names) },
+  }
+}
+
 const RISKS = {
   title: ['예산이 늘어날 수 있어요', '일정이 늦어질 수 있어요', '맡을 사람이 모자랄 수 있어요'],
   body: ['단계마다 나눠 쓰고 점검해요', '중간 점검 날짜를 미리 정해 둬요', '협력사 인력을 미리 잡아 둬요'],

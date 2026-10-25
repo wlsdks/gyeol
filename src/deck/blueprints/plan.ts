@@ -1,6 +1,6 @@
 // 발표 종류: 연간·반기 계획 (plan)
 
-import { agenda, cover, decision, each, risks, section, summary, type Blueprint } from './recipes'
+import { agenda, cover, decision, each, priorities, risks, section, summary, type Blueprint } from './recipes'
 
 /** 연간·반기 계획: 지난 기간을 돌아보고, 다음 기간의 목표와 과제, 예산을 승인받는다 */
 export const plan: Blueprint = {
@@ -90,22 +90,7 @@ export const plan: Blueprint = {
         ...each({ title: ['신규 업종 진입', '구독 매출 늘리기', '영업 방식 바꾸기'] }),
       },
     },
-    {
-      layout: 'matrix',
-      purpose: '과제 우선순위',
-      priority: 3,
-      focus: 'detail',
-      section: '과제',
-      guide: '효과와 하기 쉬운 정도로 나눠 무엇부터 할지 보여요.',
-      fields: { yAxis: '실행하기 쉬움', xAxis: '효과가 큼' },
-      hints: {
-        title: '쉽고 효과가 큰 것부터 시작해요',
-        'items.0.title': '틈틈이 하기',
-        'items.1.title': '바로 하기',
-        'items.2.title': '미루기',
-        'items.3.title': '계획해서 하기',
-      },
-    },
+    priorities('과제'),
     section('실행', '언제, 무엇으로 할지'),
     {
       layout: 'timeline',

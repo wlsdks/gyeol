@@ -1,6 +1,6 @@
 // 발표 종류: 개선 제안 (improve)
 
-import { cover, decision, each, options, risks, section, summary, type Blueprint } from './recipes'
+import { cover, decision, each, options, priorities, risks, section, summary, type Blueprint } from './recipes'
 
 export const improve: Blueprint = {
   type: 'improve',
@@ -56,22 +56,7 @@ export const improve: Blueprint = {
       },
     },
     section('개선안', '어떻게 바꿀지'),
-    {
-      layout: 'matrix',
-      purpose: '과제 우선순위',
-      priority: 3,
-      focus: 'detail',
-      section: '개선안',
-      guide: '효과와 하기 쉬운 정도로 나눠 무엇부터 할지 보여요.',
-      fields: { yAxis: '실행하기 쉬움', xAxis: '효과가 큼' },
-      hints: {
-        title: '쉽고 효과가 큰 것부터 시작해요',
-        'items.0.title': '틈틈이 하기',
-        'items.1.title': '바로 하기',
-        'items.2.title': '미루기',
-        'items.3.title': '계획해서 하기',
-      },
-    },
+    priorities('개선안'),
     {
       layout: 'compare',
       purpose: '바뀌는 모습',
