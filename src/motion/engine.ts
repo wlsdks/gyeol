@@ -355,6 +355,11 @@ export function motionEngine(): MotionEngine {
     const fade = (el: Element | null, at: number, duration = 600) => {
       if (el) run(anims, el, [{ opacity: 0 }], s(at), { easing: OUT, duration })
     }
+    /**
+     * 선을 그은 줄(목록과 표의 줄): 줄째 그 줄의 차례에 흐리게 들인다. 칸의 본문(.bk-in)과 함께 나타나면 선만 먼저 깔려 있다가
+     * 줄마다 글이 채워져서 빈 표처럼 보였다(녹화해 보니 예상 질문의 마지막 줄은 선만 0.4초 보였다)
+     */
+    const ruled = (el: Element | null, at: number) => fade(el, at, 280)
     const pop = (el: Element | null, at: number, pseudo?: string) => {
       if (el) run(anims, el, [{ opacity: 0, scale: '0.3' }], s(at), L.pop, pseudo)
     }
@@ -508,6 +513,7 @@ export function motionEngine(): MotionEngine {
       case 'summary': {
         const t = head()
         items('.sm-row', t, (el, at) => {
+          ruled(el, at)
           fade(el.querySelector('.sm-label'), at, 500)
           rise(el.querySelector('.sm-body'), at + 40, L.y * 0.6)
         })
@@ -602,6 +608,7 @@ export function motionEngine(): MotionEngine {
       case 'bars': {
         const t = head()
         items('.br-row', t, (el, at) => {
+          ruled(el, at)
           rise(el.querySelector('.br-label'), at, L.y * 0.5)
           fade(el.querySelector('.br-track'), at, 400)
           grow(el.querySelector(variant === 'columns' ? '.br-track' : '.br-fill'), at + 120, variant === 'columns' ? 'up' : 'x')
@@ -678,6 +685,7 @@ export function motionEngine(): MotionEngine {
         const t = head()
         fade(one('.sk-headrow'), t, 500)
         const end = items('.sk-row.it', t + 120, (el, at) => {
+          ruled(el, at)
           rise(el.querySelector('.sk-name'), at, L.y * 0.5)
           grow(el.querySelector('.sk-fill'), at + 120)
           pop(el.querySelector('.sk-mark'), at + 320)
@@ -731,6 +739,7 @@ export function motionEngine(): MotionEngine {
         fade(one('.ps-sum'), t, 500)
         fade(one('.ps-headrow'), t + 80, 500)
         const end = items('.ps-row.it', t + 160, (el, at) => {
+          ruled(el, at)
           rise(el.querySelector('.ps-name'), at, L.y * 0.5)
           grow(el.querySelector('.ps-fill'), at + 120)
           countIn(el.querySelector('.ps-pct'), at + 120)
@@ -984,6 +993,7 @@ export function motionEngine(): MotionEngine {
           rise(one('.bk-h'), 60, L.y * 0.5)
           fade(one('.bk-rk-head'), 120, 500)
           items('.bk-rk-row', 220, (el, at) => {
+            ruled(el, at)
             rise(el.querySelector('.bk-rk-t'), at, L.y * 0.4)
             const arrow = el.querySelector('.bk-rk-arrow')
             if (arrow) run(anims, arrow, [{ opacity: 0, translate: `${-L.y * 0.6}px 0` }], s(at + 160), L.move)
@@ -993,6 +1003,7 @@ export function motionEngine(): MotionEngine {
         case 'faq':
           rise(one('.bk-h'), 60, L.y * 0.5)
           items('.bk-qa-item', 160, (el, at) => {
+            ruled(el, at)
             pop(el.querySelector('.bk-qa-k'), at)
             rise(el.querySelector('.bk-qa-qt'), at + 60, L.y * 0.4)
             fade(el.querySelector('.bk-qa-a'), at + 260, 600)
@@ -1002,6 +1013,7 @@ export function motionEngine(): MotionEngine {
           rise(one('.bk-h'), 60, L.y * 0.5)
           fade(one('.bk-ck-sum'), 160, 500)
           items('.bk-ck-row', 200, (el, at) => {
+            ruled(el, at)
             rise(el.querySelector('.bk-ck-text'), at, L.y * 0.4)
             pop(el.querySelector('.bk-ck-mark'), at + 140)
             fade(el.querySelector('.bk-ck-s'), at + 220, 400)
@@ -1011,6 +1023,7 @@ export function motionEngine(): MotionEngine {
           // 네 칸이 읽는 차례(강점, 약점, 기회, 위협)로: 글자가 맺히고 이름과 내용이 따라 올라온다
           rise(one('.bk-h'), 60, L.y * 0.5)
           items('.bk-sw-q', 140, (el, at) => {
+            ruled(el, at)
             pop(el.querySelector('.bk-sw-k'), at)
             rise(el.querySelector('.bk-sw-t'), at + 80, L.y * 0.4)
             rise(el.querySelector('.bk-sw-b'), at + 160, L.y * 0.4)
@@ -1022,6 +1035,7 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-gt-cols'), 120, 500)
           fade(one('.bk-gt-now'), 160, 800)
           items('.bk-gt-row', 240, (el, at) => {
+            ruled(el, at)
             rise(el.querySelector('.bk-gt-label'), at, L.y * 0.4)
             grow(el.querySelector('.bk-gt-bar'), at + 120, 'x')
           })
@@ -1045,6 +1059,8 @@ export function motionEngine(): MotionEngine {
             break
           }
           items('.bk-pp-card', 160, (el, at) => {
+            // 목록 모양은 줄 사이에 선이 있다
+            if (cell.classList.contains('va-list')) ruled(el, at)
             pop(el.querySelector('.bk-pp-av'), at)
             rise(el.querySelector('.bk-pp-text'), at + 100, L.y * 0.4)
           }, L.step * 1.5)
@@ -1135,8 +1151,10 @@ export function motionEngine(): MotionEngine {
         case 'sparks':
           // 줄마다 이름이 올라오고 흐름 선이 왼쪽부터 같은 빠르기로 그어진다. 선이 끝에 닿을 때 지금 점이 맺히고 지금 값이 굴러간다
           rise(one('.bk-h'), 60, L.y * 0.5)
-          fade(one('.bk-sx-head'), 120, 500)
+          // 넓은 칸에서 두 단으로 흘리면 머리도 둘이다
+          $('.bk-sx-head').forEach((el) => fade(el, 120, 500))
           items('.bk-sx-row', 180, (el, at) => {
+            ruled(el, at)
             rise(el.querySelector('.bk-sx-name'), at, L.y * 0.4)
             const draw = levelName === 'lively' ? 900 : 700
             const svg = el.querySelector('.bk-sx-svg')
