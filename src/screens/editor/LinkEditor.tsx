@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { BLOCK_LINKS, fitsHeight, linkAt, linkTargets, sameLinkTarget, withLink, type LinkTarget } from '../../deck/blocks'
 import type { BlockLink, BlockRow, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { usePointerSessions } from '../../lib/pointerSession'
 import { LinkGlyph } from '../../slides/blocks'
 import { useDeck } from '../../store/deckStore'
 import { dialogOpen, isTyping, TrashIcon, undoAction, type Toast } from '../ui'
@@ -93,6 +94,7 @@ export function useLinkEditing({
   selectedBlock: string | null
 }) {
   const store = useDeck.getState()
+  const startSession = usePointerSessions()
   const [selected, setSelected] = useState<LinkTarget | null>(null)
   const [drag, setDrag] = useState<LinkDrag | null>(null)
   const dragRef = useRef<LinkDrag | null>(null)
@@ -168,24 +170,15 @@ export function useLinkEditing({
     setDrag(d)
     setSelected(null)
     deselectBlock()
-    document.body.classList.add('is-block-dragging')
+    const session = startSession('is-block-dragging')
     requestAnimationFrame(() => {
       moveGhost(x, y)
       ghostEl.current?.animate([{ scale: '0.6', opacity: 0 }, { scale: '1', opacity: 1 }], { duration: 220, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' })
     })
     let raf = 0
-    const onMove = (e: PointerEvent) => {
-      moveGhost(e.clientX, e.clientY)
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => track(e.clientX, e.clientY))
-    }
+    session.onEnd(() => cancelAnimationFrame(raf))
     const end = (cancel: boolean) => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onCancel)
-      window.removeEventListener('keydown', onKey)
-      document.body.classList.remove('is-block-dragging')
+      session.end()
       const cur = dragRef.current
       dragRef.current = null
       setDrag(null)
@@ -199,20 +192,21 @@ export function useLinkEditing({
       if (cur.from) setSelected(cur.from)
       else if (!cancel) toast.show(cur.blocked ?? (cur.spots.length ? '컴포넌트 사이에 놓아 주세요.' : NO_PAIR), undefined, 5000)
     }
-    const onUp = (e: PointerEvent) => {
+    session.on('pointermove', (e) => {
+      moveGhost(e.clientX, e.clientY)
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => track(e.clientX, e.clientY))
+    })
+    session.on('pointerup', (e) => {
       track(e.clientX, e.clientY)
       end(false)
-    }
-    const onCancel = () => end(true)
-    const onKey = (e: KeyboardEvent) => {
+    })
+    session.on('pointercancel', () => end(true))
+    session.on('keydown', (e) => {
       if (e.key !== 'Escape') return
       e.preventDefault()
       end(true)
-    }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onCancel)
-    window.addEventListener('keydown', onKey)
+    })
   }
 
   /** 눌렀다가 조금 움직이면 끌기 시작. 그냥 떼면 onTap */
@@ -221,21 +215,16 @@ export function useLinkEditing({
     e.preventDefault()
     const sx = e.clientX
     const sy = e.clientY
-    const move = (ev: PointerEvent) => {
+    const session = startSession()
+    session.on('pointermove', (ev) => {
       if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return
-      cleanup()
+      session.end()
       start(ev.clientX, ev.clientY)
-    }
-    const up = () => {
-      cleanup()
+    })
+    session.on('pointerup', () => {
+      session.end()
       onTap()
-    }
-    const cleanup = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
+    })
   }
 
   // ---------- 눌러서 넣기 ----------

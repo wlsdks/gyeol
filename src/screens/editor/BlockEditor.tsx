@@ -45,6 +45,7 @@ import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { usePointerSessions } from '../../lib/pointerSession'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
@@ -151,6 +152,8 @@ export interface BlockEditing {
 export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEditing {
   // 할 일(액션)만 쓰므로 바뀔 때마다 다시 그리지 않게 한 번 꺼내 둔다
   const store = useDeck.getState()
+  // 끄는 동안 창에 건 처리기. 편집기가 사라지면 끝나지 않은 끌기를 거둔다
+  const startSession = usePointerSessions()
   const [selected, setSelected] = useState<string | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   // 놓은 뒤 끌던 그림이 칸으로 날아가는 동안 (id가 없으면 집어 온 카드로 돌아가 사라진다)
@@ -377,7 +380,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       setSelected(null)
       dragRef.current = d
       setDrag(d)
-      document.body.classList.add('is-block-dragging')
+      const session = startSession('is-block-dragging')
       // 그림이 그려지면 집어 든 자리(칸 또는 카드)에서 손 아래 크기로 줄어들며 들린다
       requestAnimationFrame(() => {
         const g = ghostEl.current
@@ -387,62 +390,52 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         if (from && !reduced()) g.animate([{ scale: String(from.width / d.ghost.w), opacity: 0.6 }, { scale: String(d.over ? GHOST_OVER : 1), opacity: 1 }], { duration: 380, easing: SPRING })
       })
       let raf = 0
-      const onMove = (e: PointerEvent) => {
-        moveGhost(e.clientX, e.clientY)
-        cancelAnimationFrame(raf)
-        raf = requestAnimationFrame(() => track(e.clientX, e.clientY))
-      }
+      session.onEnd(() => cancelAnimationFrame(raf))
       const end = (cancel: boolean) => {
-        cancelAnimationFrame(raf)
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        window.removeEventListener('pointercancel', onCancel)
-        window.removeEventListener('keydown', onKey)
-        document.body.classList.remove('is-block-dragging')
+        session.end()
         const cur = dragRef.current
         if (!cur) return
         finish(cancel ? { ...cur, plan: null, target: null, blocked: null } : cur)
       }
-      const onUp = (e: PointerEvent) => {
+      session.on('pointermove', (e) => {
+        moveGhost(e.clientX, e.clientY)
+        cancelAnimationFrame(raf)
+        raf = requestAnimationFrame(() => track(e.clientX, e.clientY))
+      })
+      session.on('pointerup', (e) => {
         track(e.clientX, e.clientY)
         end(false)
-      }
-      const onCancel = () => end(true)
-      const onKey = (e: KeyboardEvent) => {
+      })
+      session.on('pointercancel', () => end(true))
+      session.on('keydown', (e) => {
         if (e.key === 'Escape') {
           e.preventDefault()
           end(true)
         }
-      }
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
-      window.addEventListener('pointercancel', onCancel)
-      window.addEventListener('keydown', onKey)
+      })
     },
-    [finish, moveGhost, track],
+    [finish, moveGhost, track, startSession],
   )
 
   /** 눌렀다가 조금 움직이면 끌기 시작. 그냥 떼면 onClick */
-  const press = useCallback((e: ReactPointerEvent<HTMLElement>, start: (x: number, y: number) => void, onClick?: () => void) => {
-    if (e.button !== 0) return
-    const sx = e.clientX
-    const sy = e.clientY
-    const move = (ev: PointerEvent) => {
-      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return
-      cleanup()
-      start(ev.clientX, ev.clientY)
-    }
-    const up = () => {
-      cleanup()
-      onClick?.()
-    }
-    const cleanup = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
-  }, [])
+  const press = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, start: (x: number, y: number) => void, onClick?: () => void) => {
+      if (e.button !== 0) return
+      const sx = e.clientX
+      const sy = e.clientY
+      const session = startSession()
+      session.on('pointermove', (ev) => {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return
+        session.end()
+        start(ev.clientX, ev.clientY)
+      })
+      session.on('pointerup', () => {
+        session.end()
+        onClick?.()
+      })
+    },
+    [startSession],
+  )
 
   /** 캔버스 크기의 부품 그림을 손 아래에 들 만한 크기로 */
   const ghostSize = (canvas: { w: number; h: number }, k: number) => {
@@ -614,8 +607,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const s = slideRef.current
       // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
       let told = false
-      document.body.classList.add('is-block-resizing')
-      const onMove = (ev: PointerEvent) => {
+      const session = startSession('is-block-resizing')
+      session.on('pointermove', (ev) => {
         const cur = slideRef.current
         const row = (cur.rows ?? []).find((r) => r.id === rowId)
         const area = measureArea(areaEl.current)
@@ -629,16 +622,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const spans = spansAt(row, gutter, frac)
         if (row.spans && row.spans.join() === spans.join()) return
         store.setRows(cur.id, (cur.rows ?? []).map((r) => (r.id === rowId ? { ...r, spans } : r)), `${s.id}.spans.${rowId}`)
-      }
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        document.body.classList.remove('is-block-resizing')
-      }
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
+      })
+      session.on('pointerup', () => session.end())
     },
-    [store, toast],
+    [store, toast, startSession],
   )
 
   // ---------- 줄 높이 ----------
@@ -657,8 +644,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const pair = heights[between] + heights[between + 1]
       const startY = e.clientY
       let moved = false
-      document.body.classList.add('is-row-resizing')
-      const onMove = (ev: PointerEvent) => {
+      const session = startSession('is-row-resizing')
+      session.on('pointermove', (ev) => {
         if (!moved && Math.abs(ev.clientY - startY) < 3) return
         moved = true
         const cur = slideRef.current
@@ -669,16 +656,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const grow = growAt(rows, heights, between, (y - top - gap / 2) / pair)
         if (rows.every((r, i) => r.grow === grow[i])) return
         store.setRows(cur.id, rows.map((r, i) => ({ ...r, grow: grow[i] })), `${cur.id}.grow`)
-      }
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        document.body.classList.remove('is-row-resizing')
-      }
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
+      })
+      session.on('pointerup', () => session.end())
     },
-    [store],
+    [store, startSession],
   )
   const onRowGapReset = useCallback(() => {
     const s = slideRef.current

@@ -4,6 +4,7 @@ import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layou
 import { PLACES } from '../../deck/themes'
 import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { usePointerSessions } from '../../lib/pointerSession'
 import { josa } from '../../lib/josa'
 import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, zoneOf } from '../../slides/panes'
@@ -206,6 +207,8 @@ function targetAt(node: Element, slide: Slide): Target | null {
 export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Slide; canvasRef: RefObject<HTMLDivElement | null> }) {
   // 할 일(액션)만 쓴다. 저장소 전체를 구독하면 고칠 때마다 다시 그린다
   const store = useDeck.getState()
+  // 끄는 동안 창에 건 처리기. 막대가 사라지면(다른 장, 미리 보기) 끝나지 않은 끌기를 거둔다
+  const startSession = usePointerSessions()
   const [target, setTarget] = useState<Target | null>(null)
   const [ring, setRing] = useState<Rect | null>(null)
   const [bar, setBar] = useState<{ x: number; y: number } | null>(null)
@@ -233,11 +236,15 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       // 항목의 손잡이로 끄는 동안은 도구를 걷는다 (항목이 손을 따라 움직인다)
       if (e.target instanceof Element && e.target.closest('.it-grip, .pn-tools')) {
         setDragging(true)
-        const up = () => {
-          setDragging(false)
-          window.removeEventListener('pointerup', up, true)
-        }
-        window.addEventListener('pointerup', up, true)
+        const session = startSession()
+        session.on(
+          'pointerup',
+          () => {
+            setDragging(false)
+            session.end()
+          },
+          true,
+        )
         return
       }
       pick(e.target)
@@ -253,7 +260,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       root.removeEventListener('pointerdown', onDown)
       document.removeEventListener('pointerdown', onOutside, true)
     }
-  }, [canvasRef])
+  }, [canvasRef, startSession])
 
   // 고른 것의 자리를 따라간다 (글을 적어 카드가 커지거나 순서를 바꿔 옮겨 가도)
   useLayoutEffect(() => {
@@ -374,11 +381,15 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
                 if (e.button !== 0) return
                 e.preventDefault()
                 setDragging(true)
-                const up = () => {
-                  setDragging(false)
-                  window.removeEventListener('pointerup', up, true)
-                }
-                window.addEventListener('pointerup', up, true)
+                const session = startSession()
+                session.on(
+                  'pointerup',
+                  () => {
+                    setDragging(false)
+                    session.end()
+                  },
+                  true,
+                )
                 startItemDrag(e.nativeEvent, grip, i, (from, to, key) => store.moveItem(slide.id, from, to, key))
               }}
             >
@@ -413,8 +424,13 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
         return { x: r.left, y: r.top, w: r.width, h: r.height }
       }
       setPlacing({ rect: rectOf(), at })
-      document.body.classList.add('is-placing')
-      const move = (ev: PointerEvent) => {
+      const session = startSession('is-placing')
+      const stop = (cancel: boolean) => {
+        session.end()
+        if (cancel && at !== from) setPlace(from, key)
+        setPlacing(null)
+      }
+      session.on('pointermove', (ev) => {
         const r = rectOf()
         const next = placeAt((ev.clientY - r.y) / r.h)
         if (next !== at) {
@@ -422,25 +438,18 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
           setPlace(next, key)
         }
         setPlacing({ rect: r, at })
-      }
-      const stop = (cancel: boolean) => {
-        window.removeEventListener('pointermove', move)
-        window.removeEventListener('pointerup', up)
-        window.removeEventListener('keydown', onKey, true)
-        document.body.classList.remove('is-placing')
-        if (cancel && at !== from) setPlace(from, key)
-        setPlacing(null)
-      }
-      const up = () => stop(false)
-      const onKey = (ev: KeyboardEvent) => {
-        if (ev.key !== 'Escape') return
-        ev.preventDefault()
-        ev.stopPropagation()
-        stop(true)
-      }
-      window.addEventListener('pointermove', move)
-      window.addEventListener('pointerup', up)
-      window.addEventListener('keydown', onKey, true)
+      })
+      session.on('pointerup', () => stop(false))
+      session.on(
+        'keydown',
+        (ev) => {
+          if (ev.key !== 'Escape') return
+          ev.preventDefault()
+          ev.stopPropagation()
+          stop(true)
+        },
+        true,
+      )
     }
     return (
       <>
