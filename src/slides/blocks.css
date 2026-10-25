@@ -535,6 +535,72 @@
   }
 }
 
+/* 한 줄을 다 쓰는 넓은 칸(1200px 넘고 높이의 두 배 넘게 넓은): 이름과 설명은 격자의 왼쪽 4칸에, 숫자는 5번째 칸부터.
+   숫자 옆에 이름을 바로 붙이면 묶음이 칸 왼쪽에 몰려 오른쪽 절반 넘게 비었다. 격자의 칸 선에 맞춰서 위아래 줄의 칸 나눔과도 줄이 맞는다.
+   옆으로 눕혔으니 낮은 줄이어도 글자를 줄이지 않고(--bk-h), 이름은 작은 이름표 대신 굵게 */
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) {
+  .bk-number > .bk-in {
+    --bk-h: 1;
+  }
+
+  .bk-num {
+    display: grid;
+    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: var(--bk-gap);
+  }
+
+  .bk-num-v {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    margin-top: 0;
+  }
+
+  /* 한 줄로 줄이는 너비도 숫자 칸(5번째 칸부터 끝까지)으로 */
+  .slide .bk-num-v.one-line {
+    font-size: min(max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1))), calc((200cqi - var(--bk-gap)) / 3 / (var(--units, 1) * var(--glyph-k, 1))));
+  }
+
+  .bk-num-l,
+  .bk-num-n {
+    grid-column: 1;
+  }
+
+  .bk-num-l {
+    --fs: var(--t-body);
+    grid-row: 1;
+    align-self: end;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .bk-num-n {
+    grid-row: 2;
+    align-self: start;
+    margin-top: 12px;
+  }
+}
+
+/* 그중 높은 칸: 이름은 소제목 크기, 숫자는 한 단계 더 크게(큰 칸 키우기와 함께 185px) */
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {
+  .bk-num-v {
+    --fs: 154px;
+  }
+
+  .bk-num-l {
+    --fs: var(--t-h);
+    font-family: var(--font-head);
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+  }
+
+  .bk-num-n {
+    --fs: var(--t-body);
+  }
+}
+
 /* ---------- 전과 후 ----------
    무엇이 바뀌는지 → 전, 후 → 바뀐 만큼(후 바로 아래) → 덧붙임 글. 전과 후는 같은 너비의 칸에 같은 크기로(blocks.tsx의 units),
    전은 옅게, 후는 강조색. 크기가 다르면 두 숫자의 글자 밑줄이 어긋나고 서로 다른 것을 재는 것처럼 보인다 */
@@ -750,6 +816,63 @@
     grid-column: 2;
     align-self: start;
     margin-top: 8px;
+  }
+}
+
+/* 한 줄을 다 쓰는 넓은 칸(1200px 넘고 높이의 두 배 넘게 넓은): 이름과 덧붙임 글은 격자의 왼쪽 4칸에, 전과 후는 5번째 칸부터.
+   전과 후 옆에 이름을 붙이거나 위에 쌓으면 묶음이 칸 왼쪽에 몰려 오른쪽 절반 가까이 비었다. '불량률 → 전 → 후' 차례로 읽히고,
+   격자의 칸 선에 맞춰서 위아래 줄의 칸 나눔과도 줄이 맞는다. 옆으로 눕혔으니 낮은 줄이어도 글자를 줄이지 않는다(--bk-h) */
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) {
+  .bk-delta > .bk-in {
+    --bk-h: 1;
+  }
+
+  .bk-dl {
+    display: grid;
+    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: var(--bk-gap);
+  }
+
+  .bk-dl-row {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    width: min(100%, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
+    margin-top: 0;
+  }
+
+  .bk-dl-l,
+  .bk-dl-n {
+    grid-column: 1;
+  }
+
+  .bk-dl-l {
+    --fs: var(--t-body);
+    grid-row: 1;
+    align-self: end;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .bk-dl-n {
+    grid-row: 2;
+    align-self: start;
+    margin-top: 12px;
+  }
+}
+
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {
+  .bk-dl-l {
+    --fs: var(--t-h);
+    font-family: var(--font-head);
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+  }
+
+  .bk-dl-n {
+    --fs: var(--t-body);
   }
 }
 
