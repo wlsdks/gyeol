@@ -182,17 +182,18 @@
 }
 
 /* 모양: 세로 목록. 단계마다 한 줄에 시기, 점, 할 일, 설명(칸은 모든 줄이 같이, subgrid).
-   점을 잇는 세로 선 하나만 두고 줄 사이 가로 선은 두지 않는다. 시기는 가장 긴 시기만큼만 넓게 잡아 점 바로 옆에 붙인다.
-   예전에는 시기 칸(300px)과 점 사이가 비고, 할 일과 설명을 위아래로 쌓아 오른쪽 절반이 비었으며, 줄마다 가로 선까지 그어
-   선이 세 겹(가로 선, 세로 선, 점)이었다. 여섯 줄이면 할 일과 설명이 위아래 선에 붙어 답답했다.
-   설명은 본문의 가운데(12칸 격자의 7번째 칸)에서 시작해, 왼쪽 반(시기, 점, 할 일)과 오른쪽 반(설명)이 맞선다.
-   설명을 할 일 바로 뒤에 붙이면 글이 짧을 때 묶음이 왼쪽에 몰려 오른쪽이 비었다. 목록은 본문 가운데에.
-   점은 할 일의 첫 줄 가운데에(--tl-line: 할 일 한 줄의 높이, 글자 칸 목록의 font-size와 같은 식). 설명이 두 줄이어도
-   점과 시기는 첫 줄에 맞는다 */
+   점을 잇는 세로 선은 끊기지 않게 하나로 잇는다: 점 둘레에 바탕색 테를 두르던 때는 점마다 선이 끊겨 점선처럼 보였다.
+   시기는 할 일보다 작게(한 단계 아래, 옅게): 시기와 할 일이 같은 크기라 두 글이 서로 겨뤘다.
+   할 일과 설명은 5 : 7로 나누고 그 아래에 가는 줄 선을 그어 한 줄로 묶는다. 예전에는 설명을 본문 가운데에서 시작하되 줄 선이 없어서
+   할 일이 짧으면 둘 사이가 크게 비고 설명만 오른쪽에 떠 보였고, 설명을 할 일 바로 뒤에 붙이면 묶음이 왼쪽에 몰려 오른쪽 절반이 비었다.
+   줄 선은 할 일부터 오른쪽 끝까지만(시기와 점 쪽은 세로 선이 이미 줄을 나눈다). 점은 할 일의 첫 줄 가운데에
+   (--tl-line: 할 일 한 줄의 높이, 글자 칸 목록의 font-size와 같은 식), 시기, 할 일, 설명은 한 바닥선에 놓인다.
+   지금 단계가 있으면 지나온 점은 강조색, 지금 점은 강조색에 옅은 강조색 테, 남은 점은 속이 빈 고리 */
 .va-steps .tl {
   --tl-pad: 30px;
   --tl-fs: 52px;
-  grid-template-columns: max-content 20px minmax(0, 1fr) calc((100% - 11 * var(--gap)) / 12 * 6 + 5 * var(--gap));
+  --tl-dot: 18px;
+  grid-template-columns: max-content var(--tl-dot) minmax(0, 5fr) minmax(0, 7fr);
   grid-auto-flow: row;
   grid-auto-rows: auto;
   gap: 0 48px;
@@ -205,7 +206,7 @@
 }
 
 .va-steps .tl:is([data-n='5'], [data-n='6']) {
-  --tl-pad: 18px;
+  --tl-pad: 22px;
   --tl-fs: 44px;
 }
 
@@ -243,6 +244,16 @@
   display: none;
 }
 
+.va-steps .tl-item:not(:last-child)::after {
+  grid-row: 1;
+  grid-column: 3 / -1;
+  align-self: end;
+  height: var(--rule);
+  margin-bottom: calc(var(--tl-pad) * -1);
+  background: var(--line);
+  content: '';
+}
+
 /* 지금 단계의 선은 점 위(지나온 쪽)만 채운다 */
 .va-steps .tl-item.is-now:not(:first-child)::before {
   background: linear-gradient(var(--accent) calc(var(--tl-pad) + var(--tl-line) / 2), var(--line) 0);
@@ -253,20 +264,36 @@
 }
 
 .va-steps .tl-meta {
-  --fs: var(--tl-fs);
+  --fs: 36px;
   grid-row: 1;
   grid-column: 1;
   height: auto;
+  color: var(--ink-2);
   font-weight: 600;
   line-height: 1.25;
 }
 
+.va-steps .tl:is([data-n='5'], [data-n='6']) .tl-meta {
+  --fs: 30px;
+}
+
 .va-steps .tl-dot {
+  z-index: 1;
   grid-row: 1;
   grid-column: 2;
   align-self: start;
   justify-self: center;
   margin: calc((var(--tl-line) - var(--tl-dot)) / 2) 0 0;
+  box-shadow: none;
+}
+
+.va-steps .tl-item.is-now .tl-dot {
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 22%, var(--bg));
+}
+
+.va-steps .tl.has-now .tl-item:not(.is-done, .is-now) .tl-dot {
+  border: 3px solid var(--ink-3);
+  background: var(--bg);
 }
 
 .va-steps .tl-title {
@@ -289,7 +316,7 @@
 }
 
 .va-steps .tl:is([data-n='5'], [data-n='6']) .tl-body {
-  --fs: 30px;
+  --fs: 26px;
 }
 
 /* 부품 칸 안에서는 한 단계 작게, 줄 사이를 촘촘하게: 장 한 장의 크기로 재면 둘만 돼도 칸이 340px 높아야 했다.
@@ -310,5 +337,13 @@
 }
 
 .bk.va-steps .tl:is([data-n='5'], [data-n='6']) .tl-body {
+  --fs: 30px;
+}
+
+.bk.va-steps .tl-meta {
   --fs: 26px;
+}
+
+.bk.va-steps .tl:is([data-n='5'], [data-n='6']) .tl-meta {
+  --fs: 22px;
 }

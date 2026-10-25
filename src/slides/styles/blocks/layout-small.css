@@ -143,7 +143,8 @@
   padding-block: clamp(20px, 3.5cqh, 36px);
 }
 
-.bk-in .tl {
+/* 가로 일정만: 세로 모양에 줄 사이 틈이 생기면 점을 잇는 세로 선이 줄마다 끊겨 점선처럼 보였다 */
+.bk:not(.va-steps) > .bk-in .tl {
   gap: clamp(32px, 5.2cqh, 56px);
   padding-bottom: clamp(16px, calc(9cqh - 40px), 56px);
 }
