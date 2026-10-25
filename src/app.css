@@ -437,21 +437,16 @@ select {
   color: var(--ink);
 }
 
-.menu-note {
-  margin: -2px 10px 10px;
-  color: var(--ink-3);
-  font-size: 12px;
+/* 머리말 오른쪽 끝에 붙는 할 일 ('지금 장에서 보기') */
+.menu-h-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
-.motion-note {
-  min-height: 36px;
-  margin-top: 8px;
-}
-
-/* 고르는 줄 아래 설명: 버튼과 떨어뜨리고, 다음 머리말과는 붙지 않게 */
-.choice-note {
-  margin-top: 6px;
-  margin-bottom: 14px;
+/* 테마 메뉴는 고르는 줄마다 설명을 늘어놓지 않으니, 줄과 다음 머리말 사이로 묶음을 가른다 */
+.theme-menu .menu-h:not(:first-child) {
+  margin-top: 18px;
 }
 
 .link-btn {
@@ -2902,8 +2897,9 @@ select {
 
 .theme-grid {
   display: grid;
-  grid-template-columns: repeat(3, 156px);
-  gap: 10px;
+  /* 테마가 둘이라 둘로 나눠 메뉴 너비를 채운다 (셋으로 나누면 오른쪽 한 칸이 빈다) */
+  grid-template-columns: repeat(2, 238px);
+  gap: 12px;
   margin: 0 0 8px;
   padding: 0 10px;
 }

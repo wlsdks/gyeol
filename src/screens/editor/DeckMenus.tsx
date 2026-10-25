@@ -7,7 +7,7 @@ import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { keys } from '../../lib/keys'
 import { presenterAuto, setPresenterAuto } from '../../present/link'
-import { CheckIcon, ChevronIcon, DownloadIcon, PlayIcon, Popover, Toggle } from '../ui'
+import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Toggle } from '../ui'
 
 /** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
@@ -57,17 +57,20 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 aria-pressed={deck.theme.id === id}
                 onClick={() => setTheme(id)}
               >
-                <ScaledSlide width={156}>
+                <ScaledSlide width={238}>
                   <SlideCanvas deck={{ ...deck, theme: { ...deck.theme, id } }} slide={cover} mode="final" />
                 </ScaledSlide>
                 <span>{THEMES[id].name}</span>
               </button>
             ))}
           </div>
+          {/* 설명은 늘어놓지 않고 (i)에. 고르는 단추마다의 설명은 마우스를 올리면 보인다 */}
           <p className="menu-h">
             강조색 <span className="menu-h-v">{comboName(deck.theme)}</span>
+            <Info label="강조색 설명" align="start">
+              숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 마지막 칸에서 직접 골라요.
+            </Info>
           </p>
-          <p className="menu-note">숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 마지막 칸에서 직접 골라요.</p>
           <div className="swatches">
             <button
               type="button"
@@ -109,6 +112,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 type="button"
                 className={cx('seg-btn', font === o.id && 'is-on')}
                 style={fontPreview(o.id)}
+                title={o.description}
                 aria-pressed={font === o.id}
                 onClick={() => setLook({ font: o.id })}
               >
@@ -116,18 +120,32 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               </button>
             ))}
           </div>
-          <p className="menu-note choice-note">{FONTS.find((o) => o.id === font)?.description}</p>
           <p className="menu-h">글자 크기</p>
           <Choice label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>
           <Choice label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
-          <p className="menu-h">발표할 때 움직임</p>
+          <p className="menu-h menu-h-row">
+            발표할 때 움직임
+            {motion !== 'none' && (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => {
+                  close()
+                  window.dispatchEvent(new Event(PREVIEW_MOTION))
+                }}
+              >
+                지금 장에서 보기
+              </button>
+            )}
+          </p>
           <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
             {MOTIONS.map((m) => (
               <button
                 key={m.id}
                 type="button"
                 className={cx('seg-btn', motion === m.id && 'is-on')}
+                title={m.description}
                 aria-pressed={motion === m.id}
                 onClick={() => {
                   setMotion(m.id)
@@ -142,21 +160,6 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               </button>
             ))}
           </div>
-          <p className="menu-note motion-note">
-            {MOTIONS.find((m) => m.id === motion)?.description}
-            {motion !== 'none' && (
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => {
-                  close()
-                  window.dispatchEvent(new Event(PREVIEW_MOTION))
-                }}
-              >
-                지금 장에서 보기
-              </button>
-            )}
-          </p>
           <p className="menu-h">장 넘기기</p>
           <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
         </div>
@@ -165,7 +168,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
   )
 }
 
-/** 몇 가지 중 하나를 고르는 줄. 고른 것의 설명을 아래에 보여 준다. */
+/** 몇 가지 중 하나를 고르는 줄. 설명은 마우스를 올리면 보인다 */
 function Choice<T extends string>({
   label,
   options,
@@ -181,12 +184,18 @@ function Choice<T extends string>({
     <>
       <div className="seg seg-full" role="group" aria-label={label}>
         {options.map((o) => (
-          <button key={o.id} type="button" className={cx('seg-btn', value === o.id && 'is-on')} aria-pressed={value === o.id} onClick={() => onPick(o.id)}>
+          <button
+            key={o.id}
+            type="button"
+            className={cx('seg-btn', value === o.id && 'is-on')}
+            title={o.description}
+            aria-pressed={value === o.id}
+            onClick={() => onPick(o.id)}
+          >
             {o.name}
           </button>
         ))}
       </div>
-      <p className="menu-note choice-note">{options.find((o) => o.id === value)?.description}</p>
     </>
   )
 }
