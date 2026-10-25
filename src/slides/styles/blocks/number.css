@@ -16,7 +16,8 @@
 
 .bk-num-v {
   --fs: 108px;
-  margin-top: 14px;
+  margin-top: calc(14px + 0.16em);
+  margin-bottom: 0.17em;
   color: var(--accent);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
@@ -25,11 +26,32 @@
   line-height: 1.05;
 }
 
+/* 숫자의 줄 상자는 숫자 윗선(cap)과 바닥선으로 자르고, 자른 빈 키는 위아래 바깥 여백으로 돌려준다(기본 글꼴의 빈 키가 위 0.16em,
+   아래 0.17em이라 기본 글꼴에서는 자리가 그대로다). 명조 제목 글꼴은 빈 키가 위 0.20em, 아래 0.09em이라 숫자가 줄 상자의 아래로
+   쏠려, 면 위에서는 숫자가 낮아 보이고 면의 위 여백만 넓었다(위 62, 아래 36). 자르면 어느 글꼴이든 숫자 글자가 상자 가운데다.
+   편집 칸(.ed)은 격자라 자르기가 안쪽 글 상자에 걸려야 한다 */
+.bk-num-v,
+.bk-num-v > :is(.ed-input, .ed-hint) {
+  text-box: trim-both cap alphabetic;
+}
+
 .bk-num-n {
   --fs: var(--t-small);
   margin-top: 18px;
   color: var(--ink-2);
   line-height: 1.45;
+}
+
+/* 낮은 칸(300px 밑): 이름, 숫자, 설명 사이를 좁힌다. 크게(1.2배)에서는 글자를 한 단계 줄여도 세 줄이 면의 아래 여백까지
+   내려가 아래 여백만 좁았다(488×260에서 위 48, 아래 36) */
+@container bk (max-height: 300px) {
+  .bk-num-v {
+    margin-top: calc(8px + 0.16em);
+  }
+
+  .bk-num-n {
+    margin-top: 10px;
+  }
 }
 
 /* 넓고 낮은 칸: 숫자를 왼쪽에, 이름과 설명을 그 오른쪽에 위아래로. 셋을 쌓으면 낮은 줄에서 숫자가 작아진다 */
@@ -46,7 +68,7 @@
     grid-row: 1 / span 2;
     grid-column: 1;
     align-self: center;
-    margin-top: 0;
+    margin-block: 0;
   }
 
   .bk-num-l {
@@ -83,7 +105,7 @@
     grid-row: 1 / span 2;
     grid-column: 2;
     align-self: center;
-    margin-top: 0;
+    margin-block: 0;
   }
 
   /* 한 줄로 줄이는 너비도 숫자 칸(5번째 칸부터 끝까지)으로 */
