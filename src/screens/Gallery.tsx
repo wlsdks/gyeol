@@ -22,6 +22,7 @@ import { clashes, failingHeights, heightsSource, measureAll, measureAllFonts, me
 // &variants=1 이면 장마다 레이아웃의 모든 모양을 늘어놓는다. &only=kpi,bars 처럼 레이아웃을 고를 수 있다.
 // &tone=invert|accent 는 모든 장의 바탕을, &font=serif|suit|myeongjo &size=large &footer=page &accent=B8432A 는 발표 전체 설정을 바꿔 본다.
 // &hl=2 는 강조할 항목(일정은 지금 단계)을 고를 수 있는 장 모두에 같은 번호를 준다.
+// &count=5 는 레이아웃 장의 항목 수를 그만큼(정한 범위 안에서). 예시 항목을 되풀이해 채운다.
 // &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
@@ -181,6 +182,14 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 
+/** &count: 레이아웃 장의 항목 수를 바꿔 본다. 모자라면 예시 항목을 되풀이한다 */
+function withCount(s: Slide, n: number): Slide {
+  const spec = LAYOUTS[s.layout].items
+  if (!n || !spec || !s.items.length) return s
+  const k = Math.min(spec.max, Math.max(spec.min, n))
+  return { ...s, items: Array.from({ length: k }, (_, i) => (i < s.items.length ? s.items[i] : { ...s.items[i % s.items.length], id: `${s.items[i % s.items.length].id}-${i}` })) }
+}
+
 /** 편집 보기에서 칸을 편집기처럼 그리려고 (적어도 바뀌지 않는다) */
 const NO_ACTIONS: SlideActions = { setField() {}, setItem() {}, removeItem() {}, updateBlock() {} }
 
@@ -227,7 +236,7 @@ export function Gallery() {
     ...base,
     theme: { ...base.theme, ...look },
     slides: slides.map((s) => ({
-      ...s,
+      ...withCount(s, Number(params.get('count')) || 0),
       options: {
         ...s.options,
         ...(tone ? { tone } : {}),
