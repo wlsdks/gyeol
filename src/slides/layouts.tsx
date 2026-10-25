@@ -377,8 +377,6 @@ function Bars() {
   const items = useItems()
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
-  // 세로 막대에서 보충 설명이 있는 막대만 바닥 줄이 올라가지 않게, 없는 막대에도 그만큼 자리를 둔다
-  const anyMeta = items.some((it) => it.meta.trim())
   // 막대끼리 길이를 견주므로 한 기준으로 ('1.2억', '9,500만')
   const values = seriesIn(
     items.map((it) => it.value),
@@ -412,16 +410,14 @@ function Bars() {
                 <div className="br-label">
                   <IT i={i} k="title" className="br-name" />
                   <IT i={i} k="meta" className="br-meta" />
-                  {mode === 'final' && anyMeta && !it.meta.trim() && (
-                    <span className="br-meta is-pad" aria-hidden="true">
-                      .
-                    </span>
-                  )}
                 </div>
-                <div className="br-track">
-                  <div className="br-fill" />
+                {/* 막대와 숫자. 가로 막대에서는 묶음 없이(contents) 줄의 칸에, 세로 막대에서는 바닥 줄 위의 한 칸에 */}
+                <div className="br-bar">
+                  <div className="br-track">
+                    <div className="br-fill" />
+                  </div>
+                  <IT i={i} k="value" className="br-value" />
                 </div>
-                <IT i={i} k="value" className="br-value" />
                 <ItemTools i={i} />
               </div>
             )
