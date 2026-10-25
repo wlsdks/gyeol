@@ -524,7 +524,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '안 비교',
     description: '두세 가지 안이나 가격을 나란히, 추천안 강조',
     variants: [
-      { id: 'base', name: '카드' },
+      { id: 'base', name: '나란히' },
       { id: 'rows', name: '표' },
     ],
     highlight: { label: '추천 표시', fallback: -1 },
