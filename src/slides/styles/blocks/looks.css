@@ -19,6 +19,16 @@
   padding: var(--bk-py) 52px;
 }
 
+/* 줄이나 칸이 면 아래 끝까지 서는 부품(준비 상황, 강점과 약점, 시장 크기, 안 견주기, 숫자와 흐름, 늘고 준 것, 맨 아래가 달성률
+   상자인 기간별 달성)은 맨 위 소제목의 줄 상자 위쪽(글자 윗선 위의 빈 키)을 잘라 낸다(text-box). 아래는 줄 선이나 칸 끝이 면 여백에
+   바로 닿는데 위는 소제목의 빈 키만큼 더 떨어져, 명조 제목 글꼴에서 위 여백이 아래보다 13px 넓었다(1680×700에서 위 57, 아래 44).
+   끝이 글인 부품(글, 점 목록)은 아래에도 글의 빈 키가 있어 그대로 둔다. 준비 상황과 안 견주기는 소제목이 맨 위 줄(옆에 합계, 등급 표)
+   안에 있어 부품 안 어디서든 찾는다(소제목은 부품마다 하나). 편집할 때는 소제목이 칸(.ed, 격자) 안의 글상자에 들어 있어 그 글상자도 자른다 */
+:is(.bk-look-card, .bk-look-bold) > .bk-in > :is(.bk-ck, .bk-sw, .bk-mk, .bk-ev, .bk-sx, .bk-dv, .bk-tg) .bk-h,
+:is(.bk-look-card, .bk-look-bold) > .bk-in > :is(.bk-ck, .bk-sw, .bk-mk, .bk-ev, .bk-sx, .bk-dv, .bk-tg) .bk-h > :is(.ed-input, .ed-hint) {
+  text-box: trim-start cap alphabetic;
+}
+
 /* 면 위에서는 면의 가장자리가 이미 묶음을 보여서, 목록 맨 위의 굵은 줄은 뺀다 (면 바로 안쪽에 줄이 한 번 더 그어져 보인다) */
 :is(.bk-look-card, .bk-look-bold) > .bk-in .pt {
   border-top: 0;
