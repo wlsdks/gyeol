@@ -271,7 +271,10 @@ export function motionEngine(): MotionEngine {
       seq.push(String((digit + 1) % 10))
       strip.textContent = seq.join('\n')
       strip.style.lineHeight = h + 'px'
-      strip.style.translate = `0 ${-stop * h}px`
+      // 멈춘 자리는 translate가 아니라 margin으로 둔다. 글자 높이는 px 소수라서, 소수 translate로 옮긴 글자는 원래 글자와
+      // 다른 자리에 맞춰 그려진다(녹화해 보니 멈춘 숫자가 1px 가까이 아래에 있다가, 움직임이 다 끝나 창을 걷을 때 위로 튀었다).
+      // 움직임은 그 자리에서 아래로 내려간 데서 출발해 0(옮기지 않음)으로 끝난다
+      strip.style.marginTop = -stop * h + 'px'
       const cover = document.createElement('span')
       cover.className = 'mo-od'
       cover.setAttribute('aria-hidden', 'true')
@@ -293,14 +296,14 @@ export function motionEngine(): MotionEngine {
           anims,
           strip,
           [
-            { translate: '0 0', easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' },
-            { translate: `0 ${-(stop + 0.16) * h}px`, offset: 0.74, easing: 'cubic-bezier(0.45, 0, 0.35, 1)' },
-            { translate: `0 ${-stop * h}px` },
+            { translate: `0 ${stop * h}px`, easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' },
+            { translate: `0 ${-0.16 * h}px`, offset: 0.74, easing: 'cubic-bezier(0.45, 0, 0.35, 1)' },
+            { translate: '0 0' },
           ],
           at,
           { easing: 'linear', duration: time },
         )
-      else run(anims, strip, [{ translate: '0 0' }], at, { easing: 'cubic-bezier(0.25, 0.8, 0.15, 1)', duration: time })
+      else run(anims, strip, [{ translate: `0 ${stop * h}px` }], at, { easing: 'cubic-bezier(0.25, 0.8, 0.15, 1)', duration: time })
     })
     restores.push(undo)
     return true
