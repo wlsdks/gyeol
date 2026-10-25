@@ -33,6 +33,11 @@
   grid-column: 1 / -1;
 }
 
+/* 줄이 하나뿐인 장(위에 이어 읽을 것이 없다, 컴포넌트 고르기의 그림): 위에 붙이면 아래가 통째로 비어 가운데에 */
+.bk-area:not(:has(> .bk[data-row='1'])) > .bk > .bk-in > .bk-nt {
+  align-content: safe center;
+}
+
 .bk.is-shared > .bk-in > .bk-nt {
   --bk-lifts: 1;
   box-sizing: border-box;
