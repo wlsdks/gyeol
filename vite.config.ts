@@ -43,6 +43,9 @@ function aiShare(): Plugin {
 export default defineConfig({
   plugins: [react(), cspMeta(), aiShare()],
   base: './',
-  // 에이전트가 따로 쓰는 작업 폴더(.claude/worktrees)의 시험 사본은 돌리지 않는다
+  // 에이전트가 따로 쓰는 작업 폴더(.claude/worktrees)는 지켜보지 않는다. 그 안의 index.html, tsconfig.json이 생기거나 바뀌면
+  // 이 개발 서버가 열린 화면을 모두 새로 고쳐서, 갤러리에서 부품 높이를 재던 것이 중간에 끊겼다
+  server: { watch: { ignored: ['**/.claude/**'] } },
+  // 그 폴더의 시험 사본도 돌리지 않는다
   test: { exclude: ['**/node_modules/**', '**/.git/**', '.claude/**'] },
 })
