@@ -27,18 +27,6 @@
  * 앱과 내보낸 HTML(export/viewer.ts가 blockFitter의 소스를 그대로 넣는다)이 같이 쓴다. 그래서 안에서 바깥의 이름을 쓰지 않는다.
  * 부품의 잘리지 않는 높이를 잴 때(screens/measureBlocks.ts)도 이것으로 맞추고, 글 줄의 자리도 이것으로 본다.
  */
-/**
- * 안쪽 상자(.bk-in)의 글 없는 그림: 맨 바깥 svg와 읽지 않는 그림 상자(aria-hidden). 크기가 없는 것은 뺀다.
- * 글 줄만 보면 카드 아래 여백 밖으로 밀려난 차트의 점과 선을 놓쳐서, 맞추기(over)와 잘리지 않는 높이 재기가 같이 본다
- */
-export function blockFigures(inner: HTMLElement): Element[] {
-  return Array.from(inner.querySelectorAll(':scope svg, :scope [aria-hidden="true"]')).filter((el) => {
-    if (el.parentElement?.closest('svg')) return false
-    const r = el.getBoundingClientRect()
-    return r.width > 0 && r.height > 0
-  })
-}
-
 export function blockFitter() {
   // 글자 크기 비율(1.2)의 단계: 한 단계, 두 단계. 칸 크기로 정한 단계(--bk-w, --bk-h)와 같은 값이라 줄여도 크기가 단계 위에 있다
   const steps = [0.84, 0.7]
@@ -51,6 +39,19 @@ export function blockFitter() {
   let inks: Record<string, [number, number]> = {}
   // 움직임이 끝나기를 기다리는 본문 상자와 판 (같은 것을 여러 번 기다리지 않게)
   const waiting = new WeakSet<Element>()
+
+  /**
+   * 안쪽 상자(.bk-in)의 글 없는 그림: 맨 바깥 svg와 읽지 않는 그림 상자(aria-hidden). 크기가 없는 것은 뺀다.
+   * 글 줄만 보면 카드 아래 여백 밖으로 밀려난 차트의 점과 선을 놓쳐서, 맞추기(over)와 잘리지 않는 높이 재기가 같이 본다.
+   * 이 함수 밖에 두면 내보낸 HTML에서는 없는 이름이라 맞추기가 처음부터 멈췄다(뷰어는 blockFitter의 소스만 넣는다)
+   */
+  function figures(inner: HTMLElement): Element[] {
+    return Array.from(inner.querySelectorAll(':scope svg, :scope [aria-hidden="true"]')).filter((el) => {
+      if (el.parentElement?.closest('svg')) return false
+      const r = el.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    })
+  }
 
   /** 이것을 움직이는 중인 요소(그 장, 또는 그 안의 부품 하나). 없으면 null */
   function moving(el: Element): Element | null {
@@ -166,7 +167,7 @@ export function blockFitter() {
     for (const q of ls) if (q.t < top || q.b > bottom || q.l < left || q.r > right) return true
     // 글이 없는 그림도 같은 자리 안에: 글자를 키우면 글 아래의 차트가 밀려 내려가 점이 카드 아래 여백 밖으로 나갔는데,
     // 글만 보면 넘치지 않은 것으로 알고 글자를 그대로 두거나 더 키웠다(한 개의 흐름, 몇 중 몇)
-    for (const f of blockFigures(inner)) {
+    for (const f of figures(inner)) {
       const q = f.getBoundingClientRect()
       if (q.top < top || q.bottom > bottom || q.left < left || q.right > right) return true
     }
@@ -552,7 +553,7 @@ export function blockFitter() {
     }
   }
 
-  return { fit, lines, over, labels }
+  return { fit, lines, over, labels, figures }
 }
 
 let fitter: ReturnType<typeof blockFitter> | null = null
@@ -566,3 +567,5 @@ export const blockTextLines = (inner: HTMLElement) => shared().lines(inner)
 export const placeLabels = (scope: ParentNode) => shared().labels(scope)
 /** 칸 안쪽이 넘치거나 글이 겹치는지 (fitBlocks가 글자를 줄이는 기준. 진단용) */
 export const blockOverflows = (inner: HTMLElement) => shared().over(inner)
+/** 칸 안쪽의 글 없는 그림 (맞추기와 잘리지 않는 높이 재기가 같이 본다) */
+export const blockFigures = (inner: HTMLElement) => shared().figures(inner)
