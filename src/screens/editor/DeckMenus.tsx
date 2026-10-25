@@ -12,6 +12,9 @@ import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Toggle }
 /** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
 
+/** 테마 견본 하나의 너비 (메뉴의 고르는 칸을 둘로 나눈 너비, app.css의 .theme-menu) */
+const THEME_THUMB = 226
+
 export function ThemeMenu({ deck }: { deck: Deck }) {
   const setTheme = useDeck((s) => s.setTheme)
   const setAccent = useDeck((s) => s.setAccent)
@@ -46,8 +49,10 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
       )}
     >
       {(close) => (
+        // 이름은 왼쪽, 고르는 것은 오른쪽에 한 줄씩 (오른쪽 칸의 '이 장 설정'과 같은 꼴). 예전에는 줄마다 머리말을 위에 따로 두어
+        // 1280×600에서 메뉴가 보이는 높이(526px)보다 150px쯤 길었고, '발표할 때 움직임'과 '장 넘기기'는 스크롤해야 보였다
         <div className="theme-menu">
-          <p className="menu-h">테마</p>
+          <p className="menu-h is-top">테마</p>
           <div className="theme-grid">
             {THEME_ORDER.map((id) => (
               <button
@@ -57,7 +62,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 aria-pressed={deck.theme.id === id}
                 onClick={() => setTheme(id)}
               >
-                <ScaledSlide width={238}>
+                <ScaledSlide width={THEME_THUMB}>
                   <SlideCanvas deck={{ ...deck, theme: { ...deck.theme, id } }} slide={cover} mode="final" />
                 </ScaledSlide>
                 <span>{THEMES[id].name}</span>
@@ -66,7 +71,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           </div>
           {/* 설명은 늘어놓지 않고 (i)에. 고르는 단추마다의 설명은 마우스를 올리면 보인다 */}
           <p className="menu-h">
-            강조색 <span className="menu-h-v">{comboName(deck.theme)}</span>
+            강조색
             <Info label="강조색 설명" align="start">
               숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 마지막 칸에서 직접 골라요.
             </Info>
@@ -102,6 +107,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} aria-label={custom ? `강조색 직접 고르기, 지금 ${accent}` : '강조색 직접 고르기'} />
               {custom && <CheckIcon />}
             </label>
+            <span className="swatch-name">{comboName(deck.theme)}</span>
           </div>
           <p className="menu-h">글꼴</p>
           {/* 제목과 본문을 맞춰 본 짝 하나를 고른다. 단추 이름을 그 글꼴로 써서 고르기 전에 모양이 보이게 */}
@@ -124,8 +130,29 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <Choice label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>
           <Choice label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
-          <p className="menu-h menu-h-row">
-            발표할 때 움직임
+          <p className="menu-h">발표할 때 움직임</p>
+          <div className="theme-row">
+            <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
+              {MOTIONS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={cx('seg-btn', motion === m.id && 'is-on')}
+                  title={m.description}
+                  aria-pressed={motion === m.id}
+                  onClick={() => {
+                    setMotion(m.id)
+                    // 메뉴가 슬라이드를 가리지 않게 닫고 보여 준다
+                    if (m.id !== 'none') {
+                      close()
+                      window.dispatchEvent(new Event(PREVIEW_MOTION))
+                    }
+                  }}
+                >
+                  {m.name}
+                </button>
+              ))}
+            </div>
             {motion !== 'none' && (
               <button
                 type="button"
@@ -138,27 +165,6 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 지금 장에서 보기
               </button>
             )}
-          </p>
-          <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
-            {MOTIONS.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={cx('seg-btn', motion === m.id && 'is-on')}
-                title={m.description}
-                aria-pressed={motion === m.id}
-                onClick={() => {
-                  setMotion(m.id)
-                  // 메뉴가 슬라이드를 가리지 않게 닫고 보여 준다
-                  if (m.id !== 'none') {
-                    close()
-                    window.dispatchEvent(new Event(PREVIEW_MOTION))
-                  }
-                }}
-              >
-                {m.name}
-              </button>
-            ))}
           </div>
           <p className="menu-h">장 넘기기</p>
           <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />

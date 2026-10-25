@@ -432,21 +432,55 @@ select {
   font-weight: 600;
 }
 
-.menu-h-v {
-  margin-left: 6px;
-  color: var(--ink);
+/* 테마 메뉴: 이름은 왼쪽, 고르는 것은 오른쪽에 한 줄씩. 1280×600에서도 '장 넘기기'까지 스크롤 없이 보이게 (DeckMenus.tsx) */
+.theme-menu {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 14px;
+  /* 테마 견본 둘(THEME_THUMB 226)과 그 사이 */
+  width: calc(72px + 14px + 226px * 2 + 12px);
+  padding: 6px 4px 2px;
 }
 
-/* 머리말 오른쪽 끝에 붙는 할 일 ('지금 장에서 보기') */
-.menu-h-row {
+.theme-menu .menu-h {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  line-height: 1.35;
 }
 
-/* 테마 메뉴는 고르는 줄마다 설명을 늘어놓지 않으니, 줄과 다음 머리말 사이로 묶음을 가른다 */
-.theme-menu .menu-h:not(:first-child) {
-  margin-top: 18px;
+/* 테마 견본 옆의 이름은 견본 위쪽에 맞춘다 */
+.theme-menu .menu-h.is-top {
+  align-self: start;
+  padding-top: 2px;
+}
+
+.theme-menu .seg-full {
+  margin: 0;
+}
+
+/* 이름이 긴 단추('섹션과 쪽 번호', '움직임에 맞춰')는 글만큼 넓게, 나머지가 남는 너비를 나눈다 */
+.theme-menu .seg-full .seg-btn {
+  flex: 1 1 auto;
+  padding: 0 8px;
+}
+
+.theme-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-row > .seg {
+  flex: 1;
+}
+
+.theme-row > .link-btn {
+  flex: none;
+  margin: 0;
+  font-size: 12px;
 }
 
 .link-btn {
@@ -2892,9 +2926,9 @@ select {
 
 /* 테마 고르기 */
 .pop-theme {
-  /* 1280×600 같은 낮은 화면에서도 메뉴 끝까지 닿게 */
+  /* 더 낮은 창에서도 메뉴 끝까지 닿게 */
   max-height: calc(100vh - 72px);
-  padding: 8px 10px 14px;
+  padding: 10px 12px 14px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -2904,10 +2938,8 @@ select {
 .theme-grid {
   display: grid;
   /* 테마가 둘이라 둘로 나눠 메뉴 너비를 채운다 (셋으로 나누면 오른쪽 한 칸이 빈다) */
-  grid-template-columns: repeat(2, 238px);
+  grid-template-columns: repeat(2, 226px);
   gap: 12px;
-  margin: 0 0 8px;
-  padding: 0 10px;
 }
 
 .theme-opt {
@@ -2935,8 +2967,22 @@ select {
 .swatches {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   padding: 0 10px;
+}
+
+.theme-menu .swatches {
+  padding: 0;
+}
+
+/* 고른 강조색의 이름 (견본 줄 끝) */
+.swatch-name {
+  margin-left: 4px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .swatch {
