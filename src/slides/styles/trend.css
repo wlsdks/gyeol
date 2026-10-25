@@ -124,14 +124,6 @@
   translate: clamp(calc(var(--x) * -1cqi), -100%, calc((100 - var(--x)) * 1cqi - 100%)) 0;
 }
 
-/* 그림이 낮으면 골짜기 아래에 숫자를 둘 자리가 없다(아래 시기 이름과 부딪힌다). 다른 점처럼 위에 */
-@container (max-height: 200px) {
-  .tn-pt.is-below .tn-val {
-    top: auto;
-    bottom: 24px;
-  }
-}
-
 .tn-num {
   --fs: 30px;
   display: block;
@@ -151,6 +143,51 @@
 .tn-pt.is-hl.is-below .tn-val {
   top: 40px;
   bottom: auto;
+}
+
+/* 숫자가 목표선에 걸치면 선 위로(골짜기 숫자는 선 아래로) 비켜 선다. 바탕색 둘레(text-shadow)는 글자 둘레만 지워서,
+   목표선이 숫자 한가운데를 지나면 글자 사이로 점선이 그대로 보였다(96, 101처럼 목표 115 아래의 숫자).
+   점에서 목표선까지(--tn-d)가 숫자 자리(점에서 --tn-up 위, 글 높이 1.1em) 둘레 10px 안이면 숫자 아래를 목표선 위 10px에 둔다.
+   조건은 계단 둘의 차로 만든다: (--tn-d − 시작)×1000000을 0과 올릴 만큼 사이로 자르면 시작보다 낮을 때 0, 넘으면 올릴 만큼이다(곱이 작으면 경계 둘레 0.1px 안에서 반쯤만 올라 숫자가 선에 걸쳤다).
+   끝(숫자 자리 위)을 넘으면 같은 계단을 빼서 다시 0. 목표선이 없으면 --ty가 아주 낮아 늘 0이다 */
+.tn-num {
+  --tn-up: 24px;
+  --tn-d: calc((var(--ty, -10000) - var(--y)) * 1cqh);
+  --tn-lift: calc(var(--tn-d) + 10px - var(--tn-up));
+  margin-bottom: calc(
+    clamp(0px, (var(--tn-d) - var(--tn-up) + 10px) * 1000000, var(--tn-lift)) -
+      clamp(0px, (var(--tn-d) - var(--tn-up) - 1.1em - 10px) * 1000000, var(--tn-lift))
+  );
+}
+
+.tn-pt.is-hl .tn-num {
+  --tn-up: 40px;
+}
+
+.tn-pt.is-below .tn-num {
+  --tn-d: calc((var(--y) - var(--ty, 10000)) * 1cqh);
+  margin-top: calc(
+    clamp(0px, (var(--tn-d) - var(--tn-up) + 10px) * 1000000, var(--tn-lift)) -
+      clamp(0px, (var(--tn-d) - var(--tn-up) - 1.1em - 10px) * 1000000, var(--tn-lift))
+  );
+  margin-bottom: 0;
+}
+
+/* 그림이 낮으면 골짜기 아래에 숫자를 둘 자리가 없다(아래 시기 이름과 부딪힌다). 다른 점처럼 위에, 목표선도 위로 비킨다 */
+@container (max-height: 200px) {
+  .tn-pt.is-below .tn-val {
+    top: auto;
+    bottom: 24px;
+  }
+
+  .tn-pt.is-below .tn-num {
+    --tn-d: calc((var(--ty, -10000) - var(--y)) * 1cqh);
+    margin-top: 0;
+    margin-bottom: calc(
+      clamp(0px, (var(--tn-d) - var(--tn-up) + 10px) * 1000000, var(--tn-lift)) -
+        clamp(0px, (var(--tn-d) - var(--tn-up) - 1.1em - 10px) * 1000000, var(--tn-lift))
+    );
+  }
 }
 
 .tn-pt.is-hl .tn-num {

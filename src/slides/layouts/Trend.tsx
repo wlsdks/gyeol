@@ -83,7 +83,8 @@ export function Trend() {
           </div>
         )}
         <div className="tn-plot">
-          <div className="tn-canvas" ref={canvas}>
+          {/* 목표선의 높이(--ty)를 점의 숫자도 알아야 숫자가 목표선에 걸칠 때 선 위로 비켜 선다(trend.css) */}
+          <div className="tn-canvas" ref={canvas} style={target !== null ? { '--ty': y(target).toFixed(2) } : undefined}>
             {floor < 0 && <span className="tn-zero" style={{ '--y': y(0).toFixed(2) }} />}
             {target !== null && (
               <div className="tn-target" style={{ '--y': y(target).toFixed(2) }} />
