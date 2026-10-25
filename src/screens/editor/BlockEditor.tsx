@@ -44,6 +44,7 @@ import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, dialogOpen, isTyping, undoAction, type Toast } from '../ui'
 import { BlockTools } from './BlockTools'
+import { CANVAS, COL_W } from './canvas'
 import { useLinkEditing } from './LinkEditor'
 import { useLook } from './look'
 import { narrowText, noRoomText } from './noRoom'
@@ -108,9 +109,9 @@ function measureArea(el: HTMLElement | null) {
  */
 function guessArea(frame: DOMRect) {
   const head = document.querySelector<HTMLElement>('.ed-canvas .slide .s-head')
-  const k = frame.width / 1920
+  const k = frame.width / CANVAS.w
   const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + FRAME.gap : 0)
-  const size = { w: 1920 - FRAME.x * 2, h: 1080 - top - FRAME.bottom }
+  const size = { w: CANVAS.w - FRAME.x * 2, h: CANVAS.h - top - FRAME.bottom }
   return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
 }
 
@@ -460,9 +461,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const s = slideRef.current
     const spec = BLOCKS[block.type]
     const area = measureArea(areaEl.current)
-    const k = area?.k ?? (document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect().width ?? 960) / 1920
-    const colW = (1680 - 11 * BLOCK_GAP) / 12
-    const canvas = { w: spec.prefSpan * (colW + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
+    const k = area?.k ?? (document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect().width ?? 960) / CANVAS.w
+    const canvas = { w: spec.prefSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
     const ghost = ghostSize(canvas, k)
     const grab = from ? { x: Math.min(1, Math.max(0, (x - from.left) / from.width)), y: Math.min(1, Math.max(0, (y - from.top) / from.height)) } : { x: 0.5, y: 0.5 }
     return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from, over: false }

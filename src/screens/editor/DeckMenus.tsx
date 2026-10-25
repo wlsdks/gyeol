@@ -9,7 +9,12 @@ import { keys } from '../../lib/keys'
 import { presenterAuto, setPresenterAuto } from '../../present/link'
 import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Segmented, Toggle } from '../ui'
 
-/** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
+/**
+ * 지금 장의 움직임을 발표할 때처럼 한 번 보여 달라는 창(window) 이벤트. 내용 없이 신호만 보낸다 (new Event).
+ * 보내는 곳: 테마 메뉴(발표할 때 움직임을 고를 때, '지금 장에서 보기'), 이 장 설정의 움직임 ▶(Inspector).
+ * 받는 곳: 편집 화면의 무대(SlideStage)가 받아 지금 장에 움직임을 한 번 돌린다.
+ * 메뉴와 무대는 화면 나무에서 멀리 떨어져 있어 속성으로 잇지 않고 이벤트로 보낸다. 이 창 안에서만 오가고 저장하지 않는다
+ */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
 
 /** 테마 견본 하나의 너비 (메뉴의 고르는 칸을 둘로 나눈 너비, styles/ui.css의 .theme-menu) */

@@ -10,6 +10,7 @@ import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { soloSlide, type BlockEditing } from './BlockEditor'
+import { COL_W } from './canvas'
 import { dialogOpen, isTyping } from '../ui'
 import { useLook, type Look } from './look'
 import { noRoomText } from './noRoom'
@@ -18,8 +19,6 @@ import { noRoomText } from './noRoom'
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
 
 const THUMB_RATIO = 1.5
-/** 장 본문(1680) 12칸 격자의 한 칸 너비 */
-const COL_W = (1680 - 11 * BLOCK_GAP) / 12
 
 /**
  * 예시 부품 하나를 작은 그림으로. 부품이 잘리지 않을 높이로 그린 뒤 같은 비율의 카드에 맞춰 줄인다.

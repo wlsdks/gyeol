@@ -49,7 +49,7 @@ export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersion
   )
 }
 
-export function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () => void; onOpenVersions?: () => void }) {
+function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () => void; onOpenVersions?: () => void }) {
   const { folder, browser, folderWrite, choose, allow } = useStorage()
   const [busy, setBusy] = useState(false)
   // 위쪽 단추가 '저장하지 못했어요'라고 할 때와 같은 조건 (useSaveSummary)

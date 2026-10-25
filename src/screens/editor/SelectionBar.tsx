@@ -51,13 +51,13 @@ function placeAt(t: number): Place {
   return t < 0.36 ? 'top' : t < 0.64 ? 'middle' : 'bottom'
 }
 
+/** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
+const GROUP_PAD = 10
+
 /**
  * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
  * 슬라이드 위 여백까지 쓴다 (판이나 부품이 장 맨 위에 붙어 있어도 그 글을 가리지 않게)
  */
-/** 제목 덩어리의 테를 덩어리 밖으로 띄우는 너비(화면 px) */
-const GROUP_PAD = 10
-
 function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: TextRect[] = [], slide?: DOMRect | null) {
   const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
   const bw = bar?.offsetWidth ?? 0

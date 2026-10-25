@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { composeAreaH, withImage } from '../../deck/blocks'
@@ -177,7 +177,7 @@ export function SlideStage({
  * 그렇게 눌러 담은 것도('tight') 알린다. 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도
  * 자리가 줄어서, 알리지 않으면 글자와 차트가 조용히 작아진다
  */
-function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): 'over' | 'tight' | null {
+function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): 'over' | 'tight' | null {
   const [overflow, setOverflow] = useState<'over' | 'tight' | null>(null)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
