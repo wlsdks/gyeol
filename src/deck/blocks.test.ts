@@ -176,6 +176,14 @@ describe('자리 정하기', () => {
     expect(t).toEqual({ kind: 'cell', row: 0, index: 2 })
   })
 
+  it('작은 컴포넌트를 잇달아 넣으면 새 줄에 혼자 두지 않고 앞의 것 옆에 둔다', () => {
+    // 깔때기 옆 큰 숫자에 큰 숫자를 하나 더: 8·4에 셋째 칸은 보기 좋은 너비가 아니지만(6·3·3) 숫자끼리 나란히
+    const rows = [row(block('funnel', 'f'), block('number', 'n1'))]
+    expect(autoTarget(rows, block('number', 'n2'))).toEqual({ kind: 'cell', row: 0, index: 2 })
+    // 다른 종류면 그대로 새 줄
+    expect(autoTarget(rows, block('ring', 'r'))).toEqual({ kind: 'row', index: 1 })
+  })
+
   it('끝에도 새 줄에도 들어가지 않으면 읽는 차례에서 가장 뒤의 자리에 넣는다', () => {
     // 핵심 한 줄 아래 숫자와 막대: 셋째 칸도, 셋째 줄도 들어가지 않는 높이에서 강조 상자를 누르면 핵심 한 줄 뒤로
     const rows = [row(block('message', 'm')), row(block('kpi', 'k'), block('bars', 'b'))]

@@ -1763,6 +1763,9 @@ export function autoTarget(rows: BlockRow[], block: Block, areaH?: number): Drop
     const row = placed[last]
     const spans = spansOf(row)
     if (row.blocks.every((b, i) => spans[i] >= BLOCKS[b.type].prefSpan)) return beside
+    // 작은 컴포넌트(큰 숫자, 원 같은)를 잇달아 넣으면 보기 좋은 너비가 아니어도 앞의 것 옆에 둔다.
+    // 새 줄로 내리면 넓은 줄 한쪽에 숫자 하나만 남고, 나란히 견줄 숫자가 위아래로 갈라진다
+    if (BLOCKS[block.type].prefSpan <= 4 && rows[last].blocks.at(-1)?.type === block.type) return beside
   }
   const below: DropTarget = { kind: 'row', index: rows.length }
   if (ok(below)) return below
