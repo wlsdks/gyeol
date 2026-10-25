@@ -484,3 +484,36 @@ export function periodRest(text: string, cols: string[]): string {
   for (const p of pats) t = t.replace(new RegExp(p.source, 'g'), ' ')
   return t.replace(/부터|까지|[\s~∼\-–—]/g, '')
 }
+
+/** 날짜 뒤에 붙어도 되는 것: 요일 하나 ('(금)', '금요일'). 그 밖의 것(기간의 끝 '~ 10일' 같은)이 붙으면 날짜 하나가 아니다 */
+const WEEKDAY = /^\s*(\(\s*[월화수목금토일]\s*\)|[월화수목금토일]요일)?\s*$/
+
+/** 적은 꼴마다: 달까지(그대로 보일 앞부분), 달, 일. 앞부분이 없는 꼴(11/8)은 달을 'n월'로 적는다 */
+const FORMS: { re: RegExp; head: (m: RegExpExecArray) => string }[] = [
+  // 11월 8일, 2026년 11월 8일 (금)
+  { re: /^((?:\d{4}\s*년\s*)?(\d{1,2})\s*월)\s*(\d{1,2})\s*일(.*)$/, head: (m) => m[1] },
+  // 2026. 11. 8., 2026-11-08, 2026/11/8
+  { re: /^(\d{4}\s*([./-])\s*(\d{1,2}))\s*[./-]\s*(\d{1,2})\.?(.*)$/, head: (m) => m[1] + (m[2] === '.' ? '.' : '') },
+  // 11/8, 11. 8. (점은 띄어 쓴 것만: '3.5'는 수일 수 있다)
+  { re: /^((\d{1,2}))(?:\s*\/\s*|\.\s+)(\d{1,2})\.?(.*)$/, head: (m) => `${Number(m[2])}월` },
+]
+
+/**
+ * 날짜를 일의 숫자와 그 위의 달(과 해), 요일로 나눈다. 일의 숫자는 크게, 달은 작게 두려고. 달까지는 사람이 적은 꼴 그대로(2026. 11.).
+ * 날짜 하나로 읽히지 않으면(11월 둘째 주, 연말, 기간) null: 그때는 적은 글을 그대로 쓴다
+ */
+export function dateParts(text: string): { head: string; day: string; weekday: string } | null {
+  const t = text.trim()
+  for (const { re, head } of FORMS) {
+    const m = re.exec(t)
+    if (!m) continue
+    // 꼴마다 달과 일의 자리: 첫 꼴은 2·3, 둘째는 3·4, 셋째는 2·3
+    const [mi, di] = re === FORMS[1].re ? [3, 4] : [2, 3]
+    const month = Number(m[mi])
+    const day = Number(m[di])
+    const rest = WEEKDAY.exec(m[m.length - 1])
+    if (month < 1 || month > 12 || day < 1 || day > 31 || !rest) return null
+    return { head: head(m).trim(), day: String(day), weekday: (rest[1] ?? '').replace(/\s+/g, '') }
+  }
+  return null
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lineAxis, lowerIsBetter, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
+import { amountPair, changeOf, colsOf, dateParts, formatNumber, gradeOf, gradesOf, isNumericCell, lineAxis, lowerIsBetter, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 적은 숫자를 읽는다', () => {
@@ -291,5 +291,26 @@ describe('선 그래프의 세로 축', () => {
   it('값이 하나거나 없어도 0으로 나누지 않는다', () => {
     expect(Number.isFinite(lineAxis([5], 1).y(5))).toBe(true)
     expect(Number.isFinite(lineAxis([], 1).y(0))).toBe(true)
+  })
+})
+
+describe('날짜 나누기', () => {
+  it('적은 꼴의 달까지는 그대로 두고 일의 숫자와 요일을 뗀다', () => {
+    expect(dateParts('11월 8일')).toEqual({ head: '11월', day: '8', weekday: '' })
+    expect(dateParts('2026년 11월 8일 (금)')).toEqual({ head: '2026년 11월', day: '8', weekday: '(금)' })
+    expect(dateParts('11월 22일 금요일')).toEqual({ head: '11월', day: '22', weekday: '금요일' })
+    expect(dateParts('2026. 11. 8.')).toEqual({ head: '2026. 11.', day: '8', weekday: '' })
+    expect(dateParts('2026-11-08')).toEqual({ head: '2026-11', day: '8', weekday: '' })
+    expect(dateParts('11/8')).toEqual({ head: '11월', day: '8', weekday: '' })
+  })
+
+  it('날짜 하나로 읽히지 않으면 나누지 않는다', () => {
+    expect(dateParts('11월 둘째 주')).toBe(null)
+    expect(dateParts('11월 8일 ~ 10일')).toBe(null)
+    expect(dateParts('연말')).toBe(null)
+    expect(dateParts('13월 2일')).toBe(null)
+    expect(dateParts('11월 32일')).toBe(null)
+    expect(dateParts('3.5')).toBe(null)
+    expect(dateParts('')).toBe(null)
   })
 })

@@ -903,4 +903,17 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       items: [{ title: '요구 정리' }, { title: '개발' }, { title: '시범 운영' }, { title: '전 부서 적용' }, { title: '정착 점검' }],
     },
   },
+  date: {
+    name: '날짜',
+    description: '정해진 날 하나와 그날 하는 일 (마감, 회의, 시작일)',
+    motion: '날짜가 올라오고 하는 일이 뒤따라요',
+    fields: [
+      { key: 'date', label: '날짜', hint: '11월 8일' },
+      { key: 'what', label: '하는 일', hint: '그날 하는 일 (예: 확대 여부 결정 회의)' },
+      { key: 'note', label: '덧붙임', hint: '덧붙임 (예: 남은 기간 2주)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { date: '11월 8일 (금)', what: '연말 행사 장소 확정', note: '총무팀 · 남은 기간 2주' } },
+  },
 }

@@ -1699,6 +1699,14 @@ export function motionEngine(): MotionEngine {
           $('.bk-stp-t').forEach((t, i) => fade(t, 160 + (i / last) * span * 0.75, 400))
           break
         }
+        case 'date':
+          // 일의 숫자가 먼저 올라오고(이 컴포넌트의 답) 달이 옆에 흐려지듯, 그날 하는 일이 뒤따른다.
+          // 숫자는 굴리지 않는다: 날짜는 세는 수가 아니라서 0부터 굴리면 다른 날을 거쳐 가는 것처럼 보인다
+          rise(one('.bk-dt-day') ?? one('.bk-dt-txt'), 60, L.y * 0.5)
+          fade(one('.bk-dt-mo'), 160, 500)
+          rise(one('.bk-dt-w'), 220, L.y * 0.4)
+          fade(one('.bk-dt-n'), 400, 500)
+          break
         default:
           rise(cell, 0)
       }
