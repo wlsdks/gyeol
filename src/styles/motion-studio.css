@@ -408,6 +408,15 @@
   padding: 0 10px 0 6px;
 }
 
+/* 컴포넌트 줄의 이름은 잡고 끌어 차례를 바꾼다 (눌렀다 떼면 고르기) */
+.ms-tl-row:not(.is-fixed) :is(.ms-lane-l, .ms-lane-btn) {
+  cursor: grab;
+}
+
+.ms-tl-row.is-dragging :is(.ms-lane-l, .ms-lane-btn) {
+  cursor: grabbing;
+}
+
 .ms-tl-row.is-fixed .ms-lane-l {
   padding-left: 24px;
   color: var(--ink-3);
@@ -422,8 +431,8 @@
   width: 18px;
   height: 24px;
   color: var(--ink-3);
-  cursor: grab;
-  opacity: 0;
+  /* 가만히 있을 때도 옅게: 끌 수 있는 줄인 줄 알게 */
+  opacity: 0.35;
   transition: opacity 0.12s;
 }
 

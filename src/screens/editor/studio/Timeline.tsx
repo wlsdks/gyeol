@@ -237,8 +237,10 @@ function SortRow({
       onPointerEnter={() => onHot(lane.block!)}
       onPointerLeave={() => onHot(null)}
     >
-      <span className="ms-lane-l">
-        <span className="ms-grip" aria-hidden="true" {...listeners}>
+      {/* 줄 이름 전체를 잡고 끈다: 손잡이만 잡게 했더니 18px짜리라 잡기 어려웠고, 이름을 끌어도 아무 일이 없었다.
+          4px 넘게 움직여야 끌기라서 눌렀다 떼면 예전처럼 고르기다 */}
+      <span className="ms-lane-l" {...listeners}>
+        <span className="ms-grip" aria-hidden="true">
           <GripIcon />
         </span>
         <button
