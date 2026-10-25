@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { blockCount, blockPrefH, BLOCK_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
@@ -159,6 +159,11 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
           null
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   const showLinks = !group || group === LINK_GROUP.name
+  const chips: { id: string | null; name: string; title?: string }[] = [
+    { id: null, name: '전체' },
+    ...BLOCK_GROUPS.map((g) => ({ id: g.name, name: g.short, title: `${g.name}: ${g.description}` })),
+    { id: LINK_GROUP.name, name: LINK_GROUP.short, title: `${LINK_GROUP.name}: ${LINK_GROUP.description}` },
+  ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.rows ?? []).length > 0
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
@@ -192,34 +197,25 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
 
       {mine && <SavedParts deck={deck} slide={slide} blocks={blocks} toast={toast} />}
 
-      {/* 묶음은 같은 폭의 글자 칩 한 줄. 긴 이름과 설명은 목록의 묶음 제목에 */}
+      {/* 묶음은 글자 칩. 한 줄에 다 들지 않아 두 줄로 반씩 나누고, 줄마다 칩이 너비를 똑같이 나눠 끝까지 채운다
+          (넘친 칩 하나가 아랫줄에 홀로 남지 않게). 긴 이름과 설명은 목록의 묶음 제목에 */}
       {!mine && (
         <>
           <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
-            <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
-              전체
-            </button>
-            {BLOCK_GROUPS.map((g) => (
-              <button
-                key={g.name}
-                type="button"
-                className={cx('lib-tab', group === g.name && 'is-on')}
-                aria-pressed={group === g.name}
-                title={`${g.name}: ${g.description}`}
-                onClick={() => setGroup(g.name)}
-              >
-                {g.short}
-              </button>
+            {chips.map((c, i) => (
+              <Fragment key={c.id ?? '전체'}>
+                {i === Math.ceil(chips.length / 2) && <span className="lib-tabs-br" aria-hidden="true" />}
+                <button
+                  type="button"
+                  className={cx('lib-tab', group === c.id && 'is-on')}
+                  aria-pressed={group === c.id}
+                  title={c.title}
+                  onClick={() => setGroup(c.id)}
+                >
+                  {c.name}
+                </button>
+              </Fragment>
             ))}
-            <button
-              type="button"
-              className={cx('lib-tab', group === LINK_GROUP.name && 'is-on')}
-              aria-pressed={group === LINK_GROUP.name}
-              title={`${LINK_GROUP.name}: ${LINK_GROUP.description}`}
-              onClick={() => setGroup(LINK_GROUP.name)}
-            >
-              {LINK_GROUP.short}
-            </button>
           </div>
 
           <div className="lib-list">
