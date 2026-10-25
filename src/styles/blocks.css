@@ -483,6 +483,65 @@ body.is-block-resizing * {
   background: #b3b9c3;
 }
 
+/* 가만히 있을 때는 움직임마다 그 움직임의 한 순간을 그려 둔다: 모두 같은 줄 셋이면 올려 보기 전에는 무엇이 무엇인지
+   알 수 없었다. 올리면(아래 animation) 이 모습을 지우고 처음부터 움직인다 */
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo {
+  --trail: color-mix(in srgb, var(--sel) 24%, transparent);
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-rise i {
+  box-shadow: 0 4px 0 var(--trail);
+  translate: 0 -2px;
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-fade i {
+  opacity: 0.32;
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-wipe {
+  position: relative;
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-wipe i {
+  clip-path: inset(0 40% 0 0);
+}
+
+/* 펼쳐지는 끝 */
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-wipe::after {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: calc(6px + (100% - 12px) * 0.6);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--sel);
+  content: '';
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-slide i {
+  box-shadow: -6px 0 0 var(--trail);
+  translate: 4px 0;
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-pop i {
+  transform-origin: center;
+  scale: 0.7;
+}
+
+/* 다가오기: 크게 있던 것이 제자리로 줄어드는 모습. 바깥에 큰 테두리를 옅게 */
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-zoom {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--trail);
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-flip {
+  transform: perspective(60px) rotateX(38deg);
+  transform-origin: 50% 100%;
+}
+
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-blur i {
+  filter: blur(1.2px);
+}
+
 :is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
   animation: 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
 }
