@@ -50,6 +50,29 @@ describe('버전 비교', () => {
   it('수정 시각만 바뀌면 같은 내용으로 본다', () => {
     const d = deck()
     expect(deckSignature({ ...d, updatedAt: d.updatedAt + 1000 })).toBe(deckSignature(d))
+    expect(deckSignature({ ...d, aiShare: !d.aiShare })).toBe(deckSignature(d))
+  })
+
+  it('발표 전체의 움직임만 바꿔도 다른 내용으로 본다', () => {
+    const d = deck()
+    expect(deckSignature({ ...d, motion: 'lively' })).not.toBe(deckSignature({ ...d, motion: 'calm' }))
+    expect(deckSignature({ ...d, motion: 'lively' })).not.toBe(deckSignature(d))
+  })
+
+  it('예전에 저장한 버전의 서명과 같다 (움직임을 고르지 않은 발표)', () => {
+    // 예전 서명: 제목, 정보, 테마, 장 넷만 넣은 FNV-1a. 이미 저장된 버전과 견주므로 바뀌면 안 된다
+    const old = (d: Deck) => {
+      const text = JSON.stringify([d.title, d.meta, d.theme, d.slides])
+      let h = 2166136261
+      for (let i = 0; i < text.length; i++) {
+        h ^= text.charCodeAt(i)
+        h = Math.imul(h, 16777619)
+      }
+      return `${text.length}:${(h >>> 0).toString(36)}`
+    }
+    const d = deck()
+    delete d.motion
+    expect(deckSignature(d)).toBe(old(d))
   })
 
   it('고친 장, 더한 장, 뺀 장을 찾는다', () => {

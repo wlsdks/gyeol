@@ -69,9 +69,14 @@ export const REASON_LABEL: Record<VersionReason, string> = {
   ai: 'AI 제안을 적용하기 전',
 }
 
-/** 내용이 같은지 보는 짧은 값. 수정 시각처럼 내용이 아닌 것은 뺀다. */
+/**
+ * 내용이 같은지 보는 짧은 값. id, 만든·고친 시각, 저장 형식 번호, AI 공유처럼 내용이 아닌 것만 빼고 모두 넣는다.
+ * 예전에는 제목, 정보, 테마, 장 넷만 넣어서 발표 전체의 움직임만 바꾸면 같은 내용으로 보고, 파일을 열거나 폴더와 맞출 때
+ * 버전 없이 덮어썼다. 넷 밖의 값은 있을 때만 넣어, 예전에 저장한 버전의 서명과 그대로 맞는다
+ */
 export function deckSignature(deck: Deck): string {
-  return hash(JSON.stringify([deck.title, deck.meta, deck.theme, deck.slides]))
+  const { id, version, createdAt, updatedAt, aiShare, title, meta, theme, slides, ...rest } = deck
+  return hash(JSON.stringify(Object.keys(rest).length ? [title, meta, theme, slides, rest] : [title, meta, theme, slides]))
 }
 
 /** 장마다의 비교 값 */
