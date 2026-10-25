@@ -1,7 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LAYOUTS, PANE_UNIT, panesOf, placeOf, sideOf, variantOf } from '../deck/layouts'
 import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
-import type { PageInfo } from '../deck/fields'
+import { presentable, type PageInfo } from '../deck/fields'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { Compose } from './blocks'
@@ -51,7 +51,7 @@ export function useStableSections(info: PageInfo): readonly string[] {
 /** 1920×1080 슬라이드 한 장. 크기 맞춤은 바깥 프레임이 한다. */
 export const SlideCanvas = memo(function SlideCanvas({
   deck,
-  slide,
+  slide: given,
   mode,
   actions,
   page = 0,
@@ -60,6 +60,8 @@ export const SlideCanvas = memo(function SlideCanvas({
   sectionIndex = -1,
   solo,
 }: SlideCanvasProps) {
+  // 발표 모습(발표, 미리 보기, 내보낸 파일)에서는 하나도 채우지 않은 항목을 그리지 않는다
+  const slide = useMemo(() => (mode === 'final' ? presentable(given) : given), [given, mode])
   const View = slide.layout === 'compose' ? Compose : LAYOUT_VIEWS[slide.layout]
   const spec = LAYOUTS[slide.layout]
   const bold = BOLD_LAYOUTS.includes(slide.layout)

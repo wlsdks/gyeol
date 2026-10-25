@@ -6,7 +6,7 @@
 
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { behind, BLOCK_LINKS, BLOCKS, blockFieldPrefix, boardInfo, byReading, foldableFields, blockItems, blockSlide, effectOf, fromOf, guttersOf, isAlone, knownBlocks, linkAt, playOrder, sameLinkTarget, shownBlocks, shownLook, speedOf, variantOfBlock, whenOf, withLink, type Gutter, type LinkTarget } from '../deck/blocks'
-import { followIndex, moveIn } from '../deck/fields'
+import { followIndex, moveIn, presentable } from '../deck/fields'
 import type { Block, BlockLink, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
@@ -118,7 +118,11 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
   }, [block.type, block.id, opened])
   const spec = BLOCKS[block.type]
   const outer = ctx.actions
-  const inner = useMemo(() => blockSlide(ctx.slide, block), [ctx.slide, block])
+  // 발표 모습에서는 하나도 채우지 않은 항목을 그리지 않는다(장의 항목과 같은 규칙, SlideCanvas)
+  const inner = useMemo(() => {
+    const own = blockSlide(ctx.slide, block)
+    return ctx.mode === 'final' ? presentable(own, spec.items) : own
+  }, [ctx.slide, ctx.mode, block, spec])
   const actions = useMemo<SlideActions | undefined>(() => {
     const update = outer?.updateBlock
     if (!outer || !update) return undefined
