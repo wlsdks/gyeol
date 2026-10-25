@@ -46,6 +46,8 @@ export function Presenter({ id }: { id: string }) {
   now.current = { index, blank }
 
   useEffect(() => {
+    // 같은 창에서 다른 화면으로 가면(주소를 바꿔서) 원래 이름으로 돌려 둔다
+    const title = document.title
     document.title = '발표자 화면'
     const onMessage = (m: PresentMessage) => {
       if (m.type === 'deck') {
@@ -67,6 +69,7 @@ export function Presenter({ id }: { id: string }) {
     return () => {
       link.current = null
       l.close()
+      document.title = title
     }
   }, [id])
 
