@@ -105,3 +105,7 @@ npm run pack       # 라이선스 확인 후 윈도우용, 맥용 zip 만들기
 ```
 
 설계와 앞으로 할 일은 [docs/DESIGN.md](docs/DESIGN.md), 코드의 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), AI 에이전트가 이 저장소에서 지킬 규칙은 [AGENTS.md](AGENTS.md)에 있습니다.
+
+## 라이선스
+
+[MIT](LICENSE). 회사에서 고쳐 쓰고 다시 나눠도 됩니다. 저작권 표시만 남겨 주세요. 함께 쓰는 패키지와 글꼴의 라이선스는 [docs/OPEN-SOURCE.md](docs/OPEN-SOURCE.md)에 있습니다.
