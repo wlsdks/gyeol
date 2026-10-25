@@ -156,9 +156,9 @@
    좁을 때처럼 쌓으면 이름과 숫자 사이가 통째로 비고, 막대만 칸 너비로 길게 늘어난다 */
 @container bk (min-width: 1000px) {
   .bk-mt {
-    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr) auto;
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: var(--bk-gap);
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-mt-l {

@@ -818,6 +818,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 12,
+    small: true,
     sample: { fields: { text: '지금 방식', note: '구매 요청에서 물품을 받기까지' } },
   },
   stat: {
@@ -832,6 +833,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: { fields: { label: '문의 평균 처리 시간', value: '2.4일', change: '1.1일 줄었어요', note: '9월 한 달, 고객 지원팀' } },
   },
   meter: {
@@ -847,6 +849,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: { fields: { label: '올해 교육 예산 집행', value: '3.6억 원', of: '5억 원', target: '4억 원' } },
   },
   range: {
@@ -863,6 +866,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: { fields: { label: '서버실 적정 온도', low: '18℃', high: '24℃', mark: '26℃', markName: '지난주 최고', note: '장비 제조사 권장' } },
   },
   status: {
@@ -881,6 +885,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: { variant: 'doing', fields: { what: '신입 교육 자료 새로 쓰기', meta: '11월 둘째 주까지 · 인사팀' } },
   },
   steps: {
@@ -898,6 +903,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     },
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: {
       fields: { label: '새 근태 시스템 도입' },
       items: [{ title: '요구 정리' }, { title: '개발' }, { title: '시범 운영' }, { title: '전 부서 적용' }, { title: '정착 점검' }],
@@ -914,6 +920,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 4,
+    small: true,
     sample: { fields: { date: '11월 8일 (금)', what: '연말 행사 장소 확정', note: '총무팀 · 남은 기간 2주' } },
   },
   note: {
@@ -926,6 +933,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 3,
     prefSpan: 12,
+    small: true,
     sample: { fields: { kind: '기준', text: '9월 말 인사 시스템 집계예요. 파견 인력은 빼고 셌어요.' } },
   },
 }

@@ -240,10 +240,10 @@
 @container bk (min-width: 1000px) {
   .bk-stp {
     display: grid;
-    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
     align-items: center;
     align-content: center;
-    column-gap: var(--bk-gap);
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-stp-list {

@@ -153,8 +153,8 @@
    좁을 때처럼 쌓으면 이름이 그림 위 왼쪽에 홀로 떠 있고 띠만 길게 늘어난다 */
 @container bk (min-width: 1000px) {
   .bk-rn {
-    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
-    column-gap: var(--bk-gap);
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-rn-l {
