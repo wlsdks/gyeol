@@ -5,10 +5,10 @@ import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { BLOCK_EFFECTS, BLOCK_LINKS, BLOCK_LOOKS, BLOCKS, slideName } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
-import { MOTIONS, THEMES, TONES } from '../../deck/themes'
+import { MOTIONS, THEMES, TONES, TRANSITIONS } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
@@ -374,6 +374,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.contain !== undefined) parts.push(op.contain ? '이미지 전체 보이기' : '이미지로 채우기')
       if (op.tone) parts.push(`바탕: ${TONES.find((t) => t.id === op.tone)?.name}`)
       if (op.motion !== undefined) parts.push(op.motion === null ? '움직임: 발표 전체 설정대로' : `움직임: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
+      if (op.transition !== undefined)
+        parts.push(op.transition === null || op.transition === 'auto' ? '장 넘기기: 발표 전체 설정대로' : `장 넘기기: ${TRANSITIONS.find((t) => t.id === op.transition)?.name}`)
       return { text: `${name(op.slide)} 모양 설정`, detail: parts.join(', ') }
     }
     case 'set_theme': {
@@ -400,6 +402,9 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.variant) parts.push(`모양: ${(b && BLOCKS[b.type].variants?.find((v) => v.id === op.variant)?.name) ?? op.variant}`)
       if (op.look) parts.push(`바탕: ${BLOCK_LOOKS.find((l) => l.id === op.look)?.name}`)
       if (op.effect) parts.push(`움직임: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)
+      if (op.when) parts.push(`나오는 때: ${BLOCK_WHENS.find((w) => w.id === op.when)?.name}`)
+      if (op.from) parts.push(`들어오는 쪽: ${BLOCK_FROMS.find((f) => f.id === op.from)?.name}`)
+      if (op.speed) parts.push(`빠르기: ${BLOCK_SPEEDS.find((x) => x.id === op.speed)?.name}`)
       if (op.count !== undefined) parts.push(`${(b && BLOCKS[b.type].items?.label) ?? '항목'} ${op.count}개`)
       if (op.highlight !== undefined) parts.push(op.highlight < 0 ? '강조 없음' : `${op.highlight + 1}번째를 강조`)
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 모양 바꾸기`, detail: parts.join(', ') }
@@ -411,6 +416,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       const kind = BLOCK_LINKS.find((l) => l.id === op.link)?.name
       return op.link ? { text: `${name(op.slide)}에 이음표 ‘${kind}’ 넣기`, detail: where } : { text: `${name(op.slide)}에서 이음표 빼기`, detail: where }
     }
+    case 'set_order':
+      return { text: `${name(op.slide)}의 컴포넌트 나오는 차례 바꾸기`, detail: op.order.length ? op.order.map(blockName).join(' → ') : '놓인 차례대로' }
     case 'set_row_grow':
       return { text: `${name(op.slide)}의 줄 높이 바꾸기`, detail: op.grow.length ? `위에서부터 ${op.grow.join(' : ')}로` : '줄 높이를 똑같이' }
     case 'set_hint': {

@@ -33,7 +33,7 @@ import {
   type ShareSubdir,
 } from '../src/ai/protocol'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
-import { BLOCK_EFFECT_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, GROW_MAX, GROW_MIN, MAX_ROWS } from '../src/deck/blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, GROW_MAX, GROW_MIN, MAX_BLOCKS, MAX_ROWS } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
@@ -62,7 +62,7 @@ const PROTOCOL_WORDS = [
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'pane', 'contain', 'place', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
   // 부품 장
-  'blocks', 'span', 'look', 'effect', 'rowGrow', 'link', 'rowLinks',
+  'blocks', 'span', 'look', 'effect', 'when', 'speed', 'from', 'order', 'rowGrow', 'link', 'rowLinks',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
   'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash',
@@ -150,6 +150,7 @@ const TOOLS = [
     description:
       '발표 하나의 모양: 장 순서, 장마다 레이아웃과 역할, 숨김 여부, 칸마다 비었는지(empty)/채웠는지(filled)/길어서 넘칠 수 있는지(long), 항목 수, 옵션, 테마. ' +
       '부품 장(layout compose)은 부품을 줄과 칸에 놓아 꾸민 장으로, blocks에 줄마다 부품의 id(b로 시작), 종류, 너비(span, 12 기준), 모양, 바탕, 움직임, 칸 상태가 나온다. ' +
+        '부품의 when/speed/from은 기본값이 아닐 때만 나오고, 장의 options.order는 부품이 나오는 차례를 정했을 때만 나온다. ' +
       '사람이 적은 글은 이 서버에 없다. 글의 내용을 추측하거나 사용자에게 붙여 달라고 하지 말고 모양만으로 판단한다.',
     inputSchema: {
       type: 'object',
@@ -172,7 +173,7 @@ const TOOLS = [
         'layout을 compose로 하면 같은 내용의 부품 장이 되고(표지, 섹션 장은 안 됨), 부품 장은 그 레이아웃의 부품 하나뿐일 때만 다른 레이아웃으로 되돌릴 수 있다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
-      '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?: 옆 판을 반대쪽에, pane?: 옆 판 너비(layouts[].panes.sides 중 하나, null은 기본; 둘 다 panes가 있는 레이아웃의 panes.variants 모양에서만), contain?: 이미지와 설명의 이미지를 자르지 않기, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨), place?: 제목 덩어리의 자리(카탈로그 places, null은 기본; layouts[].place가 있는 레이아웃만)}',
+      '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?: 옆 판을 반대쪽에, pane?: 옆 판 너비(layouts[].panes.sides 중 하나, null은 기본; 둘 다 panes가 있는 레이아웃의 panes.variants 모양에서만), contain?: 이미지와 설명의 이미지를 자르지 않기, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨), place?: 제목 덩어리의 자리(카탈로그 places, null은 기본; layouts[].place가 있는 레이아웃만), transition?: 이 장으로 넘어올 때(카탈로그 transitions, null은 발표 전체 설정대로; morph는 앞 장과 같은 제목이나 부품이 새 자리로 옮겨 간다)}',
       '- set_theme {theme?: 테마 id, accent?: "#rrggbb"(카탈로그 accents의 강조색에서 고르기) 또는 null(테마 기본색), motion?: 발표할 때 움직임(카탈로그 motions), font?: 제목 글꼴(카탈로그 fonts, null은 테마 글꼴), size?: 글자 크기(textSizes), footer?: 아래 표시(footers), transition?: 장 넘기기(transitions)}',
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
@@ -183,7 +184,9 @@ const TOOLS = [
       '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: row(그 차례에 새 줄, 0이 맨 위) 또는 beside(그 부품의 줄에)와 side(before|after, 기본 after). 자리를 빼면 알아서 놓는다.',
       '- remove_block {slide, block} 빈 부품만 뺀다. 내용이 있으면 has_content.',
       '- move_block {slide, block, 자리} 부품을 옮긴다. 글은 부품과 함께 간다. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다.',
-      '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
+      '- set_block {slide, block, variant?: 카탈로그 blocks[].variants, look?: blockLooks, effect?: blockEffects, when?: 언제 나오는지(blockWhens), speed?: blockSpeeds, from?: 들어오는 쪽(blockFroms; effect가 rise, slide, wipe일 때만), count?: 항목 수(줄일 때는 끝의 빈 항목만), highlight?: 강조할 항목(blocks[].highlight가 있는 부품만, -1은 없음)}',
+      '- set_order {slide, order} 부품 장의 부품이 나오는 차례. 먼저 나올 부품의 id부터 적고, 빠진 부품은 그 뒤에 놓인 차례대로 나온다. 빈 배열이면 놓인 차례(위에서 아래, 왼쪽에서 오른쪽)로. ' +
+        'when이 click인 부품은 발표하는 사람이 누를 때 나오니, 짚어 가며 말할 부품에만 쓴다. 모든 부품을 click으로 하면 발표가 느려진다.',
       '- set_spans {slide, block, spans} 그 부품이 있는 줄의 칸 너비. blockRules.spans에서 그 줄의 부품 수에 맞는 것을 고른다.',
       '- set_row_grow {slide, grow} 부품 장의 줄 높이 비중(1~100의 정수, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다. 지금 비중은 모양의 rowGrow(없으면 똑같이). 비중대로면 잘리는 줄은 잘리지 않을 높이로 묶인다.',
       '- set_link {slide, block, side, link} 이음표(카탈로그 blockLinks)를 부품 사이에 끼운다. side가 right면 그 부품과 같은 줄의 오른쪽 부품 사이, below면 그 부품의 줄과 아래 줄 사이. link가 null이면 뺀다. 지금 이음표는 모양의 blocks[][].link와 rowLinks. ' +
@@ -222,7 +225,7 @@ const TOOLS = [
               font: { anyOf: [{ type: 'string', enum: FONTS.map((m) => m.id) }, { type: 'null' }] },
               size: { type: 'string', enum: TEXT_SIZES.map((m) => m.id) },
               footer: { type: 'string', enum: FOOTERS.map((m) => m.id) },
-              transition: { type: 'string', enum: TRANSITIONS.map((m) => m.id) },
+              transition: { anyOf: [{ type: 'string', enum: TRANSITIONS.map((m) => m.id) }, { type: 'null' }] },
               field: { type: 'string' },
               item: { type: 'integer', minimum: 0, maximum: MAX_ITEMS - 1 },
               text: { type: 'string' },
@@ -230,6 +233,10 @@ const TOOLS = [
               type: { type: 'string', enum: BLOCK_TYPES },
               look: { type: 'string', enum: BLOCK_LOOK_IDS },
               effect: { type: 'string', enum: BLOCK_EFFECT_IDS },
+              when: { type: 'string', enum: BLOCK_WHEN_IDS },
+              speed: { type: 'string', enum: BLOCK_SPEED_IDS },
+              from: { type: 'string', enum: BLOCK_FROM_IDS },
+              order: { type: 'array', maxItems: MAX_BLOCKS, items: blockRefSchema },
               row: { type: 'integer', minimum: 0, maximum: 3 },
               beside: blockRefSchema,
               side: { type: 'string', enum: ['before', 'after', 'right', 'below'] },

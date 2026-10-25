@@ -390,6 +390,46 @@ describe('부품 장', () => {
     expect(next.slides[1].rows!.flatMap((r) => r.blocks)).toHaveLength(2)
   })
 
+  it('부품이 나오는 때, 빠르기, 들어오는 쪽, 차례와 장 넘기기를 정해진 값으로만 바꾼다. 글은 그대로', () => {
+    const two = applyOps(composed, [{ op: 'add_block', slide: cshape().id, type: 'callout', row: 1 }]).deck
+    const sh = toShape(two).slides[at]
+    const [first, second] = sh.blocks!.flat().map((b) => b.id!)
+    const { deck: next, results } = applyOps(two, [
+      { op: 'set_block', slide: sh.id, block: second, when: 'click', speed: 'slow', effect: 'slide', from: 'left' },
+      { op: 'set_block', slide: sh.id, block: first, effect: 'fade', from: 'left' },
+      { op: 'set_block', slide: sh.id, block: second, when: 'click' },
+      { op: 'set_order', slide: sh.id, order: [second] },
+      { op: 'set_order', slide: sh.id, order: ['b00000000'] },
+      { op: 'set_options', slide: sh.id, transition: 'morph' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'not_for_layout', 'no_change', 'applied', 'no_block', 'applied'])
+    const ns = toShape(next).slides[at]
+    expect(checkShape(toShape(next))).toBe(true)
+    const moved = ns.blocks!.flat().find((b) => b.id === second)!
+    expect([moved.when, moved.speed, moved.from, moved.effect]).toEqual(['click', 'slow', 'left', 'slide'])
+    // 차례는 해시 id로만 나간다 (원래 id는 모양 파일에 없다)
+    expect(ns.options.order).toEqual([second])
+    expect(JSON.stringify(toShape(next))).not.toContain(next.slides[at].rows![1].blocks[0].id)
+    expect(ns.options.transition).toBe('morph')
+    expect(allText(next)).toEqual(allText(two))
+    // 되돌리기: 기본값은 지운다
+    const back = applyOps(next, [
+      { op: 'set_block', slide: sh.id, block: second, when: 'after', speed: 'normal' },
+      { op: 'set_order', slide: sh.id, order: [] },
+      { op: 'set_options', slide: sh.id, transition: null },
+    ])
+    expect(back.results.map((r) => r.code)).toEqual(['applied', 'applied', 'applied'])
+    const bs = toShape(back.deck).slides[at]
+    expect(bs.options.order).toBeUndefined()
+    expect(bs.options.transition).toBeUndefined()
+    expect(bs.blocks!.flat().find((b) => b.id === second)!.when).toBeUndefined()
+    // 정해지지 않은 값, 겹친 차례, 부품 장이 아닌 장은 받지 않는다
+    expect(parseOp({ op: 'set_block', slide: sh.id, block: second, when: 'later' })).toBeNull()
+    expect(parseOp({ op: 'set_order', slide: sh.id, order: [second, second] })).toBeNull()
+    expect(parseOp({ op: 'set_options', slide: sh.id, transition: 'spin' })).toBeNull()
+    expect(applyOps(deck, [{ op: 'set_order', slide: sid(0), order: [] }]).results[0]).toEqual({ ok: false, code: 'not_for_layout' })
+  })
+
   it('부품이 있는 장은 글을 비워 둬도 빈 장이 아니라서 지우지 못한다', () => {
     const d = withCompose({})
     expect(slideEmpty(d.slides[d.slides.length - 1])).toBe(false)

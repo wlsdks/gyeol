@@ -4,12 +4,12 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS, effectOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, spansOf, variantOfBlock, weighted } from '../deck/blocks'
+import { allBlocks, blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_FROMS, BLOCK_FROM_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_SPEEDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHENS, BLOCK_WHEN_IDS, BLOCKS, effectOf, fromOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, speedOf, spansOf, variantOfBlock, weighted, whenOf } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
 import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, PLACES, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Audience, Block, BlockEffect, BlockLink, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Audience, Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { hasKey, HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
 import { HIGHLIGHT_MAX, HIGHLIGHT_MIN, OPAQUE_ID, REQUEST_ID, SHAPE_FORMAT } from './protocol'
 
@@ -31,7 +31,8 @@ export interface ShapeSlide {
   hiddenItems: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place }
+  /** transition: 이 장으로 넘어올 때(발표 전체 설정을 따르면 빠진다). order: 부품 장의 부품이 나오는 차례(부품 해시 id, 정했을 때만) */
+  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[] }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 부품 장(layout 'compose')만: 줄마다 부품. 부품의 종류, 너비, 바탕, 움직임과 칸이 찼는지만 */
@@ -50,6 +51,10 @@ export interface ShapeBlock {
   span: number
   look: BlockLook
   effect: BlockEffect
+  /** 아래 셋은 기본값이 아닐 때만: 언제 나오는지(blockWhens), 빠르기(blockSpeeds), 들어오는 쪽(blockFroms, 쪽이 있는 움직임만) */
+  when?: BlockWhen
+  speed?: BlockSpeed
+  from?: BlockFrom
   /** 카탈로그 blocks[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 강조할 항목을 고를 수 있는 부품만 (카탈로그 blocks[].highlight) */
@@ -177,6 +182,10 @@ export function catalog() {
     blockRules: { maxRows: MAX_ROWS, maxInRow: MAX_IN_ROW, maxBlocks: MAX_BLOCKS, spans: [1, 2, 3].map((n) => COMBOS[n]) },
     blockLooks: BLOCK_LOOKS.map((m) => ({ id: m.id, name: m.name })),
     blockEffects: BLOCK_EFFECTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    // 부품이 언제 나오는지(이어서, 함께, 누르면), 빠르기, 들어오는 쪽(올라오기, 밀려오기, 펼치기만)
+    blockWhens: BLOCK_WHENS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    blockSpeeds: BLOCK_SPEEDS.map((m) => ({ id: m.id, name: m.name })),
+    blockFroms: BLOCK_FROMS.map((m) => ({ id: m.id, name: m.name })),
     // 부품 사이에 끼우는 표시: 같은 줄의 두 부품 사이(link) 또는 두 줄 사이(rowLinks)
     blockLinks: BLOCK_LINKS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
   }
@@ -278,6 +287,7 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   }
   if (slide.layout === 'imageText') options.contain = !!o.contain
   if (isOneOf(MOTIONS, o.motion)) options.motion = o.motion
+  if (isOneOf(TRANSITIONS, o.transition) && o.transition !== 'auto') options.transition = o.transition
   if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
   const place = placeOf(slide)
   if (place) options.place = place
@@ -305,6 +315,10 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
       })
     })
     if (weighted(rows)) out.rowGrow = rows.map((r) => r.grow!)
+    // 나오는 차례는 장에 있는 부품의 해시 id로만 (지운 부품의 id가 남아 있으면 뺀다)
+    const byId = new Map(allBlocks(rows).map((b) => [b.id, b]))
+    const order = [...new Set(Array.isArray(o.order) ? o.order : [])].filter((id) => byId.has(id)).map((id) => shapeBlockId(byId.get(id)!))
+    if (order.length) options.order = order
     const rowLinks = rows.slice(0, -1).map((_, i) => linkAt(rows, { dir: 'v', row: i }))
     if (rowLinks.some(Boolean)) out.rowLinks = rowLinks
   }
@@ -323,6 +337,9 @@ function shapeBlock(block: Block, span: number): ShapeBlock {
       })
     : []
   const out: ShapeBlock = { id: shapeBlockId(block), type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
+  if (whenOf(block) !== 'after') out.when = whenOf(block)
+  if (speedOf(block) !== 'normal') out.speed = speedOf(block)
+  if (block.from && fromOf(block)) out.from = fromOf(block)!
   if (spec.layout && LAYOUTS[spec.layout].highlight && isInt(block.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) out.highlight = block.highlight
   return out
 }
@@ -336,7 +353,10 @@ function checkStates(v: unknown, keys: string[]): boolean {
 }
 
 function checkBlock(v: unknown): boolean {
-  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'variant', 'highlight', 'link', 'fields', 'items'])) return false
+  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link', 'fields', 'items'])) return false
+  if (v.when !== undefined && !BLOCK_WHEN_IDS.includes(v.when as BlockWhen)) return false
+  if (v.speed !== undefined && !BLOCK_SPEED_IDS.includes(v.speed as BlockSpeed)) return false
+  if (v.from !== undefined && !BLOCK_FROM_IDS.includes(v.from as BlockFrom)) return false
   if (v.link !== undefined && !isLink(v.link)) return false
   if (v.id !== undefined && !(typeof v.id === 'string' && OPAQUE_ID.test(v.id) && v.id[0] === 'b')) return false
   if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return false
@@ -379,7 +399,12 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'])) return false
+  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'order'])) return false
+  if (o.transition !== undefined && !(isOneOf(TRANSITIONS, o.transition) && o.transition !== 'auto')) return false
+  if (o.order !== undefined) {
+    if (v.layout !== 'compose' || !Array.isArray(o.order) || !o.order.length || o.order.length > MAX_BLOCKS) return false
+    if (!o.order.every((id) => typeof id === 'string' && OPAQUE_ID.test(id) && id[0] === 'b') || new Set(o.order).size !== o.order.length) return false
+  }
   if (o.place !== undefined && !isOneOf(PLACES, o.place)) return false
   if (o.pane !== undefined && !isInt(o.pane, 1, 12)) return false
   if (o.highlight !== undefined && !isInt(o.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return false

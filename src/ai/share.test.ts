@@ -100,6 +100,28 @@ describe('모양만 고르기', () => {
     expect(badBlocks((b) => (b.id = 's12345678'))).toBe(false)
     expect(badBlocks((b) => delete b.id)).toBe(true)
     expect(badBlocks((b) => (b.highlight = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.when = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.speed = SECRET))).toBe(false)
+    expect(badBlocks((b) => (b.from = SECRET))).toBe(false)
+    // 나오는 차례는 부품 장에만, 해시 id로만
+    const badCompose = (fn: (o: Record<string, unknown>) => void) => {
+      const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; options: Record<string, unknown> }[] }
+      fn(copy.slides.find((x) => x.layout === 'compose')!.options)
+      return checkShape(copy)
+    }
+    expect(badCompose((o) => (o.order = [SECRET]))).toBe(false)
+    expect(badCompose((o) => (o.transition = SECRET))).toBe(false)
+    expect(bad((v) => ((v.slides[1].options as Record<string, unknown>).order = ['b12345678']))).toBe(false)
+  })
+
+  it('비밀을 심은 덱의 나오는 차례는 있는 부품의 해시 id만 남는다', () => {
+    const shape = toShape(secretDeck())
+    const compose = shape.slides.find((x) => x.layout === 'compose')!
+    const ids = compose.blocks!.flat().map((b) => b.id)
+    // 심은 차례: 없는 id, 셋째 부품, 첫째 부품 → 셋째, 첫째의 해시 id
+    expect(compose.options.order).toEqual([ids[2], ids[0]])
+    expect(compose.options.transition).toBeUndefined()
+    for (const s of shape.slides.filter((x) => x.layout !== 'compose')) expect(s.options.order).toBeUndefined()
   })
 
   it('Object.prototype의 이름을 레이아웃으로 써도 예외 없이 거른다', () => {
@@ -135,7 +157,7 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect', 'link', 'rowLinks']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'span', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'rowLinks']
     expect(onlyKnownStrings(shape, words)).toBe(true)
     expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)

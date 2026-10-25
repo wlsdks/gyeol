@@ -2,14 +2,17 @@
 //
 // - 칸의 글(fields, items의 글)을 쓰는 동작은 아예 없다.
 // - 지우는 동작은 빈 장, 빈 항목, 빈 부품만. 내용이 있는 장은 '발표에서 빼기'(숨기기)만 된다.
-// - 부품 장도 모양은 바꿀 수 있다: 빈 부품 넣기, 부품 옮기기, 너비, 모양, 바탕, 움직임, 항목 수. 부품 안의 글은 그대로 따라간다.
+// - 부품 장도 모양은 바꿀 수 있다: 빈 부품 넣기, 부품 옮기기, 너비, 모양, 바탕, 움직임(나오는 차례와 때 포함), 항목 수. 부품 안의 글은 그대로 따라간다.
 // - AI가 적을 수 있는 글은 세 가지뿐이고 모두 사람에게 보이는 안내다: 제안 설명, 장 안내, 칸 안내 문구.
 
 import {
   asCompose,
   autoTarget,
   BLOCK_EFFECT_IDS,
+  BLOCK_FROM_IDS,
   BLOCK_LOOK_IDS,
+  BLOCK_SPEED_IDS,
+  BLOCK_WHEN_IDS,
   BLOCK_TYPES,
   BLOCKS,
   blockItems,
@@ -19,6 +22,7 @@ import {
   composeAreaH,
   effectOf,
   fitsHeight,
+  fromOf,
   insertAt,
   isGrow,
   isLink,
@@ -26,17 +30,21 @@ import {
   lookIssue,
   lookOf,
   makeBlock,
+  MAX_BLOCKS,
   MAX_ROWS,
   needH,
+  playOrder,
   removeBlock,
   sameTarget,
   spanChoices,
   spansOf,
+  speedOf,
   targetOf,
   unweighted,
   unwrapCompose,
   variantOfBlock,
   weighted,
+  whenOf,
   whyNot,
   withLink,
   withLook,
@@ -48,7 +56,7 @@ import { relayout, withVisibleCount } from '../deck/edits'
 import { makeSlide } from '../deck/generate'
 import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, panesOf, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockRow, BlockSpeed, BlockType, BlockWhen, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
 import { DECK_ID, HIGHLIGHT_MAX, HIGHLIGHT_MIN, MAX_ITEMS, REQUEST_FORMAT, REQUEST_ID } from './protocol'
 import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
@@ -82,9 +90,20 @@ export type Op =
   | { op: 'set_layout'; slide: SlideRef; layout: LayoutId; variant?: string }
   | { op: 'set_hidden'; slide: SlideRef; hidden: boolean }
   | { op: 'set_item_count'; slide: SlideRef; count: number }
-  /** motion: null이면 발표 전체 설정을 따르게 되돌린다 */
+  /** motion, transition: null이면 발표 전체 설정을 따르게 되돌린다 */
   /** flip, pane: 두 판으로 나뉜 장(LayoutSpec.panes)의 옆 판 자리와 너비. pane이 null이면 기본 너비 */
-  | { op: 'set_options'; slide: SlideRef; highlight?: number; flip?: boolean; pane?: number | null; contain?: boolean; motion?: Motion | null; tone?: Tone; place?: TitlePlace | null }
+  | {
+      op: 'set_options'
+      slide: SlideRef
+      highlight?: number
+      flip?: boolean
+      pane?: number | null
+      contain?: boolean
+      motion?: Motion | null
+      tone?: Tone
+      place?: TitlePlace | null
+      transition?: Transition | null
+    }
   /** font: null이면 테마의 글꼴로 */
   | {
       op: 'set_theme'
@@ -106,7 +125,22 @@ export type Op =
   /** row나 beside 중 하나. row는 옮기는 부품을 뺀 뒤의 줄 차례로 센다 */
   | ({ op: 'move_block'; slide: SlideRef; block: BlockRef } & Place)
   /** count는 항목 수(줄일 때는 끝의 빈 항목만), highlight는 강조할 항목(-1은 없음) */
-  | { op: 'set_block'; slide: SlideRef; block: BlockRef; variant?: string; look?: BlockLook; effect?: BlockEffect; count?: number; highlight?: number }
+  /** when, speed, from: 언제 나오는지, 빠르기, 들어오는 쪽(쪽이 있는 움직임만) */
+  | {
+      op: 'set_block'
+      slide: SlideRef
+      block: BlockRef
+      variant?: string
+      look?: BlockLook
+      effect?: BlockEffect
+      when?: BlockWhen
+      speed?: BlockSpeed
+      from?: BlockFrom
+      count?: number
+      highlight?: number
+    }
+  /** 부품 장의 부품이 나오는 차례. 앞에 둘 부품부터 (빠진 부품은 그 뒤에 놓인 차례대로). 빈 배열이면 놓인 차례로 */
+  | { op: 'set_order'; slide: SlideRef; order: BlockRef[] }
   /** 그 부품이 있는 줄의 칸 너비 (12 기준, 카탈로그 blockRules.spans 중 하나) */
   | { op: 'set_spans'; slide: SlideRef; block: BlockRef; spans: number[] }
   /** 부품 장의 줄 높이 비중 (1~100, 줄 수만큼 위에서부터). 빈 배열이면 똑같이 나눈다 */
@@ -136,6 +170,7 @@ export const OP_NAMES: OpName[] = [
   'set_spans',
   'set_row_grow',
   'set_link',
+  'set_order',
 ]
 
 export interface ChangeRequest {
@@ -225,17 +260,18 @@ export const OP_KEYS = {
   set_layout: ['op', 'slide', 'layout', 'variant'],
   set_hidden: ['op', 'slide', 'hidden'],
   set_item_count: ['op', 'slide', 'count'],
-  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'],
+  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition'],
   set_theme: ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'],
   set_guide: ['op', 'slide', 'text'],
   set_hint: ['op', 'slide', 'block', 'field', 'item', 'text'],
   add_block: ['op', 'slide', 'type', 'variant', 'look', 'effect', 'as', 'row', 'beside', 'side'],
   remove_block: ['op', 'slide', 'block'],
   move_block: ['op', 'slide', 'block', 'row', 'beside', 'side'],
-  set_block: ['op', 'slide', 'block', 'variant', 'look', 'effect', 'count', 'highlight'],
+  set_block: ['op', 'slide', 'block', 'variant', 'look', 'effect', 'when', 'speed', 'from', 'count', 'highlight'],
   set_spans: ['op', 'slide', 'block', 'spans'],
   set_row_grow: ['op', 'slide', 'grow'],
   set_link: ['op', 'slide', 'block', 'side', 'link'],
+  set_order: ['op', 'slide', 'order'],
 } as const satisfies { [K in OpName]: readonly (keyof Extract<Op, { op: K }>)[] }
 
 /** 놓을 자리. 꼴이 틀리면 null, 없으면 빈 자리({}) */
@@ -253,6 +289,14 @@ function parseLooks(v: Record<string, unknown>): boolean {
   if (v.variant !== undefined && !(typeof v.variant === 'string' && /^[a-z][a-zA-Z0-9]{0,23}$/.test(v.variant))) return false
   if (v.look !== undefined && !BLOCK_LOOK_IDS.includes(v.look as BlockLook)) return false
   if (v.effect !== undefined && !BLOCK_EFFECT_IDS.includes(v.effect as BlockEffect)) return false
+  return true
+}
+
+/** 부품이 나오는 때와 빠르기, 들어오는 쪽 */
+function parseTiming(v: Record<string, unknown>): boolean {
+  if (v.when !== undefined && !BLOCK_WHEN_IDS.includes(v.when as BlockWhen)) return false
+  if (v.speed !== undefined && !BLOCK_SPEED_IDS.includes(v.speed as BlockSpeed)) return false
+  if (v.from !== undefined && !BLOCK_FROM_IDS.includes(v.from as BlockFrom)) return false
   return true
 }
 
@@ -290,10 +334,10 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     }
     case 'set_block': {
       const block = blockRef(v.block)
-      if (!onlyKeys(v, OP_KEYS.set_block) || !block || !parseLooks(v)) return null
+      if (!onlyKeys(v, OP_KEYS.set_block) || !block || !parseLooks(v) || !parseTiming(v)) return null
       if (v.count !== undefined && !isInt(v.count, 0, MAX_ITEMS)) return null
       if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return null
-      if ([v.variant, v.look, v.effect, v.count, v.highlight].every((x) => x === undefined)) return null
+      if ([v.variant, v.look, v.effect, v.when, v.speed, v.from, v.count, v.highlight].every((x) => x === undefined)) return null
       return {
         op: 'set_block',
         slide,
@@ -301,6 +345,9 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
         variant: v.variant as string | undefined,
         look: v.look as BlockLook | undefined,
         effect: v.effect as BlockEffect | undefined,
+        when: v.when as BlockWhen | undefined,
+        speed: v.speed as BlockSpeed | undefined,
+        from: v.from as BlockFrom | undefined,
         count: v.count as number | undefined,
         highlight: v.highlight as number | undefined,
       }
@@ -318,6 +365,12 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
       if (v.link !== null && !isLink(v.link)) return null
       return { op: 'set_link', slide, block, side: v.side, link: v.link as BlockLink | null }
     }
+    case 'set_order': {
+      if (!onlyKeys(v, OP_KEYS.set_order) || !Array.isArray(v.order) || v.order.length > MAX_BLOCKS) return null
+      const order = v.order.map(blockRef)
+      if (!order.every((x): x is BlockRef => !!x) || new Set(order).size !== order.length) return null
+      return { op: 'set_order', slide, order }
+    }
   }
   return null
 }
@@ -332,6 +385,7 @@ export function parseOp(v: unknown): Op | null {
     case 'set_block':
     case 'set_spans':
     case 'set_link':
+    case 'set_order':
       return parseBlockOp(v)
     case 'set_row_grow': {
       const slide = refOrNull(v.slide)
@@ -391,7 +445,8 @@ export function parseOp(v: unknown): Op | null {
         if (v.motion !== undefined && v.motion !== null && !isOneOf(MOTIONS, v.motion)) return null
         if (v.tone !== undefined && !isOneOf(TONES, v.tone)) return null
         if (v.place !== undefined && v.place !== null && !isOneOf(PLACES, v.place)) return null
-        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place].every((x) => x === undefined)) return null
+        if (v.transition !== undefined && v.transition !== null && !isOneOf(TRANSITIONS, v.transition)) return null
+        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place, v.transition].every((x) => x === undefined)) return null
         return {
           op: v.op,
           slide,
@@ -402,6 +457,7 @@ export function parseOp(v: unknown): Op | null {
           motion: v.motion as Motion | null | undefined,
           tone: v.tone as Tone | undefined,
           place: v.place as TitlePlace | null | undefined,
+          transition: v.transition as Transition | null | undefined,
         }
       }
       // set_hint
@@ -657,6 +713,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           options.contain = op.contain
         }
         if (op.motion !== undefined) options.motion = op.motion ?? undefined
+        // 장마다의 '움직임에 맞춰'는 발표 전체 설정을 따르는 것과 같다
+        if (op.transition !== undefined) options.transition = op.transition === null || op.transition === 'auto' ? undefined : op.transition
         if (op.tone !== undefined) {
           // 색 면 장(표지, 섹션, 마지막 장)은 바탕을 바꾸지 않는다
           if (BOLD_LAYOUTS.includes(s.layout)) return fail('not_for_layout')
@@ -730,6 +788,13 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           next.look = op.look
         }
         if (op.effect) next.effect = op.effect
+        if (op.when) next.when = op.when === 'after' ? undefined : op.when
+        if (op.speed) next.speed = op.speed === 'normal' ? undefined : op.speed
+        if (op.from) {
+          // 들어오는 쪽은 쪽이 있는 움직임(올라오기, 밀려오기, 펼치기)에만
+          if (!fromOf({ ...next, from: op.from })) return fail('not_for_layout')
+          next.from = op.from
+        }
         if (op.count !== undefined) {
           if (!bs.items) return fail('not_for_layout')
           if (op.count < bs.items.min || op.count > bs.items.max) return fail('out_of_range')
@@ -743,7 +808,14 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           next.highlight = op.highlight
         }
         const same =
-          variantOfBlock(next) === variantOfBlock(b) && lookOf(next) === lookOf(b) && effectOf(next) === effectOf(b) && next.items.length === b.items.length && next.highlight === b.highlight
+          variantOfBlock(next) === variantOfBlock(b) &&
+          lookOf(next) === lookOf(b) &&
+          effectOf(next) === effectOf(b) &&
+          whenOf(next) === whenOf(b) &&
+          speedOf(next) === speedOf(b) &&
+          fromOf(next) === fromOf(b) &&
+          next.items.length === b.items.length &&
+          next.highlight === b.highlight
         if (same) return fail('no_change')
         const rows = s.rows ?? []
         const changed = changeRows(rows, b.id, () => next)
@@ -784,6 +856,17 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         // 줄 사이의 이음표는 위아래 줄이 비켜 나는 만큼 높이가 더 든다
         if (grows(rows, after, areaOf(s))) return fail('no_room')
         put(i, { ...s, rows: after })
+        return done
+      }
+      case 'set_order': {
+        if (s.layout !== 'compose') return fail('not_for_layout')
+        const picked = op.order.map((ref) => findBlock(s, ref))
+        if (!picked.every((b): b is Block => !!b)) return fail('no_block')
+        const order = picked.length ? picked.map((b) => b.id) : undefined
+        const now = playOrder(s).map((b) => b.id)
+        const next = playOrder({ ...s, options: { ...s.options, order } }).map((b) => b.id)
+        if (now.join() === next.join() && !!order === !!s.options.order) return fail('no_change')
+        put(i, { ...s, options: { ...s.options, order } })
         return done
       }
       case 'set_row_grow': {

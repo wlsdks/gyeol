@@ -36,18 +36,18 @@ export function secretDeck(): Deck {
       guide: s('guide'),
       notes: s('notes'),
       hints: { title: s('hint') },
-      options: { ...slide.options, motion: s('motion'), tone: s('tone') } as unknown as Deck['slides'][number]['options'],
+      options: { ...slide.options, motion: s('motion'), tone: s('tone'), transition: s('transition'), order: [s('order')] } as unknown as Deck['slides'][number]['options'],
       fields: Object.fromEntries([...Object.keys(slide.fields), 'title', 'lead', 'body'].map((k) => [k, s(`field-${k}`)])),
       items: slide.items.map((it, j) => ({ ...it, id: s(`item-${j}`), title: s('t'), body: s('b'), value: s('v'), meta: s('m'), image: s('img') })),
     })) as Deck['slides']).concat(composeSecret(s)),
   }
 }
 
-/** 부품 장: 부품의 칸, 항목, 안내, id, 그리고 고르는 값 자리(바탕, 움직임, 모양, 너비)에도 비밀을 심는다 */
+/** 부품 장: 부품의 칸, 항목, 안내, id, 그리고 고르는 값 자리(바탕, 움직임, 나오는 때와 차례, 모양, 너비)에도 비밀을 심는다 */
 function composeSecret(s: (k: string) => string): Deck['slides'] {
   const it = (j: number) => ({ id: s(`bi-${j}`), title: s('bt'), body: s('bb'), value: s('bv'), meta: s('bm'), image: s('bimg') })
   const block = (type: string, j: number) =>
-    ({ id: s(`block-${j}`), type, fields: { text: s('bf'), body: s('bf'), label: s('bf'), [s('key')]: s('bf') }, items: [it(0), it(1)], hints: { body: s('bh') }, look: s('look'), effect: s('fx'), variant: s('va'), highlight: 1 }) as unknown as Block
+    ({ id: s(`block-${j}`), type, fields: { text: s('bf'), body: s('bf'), label: s('bf'), [s('key')]: s('bf') }, items: [it(0), it(1)], hints: { body: s('bh') }, look: s('look'), effect: s('fx'), when: s('when'), speed: s('speed'), from: s('from'), variant: s('va'), highlight: 1 }) as unknown as Block
   return [
     {
       id: s('compose'),
@@ -57,7 +57,8 @@ function composeSecret(s: (k: string) => string): Deck['slides'] {
       guide: s('guide'),
       notes: s('notes'),
       hints: { title: s('hint') },
-      options: {},
+      // 나오는 차례: 없는 id(비밀)는 빠지고, 있는 부품의 원래 id는 해시 id로만 나가야 한다
+      options: { transition: s('transition'), order: [s('order'), s('block-3'), s('block-1')] } as unknown as Deck['slides'][number]['options'],
       fields: { title: s('ct'), lead: s('cl') },
       items: [],
       // 이음표 자리에도: 첫 줄은 맞는 이음표, 둘째 줄과 마지막 부품은 비밀
