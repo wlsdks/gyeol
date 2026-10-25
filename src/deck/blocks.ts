@@ -1558,9 +1558,10 @@ const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.
  * 장의 틀(frame.ts)에서 제목은 글자 윗선을 맞추느라 조금 올라간다
  */
 export function composeAreaH(slide: Slide, look?: { meta?: { method?: string }; theme?: { size?: string } }, edit?: boolean): number {
-  // 편집 화면은 비운 제목과 부제에도 안내를 보여서 그만큼 본문이 낮다
+  // 편집 화면은 비운 제목에도 안내를 보여서 그만큼 본문이 낮다. 비운 부제의 안내는 제목 아래 여백 위에 겹쳐 두어
+  // 자리를 밀지 않는다(edit.css)
   const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
-  const lead = slide.fields.lead?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'lead') : '')
+  const lead = slide.fields.lead?.trim() ?? ''
   const type = look?.meta?.method === 'send' ? HEAD_TYPE.read : HEAD_TYPE.present
   const scale = look?.theme?.size === 'small' ? 0.92 : look?.theme?.size === 'large' ? 1.2 : 1
   const n = [...title].length
