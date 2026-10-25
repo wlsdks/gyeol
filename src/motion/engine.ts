@@ -802,26 +802,24 @@ export function motionEngine(): MotionEngine {
         if (variant === 'cards') {
           items('.pc-step', t, (el, at) => {
             run(anims, el, [{ opacity: 0, translate: `${-L.y}px 0` }], s(at), L.move)
-            run(anims, el, [{ opacity: 0 }], s(at + 200), { easing: OUT, duration: 400 }, '::after')
             rise(el.querySelector('.pc-text'), at + 140, L.y * 0.5)
           }, L.step * 1.4)
           break
         }
-        // 선으로 잇기: 점이 맺히면 다음 점까지 선이 그어지고, 선이 닿을 때 다음 점이 맺힌다
+        // 선으로 잇기: 단계마다 위의 선이 왼쪽부터 그어지고, 선이 끝날 즈음 다음 단계의 선이 이어서. 번호와 이름은 선을 따라 올라온다
         const step = L.step * 1.7
         items('.pc-step', t, (el, at) => {
-          pop(el.querySelector('.pc-n'), at)
-          if (el.classList.contains('is-hl')) pulse(el.querySelector('.pc-n'), at + 300)
-          rise(el.querySelector('.pc-title'), at + 80, L.y * 0.5)
-          rise(el.querySelector('.pc-text'), at + 160, L.y * 0.5)
           run(
             anims,
             el,
             [{ scale: '0 1', transformOrigin: 'left center' }, { scale: '1 1', transformOrigin: 'left center' }],
-            s(at + 90),
-            { easing: 'cubic-bezier(0.45, 0, 0.25, 1)', duration: d(step - 90) },
+            s(at),
+            { easing: 'cubic-bezier(0.45, 0, 0.25, 1)', duration: d(step) },
             '::before',
           )
+          fade(el.querySelector('.pc-n'), at + 60, 600)
+          rise(el.querySelector('.pc-title'), at + 100, L.y * 0.5)
+          rise(el.querySelector('.pc-text'), at + 180, L.y * 0.5)
         }, step)
         break
       }

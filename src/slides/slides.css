@@ -156,7 +156,7 @@
     .sk-h, .sk-title, .sk-body, .sk-target, .sk-value, .sk-rate, .mx-title, .mx-body, .mx-x, .mx-y, .wf-num, .wf-title, .wf-meta, .wf-unit, .tb-cell,
     .tn-num, .tn-name, .tn-unit, .vs-key-t, .vs-unit, .vs-num, .vs-name, .vs-change, .ps-title, .ps-meta, .ps-pct, .ps-chip, .ps-count,
     .sh-sum, .sh-unit, .sh-pct, .sh-name, .sh-value, .sh-meta, .sh-total-k, .sh-total-v,
-    .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total, .pm-name, .pm-body, .pm-nums, .pm-x, .pm-y,
+    .pc-n, .pc-title, .pc-meta, .pc-body, .fn-name, .fn-meta, .fn-num, .fn-unit, .fn-rate, .fn-total, .pm-name, .pm-body, .pm-nums, .pm-x, .pm-y,
     .bk-msg-t, .bk-msg-s, .bk-label, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-q-t, .bk-q-by, .bk-call-l, .bk-call-t,
     .bk-num-l, .bk-num-v, .bk-num-n, .bk-dl-l, .bk-dl-k, .bk-dl-v, .bk-dl-chip, .bk-dl-n,
     .bk-gl-l, .bk-gl-pct, .bk-gl-of, .bk-gl-n, .bk-img-c, .bk-empty-t, .bk-empty-s,
@@ -3403,14 +3403,14 @@
 }
 
 /* ---------- 단계 흐름 ----------
-   선으로 잇기: 단계마다 번호 점을 찍고 점 사이를 선으로 잇는다. 강조할 단계는 점을 칠하고 둘레를 옅게.
-   (꺾쇠 화살표 면은 예전 도표 모양이라 쓰지 않는다) 칸: 둥근 면을 화살표로 잇는다.
-   단계는 같은 너비의 칸이다. 선은 마지막 단계에서도 오른쪽 끝까지 간다: 마지막 점에서 끊으면 마지막 칸의 오른쪽이
-   비어 점 사이가 고르지 않아 보였다. 아래 기본 규칙은 부품 칸 안에서도 쓰므로 높이를 바꾸지 않는다(잰 높이 표).
+   선으로 잇기: 단계마다 위에 굵은 선을 긋고(이어 보면 순서의 띠) 그 아래 번호, 이름, 설명. 강조할 단계는 선과 번호를 강조색으로.
+   번호를 동그라미에 넣어 점 사이를 잇는 꼴은 흔한 서식처럼 보였다(목차, 마지막 장과 같은 말). 칸: 둥근 면을 나란히.
+   단계는 같은 너비의 칸이다. 아래 기본 규칙은 부품 칸 안에서도 쓰므로 고치면 잰 높이 표를 다시 잰다.
    장 한 장을 다 쓸 때의 짜임은 그 아래 .l-process 규칙에 있다 */
 
 .pc {
-  --pc-node: 64px;
+  /* 단계 사이 글의 틈: 글은 칸 오른쪽에서 이만큼 비우고 줄을 바꾼다. 위의 선도 여기서 끊는다 */
+  --pc-gutter: 40px;
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   align-content: center;
@@ -3423,15 +3423,21 @@
   min-width: 0;
 }
 
-/* 점의 오른쪽 끝에서 다음 칸의 점까지 (칸 사이 틈이 없어서 칸 끝까지 그으면 닿는다). 마지막 단계는 오른쪽 끝까지 */
+/* 단계마다 위의 선: 칸 왼쪽 끝에서 글의 틈 앞까지. 발표할 때 왼쪽부터 긋는다(motion/engine.ts) */
 .pc-step::before {
   position: absolute;
-  top: calc(var(--pc-node) / 2 - 1.5px);
-  right: 0;
-  left: var(--pc-node);
+  top: 0;
+  right: var(--pc-gutter);
+  left: 0;
   height: 3px;
-  background: var(--line);
+  background: var(--ink);
   content: '';
+}
+
+/* 강조할 단계는 선을 두 배로: 강조색 바탕(강조가 글자색)에서도 어느 단계인지 보이게 */
+.pc-step.is-hl::before {
+  height: 6px;
+  background: var(--accent);
 }
 
 .pc-head {
@@ -3439,34 +3445,20 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 32px;
-  padding-right: 40px;
+  gap: 14px;
+  padding-right: var(--pc-gutter);
 }
 
 .pc-n {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: var(--pc-node);
-  height: var(--pc-node);
-  box-sizing: border-box;
-  border: 3px solid var(--line);
-  border-radius: 50%;
-  background: var(--bg);
-  color: var(--ink-2);
-  font-family: var(--font-head);
-  font-size: 26px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  --fs: 30px;
+  padding-top: 24px;
+  color: var(--ink-3);
+  font-weight: 300;
+  line-height: 1;
 }
 
 .pc-step.is-hl .pc-n {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: 0 0 0 12px var(--accent-soft);
-  color: var(--accent-ink);
+  color: var(--accent);
 }
 
 .pc-title {
@@ -3477,7 +3469,7 @@
 }
 
 .pc-text {
-  padding: 18px 40px 0 0;
+  padding: 18px var(--pc-gutter) 0 0;
 }
 
 .pc-meta {
@@ -3495,7 +3487,7 @@
 }
 
 .pc:is([data-n='5'], [data-n='6']) {
-  --pc-node: 56px;
+  --pc-gutter: 28px;
 }
 
 .pc:is([data-n='5'], [data-n='6']) .pc-title {
@@ -3506,18 +3498,12 @@
   --fs: 26px;
 }
 
-.pc:is([data-n='5'], [data-n='6']) :is(.pc-head, .pc-text) {
-  padding-right: 28px;
-}
-
 /* 장 한 장을 다 쓸 때: 점 줄은 본문 첫 줄(제목 아래 틈 바로 밑)에, 담당과 시간은 본문 아래 끝 줄에 둔다.
    점, 이름, 설명만 가운데에 두면 작은 띠가 떠서 위아래가 크게 비었다. 담당과 시간을 아래 끝 줄로 내리면 설명과
    섞이지 않고(설명은 이름 바로 아래 한 덩이), 모든 단계의 담당과 시간이 한 줄에 맞아 표처럼 읽힌다.
    이름과 설명은 모든 단계가 같은 줄(subgrid)을 쓴다: 한 단계의 이름이 두 줄이 되어도 옆 단계의 설명이 따라 내려간다.
    담당과 시간이 하나도 없으면 아래 끝 줄이 비므로, 그때는 띠를 본문 가운데(눈높이로 조금 위)에 둔다 */
 .l-process .pc {
-  --pc-node: 80px;
-  /* 단계 사이 글의 틈: 글은 칸 오른쪽에서 이만큼 비우고 줄을 바꾼다 */
   --pc-gutter: 56px;
   grid-template-rows: auto auto minmax(0, 1fr);
 }
@@ -3542,18 +3528,15 @@
 }
 
 .l-process .pc-n {
+  --fs: 44px;
   grid-row: 1;
-  font-size: 30px;
-}
-
-.l-process.va-base .pc-step.is-hl .pc-n {
-  box-shadow: 0 0 0 14px var(--accent-soft);
+  padding-top: 32px;
 }
 
 .l-process .pc-title {
   --fs: 52px;
   grid-row: 2;
-  margin-top: 48px;
+  margin-top: 20px;
   padding-right: var(--pc-gutter);
 }
 
@@ -3599,7 +3582,6 @@
 
 .l-process .pc[data-n='4'] .pc-title {
   --fs: 44px;
-  margin-top: 44px;
 }
 
 .l-process .pc[data-n='4'] .pc-body {
@@ -3611,21 +3593,16 @@
 }
 
 .l-process .pc:is([data-n='5'], [data-n='6']) {
-  --pc-node: 64px;
   --pc-gutter: 32px;
 }
 
 .l-process .pc:is([data-n='5'], [data-n='6']) .pc-n {
-  font-size: 26px;
-}
-
-.l-process.va-base .pc:is([data-n='5'], [data-n='6']) .pc-step.is-hl .pc-n {
-  box-shadow: 0 0 0 12px var(--accent-soft);
+  --fs: 36px;
 }
 
 .l-process .pc:is([data-n='5'], [data-n='6']) .pc-title {
   --fs: 36px;
-  margin-top: 36px;
+  margin-top: 16px;
 }
 
 .l-process .pc:is([data-n='5'], [data-n='6']) .pc-text {
@@ -3641,7 +3618,7 @@
   padding-top: 24px;
 }
 
-/* 모양: 칸. 둥근 면, 사이에 화살표 */
+/* 모양: 칸. 둥근 면을 나란히. 차례는 번호로 읽는다(칸 사이 꺾쇠는 예전 도표 모양이라 뺐다) */
 .va-cards .pc {
   --pc-gap: 64px;
   gap: var(--pc-gap);
@@ -3687,18 +3664,12 @@
 }
 
 .va-cards .pc-n {
-  width: 56px;
-  height: 56px;
-  border: 2px solid currentColor;
-  background: none;
-  color: var(--accent);
+  padding-top: 0;
 }
 
 .va-cards .pc-step.is-hl .pc-n {
-  border-color: currentColor;
-  background: none;
-  box-shadow: none;
   color: inherit;
+  opacity: var(--o-mute);
 }
 
 .va-cards .pc-text {
@@ -3722,6 +3693,7 @@
 
 .is-dark.va-cards .pc-step.is-hl :is(.pc-n, .pc-meta) {
   color: var(--accent);
+  opacity: 1;
 }
 
 /* 칸 모양을 장 한 장에 쓸 때: 칸을 본문 높이만큼 세우고(가운데 뜬 짧은 칸이 아니라), 번호와 이름은 위에,
@@ -3747,32 +3719,27 @@
   padding: 36px 24px 32px;
 }
 
-.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-n {
-  width: 56px;
-  height: 56px;
+.l-process.va-cards .pc-n {
+  padding-top: 0;
 }
 
-.l-process.va-cards .pc-n {
-  width: 64px;
-  height: 64px;
-  border-width: 3px;
-  font-size: 26px;
+.l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-n {
+  --fs: 30px;
 }
 
 .l-process.va-cards .pc-title {
   --fs: 44px;
-  margin-top: 40px;
+  margin-top: 20px;
   padding-right: 0;
 }
 
 .l-process.va-cards .pc[data-n='4'] .pc-title {
   --fs: 36px;
-  margin-top: 36px;
 }
 
 .l-process.va-cards .pc:is([data-n='5'], [data-n='6']) .pc-title {
   --fs: 30px;
-  margin-top: 28px;
+  margin-top: 16px;
 }
 
 .l-process.va-cards .pc-text {
@@ -3793,20 +3760,6 @@
 
 .l-process.va-cards .pc:not(:has(.pc-meta)) .pc-foot {
   display: none;
-}
-
-/* 칸 사이 화살표: 두 변만 그린 마름모를 돌려 화살촉으로 */
-.va-cards .pc-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: calc(var(--pc-gap) / -2 - 6px);
-  width: 16px;
-  height: 16px;
-  border-top: 3px solid var(--ink-3);
-  border-right: 3px solid var(--ink-3);
-  rotate: 45deg;
-  translate: 0 -50%;
 }
 
 /* ---------- 깔때기 ----------
