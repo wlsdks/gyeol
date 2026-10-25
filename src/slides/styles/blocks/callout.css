@@ -7,6 +7,12 @@
   height: 100%;
 }
 
+/* 면 위에서는 가운데로 넘치게: 글자 맞추기(fitBlocks)가 안쪽 여백에 8px까지 들어간 글을 들어간 것으로 보아, 아래로만 넘치면
+   면의 아래 여백만 그만큼 좁았다(1680×175에서 위 49, 아래 35. base.css의 띠를 나눠 쓰는 면과 같다) */
+.bk-callout:is(.bk-look-card, .bk-look-bold) > .bk-in > .bk-call {
+  justify-content: center;
+}
+
 .bk-call-l {
   --fs: var(--t-label);
   margin-bottom: 18px;
