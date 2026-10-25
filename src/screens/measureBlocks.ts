@@ -71,6 +71,16 @@ function clippedBy(n: Node, r: Box, cell: HTMLElement, cache: Map<Element, Box |
  * 글이 칸 밖(카드면 안쪽 여백 안)으로 나가거나, 잘리거나, 다른 글과 겹치는 곳. 줄 사이가 모자라 다음 줄에 올라타는 것은
  * 칸 전체 높이(scrollHeight)로는 보이지 않아서, 글 줄마다의 상자로 본다
  */
+/**
+ * 글이 없는 그림의 가장 작은 크기 (캔버스 px, [가로, 세로]). 그림은 칸에 맞춰 줄어들 뿐 넘치지 않아서 글만 보면 놓친다:
+ * 낮은 칸에서 목표 대비의 막대가 높이 0으로 사라지고, 비율 원이 지름 50px대로 줄어 안의 숫자가 10px가 됐다
+ */
+const FIGURE_MIN: [string, number, number][] = [
+  ['.bk-gl-bar', 0, 16],
+  ['.bk-rg:not(.is-gauge) .bk-rg-sq', 120, 120],
+  ['.bk-rg.is-gauge .bk-rg-sq', 160, 0],
+]
+
 function clashList(cell: HTMLElement, all: boolean): string[] {
   const box = contentBox(cell)
   const lines = textLines(cell)
@@ -93,6 +103,14 @@ function clashList(cell: HTMLElement, all: boolean): string[] {
     if (r.bottom > box.bottom + 1 || r.top < box.top - 1 || r.right > box.right + 1 || r.left < box.left - 1) {
       out.push(`그림이 칸 밖: ${fig.getAttribute('class')?.split(' ')[0] ?? fig.tagName}`)
       if (!all) return out
+    }
+  }
+  for (const [sel, w, h] of FIGURE_MIN) {
+    for (const fig of cell.querySelectorAll<HTMLElement>(sel)) {
+      if (fig.offsetWidth < w || fig.offsetHeight < h) {
+        out.push(`그림이 너무 작음: ${sel} ${fig.offsetWidth}×${fig.offsetHeight}`)
+        if (!all) return out
+      }
     }
   }
   for (let i = 0; i < lines.length; i++) {
