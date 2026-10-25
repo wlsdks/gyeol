@@ -257,7 +257,9 @@ export function motionEngine(): MotionEngine {
     const n = cells.length
     cells.forEach((c, i) => {
       const b = boxes[i]
-      const h = b.height / k
+      // 창 높이(=띠의 줄 높이)는 글자 상자의 높이 그대로. 잰 높이를 줄인 비율로 되돌리면 127.92처럼 조금 모자라서, 줄 높이가
+      // 글자 상자보다 작아지고 글자가 줄 안에서 1px 위로 맞춰졌다. offsetHeight는 줄이기와 상관없는 장의 px다
+      const h = c.offsetHeight || b.height / k
       const digit = Number(c.textContent)
       const strip = document.createElement('span')
       strip.className = 'mo-odr'
