@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIENCES, DECK_TYPES } from '../deck/blueprints'
+import { AUDIENCES, BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { createDeck } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
 import { LAYOUTS } from '../deck/layouts'
@@ -204,5 +204,15 @@ describe('모양만 고르기', () => {
     expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)
     expect(onlyKnownStrings({ [SECRET]: 1 }, words)).toBe(false)
+  })
+})
+
+describe('장 역할 이름 (저장한 발표, 모양 파일, AI 제안이 장을 부르는 말)', () => {
+  // 장의 역할(slide.purpose)은 사람이 고치지 않는 정해진 말이라, 모양 파일의 role과 제안(add_slide의 role)이 장을 찾는 데 쓴다.
+  // 이름을 바꾸면 예전에 만든 발표의 장이 역할을 잃고(모양 파일에 role: null), 예전 이름으로 온 제안은 unknown_role로 거절된다.
+  // 일부러 바꿨으면 이 기록을 고치고(vitest -u), 예전 이름을 새 이름으로 읽는 길(deckStore의 예전 파일 읽기)을 챙긴다
+  it('바뀌면 일부러 바꾼 것이다', () => {
+    const roles = Object.fromEntries(Object.entries(BLUEPRINTS).map(([type, bp]) => [type, bp.recipes.map((r) => (r.section ? `${r.purpose} (${r.section})` : r.purpose))]))
+    expect({ layouts: Object.values(LAYOUTS).map((l) => l.name), roles }).toMatchSnapshot()
   })
 })
