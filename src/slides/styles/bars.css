@@ -174,3 +174,55 @@
 .va-columns .br:is([data-n='5'], [data-n='6']) .br-value {
   --fs: 44px;
 }
+
+/* 모양: 점과 선. 굵은 막대 대신 가는 선과 그 끝의 점으로 길이를 읽는다. 값이 고만고만한 항목이 많을 때 면이 덜 무겁고
+   끝의 점이 숫자 자리를 짚는다. 다 찬 자리까지는 줄 선 굵기의 옅은 선을 깔아 둔다 */
+.va-dots .br-track {
+  position: relative;
+  height: 32px;
+  overflow: visible;
+  border-radius: 0;
+  background: none;
+}
+
+.va-dots .br-track::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: var(--rule);
+  translate: 0 -50%;
+  background: var(--line);
+  content: '';
+}
+
+.va-dots .br-fill {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 6px;
+  translate: 0 -50%;
+  border-radius: 3px;
+}
+
+.br-dot {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--p, 0) * 1%);
+  width: 32px;
+  height: 32px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 22%, var(--bg));
+}
+
+.br-row.is-hl .br-dot {
+  background: var(--accent);
+  /* 강조한 점만 바탕색 고리로 선에서 떼어 낸다 */
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 16%, var(--bg));
+}
+
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-dot {
+  width: 26px;
+  height: 26px;
+}

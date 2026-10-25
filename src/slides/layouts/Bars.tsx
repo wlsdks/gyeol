@@ -34,6 +34,8 @@ export function Bars() {
   const demo = mode !== 'final' && max <= 0
   const demoP = demo ? demoBars(slide, items.length) : []
   const highlight = highlightOf(slide)
+  // 점과 선: 가는 선 끝의 점으로 길이를 읽는다. 점은 선 위를 따라 움직이도록 따로 둔다(선을 늘리는 움직임에 같이 늘어나지 않게)
+  const dots = slide.variant === 'dots'
   return (
     <>
       <Head lead />
@@ -63,6 +65,7 @@ export function Bars() {
                 <div className="br-bar">
                   <div className="br-track">
                     <div className="br-fill" />
+                    {dots && <span className="br-dot" />}
                   </div>
                   <IT i={i} k="value" className="br-value" />
                 </div>
