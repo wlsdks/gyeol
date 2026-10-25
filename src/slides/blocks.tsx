@@ -26,6 +26,7 @@ import { Tiles } from './blocks/Tiles'
 import { Heading } from './blocks/Heading'
 import { Stat } from './blocks/Stat'
 import { Meter } from './blocks/Meter'
+import { Range } from './blocks/Range'
 import { Faq } from './blocks/Faq'
 import { Gantt } from './blocks/Gantt'
 import { Goal } from './blocks/Goal'
@@ -87,6 +88,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   heading: Heading,
   stat: Stat,
   meter: Meter,
+  range: Range,
 }
 
 const FOLDS = new Map<BlockType, ReadonlySet<string>>()

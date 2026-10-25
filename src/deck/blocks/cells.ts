@@ -179,6 +179,7 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
     target: '막대 위에 눈금으로 긋는 목표나 기준',
     targetName: '눈금 아래 이름을 목표 말고 다른 말로 (예: 작년, 기준)',
   },
+  range: { mark: '띠 위에 고리로 찍는 지금 값', markName: '고리 아래 값 앞의 이름 (예: 지금, 지난주 최고)', note: '그림 아래 기준이나 출처' },
   kpi: { 'items.body': '숫자마다 아래 짧은 설명' },
   scorecard: { 'items.body': '지표마다 짧은 설명이나 원인' },
   bars: { 'items.meta': '막대마다 짧은 설명' },

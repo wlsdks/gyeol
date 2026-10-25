@@ -849,4 +849,20 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 4,
     sample: { fields: { label: '올해 교육 예산 집행', value: '3.6억 원', of: '5억 원', target: '4억 원' } },
   },
+  range: {
+    name: '범위',
+    description: '지켜야 할 범위나 예상 범위, 그 위에 지금 값',
+    motion: '띠가 가운데서 양쪽으로 열리고 고리가 내려앉아요',
+    fields: [
+      { key: 'label', label: '이름', hint: '무엇의 범위인지 (예: 서버실 적정 온도)' },
+      { key: 'low', label: '낮은 값', hint: '18℃' },
+      { key: 'high', label: '높은 값', hint: '24℃' },
+      { key: 'mark', label: '지금 값', hint: '26℃', optional: true },
+      { key: 'markName', label: '지금 값 이름', hint: '지금', optional: true },
+      { key: 'note', label: '덧붙임', hint: '기준이나 출처 (예: 장비 제조사 권장)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 4,
+    sample: { fields: { label: '서버실 적정 온도', low: '18℃', high: '24℃', mark: '26℃', markName: '지난주 최고', note: '장비 제조사 권장' } },
+  },
 }

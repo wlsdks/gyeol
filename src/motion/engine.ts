@@ -1656,6 +1656,19 @@ export function motionEngine(): MotionEngine {
           fade(one('.bk-mt-tg'), 560, 500)
           break
         }
+        case 'range': {
+          // 눈금이 먼저 깔리고, 범위 띠가 제 가운데에서 양쪽으로 열리며 양 끝 값이 따라 나온다. 표시 고리는 띠가 다 열릴 즈음 위에서 내려앉는다
+          fade(one('.bk-rn-l'), 60, 500)
+          fade(one('.bk-rn-fig'), 100, 300)
+          const band = one('.bk-rn-band')
+          if (band) run(anims, band, [{ scale: '0 1', transformOrigin: 'center' }, { scale: '1 1', transformOrigin: 'center' }], s(160), L.grow)
+          rise(one('.bk-rn-ends'), 220, L.y * 0.4)
+          const mark = one('.bk-rn-mark')
+          if (mark) run(anims, mark, [{ opacity: 0, translate: `0 ${-L.y * 0.8}px` }], s(520), L.pop)
+          fade(one('.bk-rn-mk'), 640, 400)
+          fade(one('.bk-rn-n'), 700, 500)
+          break
+        }
         default:
           rise(cell, 0)
       }
