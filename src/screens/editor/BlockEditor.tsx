@@ -8,7 +8,7 @@ import {
   blockItems,
   blockPrefH,
   changeIssue,
-  BLOCK_GAP,
+  BLOCK_COL_GAP,
   BLOCKS,
   canCompose,
   copyBlock,
@@ -493,7 +493,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const spec = BLOCKS[block.type]
     const area = measureArea(areaEl.current)
     const k = area?.k ?? (document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect().width ?? 960) / CANVAS.w
-    const canvas = { w: spec.prefSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
+    const canvas = { w: spec.prefSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
     const ghost = ghostSize(canvas, k)
     const grab = from ? { x: Math.min(1, Math.max(0, (x - from.left) / from.width)), y: Math.min(1, Math.max(0, (y - from.top) / from.height)) } : { x: 0.5, y: 0.5 }
     return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from, over: false }

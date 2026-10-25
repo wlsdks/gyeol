@@ -8,7 +8,7 @@ import { BLOCK_GROUPS, BLOCKS } from './catalog'
 import { blockItems, mapBlock, membersOf, placeOf, variantOfBlock } from './cells'
 import { LINK_PAD, linkAt } from './links'
 import type { NoRoom } from './place'
-import { BLOCK_GAP, COMBOS, lookIssue, maxInRow, shownLook, withLook } from './rules'
+import { BLOCK_COL_GAP, BLOCK_GAP, COMBOS, lookIssue, maxInRow, shownLook, withLook } from './rules'
 
 /**
  * 이 부품이 들어갈 가장 좁은 칸. 로고 모음은 로고가 많을수록 넓어야 한다: 칸 너비를 로고 수로 나눠 쓰므로
@@ -404,12 +404,12 @@ export interface Rect {
 
 /** 칸마다의 자리를 px로 (본문 상자 크기 기준). 맨 위 부품의 id로 찾는다 (쌓은 칸이면 칸 전체) */
 export function boxRects(rows: BlockRow[], size: { w: number; h: number }, gap = BLOCK_GAP): Map<string, Rect> {
-  const colW = (size.w - 11 * gap) / 12
+  const colW = (size.w - 11 * BLOCK_COL_GAP) / 12
   const heights = rowHeights(rows, size.h, gap)
   const tops = heights.map((_, i) => heights.slice(0, i).reduce((a, h) => a + h + gap, 0))
   const out = new Map<string, Rect>()
   for (const b of cellBoxes(rows)) {
-    out.set(b.block.id, { x: b.start * (colW + gap), y: tops[b.row], w: b.span * colW + (b.span - 1) * gap, h: heights[b.row] })
+    out.set(b.block.id, { x: b.start * (colW + BLOCK_COL_GAP), y: tops[b.row], w: b.span * colW + (b.span - 1) * BLOCK_COL_GAP, h: heights[b.row] })
   }
   return out
 }

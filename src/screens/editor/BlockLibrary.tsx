@@ -1,5 +1,5 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react'
-import { blockCount, blockPrefH, BLOCK_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
+import { blockCount, blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
@@ -33,7 +33,7 @@ export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = '
   }, [type, blank])
   const slide = useMemo(() => soloSlide(block), [block])
   // 부품이 들어갈 수 있는 가장 좁은 칸보다 좁게 그리지 않는다 (표나 차트가 찌그러져 보이지 않게)
-  const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80
+  const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80
   const h = Math.max(480, blockPrefH(block) + 80, Math.round(minW / THUMB_RATIO))
   const canvas = { w: Math.round(h * THUMB_RATIO), h }
   const ref = useRef<HTMLDivElement>(null)

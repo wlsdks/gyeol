@@ -1,5 +1,7 @@
 .slide.l-compose {
+  /* 줄 사이(쌓은 부품 사이도)와 옆 칸 사이 (deck/blocks/rules.ts의 BLOCK_GAP, BLOCK_COL_GAP) */
   --bk-gap: 48px;
+  --bk-col-gap: 72px;
   --bk-h-gap: 28px;
 }
 
@@ -8,7 +10,7 @@
   display: grid;
   flex: 1;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--bk-gap);
+  gap: var(--bk-gap) var(--bk-col-gap);
   min-height: 0;
   margin-top: var(--body-gap);
 }

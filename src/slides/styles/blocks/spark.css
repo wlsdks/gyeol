@@ -178,8 +178,8 @@
    반씩 나누면 짧은 숫자 오른쪽이 칸 너비의 4분의 1 넘게 비어 숫자와 선이 따로 놀았다 */
 @container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) {
   .bk-sp {
-    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
-    column-gap: var(--bk-gap);
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-sp-chart {

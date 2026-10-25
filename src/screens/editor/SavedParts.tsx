@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import {
   allBlocks,
-  BLOCK_GAP,
+  BLOCK_COL_GAP,
   BLOCKS,
   blockCount,
   blockPrefH,
@@ -41,7 +41,7 @@ import { dropRows } from './planDrop'
 const MIN_RATIO = 1.2
 const MAX_RATIO = 4
 /** 한 줄 전체의 너비 (본문 너비와 그림 둘레의 여백) */
-const ROW_W = 12 * (COL_W + BLOCK_GAP) - BLOCK_GAP + 80
+const ROW_W = 12 * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80
 
 const KIND_NAMES: Record<SavedPart['kind'], string> = { block: '컴포넌트', row: '한 줄', slide: '장 하나' }
 
@@ -59,7 +59,7 @@ const SavedThumb = memo(function SavedThumb({ deck, part }: { deck: Look; part: 
     const first = part.rows[0].blocks[0]
     const solo: Slide = { ...soloSlide(first), id: `saved-${part.id}`, rows: part.rows }
     // 저장할 때의 크기가 있으면 그대로 (없으면 가져온 파일: 보기 좋은 너비와 잘리지 않는 높이로)
-    const w0 = (part.size?.w ?? (part.kind === 'block' ? BLOCKS[first.type].prefSpan * (COL_W + BLOCK_GAP) - BLOCK_GAP : ROW_W - 80)) + 80
+    const w0 = (part.size?.w ?? (part.kind === 'block' ? BLOCKS[first.type].prefSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP : ROW_W - 80)) + 80
     const h0 = (part.size?.h ?? (part.kind === 'block' ? blockPrefH(first) : needH(part.rows))) + 80
     // 너무 넓적하면 정한 비율 안으로. 줄 높이는 그대로 두고 위아래 여백만 늘린다
     // (줄이 높아지면 높이에 따라 짜임을 바꾸는 컴포넌트가 저장한 모습과 다르게 그려진다)

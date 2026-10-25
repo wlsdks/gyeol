@@ -1,7 +1,7 @@
 // 레이아웃: 위치 비교 (position). 모양은 styles/position.css
 
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { BLOCK_GAP } from '../../deck/blocks'
+import { BLOCK_COL_GAP } from '../../deck/blocks'
 import { highlightOf, hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
@@ -18,7 +18,7 @@ const PM_PLOT = { w: 1568, h: 520 }
  * 부품 안에서는 칸이 좁으면 글자도 줄어든다 (blocks.css의 --bk-w 단계)
  */
 function labelSize(name: string, body: string, hl: boolean, edit: boolean, span?: number): { w: number; h: number } {
-  const cell = span ? span * ((1680 - 11 * BLOCK_GAP) / 12) + (span - 1) * BLOCK_GAP : 0
+  const cell = span ? span * ((1680 - 11 * BLOCK_COL_GAP) / 12) + (span - 1) * BLOCK_COL_GAP : 0
   const k = !cell ? 1 : cell <= 420 ? 0.66 : cell <= 560 ? 0.74 : cell <= 820 ? 0.84 : cell <= 1100 ? 0.92 : 1
   const plotW = cell ? Math.max(200, cell - 112) : PM_PLOT.w
   const n = [...name.trim()].length * (hl ? 38 : 30)

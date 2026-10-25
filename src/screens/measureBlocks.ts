@@ -1,4 +1,4 @@
-import { BLOCKS, BLOCK_GAP, BLOCK_TYPES, LINK_PAD } from '../deck/blocks'
+import { BLOCKS, BLOCK_COL_GAP, BLOCK_TYPES, LINK_PAD } from '../deck/blocks'
 import { FONTS } from '../deck/themes'
 import type { BlockType } from '../deck/types'
 import { blockFigures, blockOverflows, blockTextLines, fitBlocks } from '../slides/fitBlocks'
@@ -16,9 +16,9 @@ import { blockFigures, blockOverflows, blockTextLines, fitBlocks } from '../slid
  */
 
 const AREA_W = 1920 - 120 * 2
-const COL = (AREA_W - 11 * BLOCK_GAP) / 12
+const COL = (AREA_W - 11 * BLOCK_COL_GAP) / 12
 /** 12칸 격자에서 span칸을 쓰는 부품의 너비 */
-export const spanWidth = (span: number) => span * COL + (span - 1) * BLOCK_GAP
+export const spanWidth = (span: number) => span * COL + (span - 1) * BLOCK_COL_GAP
 /** 부품 장에서 나올 수 있는 칸 너비 (blocks.ts의 COMBOS) */
 export const SPANS = [3, 4, 6, 8, 12]
 const TOP = 860

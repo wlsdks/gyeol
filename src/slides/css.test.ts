@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BLOCK_GAP, LINK_PAD } from '../deck/blocks'
+import { BLOCK_COL_GAP, BLOCK_GAP, LINK_PAD } from '../deck/blocks'
 import { cssSource } from './cssSource'
 
 // CSS와 코드가 서로 기대는 약속. 어긋나도 오류 없이 모양만 틀어져서(글자 크기 설정이 먹지 않거나 자리 어림이 틀린다) 테스트로 본다
@@ -63,6 +63,7 @@ describe('부품 장의 간격', () => {
 
   it('칸 사이와 이음표 자리가 CSS와 같다 (자리 계산이 CSS calc()와 같은 값을 쓴다)', () => {
     expect(px('bk-gap')).toBe(BLOCK_GAP)
+    expect(px('bk-col-gap')).toBe(BLOCK_COL_GAP)
     expect(px('lk-pad')).toBe(LINK_PAD)
   })
 })

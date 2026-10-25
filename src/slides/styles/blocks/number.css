@@ -73,10 +73,10 @@
 
   .bk-num {
     display: grid;
-    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-content: center;
-    column-gap: var(--bk-gap);
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-num-v {
@@ -88,7 +88,7 @@
 
   /* 한 줄로 줄이는 너비도 숫자 칸(5번째 칸부터 끝까지)으로 */
   .slide .bk-num-v.one-line {
-    font-size: min(max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1))), calc((200cqi - var(--bk-gap)) / 3 / (var(--units, 1) * var(--glyph-k, 1))));
+    font-size: min(max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1))), calc((200cqi - var(--bk-col-gap)) / 3 / (var(--units, 1) * var(--glyph-k, 1))));
   }
 
   .bk-num-l,

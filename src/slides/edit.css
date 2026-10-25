@@ -668,8 +668,8 @@ body.is-pane-sizing * {
   position: relative;
   z-index: 5;
   justify-self: start;
-  width: var(--bk-gap);
-  margin-left: calc(var(--bk-gap) * -1);
+  width: var(--bk-col-gap);
+  margin-left: calc(var(--bk-col-gap) * -1);
   cursor: col-resize;
   touch-action: none;
 }

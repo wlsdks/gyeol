@@ -37,7 +37,7 @@
 
 .bk-link.lk-h {
   top: 50%;
-  left: calc(100% + var(--bk-gap) / 2);
+  left: calc(100% + var(--bk-col-gap) / 2);
 }
 
 .bk-link.lk-v {

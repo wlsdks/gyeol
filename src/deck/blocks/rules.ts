@@ -15,8 +15,12 @@ export const MAX_BLOCKS = 10
 export const MAX_LARGE = 6
 /** 한 칸에 쌓는 부품 수 */
 export const MAX_STACK = 3
-/** 칸 사이 간격 (1920 기준 px). CSS의 --bk-gap과 같다. 한 칸 안에 쌓은 부품 사이도 같은 간격이라 쌓은 칸이 옆 줄과 맞는다 */
+/** 줄 사이 간격 (1920 기준 px). CSS의 --bk-gap과 같다. 한 칸 안에 쌓은 부품 사이도 같은 간격이라 쌓은 칸이 옆 줄과 맞는다.
+ *  제목 아래 간격(--body-gap, 72)보다 좁아야 제목과 본문, 본문 안의 줄이 다른 사이로 읽힌다 */
 export const BLOCK_GAP = 48
+/** 옆 칸 사이 간격 (1920 기준 px). CSS의 --bk-col-gap과 같다. 줄 사이와 같은 48이면 나란한 두 부품이 붙어 보였다:
+ *  오른쪽 끝에 붙은 숫자 바로 옆에서 다음 칸의 글이 시작했다. 장의 큰 사이(--body-gap)와 같은 값이다 */
+export const BLOCK_COL_GAP = 72
 
 export const isSmall = (type: BlockType) => !!BLOCKS[type].small
 
