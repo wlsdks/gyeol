@@ -84,9 +84,33 @@ const settled = (blocks: Block[], added: readonly Block[], areaH?: number): Bloc
  * 놓은 뒤가 같은 판을 주어야 서로 맞는다
  */
 export function insertAt(blocks: Block[], spot: Spot, block: Block, areaH?: number): Block[] | null {
-  if (crowdIssue(blocks, [block])) return null
-  const next = insertBlock(blocks, block, spot, fitFor([...blocks, block], areaH))
-  return next && settled(next, [block], areaH)
+  return remember(INSERTED, blocks, block, spot, areaH, () => {
+    if (crowdIssue(blocks, [block])) return null
+    const next = insertBlock(blocks, block, spot, fitFor([...blocks, block], areaH))
+    return next && settled(next, [block], areaH)
+  })
+}
+
+/**
+ * 판(blocks)과 넣는 부품(block) 객체마다 자리별 결과를 기억한다. 끄는 동안 판과 끄는 부품은 같은 객체인데, 손을 움직일 때마다
+ * 놓을 수 있는 자리(validTargets), 놓을 수 없는 까닭(whyNot, placeIssue), 손 아래 자리(dropTarget)가 같은 자리를 몇 번씩
+ * 다시 넣어 봤다. 자리가 하나도 없는 장에서는 손을 움직일 때마다 10ms 넘게 들었다.
+ * 판과 부품은 고치지 않고 새로 만들기 때문에(불변) 객체가 같으면 결과도 같다. 판이 바뀌면 예전 판의 기억은 저절로 버려진다(WeakMap)
+ */
+type Memo<T> = WeakMap<Block[], WeakMap<Block, Map<string, T>>>
+const INSERTED: Memo<Block[] | null> = new WeakMap()
+const WHY_NOT: Memo<NoRoom | null> = new WeakMap()
+
+function remember<T>(memo: Memo<T>, blocks: Block[], block: Block, spot: Spot, areaH: number | undefined, make: () => T): T {
+  let byBlock = memo.get(blocks)
+  if (!byBlock) memo.set(blocks, (byBlock = new WeakMap()))
+  let bySpot = byBlock.get(block)
+  if (!bySpot) byBlock.set(block, (bySpot = new Map()))
+  const key = `${spot.at ?? ''}|${spot.side}|${spot.up ?? 0}|${areaH ?? ''}`
+  if (bySpot.has(key)) return bySpot.get(key) as T
+  const out = make()
+  bySpot.set(key, out)
+  return out
 }
 
 /**
@@ -129,14 +153,18 @@ function soloBeside(blocks: Block[], spot: Spot, block: Block): BlockType | null
 /** 그 자리에 넣을 수 없는 까닭. 넣을 수 있으면 null */
 export function whyNot(blocks: Block[], target: DropTarget, block: Block, areaH?: number): NoRoom | null {
   if (target.kind === 'swap') return null
+  return remember(WHY_NOT, blocks, block, target.spot, areaH, () => spotIssue(blocks, target.spot, block, areaH))
+}
+
+function spotIssue(blocks: Block[], spot: Spot, block: Block, areaH?: number): NoRoom | null {
   const crowd = crowdIssue(blocks, [block])
   if (crowd) return crowd
-  if (insertAt(blocks, target.spot, block, areaH)) return null
-  const solo = blocks.length ? soloBeside(blocks, target.spot, block) : null
+  if (insertAt(blocks, spot, block, areaH)) return null
+  const solo = blocks.length ? soloBeside(blocks, spot, block) : null
   if (solo) return { kind: 'solo', type: solo }
   if (areaH === undefined) return { kind: 'narrow', span: boardFit(1000).minW(block) }
   const fit = boardFit(areaH, [...blocks, block])
-  const need = needWith(blocks, block, target.spot, fit)
+  const need = needWith(blocks, block, spot, fit)
   if (need === null || !Number.isFinite(need)) return { kind: 'narrow', span: fit.minW(block) }
   return { kind: 'height', need: Math.round(rowsPx(need, areaH)), room: Math.round(areaH) }
 }
