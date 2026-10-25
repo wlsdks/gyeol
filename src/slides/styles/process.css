@@ -151,9 +151,12 @@
   text-wrap: pretty;
 }
 
-/* 담당과 시간의 줄: 칸마다 선을 하나 두고 그 아래에. 비어 있는 단계도 선을 두어 줄이 끊기지 않게 */
+/* 담당과 시간의 줄: 칸마다 선을 하나 두고 그 아래에. 비어 있는 단계도 선을 두어 줄이 끊기지 않게.
+   가장 낮은 높이는 담당 글 한 줄의 높이라 안쪽(content-box)으로 잰다: 장 전체의 border-box로 재면 위 틈(padding)까지
+   그 안에 들어, 담당이 빈 단계만 칸이 틈만큼 낮아져 선이 옆 단계보다 아래로 내려갔다 */
 .l-process .pc-foot {
   --pc-meta-fs: 30px;
+  box-sizing: content-box;
   order: 2;
   min-height: calc(var(--pc-meta-fs) * 1.35 * var(--scale, 1));
   margin-top: auto;
