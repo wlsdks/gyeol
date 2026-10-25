@@ -1246,9 +1246,9 @@ export function motionEngine(): MotionEngine {
             break
           }
           items('.bk-pp-card', 160, (el, at) => {
-            // 목록 모양은 줄 사이에 선이 있다
+            // 목록 모양은 줄 사이에 선이 있고, 나란히는 사람마다 위에 선이 있다(왼쪽에서부터 긋는다)
             if (cell.classList.contains('va-list')) ruled(el, at)
-            pop(el.querySelector('.bk-pp-av'), at)
+            else grow(el, at, 'x', '::before')
             rise(el.querySelector('.bk-pp-text'), at + 100, L.y * 0.4)
           }, L.step * 1.5)
           break

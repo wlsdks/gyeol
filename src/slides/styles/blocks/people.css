@@ -4,66 +4,26 @@
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  gap: 40px;
+  gap: 48px;
 }
 
 .bk-pp-card {
+  position: relative;
   display: grid;
   align-content: start;
-  justify-items: start;
-  gap: 26px;
 }
 
-.bk-pp-av {
-  --av: calc(116px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
-  display: grid;
-  place-items: center;
-  width: var(--av);
-  height: var(--av);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--ink-2);
-  font-family: var(--font-head);
-  font-size: calc(var(--av) * 0.42);
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* 나란히가 넓고 낮은 칸에 들면 동그라미를 이름 왼쪽에 둔다(--pp-side). 위아래로 쌓으면 한 사람이 제 단의 왼쪽 반만 써서
-   한 줄을 다 쓰는 세 사람이 칸 왼쪽에 몰리고 오른쪽이 비었고, 낮은 줄에서는 동그라미와 글이 단계로 작아졌다.
-   한 단이 동그라미와 글을 나란히 담는 너비(460px 남짓)일 때만: 하나는 늘, 둘은 8칸부터, 셋은 12칸, 넷은 늘 위아래로.
-   높은 칸(410부터)은 키워서 위아래로 쌓는 편이 칸을 채운다 */
+/* 나란히: 사람마다 위에 선(발표할 때 왼쪽에서부터 그어진다), 그 아래 이름, 역할, 맡은 일 */
 .va-row .bk-pp-card {
-  grid-template-columns: var(--pp-side, minmax(0, 1fr));
-  align-items: center;
-  gap: 26px 32px;
+  padding-top: calc(28px * var(--bk-fit, 1) + var(--bk-air, 0px));
 }
 
-@container bk (max-height: 409px) {
-  .va-row .bk-pp-list[data-n='1'] {
-    --pp-side: auto minmax(0, 1fr);
-  }
-}
-
-@container bk (min-width: 960px) and (max-height: 409px) {
-  .va-row .bk-pp-list[data-n='2'] {
-    --pp-side: auto minmax(0, 1fr);
-    column-gap: 56px;
-  }
-}
-
-@container bk (min-width: 1460px) and (max-height: 409px) {
-  .va-row .bk-pp-list[data-n='3'] {
-    --pp-side: auto minmax(0, 1fr);
-    column-gap: 56px;
-  }
-}
-
-.bk-pp-av svg {
-  width: 50%;
-  height: 50%;
-  fill: currentColor;
-  opacity: 0.6;
+.va-row .bk-pp-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--rule);
+  background: var(--ink);
+  content: '';
 }
 
 .bk-pp-name {
@@ -90,7 +50,7 @@
   text-wrap: pretty;
 }
 
-/* 목록: 동그라미를 왼쪽에, 이름과 역할을 한 줄에 */
+/* 목록: 한 사람이 한 줄. 이름과 역할을 한 줄에, 맡은 일은 그 아래 */
 .va-list .bk-pp-list {
   grid-auto-flow: row;
   grid-template-columns: minmax(0, 1fr);
@@ -98,9 +58,6 @@
 }
 
 .va-list .bk-pp-card {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 28px;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-top: var(--rule) solid var(--line);
 }
@@ -111,10 +68,6 @@
 
 .va-list .bk-pp-card:last-child {
   border-bottom: var(--rule) solid var(--line);
-}
-
-.va-list .bk-pp-av {
-  --av: calc(80px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
 }
 
 .va-list .bk-pp-text {
@@ -211,10 +164,6 @@
 .va-tree .bk-pp-card:first-child {
   grid-row: 1;
   grid-column: 1 / -1;
-}
-
-.va-tree .bk-pp-av {
-  display: none;
 }
 
 .va-tree .bk-pp-list:not([data-n='1']) > .bk-pp-card:first-child::after,
