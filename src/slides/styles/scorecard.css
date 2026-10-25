@@ -144,3 +144,191 @@
 .sk:is([data-n='5'], [data-n='6']) .sk-rate {
   --fs: 36px;
 }
+
+/* 모양: 나란히. 지표마다 한 단: 이름, 크게 쓴 달성률, 목표 자리를 표시한 막대, 그 아래 목표와 실적.
+   지표가 적어(둘, 셋) 표의 줄이 장 너비를 다 써 가며 비어 보일 때. 단 사이는 핵심 숫자(나란히)처럼 세로 줄로 나누고
+   면(카드)을 깔지 않는다. 여섯이면 셋씩 두 줄. 목표와 실적의 이름은 머리 줄의 이름을 단마다 다시 쓴다(--sk-kt, --sk-kv) */
+.va-side .sk {
+  --sk-cols: 3;
+
+  grid-template-columns: repeat(var(--sk-cols), minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: auto;
+  /* 넘치면 아래로만: 위로 넘치면 제목에 붙는다 */
+  align-content: safe center;
+}
+
+.va-side .sk[data-n='2'] {
+  --sk-cols: 2;
+}
+
+.va-side .sk[data-n='4'] {
+  --sk-cols: 4;
+}
+
+.va-side .sk[data-n='5'] {
+  --sk-cols: 5;
+}
+
+/* 머리 줄은 편집할 때만, 목표와 실적의 이름을 고치는 한 줄로 (발표할 때는 단마다 이름이 붙는다) */
+.va-side .sk-headrow {
+  display: none;
+}
+
+.m-edit.va-side .sk-headrow,
+.m-edit .va-side .sk-headrow {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 32px;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.va-side .sk-headrow > .sk-h:is(:nth-child(1), :nth-child(2), :nth-child(5)) {
+  display: none;
+}
+
+.va-side .sk-row:not(.sk-headrow) {
+  /* 목표와 실적은 이름과 숫자를 한 줄씩: 두 숫자를 옆으로 두면 단이 좁을 때(다섯) '15.2시간'이 두 줄로 꺾였다 */
+  grid-template-columns: auto minmax(0, 1fr);
+  /* 다섯 줄(이름, 달성률, 막대, 목표, 실적)을 모든 단이 같이 쓴다(subgrid): 단마다 따로 쌓으면 설명이 없는 단만
+     달성률과 막대가 위로 올라가 옆 단과 높이가 어긋났다 */
+  grid-row: span 5;
+  grid-template-rows: subgrid;
+  grid-template-areas: 'name name' 'rate rate' 'bar bar' 'kt target' 'kv value';
+  align-content: start;
+  align-items: baseline;
+  column-gap: 24px;
+  row-gap: 0;
+  padding: 8px 48px;
+  border-bottom: 0;
+  border-left: var(--rule) solid var(--line);
+}
+
+/* 줄의 첫 단은 왼쪽 줄 없이 본문 왼쪽 끝에 */
+.va-side .sk:not([data-n='6']) .sk-row:nth-child(2),
+.va-side .sk[data-n='6'] .sk-row:is(:nth-child(2), :nth-child(5)) {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* 여섯이면 아랫줄 위에 가로 줄 */
+.va-side .sk[data-n='6'] .sk-row:nth-child(n + 5) {
+  margin-top: 32px;
+  padding-top: 36px;
+  border-top: var(--rule) solid var(--line);
+}
+
+.va-side .sk-name {
+  grid-area: name;
+  align-self: start;
+}
+
+.va-side .sk-title {
+  --fs: 30px;
+}
+
+.va-side .sk-rate {
+  --fs: 90px;
+  grid-area: rate;
+  margin-top: 48px;
+  text-align: left;
+}
+
+.va-side .sk:is([data-n='4'], [data-n='5'], [data-n='6']) .sk-rate {
+  --fs: 74px;
+}
+
+.va-side .sk-bar {
+  grid-area: bar;
+  align-self: center;
+  height: 20px;
+  margin: 40px 0 36px;
+}
+
+.va-side .sk-mark {
+  top: -10px;
+  bottom: -10px;
+}
+
+.va-side .sk-row:not(.sk-headrow)::before,
+.va-side .sk-row:not(.sk-headrow)::after {
+  /* 단마다의 이름은 글자 칸이 아니라서 글자 칸의 크기 공식(base.css)을 22px로 같이 쓴다 */
+  font-size: max(var(--fs-min, 0px), calc(22px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1)));
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.va-side .sk-row:not(.sk-headrow)::before {
+  grid-area: kt;
+  content: var(--sk-kt, '목표');
+}
+
+.va-side .sk-row:not(.sk-headrow)::after {
+  grid-area: kv;
+  margin-top: 10px;
+  content: var(--sk-kv, '실적');
+}
+
+.va-side .sk-target {
+  --fs: 26px;
+  grid-area: target;
+}
+
+.va-side .sk-value {
+  --fs: 30px;
+  grid-area: value;
+  margin-top: 10px;
+}
+
+/* 여섯(셋씩 두 줄)은 장 높이에 두 줄이 들게: 목표와 실적을 한 줄에 (단이 셋이라 넓다) */
+.va-side .sk[data-n='6'] .sk-row:not(.sk-headrow) {
+  grid-row: span 4;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: 'name name name name' 'rate rate rate rate' 'bar bar bar bar' 'kt target kv value';
+  column-gap: 16px;
+}
+
+.va-side .sk[data-n='6'] .sk-target {
+  text-align: left;
+}
+
+.va-side .sk[data-n='6'] .sk-row:not(.sk-headrow)::after,
+.va-side .sk[data-n='6'] .sk-value {
+  margin-top: 0;
+}
+
+.va-side .sk[data-n='6'] .sk-rate {
+  --fs: 62px;
+  margin-top: 28px;
+}
+
+.va-side .sk[data-n='6'] .sk-bar {
+  margin: 28px 0 24px;
+}
+
+/* 큰 글자나 편집할 때(머리 줄이 더 보인다) 여섯: 두 줄이 장 높이를 넘었다. 달성률을 한 단계, 줄 사이를 조금 줄인다 */
+:is(.sz-large.va-side, .sz-large .va-side, .m-edit.va-side, .m-edit .va-side) .sk[data-n='6'] .sk-rate {
+  --fs: 52px;
+  margin-top: 20px;
+}
+
+:is(.sz-large.va-side, .sz-large .va-side, .m-edit.va-side, .m-edit .va-side) .sk[data-n='6'] .sk-bar {
+  margin: 22px 0 18px;
+}
+
+:is(.sz-large.va-side, .sz-large .va-side, .m-edit.va-side, .m-edit .va-side) .sk[data-n='6'] .sk-row:nth-child(n + 5) {
+  margin-top: 24px;
+  padding-top: 28px;
+}
+
+/* 큰 글자로 편집할 때 여섯: 머리 줄과 빈 설명 칸의 안내까지 더해 31px 넘쳤다 */
+:is(.sz-large.m-edit.va-side, .sz-large.m-edit .va-side) .sk[data-n='6'] .sk-rate {
+  margin-top: 10px;
+}
+
+:is(.sz-large.m-edit.va-side, .sz-large.m-edit .va-side) .sk[data-n='6'] .sk-bar {
+  margin: 14px 0 10px;
+}

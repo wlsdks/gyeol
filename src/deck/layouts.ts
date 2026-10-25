@@ -180,6 +180,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'scorecard',
     name: '목표 대비 실적',
     description: '지표마다 목표와 실적, 달성률을 한 표로',
+    variants: [
+      { id: 'base', name: '표' },
+      { id: 'side', name: '나란히' },
+    ],
     highlight: { label: '강조할 지표', fallback: -1 },
     fields: [
       title('실적을 요약하는 한 문장'),

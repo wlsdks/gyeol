@@ -1,5 +1,6 @@
 // 레이아웃: 목표 대비 실적 (scorecard). 모양은 styles/scorecard.css
 
+import { readField } from '../../deck/fields'
 import { highlightOf, hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
@@ -7,9 +8,12 @@ import { IT, ItemTools } from '../fields'
 import { amountPair, lowerIsBetter } from '../numbers'
 import { Head, Label, useItems } from './parts'
 
-/** 목표 대비 실적: 지표마다 목표, 실적, 달성률. 막대에 목표 자리를 세로 줄로 표시한다. */
+/**
+ * 목표 대비 실적: 지표마다 목표, 실적, 달성률. 막대에 목표 자리를 세로 줄로 표시한다.
+ * 표(기본)는 지표마다 한 줄, 나란히는 지표마다 한 단(달성률을 크게, 그 아래 막대와 목표, 실적). 두 모양이 같은 칸을 쓰고 배치만 다르다.
+ */
 export function Scorecard() {
-  const { slide, mode } = useSlide()
+  const { slide, meta, mode } = useSlide()
   const items = useItems()
   const highlight = highlightOf(slide)
   // 편집할 때 목표와 실적이 둘 다 비어 있으면 안내 문구의 예시 숫자로 막대를 흐리게 그린다.
@@ -22,7 +26,12 @@ export function Scorecard() {
   return (
     <>
       <Head />
-      <div className="s-body sk" data-n={items.length}>
+      {/* 나란히: 단마다 목표와 실적 앞에 붙이는 이름(머리 줄의 이름을 그대로). 따옴표로 묶은 글이라 CSS의 content로 쓴다 */}
+      <div
+        className="s-body sk"
+        data-n={items.length}
+        style={slide.variant === 'side' ? { '--sk-kt': JSON.stringify(readField(slide, meta, 'metaTitle').trim() || '목표'), '--sk-kv': JSON.stringify(readField(slide, meta, 'valueTitle').trim() || '실적') } : undefined}
+      >
         <div className="sk-row sk-headrow">
           <span className="sk-h">지표</span>
           <span className="sk-h">목표 대비</span>
