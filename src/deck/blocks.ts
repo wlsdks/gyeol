@@ -51,7 +51,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 6,
     prefSpan: 12,
-    sample: { fields: { text: '12월에 계약하면 1분기부터 불량률을 절반으로 줄여요', sub: '시범 라인 3개월 결과 기준' } },
+    sample: { fields: { text: '주간 보고를 한 양식으로 맞추면 회의가 20분 줄어요', sub: '기획팀 시범 3개월 결과 기준' } },
   },
   text: {
     name: '제목과 글',
@@ -64,7 +64,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    sample: { fields: { heading: '검사 시간을 줄여요', body: '사람이 눈으로 보던 외관 검사를 카메라가 먼저 걸러요. 검사원은 의심되는 제품만 다시 봐요.' } },
+    sample: { fields: { heading: '배포 시간을 줄여요', body: '사람이 손으로 하던 배포 전 점검을 자동 시험이 먼저 걸러요. 개발자는 실패한 항목만 다시 봐요.' } },
   },
   bullets: {
     name: '점 목록',
@@ -85,20 +85,20 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 6,
     sample: {
       fields: { heading: '먼저 바꿀 것' },
-      items: [{ title: '불량이 많은 3개 라인부터' }, { title: '검사 기록을 한곳에 모아요' }, { title: '분기마다 효과를 다시 봐요' }],
+      items: [{ title: '주문이 많은 3개 품목부터' }, { title: '단가 기록을 한곳에 모아요' }, { title: '분기마다 효과를 다시 봐요' }],
     },
   },
   quote: {
     name: '인용',
-    description: '고객이나 현장의 한마디',
+    description: '동료나 현장에서 들은 한마디',
     motion: '따옴표가 먼저, 글이 뒤따라요',
     fields: [
       { key: 'quote', label: '인용할 말', hint: '그대로 옮길 한마디', multiline: true },
-      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 고객사 품질팀장)', optional: true },
+      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)', optional: true },
     ],
     minSpan: 4,
     prefSpan: 6,
-    sample: { fields: { quote: '검사 기록이 남으니 고객 감사 준비가 훨씬 편해졌어요', by: '시범 공장 품질 담당' } },
+    sample: { fields: { quote: '신청이 한곳에 모이니 교육 일정 잡기가 훨씬 편해졌어요', by: '시범 부서 교육 담당' } },
   },
   callout: {
     name: '강조 상자',
@@ -111,7 +111,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 3,
     prefSpan: 4,
     look: 'bold',
-    sample: { fields: { label: '결정 요청', text: '시범 구축 인력 2명을 11월부터 지원해 주세요' } },
+    sample: { fields: { label: '결정 요청', text: '신입 교육 담당 2명을 11월부터 지원해 주세요' } },
   },
   number: {
     name: '큰 숫자',
@@ -119,33 +119,33 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     motion: '숫자가 자리마다 굴러가 맞춰져요',
     fields: [
       { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지' },
-      { key: 'value', label: '숫자', hint: '4.8억 원' },
-      { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 3년이면 7.2억 원)', optional: true, multiline: true },
+      { key: 'value', label: '숫자', hint: '3.6억 원' },
+      { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 3년이면 10.8억 원)', optional: true, multiline: true },
     ],
     minSpan: 3,
     prefSpan: 4,
-    sample: { fields: { value: '4.8억 원', label: '첫해 예상 매출', note: '3년이면 7.2억 원' } },
+    sample: { fields: { value: '3.6억 원', label: '줄어드는 전기료', note: '3년이면 10.8억 원' } },
   },
   delta: {
     name: '전과 후',
     description: '바뀌기 전과 뒤의 숫자, 얼마나 달라지는지',
     motion: '전에서 후로, 차이가 튀어나와요',
     fields: [
-      { key: 'label', label: '무엇이 바뀌는지', hint: '무엇이 바뀌는지 (예: 불량률)' },
-      { key: 'before', label: '전', hint: '3.2%' },
-      { key: 'after', label: '후', hint: '1.1%' },
-      { key: 'note', label: '덧붙임', hint: '기준 (예: 시범 라인 3개월)', optional: true },
+      { key: 'label', label: '무엇이 바뀌는지', hint: '무엇이 바뀌는지 (예: 이직률)' },
+      { key: 'before', label: '전', hint: '8.4%' },
+      { key: 'after', label: '후', hint: '5.1%' },
+      { key: 'note', label: '덧붙임', hint: '기준 (예: 도입 1년 뒤)', optional: true },
     ],
     minSpan: 4,
     prefSpan: 6,
-    sample: { fields: { label: '불량률', before: '3.2%', after: '1.1%', note: '시범 라인 3개월 결과' } },
+    sample: { fields: { label: '이직률', before: '8.4%', after: '5.1%', note: '새 제도 도입 1년 결과' } },
   },
   goal: {
     name: '목표 대비',
     description: '목표에 얼마나 왔는지 막대로',
     motion: '막대가 목표를 향해 자라요',
     fields: [
-      { key: 'label', label: '무엇의 목표', hint: '무엇의 목표인지 (예: 연간 수주)' },
+      { key: 'label', label: '무엇의 목표', hint: '무엇의 목표인지 (예: 연간 절감)' },
       { key: 'value', label: '지금', hint: '7.2' },
       { key: 'target', label: '목표', hint: '10' },
       { key: 'unit', label: '단위', hint: '억 원', optional: true },
@@ -153,7 +153,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    sample: { fields: { label: '연간 수주', value: '7.2', target: '10', unit: '억 원', note: '4분기 계약 3건이 남았어요' } },
+    sample: { fields: { label: '연간 절감', value: '7.2', target: '10', unit: '억 원', note: '4분기 과제 3건이 남았어요' } },
   },
   ring: {
     name: '비율 원',
@@ -164,20 +164,20 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       { id: 'gauge', name: '반원 게이지' },
     ],
     fields: [
-      { key: 'label', label: '무엇의 비율', hint: '무엇의 비율인지 (예: 자동 검사 비율)' },
+      { key: 'label', label: '무엇의 비율', hint: '무엇의 비율인지 (예: 첫 상담 해결률)' },
       { key: 'value', label: '비율', hint: '72%' },
       { key: 'note', label: '덧붙임', hint: '짧은 설명 (예: 지난해 41%)', optional: true, multiline: true },
     ],
     minSpan: 3,
     prefSpan: 4,
-    sample: { fields: { label: '사람 손 없이 끝내는 검사', value: '72%', note: '지난해에는 41%였어요' } },
+    sample: { fields: { label: '상담원 한 번에 끝낸 문의', value: '72%', note: '지난해에는 41%였어요' } },
   },
   ratio: {
     name: '몇 중 몇',
     description: '전체 가운데 몇인지 점으로 (10곳 중 7곳)',
     motion: '점이 하나씩 채워져요',
     fields: [
-      { key: 'label', label: '무엇을 센 것', hint: '무엇을 센 것인지 (예: 도입한 고객사)' },
+      { key: 'label', label: '무엇을 센 것', hint: '무엇을 센 것인지 (예: 새 점검표를 쓰는 공장)' },
       { key: 'value', label: '몇', hint: '7' },
       { key: 'total', label: '전체', hint: '10' },
       { key: 'unit', label: '단위', hint: '곳', optional: true },
@@ -185,27 +185,27 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     ],
     minSpan: 4,
     prefSpan: 6,
-    sample: { fields: { label: '시범 뒤 도입을 정한 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 정해요' } },
+    sample: { fields: { label: '점검표를 새로 바꾼 공장', value: '7', total: '10', unit: '곳', note: '나머지 3곳은 1분기에 바꿔요' } },
   },
   spark: {
     name: '숫자와 흐름',
     description: '지금 숫자와 그동안의 흐름을 작은 선으로',
     motion: '선이 그려지고 숫자가 올라가요',
     fields: [
-      { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지 (예: 월 불량률)' },
+      { key: 'label', label: '무엇의 숫자', hint: '무엇의 숫자인지 (예: 월 오류율)' },
       { key: 'value', label: '지금 숫자', hint: '1.1%' },
       { key: 'series', label: '흐름', hint: '3.2, 3.0, 2.1, 1.6, 1.1' },
       { key: 'note', label: '덧붙임', hint: '기간이나 기준 (예: 5월부터 9월까지)', optional: true },
     ],
     minSpan: 3,
     prefSpan: 4,
-    sample: { fields: { label: '월 불량률', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
+    sample: { fields: { label: '월 오류율', value: '1.1%', series: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', note: '4월부터 9월까지' } },
   },
   facts: {
     name: '개요',
     description: '기간, 예산, 담당처럼 항목과 내용을 짝지어',
     motion: '줄마다 선이 그어지며 들어와요',
-    fields: [{ key: 'heading', label: '소제목', hint: '예: 사업 개요', optional: true }],
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 과제 개요', optional: true }],
     items: {
       label: '줄',
       min: 1,
@@ -219,12 +219,12 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 4,
     prefSpan: 6,
     sample: {
-      fields: { heading: '사업 개요' },
+      fields: { heading: '이전 개요' },
       items: [
         { title: '기간', body: '11월부터 1월까지, 3개월' },
-        { title: '예산', body: '2.4억 원 (카메라 1.6억, 설치 0.8억)' },
-        { title: '대상', body: '불량이 많은 3개 라인' },
-        { title: '담당', body: '품질팀 2명, 생산기술팀 1명' },
+        { title: '예산', body: '2.4억 원 (공사 1.6억, 이사 0.8억)' },
+        { title: '대상', body: '본사 사무실 3개 층' },
+        { title: '담당', body: '총무팀 2명, 정보보안팀 1명' },
       ],
     },
   },
@@ -248,9 +248,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: {},
       items: [
-        { title: '설치하는 동안 라인이 멈춰요', body: '주말 이틀씩 나눠 설치해 평일 생산은 그대로' },
-        { title: '카메라가 불량을 놓칠 수 있어요', body: '첫 달은 사람 검사와 같이 돌려 놓친 것을 맞춰 봐요' },
-        { title: '현장이 새 방식을 낯설어해요', body: '라인마다 담당 1명을 먼저 가르쳐 옆에서 돕게 해요' },
+        { title: '옮기는 동안 시스템이 멈춰요', body: '주말 이틀씩 나눠 옮겨 평일 업무는 그대로' },
+        { title: '옮긴 자료 일부가 빠질 수 있어요', body: '첫 달은 예전 시스템과 같이 돌려 빠진 것을 맞춰 봐요' },
+        { title: '직원들이 새 화면을 낯설어해요', body: '부서마다 담당 1명을 먼저 가르쳐 옆에서 돕게 해요' },
       ],
     },
   },
@@ -258,7 +258,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     name: '강점과 약점',
     description: '강점, 약점, 기회, 위협을 네 칸에 (SWOT)',
     motion: '네 칸이 차례로 나타나요',
-    fields: [{ key: 'heading', label: '소제목', hint: '예: 우리 제안의 강점과 약점', optional: true }],
+    fields: [{ key: 'heading', label: '소제목', hint: '예: 새 제도의 강점과 약점', optional: true }],
     items: {
       label: '칸',
       min: 4,
@@ -278,12 +278,12 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 6,
     prefSpan: 12,
     sample: {
-      fields: { heading: '우리 제안의 강점과 약점' },
+      fields: { heading: '새 근무제의 강점과 약점' },
       items: [
-        { title: '강점', body: '불량 원인까지 분석해 주는 곳은 우리뿐이에요' },
-        { title: '약점', body: '경쟁사보다 첫해 비용이 0.9억 원 많아요' },
-        { title: '기회', body: '고객사가 내년에 품질 투자를 늘리기로 했어요' },
-        { title: '위협', body: '경쟁사가 가격을 더 낮출 수 있어요' },
+        { title: '강점', body: '출퇴근 시간을 고를 수 있는 곳이 드물어요' },
+        { title: '약점', body: '팀끼리 회의 시간을 맞추기가 더 어려워요' },
+        { title: '기회', body: '채용 공고에 내세우면 지원자가 늘 수 있어요' },
+        { title: '위협', body: '경쟁사도 같은 제도를 낼 수 있어요' },
       ],
     },
   },
@@ -298,7 +298,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 4,
       default: 3,
       fields: [
-        { key: 'title', label: '질문', hint: '받을 만한 질문', hints: ['왜 지금 해야 하나요?', '비용은 언제 되찾나요?', '다른 공장에도 쓸 수 있나요?', '안 하면 어떻게 되나요?'], multiline: true },
+        { key: 'title', label: '질문', hint: '받을 만한 질문', hints: ['왜 지금 해야 하나요?', '비용은 언제 되찾나요?', '다른 부서에도 쓸 수 있나요?', '안 하면 어떻게 되나요?'], multiline: true },
         { key: 'body', label: '답', hint: '짧은 답', multiline: true },
       ],
     },
@@ -307,9 +307,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: {},
       items: [
-        { title: '왜 지금 해야 하나요?', body: '1분기에 고객 감사가 있어서 그 전에 검사 기록을 갖춰야 해요' },
-        { title: '비용은 언제 되찾나요?', body: '불량 처리비가 줄어 14개월이면 설치비를 되찾아요' },
-        { title: '다른 공장에도 쓸 수 있나요?', body: '같은 카메라를 써서 설정만 바꾸면 돼요' },
+        { title: '왜 지금 해야 하나요?', body: '1분기에 외부 감사가 있어서 그 전에 증빙 기록을 갖춰야 해요' },
+        { title: '비용은 언제 되찾나요?', body: '정산하는 시간이 줄어 14개월이면 도입비를 되찾아요' },
+        { title: '다른 부서에도 쓸 수 있나요?', body: '같은 시스템을 써서 설정만 바꾸면 돼요' },
       ],
     },
   },
@@ -324,7 +324,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '할 일', hint: '할 일', hints: ['예산 승인', '업체 고르기', '라인 설치', '현장 교육', '효과 점검', '결과 보고'] },
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['예산 승인', '업체 고르기', '참석자 초대', '자료 준비', '효과 점검', '결과 보고'] },
         { key: 'body', label: '상태', hint: '완료, 진행 중, 지연, 예정', hints: ['완료', '완료', '진행 중', '예정', '예정', '예정'], optional: true },
         { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true },
       ],
@@ -335,9 +335,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       fields: { heading: '준비 상황' },
       items: [
         { title: '예산 승인', body: '완료', meta: '경영기획팀, 10월' },
-        { title: '카메라 업체 고르기', body: '완료', meta: '구매팀, 10월' },
-        { title: '시범 라인 설치', body: '진행 중', meta: '생산기술팀, 11월' },
-        { title: '현장 교육', body: '1주 지연', meta: '품질팀, 11월' },
+        { title: '행사장 업체 고르기', body: '완료', meta: '총무팀, 10월' },
+        { title: '참석자 초대하기', body: '진행 중', meta: '마케팅팀, 11월' },
+        { title: '자료 준비', body: '1주 지연', meta: '기획팀, 11월' },
       ],
     },
   },
@@ -358,7 +358,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '할 일', hint: '할 일', hints: ['업체 고르기', '라인 설치', '현장 교육', '효과 점검', '결과 보고', '넓히기'] },
+        { key: 'title', label: '할 일', hint: '할 일', hints: ['업체 고르기', '화면 만들기', '직원 교육', '효과 점검', '결과 보고', '넓히기'] },
         { key: 'body', label: '기간', hint: '예: 12월~2월', hints: ['11월', '11월~12월', '1월', '2월~3월', '3월', '3월'] },
         { key: 'meta', label: '담당', hint: '담당', optional: true },
       ],
@@ -368,9 +368,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: { heading: '추진 일정', cols: '11월 12월 1월 2월 3월', now: '12월' },
       items: [
-        { title: '카메라 업체 고르기', body: '11월', meta: '구매팀' },
-        { title: '시범 라인 설치', body: '11월~12월', meta: '생산기술팀' },
-        { title: '현장 교육', body: '1월', meta: '품질팀' },
+        { title: '개발 업체 고르기', body: '11월', meta: '구매팀' },
+        { title: '새 화면 만들기', body: '11월~12월', meta: '정보기술팀' },
+        { title: '직원 교육', body: '1월', meta: '인사팀' },
         { title: '효과 점검과 보고', body: '2월~3월', meta: '경영기획팀' },
       ],
     },
@@ -392,7 +392,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       default: 3,
       fields: [
         { key: 'title', label: '이름', hint: '이름과 직급' },
-        { key: 'meta', label: '역할', hint: '역할', hints: ['사업 총괄', '현장 설치', '품질 검증', '예산 관리'] },
+        { key: 'meta', label: '역할', hint: '역할', hints: ['과제 총괄', '챗봇 설정', '상담 품질', '예산 관리'] },
         { key: 'body', label: '맡은 일', hint: '맡은 일 한 줄', optional: true, multiline: true },
       ],
     },
@@ -401,9 +401,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: {},
       items: [
-        { title: '한도윤 책임', meta: '사업 총괄', body: '일정과 예산, 윗분 보고' },
-        { title: '서지우 선임', meta: '현장 설치', body: '라인마다 카메라 설치와 시험' },
-        { title: '문하린 선임', meta: '품질 검증', body: '사람 검사와 결과 맞춰 보기' },
+        { title: '한도윤 책임', meta: '과제 총괄', body: '일정과 예산, 윗분 보고' },
+        { title: '서지우 선임', meta: '챗봇 설정', body: '질문마다 챗봇 답을 넣고 시험' },
+        { title: '문하린 선임', meta: '상담 품질', body: '상담원 답과 결과 맞춰 보기' },
       ],
     },
   },
@@ -440,7 +440,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '기준', hint: '견주는 기준', hints: ['첫해 비용', '불량 줄이는 효과', '구축 기간', '현장 부담', '다른 공장으로 넓히기', '업체 지원'] },
+        { key: 'title', label: '기준', hint: '견주는 기준', hints: ['첫해 비용', '시간 줄이는 효과', '도입 기간', '익히는 부담', '다른 부서로 넓히기', '업체 지원'] },
         {
           key: 'body',
           label: '평가',
@@ -456,9 +456,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       fields: { heading: '세 안 견주기', opts: 'A안 B안 C안', pick: 'B안' },
       items: [
         { title: '첫해 비용', body: '좋음 보통 나쁨', meta: '1.9억, 2.4억, 3.1억 원' },
-        { title: '불량 줄이는 효과', body: '나쁨 좋음 좋음' },
-        { title: '구축 기간', body: '좋음 좋음 나쁨', meta: '2개월, 3개월, 6개월' },
-        { title: '다른 공장으로 넓히기', body: '나쁨 좋음 보통' },
+        { title: '시간 줄이는 효과', body: '나쁨 좋음 좋음' },
+        { title: '도입 기간', body: '좋음 좋음 나쁨', meta: '2개월, 3개월, 6개월' },
+        { title: '다른 부서로 넓히기', body: '나쁨 좋음 보통' },
       ],
     },
   },
@@ -483,8 +483,8 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: { heading: '시장 규모' },
       items: [
-        { title: '전체 시장', value: '2.4조 원', body: '국내 제조 품질 검사 전체' },
-        { title: '공략할 시장', value: '3,200억 원', body: '중견 전자·자동차 부품 공장' },
+        { title: '전체 시장', value: '2.4조 원', body: '국내 기업 직무 교육 전체' },
+        { title: '공략할 시장', value: '3,200억 원', body: '직원 300명이 넘는 중견기업' },
         { title: '3년 안 목표', value: '180억 원', body: '공략할 시장의 5.6%' },
       ],
     },
@@ -526,8 +526,8 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     description: '기간마다 실적 막대와 목표 표시. 못 미친 기간이 바로 보여요',
     motion: '막대가 차례로 자라고, 목표 표시가 그어져요',
     fields: [
-      { key: 'heading', label: '소제목', hint: '예: 월별 매출 달성', optional: true },
-      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      { key: 'heading', label: '소제목', hint: '예: 월별 생산 달성', optional: true },
+      { key: 'unit', label: '단위', hint: '만 개', optional: true },
     ],
     items: {
       label: '기간',
@@ -543,7 +543,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 6,
     prefSpan: 8,
     sample: {
-      fields: { heading: '월별 매출 달성', unit: '억 원' },
+      fields: { heading: '월별 생산 달성', unit: '만 개' },
       items: [
         { title: '4월', value: '42', meta: '40' },
         { title: '5월', value: '45', meta: '44' },
@@ -563,7 +563,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       { id: 'down', name: '줄어든 쪽 강조' },
     ],
     fields: [
-      { key: 'heading', label: '소제목', hint: '예: 지점별 매출 증감', optional: true },
+      { key: 'heading', label: '소제목', hint: '예: 부서별 야근 증감', optional: true },
       { key: 'basis', label: '기준', hint: '예: 작년 같은 분기 대비', optional: true },
     ],
     items: {
@@ -572,20 +572,20 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 8,
       default: 5,
       fields: [
-        { key: 'title', label: '항목', hint: '항목', hints: ['서울', '경기', '부산', '대구', '광주', '대전', '울산', '강원'] },
+        { key: 'title', label: '항목', hint: '항목', hints: ['생산', '영업', '연구', '지원', '품질', '구매', '재무', '인사'] },
         { key: 'value', label: '증감', hint: '+12% 또는 −3%', hints: ['+12%', '+8%', '−3%', '+5%', '−9%', '+2%', '−1%', '+4%'] },
       ],
     },
     minSpan: 6,
     prefSpan: 8,
     sample: {
-      fields: { heading: '지점별 매출 증감', basis: '작년 같은 분기 대비' },
+      fields: { heading: '부서별 야근 증감', basis: '작년 같은 분기 대비' },
       items: [
-        { title: '서울', value: '+12%' },
-        { title: '경기', value: '+8%' },
-        { title: '부산', value: '−3%' },
-        { title: '대구', value: '+5%' },
-        { title: '광주', value: '−9%' },
+        { title: '생산', value: '+12%' },
+        { title: '영업', value: '+8%' },
+        { title: '연구', value: '−3%' },
+        { title: '지원', value: '+5%' },
+        { title: '품질', value: '−9%' },
       ],
     },
   },
@@ -598,8 +598,8 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       { id: 'pct', name: '100%로' },
     ],
     fields: [
-      { key: 'heading', label: '소제목', hint: '예: 분기별 매출 구성', optional: true },
-      { key: 'parts', label: '나눈 것', hint: '장비, 소프트웨어, 유지보수' },
+      { key: 'heading', label: '소제목', hint: '예: 분기별 비용 구성', optional: true },
+      { key: 'parts', label: '나눈 것', hint: '인건비, 시설 임차료, 운영비' },
       { key: 'unit', label: '단위', hint: '억 원', optional: true },
     ],
     items: {
@@ -615,7 +615,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 6,
     prefSpan: 8,
     sample: {
-      fields: { heading: '분기별 매출 구성', parts: '장비, 소프트웨어, 유지보수', unit: '억 원' },
+      fields: { heading: '분기별 비용 구성', parts: '인건비, 시설 임차료, 운영비', unit: '억 원' },
       items: [
         { title: '1분기', value: '12, 6, 3' },
         { title: '2분기', value: '14, 7, 3' },
@@ -633,9 +633,9 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       { id: 'rows', name: '줄마다 견주기' },
     ],
     fields: [
-      { key: 'heading', label: '소제목', hint: '예: 지점별 월 매출', optional: true },
+      { key: 'heading', label: '소제목', hint: '예: 센터별 월 출고', optional: true },
       { key: 'cols', label: '칸 이름', hint: '4월 5월 6월 7월 8월 9월' },
-      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+      { key: 'unit', label: '단위', hint: '천 건', optional: true },
     ],
     items: {
       label: '줄',
@@ -665,7 +665,7 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     minSpan: 6,
     prefSpan: 12,
     sample: {
-      fields: { heading: '지점별 월 매출', cols: '4월 5월 6월 7월 8월 9월', unit: '억 원' },
+      fields: { heading: '센터별 월 출고', cols: '4월 5월 6월 7월 8월 9월', unit: '천 건' },
       items: [
         { title: '서울', value: '42, 45, 48, 51, 55, 58' },
         { title: '경기', value: '38, 40, 39, 44, 47, 49' },
@@ -692,14 +692,14 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '불량률', '신규 고객', '재구매율', '처리 기간', '문의'] },
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['문의', '포기율', '상담 인력', '첫 해결률', '처리 기간', '만족도'] },
         {
           key: 'value',
           label: '흐름',
           hint: '앞에서부터 쉼표로 (예: 3.2, 2.8, 2.1)',
-          hints: ['42, 45, 48, 51, 55, 58', '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', '12, 15, 14, 18, 21, 24', '31, 33, 32, 35, 37, 38', '4.2, 4.0, 3.6, 3.1, 2.9, 2.6', '210, 240, 225, 260, 245, 230'],
+          hints: ['42, 45, 48, 51, 55, 58', '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', '12, 15, 14, 18, 21, 24', '61, 63, 62, 65, 67, 68', '4.2, 4.0, 3.6, 3.1, 2.9, 2.6', '4.1, 4.2, 4.2, 4.4, 4.5, 4.6'],
         },
-        { key: 'meta', label: '단위', hint: '단위', hints: ['억 원', '%', '곳', '%', '일', '건'], optional: true },
+        { key: 'meta', label: '단위', hint: '단위', hints: ['백 건', '%', '명', '%', '일', '점'], optional: true },
       ],
     },
     minSpan: 6,
@@ -707,10 +707,10 @@ const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     sample: {
       fields: { heading: '월간 핵심 지표', period: '4월~9월' },
       items: [
-        { title: '매출', value: '42, 45, 48, 51, 55, 58', meta: '억 원' },
-        { title: '불량률', value: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', meta: '%' },
-        { title: '신규 고객', value: '12, 15, 14, 18, 21, 24', meta: '곳' },
-        { title: '재구매율', value: '31, 33, 32, 35, 37, 38', meta: '%' },
+        { title: '문의', value: '42, 45, 48, 51, 55, 58', meta: '백 건' },
+        { title: '포기율', value: '3.2, 3.0, 2.1, 1.6, 1.3, 1.1', meta: '%' },
+        { title: '상담 인력', value: '12, 15, 14, 18, 21, 24', meta: '명' },
+        { title: '첫 해결률', value: '61, 63, 62, 65, 67, 68', meta: '%' },
       ],
     },
   },
