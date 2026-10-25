@@ -2,6 +2,7 @@
 // 발표할 때의 움직임은 앱의 발표 화면과 같은 엔진(motion/engine.ts)을 쓴다. 엔진은 소스를 그대로 넣는다.
 // 부품 장에서 넘치는 부품 맞추기(slides/fitBlocks.ts의 blockFitter)도 같다. 처음에는 모든 장이 보이므로 열 때 한 번, 폰트가 오면 한 번 더.
 
+import { presentAction, presentKey } from '../lib/presentKeys'
 import { motionEngine } from '../motion/engine'
 import { blockFitter } from '../slides/fitBlocks'
 
@@ -48,6 +49,7 @@ body.is-present .v-blank.is-white{background:#fff}
 export const VIEWER_JS = `(function(){
 var engine=(${motionEngine.toString()})();
 var fitBlocks=(${blockFitter.toString()})().fit;
+var presentKey=(${presentKey.toString()}),presentAction=(${presentAction.toString()});
 var slides=[].slice.call(document.querySelectorAll('.v-slide'));
 var body=document.body,root=document.documentElement,count=document.querySelector('.v-count'),blank=document.querySelector('.v-blank');
 var i=0,timer=0,stopMotion=null;
@@ -97,24 +99,16 @@ document.addEventListener('click',function(e){if(!presenting())return;if(!blank.
 document.addEventListener('mousemove',function(){if(presenting())wake()});
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&presenting())stop()});
 document.addEventListener('keydown',function(e){
-  var k=e.key;
-  // 한글 입력 상태에서는 B가 'ㅠ'나 'Process'로 온다. 글자 키는 자판 자리로 읽는다 (앱의 presentKey와 같게)
-  if(/^Key[A-Z]$/.test(e.code)&&!/^[a-z]$/i.test(k))k=e.code.slice(3).toLowerCase();
-  else if(k==='Process')k={Period:'.',Comma:',',Space:' ',Enter:'Enter'}[e.code]||k;
+  // 키를 읽는 법과 할 일은 앱의 발표 화면과 같은 함수다 (lib/presentKeys.ts)
+  var k=presentKey(e);
   // 발표 중에 F5를 또 누르면 새로 고쳐져 발표가 끊긴다
   if(k==='F5'){e.preventDefault();if(!presenting())start(0);return}
   if(!presenting())return;
   if(e.ctrlKey||e.metaKey||e.altKey)return;
-  var b={b:'black',B:'black','.':'black',w:'white',W:'white',',':'white'}[k];
-  if(b){setBlank(blank.hidden||blank.className.indexOf(b)<0?b:null);e.preventDefault();return}
-  if(!blank.hidden&&k!=='Escape'){setBlank(null);e.preventDefault();return}
-  if(['ArrowRight','ArrowDown','PageDown',' ','Enter','n'].indexOf(k)>=0)show(i+1);
-  else if(['ArrowLeft','ArrowUp','PageUp','Backspace','p'].indexOf(k)>=0)show(i-1);
-  else if(k==='Home')show(0);
-  else if(k==='End')show(slides.length-1);
-  else if(k==='Escape')stop();
-  else return;
+  var a=presentAction(k,blank.hidden?null:blank.className.indexOf('is-white')>=0?'white':'black',i,slides.length-1);
+  if(!a)return;
   e.preventDefault();
+  if(a.kind==='blank')setBlank(a.blank);else if(a.kind==='go')show(a.index);else stop();
 });
 addEventListener('resize',fit);
 fit();fitBlocks(document);

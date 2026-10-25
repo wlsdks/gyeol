@@ -3,9 +3,9 @@ import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
 import { isMac } from '../lib/keys'
+import { presentAction, presentKey } from '../lib/presentKeys'
 import { hasSecondScreen, presentChannel, type Blank, type PresentMessage } from '../present/link'
 import { FitSlide, pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { BLANK_KEYS, NEXT_KEYS, presentKey, PREV_KEYS } from './Present'
 
 const NOTE_SIZES = [18, 21, 24, 28, 32, 38]
 const NOTE_SIZE_KEY = 'html-maker:notes-size'
@@ -124,26 +124,13 @@ export function Presenter({ id }: { id: string }) {
         return
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return
-      const key = presentKey(e)
       const { index: i, blank: b } = now.current
-      const nextBlank = BLANK_KEYS[key]
-      if (nextBlank) {
-        sendBlank(b === nextBlank ? null : nextBlank)
-        e.preventDefault()
-        return
-      }
-      if (b && key !== 'Escape') {
-        sendBlank(null)
-        e.preventDefault()
-        return
-      }
-      if (NEXT_KEYS.includes(key)) go(i + 1)
-      else if (PREV_KEYS.includes(key)) go(i - 1)
-      else if (key === 'Home') go(0)
-      else if (key === 'End') go(slides.length - 1)
-      else if (key === 'Escape') end()
-      else return
+      const act = presentAction(presentKey(e), b, i, slides.length - 1)
+      if (!act) return
       e.preventDefault()
+      if (act.kind === 'blank') sendBlank(act.blank)
+      else if (act.kind === 'go') go(act.index)
+      else end()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

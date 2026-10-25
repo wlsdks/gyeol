@@ -1,19 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDeck } from '../deck/generate'
-import { presentKey, startIndex } from './Present'
-
-const key = (k: string, code: string) => presentKey({ key: k, code } as KeyboardEvent)
-
-describe('발표 중의 키', () => {
-  it('한글 입력 상태에서도 B, W, N, P를 자판 자리로 읽는다', () => {
-    expect(key('ㅠ', 'KeyB')).toBe('b')
-    expect(key('ㅈ', 'KeyW')).toBe('w')
-    expect(key('Process', 'KeyN')).toBe('n')
-    expect(key('Process', 'Period')).toBe('.')
-    expect(key('B', 'KeyB')).toBe('B')
-    expect(key('ArrowRight', 'ArrowRight')).toBe('ArrowRight')
-  })
-})
+import { startIndex } from './Present'
 
 describe('발표를 시작할 장', () => {
   const deck = createDeck({ type: 'report', audience: 'mixed', minutes: 20, method: 'live', title: '', org: '', presenter: '', theme: 'white' })

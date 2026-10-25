@@ -3,25 +3,11 @@ import { flushSync } from 'react-dom'
 import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
+import { presentAction, presentKey } from '../lib/presentKeys'
 import { motionOf, transitionOf } from '../deck/themes'
 import { motionEngine } from '../motion/engine'
 import { presentChannel, type Blank, type PresentMessage } from '../present/link'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
-
-export const NEXT_KEYS = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n']
-export const PREV_KEYS = ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p']
-/** PowerPoint처럼 B나 .은 검은 화면, W나 ,는 흰 화면. 클리커의 '화면 가리기' 단추도 이 키를 보낸다. */
-export const BLANK_KEYS: Record<string, 'black' | 'white'> = { b: 'black', B: 'black', '.': 'black', w: 'white', W: 'white', ',': 'white' }
-
-/**
- * 발표 중에 누른 키. 한글 입력 상태에서는 B가 'ㅠ'로(윈도우는 'Process'로) 와서 B·W·N·P가 듣지 않는다.
- * 글자 키는 자판 자리(e.code)로 읽는다. 영문 자판이 아닌 나라 배열(AZERTY 등)은 e.key가 영문자라 그대로 쓴다
- */
-export function presentKey(e: KeyboardEvent): string {
-  if (/^Key[A-Z]$/.test(e.code) && !/^[a-z]$/i.test(e.key)) return e.code.slice(3).toLowerCase()
-  if (e.key === 'Process') return ({ Period: '.', Comma: ',', Space: ' ', Enter: 'Enter' } as Record<string, string>)[e.code] ?? e.key
-  return e.key
-}
 
 /** 발표를 시작할 장. 발표에서 뺀 장을 골랐으면 그 뒤의 첫 장부터 (뒤에 없으면 바로 앞 장) */
 export function startIndex(deck: Deck, shown: Deck['slides'], startId?: string): number {
@@ -113,27 +99,13 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
         return
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return
-      const key = presentKey(e)
-      const nextBlank = BLANK_KEYS[key]
       const { index, blank: b } = now.current
-      if (nextBlank) {
-        setBlank(b === nextBlank ? null : nextBlank)
-        e.preventDefault()
-        return
-      }
-      // 가린 화면에서는 아무 키나 누르면 넘기지 않고 그 장으로 돌아온다
-      if (b && key !== 'Escape') {
-        setBlank(null)
-        e.preventDefault()
-        return
-      }
-      if (NEXT_KEYS.includes(key)) goTo(index + 1)
-      else if (PREV_KEYS.includes(key)) goTo(index - 1)
-      else if (key === 'Home') goTo(0)
-      else if (key === 'End') goTo(slides.length - 1)
-      else if (key === 'Escape') exit()
-      else return
+      const act = presentAction(presentKey(e), b, index, slides.length - 1)
+      if (!act) return
       e.preventDefault()
+      if (act.kind === 'blank') setBlank(act.blank)
+      else if (act.kind === 'go') goTo(act.index)
+      else exit()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
