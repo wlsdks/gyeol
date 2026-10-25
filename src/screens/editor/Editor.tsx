@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { blockFieldPrefix, composeAreaH, withImage } from '../../deck/blocks'
 import { knownOnly, unknownParts } from '../../deck/compat'
@@ -36,6 +36,7 @@ import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector, layoutPreview } from './Inspector'
 import { SaveStatus } from './SaveStatus'
+import { useLook } from './look'
 import { FloatTools, SelectionBar } from './SelectionBar'
 import { VariantMenu } from './VariantMenu'
 import { SlideList } from './SlideList'
@@ -215,7 +216,10 @@ interface SidePanel {
 
 function EditorBody({ deck }: { deck: Deck }) {
   const slide = useSelectedSlide() ?? deck.slides[0]
-  const store = useDeck()
+  // 상태는 쓰는 것만 골라 구독하고, 할 일(액션)은 꺼내 쓴다 (예전에는 저장소 전체를 구독해서 무엇이 바뀌어도 다시 그렸다)
+  const store = useDeck.getState()
+  const canUndo = useDeck((s) => s.past.length > 0)
+  const canRedo = useDeck((s) => s.future.length > 0)
   const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
   // '레이아웃 바꾸기'에서 그림에 올린 레이아웃. 슬라이드 자리에 그 모습으로 미리 보인다
@@ -356,46 +360,49 @@ function EditorBody({ deck }: { deck: Deck }) {
     setPrinting(true)
   }, [markVersion])
 
-  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게), Ctrl+S 저장, Ctrl+P PDF
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const typing = isTyping(e)
-      const mod = e.metaKey || e.ctrlKey
-      // 한글 입력 상태에서는 Ctrl+Z가 'ㅋ'로 와서 글자 키는 자판 자리로 읽는다
-      const k = presentKey(e).toLowerCase()
-      const save = mod && !e.shiftKey && !e.altKey && k === 's'
-      // Ctrl+P를 브라우저에 맡기면 인쇄할 장이 없어 빈 쪽이 나온다. 내보내기의 PDF와 같은 길로 보낸다
-      const print = mod && !e.shiftKey && !e.altKey && k === 'p'
-      // 브라우저의 새로 고침, 페이지 저장, 인쇄 창은 글을 쓰는 중에도, 창이 떠 있어도 막는다
-      if (e.key === 'F5' || save || print) e.preventDefault()
-      if (presenting || dialogOpen()) return
-      if (e.key === 'F5') {
-        void startPresent(e.shiftKey ? slide?.id : undefined, false, e.altKey ? 'presenter' : 'auto')
-        return
-      }
-      if (save) {
-        void saveNow().then((ok) =>
-          toast.show(ok ? '저장했어요. 고칠 때마다 자동으로 저장되고 있어요.' : '저장하지 못했어요. 위쪽의 저장 상태를 눌러 할 일을 확인해 주세요.'),
-        )
-        return
-      }
-      if (print) {
-        printPdf()
-        return
-      }
-      if (typing) return
-      if (mod && k === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) store.redo()
-        else store.undo()
-      } else if (mod && k === 'y') {
-        e.preventDefault()
-        store.redo()
-      }
+  // 단축키: 되돌리기, F5로 발표 (PowerPoint와 같게), Ctrl+S 저장, Ctrl+P PDF.
+  // 창에는 한 번만 걸고 늘 최근 처리기를 부른다 (예전에는 글자 하나 칠 때마다 떼었다 다시 걸었다)
+  const onShortcut = useEffectEvent((e: KeyboardEvent) => {
+    const typing = isTyping(e)
+    const mod = e.metaKey || e.ctrlKey
+    // 한글 입력 상태에서는 Ctrl+Z가 'ㅋ'로 와서 글자 키는 자판 자리로 읽는다
+    const k = presentKey(e).toLowerCase()
+    const save = mod && !e.shiftKey && !e.altKey && k === 's'
+    // Ctrl+P를 브라우저에 맡기면 인쇄할 장이 없어 빈 쪽이 나온다. 내보내기의 PDF와 같은 길로 보낸다
+    const print = mod && !e.shiftKey && !e.altKey && k === 'p'
+    // 브라우저의 새로 고침, 페이지 저장, 인쇄 창은 글을 쓰는 중에도, 창이 떠 있어도 막는다
+    if (e.key === 'F5' || save || print) e.preventDefault()
+    if (presenting || dialogOpen()) return
+    if (e.key === 'F5') {
+      void startPresent(e.shiftKey ? slide?.id : undefined, false, e.altKey ? 'presenter' : 'auto')
+      return
     }
+    if (save) {
+      void saveNow().then((ok) =>
+        toast.show(ok ? '저장했어요. 고칠 때마다 자동으로 저장되고 있어요.' : '저장하지 못했어요. 위쪽의 저장 상태를 눌러 할 일을 확인해 주세요.'),
+      )
+      return
+    }
+    if (print) {
+      printPdf()
+      return
+    }
+    if (typing) return
+    const { undo, redo } = useDeck.getState()
+    if (mod && k === 'z') {
+      e.preventDefault()
+      if (e.shiftKey) redo()
+      else undo()
+    } else if (mod && k === 'y') {
+      e.preventDefault()
+      redo()
+    }
+  })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => onShortcut(e)
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [presenting, startPresent, slide?.id, store, saveNow, printPdf, toast.show])
+  }, [])
 
   const exportHtml = async () => {
     markVersion('export')
@@ -492,10 +499,10 @@ function EditorBody({ deck }: { deck: Deck }) {
         </div>
 
         <div className="ed-top-r">
-          <button type="button" className="icon-btn" aria-label="되돌리기" title={`되돌리기 (${keys('mod+Z')})`} disabled={!store.past.length} onClick={store.undo}>
+          <button type="button" className="icon-btn" aria-label="되돌리기" title={`되돌리기 (${keys('mod+Z')})`} disabled={!canUndo} onClick={store.undo}>
             <UndoIcon />
           </button>
-          <button type="button" className="icon-btn" aria-label="다시 하기" title={`다시 하기 (${isMac ? keys('mod+shift+Z') : keys('mod+Y')})`} disabled={!store.future.length} onClick={store.redo}>
+          <button type="button" className="icon-btn" aria-label="다시 하기" title={`다시 하기 (${isMac ? keys('mod+shift+Z') : keys('mod+Y')})`} disabled={!canRedo} onClick={store.redo}>
             <RedoIcon />
           </button>
           <button
@@ -690,11 +697,12 @@ function SlideStage({
   onRemove: (s: Slide) => void
   onPresentHere: () => void
 }) {
-  const store = useDeck()
+  // 할 일(액션)만 쓴다: 덱 전체를 구독하면 고칠 때마다 이 장이 한 번 더 그려진다 (장과 덱은 위에서 받는다)
+  const store = useDeck.getState()
   const info = pageInfo(deck.slides)
   const spec = LAYOUTS[slide.layout]
   const canvasRef = useRef<HTMLDivElement>(null)
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
+  const look = useLook(deck)
   // 테마, 글꼴, 글자 크기, 발표 정보(아래 표시의 이름, 소속)를 바꿔도 다시 잰다
   const overflow = useOverflow(canvasRef, slide, look)
 

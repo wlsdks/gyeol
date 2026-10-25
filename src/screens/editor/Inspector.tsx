@@ -9,12 +9,11 @@ import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { PREVIEW_MOTION } from './DeckMenus'
+import { useLook, type Look } from './look'
 import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
-
-type Look = Pick<Deck, 'meta' | 'theme' | 'title'>
 
 /**
  * 오른쪽 칸의 '이 장 설정'. 늘 보는 것(지금 레이아웃, 빈칸, 모양, 바탕, 움직임)만 한 화면에 두고
@@ -37,7 +36,7 @@ export function Inspector({
   const [picking, setPicking] = useState(false)
   // 다른 장을 고르면 레이아웃 고르기를 닫는다
   useEffect(() => setPicking(false), [slide.id])
-  const look = useMemo<Look>(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
+  const look = useLook(deck)
 
   if (picking) {
     const close = () => {

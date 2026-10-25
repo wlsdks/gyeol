@@ -203,7 +203,8 @@ function targetAt(node: Element, slide: Slide): Target | null {
 }
 
 export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Slide; canvasRef: RefObject<HTMLDivElement | null> }) {
-  const store = useDeck()
+  // 할 일(액션)만 쓴다. 저장소 전체를 구독하면 고칠 때마다 다시 그린다
+  const store = useDeck.getState()
   const [target, setTarget] = useState<Target | null>(null)
   const [ring, setRing] = useState<Rect | null>(null)
   const [bar, setBar] = useState<{ x: number; y: number } | null>(null)

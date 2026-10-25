@@ -10,12 +10,11 @@ import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { dialogOpen, isTyping } from '../ui'
+import { useLook, type Look } from './look'
 import { josa, noRoomText } from './noRoom'
 
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
-
-export type Look = Pick<Deck, 'meta' | 'theme' | 'title' | 'motion'>
 
 const THUMB_RATIO = 1.5
 /** 장 본문(1680) 12칸 격자의 한 칸 너비 */
@@ -100,7 +99,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
   const [group, setGroup] = useState<string | null>(null)
   // 이 장에 넣을 수 없는 카드를 눌렀을 때 그 까닭을 보여 줄 부품
   const [why, setWhy] = useState<{ type: BlockType; card: HTMLElement } | null>(null)
-  const look = useMemo<Look>(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
+  const look = useLook(deck)
   const engine = useMemo(() => motionEngine(), [])
   const playing = useRef(new WeakMap<Element, number>())
   const level = motionOf(deck, slide)

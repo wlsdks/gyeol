@@ -51,6 +51,7 @@ import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, isTyping, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction, type Toast } from '../ui'
 import { useLinkEditing } from './LinkEditor'
+import { useLook } from './look'
 import { narrowText, noRoomText } from './noRoom'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 칸 너비를 바꾸는 일.
@@ -167,7 +168,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const slideRef = useRef(slide)
   slideRef.current = slide
   const engine = useMemo(() => motionEngine(), [])
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title, motion: deck.motion }), [deck.meta, deck.theme, deck.title, deck.motion])
+  const look = useLook(deck)
 
   // '칸 더하기'로 연 빈칸 ('부품id 칸키'). 다른 장으로 가면 다시 접는다
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set())

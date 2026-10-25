@@ -13,7 +13,8 @@ import { go } from '../lib/router'
 import { motionEngine } from '../motion/engine'
 import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
-import { BlockThumb, LinkThumb, type Look } from './editor/BlockLibrary'
+import { BlockThumb, LinkThumb } from './editor/BlockLibrary'
+import type { Look } from './editor/look'
 import { BackIcon, Brand, CheckIcon } from './ui'
 
 /*

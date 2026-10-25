@@ -1,10 +1,10 @@
-import { useMemo } from 'react'
 import { LAYOUTS, variantOf } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { useDeck } from '../../store/deckStore'
 import { Popover, ShapesIcon } from '../ui'
 import { LayoutChoice } from './Inspector'
+import { useLook } from './look'
 
 /**
  * 슬라이드 아래의 '모양': 이 레이아웃의 다른 모양을 그림으로 보고 고른다.
@@ -14,7 +14,7 @@ export function VariantMenu({ deck, slide, compact }: { deck: Deck; slide: Slide
   const setVariant = useDeck((s) => s.setVariant)
   const variants = LAYOUTS[slide.layout].variants ?? []
   const current = variantOf(slide)
-  const look = useMemo(() => ({ meta: deck.meta, theme: deck.theme, title: deck.title }), [deck.meta, deck.theme, deck.title])
+  const look = useLook(deck)
   return (
     <Popover
       align="left"
