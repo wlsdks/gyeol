@@ -1,9 +1,28 @@
 /* ---------- 항목별 증감 ----------
-   0의 자리(--z)는 양쪽 가장 큰 값의 비율. 막대 끝 숫자 자리는 그쪽에 값이 있을 때만 남긴다(--dv-l, --dv-r).
-   가운데 선은 줄마다 그려 줄 사이 틈 없이 이어지게, 줄의 위아래 여백은 이름에 둔다 */
+   이름은 막대 반대쪽, 0 선 바로 옆에(늘어난 항목은 0 선 왼쪽, 줄어든 항목은 오른쪽): 한 줄이 '이름 | 막대 숫자'로 붙어 읽힌다.
+   0 선의 자리(--dv-x)와 막대의 눈금(--dv-b, 몫 1의 길이)은 칸 너비(100%)에서 셈한다. 둘 다 가장 길게 잡되
+   - 막대 끝의 숫자가 칸 안에 들고 (양쪽 숫자 자리 --dv-vn, --dv-vp)
+   - 0 선 반대쪽에 이름이 들어갈 자리가 남게 (--dv-lp, --dv-ln. 이름 폭은 Diverge.tsx가 글자 수로 어림한 em)
+   한쪽에만 막대가 있으면 0 선이 이름 바로 옆으로 가서 보통의 가로 막대가 된다.
+   이름이 칸의 42%보다 길면 그 폭에서 줄을 바꾼다. 가운데 선은 줄마다 그려 줄 사이 틈 없이 이어지게, 줄의 위아래 여백은 이름에 둔다 */
 .bk-dv {
-  --dv-l: 0px;
-  --dv-r: 0px;
+  /* 이름과 숫자의 글자 크기 (base.css의 글자 칸 꼴과 같은 셈) */
+  --dv-fs: max(var(--fs-min, 0px), calc(var(--t-small) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1)));
+  --dv-g: 20px;
+  --dv-vg: 14px;
+  --dv-vn: 0px;
+  --dv-vp: 0px;
+  --dv-lp: 0px;
+  --dv-ln: 0px;
+  --dv-b: max(
+    20%,
+    min(
+      100% - var(--dv-vn) - var(--dv-vp),
+      (100% - var(--dv-vp) - var(--dv-lp)) * var(--pfi),
+      (100% - var(--dv-vn) - var(--dv-ln)) * var(--nfi)
+    )
+  );
+  --dv-x: max(var(--dv-b) * var(--nf) + var(--dv-vn), var(--dv-lp));
   --dv-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
   display: flex;
   flex-direction: column;
@@ -15,12 +34,18 @@
   --dv-bar: color-mix(in srgb, var(--ink) 30%, var(--bg));
 }
 
+/* 숫자 자리: 숫자 폭(어림)과 막대와의 틈. 어림이 조금 모자라도 칸 밖으로 나가지 않게 4px 더 */
 .bk-dv.has-neg {
-  --dv-l: 140px;
+  --dv-vn: calc(var(--vw) * var(--dv-fs) + var(--dv-vg) + 4px);
+  --dv-ln: min(42%, var(--ln) * var(--dv-fs) + var(--dv-g));
 }
 
 .bk-dv.has-pos {
-  --dv-r: 140px;
+  --dv-vp: calc(var(--vw) * var(--dv-fs) + var(--dv-vg) + 4px);
+}
+
+.bk-dv.has-left {
+  --dv-lp: min(42%, var(--lp) * var(--dv-fs) + var(--dv-g));
 }
 
 .bk-dv > .bk-cc-key {
@@ -28,39 +53,42 @@
 }
 
 .bk-dv-row {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.34fr) minmax(0, 1fr);
-  column-gap: 32px;
+  grid-template-columns: var(--dv-x) minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(44px * var(--bk-fit, 1) + 2 * (10px * var(--bk-fit, 1) + var(--bk-air, 0px)));
 }
 
 .bk-dv-name {
   --fs: var(--t-small);
-  align-self: center;
-  padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  grid-column: 1;
+  justify-self: end;
+  min-width: 0;
+  padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) var(--dv-g) calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.25;
+  text-align: right;
+}
+
+.bk-dv-row.is-neg .bk-dv-name {
+  grid-column: 2;
+  justify-self: start;
+  padding-right: 0;
+  padding-left: var(--dv-g);
+  text-align: left;
 }
 
 .bk-dv-row.is-hl .bk-dv-name {
   color: var(--ink);
 }
 
-.bk-dv-track {
-  position: relative;
-  min-height: calc(44px * var(--bk-fit, 1) + 2 * (10px * var(--bk-fit, 1) + var(--bk-air, 0px)));
-}
-
-.bk-dv-scale {
-  position: absolute;
-  inset: 0 var(--dv-r) 0 var(--dv-l);
-}
-
 .bk-dv-axis {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc(var(--z) * 1%);
+  left: var(--dv-x);
   width: 2px;
   background: var(--ink);
   translate: -50% 0;
@@ -69,8 +97,8 @@
 .bk-dv-bar {
   position: absolute;
   top: 50%;
-  left: calc(var(--z) * 1%);
-  width: calc(var(--p) * 1%);
+  left: var(--dv-x);
+  width: calc(var(--dv-b) * var(--p));
   height: calc(44px * var(--bk-fit, 1));
   border-radius: 0 8px 8px 0;
   background: var(--dv-bar);
@@ -78,7 +106,7 @@
 }
 
 .bk-dv-row.is-neg .bk-dv-bar {
-  right: calc((100 - var(--z)) * 1%);
+  right: calc(100% - var(--dv-x));
   left: auto;
   border-radius: 8px 0 0 8px;
 }
@@ -90,13 +118,13 @@
 .bk-dv-v {
   position: absolute;
   top: 50%;
-  left: calc((var(--z) + var(--p)) * 1% + 14px);
+  left: calc(var(--dv-x) + var(--dv-b) * var(--p) + var(--dv-vg));
   white-space: nowrap;
   translate: 0 -50%;
 }
 
 .bk-dv-row.is-neg .bk-dv-v {
-  right: calc((100 - var(--z) + var(--p)) * 1% + 14px);
+  right: calc(100% - var(--dv-x) + var(--dv-b) * var(--p) + var(--dv-vg));
   left: auto;
 }
 
