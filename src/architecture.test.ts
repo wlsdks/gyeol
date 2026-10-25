@@ -30,17 +30,24 @@ function sourceFiles(dir: string): string[] {
 const FILES = sourceFiles(SRC)
 const KNOWN = new Set(FILES)
 
+const IMPORT = /^(?:import|export)\s+(type\s+)?(?:[^'"]*?\sfrom\s+)?['"]([^'"]+)['"]/gm
+
 /** 이 파일이 가져오는 src 안의 파일. 실행할 때 불러오는 것만(import type은 빼고) */
 function imports(file: string): string[] {
   const text = readFileSync(file, 'utf8')
   const out: string[] = []
-  for (const m of text.matchAll(/^(?:import|export)\s+(type\s+)?(?:[^'"]*?\sfrom\s+)?['"](\.[^'"]+)['"]/gm)) {
-    if (m[1]) continue
+  for (const m of text.matchAll(IMPORT)) {
+    if (m[1] || !m[2].startsWith('.')) continue
     const base = normalize(join(dirname(file), m[2].split('?')[0]))
     const hit = [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')].find((p) => KNOWN.has(p))
     if (hit) out.push(hit)
   }
   return out
+}
+
+/** 이 파일이 실행할 때 가져오는 바깥 패키지(react, node:fs 같은) */
+function packages(file: string): string[] {
+  return [...readFileSync(file, 'utf8').matchAll(IMPORT)].filter((m) => !m[1] && !m[2].startsWith('.')).map((m) => m[2])
 }
 
 const GRAPH = new Map(FILES.map((f) => [f, imports(f)]))
@@ -62,6 +69,27 @@ describe('구조', () => {
         if (to !== from && !allowed.includes(to)) wrong.push(`${name(file)} → ${name(dep)}`)
       }
     }
+    expect(wrong).toEqual([])
+  })
+
+  it('로컬 서버와 MCP 서버가 가져가는 src 파일은 브라우저와 패키지 없이 돈다', () => {
+    // 서버와 MCP 서버는 Node 내장만으로 돈다(AGENTS.md '꼭 지킬 것' 6). 모양 확인, 제안 읽기, 부품 목록을
+    // src에서 그대로 가져가므로, 그 파일들이 React나 DOM을 쓰기 시작하면 서버 빌드가 깨지거나 몰래 의존성이 늘어난다
+    const ROOT = dirname(SRC)
+    const entries = [...sourceFiles(join(ROOT, 'server')), ...sourceFiles(join(ROOT, 'mcp'))]
+    const used = new Set<string>()
+    const walk = (f: string) => {
+      for (const d of GRAPH.get(f) ?? imports(f)) if (!used.has(d)) used.add(d), walk(d)
+    }
+    entries.forEach(walk)
+    const wrong: string[] = []
+    for (const f of used) {
+      for (const p of packages(f)) wrong.push(`${name(f)}: ${p}`)
+      // 주석을 걷고 본다. 브라우저에만 있는 것
+      const code = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+      for (const g of code.match(/\b(?:document|window|navigator|localStorage|indexedDB|requestAnimationFrame)\b/g) ?? []) wrong.push(`${name(f)}: ${g}`)
+    }
+    expect(used.size).toBeGreaterThan(10)
     expect(wrong).toEqual([])
   })
 
