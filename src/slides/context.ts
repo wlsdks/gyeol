@@ -8,6 +8,14 @@ import type { Block, DeckMeta, ItemKey, Slide, SlideOptions } from '../deck/type
  */
 export type SlideMode = 'edit' | 'preview' | 'final'
 
+/**
+ * 차트를 예시로 그릴지: 편집하거나 미리 볼 때 숫자가 들어가는 항목 칸(keys)이 모두 비었으면, 칸 안내의 예시 값으로
+ * 옅게 그려 무엇이 그려질지 보여 준다. 다 만든 발표(final)는 빈 차트 그대로. 차트마다 숫자 칸이 다르다(값과 이전 값 같은)
+ */
+export function demoOf(mode: SlideMode, items: readonly { [K in ItemKey]: string }[], keys: readonly ItemKey[] = ['value']): boolean {
+  return mode !== 'final' && items.every((it) => keys.every((k) => !it[k].trim()))
+}
+
 export interface SlideActions {
   setField(key: string, value: string): void
   setItem(index: number, key: ItemKey, value: string): void

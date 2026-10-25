@@ -6,7 +6,7 @@ import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../
 import { cx } from '../lib/cx'
 import { imageSize } from '../lib/image'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
-import { SlideContext, useSlide, type SlideActions } from './context'
+import { demoOf, SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
@@ -807,8 +807,7 @@ function ChartKey({ sum, keys, unitKey = 'unit' }: { sum?: ReactNode; keys?: Rea
 function Pareto() {
   const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.pareto.items!.max)
-  const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const series = seriesIn(
     items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)),
     readField(slide, meta, 'unit'),
@@ -884,7 +883,7 @@ function Attain() {
   const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.attain.items!.max)
   const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
+  const demo = demoOf(mode, items, ['value', 'meta'])
   const text = (k: 'value' | 'meta', i: number) => (demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
   // 실적과 목표를 한 기준으로 읽는다. 단위가 서로 다른 값이 섞였으면 달성과 달성률은 말하지 않고 막대만 그린다
   const series = seriesIn([...items.map((_, i) => text('value', i)), ...items.map((_, i) => text('meta', i))], readField(slide, meta, 'unit'))
@@ -977,7 +976,7 @@ function Stack() {
   const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.stack.items!.max)
   const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const partsText = readField(slide, meta, 'parts').trim() || (final ? '' : hintFor(slide.layout, slide.hints, 'parts'))
   const parts = partsOf(partsText)
   const pct = slide.variant === 'pct'
@@ -1056,8 +1055,7 @@ function Stack() {
 function Diverge() {
   const { slide, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.diverge.items!.max)
-  const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   // 막대 길이끼리 견주므로 한 기준으로 ('+1.2억', '−4,000만')
   const values = seriesIn(items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))).values
   const known = values.filter((v): v is number => v !== null)
@@ -1143,7 +1141,7 @@ function Heat() {
   const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.heat.items!.max)
   const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const colsText = readField(slide, meta, 'cols').trim()
   const names = colsOf(colsText || (final ? '' : hintFor(slide.layout, slide.hints, 'cols')))
   const rows = items.map((it, i) => tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(0, HEAT_COLS))
@@ -1259,8 +1257,7 @@ function stepOf(from: string, to: string, unit: string): { text: string; dir: nu
 function Sparks() {
   const { slide, mode, folds } = useSlide()
   const items = slide.items.slice(0, BLOCKS.sparks.items!.max)
-  const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const first = slide.variant === 'first'
   // 단위 칸은 편집할 때 지금 값 옆에서 적는다. 모두 비어 접혀 있으면(칸 더하기로 연다) 적은 단위나 예시 단위를 그대로 보인다
   const unitField = mode === 'edit' && !folds?.has('items.meta')

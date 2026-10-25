@@ -5,7 +5,7 @@ import { readField, visibleItems } from '../deck/fields'
 import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
-import { useSlide } from './context'
+import { demoOf, useSlide } from './context'
 import { amountPair, formatNumber, isNumericCell, lineAxis, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T, textUnits } from './fields'
 import { placeLabels } from './fitBlocks'
@@ -451,7 +451,7 @@ function Versus() {
   const lines = slide.variant === 'lines'
   const dots = slide.variant === 'dots'
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
-  const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
+  const demo = demoOf(mode, items, ['value', 'meta'])
   const text = (k: 'meta' | 'value', i: number) => (demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
@@ -679,7 +679,7 @@ function Bridge() {
   const startText = readField(slide, meta, 'startValue')
   const unit = readField(slide, meta, 'unit').trim()
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
-  const demo = mode !== 'final' && !startText.trim() && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items) && !startText.trim()
   // 처음 값과 증감을 한 기준으로 더한다 ('1.2억'에 '+3,000만'은 1.5억). 단위가 서로 다른 값이 섞였으면 끝 값을 말하지 않는다
   const series = seriesIn(
     [demo ? hintFor(slide.layout, slide.hints, 'startValue') : startText, ...items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))],
@@ -767,7 +767,7 @@ function Trend() {
   const highlight = highlightOf(slide)
   const final = mode === 'final'
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   // 목표를 비워 두면 선을 긋지 않는다. 예시로 그릴 때만 예시 목표값에 흐리게
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
@@ -870,7 +870,7 @@ function Progress() {
   const { slide, mode } = useSlide()
   const items = useItems()
   const final = mode === 'final'
-  const demo = !final && items.every((it) => !it.value.trim() && !it.body.trim())
+  const demo = demoOf(mode, items, ['value', 'body'])
   const rows = items.map((it, i) => {
     const valueText = demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value
     const stateText = demo ? hintFor(slide.layout, slide.hints, 'body', 'body', i) : it.body
@@ -940,7 +940,7 @@ function Share() {
   const items = useItems()
   const final = mode === 'final'
   const highlight = highlightOf(slide)
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const texts = items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).trim())
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
@@ -1094,7 +1094,7 @@ function Funnel() {
   const items = useItems()
   const final = mode === 'final'
   const highlight = highlightOf(slide)
-  const demo = !final && items.every((it) => !it.value.trim())
+  const demo = demoOf(mode, items)
   const unit = readField(slide, meta, 'unit').trim()
   // 단계마다의 값을 한 기준으로 ('1.2만 명', '8,000명'). 단위가 서로 다른 값이 섞였으면 전환율은 틀린 숫자라 보이지 않는다
   const series = seriesIn(
@@ -1325,7 +1325,7 @@ function Position() {
   const items = useItems()
   const final = mode === 'final'
   const highlight = highlightOf(slide)
-  const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
+  const demo = demoOf(mode, items, ['value', 'meta'])
   const read = (k: 'value' | 'meta', i: number) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
   const xs = items.map((_, i) => read('value', i))
   const ys = items.map((_, i) => read('meta', i))
