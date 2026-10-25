@@ -434,8 +434,11 @@ function EditorBody({ deck }: { deck: Deck }) {
       pptBusy.current = false
     }
   }
-  // 콘솔에서 PPT의 장 그림만 볼 수 있게 (그림 점검용. rasterize.tsx의 exposePptDebug)
-  useEffect(() => exposePptDebug(() => useDeck.getState().deck), [])
+  // 콘솔에서 PPT의 장 그림만 볼 수 있게 (그림 점검용. rasterize.tsx의 exposePptDebug).
+  // 개발 서버에서만: 배포본의 window에 점검 함수를 걸어 두지 않고, 빌드에서는 함수째 빠진다
+  useEffect(() => {
+    if (import.meta.env.DEV) return exposePptDebug(() => useDeck.getState().deck)
+  }, [])
 
   const removeSlide = (s: Slide) => {
     store.removeSlide(s.id)
