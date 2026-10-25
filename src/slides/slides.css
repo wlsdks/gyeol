@@ -3514,6 +3514,28 @@
   --fs: 44px;
 }
 
+/* 다섯, 여섯이면 값을 이름 옆에 붙인다. 이름, 값, 덧붙임을 위아래로 쌓으면 목록이 본문보다 높아져 제목 쪽으로 올라갔다.
+   글자를 줄이지 않고 한 줄을 덜 쓴다 */
+.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 20px;
+}
+
+.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-value {
+  margin-top: 0;
+}
+
+.va-donut .sh:is([data-n='5'], [data-n='6']) .sh-meta {
+  flex-basis: 100%;
+}
+
+/* 큰 글자에서 넷이면, 편집할 때 빈 덧붙임 칸의 안내 줄까지 더해 목록이 본문보다 높아졌다. 줄 위아래 틈을 줄인다 */
+.sz-large.l-share.va-donut .sh[data-n='4'] .sh-item {
+  padding-block: 12px;
+}
+
 .sh.is-demo :is(.sh-band, .sh-ring svg) {
   opacity: 0.35;
 }
