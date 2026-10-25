@@ -146,3 +146,9 @@
 .bk-points.va-columns:is(.bk-look-card, .bk-look-bold) .pt {
   padding-bottom: 0;
 }
+
+/* 핵심 포인트의 줄 모양에서 하나나 둘은 줄 높이를 240px까지만 늘인다(장에서 줄 사이가 너무 벌어지지 않게). 면 위에서는 그 줄을
+   면 가운데에 모은다: 높은 칸(1096×705)에서 두 줄이 위에 붙어 면의 위 여백 126px, 아래 265px로 아래만 비었다 */
+.bk-points.va-base:is(.bk-look-card, .bk-look-bold) .pt:is([data-n='1'], [data-n='2']) {
+  align-content: center;
+}
