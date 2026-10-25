@@ -28,6 +28,7 @@ import {
   linkAt,
   linkTargets,
   needH,
+  placeIssue,
   tidyLinks,
   withLink,
   lookIssue,
@@ -235,6 +236,24 @@ describe('자리 정하기', () => {
     // 세 칸 줄의 끝(6:3:3)에서 더 끌어도 같다
     const three = { ...row(block('text', 't'), block('number', 'a'), block('number', 'b')), spans: [6, 3, 3] }
     expect(spanLimit(three, 0, 0.95)).toEqual({ kind: 'end', type: 'number', span: 3 })
+  })
+
+  it('눌러서 넣을 자리가 없는 것과 카드에 보이는 까닭이 늘 같다', () => {
+    // 부품 고르기의 카드 표시(placeIssue)와 누를 때(autoTarget)가 다르면, 표가 없는 카드를 눌렀는데 다음 장이 생기거나 그 반대가 된다
+    const areaH = 1080 - FRAME.y - FRAME.bottom
+    const layouts: BlockRow[][] = [
+      [],
+      [row(block('points', 'p'), block('ring', 'r')), row(block('number', 'a'), block('number', 'b'), block('number', 'c'))],
+      [row(block('message', 'm')), row(block('kpi', 'k'), block('bars', 'b'))],
+      [row(block('table', 't'))],
+      [row(block('people', 'pp')), row(block('checks', 'ck'), block('risks', 'rk'))],
+    ]
+    for (const rows of layouts)
+      for (const type of BLOCK_TYPES)
+        for (const h of [areaH, areaH - 200, areaH - 400]) {
+          const b = block(type, 'new')
+          expect([type, h, autoTarget(rows, b, h) === null]).toEqual([type, h, placeIssue(rows, b, h) !== null])
+        }
   })
 
   it('한 줄을 다 쓰는 선 차트만 바닥 높이를 낮추고 막대 차트는 그대로 둔다', () => {

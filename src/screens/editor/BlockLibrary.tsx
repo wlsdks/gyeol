@@ -131,8 +131,12 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
 
   const types = BLOCK_GROUPS.flatMap((g) => g.types)
   const counted = slide.layout === 'compose' && blockCount(slide.rows ?? []) >= MAX_BLOCKS
+  // 카드마다 이 장 어디에도 넣을 수 없는 까닭. 누를 때도 이것 하나로 정한다: 까닭이 있으면 바로 넣지 않고 까닭과
+  // '다음 장에 새로 넣기'를 보인다. 예전에는 어느 카드도 들어가지 않는 장이면 까닭을 아예 재지 않아서, 누르면 묻지 않고
+  // 다음 장을 만들었고 몇 카드만 막힌 장에서는 물었다 (같은 결과인데 흐름이 둘). 장이 바뀔 때마다 다시 본다
+  const issues = new Map(types.map((t) => [t, blocks.issueFor(t)]))
   // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 카드마다 표를 붙이지 않고 위에 한 번만 알린다
-  const full = counted || (slide.layout === 'compose' && types.every((t) => blocks.issueFor(t)))
+  const full = counted || (slide.layout === 'compose' && types.every((t) => issues.get(t)))
   // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
   const note =
     slide.layout === 'compose'
@@ -149,8 +153,6 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
   const showLinks = !group || group === LINK_GROUP.name
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.rows ?? []).length > 0
-  // 카드마다의 까닭은 장이 바뀔 때마다 다시 본다 (부품을 빼면 바로 넣을 수 있게 바뀐다)
-  const issues = new Map(types.map((t) => [t, full ? null : blocks.issueFor(t)]))
   const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
 
   return (
@@ -206,13 +208,15 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
               {g.types.map((type) => {
                 const spec = BLOCKS[type]
                 const issue = issues.get(type)
+                // 카드의 표는 몇 카드만 막혔을 때만 (다 막혔으면 위의 알림 한 줄로)
+                const marked = !!issue && !full
                 // 이 장에 넣을 수 없는 부품: 눌러도 바로 넣지 않고 까닭을 보여 준다 (끌어서 놓으면 다음 장에 들어간다)
                 const tap = (card: HTMLElement) => (issue ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
                 return (
                   <button
                     key={type}
                     type="button"
-                    className={cx('lib-card', issue && 'is-blocked', why?.type === type && 'is-why')}
+                    className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
                     title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요` : `${spec.name}: ${spec.motion}`}
                     onPointerDown={(e) => {
                       const card = e.currentTarget
@@ -226,7 +230,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
                     <BlockThumb deck={look} type={type} />
                     <span className="lib-name">{spec.name}</span>
                     <span className="lib-desc">{spec.description}</span>
-                    {issue && <span className="lib-no">이 장엔 자리가 없어요</span>}
+                    {marked && <span className="lib-no">이 장엔 자리가 없어요</span>}
                   </button>
                 )
               })}
