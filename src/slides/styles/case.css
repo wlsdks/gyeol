@@ -44,13 +44,14 @@
   text-wrap: pretty;
 }
 
-/* 한마디는 본문 바로 뒤에 잇는다. 맨 아래에 붙이면 본문과 사이가 비어 보인다 */
+/* 한마디는 왼쪽 단의 아래 끝에: 결과 판이 위에 대상, 아래 끝에 숫자를 두듯 두 단이 같은 위아래 끝을 쓴다.
+   본문 바로 뒤에 이으면 본문이 짧을 때 왼쪽 아래 절반이 통째로 비었다. 아래에 혼자 서도 읽히게 한 단계 크게 */
 .cs-quote {
-  --fs: 36px;
+  --fs: 44px;
   position: relative;
   max-width: 1020px;
-  margin-top: 72px;
-  padding: 0 0 0 76px;
+  margin-top: auto;
+  padding: 72px 0 0 76px;
   font-family: var(--font-head);
   font-weight: 500;
   line-height: 1.45;
@@ -58,7 +59,7 @@
 
 .cs-quote::before {
   position: absolute;
-  top: -4px;
+  top: 68px;
   left: 0;
   /* 따옴표는 장식이라 옅은 글자색, 테마의 제목 글꼴로 */
   color: color-mix(in srgb, var(--ink) 28%, var(--bg));
