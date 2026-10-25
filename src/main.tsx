@@ -10,6 +10,9 @@ import './motion/motion.css'
 import './slides/edit.css'
 import './app.css'
 import { App } from './App'
+import { watchScrollbar } from './lib/scrollbar'
+
+watchScrollbar()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

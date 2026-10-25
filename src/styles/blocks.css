@@ -792,7 +792,8 @@ body.is-block-resizing * {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  padding: 6px 8px 24px 16px;
+  /* 오른쪽은 스크롤바 자리까지 쳐서 왼쪽과 같게 (--sbw, lib/scrollbar.ts) */
+  padding: 6px max(0px, calc(16px - var(--sbw, 0px))) 24px 16px;
   overflow-x: hidden;
   overflow-y: auto;
   border-top: 1px solid var(--line);
