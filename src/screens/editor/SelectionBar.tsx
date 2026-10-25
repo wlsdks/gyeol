@@ -4,6 +4,7 @@ import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layou
 import { PLACES } from '../../deck/themes'
 import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { josa } from '../../lib/josa'
 import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
@@ -327,7 +328,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
             type="button"
             className={cx('sel-btn has-t', on && 'is-on')}
             aria-pressed={!!on}
-            title={on ? `${highlight.label} 끄기` : `이 ${spec.items.label}을(를) ${highlight.label}`}
+            title={on ? `${highlight.label} 끄기` : `이 ${josa(spec.items.label, '을', '를')} ${highlight.label}`}
             onClick={() => store.setOptions(slide.id, { highlight: on ? -1 : i })}
           >
             <StarIcon />
@@ -338,7 +339,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
         <button
           type="button"
           className="sel-btn"
-          title={n >= spec.items.max ? `${spec.items.label}은(는) ${spec.items.max}개까지예요` : '복제'}
+          title={n >= spec.items.max ? `${josa(spec.items.label, '은', '는')} ${spec.items.max}개까지예요` : '복제'}
           aria-label="복제"
           disabled={n >= spec.items.max}
           onClick={() => store.duplicateItem(slide.id, i)}
@@ -348,7 +349,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
         <button
           type="button"
           className="sel-btn"
-          title={n <= spec.items.min ? `${spec.items.label}은(는) ${spec.items.min}개 아래로 줄일 수 없어요` : '이 항목 빼기'}
+          title={n <= spec.items.min ? `${josa(spec.items.label, '은', '는')} ${spec.items.min}개 아래로 줄일 수 없어요` : '이 항목 빼기'}
           aria-label="이 항목 빼기"
           disabled={n <= spec.items.min}
           onClick={() => {

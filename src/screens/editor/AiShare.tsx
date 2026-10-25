@@ -11,12 +11,12 @@ import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { josa } from '../../lib/josa'
 import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { sideName } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle, useDialog } from '../ui'
-import { josa } from './noRoom'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { josa, particle } from './noRoom'
+import { josa, particle } from './josa'
 
 describe('조사', () => {
   it('받침을 보고 붙인다', () => {

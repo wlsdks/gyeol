@@ -3,6 +3,7 @@ import { slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { particle } from '../../lib/josa'
 import { go } from '../../lib/router'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
@@ -20,7 +21,6 @@ import {
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
-import { particle } from './noRoom'
 import { CloseIcon, HistoryIcon, Info, Modal, MoreIcon, Popover, SAVE_HELP, useDialog, useEscape } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })

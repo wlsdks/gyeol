@@ -5,13 +5,14 @@ import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { BlockLink, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { josa } from '../../lib/josa'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { dialogOpen, isTyping } from '../ui'
 import { useLook, type Look } from './look'
-import { josa, noRoomText } from './noRoom'
+import { noRoomText } from './noRoom'
 
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.

@@ -1,29 +1,9 @@
 import { BLOCKS, MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS, type NoRoom, type SpanLimit } from '../../deck/blocks'
 import type { BlockType } from '../../deck/types'
+import { josa } from '../../lib/josa'
 
 // 부품을 넣을 수 없는 까닭(deck/blocks.ts의 NoRoom)을 쓰는 사람이 읽는 말로.
 // 무엇이 안 되는지(why)와 어떻게 하면 되는지(fix)를 나눠서, 끄는 동안에는 짧게, 눌러서 볼 때는 둘 다 보인다.
-
-/** 받침이 있으면 앞의 조사, 없으면 뒤의 조사 ('표는', '막대 비교는') */
-export function josa(word: string, withFinal: string, without: string): string {
-  return word + particle(word, withFinal, without)
-}
-
-/**
- * 조사만 ('‘시장 규모’는'처럼 따옴표 뒤에 붙일 때). 끝의 따옴표와 괄호는 넘기고 그 앞 글자로 본다.
- * 숫자는 읽는 소리로: 0(영), 1(일), 3(삼), 6(육), 7(칠), 8(팔)은 받침이 있다.
- * '으로/로'는 ㄹ 받침 뒤에도 '로'다 ('서울로', '1로')
- */
-export function particle(word: string, withFinal: string, without: string): string {
-  const w = word.trim().replace(/[\s'"’”)\]」』>]+$/u, '')
-  const c = w.charCodeAt(w.length - 1) - 0xac00
-  const ro = withFinal === '으로'
-  if (c >= 0 && c < 11172) {
-    const final = c % 28
-    return final === 0 || (ro && final === 8) ? without : withFinal
-  }
-  return (ro ? /[036]$/ : /[013678]$/).test(w) ? withFinal : without
-}
 
 /** 12칸 가운데 몇 칸인지를 장 너비의 몫으로 */
 const WIDTH: Record<number, string> = { 3: '4분의 1', 4: '3분의 1', 6: '절반', 8: '3분의 2', 12: '전체' }
