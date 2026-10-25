@@ -2936,16 +2936,23 @@
    막대 길이는 --p(0~100). 지연된 과제만 막대도 나쁨 색. */
 
 .ps {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: grid;
+  /* 칸 너비는 모든 줄이 같이(subgrid): 과제 이름은 가장 긴 이름만큼(40%까지), 막대가 남는 너비를 다 쓰고, 숫자와 상태는 가장 긴 것만큼.
+     줄마다 비율로 나누면(1.5fr 2fr 150px 220px) 짧은 이름 뒤로 막대까지 300px 넘게 비고, 상태 칸이 가장 긴 상태보다 넓어
+     짧은 상태 뒤가 줄마다 들쭉날쭉 비었다. 머리줄의 상태별 과제 수는 오른쪽 끝에 붙어서 더 어긋나 보였다 */
+  grid-template-columns: fit-content(40%) minmax(0, 1fr) auto auto;
+  align-content: center;
   min-height: 0;
 }
 
-.ps-sum,
-.ps-h-state {
+.ps-sum {
   grid-column: 2 / -1;
   justify-self: end;
+}
+
+/* 상태가 한 가지뿐일 때의 '상태'는 상태 칸 위에 (상태 표시와 같은 왼쪽 선) */
+.ps-h-state {
+  grid-column: -2;
 }
 
 .ps-sum {
@@ -2984,7 +2991,8 @@
   --ps-c: var(--accent);
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 2fr) 150px 220px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: 40px;
   padding: 26px 0;
@@ -3024,7 +3032,7 @@
 }
 
 .ps:is([data-n='6'], [data-n='7']) .ps-meta {
-  --fs: 21px;
+  --fs: 22px;
   margin-top: 0;
 }
 
