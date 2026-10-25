@@ -272,6 +272,18 @@
   margin-top: 0;
 }
 
+/* 한 줄뿐인 로고 모음: 판이 칸 높이를 채운다(판 너비만큼까지, 그보다 높은 칸에서는 가운데에).
+   장에서처럼 판을 320px로 묶어 두면 남는 높이를 받은 칸에서 판이 위에 붙고 그 아래가 통째로 비었다 */
+.bk-layout .lg[data-rows='1'] {
+  grid-auto-rows: min(100%, calc((100cqi - (var(--lg-half) - 1) * 20px) / var(--lg-half) * 2 + 20px));
+  align-content: center;
+}
+
+/* 판이 커진 만큼 로고도: 큰 판 가운데에 장에서의 크기(112px) 그대로면 판만 넓어 보인다 */
+.bk-layout .lg[data-rows='1'] .lg-img {
+  height: clamp(112px, 34%, 220px);
+}
+
 .bk-agenda .ag {
   display: flex;
   height: 100%;
