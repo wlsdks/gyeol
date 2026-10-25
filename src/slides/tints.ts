@@ -10,6 +10,14 @@ const GREY_STEPS = [64, 46, 32, 22, 15]
 /** 나눌 수 있는 조각 수: 강조색 농담이 서로 구별되는 데까지 */
 export const TINT_COUNT = ACCENT_STEPS.length
 
-export const accentTint = (i: number) => `color-mix(in srgb, var(--accent) ${ACCENT_STEPS[i % ACCENT_STEPS.length]}%, var(--bg))`
+// 어두운 바탕은 단계를 따로 둔다(base.css의 --ta-*, --tg-*): 검정에 12~32%를 섞으면 sRGB 13~29라 프로젝터에서는 바탕과 같은
+// 검정으로 보였다. 여기의 숫자는 흰 바탕의 단계이자 변수가 없을 때의 값
+export const accentTint = (i: number) => {
+  const k = i % ACCENT_STEPS.length
+  return `color-mix(in srgb, var(--accent) var(--ta-${k}, ${ACCENT_STEPS[k]}%), var(--bg))`
+}
 
-export const greyTint = (i: number) => `color-mix(in srgb, var(--ink-3) ${GREY_STEPS[i % GREY_STEPS.length]}%, var(--bg))`
+export const greyTint = (i: number) => {
+  const k = i % GREY_STEPS.length
+  return `color-mix(in srgb, var(--ink-3) var(--tg-${k}, ${GREY_STEPS[k]}%), var(--bg))`
+}
