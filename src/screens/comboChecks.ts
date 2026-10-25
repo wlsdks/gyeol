@@ -142,12 +142,28 @@ function linesOf(inner: HTMLElement): Line[] {
 const overlap = (a0: number, a1: number, b0: number, b1: number) => Math.min(a1, b1) - Math.max(a0, b0)
 const text = (q: Line) => `「${(q.n.textContent ?? '').trim().slice(0, 12)}」`
 
+/**
+ * 글이 불투명한 바탕을 깐 상자 안에 있고 그 상자가 줄 선보다 나중에(위에) 그려지면, 줄 선은 그 상자 밑으로 지나가 글에 닿아 보이지 않는다
+ * (위치 비교의 이름표는 판의 바탕색을 깔아 가운데 점선을 가린다). 그 상자가 줄 선을 품고 있으면 줄 선이 위에 그려진다
+ */
+function hiddenUnder(q: Line, rule: Rule, stop: Element): boolean {
+  for (let x: Element | null = q.el; x && x !== stop; x = x.parentElement) {
+    if (x.contains(rule.el)) return false
+    if (alpha(getComputedStyle(x).backgroundColor) < 0.95) continue
+    if (!(rule.el.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING)) return false
+    const z = getComputedStyle(rule.el).zIndex
+    return z === 'auto' || z === '0'
+  }
+  return false
+}
+
 /** 글이 줄 선에 걸치거나 닿는 곳 */
-function ruleHits(lines: Line[], rules: Rule[], k: number): string[] {
+function ruleHits(lines: Line[], rules: Rule[], k: number, stop: Element): string[] {
   const out: string[] = []
   for (const q of lines) {
     for (const rule of rules) {
       const g = rule.box
+      if (hiddenUnder(q, rule, stop)) continue
       if (rule.dir === 'h') {
         if (overlap(q.l, q.r, g.l, g.r) <= 2 * k) continue
         const d = Math.max(g.t - q.b, q.t - g.b) / k
@@ -227,14 +243,22 @@ function covered(cell: HTMLElement, lines: Line[]): string[] {
  * 내용은 면 안에 가운데가 든 글 줄, 그림, 줄 선, 작은 면. 위가 넓고 아래가 붙은 면(아래로 밀린 내용)과 끝에 닿은 면을 찾는다.
  * 위에 붙고 아래가 빈 면(내용이 면보다 짧은)은 따로 적는다: 칸을 채우는 일(fitBlocks의 줄 사이 넓히기, 가운데로 내리기)이다
  */
-function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], lines: Line[], k: number, fill: boolean): string[] {
+function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], all: Line[], k: number, fill: boolean): string[] {
   const out: string[] = []
+  // 숫자 옆 단위 글자(.u)는 숫자 줄의 일부로 본다: 한글 단위는 숫자 바닥선 아래로 조금 내려오지만(명조의 큰 숫자에서 17px)
+  // 눈은 큰 숫자의 바닥선을 묶음의 끝으로 읽는다
+  const lines = all.filter((q) => !q.el.closest('.u'))
   const cellBox = cell.getBoundingClientRect()
   const panels: Paint[] = []
   // 칸 자체의 면 (옅은 면, 진한 면): 칸에 칠해진 바탕
   const ccs = getComputedStyle(cell)
   if (filled(ccs)) panels.push({ box: { l: cellBox.left, t: cellBox.top, r: cellBox.right, b: cellBox.bottom }, cs: ccs, el: cell, name: '칸의 면' })
-  const bg = alpha(ccs.backgroundColor) > 0.02 ? ccs.backgroundColor : ''
+  // 칸 밑에 깔린 바탕색: 칸에 면이 없으면 장의 바탕까지 올라가 본다. 그 색을 깐 상자(위치 비교의 이름표)는 보이는 면이 아니다
+  let bg = ''
+  for (let x: Element | null = cell; x && !bg; x = x.parentElement) {
+    const c = getComputedStyle(x).backgroundColor
+    if (alpha(c) > 0.02) bg = c
+  }
   for (const p of list) {
     const w = (p.box.r - p.box.l) / k
     const h = (p.box.b - p.box.t) / k
@@ -264,18 +288,32 @@ function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], lines: 
     if (!own.length) continue
     // 면 안의 더 작은 면(칸 안의 카드)도 내용이다. 면 자신과 면을 다 덮는 상자는 빼고
     const smaller = panels.filter((o) => o !== p && mine(o.el) && inside(o.box) && o.box.b - o.box.t < b.b - b.t - 2 * k).map((o) => o.box)
+    // 면보다 작게 칠한 상자(색 표의 칸, 막대, 표시 점)도 눈에는 내용의 끝이다: 색 표 마지막 줄의 칸은 칸 안 숫자보다 23px 아래까지
+    // 칠해져, 숫자만 재면 아래가 그만큼 더 비어 보였다. 면을 다 덮는 칠(고른 열의 띠)과 바탕색을 다시 깐 상자는 빼고
+    const shapes = list
+      .filter((o) => o.el !== p.el && mine(o.el) && filled(o.cs) && o.cs.backgroundColor !== bg && inside(o.box) && o.box.b - o.box.t < b.b - b.t - 2 * k)
+      .map((o) => o.box)
     // 면 끝에 붙여 긋는 선(면의 테두리, 면 맨 위의 머리 선)은 내용이 아니다
     const edge = (q: Box) => Math.abs(q.t - b.t) < 2 * k || Math.abs(q.b - b.b) < 2 * k
     // 두 면이 항목의 줄을 같이 쓰면(비교의 두 면) 그 줄은 두 면에 걸친 한 묶음이다: 한쪽 글이 두 줄이면 다른 쪽의 한 줄 글은
     // 줄 가운데에 서서 그 면만 아래가 반 줄 더 빈다. 그 줄의 다른 면 글도 같이 넣어 줄째 잰다
     const rows = new Set(own.map((q) => q.el.closest('.it')).filter((it): it is Element => !!it && it !== p.el && mine(it)))
     const paired = lines.filter((q) => !own.includes(q) && rows.has(q.el.closest('.it')!)).map((q) => ({ ...q, l: b.l, r: b.r }))
+    // 나란히 선 같은 높이의 면들(단계 흐름의 칸, 안 비교의 안)은 한 줄을 같이 쓴다: 내용이 가장 긴 면의 위아래가 같으면 되고,
+    // 짧은 면은 그만큼 아래가 더 비는 것이 맞다(글을 면마다 가운데에 두면 번호와 이름의 윗선이 면마다 어긋난다)
+    const same = (o: Paint) => o.el !== p.el && o.el.parentElement === p.el.parentElement && Math.abs(o.box.t - b.t) < 2 * k && Math.abs(o.box.b - b.b) < 2 * k
+    const sibling = panels
+      .filter(same)
+      .flatMap((o) => lines.filter((q) => o.el.contains(q.el)).map((q) => ({ ...q, l: b.l, r: b.r })))
     const content = [
       ...own,
       ...paired,
-      ...figs.filter((f) => mine(f.el) && inside(f.box)).map((f) => f.box),
+      ...sibling,
+      // 면을 다 덮는 그림(색 표의 고리처럼 칸에 겹쳐 그린 틀)은 내용이 아니다
+      ...figs.filter((f) => mine(f.el) && inside(f.box) && !(Math.abs(f.box.t - b.t) < 2 * k && Math.abs(f.box.b - b.b) < 2 * k)).map((f) => f.box),
       ...rules.filter((g) => mine(g.el) && inside(g.box) && !edge(g.box)).map((g) => g.box),
       ...smaller,
+      ...shapes,
     ]
     const top = (Math.min(...content.map((q) => q.t)) - b.t) / k
     const bottom = (b.b - Math.max(...content.map((q) => q.b))) / k
@@ -314,7 +352,7 @@ export function innerProblems(cell: HTMLElement, { fill = true, covered: cover =
   const list = paints(inner)
   const lines = linesOf(inner)
   const out = [
-    ...ruleHits(lines, rulesOf(list, k), k),
+    ...ruleHits(lines, rulesOf(list, k), k, inner),
     ...itemSpills(inner, lines, k),
     ...(cover ? covered(cell, lines) : []),
     ...panelGaps(cell, inner, list, lines, k, fill),
