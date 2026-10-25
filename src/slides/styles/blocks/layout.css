@@ -134,3 +134,15 @@
   align-content: safe center;
   align-items: start;
 }
+
+/* 핵심 포인트의 줄 모양: 줄마다 위아래 여백을 둔다. 줄은 내용 높이까지 눌리는데 줄 안 여백이 없어, 낮은 칸에서 두 줄 설명이
+   위아래 줄 선에 붙었다(선에서 글까지 8px 남짓). 잘리지 않는 높이도 이 여백까지 잰다 */
+.bk-points.va-base .pt-item {
+  padding-block: 16px;
+}
+
+/* 세로 칸 모양을 면에 두면 묶음 아래의 틈(40px)을 뺀다: 장에서 칸 위의 굵은 선과 짝을 이루던 틈이 면 안에서는
+   아래 여백에 그대로 더해져 위 44px, 아래 76px였다 */
+.bk-points.va-columns:is(.bk-look-card, .bk-look-bold) .pt {
+  padding-bottom: 0;
+}
