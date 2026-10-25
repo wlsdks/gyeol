@@ -263,7 +263,7 @@ export function blockFitter() {
   /**
    * 추이의 점 숫자 자리를 그려진 크기로 다시 고른다. 그릴 때 어림한 자리(골짜기는 점 아래, Trend.tsx의 data-tn-side)를 먼저 보고,
    * 숫자가 선(앞뒤 점으로 가는 선)이나 다른 점, 앞의 숫자를 덮거나 그림 밖(위는 숫자 띠까지, 아래는 바닥줄)으로 나가면
-   * 위, 점 오른쪽 위, 왼쪽 위, 아래 차례로 겹치지 않는 자리를 찾는다. 없으면 가장 덜 겹치는 자리.
+   * 위, 점 오른쪽 위, 왼쪽 위, 점 바로 왼쪽과 오른쪽, 아래 차례로 겹치지 않는 자리를 찾는다. 없으면 가장 덜 겹치는 자리.
    * 앞 점보다 한참 낮은 마지막 점은 내리꽂히는 선이 점 위의 숫자를 그대로 지나갔다(바닥에 붙어 아래에 둘 자리도 없다)
    */
   function trendPlace(canvas: HTMLElement): void {
@@ -272,9 +272,11 @@ export function blockFitter() {
     const P = plot.getBoundingClientRect()
     const k = canvas.offsetWidth ? canvas.getBoundingClientRect().width / canvas.offsetWidth : 1
     const pts = Array.from(canvas.children).filter((c) => c instanceof HTMLElement && c.classList.contains('tn-pt') && !c.classList.contains('is-blank')) as HTMLElement[]
-    const SIDES = ['is-below', 'is-after', 'is-before']
-    // 옆으로 비키기를 아래보다 먼저: 숫자가 모두 선 위에 있어야 읽기 쉽고, 아래는 바닥줄과 시기 이름에 붙기 쉽다
-    const tries = [[], ['is-after'], ['is-before'], ['is-below'], ['is-below', 'is-after'], ['is-below', 'is-before']]
+    const SIDES = ['is-below', 'is-after', 'is-before', 'is-mid']
+    // 옆으로 비키기를 아래보다 먼저: 숫자가 모두 선 위에 있어야 읽기 쉽고, 아래는 바닥줄과 시기 이름에 붙기 쉽다.
+    // 위로 비킬 자리가 없으면 점의 바로 옆(is-mid). 앞 점보다 한참 낮은 마지막 점은 위로는 내리꽂히는 선이, 아래로는 바닥줄이 지나가서
+    // 강조한 큰 숫자가 바닥줄에 걸쳤다
+    const tries = [[], ['is-after'], ['is-before'], ['is-mid', 'is-before'], ['is-mid', 'is-after'], ['is-below'], ['is-below', 'is-after'], ['is-below', 'is-before']]
     const set = (el: HTMLElement, on: string[]) => SIDES.forEach((c) => el.classList.toggle(c, on.indexOf(c) >= 0))
     const gap = 8 * k
     const dots = pts.map((p) => p.querySelector<HTMLElement>('.tn-dot')?.getBoundingClientRect() ?? null)

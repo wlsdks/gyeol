@@ -17,7 +17,10 @@
 
 .tn-canvas {
   position: absolute;
-  inset: 104px 0 0;
+  /* 위 띠는 가장 높은 점의 강조한 숫자(52px, 줄 높이 1.1)와 점에서 띄운 40px가 들어갈 만큼. 숫자 크기(--fs 목록과 같은 식)를 따라 늘린다:
+     104px로 두면 글자 크기 '크게'와 글자 맞추기의 키우기에서 숫자(75px)가 그림 위로 나가, 낮은 줄에서는 위에도 아래에도 둘 자리가 없어
+     바닥줄에 걸쳤다 */
+  inset: calc(40px + 64px * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1)) 0 0;
   /* 점 숫자의 자리를 그림 너비(cqi)로 재서 양끝에서 밖으로 나가지 않게 한다. 높이는 골짜기 숫자의 자리를 정할 때 본다 */
   container-type: size;
 }
@@ -188,6 +191,33 @@
         clamp(0px, (var(--tn-d) - var(--tn-up) - 1.1em - 10px) * 1000000, var(--tn-lift))
     );
   }
+}
+
+/* 점 바로 옆(fitBlocks.ts가 위아래에 둘 자리가 없을 때 고른다): 숫자 가운데를 점 높이에. 목표선 비키기(margin)는 위아래에 둘 때만 */
+.tn-pt.is-mid .tn-val {
+  top: 0;
+  bottom: auto;
+}
+
+.tn-pt.is-mid.is-before .tn-val {
+  translate: calc(-100% - 20px) -50%;
+}
+
+.tn-pt.is-mid.is-after .tn-val {
+  translate: 20px -50%;
+}
+
+/* 강조한 점은 둘레 고리(반지름 35px)만큼 더 띄운다 */
+.tn-pt.is-hl.is-mid.is-before .tn-val {
+  translate: calc(-100% - 48px) -50%;
+}
+
+.tn-pt.is-hl.is-mid.is-after .tn-val {
+  translate: 48px -50%;
+}
+
+.tn-pt.is-mid .tn-num {
+  margin: 0;
 }
 
 .tn-pt.is-hl .tn-num {
