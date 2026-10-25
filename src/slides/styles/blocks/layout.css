@@ -18,10 +18,13 @@
 
 /* 부품 칸의 로고 모음: 한 줄의 로고 수를 로고 수가 아니라 칸 너비로 정한다(판이 180px 밑으로 좁아지지 않게).
    로고 수로 정하면 반 칸에 열둘이 여섯 줄로 서서 판이 119×332로 세로로 길고 로고는 알아볼 수 없게 작았다.
-   판은 칸 높이를 줄 수만큼 나눠 채우되 정사각형보다 높아지지 않고(그보다 높은 칸에서는 가운데에), 덜 찬 마지막 줄은 가운데로 */
+   판은 칸 높이를 줄 수만큼 나눠 채우되 정사각형보다 높아지지 않고(그보다 높은 칸에서는 가운데에), 덜 찬 마지막 줄은 가운데로.
+   너비로 정한 수(--cmax)는 한 줄에 놓을 수 있는 가장 많은 수다. 그만큼 채우면 8개가 6·2, 7개가 6·1로 마지막 줄에 한둘만
+   남아서, 줄 수를 먼저 정하고 줄마다 고르게 나눈다(8개는 4·4, 7개는 4·3, 11개는 6·5) */
 .bk-layout .lg {
-  --c: min(2, var(--n));
-  --rows: round(up, var(--n) / var(--c), 1);
+  --cmax: min(2, var(--n));
+  --rows: round(up, var(--n) / var(--cmax), 1);
+  --c: round(up, var(--n) / var(--rows), 1);
   --tile: calc((100cqi - (var(--c) - 1) * 20px) / var(--c));
   display: flex;
   flex-wrap: wrap;
@@ -30,10 +33,10 @@
   height: 100%;
 }
 
-@container (min-width: 580px) { .bk-layout .lg { --c: min(3, var(--n)); } }
-@container (min-width: 780px) { .bk-layout .lg { --c: min(4, var(--n)); } }
-@container (min-width: 980px) { .bk-layout .lg { --c: min(5, var(--n)); } }
-@container (min-width: 1180px) { .bk-layout .lg { --c: min(6, var(--n)); } }
+@container (min-width: 580px) { .bk-layout .lg { --cmax: min(3, var(--n)); } }
+@container (min-width: 780px) { .bk-layout .lg { --cmax: min(4, var(--n)); } }
+@container (min-width: 980px) { .bk-layout .lg { --cmax: min(5, var(--n)); } }
+@container (min-width: 1180px) { .bk-layout .lg { --cmax: min(6, var(--n)); } }
 
 .bk-layout .lg-cell {
   flex: 0 0 var(--tile);
