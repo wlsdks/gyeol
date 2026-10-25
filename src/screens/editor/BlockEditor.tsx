@@ -793,7 +793,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
-        <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 아무 데나 놓아도 줄과 너비가 반듯하게 맞춰져요.</p>
+        <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 크기는 옆 컴포넌트와 맞춰 알아서 정해져요.</p>
         <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
           <BlocksIcon />
           컴포넌트 고르기
