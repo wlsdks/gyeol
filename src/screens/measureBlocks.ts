@@ -192,16 +192,27 @@ export function failingHeights(cell: HTMLElement, span: number): number[] {
 /** 재는 칸 너비: 한 줄을 다 쓰지 않는 칸은 옆 칸과의 사이에 이음표가 설 수 있어서, 한쪽이 비켜 준 너비(LINK_PAD만큼 좁게)로 잰다 */
 export const measuredWidth = (span: number) => spanWidth(span) - (span < 12 ? LINK_PAD : 0)
 
-/** 이 너비에서 이 높이부터 위로는 늘 괜찮은 가장 낮은 높이. 맨 위(860)도 안 되면 Infinity */
+/**
+ * 이 너비에서 이 높이부터 위로는 늘 괜찮은 가장 낮은 높이. 맨 위(860)도 안 되면 Infinity.
+ * 한 줄을 다 쓰지 않는 칸은 이음표가 비켜 준 너비와 온 너비 둘 다 잰다: 칸 너비로 크기가 정해지는 한 줄 숫자(큰 숫자의 값)는
+ * 넓을수록 커서 더 높이 든다. 좁은 너비로만 재던 때는 3칸 숫자 카드가 온 너비에서 잰 높이로는 넘쳐 글자를 두 단계 줄였다
+ */
 function lowest(cell: HTMLElement, el: HTMLElement, span: number): number {
-  cell.style.width = `${measuredWidth(span)}px`
   // 한 줄을 다 쓰지 않는 칸은 늘 다른 부품과 한 줄에 있다(blocks.css의 .is-shared: 글자 단계가 다르다)
   cell.classList.toggle('is-shared', span < 12)
   let ok = Infinity
-  for (const h of HEIGHTS) {
-    cell.style.height = `${h}px`
-    if (!fine(cell, el)) break
-    ok = h
+  for (const w of new Set([measuredWidth(span), spanWidth(span)])) {
+    cell.style.width = `${w}px`
+    let here = Infinity
+    for (const h of HEIGHTS) {
+      if (ok !== Infinity && h < ok) break
+      cell.style.height = `${h}px`
+      if (!fine(cell, el)) break
+      here = h
+    }
+    // 둘째 너비는 첫 너비의 높이까지만 잰다: 그보다 낮은 높이는 어차피 쓰지 않는다
+    ok = ok === Infinity ? here : here === Infinity ? Infinity : Math.max(ok, here)
+    if (ok === Infinity) break
   }
   return ok
 }
