@@ -1,25 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, parseDelta, parseNumber, readAmount, readNumber, spanIn, statusOf } from './numbers'
+import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
-  it('단위와 쉼표가 붙은 값에서 숫자만 읽는다', () => {
-    expect(parseNumber('131억 원')).toBe(131)
-    expect(parseNumber('1,200억 원')).toBe(1200)
-    expect(parseNumber('15.2억 원')).toBe(15.2)
-    expect(parseNumber('93%')).toBe(93)
-    expect(parseNumber('')).toBe(0)
-    expect(parseNumber('미정')).toBe(0)
+  it('단위와 쉼표가 붙은 값에서 적은 숫자를 읽는다', () => {
+    expect(readNumber('131억 원')).toBe(131)
+    expect(readNumber('1,200억 원')).toBe(1200)
+    expect(readNumber('15.2억 원')).toBe(15.2)
+    expect(readNumber('93%')).toBe(93)
+    expect(readNumber('1시간 30분')).toBe(1.5)
+    expect(readNumber('')).toBe(null)
+    expect(readNumber('미정')).toBe(null)
   })
 
   it('증감은 보고서에서 쓰는 더하기, 빼기 표기를 모두 받는다', () => {
-    expect(parseDelta('+9')).toBe(9)
-    expect(parseDelta('9')).toBe(9)
-    expect(parseDelta('▲9')).toBe(9)
-    expect(parseDelta('-2')).toBe(-2)
-    expect(parseDelta('−2')).toBe(-2)
-    expect(parseDelta('△2')).toBe(-2)
-    expect(parseDelta('▼ 1.5억 원')).toBe(-1.5)
-    expect(parseDelta('(-3)')).toBe(-3)
+    expect(readNumber('+9')).toBe(9)
+    expect(readNumber('9')).toBe(9)
+    expect(readNumber('▲9')).toBe(9)
+    expect(readNumber('-2')).toBe(-2)
+    expect(readNumber('−2')).toBe(-2)
+    expect(readNumber('△2')).toBe(-2)
+    expect(readNumber('▼ 1.5억 원')).toBe(-1.5)
+    expect(readNumber('(-3)')).toBe(-3)
+    // 붙임표가 낱말 안에 있으면 빼기가 아니다
+    expect(readNumber('A-3')).toBe(3)
   })
 
   it('단위까지 읽어 무리의 기준 값으로 바꾼다', () => {
@@ -58,18 +61,6 @@ describe('숫자 읽기', () => {
 
   it('어느 숫자인지 모르면 읽지 않는다', () => {
     for (const t of ['', '미정', '3~5일', '2024년 120억', '120건(전년 100건)', '2억 5,000']) expect(readAmount(t), t).toBe(null)
-    // 붙임표가 낱말 안에 있으면 빼기가 아니다
-    expect(readNumber('A-3')).toBe(3)
-  })
-
-  it('적은 숫자 그대로 읽기', () => {
-    expect(readNumber('131억 원')).toBe(131)
-    expect(readNumber('1,200억 원')).toBe(1200)
-    expect(readNumber('93%')).toBe(93)
-    expect(readNumber('▼ 1.5억 원')).toBe(-1.5)
-    expect(readNumber('△2')).toBe(-2)
-    expect(readNumber('(-3)')).toBe(-3)
-    expect(readNumber('미정')).toBe(null)
   })
 
   it('전과 후의 증감은 단위를 같은 기준으로 바꿔 센다', () => {
@@ -99,6 +90,20 @@ describe('숫자 읽기', () => {
       expect(changeOf(a, b), `${a} → ${b}`).toBe(null)
   })
 
+  it('목표와 실적은 단위 칸과 따로 적은 자리, 단위를 같이 읽는다', () => {
+    const rate = (v: string, t: string, unit?: string) => {
+      const p = amountPair(v, t, unit)
+      return p && Math.round((p.a.base / p.b.base) * 1000) / 10
+    }
+    expect(rate('7.2', '10', '억 원')).toBe(72)
+    expect(rate('7,200만', '1억')).toBe(72)
+    expect(rate('7,200만 원', '1.2억 원')).toBe(60)
+    expect(rate('6분 30초', '7분 이하')).toBe(92.9)
+    expect(rate('50분', '2시간')).toBe(41.7)
+    expect(rate('4곳', '5곳')).toBe(80)
+    expect(rate('40%', '5건')).toBe(null)
+  })
+
   it('계산한 값은 천 단위 쉼표와 소수 둘째 자리까지', () => {
     expect(formatNumber(131)).toBe('131')
     expect(formatNumber(1234.567)).toBe('1,234.57')
@@ -119,6 +124,46 @@ describe('숫자 읽기', () => {
     expect(statusOf('', 0)).toBe('todo')
     expect(statusOf('', 35)).toBe('doing')
     expect(statusOf('', null)).toBe(null)
+  })
+})
+
+describe('한 그림의 값', () => {
+  const round = (vs: (number | null)[]) => vs.map((v) => (v === null ? null : Math.round(v * 1000) / 1000))
+
+  it('자리와 단위를 섞어 적은 값을 기준 값의 자리로 맞춘다', () => {
+    expect(round(seriesIn(['1.2억', '8,000만', '9,500만 원']).values)).toEqual([1.2, 0.8, 0.95])
+    expect(round(seriesIn(['6분', '40초', '1시간']).values)).toEqual([6, 0.667, 60])
+    expect(seriesIn(['58억', '42억', '31억']).suffix).toBe('억')
+  })
+
+  it('단위 칸이 있으면 그 단위가 기준이다', () => {
+    const s = seriesIn(['117', '+9', '-2', '+3,000만'], '억 원')
+    expect(round(s.values)).toEqual([117, 9, -2, 0.3])
+    expect(s.suffix).toBe('억 원')
+    expect(round(seriesIn(['8,000만', '1.2'], '억 원').values)).toEqual([0.8, 1.2])
+    expect(round(seriesIn(['40초', '2'], '분').values)).toEqual([0.667, 2])
+  })
+
+  it('숫자만 적은 값은 한 그림의 단위로 읽는다 (증감 요인의 끝 값)', () => {
+    const s = seriesIn(['117억', '+9', '-2'])
+    expect(s.values).toEqual([117, 9, -2])
+    expect(s.suffix).toBe('억')
+    expect(seriesIn(['117', '+9억', '-2억']).values).toEqual([117, 9, -2])
+  })
+
+  it('깔때기의 단계 사이 전환율', () => {
+    const { values } = seriesIn(['1.2만 명', '8,000명', '1,200명'])
+    expect(Math.round((values[1]! / values[0]!) * 1000) / 10).toBe(66.7)
+    expect(Math.round((values[2]! / values[1]!) * 1000) / 10).toBe(15)
+  })
+
+  it('단위 무리가 섞이면 합이나 비율을 계산하지 않는다', () => {
+    expect(seriesIn(['3건', '40%']).ok).toBe(false)
+    expect(seriesIn(['2명', '5대', '7']).ok).toBe(false)
+    expect(seriesIn(['3만', '2시간']).ok).toBe(false)
+    // 막대는 그리도록 적은 숫자 그대로
+    expect(seriesIn(['3건', '40%']).values).toEqual([3, 40])
+    expect(seriesIn(['120', '', '미정', '150건']).values).toEqual([120, null, null, 150])
   })
 })
 

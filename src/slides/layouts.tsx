@@ -5,7 +5,7 @@ import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
-import { formatNumber, isNumericCell, lowerIsBetter, parseDelta, parseNumber, statusOf, STATUS_NAMES, type Status } from './numbers'
+import { amountPair, formatNumber, isNumericCell, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { Compose } from './blocks'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T } from './fields'
 import { placeLabels } from './fitBlocks'
@@ -357,7 +357,7 @@ const DEMO_BARS = [64, 78, 100, 86, 72, 92]
 
 /** 예시 숫자가 막대마다 있으면 그 비율로, 없으면 정해 둔 길이로. 안내 글의 숫자와 막대 길이가 맞아야 덜 어색하다. */
 function demoBars(slide: Slide, n: number): number[] {
-  const hinted = Array.from({ length: n }, (_, i) => parseNumber(hintFor(slide.layout, slide.hints, 'value', 'value', i)))
+  const hinted = Array.from({ length: n }, (_, i) => readNumber(hintFor(slide.layout, slide.hints, 'value', 'value', i)) ?? 0)
   const top = Math.max(0, ...hinted)
   if (top > 0 && hinted.every((v) => v > 0)) return hinted.map((v) => (v / top) * 100)
   return Array.from({ length: n }, (_, i) => DEMO_BARS[i % DEMO_BARS.length])
@@ -376,7 +376,11 @@ function Bars() {
   const unitOpen = useUnitOpen(unit)
   // 세로 막대에서 보충 설명이 있는 막대만 바닥 줄이 올라가지 않게, 없는 막대에도 그만큼 자리를 둔다
   const anyMeta = items.some((it) => it.meta.trim())
-  const values = items.map((it) => parseNumber(it.value))
+  // 막대끼리 길이를 견주므로 한 기준으로 ('1.2억', '9,500만')
+  const values = seriesIn(
+    items.map((it) => it.value),
+    unit,
+  ).values.map((v) => v ?? 0)
   const max = Math.max(0, ...values)
   const demo = mode !== 'final' && max <= 0
   const demoP = demo ? demoBars(slide, items.length) : []
@@ -449,11 +453,14 @@ function Versus() {
   const dots = slide.variant === 'dots'
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
   const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
-  const read = (k: 'meta' | 'value', i: number) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
-  const a = items.map((_, i) => read('meta', i))
-  const b = items.map((_, i) => read('value', i))
+  const text = (k: 'meta' | 'value', i: number) => (demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
+  // 앞 값과 뒤 값을 한 기준으로 읽는다. 단위가 서로 다른 값이 섞였으면 바뀐 비율은 말하지 않는다
+  const series = seriesIn([...items.map((_, i) => text('meta', i)), ...items.map((_, i) => text('value', i))], unit)
+  const a = series.values.slice(0, items.length)
+  const b = series.values.slice(items.length)
+  const change = (i: number) => (series.ok ? changeText(a[i], b[i]) : null)
   const known = [...a, ...b].filter((v): v is number => v !== null)
   // 막대: 0부터 가장 큰 값까지. 0보다 작은 값은 바닥에 붙인다
   const top = Math.max(0, ...known)
@@ -519,7 +526,7 @@ function Versus() {
                   <div className="vs-nums">
                     <IT i={i} k="meta" as="span" className="vs-num is-a" oneLine />
                     <IT i={i} k="value" as="span" className="vs-num is-b" oneLine />
-                    <span className="vs-change">{changeText(va, vb) ?? ''}</span>
+                    <span className="vs-change">{change(i) ?? ''}</span>
                   </div>
                   <ItemTools i={i} />
                 </div>
@@ -588,7 +595,7 @@ function Versus() {
               )}
               <div className="vs-label">
                 <IT i={i} k="title" className="vs-name" />
-                {changeText(a[i], b[i]) && <span className="vs-change">{changeText(a[i], b[i])}</span>}
+                {change(i) && <span className="vs-change">{change(i)}</span>}
               </div>
               <ItemTools i={i} />
             </div>
@@ -626,8 +633,11 @@ function Scorecard() {
         </div>
         {items.map((it, i) => {
           const { demo, meta, value } = pair(i)
-          const target = parseNumber(meta)
-          const actual = parseNumber(value)
+          // 목표와 실적은 단위까지 읽어 같은 기준으로 ('7분 이하'와 '6분 30초', '1.2억 원'과 '9,500만 원').
+          // 견줄 수 없는 단위끼리면 달성률과 달성 여부를 말하지 않는다
+          const p = amountPair(meta, value)
+          const target = p?.a.base ?? 0
+          const actual = p?.b.base ?? 0
           const known = target > 0 && value.trim() !== ''
           // 낮을수록 좋은 지표('7분 이하'): 목표보다 작아야 달성, 달성률은 목표 ÷ 실적
           const lower = lowerIsBetter(meta)
@@ -672,8 +682,13 @@ function Bridge() {
   const unit = readField(slide, meta, 'unit').trim()
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
   const demo = mode !== 'final' && !startText.trim() && items.every((it) => !it.value.trim())
-  const start = parseNumber(demo ? hintFor(slide.layout, slide.hints, 'startValue') : startText)
-  const deltas = items.map((it, i) => parseDelta(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
+  // 처음 값과 증감을 한 기준으로 더한다 ('1.2억'에 '+3,000만'은 1.5억). 단위가 서로 다른 값이 섞였으면 끝 값을 말하지 않는다
+  const series = seriesIn(
+    [demo ? hintFor(slide.layout, slide.hints, 'startValue') : startText, ...items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))],
+    unit,
+  )
+  const start = series.values[0] ?? 0
+  const deltas = series.values.slice(1).map((v) => v ?? 0)
   const levels = deltas.reduce((acc, d) => [...acc, acc[acc.length - 1] + d], [start])
   const end = levels[levels.length - 1]
   const lo = Math.min(...levels)
@@ -686,7 +701,9 @@ function Bridge() {
   const base = cut ? floor : 0
   const col = (a: number, b: number, link?: number) =>
     ({ '--lo': pct(Math.min(a, b)), '--hi': pct(Math.max(a, b)), ...(link !== undefined ? { '--link': pct(link) } : {}) }) as CSSProperties
-  const known = demo || !!startText.trim()
+  const known = demo || (!!startText.trim() && series.values[0] !== null && series.ok)
+  // 끝 값의 단위: 단위 칸이 비었으면 처음 값에 붙여 쓴 자리와 단위('117억'이면 억)
+  const endUnit = unit || (demo ? hintFor(slide.layout, slide.hints, 'unit') : series.suffix)
   return (
     <>
       <Head />
@@ -725,7 +742,7 @@ function Bridge() {
             <span className="wf-bar" />
             <span className="wf-val">
               <span className="wf-num">{known ? minusSigns(formatNumber(end)) : '–'}</span>
-              {known && (unit || demo) && <span className="wf-unit">{unit || hintFor(slide.layout, slide.hints, 'unit')}</span>}
+              {known && endUnit && <span className="wf-unit">{endUnit}</span>}
             </span>
           </div>
           <Label k="endTitle" fallback="결과" className="wf-title" />
@@ -736,10 +753,11 @@ function Bridge() {
   )
 }
 
-/** 숫자 칸을 읽는다. 비었거나 숫자가 없으면 null. '△3', '-2%'처럼 줄어든 값은 음수로 */
-function numberOrNull(text: string): number | null {
-  return text.trim() && /\d/.test(text) ? parseDelta(text) : null
-}
+/**
+ * 숫자 칸 하나를 읽는다(진행률, 점수처럼 칸 하나로 그리는 값). 비었거나 숫자가 없으면 null. '△3', '-2%'처럼 줄어든 값은 음수로.
+ * 칸 여럿을 견주거나 더하는 곳은 단위까지 읽는 seriesIn, amountPair를 쓴다
+ */
+const numberOrNull = readNumber
 
 /**
  * 추이: 시기마다 점을 찍고 선으로 잇는다. 흐름을 보는 장이라 모두 0보다 크고 폭이 좁으면 0부터 그리지 않는다.
@@ -752,11 +770,15 @@ function Trend() {
   const final = mode === 'final'
   // 편집할 때 숫자가 하나도 없으면 안내 문구의 예시 숫자로 흐리게 그린다
   const demo = !final && items.every((it) => !it.value.trim())
-  const values = items.map((it, i) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
   // 목표를 비워 두면 선을 긋지 않는다. 예시로 그릴 때만 예시 목표값에 흐리게
   const unit = readField(slide, meta, 'unit').trim()
   const unitOpen = useUnitOpen(unit)
-  const target = numberOrNull(readField(slide, meta, 'target')) ?? (demo ? numberOrNull(hintFor(slide.layout, slide.hints, 'target')) : null)
+  const targetField = readField(slide, meta, 'target')
+  const targetText = readNumber(targetField) === null && demo ? hintFor(slide.layout, slide.hints, 'target') : targetField
+  // 시기마다의 값과 목표를 한 기준으로 ('1.2억'과 '9,500만'의 높이가 맞게)
+  const series = seriesIn([...items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)), targetText], unit)
+  const values = series.values.slice(0, items.length)
+  const target = series.values[items.length]
   const known = values.filter((v): v is number => v !== null)
   const all = target === null ? known : [...known, target]
   const lo = all.length ? Math.min(...all) : 0
@@ -934,13 +956,15 @@ function Share() {
   const highlight = highlightOf(slide)
   const demo = !final && items.every((it) => !it.value.trim())
   const texts = items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).trim())
-  const values = texts.map((t) => Math.max(0, numberOrNull(t) ?? 0))
+  const unit = readField(slide, meta, 'unit').trim()
+  const unitOpen = useUnitOpen(unit)
+  // 값을 한 기준으로 더한다 ('1.2억'과 '8,000만'). 단위가 서로 다른 값이 섞였으면 비중과 합계는 틀린 숫자라 보이지 않는다
+  const series = seriesIn(texts, unit)
+  const values = series.values.map((v) => Math.max(0, v ?? 0))
   const sum = values.reduce((a, b) => a + b, 0)
   const pcts = values.map((v) => (sum > 0 ? (v / sum) * 100 : 0))
   const typedPct = texts.every((t) => !t || t.includes('%'))
-  const unit = readField(slide, meta, 'unit').trim()
-  const unitOpen = useUnitOpen(unit)
-  const pctText = (p: number) => (p > 0 && p < 1 ? '1% 미만' : `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`)
+  const pctText = (p: number) => (!series.ok ? '–' : p > 0 && p < 1 ? '1% 미만' : `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`)
   let grey = 0
   const colors = items.map((_, i) => {
     if (highlight < 0) return `color-mix(in srgb, var(--accent) ${SHARE_TINTS[i % SHARE_TINTS.length]}%, var(--bg))`
@@ -954,8 +978,8 @@ function Share() {
     return s
   })
   const donut = slide.variant === 'donut'
-  // '131억 원'처럼 숫자와 단위는 붙여 쓴다
-  const totalText = sum > 0 && !typedPct ? `${formatNumber(sum)}${unit}` : ''
+  // '131억 원'처럼 숫자와 단위는 붙여 쓴다. 단위 칸이 비었으면 값에 붙여 쓴 자리와 단위('58억'이면 억)
+  const totalText = sum > 0 && !typedPct && series.ok ? `${formatNumber(sum)}${series.suffix}` : ''
   return (
     <>
       <Head />
@@ -1084,10 +1108,15 @@ function Funnel() {
   const final = mode === 'final'
   const highlight = highlightOf(slide)
   const demo = !final && items.every((it) => !it.value.trim())
-  const values = items.map((it, i) => Math.max(0, numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value) ?? 0))
+  const unit = readField(slide, meta, 'unit').trim()
+  // 단계마다의 값을 한 기준으로 ('1.2만 명', '8,000명'). 단위가 서로 다른 값이 섞였으면 전환율은 틀린 숫자라 보이지 않는다
+  const series = seriesIn(
+    items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)),
+    unit,
+  )
+  const values = series.values.map((v) => Math.max(0, v ?? 0))
   const top = Math.max(0, ...values)
   const widths = values.map((v) => (top > 0 ? Math.max(3, (v / top) * 100) : 0))
-  const unit = readField(slide, meta, 'unit').trim()
   const first = values[0]
   const last = values[values.length - 1]
   return (
@@ -1097,7 +1126,7 @@ function Funnel() {
         {items.map((it, i) => {
           // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다. 앞 단계보다 늘어난 단계는 전환율이 아니라(1,333%) 적지 않는다
           const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
-          const rate = linked && values[i] <= values[i - 1] ? (values[i] / values[i - 1]) * 100 : null
+          const rate = linked && series.ok && values[i] <= values[i - 1] ? (values[i] / values[i - 1]) * 100 : null
           // 단계의 농담: 첫 단계가 가장 옅고 갈수록 진하게 (강조할 단계는 강조색 그대로)
           const tint = items.length > 1 ? 24 + (46 * i) / (items.length - 1) : 46
           const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2), '--t': tint.toFixed(0) } as CSSProperties
@@ -1125,7 +1154,7 @@ function Funnel() {
             </div>
           )
         })}
-        {first > 0 && last > 0 && items.length > 2 && (
+        {first > 0 && last > 0 && items.length > 2 && series.ok && (
           <p className="fn-total">
             <span>
               처음부터 끝까지 <b>{rateText((last / first) * 100)}</b>

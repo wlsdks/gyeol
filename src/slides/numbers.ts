@@ -1,26 +1,11 @@
 // 칸에 적은 글에서 숫자를 읽는다. 막대 길이, 달성률, 증감의 끝 값을 계산할 때만 쓰고 화면에는 사람이 적은 글을 그대로 보인다.
 
-/** '131억 원', '1,200', '93%' → 131, 1200, 93. 숫자가 없으면 0 */
-export function parseNumber(text: string): number {
-  const n = parseFloat(text.replace(/,/g, '').replace(/[^0-9.-]/g, ''))
-  return Number.isFinite(n) ? n : 0
-}
-
 /**
  * 낮을수록 좋은 목표인지 ('7분 이하', '불량률 0.5% 미만', '≤ 3일'). 대기 시간, 비용, 불량처럼 줄여야 하는 지표는
  * 목표를 이렇게 적으므로, 이때는 실적이 목표보다 작아야 달성이고 달성률도 거꾸로(목표 ÷ 실적) 센다
  */
 export function lowerIsBetter(target: string): boolean {
   return /이하|이내|미만|아래|[≤⩽<]/.test(target)
-}
-
-/**
- * 증감 값. ▲와 +는 더하기, ▼ △ − - 는 빼기.
- * 보고서에서 흔히 쓰는 표기(△는 회계에서 마이너스, 유니코드 빼기 기호 −)를 모두 받는다.
- */
-export function parseDelta(text: string): number {
-  const n = Math.abs(parseNumber(text))
-  return /^[\s(]*[-−–△▽▼]/.test(text) ? -n : n
 }
 
 // ---------- 숫자와 단위 ----------
@@ -202,7 +187,7 @@ export function readAmount(text: string, unit = ''): Amount | null {
   const own = readOwn(text)
   if (!own || own.kind || !unit.trim()) return own
   const u = readOwn(`1 ${unit.trim()}`)
-  if (!u) return own
+  if (!u || u.bare) return own
   if (own.bare) return { ...own, base: own.base * u.scale, scale: u.scale, place: u.place, kind: u.kind, bare: false, suffix: unit.trim() }
   const per = u.scale / u.place
   return { ...own, base: own.base * per, scale: own.scale * per, kind: u.kind }
@@ -251,6 +236,43 @@ export function changeOf(before: string, after: string, unit = ''): { value: num
   if (p.kind === '%') return { value: d, pp: true }
   if (p.a.base === 0) return null
   return { value: (d / Math.abs(p.a.base)) * 100, pp: false }
+}
+
+/** 한 그림의 값들 */
+export interface Series {
+  /** 같은 자리로 맞춘 값: '58억, 4,200만'이면 58, 0.42. 비었거나 어느 숫자인지 모르는 칸은 null */
+  values: (number | null)[]
+  /** 서로 견줄 수 있는 값들인지. 아니면 values는 적은 숫자 그대로이고, 합이나 비율은 계산하지 않는다 */
+  ok: boolean
+  /** 계산한 값(합계, 끝 값)에 붙일 자리와 단위: 단위 칸에 적은 것, 없으면 기준으로 삼은 값에 적은 것('억') */
+  suffix: string
+}
+
+/**
+ * 한 그림에 놓이는 값들(막대, 선, 깔때기, 증감 요인)을 같은 자리로 읽는다. 기준은 자리나 단위를 적은 첫 값
+ * (단위 칸이 있으면 그 단위). 한 그림의 숫자는 보통 같은 단위로 적고 몇 개에만 단위를 붙이므로, 숫자만 적은 값은
+ * 그 기준 단위로 읽는다('117, +9억'은 117억과 9억). 서로 다른 단위 무리가 섞였으면('3건'과 '40%') ok가 false다
+ */
+export function seriesIn(texts: string[], unit = ''): Series {
+  const amounts = texts.map((t) => readAmount(t, unit))
+  const known = amounts.filter((a): a is Amount => a !== null)
+  const kinds = new Set(known.map((a) => a.kind).filter(Boolean))
+  const kind = [...kinds][0] ?? ''
+  // 자리만 적은 값('3만')과 기준이 여럿인 단위('2시간')가 섞이면 3만이 무엇인지 모른다
+  const ok = kinds.size <= 1 && !(SCALED_KINDS.has(kind) && known.some((a) => !a.bare && !a.kind))
+  if (!ok) return { values: amounts.map((a) => a && a.base / a.scale), ok, suffix: '' }
+  // 자리의 기준은 자리나 단위를 적은 첫 값, 단위의 기준은 단위를 적은 첫 값
+  const ref = known.find((a) => !a.bare) ?? known[0]
+  if (!ref) return { values: amounts.map(() => null), ok, suffix: unit.trim() }
+  const unitRef = known.find((a) => a.kind)
+  // 자리만 적은 값('8,000만')은 단위 무리의 배수만 받는다 (단위를 적은 값이 '9,500만 원'이면 원의 1)
+  const per = unitRef ? unitRef.scale / unitRef.place : 1
+  // 단위 칸이 있으면 그 단위가 기준이다 (계산한 끝 값에 단위 칸의 글을 붙이므로)
+  const u = unit.trim() ? readOwn(`1 ${unit.trim()}`) : null
+  const scale = u && !u.bare && u.kind === kind ? u.scale : ref.kind ? ref.scale : ref.place * per
+  // 숫자만 적은 값은 기준의 자리와 단위 그대로라 적은 숫자가 곧 기준의 몇 배다
+  const values = amounts.map((a) => a && (a.bare ? a.base : (a.kind ? a.base : a.base * per) / scale))
+  return { values, ok, suffix: unit.trim() || ref.suffix }
 }
 
 /** 계산한 값을 보이는 꼴: 천 단위 쉼표, 소수 둘째 자리까지 */

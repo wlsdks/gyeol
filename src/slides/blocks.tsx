@@ -10,16 +10,12 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { changeOf, colsOf, formatNumber, gradeOf, gradesOf, parseDelta, spanIn, statusOf, type Grade, type Status } from './numbers'
+import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, readAmount, readNumber, seriesIn, spanIn, statusOf, type Grade, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
 // 가짜 장(blockSlide)을 SlideContext로 한 번 더 감싸서, 레이아웃 부품은 그 레이아웃의 그리기를 그대로 쓴다.
-
-/** 숫자 칸을 읽는다. 비었거나 숫자가 없으면 null */
-function numberOrNull(text: string): number | null {
-  return text.trim() && /\d/.test(text) ? parseDelta(text) : null
-}
+// 칸 둘 이상의 숫자로 계산하는 곳(비율, 합, 차이)은 단위까지 읽어 같은 기준으로 맞춘다 (numbers.ts의 seriesIn, amountPair)
 
 /** 편집할 때 비어 있으면 안내 문구의 예시 숫자로 흐리게 그린다. 발표할 때는 적은 값만 */
 function useDemo(keys: string[]) {
@@ -163,9 +159,9 @@ function Delta() {
 function Goal() {
   const { mode } = useSlide()
   const { demo, read } = useDemo(['value', 'target'])
-  const value = numberOrNull(read('value'))
-  const target = numberOrNull(read('target'))
-  const pct = value !== null && target !== null && target > 0 ? (value / target) * 100 : null
+  // 단위 칸('억 원')으로 숫자만 적은 값을 읽고, 따로 적은 자리('7,200만 / 1억')나 단위('50분 / 2시간')는 같은 기준으로 바꿔 나눈다
+  const pair = amountPair(read('value'), read('target'), read('unit'))
+  const pct = pair && pair.b.base > 0 ? (pair.a.base / pair.b.base) * 100 : null
   return (
     <div className={cx('bk-gl', demo && 'is-demo', pct !== null && pct >= 100 && 'is-met')} style={{ '--p': Math.min(100, Math.max(0, pct ?? 0)).toFixed(1) } as CSSProperties}>
       <div className="bk-gl-top">
@@ -209,7 +205,7 @@ const GAUGE_ARC = 'M 8 52 A 42 42 0 0 1 92 52'
 function Ring() {
   const { slide } = useSlide()
   const { demo, read } = useDemo(['value'])
-  const v = numberOrNull(read('value'))
+  const v = readNumber(read('value'))
   const p = v === null ? 0 : Math.min(100, Math.max(0, v))
   if (slide.variant === 'gauge')
     return (
@@ -267,9 +263,12 @@ function PersonIcon() {
 function Ratio() {
   const { mode } = useSlide()
   const { demo, read } = useDemo(['value', 'total'])
-  const value = numberOrNull(read('value'))
-  const total = numberOrNull(read('total'))
   const unit = read('unit').trim()
+  // 몇과 전체를 전체에 적은 단위로 맞춘다('180분 중 3시간'). 자리는 그대로 둬서 '1만 명'의 점은 1개가 아니라 백분율
+  const pair = amountPair(read('value'), read('total'), unit)
+  const per = pair ? pair.b.scale / pair.b.place : 1
+  const value = pair && pair.a.base / per
+  const total = pair && pair.b.base / per
   const ok = value !== null && total !== null && total > 0
   const exact = ok && total <= 20 && Number.isInteger(total)
   const n = !ok ? 0 : exact ? total : 100
@@ -321,16 +320,10 @@ function Ratio() {
 
 /**
  * 흐름 칸의 숫자들. 쉼표나 띄어쓰기로 나눈다. '1,200'처럼 천 단위 쉼표가 든 숫자는 하나로 본다
- * (그래서 천 단위 숫자를 이어 적을 때는 쉼표 뒤를 띄어 쓴다: 1,200, 1,500)
+ * (그래서 천 단위 숫자를 이어 적을 때는 쉼표 뒤를 띄어 쓴다: 1,200, 1,500). 단위를 섞어 적었으면('9,500만, 1.2억') 같은 자리로 맞춘다
  */
 export function seriesOf(text: string): number[] {
-  const out: number[] = []
-  for (const tok of text.split(/[\s/·|]+|,\s+/)) {
-    if (!tok) continue
-    const parts = /^[-−–△▼+]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(tok) ? [tok] : tok.split(',')
-    for (const p of parts) if (/\d/.test(p)) out.push(parseDelta(p))
-  }
-  return out
+  return seriesIn(tokensOf(text)).values.filter((v): v is number => v !== null)
 }
 
 /** 숫자와 흐름: 지금 숫자를 크게, 그동안의 흐름은 작은 선으로. 선 끝이 지금 숫자다 */
@@ -811,16 +804,21 @@ function ChartKey({ sum, keys, unitKey = 'unit' }: { sum?: ReactNode; keys?: Rea
  * 원인은 적은 차례 그대로 둔다. 장 위에서 순서를 바꾼 대로 보여야 해서 저절로 줄 세우지 않는다(안내에 '많은 것부터')
  */
 function Pareto() {
-  const { slide, mode } = useSlide()
+  const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.pareto.items!.max)
   const final = mode === 'final'
   const demo = !final && items.every((it) => !it.value.trim())
-  const values = items.map((it, i) => Math.max(0, numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value) ?? 0))
+  const series = seriesIn(
+    items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)),
+    readField(slide, meta, 'unit'),
+  )
+  const values = series.values.map((v) => Math.max(0, v ?? 0))
   const total = values.reduce((a, b) => a + b, 0)
   const share = values.map((v) => (total > 0 ? (v / total) * 100 : 0))
   const cum: number[] = []
   share.forEach((p, i) => cum.push((cum[i - 1] ?? 0) + p))
-  const vital = total > 0 ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
+  // 단위가 서로 다른 값('3건', '40%')을 더한 몫은 틀린 숫자라 먼저 잡을 원인과 몫을 말하지 않는다
+  const vital = total > 0 && series.ok ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
   const n = items.length
   // 점은 막대 칸의 오른쪽 끝: 그 칸까지 더한 몫. 가운데에 찍으면 첫 점이 첫 막대의 숫자 위에 앉는다
   const x = (i: number) => ((i + 1) / n) * 100
@@ -882,16 +880,18 @@ function Pareto() {
  * 어느 달이 모자랐는지가 먼저 보인다. 막대 위에 실적과 목표 숫자를, 이름 아래에 달성률을 붙인다
  */
 function Attain() {
-  const { slide, mode } = useSlide()
+  const { slide, meta, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.attain.items!.max)
   const final = mode === 'final'
   const demo = !final && items.every((it) => !it.value.trim() && !it.meta.trim())
-  const read = (k: 'value' | 'meta', i: number) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
-  const actual = items.map((_, i) => read('value', i))
-  const goal = items.map((_, i) => read('meta', i))
+  const text = (k: 'value' | 'meta', i: number) => (demo ? hintFor(slide.layout, slide.hints, k, k, i) : items[i][k])
+  // 실적과 목표를 한 기준으로 읽는다. 단위가 서로 다른 값이 섞였으면 달성과 달성률은 말하지 않고 막대만 그린다
+  const series = seriesIn([...items.map((_, i) => text('value', i)), ...items.map((_, i) => text('meta', i))], readField(slide, meta, 'unit'))
+  const actual = series.values.slice(0, items.length)
+  const goal = series.values.slice(items.length)
   const top = Math.max(0, ...actual.map((v) => v ?? 0), ...goal.map((v) => v ?? 0))
   const y = (v: number | null) => (v === null || top <= 0 ? 0 : (Math.max(0, v) / top) * 100)
-  const met = items.map((_, i) => (actual[i] === null || goal[i] === null ? null : actual[i]! >= goal[i]!))
+  const met = items.map((_, i) => (actual[i] === null || goal[i] === null || !series.ok ? null : actual[i]! >= goal[i]!))
   const judged = met.filter((m) => m !== null).length
   const hit = met.filter((m) => m === true).length
   return (
@@ -923,7 +923,7 @@ function Attain() {
       />
       <div className="bk-cc-plot">
         {items.map((it, i) => {
-          const rate = actual[i] !== null && goal[i] ? Math.round((actual[i]! / goal[i]!) * 100) : null
+          const rate = actual[i] !== null && goal[i] && series.ok ? Math.round((actual[i]! / goal[i]!) * 100) : null
           return (
             <div
               key={it.id}
@@ -981,11 +981,15 @@ function Stack() {
   const parts = partsOf(partsText)
   const pct = slide.variant === 'pct'
   const width = parts.length || STACK_TINTS.length
-  const rows = items.map((it, i) =>
-    seriesOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)
-      .slice(0, width)
-      .map((v) => Math.max(0, v)),
+  // 막대끼리도 키를 견주므로 모든 막대의 값을 한 기준으로 읽는다 ('1.2억, 8,000만'이면 1.2와 0.8)
+  const cells = items.map((it, i) =>
+    tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)
+      .filter((t) => readAmount(t) !== null)
+      .slice(0, width),
   )
+  const series = seriesIn(cells.flat(), readField(slide, meta, 'unit'))
+  let at = 0
+  const rows = cells.map((r) => r.map(() => Math.max(0, series.values[at++] ?? 0)))
   const totals = rows.map((r) => r.reduce((a, b) => a + b, 0))
   const top = Math.max(0, ...totals)
   const tint = (j: number) => `color-mix(in srgb, var(--accent) ${STACK_TINTS[j]}%, var(--bg))`
@@ -1016,14 +1020,14 @@ function Stack() {
             <div key={it.id} className="it bk-cc-col" style={{ '--p': p.toFixed(2) } as CSSProperties}>
               <div className="bk-cc-bar bk-st-bar">
                 <span className="bk-cc-v">
-                  {/* 단위는 그래프 위에 한 번만 (막대마다 되풀이하지 않는다) */}
-                  {sum > 0 && <span className="bk-cc-num">{formatNumber(sum)}</span>}
+                  {/* 단위는 그래프 위에 한 번만 (막대마다 되풀이하지 않는다). 단위가 서로 다른 값을 더한 합은 보이지 않는다 */}
+                  {sum > 0 && series.ok && <span className="bk-cc-num">{formatNumber(sum)}</span>}
                 </span>
                 <span className="bk-cc-fill bk-st-stack">
                   {rows[i].map((v, j) => {
                     const of = sum > 0 ? (v / sum) * 100 : 0
                     // 칸 안 숫자는 그 칸이 막대 높이에서 차지하는 몫이 충분할 때만. 칸이 숫자보다 낮으면 CSS가 숨긴다
-                    const room = (of * p) / 100 >= 6
+                    const room = (of * p) / 100 >= 6 && series.ok
                     return v > 0 ? (
                       <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: tint(j) } as CSSProperties}>
                         {room && <span className="bk-st-n">{pct ? pctText(of) : formatNumber(v)}</span>}
@@ -1054,7 +1058,8 @@ function Diverge() {
   const items = slide.items.slice(0, BLOCKS.diverge.items!.max)
   const final = mode === 'final'
   const demo = !final && items.every((it) => !it.value.trim())
-  const values = items.map((it, i) => numberOrNull(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))
+  // 막대 길이끼리 견주므로 한 기준으로 ('+1.2억', '−4,000만')
+  const values = seriesIn(items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value))).values
   const known = values.filter((v): v is number => v !== null)
   const pos = Math.max(0, ...known)
   const neg = Math.max(0, ...known.map((v) => -v))
@@ -1143,8 +1148,12 @@ function Heat() {
   const names = colsOf(colsText || (final ? '' : hintFor(slide.layout, slide.hints, 'cols')))
   const rows = items.map((it, i) => tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(0, HEAT_COLS))
   const c = Math.max(1, Math.min(HEAT_COLS, Math.max(names.length, ...rows.map((r) => r.length))))
-  const nums = rows.map((r) => Array.from({ length: c }, (_, j) => numberOrNull(r[j] ?? '')))
   const byRow = slide.variant === 'rows'
+  // 표 전체에서 견주면 표 전체를, 줄마다 견주면(지표마다 단위가 다를 때) 줄마다 한 기준으로 읽는다
+  const unit = readField(slide, meta, 'unit')
+  const cellTexts = rows.map((r) => Array.from({ length: c }, (_, j) => r[j] ?? ''))
+  const table = seriesIn(cellTexts.flat(), unit)
+  const nums = byRow ? cellTexts.map((r) => seriesIn(r, unit).values) : cellTexts.map((_, i) => table.values.slice(i * c, (i + 1) * c))
   const rangeOf = (vs: (number | null)[]) => {
     const k = vs.filter((v): v is number => v !== null)
     return k.length ? { lo: Math.min(...k), hi: Math.max(...k) } : null
@@ -1160,7 +1169,8 @@ function Heat() {
     for (let i = 0; i < nums.length; i++) for (let j = 0; j < c; j++) if (nums[i][j] === v) return [i, j]
     return null
   }
-  const marks = !byRow && !!all && all.hi > all.lo
+  // 단위가 서로 다른 칸이 섞인 표에서 가장 높은 곳과 낮은 곳은 틀린 말이라 짚지 않는다
+  const marks = !byRow && table.ok && !!all && all.hi > all.lo
   const top = marks ? find(all.hi) : null
   const low = marks ? find(all.lo) : null
   const is = (p: [number, number] | null, i: number, j: number) => !!p && p[0] === i && p[1] === j
@@ -1230,16 +1240,15 @@ function Heat() {
 /** 숫자 글의 소수 자리 수 */
 const decimalsOf = (t: string) => /\.(\d+)/.exec(t)?.[1].length ?? 0
 
-/** 지표 흐름표의 바뀐 만큼: 값 그대로의 차이와 단위. 단위가 %면 %p */
+/** 지표 흐름표의 바뀐 만큼: 지금 값(뒤 값)의 자리와 단위로 센 차이. 단위가 %면 %p. 견줄 수 없는 단위끼리면 null */
 function stepOf(from: string, to: string, unit: string): { text: string; dir: number } | null {
-  const a = numberOrNull(from)
-  const b = numberOrNull(to)
-  if (a === null || b === null) return null
-  const k = 10 ** Math.min(2, Math.max(decimalsOf(from), decimalsOf(to)))
-  const d = Math.round((b - a) * k) / k
-  // 단위 칸이 비었으면 값에 붙여 쓴 단위('58억')를 그대로
-  const u = unit || to.replace(/^[^\d]*[\d.,]+/, '').trim()
-  return { text: `${formatNumber(Math.abs(d))}${u === '%' ? '%p' : u}`, dir: Math.sign(d) }
+  const p = amountPair(from, to, unit)
+  if (!p) return null
+  // 소수 자리는 적은 값을 따른다. 두 값의 자리가 다르면('9,500만 → 1.2억'은 0.25억) 둘째 자리까지
+  const k = 10 ** (p.a.scale === p.b.scale ? Math.min(2, Math.max(decimalsOf(from), decimalsOf(to))) : 2)
+  const d = Math.round(((p.b.base - p.a.base) / p.b.scale) * k) / k
+  // 단위 칸이 비었으면 지금 값에 붙여 쓴 자리와 단위('58억')를 그대로
+  return { text: `${formatNumber(Math.abs(d))}${p.kind === '%' ? '%p' : unit || p.b.suffix}`, dir: Math.sign(d) }
 }
 
 /**
@@ -1275,8 +1284,11 @@ function Sparks() {
         <ul className="bk-sx-list" data-n={items.length}>
           {items.map((it, i) => {
             const toks = tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value).slice(-24)
+            const unit = it.meta.trim() || (demo ? hintFor(slide.layout, slide.hints, 'meta', 'meta', i) : '')
+            // 줄 안에서 자리를 섞어 적었으면('9,500만, 1.2억') 한 기준으로 맞춰 선을 긋는다
+            const vs = seriesIn(toks, unit).values
             const pts = toks.flatMap((t, j) => {
-              const v = numberOrNull(t)
+              const v = vs[j]
               return v === null ? [] : [{ j, v, t }]
             })
             const lo = Math.min(...pts.map((p) => p.v))
@@ -1286,7 +1298,6 @@ function Sparks() {
             const line = at.map((p, k) => `${k ? 'L' : 'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
             const last = pts[pts.length - 1]
             const base = first ? pts[0] : pts[pts.length - 2]
-            const unit = it.meta.trim() || (demo ? hintFor(slide.layout, slide.hints, 'meta', 'meta', i) : '')
             const step = last && base && base !== last ? stepOf(base.t, last.t, unit) : null
             const end = at[at.length - 1]
             return (
