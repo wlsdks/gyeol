@@ -857,6 +857,14 @@
   }
 }
 
+/* 옅은 면, 진한 면의 도넛은 위아래 안쪽 여백(88px)만큼 넷의 한 단 목록이 더 높은 데서부터 들어간다. 바탕이 없을 때의 높이에서
+   바꾸면 그 사이(570~580px)는 목록이 면 안쪽 여백까지 넘쳐 면 끝에서 14px까지 붙었다 */
+@container bk (min-width: 1301px) and (max-height: 590px) {
+  .va-donut:is(.bk-look-card, .bk-look-bold) > .bk-in:has(> .sh[data-n='4']) {
+    --sh-row: 1;
+  }
+}
+
 /* 100칸은 칸 아래 합계 줄이 있어서, 카드 바탕이면 넷의 한 단 목록이 도넛보다 조금 높은 데서부터 들어간다 */
 @container bk (min-width: 1301px) and (max-height: 600px) {
   .va-units > .bk-in:has(> .sh[data-n='4']) {
