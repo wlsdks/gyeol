@@ -619,7 +619,10 @@ export function motionEngine(): MotionEngine {
           pop(el.querySelector('.cp-arrow'), at + 160)
           rise(el.querySelector('.cp-r'), at + 240, L.y * 0.6)
         })
-        pop(one('.cp > .cp-arrow'), t + L.step * 1.5 + 160)
+        // 두 면 사이의 잇는 선은 앞 면에서 뒤 면 쪽으로 그어진다(compare.css). 튀어나오게 하면 점과 머리가 사이 가운데에서 커졌다.
+        // 점이 앞 면 밖으로 반쯤 나와 있어서 가리는 상자를 그만큼 넓힌다
+        const mid = one('.cp > .cp-arrow')
+        if (mid) run(anims, mid, [{ clipPath: 'inset(-12px calc(100% + 12px) -12px -12px)' }, { clipPath: 'inset(-12px -12px -12px -12px)' }], s(t + L.step * 1.5 + 160), { easing: CARRY, duration: d(520) })
         break
       }
       case 'timeline': {
