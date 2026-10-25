@@ -266,12 +266,18 @@
 
 .ps-board .ps-row {
   grid-column: auto;
-  /* 이름 옆 오른쪽 위에 진행률, 그 아래 막대: 막대 줄에 숫자를 따로 두면 과제마다 한 줄씩 높아져 한 단에 셋이면 장을 넘었다 */
+  /* 이름 아래 막대, 막대 끝에 진행률. 이름 옆에 진행률을 두면 단 너비(넷이면 380px)에서 열 글자 남짓한 이름도 두 줄이 됐다 */
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'name pct' 'track track' 'state state';
-  align-items: start;
+  grid-template-areas: 'name name' 'track pct' 'state state';
+  align-items: center;
   gap: 0 20px;
   padding: 24px 0;
+}
+
+/* 여섯, 일곱이면 한 단에 셋 넘게 쌓여 장을 넘으므로 진행률을 이름 옆으로 올려 과제마다 한 줄을 줄인다 */
+.ps-board:is([data-n='6'], [data-n='7']) .ps-row {
+  grid-template-areas: 'name pct' 'track track' 'state state';
+  align-items: start;
 }
 
 .ps-board .ps-row:not(.ps-headrow) {
@@ -283,8 +289,8 @@
   margin-bottom: 16px;
 }
 
-/* 진행률 숫자는 과제 이름 첫 줄의 바닥선에 */
-.ps-board .ps-pct {
+/* 이름 옆에 올렸을 때(여섯, 일곱) 진행률 숫자는 과제 이름 첫 줄과 같은 줄 높이로 */
+.ps-board:is([data-n='6'], [data-n='7']) .ps-pct {
   line-height: 1.3;
 }
 
