@@ -1,0 +1,239 @@
+/* ---------- AI에게 구성 맡기기 ---------- */
+
+.ai-btn {
+  position: relative;
+}
+
+.ai-btn.is-on {
+  border-color: #c9d6fb;
+  background: var(--sel-soft);
+  color: var(--sel);
+}
+
+.ai-dot {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: var(--sel);
+}
+
+.pop-ai {
+  width: 420px;
+  /* 1280×600에서도 아래 설명까지 닿게 */
+  max-height: calc(100vh - 72px);
+  padding: 0;
+  overflow-y: auto;
+}
+
+.ai-pop {
+  padding: 16px 18px;
+}
+
+.ai-pop-toggle {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: #f5f6f8;
+}
+
+.ai-pop-note {
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.ai-pop-note.is-warn {
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.ai-pop-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0 4px;
+}
+
+.ai-pop-k {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ai-pop-cols ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  list-style: none;
+}
+
+.ai-pop-cols li::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 8px 2px 0;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.ai-pop-more {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+.ai-pop-more summary {
+  color: var(--ink-2);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-pop-more summary:hover {
+  color: var(--ink);
+}
+
+.ai-pop-pre {
+  max-height: 220px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: var(--r-sm);
+  background: #f5f6f8;
+  color: var(--ink-2);
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.ai-pop-step {
+  margin: 10px 0 6px;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.ai-cmd {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.ai-cmd-label {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ai-cmd-text {
+  overflow: hidden;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 복사하지 못했을 때: 글 전체가 보이고, 한 번 누르면 다 골라진다 */
+.ai-cmd-text.is-open,
+.ask-fail {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  user-select: all;
+}
+
+.ask-fail {
+  margin: 0 10px 8px;
+}
+
+.copy-fail {
+  margin: 6px 0 0;
+  color: var(--warn-ink);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ask-note.copy-fail {
+  margin: 4px 10px 6px;
+}
+
+.icon-btn-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.icon-btn-sm .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* 제안이 왔을 때 오른쪽 아래에 */
+.ai-inbox {
+  position: fixed;
+  z-index: 45;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 400px;
+  padding: 14px 14px 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  animation: ai-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ai-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-inbox {
+    animation: none;
+  }
+}
+
+.ai-inbox-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--sel-soft);
+  color: var(--sel);
+}
+
+.ai-inbox-h {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ai-inbox-p {
+  display: -webkit-box;
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* AI가 말한 까닭은 끝까지 읽히게 */
+.ai-inbox-p.ai-reason {
+  -webkit-line-clamp: 6;
+  line-height: 1.55;
+}

@@ -12,7 +12,7 @@ import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Segmente
 /** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
 
-/** 테마 견본 하나의 너비 (메뉴의 고르는 칸을 둘로 나눈 너비, app.css의 .theme-menu) */
+/** 테마 견본 하나의 너비 (메뉴의 고르는 칸을 둘로 나눈 너비, styles/ui.css의 .theme-menu) */
 const THEME_THUMB = 226
 
 export function ThemeMenu({ deck }: { deck: Deck }) {

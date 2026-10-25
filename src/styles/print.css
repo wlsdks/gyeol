@@ -1,0 +1,39 @@
+/* ---------- 인쇄 (PDF) ---------- */
+
+.print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+
+  html,
+  body {
+    height: auto;
+    background: #fff;
+  }
+
+  /* 인쇄할 장(PrintDeck)이 붙어 있을 때만 화면을 숨긴다. 그 밖의 화면에서 브라우저 인쇄를 쓰면 빈 쪽 대신 화면이 그대로 나온다 */
+  body:has(> .print-root) #root {
+    display: none !important;
+  }
+
+  .print-root {
+    display: block;
+  }
+
+  .print-page {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    break-after: page;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

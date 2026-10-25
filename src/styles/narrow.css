@@ -1,0 +1,139 @@
+/* ---------- 좁은 화면 ---------- */
+
+@media (max-width: 1100px) {
+  .ed-body,
+  .ed-body.has-side {
+    grid-template-columns: 196px minmax(0, 1fr);
+  }
+
+  /* 좁으면 오른쪽 칸을 접고, 열 때만 슬라이드 위에 띄운다 (장 아래의 '컴포넌트 넣기', '이 장 설정'으로 연다) */
+  .side {
+    display: none;
+  }
+
+  .stage-side,
+  .side-close {
+    display: inline-flex;
+  }
+
+  .ed-body.has-side .side {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    width: 336px;
+    max-width: calc(100% - 40px);
+    box-shadow: -14px 0 36px rgb(16 20 31 / 0.12);
+  }
+
+  .stage-blocks {
+    display: inline-flex;
+  }
+
+  .save {
+    max-width: 28px;
+    overflow: hidden;
+  }
+
+  .ed-body.has-versions {
+    grid-template-columns: 196px minmax(0, 1fr) 320px;
+  }
+}
+
+@media (max-width: 860px) {
+  .wz-types,
+  .wz-split,
+  .wz-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-options {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-steps {
+    display: none;
+  }
+
+  .wz-themes {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-main,
+  .home-main {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .home-top,
+  .wz-top,
+  .wz-bottom {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .ed-app {
+    grid-template-rows: auto 1fr;
+  }
+
+  .ed-top {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+
+  .ed-top-r {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .ed-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sl {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sl-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sl > .pop-wrap {
+    display: none;
+  }
+
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0s !important;
+  }
+}
+
+/* 개발용 레이아웃 모음 */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 960px);
+  gap: 24px;
+  padding: 24px;
+  background: #6b7080;
+}
+
+.vp-rename {
+  padding-right: 28px;
+}
+
+.vp-rename .input {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 14px;
+}

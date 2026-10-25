@@ -1,0 +1,65 @@
+/* ---------- 바탕: 색 토큰, 글꼴, 스크롤바, 초점 표시 ---------- */
+
+:root {
+  --app-bg: #f3f4f6;
+  --panel: #ffffff;
+  --line: #e3e5e9;
+  --line-2: #d2d6dc;
+  --ink: #191c22;
+  --ink-2: #555b66;
+  --ink-3: #8b909a;
+  --sel: #3a6ff8;
+  --sel-soft: #eaf0ff;
+  --danger: #c8322b;
+  --warn-bg: #fff6e0;
+  --warn-ink: #7a5200;
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+  --shadow-pop: 0 1px 2px rgb(16 20 31 / 0.06), 0 12px 32px rgb(16 20 31 / 0.14);
+
+  color: var(--ink);
+  background: var(--app-bg);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 윈도우는 스크롤바가 자리를 차지하고 굵게 보인다. 얇게, 화면 색에 맞춰 그린다. */
+:root {
+  scrollbar-color: #c3c7ce transparent;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sel);
+  outline-offset: 2px;
+}

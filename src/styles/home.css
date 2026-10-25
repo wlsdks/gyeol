@@ -1,0 +1,174 @@
+/* ---------- 홈 ---------- */
+
+.home {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100%;
+}
+
+.home-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 32px;
+}
+
+.home-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.home-ver {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px 32px 80px;
+}
+
+/* 큰 화면(1920×1080): 마법사와 같은 너비로 넓혀 한 줄에 넷. 그대로 두면 좌우가 너무 비어 보인다 */
+@media (min-width: 1700px) {
+  .home-main {
+    max-width: 1480px;
+  }
+}
+
+.home-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.home-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.home-h {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 28px 24px;
+}
+
+.home-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 16 / 9;
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.home-new .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.home-new:hover {
+  border-color: var(--ink);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.card {
+  min-width: 0;
+}
+
+.card-link {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r);
+  box-shadow: 0 0 0 1px var(--line);
+  transition: box-shadow 0.15s;
+}
+
+.card-link:hover {
+  box-shadow: 0 0 0 1px var(--line-2), 0 8px 24px rgb(16 20 31 / 0.1);
+}
+
+.card-thumb {
+  aspect-ratio: 16 / 9;
+}
+
+.card-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 2px 0;
+}
+
+.card-text {
+  min-width: 0;
+}
+
+.card-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  margin: 2px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+/* 만든 발표가 없을 때: 남은 자리의 가운데에. 위에 붙여 두면 화면 아래 대부분이 빈다 */
+.home-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0 64px;
+  text-align: center;
+}
+
+.home-empty-h {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.home-empty-p {
+  margin: 8px 0 28px;
+  color: var(--ink-2);
+}
+
+.home-links {
+  display: flex;
+  gap: 20px;
+}

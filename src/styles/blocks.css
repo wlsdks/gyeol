@@ -1,0 +1,935 @@
+/* ---------- 부품 넣기 ---------- */
+
+.ed-body {
+  position: relative;
+}
+
+.ed-canvas {
+  position: relative;
+}
+
+/* 넓은 화면에서는 오른쪽 칸의 '컴포넌트' 탭으로 고른다. 오른쪽 칸을 접는 좁은 화면에서만 장 아래에 둔다 */
+.stage-blocks {
+  display: none;
+  color: var(--sel);
+}
+
+.stage-blocks.is-on,
+.stage-side.is-on {
+  border-color: #c5d5ff;
+  background: var(--sel-soft);
+}
+
+/* 오른쪽 칸을 접는 좁은 창에서만: 장 아래의 '이 장 설정'과 띄운 칸의 닫기 */
+.stage-side,
+.side-close {
+  display: none;
+}
+
+.side-close {
+  align-self: center;
+  margin-left: auto;
+}
+
+/* (i) 단추가 이미 오른쪽으로 밀고 있으면 그 옆에 붙는다 */
+.side-tabs > .info + .side-close {
+  margin-left: 2px;
+}
+
+/* 끄는 동안 놓으면 할 일 */
+.bk-hint {
+  position: absolute;
+  z-index: 30;
+  top: 6px;
+  left: 50%;
+  /* 가운데 맞춘 상자는 왼쪽 50%부터라 그 너비(무대의 절반)에서 줄이 바뀌었다. 무대 너비만큼은 한 줄로 */
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: var(--shadow-pop);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  translate: -50% 0;
+  animation: bk-hint-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bk-hint-in {
+  from {
+    opacity: 0;
+    translate: -50% -6px;
+  }
+}
+
+/* 손에 든 부품. 자리는 스크립트가 translate로 옮긴다 */
+.bk-ghost {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgb(16 20 31 / 0.12), 0 18px 44px rgb(16 20 31 / 0.24);
+  pointer-events: none;
+  will-change: translate, rotate, scale;
+}
+
+.bk-ghost.is-held {
+  transition: opacity 0.16s, box-shadow 0.2s, scale 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 이 장에 둘 데가 없거나(다음 장으로 간다) 손 아래가 아닌 자리에 놓일 때: 살짝 흐리게. 까닭은 무대 위쪽의 안내(.bk-hint)에 */
+.bk-ghost:is(.is-next, .is-elsewhere) {
+  opacity: 0.88;
+}
+
+.bk-ghost-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.bk-ghost-scale {
+  transform-origin: 0 0;
+}
+
+/* 끌고 있는 이음표: 손 아래의 작은 동그라미. 놓일 자리가 잡히면 장 위에 흐리게 미리 서고, 손의 것은 옅어진다 */
+.lk-ghost {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow: 0 0 0 1.5px var(--sel), 0 10px 26px rgb(16 20 31 / 0.22);
+  color: var(--sel);
+  pointer-events: none;
+  transition: opacity 0.16s;
+  will-change: translate;
+}
+
+.lk-ghost.is-placed {
+  opacity: 0.5;
+}
+
+.lk-ghost-g,
+.lk-tool-g {
+  display: grid;
+  place-items: center;
+}
+
+.lk-ghost svg,
+.lk-tool-g svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.4;
+}
+
+.lk-tool-g svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 4;
+}
+
+.lk-ghost .bk-link-vs {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.lk-tool-g .bk-link-vs {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bk-tool.is-label {
+  color: var(--sel);
+  cursor: default;
+}
+
+.lk-tool-set {
+  display: flex;
+  gap: 2px;
+}
+
+body.is-block-dragging,
+body.is-block-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.is-block-resizing,
+body.is-block-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* 고른 부품의 도구 */
+.bk-float {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+}
+
+/* 부품 장이 아닌 장의 아래 빈자리: 여기에 부품을 더 놓을 수 있다는 안내. 장에 올리면 또렷해진다 */
+.ed-room {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--sel) 38%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sel) 3%, transparent);
+  color: var(--sel);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.ed-room:hover,
+.ed-room:focus-visible {
+  border-color: var(--sel);
+  background: color-mix(in srgb, var(--sel) 7%, transparent);
+  opacity: 1;
+}
+
+.ed-room-t {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ed-room-t .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.ed-room-s {
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+/* 낮은 빈자리에서는 설명을 숨긴다 */
+@media (max-height: 760px) {
+  .ed-room-s {
+    display: none;
+  }
+}
+
+.bk-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  animation: bk-tools-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bk-tools-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+.bk-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bk-tool:hover:not(:disabled),
+.bk-tool.is-on {
+  background: #f0f2f5;
+}
+
+.bk-tool:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* 자리가 모자라 막아 둔 단추: 누르면 까닭을 알려 준다 */
+.bk-tool.is-blocked {
+  cursor: help;
+  opacity: 0.42;
+}
+
+.bk-tool.is-icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.bk-grip {
+  color: var(--sel);
+  cursor: grab;
+  touch-action: none;
+}
+
+.bk-tool-sep {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--line);
+}
+
+/* 바탕 견본: 도구 단추 안에서는 작게, 바탕 메뉴에서는 설명 옆에 크게 */
+.bk-look {
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+}
+
+.bk-menu-item > .bk-look {
+  grid-row: 1 / span 2;
+  justify-self: center;
+  width: 34px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.bk-menu.is-looks {
+  width: 280px;
+}
+
+.bk-menu-item.is-blocked {
+  cursor: help;
+  opacity: 0.5;
+}
+
+.bk-look.is-plain {
+  background:
+    linear-gradient(135deg, transparent 46%, var(--line-2) 46% 54%, transparent 54%),
+    var(--panel);
+}
+
+.bk-look.is-card {
+  background: #e9ecf0;
+}
+
+.bk-look.is-bold {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.bk-tool-menu {
+  position: relative;
+}
+
+/* 고른 컴포넌트 위에 띄운 도구 (editor/SelectionBar.tsx의 FloatTools). 아래에 자리가 모자라면 메뉴를 위로 연다 */
+.float-tools {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 31;
+}
+
+.float-tools .bk-tools {
+  border-color: var(--line-2);
+  border-radius: 10px;
+}
+
+.float-tools.is-tight .bk-tool:not(.bk-grip, .is-label) > span:not(.bk-look, .lk-tool-g) {
+  display: none;
+}
+
+.bk-menu.is-up {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.bk-menu.is-variants {
+  width: 200px;
+}
+
+.bk-menu.is-variants .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bk-menu.is-variants .bk-menu-item > * {
+  grid-column: 1;
+}
+
+.bk-menu {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  left: -4px;
+  width: 312px;
+  max-height: min(520px, calc(100vh - 160px));
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  list-style: none;
+}
+
+.bk-menu-item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 1px 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bk-menu-item:hover,
+.bk-menu-item:focus-visible {
+  background: #f3f5f8;
+}
+
+.bk-menu-item b {
+  grid-column: 2;
+  font-size: 13.5px;
+}
+
+/* 칸 더하기 메뉴는 그림 없이 글만: 좁게, 그림 자리를 두지 않는다 */
+.bk-menu.is-fields {
+  width: 240px;
+}
+
+.bk-menu.is-fields .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bk-menu.is-fields .bk-menu-item b,
+.bk-menu.is-fields .bk-menu-d {
+  grid-column: 1;
+}
+
+.bk-menu-d {
+  grid-column: 2;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 움직임 메뉴의 작은 그림: 부품 하나(면 위에 줄 셋). 올리면 고른 움직임을 1.6초마다 되풀이한다 */
+.fx-demo {
+  grid-row: 1 / span 2;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  width: 40px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sel) 14%, #fff);
+}
+
+.fx-demo i {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--sel);
+  transform-origin: left center;
+}
+
+.fx-demo i:nth-child(2) {
+  width: 78%;
+  opacity: 0.6;
+}
+
+.fx-demo i:nth-child(3) {
+  width: 52%;
+  opacity: 0.6;
+}
+
+.fx-demo.is-none {
+  background: #eef0f3;
+}
+
+.fx-demo.is-none i {
+  background: #b3b9c3;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
+  animation: 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-rise {
+  animation-name: fx-rise;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-fade {
+  animation-name: fx-fade;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-wipe {
+  animation-name: fx-wipe;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-slide {
+  animation-name: fx-slide;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-pop {
+  animation-name: fx-pop;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-zoom {
+  animation-name: fx-zoom;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-flip {
+  animation-name: fx-flip;
+  transform-origin: 50% 100%;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-blur {
+  animation-name: fx-blur;
+}
+
+/* 알아서: 부품마다 짠 움직임이라 줄이 차례로 자라는 모습으로 대신 보인다 */
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i {
+  animation: fx-grow 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.bk-menu-item:is(:hover, :focus-visible) .fx-demo.is-auto i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes fx-rise {
+  0% {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  45%, 100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes fx-fade {
+  0% {
+    opacity: 0;
+  }
+  55%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fx-wipe {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  55%, 100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes fx-slide {
+  0% {
+    opacity: 0;
+    translate: 14px 0;
+  }
+  45%, 100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes fx-pop {
+  0% {
+    opacity: 0;
+    scale: 0.5;
+  }
+  30% {
+    opacity: 1;
+    scale: 1.08;
+  }
+  45%, 100% {
+    scale: 1;
+  }
+}
+
+@keyframes fx-zoom {
+  0% {
+    opacity: 0;
+    scale: 1.3;
+  }
+  50%, 100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes fx-flip {
+  0% {
+    opacity: 0;
+    transform: perspective(120px) rotateX(-75deg);
+  }
+  50%, 100% {
+    opacity: 1;
+    transform: perspective(120px) rotateX(0deg);
+  }
+}
+
+@keyframes fx-blur {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  55%, 100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes fx-grow {
+  0% {
+    scale: 0 1;
+  }
+  45%, 100% {
+    scale: 1 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-demo,
+  .fx-demo i {
+    animation: none !important;
+  }
+}
+
+.bk-menu-item.is-on b {
+  color: var(--sel);
+}
+
+/* 컴포넌트 고르기: 오른쪽 칸의 '컴포넌트' 탭. 슬라이드를 가리지 않는다 */
+.lib {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 이 장이 아직 컴포넌트 장이 아니거나 다 찼을 때의 알림: 상자 없이 한 줄 */
+.lib-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  margin: 14px 16px 0;
+}
+
+.lib-note-t {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.lib-note-btn {
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line-2);
+  border-radius: 15px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lib-note-btn:hover {
+  border-color: var(--ink-3);
+}
+
+/* 묶음: 같은 폭으로 나눈 글자 칩 한 줄 (접히면 어디까지가 묶음인지 읽히지 않는다). 고른 칩만 짙게 */
+.lib-tabs {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+  margin: 12px 16px 0;
+}
+
+.lib-tab {
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.14s, color 0.14s;
+}
+
+.lib-tab:hover:not(.is-on) {
+  background: #eef0f3;
+  color: var(--ink);
+}
+
+.lib-tab.is-on {
+  background: var(--ink);
+  color: #fff;
+}
+
+.lib-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sel);
+}
+
+.lib-list {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  padding: 6px 8px 24px 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  scrollbar-gutter: stable;
+}
+
+.lib-sec {
+  padding-top: 12px;
+}
+
+.lib-sec + .lib-sec {
+  margin-top: 14px;
+}
+
+/* 묶음 제목: 이름과 개수, 밑에 무엇이 들어 있는지 한 줄 */
+.lib-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lib-group-n {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lib-group-d {
+  margin: 2px 0 12px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
+}
+
+/* 카드: 테두리 상자 대신 그림 한 장과 이름. 올리면 그림이 떠오르고 파란 테두리 */
+.lib-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+}
+
+.lib-card:hover .lib-thumb,
+.lib-card:focus-visible .lib-thumb {
+  box-shadow: 0 0 0 2px var(--sel), 0 10px 22px rgb(16 20 31 / 0.12);
+  translate: 0 -2px;
+}
+
+.lib-card:focus-visible {
+  outline: none;
+}
+
+.lib-card:active .lib-thumb {
+  translate: 0 0;
+}
+
+/* 이 장에는 자리가 없는 부품: 그림만 흐리게 하고 이름 밑에 한 줄. 누르면 아래에 까닭이 나온다 */
+.lib-card.is-blocked {
+  cursor: help;
+}
+
+.lib-card.is-blocked .lib-thumb {
+  opacity: 0.42;
+}
+
+.lib-card.is-why .lib-thumb {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.lib-no {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.lib-no::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lib-why {
+  margin: 0 12px 12px 20px;
+  padding: 14px 16px;
+  border-radius: var(--r);
+  background: var(--ink);
+  box-shadow: 0 -8px 28px rgb(16 20 31 / 0.16);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.55;
+  animation: lib-why-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lib-why-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+.lib-why-t {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lib-why-p {
+  margin: 0;
+  color: rgb(255 255 255 / 0.86);
+}
+
+.lib-why-p.is-fix {
+  margin-top: 4px;
+  color: rgb(255 255 255 / 0.66);
+}
+
+.lib-why-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 어두운 판 위라서 단추 색을 뒤집는다: 하는 일은 흰 단추, 닫기는 테두리만 */
+.lib-why .btn-primary {
+  background: #fff;
+  color: var(--ink);
+}
+
+.lib-why .btn-primary:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.88);
+}
+
+.lib-why .btn-ghost {
+  border-color: rgb(255 255 255 / 0.28);
+  background: transparent;
+  color: #fff;
+}
+
+.lib-why .btn-ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+}
+
+.lib-thumb {
+  position: relative;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--line);
+  aspect-ratio: 3 / 2;
+  transition: box-shadow 0.16s, translate 0.16s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s;
+}
+
+.lib-thumb-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.lib-name {
+  padding: 0 2px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.lib-desc {
+  display: -webkit-box;
+  margin-top: 1px;
+  padding: 0 2px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

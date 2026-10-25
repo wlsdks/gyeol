@@ -272,7 +272,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       }
       if (!target.el.isConnected) return setTarget(null)
       const box = target.el.getBoundingClientRect()
-      // 제목 덩어리는 쓰는 중인 칸의 테와 겹치지 않게 조금 넓게 두른다 (app.css의 .sel-ring.is-group)
+      // 제목 덩어리는 쓰는 중인 칸의 테와 겹치지 않게 조금 넓게 두른다 (styles/selection.css의 .sel-ring.is-group)
       const pad = target.kind === 'field' && target.place ? GROUP_PAD : 0
       const r = new DOMRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))

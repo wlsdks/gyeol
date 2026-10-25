@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useEscape } from '../ui'
 import type { BlockEditing } from './BlockEditor'
 
-/** app.css의 '좁은 화면'과 같은 너비: 이보다 좁으면 오른쪽 칸을 접는다 */
+/** styles/narrow.css의 '좁은 화면'과 같은 너비: 이보다 좁으면 오른쪽 칸을 접는다 */
 const NARROW = '(max-width: 1100px)'
 
 /** 오른쪽 칸(이 장 설정, 컴포넌트)을 좁은 창에서 띄우고 닫는 일 */

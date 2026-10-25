@@ -1,0 +1,65 @@
+/* ---------- 발표 ---------- */
+
+.present {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  background: #000;
+  cursor: default;
+  user-select: none;
+}
+
+.present.is-idle {
+  cursor: none;
+}
+
+.present-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.present-blank {
+  position: fixed;
+  inset: 0;
+  background: #000;
+}
+
+.present-blank.is-white {
+  background: #fff;
+}
+
+/* 장 아래쪽 오른편에는 장의 쪽 번호가 있어 겹친다. 거의 모든 장에서 비어 있는 위 오른편에 둔다 */
+.present-bar {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.25s;
+}
+
+.present.is-idle .present-bar {
+  opacity: 0;
+}
+
+.present-count,
+.present-exit {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.5);
+  color: rgb(255 255 255 / 0.82);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.present-exit {
+  cursor: pointer;
+}
+
+.present-exit:hover {
+  background: rgb(0 0 0 / 0.75);
+  color: #fff;
+}

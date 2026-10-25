@@ -1,0 +1,337 @@
+/* ---------- 장 모음 ----------
+   만들 수 있는 장과 모양, 색과 글자를 늘어놓는 화면. 장이 돋보이게 화면은 홈처럼 조용하게 둔다. */
+
+.sys {
+  min-height: 100%;
+}
+
+.sys-top {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 64px;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--line);
+  background: var(--app-bg);
+}
+
+.sys-top-l {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sys-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px 28px;
+}
+
+.sys-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sys-control-k {
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sys-swatches {
+  padding: 0;
+  gap: 6px;
+}
+
+.sys-swatches .swatch {
+  width: 24px;
+  height: 24px;
+}
+
+.sys-body {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  gap: 40px;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 36px 32px 120px;
+}
+
+.sys-nav {
+  position: sticky;
+  top: 100px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sys-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sys-nav-item:hover {
+  color: var(--ink);
+}
+
+.sys-nav-item.is-on {
+  background: var(--panel);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--ink);
+}
+
+.sys-nav-n {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-main {
+  min-width: 0;
+}
+
+.sys-h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.sys-lead {
+  max-width: 62ch;
+  margin: 8px 0 0;
+  color: var(--ink-2);
+}
+
+.sys-group {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 72px;
+}
+
+.sys-h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sys-group-desc {
+  margin: 4px 0 28px;
+  color: var(--ink-3);
+}
+
+.sys-layout + .sys-layout {
+  margin-top: 44px;
+}
+
+.sys-layout-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sys-h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.sys-tag {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: #e7e9ed;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sys-layout-desc {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.sys-layout-use {
+  margin: 2px 0 14px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.sys-thumbs {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+.sys-thumb {
+  min-width: 0;
+  margin: 0;
+}
+
+.sys-thumb-wide {
+  grid-column: span 2;
+}
+
+.sys-thumb .slide-frame {
+  border-radius: var(--r);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.sys-thumb figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.sys-thumb figcaption span {
+  color: var(--ink-3);
+}
+
+.sys-tones-h {
+  margin: 36px 0 14px;
+}
+
+/* 장 모음의 부품: 묶음마다 작은 그림 넷씩 */
+.sys-parts + .sys-parts {
+  margin-top: 36px;
+}
+
+.sys-parts .sys-h3 {
+  margin-bottom: 14px;
+}
+
+.sys-part .lib-thumb {
+  margin-bottom: 0;
+  border-radius: var(--r);
+}
+
+.sys-part figcaption .sys-part-meta {
+  font-size: 12px;
+}
+
+.sys-part figcaption > span:not(.sys-part-meta) + .sys-part-meta {
+  margin-top: 4px;
+}
+
+/* 색 견본: 실제 장과 같은 조건(테마 변수, 어두운 테마)에서 계산한 색을 읽으려는 숨은 장 */
+.sys-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  scale: 0.001;
+  transform-origin: 0 0;
+}
+
+.sys-tokens {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px 16px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.sys-token {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.sys-chip {
+  height: 56px;
+  margin-bottom: 8px;
+  border-radius: var(--r);
+  box-shadow: inset 0 0 0 1px rgb(16 20 31 / 0.1);
+}
+
+.sys-token b {
+  font-size: 14px;
+}
+
+.sys-token-hex {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-token-use {
+  margin-top: 2px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+/* 글자 크기 견본. 너비 1920으로 그리고 zoom으로 줄인다 (크롬, 엣지) */
+.sys-type {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  width: 1920px;
+  padding: 96px 120px;
+  border-radius: 20px;
+  box-shadow: 0 0 0 2px var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  letter-spacing: -0.012em;
+  word-break: keep-all;
+}
+
+.sys-type-row {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 40px;
+}
+
+.sys-type-k {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  color: var(--ink-2);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.sys-type-px {
+  color: var(--ink-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.sys-type-v {
+  overflow: hidden;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sys-type-v.is-head {
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+}

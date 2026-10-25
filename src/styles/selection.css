@@ -1,0 +1,196 @@
+/* ---------- 장 위에서 고른 것의 도구 (editor/SelectionBar.tsx) ---------- */
+
+.sel-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--sel);
+  pointer-events: none;
+}
+
+/* 제목 덩어리(표지, 섹션): 쓰는 중인 칸의 실선 테와 다른 것이 보이게 점선으로, 덩어리 밖에 띄워 */
+.sel-ring.is-group {
+  box-shadow: none;
+  outline: 1.5px dashed var(--sel);
+  border-radius: 10px;
+}
+
+.sel-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+}
+
+.sel-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--sel-soft);
+  color: var(--sel);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sel-name.is-grip {
+  padding-left: 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sel-name.is-grip:active {
+  cursor: grabbing;
+}
+
+.sel-name .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sel-btn.has-t {
+  padding: 0 9px 0 7px;
+}
+
+.sel-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.sel-btn:hover:not(:disabled) {
+  background: #f1f3f5;
+  color: var(--ink);
+}
+
+.sel-btn.is-on {
+  background: var(--sel-soft);
+  color: var(--sel);
+}
+
+.sel-btn:disabled {
+  color: var(--line-2);
+  cursor: not-allowed;
+}
+
+.sel-sep {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+.sel-val {
+  min-width: 44px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* 저장 상태 창의 단축키 줄 */
+.save-pop-keys {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.save-pop-keys kbd {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: #f8f9fa;
+  color: var(--ink);
+  font: 600 12px/1.4 inherit;
+}
+
+/* 제목 덩어리를 위아래로 끄는 동안의 세 자리 (editor/SelectionBar.tsx의 PlaceGuide) */
+body.is-placing,
+body.is-placing * {
+  cursor: grabbing !important;
+}
+
+.place-guide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.place-band {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 14px;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sel) 28%, transparent);
+  transition: background-color 0.12s;
+}
+
+.place-band + .place-band {
+  border-top: 1.5px dashed color-mix(in srgb, var(--sel) 45%, transparent);
+  box-shadow: none;
+}
+
+.place-band span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--line-2);
+}
+
+.place-band.is-on {
+  background: color-mix(in srgb, var(--sel) 9%, transparent);
+}
+
+.place-band.is-on span {
+  background: var(--sel);
+  color: #fff;
+  box-shadow: none;
+}
