@@ -1630,6 +1630,12 @@ export function motionEngine(): MotionEngine {
           else count(one('.bk-tl-v'), 160)
           break
         }
+        case 'heading':
+          // 묶음의 윗선이 왼쪽부터 그어지고, 선이 반쯤 갔을 때 소제목이 그 아래에서 올라온다. 덧붙임은 뒤따라 흐려지듯
+          draw(one('.bk-hd'), 0, levelName === 'lively' ? 900 : 700, 'left center', '::before')
+          rise(one('.bk-hd-t'), 160, L.y * 0.5)
+          fade(one('.bk-hd-n'), 360, 500)
+          break
         default:
           rise(cell, 0)
       }

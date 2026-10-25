@@ -158,7 +158,8 @@
     .bk-nw-c, .bk-nw-t, .bk-nw-m,
     .bk-sg-label, .bk-sg-unit, .bk-sg-total, .bk-sg-name, .bk-sg-v, .bk-sg-vu, .bk-sg-pct,
     .bk-mg-name, .bk-mg-v, .bk-mg-vu, .bk-mg-label, .bk-mg-unit, .bk-mg-total,
-    .bk-tl-l, .bk-tl-v, .bk-tl-k, .bk-tl-t, .bk-tl-pct, .bk-tl-n
+    .bk-tl-l, .bk-tl-v, .bk-tl-k, .bk-tl-t, .bk-tl-pct, .bk-tl-n,
+    .bk-hd-t, .bk-hd-n
   ) {
   /* --bk-w, --bk-h: 부품 장의 칸이 좁거나 낮을 때 칸 안의 글자를 한두 단계 작게(둘 가운데 작은 쪽). 줄여도 --fs-min(부품 안 22px) 밑으로는 (blocks.css)
      --bk-up: 큰 칸에 혼자 있는 숫자 같은 부품을 한 단계 크게. --bk-fit: 놓은 뒤 내용이 늘어 칸을 넘치면 slides/fitBlocks.ts가 단계로 줄인다 */

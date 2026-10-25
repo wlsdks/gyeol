@@ -807,4 +807,17 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     prefSpan: 6,
     sample: { fields: { label: '보안 교육을 마친 직원', value: '86%', note: '남은 14%는 11월 말까지 마쳐요' } },
   },
+  // ---------- 작은 컴포넌트: 좁은 칸, 낮은 줄에 여럿 쌓아 쓰는 것 ----------
+  heading: {
+    name: '소제목',
+    description: '옆이나 아래 컴포넌트들을 묶는 짧은 제목 (지금 방식, 바꾸면)',
+    motion: '선이 왼쪽부터 그어지고 글이 올라와요',
+    fields: [
+      { key: 'text', label: '소제목', hint: '묶음의 이름 (예: 지금 방식)' },
+      { key: 'note', label: '덧붙임', hint: '짧게 덧붙이는 말 (예: 2025년 기준)', optional: true },
+    ],
+    minSpan: 3,
+    prefSpan: 12,
+    sample: { fields: { text: '지금 방식', note: '구매 요청에서 물품을 받기까지' } },
+  },
 }

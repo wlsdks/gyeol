@@ -157,6 +157,7 @@ export type NativeBlockType =
   | 'split'
   | 'merge'
   | 'tiles'
+  | 'heading'
 
 /** 장 레이아웃을 그대로 부품으로 쓰는 것. 칸과 그리는 법이 그 레이아웃과 같아서, 장을 부품 장으로 바꿔도 내용과 모습이 그대로다 */
 export type LayoutBlockType = Extract<

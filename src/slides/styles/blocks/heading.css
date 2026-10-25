@@ -1,0 +1,68 @@
+/* ---------- 소제목 ----------
+   묶음의 이름: 위에 글자색 선(--rule) 하나, 그 아래 소제목 크기(--t-h)의 제목. 개요, 준비 상황의 첫 줄 선과 같은 선이라
+   아래에 쌓인 컴포넌트와 한 꼴로 읽힌다. 면도 강조색도 쓰지 않는다(묶음의 이름이지 답이 아니다).
+   혼자 한 줄을 쓰면 칸 아래쪽에 붙는다: 묶는 컴포넌트는 아래 줄에 있어서, 줄에 높이가 남을 때 가운데나 위에 두면
+   소제목이 아래 묶음과 떨어져 앞 줄에 붙어 보였다. 다른 컴포넌트와 한 줄이면 옆 칸들과 윗선을 맞춘다 */
+
+.bk-hd {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe flex-end;
+  height: 100%;
+}
+
+.bk-hd::before {
+  content: '';
+  flex: none;
+  height: var(--rule);
+  margin-bottom: 20px;
+  background: var(--ink);
+}
+
+.bk-hd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+}
+
+.bk-hd-t {
+  --fs: var(--t-h);
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.bk-hd-n {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* 넓은 칸: 덧붙임을 같은 줄 오른쪽 끝에, 소제목과 같은 글자선으로. 아래에 두면 선 아래 왼쪽에 글이 몰리고 오른쪽이 통째로 빈다.
+   덧붙임이 길면 오른쪽 칸 안에서 줄을 바꾸고, 소제목은 칸의 반 밑으로 좁아지지 않는다 */
+@container bk (min-width: 720px) {
+  .bk-hd-row {
+    grid-template-columns: minmax(50%, 1fr) minmax(0, max-content);
+    align-items: baseline;
+    column-gap: 48px;
+  }
+
+  .bk-hd-n {
+    text-align: right;
+  }
+}
+
+/* 줄이 하나뿐인 장(묶을 아래 줄이 없다, 컴포넌트 고르기의 그림): 아래에 붙이면 위가 통째로 비어 가운데에 */
+.bk-area:not(:has(> .bk[data-row='1'])) > .bk > .bk-in > .bk-hd {
+  justify-content: safe center;
+}
+
+.bk.is-shared > .bk-in > .bk-hd {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding-top: var(--bk-lift, 0px);
+}

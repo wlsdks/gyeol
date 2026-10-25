@@ -87,6 +87,8 @@ export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[]
 /** 부품 고르기의 묶음. 모든 부품이 꼭 한 번씩 (테스트가 확인). short는 묶음 단추(한 줄에 다 들어가게 짧게), description은 묶음 제목 밑의 한 줄 */
 export const BLOCK_GROUPS: { name: string; short: string; description: string; types: BlockType[] }[] = [
   { name: '글과 메시지', short: '글', description: '결론 한 줄, 설명, 목록, 인용, 예상 질문', types: ['message', 'text', 'bullets', 'quote', 'callout', 'faq', 'summary', 'points'] },
+  // 좁은 칸, 낮은 줄에 여럿 쌓거나 나란히 두는 작은 것들. 넓은 칸에서는 늘이지 않고 한 줄로 눕힌다
+  { name: '작은 컴포넌트', short: '작게', description: '소제목', types: ['heading'] },
   { name: '숫자', short: '숫자', description: '큰 숫자, 전과 후, 목표 대비, 비율', types: ['number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'kpi', 'scorecard'] },
   {
     name: '차트',
