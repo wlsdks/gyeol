@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { makeSlide } from '../../deck/generate'
 import { ACCENT_COMBOS, comboName, comboSwatch, FONTS, FOOTERS, MOTIONS, TEXT_SIZES, THEMES, THEME_ORDER, TRANSITIONS, accentOf, fontOf, fontPreview, footerOf } from '../../deck/themes'
 import type { Deck } from '../../deck/types'
@@ -208,6 +208,22 @@ function Choice<T extends string>({
   )
 }
 
+/**
+ * 내보내기 메뉴의 한 줄: 이름과 한 줄 설명. 고르기 전에 알아야 할 것(노트가 들어가는지 같은)은 옆의 (i)에.
+ * (i)는 고르는 단추 밖에 둔다: 단추 안의 단추는 누를 때 둘 다 눌린다
+ */
+function ExportItem({ name, label, desc, info, onPick }: { name: ReactNode; label: string; desc: string; info: string; onPick: () => void }) {
+  return (
+    <div className="menu-row">
+      <button type="button" className="menu-item" onClick={onPick}>
+        <span className="menu-item-name">{name}</span>
+        <span className="menu-item-desc">{desc}</span>
+      </button>
+      <Info label={`${label} 설명`}>{info}</Info>
+    </div>
+  )
+}
+
 export function ExportMenu({
   onHtml,
   onPdf,
@@ -228,57 +244,49 @@ export function ExportMenu({
         </button>
       )}
     >
-      {(close) => (
-        <div className="menu menu-export">
-          <button
-            type="button"
-            className="menu-item"
-            onClick={() => {
-              close()
-              onHtml()
-            }}
-          >
-            <span className="menu-item-name">발표 파일 (HTML)</span>
-            <span className="menu-item-desc">인터넷 없이도 열리는 파일이에요. 메일로 미리 보내도 발표자 노트는 들어가지 않아요.</span>
-          </button>
-          <button
-            type="button"
-            className="menu-item"
-            onClick={() => {
-              close()
-              onPdf()
-            }}
-          >
-            <span className="menu-item-name">PDF <kbd>{keys('mod+P')}</kbd></span>
-            <span className="menu-item-desc">인쇄 창이 열리면 대상에서 ‘PDF로 저장’을 고르세요.</span>
-          </button>
-          <button
-            type="button"
-            className="menu-item"
-            onClick={() => {
-              close()
-              onPpt()
-            }}
-          >
-            <span className="menu-item-name">PPT (그림)</span>
-            <span className="menu-item-desc">
-              장마다 그림 한 장으로 들어가서 PowerPoint에서 글은 고칠 수 없어요. 발표자 노트가 함께 들어가니 다른 분께 보내기 전에 노트를 확인하세요.
-            </span>
-          </button>
-          <div className="menu-sep" role="separator" />
-          <button
-            type="button"
-            className="menu-item"
-            onClick={() => {
-              close()
-              onDeckFile()
-            }}
-          >
-            <span className="menu-item-name">작업 파일 (.deck)</span>
-            <span className="menu-item-desc">발표자 노트까지 담긴 원본이에요. 다른 PC에서 이어서 고칠 때 ‘파일 열기’로 불러오세요. 다른 분께는 보내지 마세요.</span>
-          </button>
-        </div>
-      )}
+      {(close) => {
+        const pick = (fn: () => void) => () => {
+          close()
+          fn()
+        }
+        return (
+          <div className="menu menu-export">
+            <ExportItem
+              name="발표 파일 (HTML)"
+              label="발표 파일"
+              desc="인터넷 없이 브라우저로 열려요"
+              info="미리 보내기 좋아요. 발표자 노트는 들어가지 않아요."
+              onPick={pick(onHtml)}
+            />
+            <ExportItem
+              name={
+                <>
+                  PDF <kbd>{keys('mod+P')}</kbd>
+                </>
+              }
+              label="PDF"
+              desc="인쇄 창에서 ‘PDF로 저장’을 골라요"
+              info="인쇄 창의 대상에서 ‘PDF로 저장’을 고르고 저장해요. 발표자 노트는 들어가지 않아요."
+              onPick={pick(onPdf)}
+            />
+            <ExportItem
+              name="PPT (그림)"
+              label="PPT"
+              desc="장마다 그림 한 장, 노트도 들어가요"
+              info="PowerPoint에서 글은 고칠 수 없어요. 발표자 노트가 함께 들어가니 다른 분께 보내기 전에 노트를 확인하세요."
+              onPick={pick(onPpt)}
+            />
+            <div className="menu-sep" role="separator" />
+            <ExportItem
+              name="작업 파일"
+              label="작업 파일"
+              desc="이어서 고칠 원본, 노트까지 담겨요"
+              info="다른 PC에서 ‘파일 열기’로 불러와 이어서 고쳐요. 발표자 노트가 들어 있으니 다른 분께는 보내지 마세요."
+              onPick={pick(onDeckFile)}
+            />
+          </div>
+        )
+      }}
     </Popover>
   )
 }

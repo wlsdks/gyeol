@@ -544,6 +544,31 @@ select {
   width: 300px;
 }
 
+/* 고르는 줄과 그 옆의 (i). (i)는 단추 밖에 두고 줄의 오른쪽 위에 띄운다. 줄 글은 (i) 자리를 비켜 한 줄로 */
+.menu-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-row > .menu-item {
+  padding-right: 36px;
+}
+
+.menu-row > .menu-item .menu-item-desc {
+  white-space: nowrap;
+}
+
+.menu-row > .info {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.menu-row > .info .info-btn {
+  margin: 0;
+}
+
 .menu-layouts {
   width: 300px;
   max-height: min(72vh, 560px);
