@@ -133,6 +133,8 @@ interface FieldProps extends TextProps {
   onChange?: (value: string) => void
   /** 비어 있으면 편집할 때도 그리지 않는 칸 (부품 안의 채우지 않아도 되는 칸) */
   fold?: boolean
+  /** 글자 수 단계(fit)를 이 글로 고른다: 목록의 칸은 가장 긴 항목의 글 (IT) */
+  fitText?: string
 }
 
 function clean(text: string, multiline?: boolean): string {
@@ -141,14 +143,14 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold }: FieldProps) {
+function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
     if (!text) return null
     const one = oneLineProps(text, oneLine, units, numeral)
     return (
-      <Tag className={cx(className, fitClass(text, fit), one.cls)} style={one.style}>
+      <Tag className={cx(className, fitClass(fitText ?? text, fit), one.cls)} style={one.style}>
         <Shown text={text} numeral={numeral} />
       </Tag>
     )
@@ -159,7 +161,7 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
   const one = oneLineProps(shown, oneLine, units, numeral)
   if (mode === 'preview' || !onChange) {
     return (
-      <Tag className={cx(className, fitClass(shown, fit), one.cls, !value && 'is-hint')} style={one.style}>
+      <Tag className={cx(className, fitClass(fitText ?? shown, fit), one.cls, !value && 'is-hint')} style={one.style}>
         <Shown text={shown} numeral={numeral} />
       </Tag>
     )
@@ -171,7 +173,7 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
       fieldId={fieldId}
       onChange={onChange}
       as={Tag}
-      className={cx(className, fitClass(shown, fit), one.cls)}
+      className={cx(className, fitClass(fitText ?? shown, fit), one.cls)}
       style={one.style}
       multiline={multiline}
       numeral={numeral}
@@ -279,7 +281,14 @@ export function T({ k, ...props }: TextProps & { k: string }) {
 
 /** 항목 칸 */
 export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
-  const { slide, actions, fieldPrefix = '', folds } = useSlide()
+  const { slide, mode, actions, fieldPrefix = '', folds } = useSlide()
+  // 글자 수 단계는 목록에서 가장 긴 항목으로 모두 같이 고른다: 항목마다 고르면 긴 이름만 한 단계 작아져
+  // 나란한 항목의 제목 크기가 줄마다 달랐다(핵심 포인트의 세 제목이 44, 44, 52px)
+  const fitText = props.fit
+    ? slide.items
+        .map((it, j) => (mode === 'final' ? (it[k] ?? '').trim() : it[k] || hintFor(slide.layout, slide.hints, k, k, j)))
+        .reduce((a, t) => ([...t].length > [...a].length ? t : a), '')
+    : undefined
   return (
     <Field
       value={slide.items[i]?.[k] ?? ''}
@@ -287,6 +296,7 @@ export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
       fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       fold={folds?.has(`items.${k}`)}
+      fitText={fitText}
       {...props}
     />
   )
