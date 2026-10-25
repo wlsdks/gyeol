@@ -4,6 +4,7 @@ import { followIndex, moveIn, readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
+import { imageSize } from '../lib/image'
 import { BlockEditContext, type BlockEdit } from './blockEdit'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
@@ -1320,11 +1321,17 @@ function Sparks() {
   )
 }
 
+/**
+ * 이미지. 꽉 채우기는 칸을 다 덮고(넘치는 쪽을 자른다), 전체 보이기는 이미지 비율 그대로 칸 안에서 가장 크게 그린다.
+ * 비율은 파일 머리에서 읽어 둬서(imageSize) 내보낸 HTML도 자바스크립트 없이 같은 크기로 그린다
+ */
 function Picture() {
   const { slide } = useSlide()
+  const contain = slide.variant === 'contain'
+  const size = contain ? imageSize(slide.fields.image ?? '') : null
   return (
-    <figure className="bk-img">
-      <ImageSlot k="image" className="bk-img-i" contain={slide.variant === 'contain'} />
+    <figure className={cx('bk-img', size && 'is-fit')} style={size ? ({ '--ar': size.w / size.h } as CSSProperties) : undefined}>
+      <ImageSlot k="image" className="bk-img-i" contain={contain} />
       <T k="caption" as="figcaption" className="bk-img-c" />
     </figure>
   )

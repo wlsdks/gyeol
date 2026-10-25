@@ -1178,9 +1178,11 @@ export function motionEngine(): MotionEngine {
           })
           break
         case 'image': {
-          wipe(one('.bk-img-i'), 0, 'left', 1000)
+          // 전체 보이기(비율대로 그린 이미지)는 이미지 자리만 걷는다. 화면 캡처는 당겨 보이면 글씨가 흔들려 보여서 키우지 않는다
+          const fit = !!one('.bk-img.is-fit')
+          wipe(one(fit ? '.bk-img-i > img' : '.bk-img-i'), 0, 'left', 1000)
           const img = one('.bk-img-i img')
-          if (img) run(anims, img, [{ scale: '1.12' }, { scale: '1' }], s(0), { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2200 })
+          if (img && !fit) run(anims, img, [{ scale: '1.12' }, { scale: '1' }], s(0), { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2200 })
           fade(one('.bk-img-c'), 600, 500)
           break
         }
