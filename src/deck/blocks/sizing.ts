@@ -41,7 +41,8 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
   versus: (v) => (v === 'lines' ? 420 : 360),
   bridge: () => 380,
   trend: () => 380,
-  share: (v) => (v === 'donut' ? 380 : 320),
+  // 도넛과 100칸은 낮으면 고리(칸)가 작아져 조각이 읽히지 않는다. 100칸은 칸 하나가 1%라서 칸이 점처럼 작아지면 셀 수 없다
+  share: (v) => (v === 'donut' || v === 'units' ? 380 : 320),
   ring: () => 220,
   ratio: () => 220,
   spark: () => 240,

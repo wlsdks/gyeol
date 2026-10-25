@@ -9,8 +9,22 @@ import { formatNumber, seriesIn } from '../numbers'
 import { accentTint, greyTint } from '../tints'
 import { Head, useItems, useUnitOpen } from './parts'
 
+/** 100칸을 비중대로 나눈다. 내림한 뒤 남는 칸은 소수점 아래가 큰 항목부터 하나씩 (모두 더하면 100, 비중이 0이면 0칸) */
+export function unitsOf(pcts: number[]): number[] {
+  const out = pcts.map((p) => Math.floor(p))
+  let left = 100 - out.reduce((a, b) => a + b, 0)
+  const byRest = pcts.map((p, i) => ({ i, rest: p - Math.floor(p) })).sort((a, b) => b.rest - a.rest)
+  for (const { i } of byRest) {
+    if (left <= 0) break
+    if (pcts[i] <= 0) continue
+    out[i]++
+    left--
+  }
+  return out
+}
+
 /**
- * 구성비: 값을 더한 전체에서 각 항목의 비중. 띠는 한 줄 막대를 나누고, 도넛은 고리를 나눈다.
+ * 구성비: 값을 더한 전체에서 각 항목의 비중. 띠는 한 줄 막대를, 도넛은 고리를, 100칸은 10×10 칸을 나눈다.
  * 모두 %로 적었으면 적은 그대로 보이고, 금액이나 건수로 적었으면 비중을 계산해 크게, 적은 값은 작게.
  */
 export function Share() {
@@ -43,13 +57,16 @@ export function Share() {
     return s
   })
   const donut = slide.variant === 'donut'
+  const units = slide.variant === 'units'
+  // 100칸: 왼쪽 위에서부터 줄마다 항목 차례대로 칠한다. 칸 하나가 1%
+  const cells = units ? unitsOf(pcts).flatMap((n, i) => Array.from({ length: n }, () => i)) : []
   // '131억 원'처럼 숫자와 단위는 붙여 쓴다. 단위 칸이 비었으면 값에 붙여 쓴 자리와 단위('58억'이면 억)
   const totalText = sum > 0 && !typedPct && series.ok ? `${formatNumber(sum)}${series.suffix}` : ''
   return (
     <>
       <Head />
       <div className={cx('s-body sh', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length }}>
-        {/* 띠는 합계를 위에, 도넛은 고리 가운데에. 단위 칸은 편집할 때만: 띠는 오른쪽 위에, 도넛은 고리 가운데 합계 아래에
+        {/* 띠는 합계를 위에, 도넛은 고리 가운데에, 100칸은 이름표 목록 위에. 단위 칸은 편집할 때만: 띠는 오른쪽 위에, 도넛은 고리 가운데 합계 아래에
             (도넛의 오른쪽 위는 이름표 목록이 차지해서 덮는다) */}
         {!donut && (totalText || (!final && unitOpen)) && (
           <div className="sh-top">
@@ -93,6 +110,12 @@ export function Share() {
                 )}
               </div>
             )}
+          </div>
+        ) : units ? (
+          <div className="sh-units" aria-hidden="true">
+            {Array.from({ length: 100 }, (_, k) => (
+              <span key={k} className="sh-u" style={k < cells.length ? { '--c': colors[cells[k]] } : undefined} />
+            ))}
           </div>
         ) : (
           <div className="sh-band" aria-hidden="true">

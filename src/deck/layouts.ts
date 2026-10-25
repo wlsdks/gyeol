@@ -282,6 +282,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     variants: [
       { id: 'base', name: '띠' },
       { id: 'donut', name: '도넛' },
+      { id: 'units', name: '100칸' },
     ],
     highlight: { label: '강조할 항목', fallback: 0 },
     fields: [title('구성이 말해 주는 결론'), { key: 'unit', label: '단위', hint: '억 원', optional: true }, source],

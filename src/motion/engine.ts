@@ -855,6 +855,11 @@ export function motionEngine(): MotionEngine {
           }
           rise(one('.sh-total'), t + 360, L.y * 0.4)
           count(one('.sh-total-v'), t + 360)
+        } else if (variant === 'units') {
+          // 칸이 왼쪽 위에서부터 하나씩 차오른다. 칸은 항목 차례로 칠해져 있어서 항목마다 제 몫을 다 채우고 다음 항목으로 넘어간다.
+          // 100칸이 한 칸씩 0.7초 남짓에 (한꺼번에 나오면 조각이 모이는 느낌이 없고, 더 느리면 이름표보다 늦게 끝난다)
+          const gap = levelName === 'lively' ? 8 : 6
+          $('.sh-u').forEach((el, k) => run(anims, el, [{ opacity: 0, scale: '0.4' }], s(t + 80 + k * gap), L.pop))
         } else wipe(one('.sh-band'), t, 'left', 900)
         const end = items('.sh-item', t + 260, (el, at) => {
           rise(el, at, L.y * 0.5)
