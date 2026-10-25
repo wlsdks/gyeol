@@ -4692,6 +4692,24 @@
   color: var(--accent);
 }
 
+/* 가로 막대가 다섯, 여섯이면 설명을 이름 옆에 둔다: 이름 아래 한 줄씩 더 쓰면 줄이 높아져, 편집 화면(빈 설명 칸이 보인다)과
+   큰 글자에서 마지막 막대가 출처 줄에 닿았다. 막대도 조금 낮게. 부품 장은 장에도 va-base가 붙어 있어서, 세로 막대(va-columns)
+   부품을 빼는 것으로 가린다 */
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 16px;
+}
+
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-meta {
+  margin-top: 0;
+}
+
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-track {
+  height: 52px;
+}
+
 /* 가로 막대: 막대와 숫자는 묶음 없이 줄의 칸(이름, 막대, 숫자)에 */
 .br-bar {
   display: contents;
