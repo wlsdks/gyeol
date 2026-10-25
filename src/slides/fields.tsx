@@ -4,6 +4,7 @@ import { hintFor } from '../deck/layouts'
 import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
 import { imageToDataUrl, pickImage } from '../lib/image'
+import { keys } from '../lib/keys'
 import { useSlide } from './context'
 import { startItemDrag } from './itemDrag'
 
@@ -367,7 +368,7 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
             <path d="M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 7.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" />
           </svg>
           <span className="img-drop-t">{hint}</span>
-          <span className="img-drop-s">끌어다 놓거나 눌러서 올려요</span>
+          <span className="img-drop-s">눌러서 고르거나 끌어다 놓아요. {keys('mod+V')}로 붙여 넣어도 돼요</span>
         </button>
       )}
     </div>

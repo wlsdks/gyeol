@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { blockFieldPrefix } from '../../deck/blocks'
+import { blockFieldPrefix, composeAreaH, withImage } from '../../deck/blocks'
 import { knownOnly, unknownParts } from '../../deck/compat'
 import { deckMissingCount, missingFields, pageInfo, visibleItems, type Missing } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
@@ -30,6 +30,7 @@ import { useAiAsk, type AiAsk } from '../../ai/useAiAsk'
 import { useAiShare, type AiShare } from '../../ai/useAiShare'
 import { ASK_ERROR, AiInbox, AiMenu, AiReview, AskStatus, SlideAsk } from './AiShare'
 import { useBlockEditing, type BlockEditing } from './BlockEditor'
+import { useImageInput } from './useImageInput'
 import { BlockLibrary } from './BlockLibrary'
 import { ExportMenu, PREVIEW_MOTION, PresentButton, ThemeMenu, type PresentHow } from './DeckMenus'
 import { Inspector, layoutPreview } from './Inspector'
@@ -229,6 +230,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   const ai = useAiShare(deck)
   const ask = useAiAsk(deck)
   const blocks = useBlockEditing(deck, slide, toast)
+  const fileOver = useImageInput(blocks, toast)
 
   // 내 발표에서 파일을 열고 왔을 때의 알림 (있던 발표를 파일 내용으로 바꿨는지, 사본으로 열었는지)
   useEffect(() => {
@@ -531,7 +533,7 @@ function EditorBody({ deck }: { deck: Deck }) {
 
       <div className={cx('ed-body', versionsOpen && 'has-versions', side.shown && !versionsOpen && 'has-side')}>
         <SlideList deck={deck} selectedId={slide?.id ?? null} />
-        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} side={side} layoutPeek={layoutPeek} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
+        {slide && <SlideStage deck={deck} slide={slide} ai={ai} ask={ask} blocks={blocks} fileOver={fileOver} side={side} layoutPeek={layoutPeek} onRemove={removeSlide} onPresentHere={() => void startPresent(slide.id)} />}
         {versionsOpen ? (
           <VersionPanel deck={deck} onClose={() => setVersionsOpen(false)} notify={(text) => toast.show(text, undefined, 6000)} />
         ) : (
@@ -678,6 +680,7 @@ function SlideStage({
   ai,
   ask,
   blocks,
+  fileOver,
   side,
   layoutPeek,
   onRemove,
@@ -688,6 +691,8 @@ function SlideStage({
   ai: AiShare
   ask: AiAsk
   blocks: BlockEditing
+  /** 이미지 파일을 장 위로 끌고 있을 때 (놓으면 이미지로 들어간다) */
+  fileOver: boolean
   side: SidePanel
   layoutPeek: LayoutId | null
   onRemove: (s: Slide) => void
@@ -710,6 +715,12 @@ function SlideStage({
       setOptions: (options, key) => useDeck.getState().setOptions(slide.id, options, key),
       setVariant: (variant, key) => useDeck.getState().setVariant(slide.id, variant, key),
       updateBlock: (blockId, fn, key) => useDeck.getState().updateBlock(slide.id, blockId, fn, key),
+      placeImage: (blockId, url) => {
+        const st = useDeck.getState()
+        const cur = st.deck?.slides.find((s) => s.id === slide.id)
+        if (!cur || !st.deck) return
+        st.setRows(cur.id, withImage(cur.rows ?? [], blockId, url, composeAreaH(cur, st.deck, true)))
+      },
     }),
     [slide.id],
   )
@@ -757,14 +768,14 @@ function SlideStage({
   return (
     <main className="stage">
       <div
-        className="ed-canvas"
+        className={cx('ed-canvas', fileOver && 'is-file-over')}
         ref={canvasRef}
         // 부품 밖을 누르면 부품 고르기를 끝낸다
         onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
       >
-        {blocks.hint && (
+        {(blocks.hint || fileOver) && (
           <p className="bk-hint" role="status">
-            {blocks.hint}
+            {blocks.hint ?? '놓으면 이 장에 이미지로 들어가요'}
           </p>
         )}
         {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판, 부품 장은 고른 컴포넌트나 이음표. 둘 다 그 바로 위에 뜬다 */}

@@ -19,6 +19,8 @@ export interface SlideActions {
   setVariant?(variant: string, key?: string): void
   /** 부품 장: 부품 하나를 고친다. key가 같으면 되돌리기 한 단계로 묶는다 */
   updateBlock?(blockId: string, fn: (b: Block) => Block, key?: string): void
+  /** 부품 장: 이미지 부품에 이미지를 넣는다. 이미지에 맞춰 보이는 법과 그 줄의 칸 너비를 함께 고른다 */
+  placeImage?(blockId: string, url: string): void
 }
 
 export interface SlideCtx {

@@ -18,6 +18,7 @@ import {
   foldableFields,
   growAt,
   fitPlaced,
+  imageTarget,
   insertAt,
   lookChangeIssue,
   shownLook,
@@ -127,6 +128,8 @@ export interface BlockEditing {
   insert(type: BlockType, from?: HTMLElement | null): void
   /** 미리 채운 부품 하나를 알아서 고른 자리에 (자리가 없으면 다음 장에) */
   insertBlock(block: Block, from?: HTMLElement | null): void
+  /** 미리 채운 부품 하나를 화면의 이 자리에 (끌어다 놓기와 같은 자리 찾기) */
+  dropBlock(block: Block, x: number, y: number): void
   /** 이 부품을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
   issueFor(type: BlockType): NoRoom | null
   /** 이음표 카드를 누르기 시작할 때. 끌면 컴포넌트 사이에 놓고, 그냥 떼면 알아서 고른 사이에 넣는다 */
@@ -529,6 +532,35 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     })
   }
 
+  /**
+   * 화면의 이 자리(x, y)에 미리 채운 부품을 놓는다: 끌어다 놓을 때와 같은 자리 찾기(놓을 수 없으면 가장 가까운 자리, 장에 자리가 없으면
+   * 다음 장). 바탕 화면에서 끌어 온 이미지 파일처럼 손에 든 그림 없이 놓이는 것. 놓인 자리로 그 자리에서 날아 들어간다
+   */
+  function dropBlock(block: Block, x: number, y: number) {
+    const d = newDrag(block, null, x, y)
+    dragRef.current = d
+    track(x, y)
+    let full = dragRef.current ?? d
+    // 이미지는 손 아래 자리보다 이미지 비율에 맞는 자리를 먼저 (끌어 오는 동안 이미지를 볼 수 없어 손 아래 자리가 어림이라서).
+    // 비율이 비슷하게 맞는 자리끼리는 놓은 곳에 가까운 쪽
+    if ((full.plan === 'place' || full.plan === 'convert') && full.room !== undefined) {
+      const area = measureArea(areaEl.current)
+      const near = area ? { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k } : undefined
+      const t = imageTarget(full.base, block, full.room, near)
+      if (t) full = { ...full, target: t, blocked: null }
+    }
+    pointer.current = { x, y, vx: 0, tilt: 0 }
+    setDrag(full)
+    requestAnimationFrame(() => {
+      const g = ghostEl.current
+      if (g) {
+        g.style.translate = `${x - d.ghost.w / 2}px ${y - d.ghost.h / 2}px`
+        g.style.transformOrigin = `${d.ghost.w / 2}px ${d.ghost.h / 2}px`
+      }
+      requestAnimationFrame(() => finish(full))
+    })
+  }
+
   /** 부품 고르기 카드마다: 지금 장 어디에도 넣을 수 없으면 그 까닭. 부품 장이 아닌 장은 부품 장으로 바꾼 모습으로 본다 */
   function issueFor(type: BlockType): NoRoom | null {
     const s = slideRef.current
@@ -856,6 +888,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     pressCard,
     insert,
     insertBlock,
+    dropBlock,
     issueFor,
     pressLinkCard: links.pressCard,
     insertLink: links.insert,

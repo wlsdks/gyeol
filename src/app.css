@@ -2241,6 +2241,12 @@ select {
   box-shadow: 0 1px 2px rgb(16 20 31 / 0.06), 0 10px 30px rgb(16 20 31 / 0.1);
 }
 
+/* 이미지 파일을 장 위로 끌고 올 때: 놓으면 이 장에 들어간다 */
+.ed-canvas.is-file-over .slide-frame {
+  outline: 3px solid var(--sel);
+  outline-offset: 4px;
+}
+
 .fit-group {
   display: flex;
   flex-direction: column;

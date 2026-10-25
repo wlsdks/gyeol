@@ -1393,8 +1393,13 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
     const update = outer?.updateBlock
     if (!outer || !update) return undefined
     return {
-      // 발표 전체의 값($org 같은)은 부품이 아니라 발표에 적는다
-      setField: (k, v) => (k.startsWith('$') ? outer.setField(k, v) : update(block.id, (b) => ({ ...b, fields: { ...b.fields, [k]: v } }), `${block.id}.${k}`)),
+      // 발표 전체의 값($org 같은)은 부품이 아니라 발표에 적는다. 이미지를 넣으면 그 줄의 칸 너비도 이미지에 맞춘다
+      setField: (k, v) =>
+        k.startsWith('$')
+          ? outer.setField(k, v)
+          : block.type === 'image' && k === 'image' && v && outer.placeImage
+            ? outer.placeImage(block.id, v)
+            : update(block.id, (b) => ({ ...b, fields: { ...b.fields, [k]: v } }), `${block.id}.${k}`),
       setItem: (i, k, v) => update(block.id, (b) => ({ ...b, items: b.items.map((it, j) => (j === i ? { ...it, [k]: v } : it)) }), `${block.id}.${i}.${k}`),
       removeItem: (i) => update(block.id, (b) => ({ ...b, items: b.items.filter((_, j) => j !== i) })),
       moveItem: (from, to, key) =>
@@ -1407,7 +1412,7 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
           key,
         ),
     }
-  }, [outer, block.id])
+  }, [outer, block.id, block.type])
   const View = spec.layout ? LAYOUT_VIEWS[spec.layout] : NATIVE_VIEWS[block.type as NativeBlockType]
   return (
     <SlideContext.Provider
