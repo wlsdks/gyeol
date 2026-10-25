@@ -174,6 +174,13 @@ export function blockFitter() {
       const q = f.getBoundingClientRect()
       if (q.top < top || q.bottom > bottom || q.left < left || q.right > right) return true
     }
+    // 칠한 면이 늘어선 것(색 표의 칸들, data-fit-box)은 안쪽 여백에 조금도 들어가지 않게: 글자는 여백에 몇 px 걸쳐도 티가 안 나지만
+    // 칠한 칸이 들어가면 그쪽 여백만 좁아 보인다(크게에서 색 표 여덟 줄이 아래 여백을 6px 먹어 위 51, 아래 38)
+    // 줄은 묶음 상자 밖으로 넘칠 수 있어서(1fr 줄의 바닥은 내용) 묶음 안의 줄마다 본다
+    for (const f of Array.from(inner.querySelectorAll('[data-fit-box] > *'))) {
+      const q = f.getBoundingClientRect()
+      if (q.top < r.top + parseFloat(cs.paddingTop) * k - slack || q.bottom > r.bottom - parseFloat(cs.paddingBottom) * k + slack) return true
+    }
     // 겹침은 캔버스 2px 넘게 (줄여 그린 화면에서도 같은 기준)
     const gap = 2 * k
     const hit = (a: { t: number; b: number; l: number; r: number }, b: { top: number; bottom: number; left: number; right: number }) =>

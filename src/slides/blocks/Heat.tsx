@@ -87,7 +87,7 @@ export function Heat() {
             {mode === 'edit' && <T k="cols" className="bk-hm-colsed on-chart" oneLine />}
           </div>
         )}
-        <ul className="bk-hm-list" data-n={items.length}>
+        <ul className="bk-hm-list" data-n={items.length} data-fit-box="">
           {items.map((it, i) => (
             <li key={it.id} className="it bk-hm-row">
               <IT i={i} k="title" className="bk-hm-name" />
