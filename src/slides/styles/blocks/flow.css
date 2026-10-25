@@ -1,13 +1,18 @@
 /* ---------- 흐름 ----------
-   단계마다 옅은 면의 상자(이름, 설명, 아래 끝에 오가는 양), 사이는 화살표 끝의 선. 강조할 단계(기본은 마지막)만 강조색:
-   옅은 강조 면과 테두리, 양 숫자. 선과 화살표는 글자색을 옅게 한 색(답이 아니라 관계라서, 이음표와 같은 까닭).
+   단계마다 옅은 면의 상자(이름, 설명, 아래 끝에 오가는 양), 사이는 잇는 선. 강조할 단계(기본은 마지막)만 강조색:
+   옅은 강조 면과 테두리, 양 숫자. 잇는 선은 글자색을 옅게 한 색(답이 아니라 관계라서, 이음표와 같은 까닭).
    좁은 칸에서는 상자를 세로로 쌓는다(아래 @container). 발표할 때 선이 그어지고 그 위로 데이터 조각이 건너간다(engine.ts) */
 
 .bk-fw {
-  /* 단계 사이 선의 자리: 가로로 놓일 때의 너비, 세로로 쌓일 때의 높이 */
-  --fw-lw: 104px;
+  /* 단계 사이 잇는 선의 자리: 가로로 놓일 때의 너비(옆 칸 사이와 같은 72), 세로로 쌓일 때의 높이.
+     예전에는 104px 사이에 선이 떠 있어서 다섯 단계면 상자가 좁아져 '신청 접수'가 두 줄로 꺾였다(글자 크게) */
+  --fw-lw: 72px;
   --fw-lh: 44px;
-  --fw-line: 3px;
+  /* 잇는 선의 세 조각: 보내는 상자 가장자리에 걸친 점, 선(연결도와 같은 굵기, 줄 선의 1.5배), 받는 상자 가장자리에 끝이 닿는 머리 */
+  --fw-line: calc(var(--rule) * 1.5);
+  --fw-port: 12px;
+  --fw-head: 18px;
+  --fw-c: var(--ink-3);
   display: flex;
   flex-direction: column;
   justify-content: safe center;
@@ -22,47 +27,57 @@
   color: var(--ink-2);
 }
 
-/* 오가는 것 앞의 작은 선: 단계 사이 선을 줄인 꼴이라 '이 선으로 오가는 것'으로 읽힌다 */
-.bk-fw-kg {
+/* ---------- 잇는 선 ----------
+   점(::before), 선(.bk-fw-wire), 꽉 찬 머리(::after)를 따로 그린다. 예전에는 가는 선 끝에 꺾쇠를 얹어 칸 사이에 띄워서
+   화살표 글자(⟶)를 쳐 넣은 것처럼 보였다. 점과 머리가 양쪽 상자의 가장자리에 붙어 있어야 상자끼리 이어진 그림으로 읽힌다.
+   선은 머리 밑까지 조금 들어간다: 줄여 그린 장에서 선 끝과 머리 사이가 벌어지지 않게 */
+:is(.bk-fw-kg, .bk-fw-link) {
   position: relative;
   flex: none;
-  width: 44px;
-  height: 16px;
 }
 
-.bk-fw-kg::before,
-.bk-fw-link::before {
+:is(.bk-fw-kg, .bk-fw-link)::before {
   position: absolute;
   top: 50%;
-  height: var(--fw-line);
-  margin-top: calc(var(--fw-line) / -2);
-  border-radius: var(--fw-line);
-  background: var(--ink-3);
+  left: 0;
+  width: var(--fw-port);
+  height: var(--fw-port);
+  border-radius: 50%;
+  background: var(--fw-c);
   content: '';
+  translate: -50% -50%;
+}
+
+.bk-fw-wire {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--fw-head) - 4px);
+  left: 0;
+  height: var(--fw-line);
+  background: var(--fw-c);
+  translate: 0 -50%;
+}
+
+:is(.bk-fw-kg, .bk-fw-link)::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: var(--fw-head);
+  height: var(--fw-head);
+  background: var(--fw-c);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  content: '';
+  translate: 0 -50%;
+}
+
+/* 오가는 것 앞의 범례: 잇는 선을 줄인 꼴이라 '이 선으로 오가는 것'으로 읽힌다. 점은 글 줄의 왼쪽 끝에 맞춘다 */
+.bk-fw-kg {
+  width: 52px;
+  height: var(--fw-head);
 }
 
 .bk-fw-kg::before {
-  right: 2px;
-  left: 0;
-}
-
-/* 화살표 끝: 꺾쇠 하나. 선 끝과 꺾쇠 끝이 한 점에서 만나게 꺾쇠를 선 끝 안쪽으로 둔다 */
-.bk-fw-kg::after,
-.bk-fw-link::after {
-  position: absolute;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  border-top: var(--fw-line) solid var(--ink-3);
-  border-right: var(--fw-line) solid var(--ink-3);
-  border-top-right-radius: 2px;
-  content: '';
   translate: 0 -50%;
-  rotate: 45deg;
-}
-
-.bk-fw-kg::after {
-  right: 2px;
 }
 
 .bk-fw-what {
@@ -121,21 +136,11 @@
   color: var(--accent);
 }
 
+/* 점은 보내는 상자의 오른쪽 가장자리에 반쯤 걸치고(잇는 선은 상자 다음에 그려져 상자 위에 선다), 머리 끝은 받는 상자의 왼쪽 가장자리에 닿는다 */
 .bk-fw-link {
-  position: relative;
-  flex: none;
   align-self: center;
   width: var(--fw-lw);
-  height: 24px;
-}
-
-.bk-fw-link::before {
-  right: 20px;
-  left: 18px;
-}
-
-.bk-fw-link::after {
-  right: 20px;
+  height: var(--fw-head);
 }
 
 /* ---------- 좁은 칸: 세로로 쌓기 ----------
@@ -198,27 +203,33 @@
     padding: 0;
   }
 
+  /* 세로로 쌓이면 점은 위 상자의 아래 가장자리에, 머리 끝은 아래 상자의 위 가장자리에 */
   .bk-fw-link {
-    width: 24px;
+    width: var(--fw-head);
     height: var(--fw-lh);
   }
 
   .bk-fw-link::before {
-    top: 8px;
+    top: 0;
+    left: 50%;
+  }
+
+  .bk-fw-link .bk-fw-wire {
+    top: 0;
     right: auto;
-    bottom: 10px;
+    bottom: calc(var(--fw-head) - 4px);
     left: 50%;
     width: var(--fw-line);
     height: auto;
-    margin: 0 0 0 calc(var(--fw-line) / -2);
+    translate: -50% 0;
   }
 
   .bk-fw-link::after {
     top: auto;
     right: auto;
-    bottom: 10px;
+    bottom: 0;
     left: 50%;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
     translate: -50% 0;
-    rotate: 135deg;
   }
 }

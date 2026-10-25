@@ -1375,19 +1375,24 @@ export function motionEngine(): MotionEngine {
           const links = $('.bk-fw-link')
           // 단계가 많아도 1.5초 안에 끝 단계까지 닿게
           const hop = Math.min(levelName === 'lively' ? 400 : 360, 1500 / Math.max(1, links.length))
-          // 선의 양 끝(flow.css의 선 자리): 가로면 왼쪽에서 오른쪽, 세로로 쌓였으면 위에서 아래
+          // 잇는 선의 양 끝(flow.css): 보내는 상자 가장자리의 점에서 받는 상자 가장자리(머리 끝)까지. 가로면 왼쪽에서 오른쪽,
+          // 세로로 쌓였으면 위에서 아래
           const tall = (link: HTMLElement) => link.offsetHeight > link.offsetWidth
           const ends = (link: HTMLElement): [number, number][] => {
             const w = link.offsetWidth
             const h = link.offsetHeight
-            return tall(link) ? [[w / 2, 8], [w / 2, h - 10]] : [[18, h / 2], [w - 20, h / 2]]
+            return tall(link) ? [[w / 2, 0], [w / 2, h]] : [[0, h / 2], [w, h / 2]]
           }
           let at = 40
           nodes.forEach((node, i) => {
             const link = links[i - 1]
             if (link) {
-              draw(link, at, hop, tall(link) ? 'center top' : 'left center', '::before')
-              run(anims, link, [{ opacity: 0 }], s(at + hop * 0.7), { easing: OUT, duration: d(260) }, '::after')
+              const down = tall(link)
+              // 점이 보내는 상자 가장자리에서 맺히고, 선이 그 점에서 그어진다. 머리는 조각이 받는 상자로 들어갈 때
+              // 선이 오던 쪽에서 밀려와 닿는다(머리가 처음부터 있으면 빈 선 끝에 화살표만 먼저 떠 있다)
+              pop(link, at, '::before')
+              draw(link.querySelector('.bk-fw-wire'), at, hop, down ? 'center top' : 'left center')
+              run(anims, link, [{ opacity: 0, translate: down ? '-50% -10px' : '-10px -50%' }], s(at + hop * 0.68), { easing: OUT, duration: d(280) }, '::after')
               packet(link, ends(link), at, hop)
               at += hop
             }

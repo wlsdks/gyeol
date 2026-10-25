@@ -14,8 +14,10 @@ export function flowHighlight(chosen: number | undefined, n: number): number {
 }
 
 /**
- * 흐름: 단계(시스템)를 상자로 나란히 두고, 사이를 방향이 보이는 선으로 잇는다. 발표할 때는 선이 그어지며 작은 데이터 조각이
- * 선을 따라 건너가고, 닿는 단계가 받아서 나타난다. 오가는 양은 단계마다 상자 아래 끝에 숫자로(나란한 단계끼리 한 줄에 선다).
+ * 흐름: 단계(시스템)를 상자로 나란히 두고, 사이를 잇는 선으로 잇는다. 잇는 선은 보내는 상자 가장자리에 걸친 점에서 나와
+ * 받는 상자 가장자리에 끝이 닿는 꽉 찬 머리로 끝난다(flow.css): 예전에는 칸 사이에 떠 있는 가는 선과 꺾쇠라 화살표 글자를
+ * 쳐 넣은 것처럼 보였다. 발표할 때는 선이 그어지며 작은 데이터 조각이 선을 따라 건너가고, 닿는 단계가 받아서 나타난다.
+ * 오가는 양은 단계마다 상자 아래 끝에 숫자로(나란한 단계끼리 한 줄에 선다).
  * 좁은 칸에서는 상자를 세로로 쌓고 선도 아래로 긋는다(flow.css): 나란히 두면 단계 이름이 두세 글자마다 꺾인다
  */
 export function Flow() {
@@ -28,15 +30,22 @@ export function Flow() {
     <div className="bk-fw" data-n={items.length}>
       {key && (
         <p className="bk-fw-key">
-          <span className="bk-fw-kg" aria-hidden="true" />
+          {/* 범례: 단계 사이의 잇는 선을 줄인 것. '이 선으로 오가는 것'으로 읽힌다 */}
+          <span className="bk-fw-kg" aria-hidden="true">
+            <span className="bk-fw-wire" />
+          </span>
           <T k="what" as="span" className="bk-fw-what" />
         </p>
       )}
       <div className="bk-fw-list">
         {items.map((it, i) => (
           <Fragment key={it.id}>
-            {/* 단계 사이의 선. 앞 단계에서 다음 단계로 (화살표 끝) */}
-            {i > 0 && <span className="bk-fw-link" aria-hidden="true" />}
+            {/* 단계 사이의 잇는 선: 점(::before), 선(.bk-fw-wire), 머리(::after). 앞 단계에서 다음 단계로 */}
+            {i > 0 && (
+              <span className="bk-fw-link" aria-hidden="true">
+                <span className="bk-fw-wire" />
+              </span>
+            )}
             <div className={cx('it bk-fw-node', i === hl && 'is-hl')}>
               <div className="bk-fw-text">
                 <IT i={i} k="title" className="bk-fw-t" />
