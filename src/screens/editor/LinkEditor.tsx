@@ -5,14 +5,12 @@ import type { BlockLink, BlockRow, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { LinkGlyph } from '../../slides/blocks'
 import { useDeck } from '../../store/deckStore'
-import { dialogOpen, isTyping, TrashIcon, undoAction } from '../ui'
+import { dialogOpen, isTyping, TrashIcon, undoAction, type Toast } from '../ui'
 
 // 이음표(화살표, 더하기, 결과, 견주기)를 컴포넌트 사이에 끼우는 일.
 //
 // 이음표는 칸을 차지하지 않고 칸 사이에 선다(deck/blocks.ts의 이음표). 끌면 손에 든 이음표가 가장 가까운 칸 사이에 붙고,
 // 그 자리의 양쪽 칸이 비켜 나는 모습을 미리 보여 준다. 놓을 때 한 번만 저장해서 되돌리기 한 번으로 돌아온다.
-
-type Toast = { show(text: string, action?: { label: string; run: () => void }, ms?: number): void }
 
 /** 이음표를 놓을 수 있는 자리의 화면 좌표. 칸 사이는 두 칸의 가운데, 줄 사이는 두 줄의 가운데 */
 interface Spot {

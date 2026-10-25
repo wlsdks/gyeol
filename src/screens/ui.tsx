@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
 import { undoLast } from '../store/deckStore'
@@ -301,11 +301,16 @@ export function takeNotice(): string | null {
 
 type ToastAction = { label: string; run: () => void }
 
+/** 알림을 띄우는 쪽. 편집기의 도우미(컴포넌트 끌기, 이미지 넣기)는 알림 자리를 몰라도 이것만 받아 알린다 */
+export interface Toast {
+  show(text: string, action?: ToastAction, ms?: number): void
+}
+
 /**
  * 알림의 '되돌리기' 단추. 바꾼 바로 뒤에 만든다.
  * 알림이 떠 있는 사이에 다른 것을 고쳤으면 엉뚱한 것을 되돌리지 않고, 위쪽 되돌리기로 하라고 알린다
  */
-export function undoAction(toast: { show(text: string, action?: ToastAction, ms?: number): void }): ToastAction {
+export function undoAction(toast: Toast): ToastAction {
   const undo = undoLast()
   return {
     label: '되돌리기',
@@ -315,33 +320,41 @@ export function undoAction(toast: { show(text: string, action?: ToastAction, ms?
   }
 }
 
-/** 화면 아래에 잠깐 떴다 사라지는 알림 */
-export function useToast() {
+/**
+ * 화면 아래에 잠깐 떴다 사라지는 알림.
+ * show는 늘 같은 함수다: 효과(useEffect)나 끌기 도우미가 처음 받은 show를 오래 들고 있어도 그대로 쓸 수 있다.
+ * 돌려주는 묶음도 알림이 바뀔 때만 새로 만든다 (그릴 때마다 바뀌면 이것을 받은 도우미의 함수가 매번 다시 만들어진다)
+ */
+export function useToast(): Toast & { node: ReactNode } {
   const [toast, setToast] = useState<{ text: string; action?: ToastAction } | null>(null)
   const timer = useRef<number>(0)
-  const show = (text: string, action?: ToastAction, ms = 4000) => {
+  const show = useCallback((text: string, action?: ToastAction, ms = 4000) => {
     setToast({ text, action })
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setToast(null), ms)
-  }
-  const node = toast ? (
-    <div className="toast" role="status">
-      {toast.text}
-      {toast.action && (
-        <button
-          type="button"
-          className="toast-action"
-          onClick={() => {
-            // 먼저 닫고 할 일을 한다: 할 일이 새 알림을 띄우면 그것이 남게
-            window.clearTimeout(timer.current)
-            setToast(null)
-            toast.action!.run()
-          }}
-        >
-          {toast.action.label}
-        </button>
-      )}
-    </div>
-  ) : null
-  return { show, node }
+  }, [])
+  const node = useMemo(
+    () =>
+      toast ? (
+        <div className="toast" role="status">
+          {toast.text}
+          {toast.action && (
+            <button
+              type="button"
+              className="toast-action"
+              onClick={() => {
+                // 먼저 닫고 할 일을 한다: 할 일이 새 알림을 띄우면 그것이 남게
+                window.clearTimeout(timer.current)
+                setToast(null)
+                toast.action!.run()
+              }}
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+      ) : null,
+    [toast],
+  )
+  return useMemo(() => ({ show, node }), [show, node])
 }

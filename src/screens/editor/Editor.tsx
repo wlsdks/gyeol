@@ -237,8 +237,8 @@ function EditorBody({ deck }: { deck: Deck }) {
   useEffect(() => {
     const text = takeNotice()
     if (text) toast.show(text, undefined, 8000)
-    // 처음 열 때 한 번만
-  }, [])
+    // 처음 열 때 한 번만 (show는 늘 같은 함수다)
+  }, [toast.show])
 
   // 부탁이 끝나면: 제안이 왔으면 미리 보기를 바로 열고, 아니면 왜인지 알려 준다.
   // 바꿀 게 없다고 하면 AI가 말한 까닭을 읽을 수 있게 오른쪽 아래 카드를 남겨 둔다.
@@ -256,8 +256,7 @@ function EditorBody({ deck }: { deck: Deck }) {
       toast.show(ASK_ERROR[job.error ?? 'failed'], undefined, 8000)
     }
     ask.dismiss()
-    // toast는 그릴 때마다 새로 만들어져서 의존성에서 뺀다
-  }, [job, ai.requests])
+  }, [job, ai.requests, toast.show])
 
   const applyAi = async (request: ChangeRequest) => {
     // 적용 전 상태를 버전으로 남긴다. 미리 본 뒤에 덱이 바뀌었을 수 있으니 지금 덱에 다시 적용한다.
@@ -294,8 +293,7 @@ function EditorBody({ deck }: { deck: Deck }) {
       setPresenting({ startId })
       return true
     },
-    // toast는 그릴 때마다 새로 만들어지지만 알림을 띄우는 길은 같아서 의존성에서 뺀다
-    [deck.id],
+    [deck.id, toast.show],
   )
 
   const startPresent = useCallback(
@@ -397,8 +395,7 @@ function EditorBody({ deck }: { deck: Deck }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-    // toast는 그릴 때마다 새로 만들어져서 의존성에서 뺀다
-  }, [presenting, startPresent, slide?.id, store, saveNow, printPdf])
+  }, [presenting, startPresent, slide?.id, store, saveNow, printPdf, toast.show])
 
   const exportHtml = async () => {
     markVersion('export')

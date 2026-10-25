@@ -3,10 +3,8 @@ import { allBlocks, composeAreaH, imageBlock, withImage } from '../../deck/block
 import { LAYOUTS } from '../../deck/layouts'
 import { imageToDataUrl } from '../../lib/imageFile'
 import { useDeck } from '../../store/deckStore'
-import { dialogOpen, isTyping } from '../ui'
+import { dialogOpen, isTyping, type Toast } from '../ui'
 import type { BlockEditing } from './BlockEditor'
-
-type Toast = { show(text: string, action?: { label: string; run: () => void }, ms?: number): void }
 
 /** 끌어 온 것이 파일인지 (글이나 컴포넌트 카드가 아니라) */
 const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files')

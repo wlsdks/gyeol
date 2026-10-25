@@ -49,7 +49,7 @@ import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, isTyping, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction } from '../ui'
+import { BlocksIcon, CopyIcon, dialogOpen, GripIcon, isTyping, MotionIcon, PlusIcon, ShapesIcon, TrashIcon, undoAction, type Toast } from '../ui'
 import { useLinkEditing } from './LinkEditor'
 import { narrowText, noRoomText } from './noRoom'
 
@@ -58,8 +58,6 @@ import { narrowText, noRoomText } from './noRoom'
 // 놓을 자리는 deck/blocks.ts가 정한다(정해진 줄과 칸 비율 가운데 하나). 여기서는 끄는 동안 놓일 자리를
 // 미리 보여 주고(그 자리에 빈 칸이 생기고 다른 부품이 비켜 난다), 놓으면 끌던 부품이 그 칸으로 날아가 맞춰진다.
 // 끄는 중에는 저장하지 않는다. 놓을 때 한 번만 바꿔서 되돌리기 한 번으로 돌아온다.
-
-type Toast = { show(text: string, action?: { label: string; run: () => void }, ms?: number): void }
 
 interface Drag {
   kind: 'move' | 'new'
