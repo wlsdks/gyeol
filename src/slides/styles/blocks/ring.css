@@ -1,38 +1,46 @@
 /* ---------- 비율 원 ----------
-   좁거나 높은 칸: 이름, 원, 덧붙임을 위아래로. 넓은 칸: 원을 왼쪽에, 글을 오른쪽에.
+   좁거나 높은 칸: 원 아래에 이름과 덧붙임(원 → 이름 → 덧붙임). 넓은 칸: 원을 왼쪽에, 글을 오른쪽에.
    원은 남는 자리(가로세로 가운데 짧은 쪽)에 맞춰 커지고, 가운데 숫자는 원 안쪽 너비에 맞춰 줄어든다 */
 
 .bk-rg {
   --py: 44px;
   display: grid;
-  /* 원 자리는 칸 너비까지만 키우고 셋을 가운데에 모은다. 1fr로 두면 좁고 높은 칸에서 원 위아래가 비어 이름과 덧붙임이 원에서 멀리 떨어진다 */
-  grid-template-rows: auto minmax(0, 100cqw) auto;
+  /* 원 자리는 칸 너비의 72%까지만 키우고 셋을 가운데에 모은다. 칸 너비를 다 쓰면 셋이 나란한 칸에서 원이 칸을 채워
+     이름과 덧붙임이 원 위아래의 작은 글로 밀려 계기판 조각처럼 보였다. 1fr로 두면 좁고 높은 칸에서 원 위아래가 빈다 */
+  grid-template: 'box' minmax(0, 72cqw) 'l' auto 'n' auto / 100%;
   align-content: safe center;
   justify-items: center;
-  gap: 22px;
   height: 100%;
   text-align: center;
 }
 
-/* 반원 게이지는 가로로 길어서(100:58) 원 자리도 그 높이만큼만. 원처럼 칸 너비만큼 높게 두면 반원 위아래가 비어
+/* 반원 게이지는 가로로 길어서(100:58) 원 자리도 그 높이만큼만. 원처럼 높게 두면 반원 위아래가 비어
    이름과 덧붙임이 반원에서 멀리 떨어져 흩어져 보였다. 낮은 칸, 넓은 칸의 짜임이 뒤에서 덮도록 같은 무게로(:where) */
 .bk-rg:where(.is-gauge) {
-  grid-template-rows: auto minmax(0, 58cqw) auto;
+  /* 반원의 숫자는 호 안쪽 아래 끝에 앉아서, 이름을 원보다 조금 더 띄운다 */
+  --rg-gap: 40px;
+  grid-template-rows: minmax(0, 52cqw) auto auto;
 }
 
 .bk-look-plain .bk-rg {
   --py: 0px;
 }
 
+/* 이름은 원 아래, 원의 짝이 되게 소제목 크기로. 원 위의 작은 이름표로 두면 원만 크고 무엇의 비율인지가 뒤로 밀렸다 */
 .bk-rg-l {
-  --fs: var(--t-label);
-  color: var(--ink-2);
-  font-weight: 600;
+  --fs: var(--t-h);
+  grid-area: l;
+  margin-top: var(--rg-gap, 28px);
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
   line-height: 1.3;
   text-wrap: balance;
 }
 
 .bk-rg-box {
+  grid-area: box;
   display: grid;
   place-items: center;
   container-type: size;
@@ -89,13 +97,22 @@
 
 .bk-rg-n {
   --fs: var(--t-small);
-  color: var(--ink-3);
+  grid-area: n;
+  margin-top: 8px;
+  color: var(--ink-2);
   line-height: 1.45;
   text-wrap: balance;
 }
 
 .bk-rg.is-demo .bk-rg-arc {
   opacity: 0.35;
+}
+
+/* 좁은 칸(세 칸 너비, 면 위의 네 칸): 소제목 크기의 이름은 서너 줄로 꺾여 원보다 무거워진다. 이름표 크기로 */
+@container bk (max-width: 479px) {
+  .bk-rg-l {
+    --fs: var(--t-label);
+  }
 }
 
 /* 반원 게이지: 가로로 긴 상자(100:58)에 호를 두고, 숫자는 호 안쪽 아래에. 손잡이가 호의 끝을 따라간다 */
@@ -135,7 +152,7 @@
 }
 
 /* 낮은 칸: 원을 왼쪽에, 이름과 덧붙임을 오른쪽에. 위아래로 쌓으면 이름과 덧붙임이 높이를 먼저 가져가 원이 지름 50px대로
-   줄고 안의 숫자를 읽을 수 없었다. 이름은 작은 이름표 크기 그대로 (넓은 칸처럼 키우면 좁은 글 자리에서 세 줄이 된다) */
+   줄고 안의 숫자를 읽을 수 없었다. 이름은 이름표 크기로 (넓은 칸처럼 키우면 좁은 글 자리에서 세 줄이 된다) */
 @container bk (min-aspect-ratio: 6 / 5) and (max-height: 440px) and (min-width: 380px) {
   .bk-rg {
     grid-template: minmax(0, 1fr) minmax(0, 1fr) / auto minmax(0, 1fr);
@@ -158,13 +175,14 @@
   }
 
   .bk-rg-l {
-    grid-area: l;
+    --fs: var(--t-label);
     align-self: end;
+    margin-top: 0;
   }
 
   .bk-rg-n {
-    grid-area: n;
     align-self: start;
+    margin-top: 0;
   }
 }
 
@@ -186,8 +204,8 @@
   /* 넓은 칸에서는 이름이 원의 짝이 되게 소제목 크기로 */
   .bk-rg-l {
     --fs: var(--t-h);
-    grid-area: l;
     align-self: end;
+    margin-top: 0;
     color: var(--ink);
     font-family: var(--font-head);
     font-weight: var(--head-weight);
@@ -196,9 +214,8 @@
 
   .bk-rg-n {
     --fs: var(--t-body);
-    grid-area: n;
     align-self: start;
-    color: var(--ink-2);
+    margin-top: 0;
   }
 }
 
@@ -218,16 +235,22 @@
    반원 자리가 칸의 반인 140px로 줄어 숫자를 읽기 어려웠다. 쌓을 높이가 없는 자리는 편집기가 고르지 않는다(blockHeights.ts) */
 @container bk (max-width: 423px) {
   :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge {
-    grid-template: auto minmax(0, 58cqw) auto / none;
-    grid-template-areas: none;
+    grid-template: 'box' minmax(0, 52cqw) 'l' auto 'n' auto / 100%;
     justify-items: center;
-    gap: 22px;
+    gap: 0;
     text-align: center;
   }
 
-  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge :is(.bk-rg-box, .bk-rg-l, .bk-rg-n) {
-    grid-area: auto;
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge :is(.bk-rg-l, .bk-rg-n) {
     align-self: auto;
+  }
+
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge .bk-rg-l {
+    margin-top: var(--rg-gap);
+  }
+
+  :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge .bk-rg-n {
+    margin-top: 8px;
   }
 
   :is(.bk-look-card, .bk-look-bold) .bk-rg.is-gauge .bk-rg-box {
