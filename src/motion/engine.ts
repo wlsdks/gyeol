@@ -1422,6 +1422,32 @@ export function motionEngine(): MotionEngine {
           run(anims, hub, [{ transform: 'scale(1)' }, { transform: 'scale(1.025)' }, { transform: 'scale(1)' }], s(arrive - 120), { easing: 'ease-in-out', duration: d(420) })
           break
         }
+        case 'split': {
+          // 전체가 먼저: 막대가 틈 없는 한 덩어리(강조색)로 왼쪽에서 펼쳐지는 동안 합계가 올라간다. 그다음 조각 사이가 벌어지며
+          // 조각마다 제 색으로 갈리고, 이름표가 조각 차례로 올라오며 값이 맞춰진다
+          rise(one('.bk-sg-top'), 0, L.y * 0.4)
+          const bar = one('.bk-sg-bar')
+          const segs = $('.bk-sg-seg')
+          const open = 760
+          // 처음 색은 이 칸의 강조색 그대로(진한 면이면 면 위의 강조색)
+          const accent = segs.length ? getComputedStyle(segs[0]).getPropertyValue('--accent').trim() : ''
+          if (bar) {
+            run(anims, bar, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], s(60), { easing: 'cubic-bezier(0.65, 0, 0.25, 1)', duration: d(720) })
+            run(anims, bar, [{ columnGap: '0px' }], s(open), { easing: 'cubic-bezier(0.3, 0, 0.2, 1)', duration: d(460) })
+            // 붙어 있는 동안 조각 사이의 이음매(반 픽셀의 틈)가 가는 선으로 비쳐 한 덩어리로 보이지 않았다. 막대 바탕을 같은 색으로 깔아 두고 갈라질 때 걷는다
+            if (accent) run(anims, bar, [{ backgroundColor: accent }], s(open), { easing: OUT, duration: d(180) })
+          }
+          segs.forEach((seg, i) => {
+            if (accent) run(anims, seg, [{ backgroundColor: accent }], s(open + 40 + i * 60), { easing: OUT, duration: d(520) })
+            run(anims, seg, [{ borderRadius: '0px' }], s(open), { easing: OUT, duration: d(460) })
+          })
+          count(one('.bk-sg-total'), 120)
+          items('.bk-sg-key', open + 220, (el, at) => {
+            rise(el, at, L.y * 0.5)
+            countIn(el.querySelector('.bk-sg-v'), at + 40)
+          })
+          break
+        }
         default:
           rise(cell, 0)
       }

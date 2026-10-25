@@ -733,4 +733,34 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  split: {
+    name: '나누기',
+    description: '전체 하나를 몇 조각으로 나눈 몫',
+    motion: '막대가 한 덩어리로 펼쳐진 뒤 조각으로 갈라져요',
+    fields: [
+      { key: 'label', label: '전체', hint: '무엇을 나누는지 (예: 올해 교육 예산)' },
+      { key: 'total', label: '합계', hint: '4.8억 원', optional: true },
+      { key: 'unit', label: '단위', hint: '억 원', optional: true },
+    ],
+    items: {
+      label: '조각',
+      min: 2,
+      max: 5,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '조각 이름', hints: ['직무 교육', '리더십 과정', '외부 연수', '자격증 지원', '기타'] },
+        { key: 'value', label: '값', hint: '조각의 값', hints: ['2.4억', '1.4억', '1억', '0.6억', '0.2억'] },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 8,
+    sample: {
+      fields: { label: '올해 교육 예산' },
+      items: [
+        { title: '직무 교육', value: '2.4억' },
+        { title: '리더십 과정', value: '1.4억' },
+        { title: '외부 연수', value: '1억' },
+      ],
+    },
+  },
 }

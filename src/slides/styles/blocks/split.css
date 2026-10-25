@@ -1,0 +1,212 @@
+/* ---------- 나누기 ----------
+   위에 무엇의 합계인지(이름표 글자)와 합계(큰 숫자), 그 아래 굵은 막대 하나를 조각의 몫대로 나눈다(조각 사이는 바탕 틈).
+   조각의 이름과 값은 그 조각 바로 아래에 같은 몫의 칸으로 맞춰 선다(--sg-cols, Split.tsx). 조각 색은 강조색의 농담
+   (tints.ts, 구성비와 같은 차례), 강조할 조각을 고르면 그것만 강조색. 이름표가 맞춰 서기에 칸이 좁거나 조각이 작으면 막대 아래 목록으로 */
+
+.bk-sg {
+  --sg-h: 64px;
+  --sg-gap: 8px;
+  --sg-r: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+/* 칸보다 내용이 높아도 막대가 눌려 얇아지지 않게(넘치면 글자 맞추기가 알아챈다) */
+.bk-sg > * {
+  flex: none;
+}
+
+.bk-sg-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.bk-sg-label {
+  --fs: var(--t-label);
+  min-width: 0;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-sg-unit {
+  --fs: var(--t-source);
+  flex: none;
+  color: var(--ink-3);
+}
+
+/* 합계: 이 부품의 답. 글자색 그대로 크게(색은 막대가 맡는다) */
+.bk-sg-total {
+  --fs: 74px;
+  margin-top: 10px;
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+/* 막대: 바깥 모서리만 둥글게 잘라 두어, 발표할 때 조각 사이가 붙어 있는 동안 한 덩어리로 보인다 */
+.bk-sg-bar {
+  display: flex;
+  gap: var(--sg-gap);
+  height: var(--sg-h);
+  margin-top: 36px;
+  overflow: hidden;
+  border-radius: var(--sg-r);
+}
+
+.bk-sg-seg {
+  flex: 1 1 0;
+  min-width: 4px;
+  border-radius: calc(var(--sg-r) * 0.6);
+}
+
+.bk-sg.is-blank .bk-sg-bar {
+  background: var(--surface);
+}
+
+.bk-sg.is-demo :is(.bk-sg-bar, .bk-sg-total, .bk-sg-pct) {
+  opacity: 0.4;
+}
+
+/* 이름표: 막대와 같은 틈, 같은 몫의 칸이라 조각의 왼쪽 끝에서 시작한다 */
+.bk-sg-keys {
+  display: grid;
+  grid-template-columns: var(--sg-cols);
+  column-gap: var(--sg-gap);
+  margin-top: 16px;
+}
+
+/* 조각에서 내려온 짧은 선(조각 색) 옆에 이름표: 어느 조각의 이름표인지 색과 자리로 같이 읽힌다 */
+.bk-sg-key {
+  position: relative;
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 3px solid var(--c);
+}
+
+.bk-sg-key.is-none {
+  display: none;
+}
+
+.bk-sg-name {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  line-height: 1.3;
+}
+
+.bk-sg-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.bk-sg-v {
+  --fs: var(--t-h);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.bk-sg-vu {
+  --fs: calc(var(--t-h) / 1.44);
+  margin-left: -8px;
+  font-weight: 600;
+}
+
+.bk-sg-pct {
+  --fs: var(--t-small);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-sg-key.is-hl :is(.bk-sg-v, .bk-sg-vu) {
+  color: var(--accent);
+}
+
+/* ---------- 목록: 이름표가 조각 아래에 들어가지 않을 때 ----------
+   조각의 몫이 작거나 칸이 좁으면 조각 아래 칸이 이름보다 좁아진다. 이름표를 막대 아래 줄 목록으로 두고 앞에 조각 색 네모를 둔다.
+   문턱은 칸이 아니라 안쪽(.bk-in, 면의 여백을 뺀 너비)에 견준다: 면을 깐 4칸에서 칸 너비로 보면 들어간다고 잘못 보았다 */
+.bk-sg[data-need='list'] {
+  --sg-list: 1;
+}
+
+@container (max-width: 1679px) {
+  .bk-sg[data-need='1680'] {
+    --sg-list: 1;
+  }
+}
+
+@container (max-width: 1399px) {
+  .bk-sg[data-need='1400'] {
+    --sg-list: 1;
+  }
+}
+
+@container (max-width: 1099px) {
+  .bk-sg[data-need='1100'] {
+    --sg-list: 1;
+  }
+}
+
+@container (max-width: 879px) {
+  .bk-sg[data-need='880'] {
+    --sg-list: 1;
+  }
+}
+
+@container (max-width: 719px) {
+  .bk-sg[data-need='720'] {
+    --sg-list: 1;
+  }
+}
+
+@container (max-width: 559px) {
+  .bk-sg[data-need='560'] {
+    --sg-list: 1;
+  }
+}
+
+@container style(--sg-list: 1) {
+  .bk-sg-bar {
+    --sg-h: 48px;
+  }
+
+  /* 넓은 칸에서는 목록을 여러 단으로 흘린다: 한 단으로 두면 다섯 줄이 막대보다 훨씬 길게 내려가 칸 높이를 다 가져갔다 */
+  .bk-sg-keys {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 14px 56px;
+    margin-top: 26px;
+  }
+
+  .bk-sg-key {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 16px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .bk-sg-key::before {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--c);
+    content: '';
+  }
+
+  .bk-sg-line {
+    margin-top: 0;
+  }
+}
