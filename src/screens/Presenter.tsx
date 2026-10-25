@@ -41,9 +41,11 @@ export function Presenter({ id }: { id: string }) {
   const [tick, setTick] = useState(() => Date.now())
   const [noteSize, setNoteSize] = useState(readNoteSize)
   const [extended, setExtended] = useState(hasSecondScreen)
+  // 지금 장에서 아직 누르지 않은 차례 수. 남았으면 '다음'이 장을 넘기지 않고 그 컴포넌트를 보인다(발표 화면이 정한다)
+  const [steps, setSteps] = useState(0)
   const link = useRef<ReturnType<typeof presentChannel> | null>(null)
-  const now = useRef({ index, blank })
-  now.current = { index, blank }
+  const now = useRef({ index, blank, steps })
+  now.current = { index, blank, steps }
 
   useEffect(() => {
     // 같은 창에서 다른 화면으로 가면(주소를 바꿔서) 원래 이름으로 돌려 둔다
@@ -55,9 +57,11 @@ export function Presenter({ id }: { id: string }) {
         setIndex(m.index)
         setBlank(m.blank)
         setStartedAt(m.startedAt)
+        setSteps(m.left ?? 0)
       } else if (m.type === 'state') {
         setIndex(m.index)
         setBlank(m.blank)
+        setSteps(m.left ?? 0)
       } else if (m.type === 'end') {
         setEnded(true)
         window.close()
@@ -98,8 +102,14 @@ export function Presenter({ id }: { id: string }) {
   const go = useCallback(
     (n: number) => {
       const to = Math.max(0, Math.min(slides.length - 1, n))
+      // 다음으로 가는데 이 장에 누를 차례가 남았으면 장은 그대로 두고 발표 화면에 맡긴다 (그 컴포넌트를 보이고 남은 수를 알려 온다)
+      if (to === now.current.index + 1 && now.current.steps > 0) {
+        link.current?.post({ type: 'go', index: to })
+        return
+      }
       if (to === now.current.index) return
       setIndex(to)
+      setSteps(0)
       link.current?.post({ type: 'go', index: to })
     },
     [slides.length],
@@ -242,7 +252,7 @@ export function Presenter({ id }: { id: string }) {
             <span className="pv-count">
               <b>{index + 1}</b> / {slides.length}
             </span>
-            <button type="button" className="pv-btn pv-btn-primary" disabled={index >= slides.length - 1} onClick={() => go(index + 1)}>
+            <button type="button" className="pv-btn pv-btn-primary" disabled={index >= slides.length - 1 && !steps} onClick={() => go(index + 1)}>
               다음
             </button>
             <button
@@ -259,7 +269,11 @@ export function Presenter({ id }: { id: string }) {
 
         <aside className="pv-side">
           <section className="pv-next" aria-label="다음 장">
-            <h2 className="pv-h">다음 장</h2>
+            <div className="pv-next-head">
+              <h2 className="pv-h">다음 장</h2>
+              {/* '다음'을 눌러도 아직 이 장이다: 누를 때마다 나오는 컴포넌트가 남았다 */}
+              {steps > 0 && <span className="pv-steps">이 장에서 {steps}번 더 눌러요</span>}
+            </div>
             {next ? (
               <FitSlide className="pv-next-stage">
                 <SlideCanvas deck={deck} slide={next} mode="final" {...pageProps(info, next.id)} />

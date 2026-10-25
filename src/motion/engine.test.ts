@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BLOCK_EFFECT_IDS, BLOCK_TYPES, isLayoutBlock } from '../deck/blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, isLayoutBlock } from '../deck/blocks'
 import { LAYOUTS } from '../deck/layouts'
 import { motionEngine } from './engine'
 
@@ -17,6 +17,14 @@ describe('움직임 엔진', () => {
     // (변환을 거친 소스라 따옴표 꼴은 가리지 않는다)
     for (const type of BLOCK_TYPES.filter((t) => !isLayoutBlock(t))) expect(src, type).toMatch(new RegExp(`case ["']${type}["']`))
     for (const id of BLOCK_EFFECT_IDS.filter((e) => e !== 'auto' && e !== 'none')) expect(src, id).toMatch(new RegExp(`effect === ["']${id}["']`))
+  })
+
+  it('고를 수 있는 나오는 때, 빠르기, 들어오는 쪽을 엔진이 안다', () => {
+    const src = motionEngine.toString()
+    // 칸에 붙인 data-when, data-speed, data-from을 읽는다 (slides/blocks.tsx)
+    for (const id of BLOCK_WHEN_IDS.filter((w) => w !== 'after')) expect(src, id).toMatch(new RegExp(`dataset\\.when [!=]== ["']${id}["']`))
+    for (const id of BLOCK_SPEED_IDS.filter((w) => w !== 'normal')) expect(src, id).toMatch(new RegExp(`dataset\\.speed === ["']${id}["']`))
+    for (const id of BLOCK_FROM_IDS) expect(src, id).toMatch(new RegExp(`["']${id}["']`))
   })
 
   it('레이아웃마다 짠 연출이 있다 (없으면 소리 없이 기본 연출로 떨어진다)', () => {

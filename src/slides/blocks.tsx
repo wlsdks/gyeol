@@ -5,7 +5,7 @@
 // 부품 장만의 부품 하나의 그리기는 blocks/<이름>.tsx, 여러 부품이 같이 쓰는 조각은 blocks/parts.tsx
 
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, knownRows, linkAt, rowMins, sameLinkTarget, shownLook, shownRows, spansOf, variantOfBlock, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
+import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, fromOf, knownRows, linkAt, playOrder, rowMins, sameLinkTarget, shownLook, shownRows, speedOf, spansOf, variantOfBlock, whenOf, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn } from '../deck/fields'
 import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -211,9 +211,12 @@ function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live
   )
 }
 
-function BlockCell({ box, live, rows }: { box: CellBox; live: BlockEdit | null; rows: BlockRow[] }) {
+function BlockCell({ box, live, rows, seq }: { box: CellBox; live: BlockEdit | null; rows: BlockRow[]; seq?: number }) {
   const b = box.block
   const spec = BLOCKS[b.type]
+  const when = whenOf(b)
+  const speed = speedOf(b)
+  const from = fromOf(b)
   const look = shownLook(b, box.cols)
   const slot = live?.dragId === b.id
   const selected = !!live && live.selected === b.id && !live.dragId
@@ -235,6 +238,11 @@ function BlockCell({ box, live, rows }: { box: CellBox; live: BlockEdit | null; 
       data-block={b.id}
       data-type={b.type}
       data-row={box.row}
+      // 발표할 때의 차례와 때, 빠르기, 들어오는 쪽 (motion/engine.ts가 읽는다). 기본값은 적지 않는다
+      data-seq={seq}
+      data-when={when === 'after' ? undefined : when}
+      data-speed={speed === 'normal' ? undefined : speed}
+      data-from={from ?? undefined}
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
     >
       {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} span={box.span} />}
@@ -365,6 +373,8 @@ export function BlockArea() {
   // 이음표를 끄는 동안에는 놓일 자리에 흐리게 미리 세운다 (양쪽 칸이 비켜 나는 것까지)
   const rows = live?.linkPreview ? withLink(saved, live.linkPreview.target, live.linkPreview.link) : saved
   const boxes = cellBoxes(rows)
+  // 발표할 때 나오는 차례 (움직임 탭에서 정한 차례, 없으면 읽는 차례). 엔진이 칸의 data-seq로 읽는다
+  const seq = new Map(playOrder({ rows, options: slide.options }).map((b, i) => [b.id, i]))
   const ref = useRef<HTMLDivElement | null>(null)
   // 자리가 바뀔 때만: 줄마다 부품 id와 칸 너비
   const key = rows
@@ -405,7 +415,7 @@ export function BlockArea() {
     >
       {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
       {boxes.map((box) => (
-        <BlockCell key={box.block.id} box={box} live={live} rows={rows} />
+        <BlockCell key={box.block.id} box={box} live={live} rows={rows} seq={seq.get(box.block.id)} />
       ))}
       <Links rows={rows} boxes={boxes} live={live} />
       {live && !live.dragId && <Gutters rows={rows} boxes={boxes} live={live} />}

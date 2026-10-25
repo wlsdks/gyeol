@@ -276,6 +276,20 @@
   min-height: 0;
 }
 
+.pv-next-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 누를 차례가 남았다는 표시. 놓치면 장이 넘어가지 않아 당황하므로 다른 머리말보다 밝게 */
+.pv-steps {
+  color: var(--pv-soon);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .pv-h {
   margin: 0;
   color: var(--pv-ink-3);

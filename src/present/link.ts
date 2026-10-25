@@ -9,8 +9,9 @@ export type PresentMessage =
   /** 발표자 화면이 열리면 지금 상태를 묻는다 */
   | { type: 'hello' }
   /** 발표 화면이 답한다. 발표 내용은 이때 한 번만 보낸다 */
-  | { type: 'deck'; deck: Deck; index: number; blank: Blank; startedAt: number }
-  | { type: 'state'; index: number; blank: Blank }
+  | { type: 'deck'; deck: Deck; index: number; blank: Blank; startedAt: number; left?: number }
+  /** left: 지금 장에서 아직 누르지 않은 차례 수('누르면' 나오는 컴포넌트) */
+  | { type: 'state'; index: number; blank: Blank; left?: number }
   | { type: 'go'; index: number }
   | { type: 'blank'; blank: Blank }
   | { type: 'end' }

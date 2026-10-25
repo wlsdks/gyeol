@@ -111,6 +111,11 @@ export interface SlideOptions {
   tone?: Tone
   /** 제목 덩어리를 위, 가운데, 아래 중 어디에 둘지 (LayoutSpec.place가 있는 레이아웃). 없으면 레이아웃 기본 */
   place?: Place
+  /**
+   * 부품 장: 발표할 때 부품이 나오는 차례(부품 id). 없거나 빠진 부품은 읽는 차례(위 줄부터, 왼쪽부터)로 그 뒤에.
+   * 자리와 나오는 차례를 따로 정할 수 있게 (오른쪽 숫자를 먼저 보이고 왼쪽 설명을 뒤에)
+   */
+  order?: string[]
 }
 
 /** 부품 장만의 부품. 목록과 모양은 src/deck/blocks.ts */
@@ -174,6 +179,12 @@ export type BlockType = NativeBlockType | LayoutBlockType
 export type BlockLook = 'plain' | 'card' | 'bold'
 /** 발표할 때 부품이 나타나는 모습. auto는 부품마다 짜 둔 움직임(숫자가 올라가고 막대가 자라는 것) */
 export type BlockEffect = 'auto' | 'rise' | 'fade' | 'wipe' | 'slide' | 'pop' | 'zoom' | 'flip' | 'blur' | 'none'
+/** 부품이 언제 나오는지: 앞 부품에 이어서(기본), 앞 부품과 함께, 발표하는 사람이 누르면 */
+export type BlockWhen = 'after' | 'with' | 'click'
+/** 부품이 움직이는 빠르기 */
+export type BlockSpeed = 'fast' | 'normal' | 'slow'
+/** 움직이며 들어오는 쪽 (올라오기, 밀려오기, 펼치기). 없으면 움직임마다 정한 쪽 */
+export type BlockFrom = 'below' | 'above' | 'left' | 'right'
 /** 컴포넌트 사이에 끼우는 이음표: 이어진다(바뀐다), 더한다, 결과, 견준다 */
 export type BlockLink = 'arrow' | 'plus' | 'equals' | 'versus'
 
@@ -188,6 +199,12 @@ export interface Block {
   look?: BlockLook
   /** 없으면 auto */
   effect?: BlockEffect
+  /** 없으면 after */
+  when?: BlockWhen
+  /** 없으면 normal */
+  speed?: BlockSpeed
+  /** 없으면 움직임마다 정한 쪽 */
+  from?: BlockFrom
   /** 같은 부품 안의 모양 (레이아웃 부품은 그 레이아웃의 모양). 없으면 첫째 */
   variant?: string
   /** 강조할 항목 (0부터, -1은 없음). 없으면 부품마다 정한 기본 */

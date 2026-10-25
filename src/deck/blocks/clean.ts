@@ -1,8 +1,8 @@
 // 파일에서 읽은 부품 장 바로잡기: 정해진 꼴로 맞추고, 모르는 부품은 빼되 글은 지우지 않는다
 
 import { uid } from '../generate'
-import type { Block, BlockEffect, BlockLook, BlockRow, BlockType, Item, Slide } from '../types'
-import { BLOCK_EFFECT_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS } from './catalog'
+import type { Block, BlockEffect, BlockFrom, BlockLook, BlockRow, BlockSpeed, BlockType, BlockWhen, Item, Slide } from '../types'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BLOCKS } from './catalog'
 import { isLink, tidyLinks } from './links'
 import { MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS } from './rules'
 import { isGrow, spanChoices } from './sizing'
@@ -14,7 +14,7 @@ const strings = (v: unknown): Record<string, string> =>
 
 /** 이 버전이 아는 줄과 부품의 값. 이 밖의 값은 새 버전에서 더한 것이라, 예전 버전이 고치면 빠진다 */
 const ROW_KEYS = ['id', 'blocks', 'spans', 'grow', 'link']
-const BLOCK_KEYS = ['id', 'type', 'fields', 'items', 'hints', 'look', 'effect', 'variant', 'highlight', 'link']
+const BLOCK_KEYS = ['id', 'type', 'fields', 'items', 'hints', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link']
 
 /**
  * 가져온 파일이나 예전 저장본의 줄과 부품을 정해진 꼴로 맞춘다. 모르는 부품은 빼고, 개수는 정한 만큼만.
@@ -55,6 +55,12 @@ export function cleanRows(rows: unknown, lost?: { n: number }): BlockRow[] {
       else if (b.look !== undefined) drop()
       if ((BLOCK_EFFECT_IDS as unknown[]).includes(b.effect)) block.effect = b.effect as BlockEffect
       else if (b.effect !== undefined) drop()
+      if ((BLOCK_WHEN_IDS as unknown[]).includes(b.when)) block.when = b.when as BlockWhen
+      else if (b.when !== undefined) drop()
+      if ((BLOCK_SPEED_IDS as unknown[]).includes(b.speed)) block.speed = b.speed as BlockSpeed
+      else if (b.speed !== undefined) drop()
+      if ((BLOCK_FROM_IDS as unknown[]).includes(b.from)) block.from = b.from as BlockFrom
+      else if (b.from !== undefined) drop()
       if (typeof b.variant === 'string' && BLOCKS[type].variants?.some((v) => v.id === b.variant)) block.variant = b.variant
       else if (b.variant !== undefined) drop()
       if (Number.isInteger(b.highlight)) block.highlight = b.highlight as number

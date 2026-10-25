@@ -97,10 +97,18 @@ export function SlideStage({
   const level = motionOf(deck, slide)
   useLayoutEffect(() => {
     if (!preview) return
-    const stop = level !== 'none' && previewRef.current ? engine.play(previewRef.current, level) : undefined
-    const t = window.setTimeout(() => setPreview(0), 3200)
+    const root = previewRef.current
+    // '누르면' 나오는 컴포넌트도 잠깐 쉬었다 이어서 보인다. 다 움직이고(mo-end) 끝 모습을 잠깐 보인 뒤 편집으로 돌아온다. 길어도 8초면 끝낸다
+    const stop = level !== 'none' && root ? engine.play(root, level, { clicks: 'auto' }) : undefined
+    let t = window.setTimeout(() => setPreview(0), stop ? 8000 : 600)
+    const end = () => {
+      window.clearTimeout(t)
+      t = window.setTimeout(() => setPreview(0), 700)
+    }
+    root?.addEventListener('mo-end', end)
     return () => {
       window.clearTimeout(t)
+      root?.removeEventListener('mo-end', end)
       stop?.()
     }
   }, [preview, level, engine])

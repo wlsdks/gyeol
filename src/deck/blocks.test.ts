@@ -23,6 +23,7 @@ import {
   fitsHeight,
   fitsWith,
   foldableFields,
+  fromOf,
   insertAt,
   isLayoutBlock,
   isSolo,
@@ -31,6 +32,7 @@ import {
   linkTargets,
   needH,
   placeIssue,
+  playOrder,
   tidyLinks,
   withLink,
   lookIssue,
@@ -50,12 +52,14 @@ import {
   shownLook,
   slideName,
   spanChoices,
+  speedOf,
   spansAt,
   spanLimit,
   spansOf,
   targetOf,
   unwrapCompose,
   validTargets,
+  whenOf,
   whyNot,
   withItem,
   withLook,
@@ -510,6 +514,32 @@ describe('파일에서 읽은 부품 장', () => {
     expect(cleanRows(rows)).toEqual(rows)
     expect(cleanRows(null)).toEqual([])
   })
+
+  it('나오는 때, 빠르기, 들어오는 쪽은 아는 값만 남긴다', () => {
+    const [r] = cleanRows([{ id: 'r', blocks: [{ id: 'a', type: 'text', fields: {}, items: [], when: 'click', speed: 'slow', from: 'left' }, { id: 'b', type: 'text', fields: {}, items: [], when: 'later', speed: 9, from: 'up' }] }])
+    expect(r.blocks[0]).toMatchObject({ when: 'click', speed: 'slow', from: 'left' })
+    expect(r.blocks[1]).toEqual({ id: 'b', type: 'text', fields: {}, items: [] })
+  })
+})
+
+describe('발표할 때 나오는 차례', () => {
+  const slide = (order?: string[]): Pick<Slide, 'rows' | 'options'> => ({ rows: [row(block('kpi', 'a'), block('callout', 'b')), row(block('faq', 'c'))], options: order ? { order } : {} })
+
+  it('정한 차례를 앞에, 빠진 부품은 놓인 차례(위에서 아래, 왼쪽에서 오른쪽)로 뒤에', () => {
+    expect(playOrder(slide()).map((b) => b.id)).toEqual(['a', 'b', 'c'])
+    expect(playOrder(slide(['c'])).map((b) => b.id)).toEqual(['c', 'a', 'b'])
+    // 지운 부품의 id와 겹친 id는 건너뛴다
+    expect(playOrder(slide(['gone', 'b', 'b', 'a'])).map((b) => b.id)).toEqual(['b', 'a', 'c'])
+  })
+
+  it('정하지 않은 값은 기본값으로, 들어오는 쪽은 쪽이 있는 움직임에만', () => {
+    const b = block('text')
+    expect([whenOf(b), speedOf(b), fromOf(b)]).toEqual(['after', 'normal', null])
+    expect(fromOf({ ...b, effect: 'rise' })).toBe('below')
+    expect(fromOf({ ...b, effect: 'slide', from: 'left' })).toBe('left')
+    expect(fromOf({ ...b, effect: 'fade', from: 'left' })).toBeNull()
+  })
+
 })
 
 describe('항목 순서 바꾸기', () => {

@@ -74,11 +74,13 @@ function show(n,first){
     halt();i=next;
     slides.forEach(function(el,k){el.classList.toggle('is-current',k===i)});
     count.textContent=(i+1)+' / '+slides.length;
-    // 앞으로 넘긴 장만 움직인다. 이전 장으로 돌아가면 다 보인 상태로.
-    if(forward&&level!=='none')stopMotion=engine.play(slides[i],level);
+    // 앞으로 넘긴 장만 움직인다. 이전 장으로 돌아가면 다 보인 상태로. 움직임이 없는 장도 엔진에 맡긴다('누르면' 나오는 컴포넌트를 감춘다)
+    if(forward)stopMotion=engine.play(slides[i],level);
   }
   if(first)apply();else engine.swap(apply,transitionOf(slides[next]),forward?1:-1);
 }
+// 다음으로: 이 장에 '누르면' 나오는 컴포넌트가 남았으면 그것을, 아니면 다음 장
+function forwardOne(){if(stopMotion&&stopMotion.next())return;show(i+1)}
 function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
 function start(n){
@@ -95,7 +97,7 @@ function stop(){
 document.getElementById('v-present').addEventListener('click',function(e){e.stopPropagation();start(0)});
 document.getElementById('v-print').addEventListener('click',function(){print()});
 slides.forEach(function(el,k){el.querySelector('.v-frame').addEventListener('click',function(e){if(!presenting()){e.stopPropagation();start(k)}})});
-document.addEventListener('click',function(e){if(!presenting())return;if(!blank.hidden){setBlank(null);return}show(e.clientX<innerWidth*.3?i-1:i+1)});
+document.addEventListener('click',function(e){if(!presenting())return;if(!blank.hidden){setBlank(null);return}if(e.clientX<innerWidth*.3)show(i-1);else forwardOne()});
 document.addEventListener('mousemove',function(){if(presenting())wake()});
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&presenting())stop()});
 document.addEventListener('keydown',function(e){
@@ -108,7 +110,7 @@ document.addEventListener('keydown',function(e){
   var a=presentAction(k,blank.hidden?null:blank.className.indexOf('is-white')>=0?'white':'black',i,slides.length-1);
   if(!a)return;
   e.preventDefault();
-  if(a.kind==='blank')setBlank(a.blank);else if(a.kind==='go')show(a.index);else stop();
+  if(a.kind==='blank')setBlank(a.blank);else if(a.kind==='go'&&a.index===i+1)forwardOne();else if(a.kind==='go')show(a.index);else stop();
 });
 addEventListener('resize',fit);
 fit();fitBlocks(document);

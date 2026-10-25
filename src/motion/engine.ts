@@ -9,11 +9,28 @@
 // 뷰어에는 이 함수의 소스(toString)가 그대로 들어간다. 그래서 바깥의 아무것도 참조하지 않게,
 // 필요한 것은 모두 이 함수 안에 둔다.
 
-export type MotionLevel = 'calm' | 'lively'
+/** none은 움직이지 않지만 '누르면' 나오는 부품은 누를 때까지 감춘다 */
+export type MotionLevel = 'calm' | 'lively' | 'none'
+
+/**
+ * play가 돌려주는 것. 부르면 바로 끝 모습으로 (아직 누르지 않은 차례도 다 보인다).
+ * next는 '누르면' 나오는 다음 차례를 보인다. 남은 차례가 없으면 false(그때 발표 화면은 다음 장으로 넘긴다)
+ */
+export interface MotionPlay {
+  (): void
+  next(): boolean
+  /** 남은 차례 수 */
+  left(): number
+}
+
+export interface PlayOptions {
+  /** auto: '누르면'을 기다리지 않고 잠깐 쉬었다 이어서 (편집기의 미리 보기). 없으면 누를 때까지 기다린다 */
+  clicks?: 'auto'
+}
 
 export interface MotionEngine {
-  /** 한 장을 움직인다. 돌려받은 함수를 부르면 바로 끝 모습으로 */
-  play(root: Element, level: MotionLevel): () => void
+  /** 한 장을 움직인다 */
+  play(root: Element, level: MotionLevel, opts?: PlayOptions): MotionPlay
   /** 장을 바꾸는 동안 앞 장과 다음 장을 이어 준다. 지원하지 않으면 그냥 바꾼다 */
   swap(update: () => void, kind: string, direction: 1 | -1): void
 }
@@ -62,6 +79,12 @@ export function motionEngine(): MotionEngine {
 
   // ---------- 하나하나의 움직임 ----------
 
+  // 움직임을 짜는 동안만 바뀌는 값 (play가 짜는 동안 정하고 끝나면 되돌린다).
+  // still: 움직이지 않는 때(움직임 없음, 동작 줄이기). '누르면' 나오는 차례만 지키고 아무것도 움직이지 않는다.
+  // pace: 부품마다 고른 빠르기. 걸리는 시간과 부품 안의 차례 사이를 함께 늘이고 줄인다
+  let still = false
+  let pace = 1
+
   function run(
     out: Animation[],
     el: Element,
@@ -70,10 +93,11 @@ export function motionEngine(): MotionEngine {
     timing: { easing: string; duration: number },
     pseudoElement?: string,
   ) {
+    if (still) return null
     // 키프레임 하나만 주면 Web Animations는 그것을 '끝' 모습으로 본다. 여기서는 늘 '시작' 모습이라 offset 0을 붙인다.
     const keyframes = frames.length === 1 ? [{ ...frames[0], offset: 0 }] : frames
     const a = el.animate(keyframes, {
-      duration: timing.duration,
+      duration: timing.duration * pace,
       delay: Math.max(0, at),
       easing: timing.easing,
       fill: 'backwards',
@@ -323,21 +347,20 @@ export function motionEngine(): MotionEngine {
    */
   const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 200, slide: 220 }
 
-  function play(root: Element, levelName: MotionLevel): () => void {
-    const L: Level = LEVELS[levelName] || LEVELS.calm
-    const lead = SWAP_LEAD[document.documentElement.dataset.moSwap || ''] || 0
+  function play(root: Element, levelName: MotionLevel, opts?: PlayOptions): MotionPlay {
+    // 움직임 없음과 '동작 줄이기'에서도 '누르면' 나오는 부품은 누를 때까지 감춘다(발표하는 사람이 짚어 가며 말하는 차례라서)
+    const quiet = levelName === 'none' || matchMedia('(prefers-reduced-motion: reduce)').matches
+    const L: Level = LEVELS[levelName as keyof typeof LEVELS] || LEVELS.calm
+    let lead = SWAP_LEAD[document.documentElement.dataset.moSwap || ''] || 0
     const cellOnly = root.classList.contains('bk') ? root : null
     const slide = cellOnly ? cellOnly.closest('.slide') : root.classList.contains('slide') ? root : root.querySelector('.slide')
-    const anims: Animation[] = []
-    const stops: (() => void)[] = []
-    const restores: (() => void)[] = []
-    const waits: Promise<void>[] = []
-    if (!slide || matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
-    // 움직이는 동안은 움직이는 것(root)에 표시를 붙인다. 그동안 글자와 막대는 옮겨지거나(translate) 커지는(scale) 중이고
-    // 숫자는 0부터 굴러가는 중이라, 부품 장의 글자 맞추기(slides/fitBlocks.ts)가 이때 재면 끝 모습과 다른 값이 나온다
-    // (움직이며 넘긴 장과 뒤로 돌아온 장의 글자 크기가 달랐다). 맞추기는 표시가 있으면 재지 않고 기다렸다가, 표시를 떼며
-    // 보내는 mo-end에 다시 잰다. 같은 것을 겹쳐 움직이면(편집기의 미리 보기) 겹친 수를 적어 마지막이 끝날 때 뗀다
-    root.setAttribute('data-mo-play', String(Number(root.getAttribute('data-mo-play') || 0) + 1))
+    // 한 묶음(장이 나올 때, 누를 때마다)의 움직임. 묶음마다 새로 받아 묶음마다 뒷정리한다
+    let anims: Animation[] = []
+    let stops: (() => void)[] = []
+    let restores: (() => void)[] = []
+    let waits: Promise<void>[] = []
+    const idle = Object.assign(() => {}, { next: () => false, left: () => 0 })
+    if (!slide) return idle
     // 부품 하나를 움직이는 동안에는 그 칸 안에서만 찾고, 시간은 그 부품이 시작하는 때부터 센다
     let scope: Element = slide
     let t0 = 0
@@ -347,7 +370,7 @@ export function motionEngine(): MotionEngine {
     const slideVariant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
     // 옆 판을 반대쪽으로 옮긴 장: 판이 들어오는 쪽도 바꾼다
     const flipped = slide.classList.contains('is-flip')
-    const s = (ms: number) => (t0 + ms) * L.speed + lead
+    const s = (ms: number) => (t0 + ms * pace) * L.speed + lead
     /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
     const d = (ms: number) => ms * L.speed
 
@@ -374,14 +397,14 @@ export function motionEngine(): MotionEngine {
       const origin = axis === 'x' ? 'left center' : axis === 'down' ? 'center top' : 'center bottom'
       run(anims, el, [{ scale: axis === 'x' ? '0 1' : '1 0', transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), L.grow, pseudo)
     }
-    const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom', duration = 1000) => {
+    const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom' | 'top', duration = 1000) => {
       if (!el) return
-      const inset = from === 'left' ? 'inset(0 100% 0 0)' : from === 'right' ? 'inset(0 0 0 100%)' : 'inset(100% 0 0 0)'
+      const inset = { left: 'inset(0 100% 0 0)', right: 'inset(0 0 0 100%)', bottom: 'inset(100% 0 0 0)', top: 'inset(0 0 100% 0)' }[from]
       run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(duration) })
     }
     /** 낱말마다 아래에서 올라오는 제목. 생동감은 살짝 기울었다가 바로 선다. */
     const words = (el: Element | null, at: number, gap = L.word, blur = false) => {
-      if (!el) return at
+      if (!el || still) return at
       // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 통째로 올라온다
       if (el.closest('.m-edit')) {
         rise(el, at, L.y * 0.6)
@@ -400,12 +423,12 @@ export function motionEngine(): MotionEngine {
     }
     const count = (el: Element | null, at: number) => {
       // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게)
-      if (!el || el.closest('.m-edit')) return
+      if (!el || still || el.closest('.m-edit')) return
       // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
       const lively = levelName === 'lively'
       // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
       if (!roll(el, s(at), lively ? 900 : 800, lively, anims, restores))
-        countUp(el, s(at), lively ? 1000 : 800, stops, waits)
+        countUp(el, s(at), (lively ? 1000 : 800) * pace, stops, waits)
     }
     /**
      * 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다.
@@ -413,7 +436,7 @@ export function motionEngine(): MotionEngine {
      * 발표하는 사람이 말을 시작한 뒤에도 장 한쪽이 계속 깜빡였다
      */
     const pulse = (el: HTMLElement | null, at: number) => {
-      if (!el || el.closest('.m-edit')) return
+      if (!el || still || el.closest('.m-edit')) return
       const ring = document.createElement('span')
       ring.className = 'mo-ring'
       ring.setAttribute('aria-hidden', 'true')
@@ -459,30 +482,62 @@ export function motionEngine(): MotionEngine {
       return body
     }
 
+    // 부품 장: 부품을 나오는 차례(data-seq, 움직임 탭에서 정한 차례)로 늘어놓고, '누르면' 나오는 부품마다 차례 묶음을 새로 연다.
+    // 첫 묶음은 장이 나올 때, 나머지는 발표하는 사람이 누를 때마다 하나씩 (PowerPoint의 '클릭할 때')
+    const links = !cellOnly && layout === 'compose' ? $('.bk-area > .bk-link') : []
+    const groups: HTMLElement[][] = [[]]
+    if (!cellOnly && layout === 'compose') {
+      const cells = $('.bk-area > .bk')
+        .map((el, i) => ({ el, k: el.dataset.seq === undefined ? i : Number(el.dataset.seq) }))
+        .sort((a, b) => a.k - b.k)
+        .map((c) => c.el)
+      for (const cell of cells) {
+        if (cell.dataset.when === 'click') groups.push([cell])
+        else groups[groups.length - 1].push(cell)
+      }
+    }
+    const auto = opts?.clicks === 'auto'
+    const waiting = auto ? [] : groups.slice(1)
+    /** 묶음의 부품과 그 뒤에 서는 이음표. 누를 때까지 자리는 지키고 보이지만 않게 (motion.css의 .mo-hold) */
+    const hold = (group: HTMLElement[], on: boolean) => {
+      for (const cell of group) {
+        cell.classList.toggle('mo-hold', on)
+        for (const lk of links) if (lk.dataset.after === cell.dataset.block) lk.classList.toggle('mo-hold', on)
+      }
+    }
+    waiting.forEach((g) => hold(g, true))
+
+    /** 부품 묶음 하나를 차례로. '함께'는 앞 부품과 같은 때에 나온다. 다음 묶음이 시작할 수 있는 때를 돌려준다 */
+    const composeGroup = (group: HTMLElement[], at: number) => {
+      const steps = group.filter((c, i) => i > 0 && c.dataset.when !== 'with').length
+      // 부품 사이의 간격. 부품이 많으면 좁혀서 모든 부품이 정한 시간 안에 나오기 시작하게 한다. 녹화해 보니 생동감에서
+      // 부품 다섯인 장은 마지막 부품이 1.7초에야 나오기 시작해 4초 넘게 움직였다(발표하는 사람이 말을 시작해도 장이 채워지는 중)
+      const gap = Math.min(L.step * 2.6, (levelName === 'lively' ? 760 : 560) / Math.max(1, steps))
+      let begin = at
+      group.forEach((cell, i) => {
+        if (i > 0 && cell.dataset.when !== 'with') begin += gap
+        block(cell, begin)
+        // 이음표는 앞의 부품이 나오고 다음 부품이 나오기 전에: 화살표는 가리키는 쪽으로 밀려 나오고, 나머지는 튀어나온다
+        for (const lk of links) {
+          if (lk.dataset.after !== cell.dataset.block) continue
+          const g = lk.firstElementChild
+          const at2 = begin + gap * 0.6
+          if (lk.classList.contains('is-arrow')) {
+            run(anims, g ?? lk, [{ opacity: 0, translate: lk.classList.contains('lk-v') ? `0 ${-L.y * 0.5}px` : `${-L.y * 0.5}px 0` }], s(at2), L.move)
+          } else pop(g, at2)
+        }
+      })
+      return begin + gap
+    }
+
     function choreo(layout: string, variant: string) {
     switch (layout) {
       case 'compose': {
         const t = head()
-        let at = Math.min(t, 420)
-        const links = $('.bk-area > .bk-link')
-        const cells = $('.bk-area > .bk')
-        // 부품 사이의 간격. 부품이 많으면 좁혀서 모든 부품이 정한 시간 안에 나오기 시작하게 한다. 녹화해 보니 생동감에서
-        // 부품 다섯인 장은 마지막 부품이 1.7초에야 나오기 시작해 4초 넘게 움직였다(발표하는 사람이 말을 시작해도 장이 채워지는 중)
-        const gap = Math.min(L.step * 2.6, (levelName === 'lively' ? 760 : 560) / Math.max(1, cells.length - 1))
-        for (const cell of cells) {
-          block(cell, at)
-          // 이음표는 앞의 부품이 나오고 다음 부품이 나오기 전에: 화살표는 가리키는 쪽으로 밀려 나오고, 나머지는 튀어나온다
-          for (const lk of links) {
-            if (lk.dataset.after !== cell.dataset.block) continue
-            const g = lk.firstElementChild
-            const at2 = at + gap * 0.6
-            if (lk.classList.contains('is-arrow')) {
-              run(anims, g ?? lk, [{ opacity: 0, translate: lk.classList.contains('lk-v') ? `0 ${-L.y * 0.5}px` : `${-L.y * 0.5}px 0` }], s(at2), L.move)
-            } else pop(g, at2)
-          }
-          at += gap
-        }
-        fade(one('.s-source'), at + 200)
+        let end = composeGroup(groups[0], Math.min(t, 420))
+        fade(one('.s-source'), end + 200)
+        // 미리 보기: '누르면' 나오는 묶음도 잠깐 쉬었다 이어서
+        if (auto) for (const g of groups.slice(1)) end = composeGroup(g, end + 600)
         break
       }
       case 'cover': {
@@ -1196,17 +1251,24 @@ export function motionEngine(): MotionEngine {
       }
     }
 
-    /** 부품 하나: 고른 움직임으로. '알아서'면 레이아웃 부품은 그 레이아웃의 연출, 아니면 부품마다 짜 둔 움직임 */
+    /**
+     * 부품 하나: 고른 움직임으로. '알아서'면 레이아웃 부품은 그 레이아웃의 연출, 아니면 부품마다 짜 둔 움직임.
+     * 고른 빠르기(data-speed)는 부품 안의 걸리는 시간과 차례 사이를 함께 바꾸고, 들어오는 쪽(data-from)은 올라오기, 밀려오기, 펼치기에 쓴다
+     */
     function block(cell: HTMLElement, at: number) {
       const effect = (/\bfx-([a-z]+)/.exec(cell.className) || [])[1] || 'auto'
       const type = cell.getAttribute('data-type') || ''
-      const saved = { scope, t0 }
+      const saved = { scope, t0, pace }
       scope = cell
       t0 = at
-      if (effect === 'rise') rise(cell, 0)
+      pace = cell.dataset.speed === 'fast' ? 0.6 : cell.dataset.speed === 'slow' ? 1.7 : 1
+      const from = cell.dataset.from
+      /** 들어오는 쪽에서 n만큼 떨어진 자리 */
+      const off = (n: number) => (from === 'left' ? `${-n}px 0` : from === 'right' ? `${n}px 0` : from === 'above' ? `0 ${-n}px` : `0 ${n}px`)
+      if (effect === 'rise') run(anims, cell, [{ opacity: 0, translate: off(L.y) }], s(0), L.move)
       else if (effect === 'fade') fade(cell, 0, 800)
-      else if (effect === 'wipe') wipe(cell, 0, 'left', 900)
-      else if (effect === 'slide') run(anims, cell, [{ opacity: 0, translate: `${L.y * 2.6}px 0` }], s(0), L.move)
+      else if (effect === 'wipe') wipe(cell, 0, from === 'right' ? 'right' : from === 'below' ? 'bottom' : from === 'above' ? 'top' : 'left', 900)
+      else if (effect === 'slide') run(anims, cell, [{ opacity: 0, translate: off(L.y * 2.6) }], s(0), L.move)
       else if (effect === 'pop') run(anims, cell, [{ opacity: 0, scale: '0.6' }], s(0), L.pop)
       else if (effect === 'zoom') run(anims, cell, [{ opacity: 0, scale: '1.14' }], s(0), { easing: OUT, duration: d(900) })
       else if (effect === 'flip')
@@ -1231,31 +1293,73 @@ export function motionEngine(): MotionEngine {
       }
       scope = saved.scope
       t0 = saved.t0
+      pace = saved.pace
     }
 
-    if (cellOnly) block(cellOnly as HTMLElement, 0)
-    else choreo(layout, slideVariant)
+    const batches: { anims: Animation[]; stops: (() => void)[]; restore: () => void }[] = []
+    /**
+     * 움직임 한 묶음을 짜고, 다 움직이면 그 묶음의 뒷정리를 한다.
+     * 움직이는 동안은 움직이는 것(root)에 표시를 붙인다. 그동안 글자와 막대는 옮겨지거나(translate) 커지는(scale) 중이고
+     * 숫자는 0부터 굴러가는 중이라, 부품 장의 글자 맞추기(slides/fitBlocks.ts)가 이때 재면 끝 모습과 다른 값이 나온다
+     * (움직이며 넘긴 장과 뒤로 돌아온 장의 글자 크기가 달랐다). 맞추기는 표시가 있으면 재지 않고 기다렸다가, 표시를 떼며
+     * 보내는 mo-end에 다시 잰다. 같은 것을 겹쳐 움직이면(편집기의 미리 보기, 누를 때마다의 묶음) 겹친 수를 적어 마지막이 끝날 때 뗀다
+     */
+    const batch = (make: () => void) => {
+      anims = []
+      stops = []
+      restores = []
+      waits = []
+      root.setAttribute('data-mo-play', String(Number(root.getAttribute('data-mo-play') || 0) + 1))
+      still = quiet
+      try {
+        make()
+      } finally {
+        still = false
+        pace = 1
+      }
+      const mine = { anims, stops, restores }
+      let restored = false
+      const restore = () => {
+        if (restored) return
+        restored = true
+        mine.restores.forEach((f) => f())
+        const left = Number(root.getAttribute('data-mo-play') || 1) - 1
+        if (left > 0) root.setAttribute('data-mo-play', String(left))
+        else {
+          root.removeAttribute('data-mo-play')
+          root.dispatchEvent(new Event('mo-end'))
+        }
+      }
+      batches.push({ anims: mine.anims, stops: mine.stops, restore })
+      // 다 움직이고 나면(숫자도 다 올라가면) 낱말로 나눈 제목을 원래 글자로 되돌린다. 화면을 그린 쪽(React)이 다시 다룰 수 있게.
+      // 중간에 멈춘 움직임(거절된 약속)도 끝난 것으로 본다: 끝 표시가 남으면 글자 맞추기가 그 장을 다시 재지 않는다
+      Promise.all([...mine.anims.map((a) => a.finished.catch(() => {})), ...waits]).then(restore)
+    }
 
-    let restored = false
-    const restore = () => {
-      if (restored) return
-      restored = true
-      restores.forEach((f) => f())
-      const left = Number(root.getAttribute('data-mo-play') || 1) - 1
-      if (left > 0) root.setAttribute('data-mo-play', String(left))
-      else {
-        root.removeAttribute('data-mo-play')
-        root.dispatchEvent(new Event('mo-end'))
+    batch(() => (cellOnly ? block(cellOnly as HTMLElement, 0) : choreo(layout, slideVariant)))
+
+    /** 누르면: 다음 묶음을 보이고 그 자리에서 움직인다. 장 바꾸기의 기다림 없이 바로 */
+    const next = () => {
+      const group = waiting.shift()
+      if (!group) return false
+      hold(group, false)
+      lead = 0
+      batch(() => {
+        scope = slide
+        t0 = 0
+        composeGroup(group, 0)
+      })
+      return true
+    }
+    const finish = () => {
+      waiting.splice(0).forEach((g) => hold(g, false))
+      for (const b of batches) {
+        b.anims.forEach((a) => a.finish())
+        b.stops.forEach((f) => f())
+        b.restore()
       }
     }
-    // 다 움직이고 나면(숫자도 다 올라가면) 낱말로 나눈 제목을 원래 글자로 되돌린다. 화면을 그린 쪽(React)이 다시 다룰 수 있게.
-    // 중간에 멈춘 움직임(거절된 약속)도 끝난 것으로 본다: 끝 표시가 남으면 글자 맞추기가 그 장을 다시 재지 않는다
-    Promise.all([...anims.map((a) => a.finished.catch(() => {})), ...waits]).then(restore)
-    return () => {
-      anims.forEach((a) => a.finish())
-      stops.forEach((f) => f())
-      restore()
-    }
+    return Object.assign(finish, { next, left: () => waiting.length })
   }
 
   // ---------- 장 바꾸기 ----------

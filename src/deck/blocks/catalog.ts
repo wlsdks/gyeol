@@ -1,7 +1,7 @@
 // 부품 목록: 부품마다의 정의(BLOCKS), 부품 고르기의 묶음, 면과 움직임의 이름. 레이아웃 부품은 레이아웃 정의에서 만든다
 
 import { type FieldSpec, LAYOUTS, type LayoutSpec, type VariantSpec } from '../layouts'
-import type { BlockEffect, BlockLook, BlockType, Item, LayoutBlockType, NativeBlockType } from '../types'
+import type { BlockEffect, BlockFrom, BlockLook, BlockSpeed, BlockType, BlockWhen, Item, LayoutBlockType, NativeBlockType } from '../types'
 import { NATIVE } from './native'
 
 export interface BlockSpec {
@@ -113,8 +113,34 @@ export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string
   { id: 'none', name: '없음', description: '처음부터 보여요' },
 ]
 
+/** 언제 나오는지. 이름과 설명은 움직임 탭과 AI 카탈로그에 함께 쓴다 */
+export const BLOCK_WHENS: { id: BlockWhen; name: string; description: string }[] = [
+  { id: 'after', name: '이어서', description: '앞 컴포넌트가 나온 뒤에 이어서 나와요' },
+  { id: 'with', name: '함께', description: '앞 컴포넌트와 같은 때에 나와요' },
+  { id: 'click', name: '누르면', description: '발표할 때 다음 키를 누르면 나와요. 하나씩 짚어 가며 말할 때 좋아요' },
+]
+
+export const BLOCK_SPEEDS: { id: BlockSpeed; name: string; description: string }[] = [
+  { id: 'fast', name: '빠르게', description: '짧게 움직여요' },
+  { id: 'normal', name: '보통', description: '움직임 정도에 맞춘 빠르기예요' },
+  { id: 'slow', name: '천천히', description: '길게 움직여 눈길을 끌어요' },
+]
+
+export const BLOCK_FROMS: { id: BlockFrom; name: string }[] = [
+  { id: 'below', name: '아래에서' },
+  { id: 'above', name: '위에서' },
+  { id: 'left', name: '왼쪽에서' },
+  { id: 'right', name: '오른쪽에서' },
+]
+
+/** 들어오는 쪽을 고를 수 있는 움직임과 그 기본 쪽 */
+export const EFFECT_FROM: Partial<Record<BlockEffect, BlockFrom>> = { rise: 'below', slide: 'right', wipe: 'left' }
+
 export const BLOCK_LOOK_IDS = BLOCK_LOOKS.map((l) => l.id)
 export const BLOCK_EFFECT_IDS = BLOCK_EFFECTS.map((e) => e.id)
+export const BLOCK_WHEN_IDS = BLOCK_WHENS.map((w) => w.id)
+export const BLOCK_SPEED_IDS = BLOCK_SPEEDS.map((w) => w.id)
+export const BLOCK_FROM_IDS = BLOCK_FROMS.map((w) => w.id)
 
 // 두 컴포넌트가 어떻게 이어지는지를 칸 사이에 끼우는 표시. 칸을 차지하지 않고 칸 사이에 서서,
 // 칸 너비 비율, 한 줄의 칸 수, 잘리지 않는 높이 같은 자리 규칙을 그대로 둔다.

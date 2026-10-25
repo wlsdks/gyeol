@@ -2,10 +2,29 @@
 
 import { withOneMore } from '../edits'
 import { emptyItem, uid, withDefaultOptions } from '../generate'
-import type { Block, BlockEffect, BlockRow, BlockType, Item, Slide } from '../types'
-import { BLOCK_EFFECT_IDS, BLOCKS } from './catalog'
+import type { Block, BlockEffect, BlockFrom, BlockRow, BlockSpeed, BlockType, BlockWhen, Item, Slide } from '../types'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_SPEED_IDS, BLOCK_WHEN_IDS, BLOCKS, EFFECT_FROM } from './catalog'
 
 export const effectOf = (b: Pick<Block, 'effect'>): BlockEffect => (b.effect && BLOCK_EFFECT_IDS.includes(b.effect) ? b.effect : 'auto')
+export const whenOf = (b: Pick<Block, 'when'>): BlockWhen => (b.when && BLOCK_WHEN_IDS.includes(b.when) ? b.when : 'after')
+export const speedOf = (b: Pick<Block, 'speed'>): BlockSpeed => (b.speed && BLOCK_SPEED_IDS.includes(b.speed) ? b.speed : 'normal')
+/** 들어오는 쪽. 쪽을 고를 수 없는 움직임이면 null */
+export function fromOf(b: Pick<Block, 'effect' | 'from'>): BlockFrom | null {
+  const base = EFFECT_FROM[effectOf(b)]
+  if (!base) return null
+  return b.from && BLOCK_FROM_IDS.includes(b.from) ? b.from : base
+}
+
+/**
+ * 부품 장에서 발표할 때 부품이 나오는 차례. 장에 정한 차례(options.order)에 있는 부품이 먼저, 나머지는 읽는 차례로.
+ * 없는 부품의 id는 건너뛴다(지운 부품이 남아 있어도 된다)
+ */
+export function playOrder(slide: Pick<Slide, 'rows' | 'options'>): Block[] {
+  const all = allBlocks(slide.rows ?? [])
+  const byId = new Map(all.map((b) => [b.id, b]))
+  const first = [...new Set(slide.options.order ?? [])].map((id) => byId.get(id)).filter((b): b is Block => !!b)
+  return [...first, ...all.filter((b) => !first.includes(b))]
+}
 
 export function makeBlock(type: BlockType): Block {
   const spec = BLOCKS[type]

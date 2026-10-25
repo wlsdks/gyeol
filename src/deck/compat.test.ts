@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { useDeck } from '../store/deckStore'
-import { BLOCK_EFFECT_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, BLOCKS } from './blocks'
+import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BLOCKS } from './blocks'
 import { sampleBlock } from './blockSamples'
 import { DECK_TYPES } from './blueprints'
 import { knownOnly, unknownParts } from './compat'
@@ -30,6 +30,9 @@ describe('새 버전에서 만든 발표 알아보기', () => {
         }
       }
     }
+    // 나오는 때, 빠르기, 들어오는 쪽
+    const t = sampleBlock('text')
+    for (const when of BLOCK_WHEN_IDS) for (const speed of BLOCK_SPEED_IDS) for (const from of BLOCK_FROM_IDS) expect(unknownParts(withSlides(compose({ ...t, effect: 'rise', when, speed, from })))).toBe(0)
   })
 
   it('모르는 부품, 모양, 움직임, 장, 저장 형식을 센다', () => {
@@ -37,6 +40,7 @@ describe('새 버전에서 만든 발표 알아보기', () => {
     const raw = (b: Record<string, unknown>) => b as unknown as Block
     expect(unknownParts(withSlides(compose(text, raw({ id: 'x', type: 'hologram', fields: { body: '글' }, items: [] }))))).toBe(1)
     expect(unknownParts(withSlides(compose(raw({ ...text, effect: 'spiral', look: 'glass' }))))).toBe(2)
+    expect(unknownParts(withSlides(compose(raw({ ...text, when: 'later', speed: 'warp' }))))).toBe(2)
     expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), variant: 'cards3d' }))))).toBe(1)
     expect(unknownParts(withSlides(compose(raw({ ...sampleBlock('bullets'), items: [{ id: 'i', title: '하나', color: 'red' }] }))))).toBe(1)
     expect(unknownParts(withSlides({ ...makeSlide('kpi'), layout: 'roadmap' as Slide['layout'] }))).toBe(1)

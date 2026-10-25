@@ -49,6 +49,11 @@
   pointer-events: none;
 }
 
+/* '누르면' 나오는 컴포넌트: 누를 때까지 자리는 지키고(다른 칸이 밀리지 않게) 보이지만 않는다(engine.ts의 hold) */
+.mo-hold {
+  visibility: hidden;
+}
+
 /* ---------- 장 바꾸기 ---------- */
 
 @keyframes mo-vt-fade-out {

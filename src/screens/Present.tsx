@@ -5,7 +5,7 @@ import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
 import { presentAction, presentKey } from '../lib/presentKeys'
 import { motionOf, transitionOf } from '../deck/themes'
-import { motionEngine } from '../motion/engine'
+import { motionEngine, type MotionPlay } from '../motion/engine'
 import { presentChannel, type Blank, type PresentMessage } from '../present/link'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 
@@ -26,10 +26,10 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   const info = pageInfo(deck.slides)
   const transition = transitionOf(deck)
   const engine = useMemo(() => motionEngine(), [])
-  const [view, setView] = useState(() => {
-    const index = startIndex(deck, slides, startId)
-    return { index, play: motionOf(deck, slides[index]) !== 'none' }
-  })
+  // play: 이 장을 움직일지 (앞으로 넘겨 온 장). 움직임이 없는 장도 엔진에 맡긴다: '누르면' 나오는 컴포넌트는 누를 때까지 감춘다
+  const [view, setView] = useState(() => ({ index: startIndex(deck, slides, startId), play: true }))
+  /** 지금 장의 움직임. 누르면 나오는 컴포넌트가 남았으면 다음 키에 그것부터 보인다 */
+  const playing = useRef<MotionPlay | null>(null)
   const [idle, setIdle] = useState(false)
   const [blank, setBlankState] = useState<Blank>(null)
   const idleTimer = useRef(0)
@@ -46,22 +46,39 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   const link = useRef<ReturnType<typeof presentChannel> | null>(null)
 
   const goTo = useCallback(
-    (next: number, fromLink = false) => {
+    (next: number) => {
       const to = Math.max(0, Math.min(slides.length - 1, next))
       const from = now.current.index
       if (to === from) return
       const dir = to > from ? 1 : -1
       // 앞으로 넘길 때만 움직인다. 이전 장으로 돌아가면 다 보인 상태로 (PowerPoint와 같게).
-      const play = motionOf(deck, slides[to]) !== 'none' && dir > 0
-      engine.swap(() => flushSync(() => setView({ index: to, play })), transition, dir)
-      if (!fromLink) link.current?.post({ type: 'state', index: to, blank: now.current.blank })
+      engine.swap(
+        () => {
+          flushSync(() => setView({ index: to, play: dir > 0 }))
+          // 새 장이 그려지고 움직임이 걸린 뒤에 알린다: 남은 차례 수는 그 장의 움직임이 정한다.
+          // 발표자 화면에서 넘긴 것도 알린다. 발표자 화면은 이 수를 모른다
+          link.current?.post({ type: 'state', index: to, blank: now.current.blank, left: playing.current?.left() ?? 0 })
+        },
+        transition,
+        dir,
+      )
     },
     [slides, deck, engine, transition],
   )
 
+  /** 다음으로: '누르면' 나오는 컴포넌트가 남았으면 그것을, 아니면 다음 장 */
+  const forward = useCallback(() => {
+    if (playing.current?.next()) {
+      // 발표자 화면에서 눌렀어도 알린다: 남은 차례는 이 창만 안다
+      link.current?.post({ type: 'state', index: now.current.index, blank: now.current.blank, left: playing.current.left() })
+      return
+    }
+    goTo(now.current.index + 1)
+  }, [goTo])
+
   const setBlank = useCallback((next: Blank, fromLink = false) => {
     setBlankState(next)
-    if (!fromLink) link.current?.post({ type: 'state', index: now.current.index, blank: next })
+    if (!fromLink) link.current?.post({ type: 'state', index: now.current.index, blank: next, left: playing.current?.left() ?? 0 })
   }, [])
 
   const exit = useCallback(
@@ -77,8 +94,12 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   const handlers = useRef<(m: PresentMessage) => void>(() => {})
   handlers.current = (m) => {
     if (m.type === 'hello') {
-      link.current?.post({ type: 'deck', deck, index: now.current.index, blank: now.current.blank, startedAt: startedAt.current })
-    } else if (m.type === 'go') goTo(m.index, true)
+      link.current?.post({ type: 'deck', deck, index: now.current.index, blank: now.current.blank, startedAt: startedAt.current, left: playing.current?.left() ?? 0 })
+    } else if (m.type === 'go') {
+      // 발표자 화면에서 다음으로 넘기면 여기서처럼 '누르면' 나오는 컴포넌트부터
+      if (m.index === now.current.index + 1) forward()
+      else goTo(m.index)
+    }
     else if (m.type === 'blank') setBlank(m.blank, true)
     else if (m.type === 'end') exit(true)
   }
@@ -104,12 +125,13 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
       if (!act) return
       e.preventDefault()
       if (act.kind === 'blank') setBlank(act.blank)
+      else if (act.kind === 'go' && act.index === index + 1) forward()
       else if (act.kind === 'go') goTo(act.index)
       else exit()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [goTo, exit, setBlank, slides.length])
+  }, [goTo, forward, exit, setBlank, slides.length])
 
   // 전체 화면을 Esc로 빠져나오면 발표도 끝낸다
   useEffect(() => {
@@ -133,8 +155,13 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   // 장이 화면에 붙자마자(그리기 전에) 움직임을 건다. 그래야 다 보인 모습이 한 번 번쩍이지 않는다.
   const level = motionOf(deck, slides[view.index])
   useLayoutEffect(() => {
-    if (!ready || !view.play || !stageRef.current || level === 'none') return
-    return engine.play(stageRef.current, level)
+    if (!ready || !view.play || !stageRef.current) return
+    const p = engine.play(stageRef.current, level)
+    playing.current = p
+    return () => {
+      playing.current = null
+      p()
+    }
   }, [view, ready, engine, level])
 
   const slide = slides[view.index]
@@ -144,7 +171,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
     <div
       className={cx('present', idle && 'is-idle')}
       onMouseMove={wake}
-      onClick={(e) => (blank ? setBlank(null) : goTo(e.clientX < window.innerWidth * 0.3 ? view.index - 1 : view.index + 1))}
+      onClick={(e) => (blank ? setBlank(null) : e.clientX < window.innerWidth * 0.3 ? goTo(view.index - 1) : forward())}
     >
       <FitSlide className="present-stage">
         <div key={slide.id} ref={attachStage} className="present-slide">
