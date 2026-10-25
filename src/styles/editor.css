@@ -236,6 +236,8 @@
 .sl-add-pop {
   top: auto;
   bottom: calc(100% + 8px);
+  /* 장 추가 단추와 왼쪽을 맞춘다 (0이면 창 끝에 붙어 잘린 것처럼 보였다) */
+  left: 12px;
   padding: 0;
 }
 
