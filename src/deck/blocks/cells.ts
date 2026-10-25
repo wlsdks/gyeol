@@ -1,5 +1,6 @@
 // 부품 하나를 다루는 도우미: 새 부품, 보이는 항목, 부품을 장처럼 그리기, 비어 있는 칸, 항목 더하기, 복사
 
+import { withOneMore } from '../edits'
 import { emptyItem, uid, withDefaultOptions } from '../generate'
 import type { Block, BlockEffect, BlockRow, BlockType, Item, Slide } from '../types'
 import { BLOCK_EFFECT_IDS, BLOCKS } from './catalog'
@@ -166,12 +167,8 @@ export function blockMissing(block: Block, name = BLOCKS[block.type].name): Bloc
 
 /** 항목을 하나 더한 부품. 보이는 항목 수(max) 뒤에 숨은 항목이 있으면 그 앞에 넣는다 */
 export function withItem(b: Block): Block {
-  const max = BLOCKS[b.type].items?.max ?? 0
-  const visible = Math.min(b.items.length, max)
-  if (visible >= max) return b
-  const items = [...b.items]
-  items.splice(visible, 0, emptyItem())
-  return { ...b, items }
+  const items = withOneMore(b.items, BLOCKS[b.type].items?.max ?? 0)
+  return items === b.items ? b : { ...b, items }
 }
 
 /** 같은 내용의 부품 (새 id) */

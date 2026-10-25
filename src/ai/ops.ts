@@ -44,7 +44,8 @@ import {
   type LinkTarget,
 } from '../deck/blocks'
 import { BLUEPRINTS } from '../deck/blueprints'
-import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
+import { relayout, withVisibleCount } from '../deck/edits'
+import { makeSlide } from '../deck/generate'
 import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, panesOf, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
@@ -620,11 +621,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         }
         const variant = op.variant ?? (op.layout === s.layout ? variantOf(s) : variantIds(op.layout)[0])
         if (op.layout === s.layout && variant === variantOf(s)) return fail('no_change')
-        const items = [...s.items]
-        const next = LAYOUTS[op.layout].items
-        if (next) while (items.length < next.min) items.push(emptyItem())
-        const keep = variant === variantIds(op.layout)[0] ? undefined : variant
-        put(i, { ...s, layout: op.layout, items, variant: keep, options: withDefaultOptions(op.layout, s.options, items.length) })
+        put(i, relayout(s, op.layout, variant === variantIds(op.layout)[0] ? undefined : variant))
         return done
       }
       case 'set_hidden':
@@ -634,16 +631,9 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       case 'set_item_count': {
         if (!spec.items) return fail('not_for_layout')
         if (op.count < spec.items.min || op.count > spec.items.max) return fail('out_of_range')
-        const visible = Math.min(s.items.length, spec.items.max)
-        if (op.count === visible) return fail('no_change')
-        const items = [...s.items]
-        if (op.count > visible) {
-          items.splice(visible, 0, ...Array.from({ length: op.count - visible }, emptyItem))
-        } else {
-          const cut = items.slice(op.count, visible)
-          if (!cut.every(itemEmpty)) return fail('has_content')
-          items.splice(op.count, visible - op.count)
-        }
+        if (op.count === Math.min(s.items.length, spec.items.max)) return fail('no_change')
+        const items = withVisibleCount(s.items, spec.items.max, op.count, itemEmpty)
+        if (!items) return fail('has_content')
         put(i, { ...s, items })
         return done
       }
@@ -743,13 +733,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         if (op.count !== undefined) {
           if (!bs.items) return fail('not_for_layout')
           if (op.count < bs.items.min || op.count > bs.items.max) return fail('out_of_range')
-          const visible = blockItems(b).length
-          const items = [...b.items]
-          if (op.count > visible) items.splice(visible, 0, ...Array.from({ length: op.count - visible }, emptyItem))
-          else if (op.count < visible) {
-            if (!items.slice(op.count, visible).every(itemEmpty)) return fail('has_content')
-            items.splice(op.count, visible - op.count)
-          }
+          const items = withVisibleCount(b.items, bs.items.max, op.count, itemEmpty)
+          if (!items) return fail('has_content')
           next.items = items
         }
         if (op.highlight !== undefined) {

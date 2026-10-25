@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { asCompose, cleanDeckRows, copyBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
 import { plainTheme } from '../deck/themes'
-import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
+import { relayout, withOneMore } from '../deck/edits'
+import { makeSlide, uid } from '../deck/generate'
 import { followIndex, isMetaKey, moveIn } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
 import type { Block, BlockRow, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
@@ -172,13 +173,9 @@ export const useDeck = create<DeckState>((set, get) => {
     addItem(slideId) {
       commit((d) =>
         mapSlide(d, slideId, (s) => {
-          const max = LAYOUTS[s.layout].items?.max ?? 0
-          const visible = Math.min(s.items.length, max)
-          if (visible >= max) return s
-          // 보이는 항목 바로 뒤에 넣는다. 레이아웃 때문에 숨겨진 항목은 뒤로 밀린다.
-          const items = [...s.items]
-          items.splice(visible, 0, emptyItem())
-          return { ...s, items }
+          // 보이는 항목 바로 뒤에 넣는다. 레이아웃 때문에 숨겨진 항목은 뒤로 밀린다
+          const items = withOneMore(s.items, LAYOUTS[s.layout].items?.max ?? 0)
+          return items === s.items ? s : { ...s, items }
         }),
       )
     },
@@ -224,14 +221,7 @@ export const useDeck = create<DeckState>((set, get) => {
           // 부품 장으로 바꿀 때는 내용을 부품으로 옮긴다(예전에 부품 장이었던 장은 남겨 둔 부품을 다시 보여 준다).
           // 레이아웃 부품 하나뿐인 부품 장은 그 레이아웃으로 되돌린다
           if (layout === 'compose') return asCompose(s)
-          const unwrapped = unwrapCompose(s, layout)
-          if (unwrapped) return unwrapped
-          const spec = LAYOUTS[layout].items
-          const items = [...s.items]
-          // 내용은 지우지 않는다. 최소 개수보다 적으면 빈 항목만 더한다.
-          if (spec) while (items.length < spec.min) items.push(emptyItem())
-          // 모양은 레이아웃마다 따로라서 기본 모양으로
-          return { ...s, layout, items, variant: undefined, options: withDefaultOptions(layout, s.options, items.length) }
+          return unwrapCompose(s, layout) ?? relayout(s, layout)
         }),
       )
     },
