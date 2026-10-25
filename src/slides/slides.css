@@ -1709,7 +1709,10 @@
   height: 30px;
 }
 
-/* ---------- 일정 ---------- */
+/* ---------- 일정 ----------
+   시기 아래 가는 선 위에 작은 꽉 찬 점. 굵은 테두리의 큰 동그라미에 둘레까지 두른 점은 흔한 서식처럼 보였다.
+   지금 단계가 있으면 지나온 점과 선은 강조색, 지금 점은 바탕 틈을 둔 가는 고리, 남은 점은 옅게.
+   아래 기본 규칙은 부품 칸도 쓴다. 선과 줄의 높이(시기 56 + 점 위 틈 + 점 + 아래 틈 = 170)는 잰 높이 표와 맞춰 둔다 */
 
 .tl {
   display: grid;
@@ -1727,11 +1730,10 @@
 
 .tl-item::before {
   position: absolute;
-  top: 92px;
+  top: calc(92px - 1.5px);
   right: -56px;
   left: 0;
-  height: 4px;
-  border-radius: 2px;
+  height: 3px;
   background: var(--line);
   content: '';
 }
@@ -1751,18 +1753,19 @@
 }
 
 .tl-dot {
+  --tl-dot: 16px;
   position: relative;
   display: block;
-  width: 36px;
-  height: 36px;
-  margin: 18px 0 60px;
-  border: 7px solid var(--accent);
+  width: var(--tl-dot);
+  height: var(--tl-dot);
+  /* 점의 가운데가 선(92px)에 오게, 아래 틈은 이름이 170px에서 시작하게 */
+  margin: calc(36px - var(--tl-dot) / 2) 0 calc(78px - var(--tl-dot) / 2);
   border-radius: 50%;
-  background: var(--bg);
-  box-shadow: 0 0 0 12px var(--bg);
+  background: var(--ink);
+  box-shadow: 0 0 0 8px var(--bg);
 }
 
-/* 지금 단계: 지나온 단계는 점과 선을 채우고, 지금 점에는 둘레를 둔다. 남은 단계는 비워 둔다 */
+/* 지금 단계: 지나온 단계는 점과 선을 강조색으로, 지금 점에는 바탕 틈을 두고 가는 고리. 남은 단계는 옅게 */
 .tl-item.is-done::before {
   background: var(--accent);
 }
@@ -1773,12 +1776,12 @@
 
 .tl-item.is-now .tl-dot {
   box-shadow:
-    0 0 0 10px var(--bg),
-    0 0 0 22px var(--accent-soft);
+    0 0 0 7px var(--bg),
+    0 0 0 10px var(--accent);
 }
 
 .has-now .tl-item:not(.is-done, .is-now) .tl-dot {
-  border-color: var(--ink-3);
+  background: var(--ink-3);
 }
 
 .has-now .tl-item:not(.is-done, .is-now) .tl-meta {
@@ -1815,12 +1818,13 @@
   --fs: 26px;
 }
 
-/* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 시기, 점, 이름, 설명을 한 단계씩 키워 띠가 본문 높이의 반을 넘게 한다.
-   그대로 두면 낮은 띠가 본문 가운데에 떠서 위아래가 크게 비었다. 이름과 설명은 모든 단계가 같은 줄(subgrid)을 써서
-   한 단계의 이름이 두 줄이어도 옆 단계의 설명과 줄이 맞는다. 위의 기본 규칙은 부품 칸이 쓰므로 그대로 둔다(잰 높이 표) */
+/* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 시기, 이름, 설명을 한 단계씩 키워 띠가 본문 높이의 반을 넘게 한다.
+   그대로 두면 낮은 띠가 본문 가운데에 떠서 위아래가 크게 비었다. 시기는 일정의 답이라 가장 크게(숫자는 크게).
+   이름과 설명은 모든 단계가 같은 줄(subgrid)을 써서 한 단계의 이름이 두 줄이어도 옆 단계의 설명과 줄이 맞는다.
+   위의 기본 규칙은 부품 칸이 쓰므로 그대로 둔다(잰 높이 표) */
 .l-timeline.va-base .tl {
-  --tl-meta-h: 72px;
-  --tl-dot: 48px;
+  --tl-meta-h: 88px;
+  --tl-dot-top: 28px;
   --tl-gap: 64px;
   grid-template-rows: repeat(4, auto);
   gap: 0 var(--tl-gap);
@@ -1835,7 +1839,7 @@
 
 /* 선은 점의 가운데를 지난다: 시기 줄 높이 + 점 위 틈 + 점 반지름 */
 .l-timeline.va-base .tl-item::before {
-  top: calc(var(--tl-meta-h) + 20px + var(--tl-dot) / 2 - 2px);
+  top: calc(var(--tl-meta-h) + var(--tl-dot-top) + 10px - 1.5px);
   right: calc(var(--tl-gap) * -1);
 }
 
@@ -1844,16 +1848,16 @@
 }
 
 .l-timeline.va-base .tl-meta {
-  --fs: 44px;
+  --fs: 62px;
   height: var(--tl-meta-h);
+  font-weight: 600;
+  letter-spacing: calc(var(--head-tracking) - 0.01em);
   line-height: var(--tl-meta-h);
 }
 
 .l-timeline.va-base .tl-dot {
-  width: var(--tl-dot);
-  height: var(--tl-dot);
-  margin: 20px 0 72px;
-  border-width: 8px;
+  --tl-dot: 20px;
+  margin: var(--tl-dot-top) 0 56px;
 }
 
 .l-timeline.va-base .tl-title {
@@ -1866,18 +1870,17 @@
 }
 
 .l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) {
-  --tl-meta-h: 56px;
-  --tl-dot: 36px;
+  --tl-meta-h: 64px;
+  --tl-dot-top: 20px;
   --tl-gap: 40px;
 }
 
 .l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-meta {
-  --fs: 30px;
+  --fs: 44px;
 }
 
 .l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-dot {
-  margin-bottom: 56px;
-  border-width: 7px;
+  margin-bottom: 48px;
 }
 
 .l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) .tl-title {
@@ -1923,8 +1926,8 @@
   top: 0;
   right: auto;
   bottom: 0;
-  left: calc(300px + 32px + 34px);
-  width: 4px;
+  left: calc(300px + 32px + 34.5px);
+  width: 3px;
   height: auto;
 }
 
