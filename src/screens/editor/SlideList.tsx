@@ -5,19 +5,20 @@ import { memo, useEffect, useMemo, useState } from 'react'
 import { keys } from '../../lib/keys'
 import { slideName } from '../../deck/blocks'
 import { missingFields, pageInfo } from '../../deck/fields'
-import { LAYOUTS, LAYOUT_GROUPS } from '../../deck/layouts'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
-import { hashOf } from '../../lib/router'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
+import { AddSlide } from './AddSlide'
+import { useLook } from './look'
 
 export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string | null }) {
   const select = useDeck((s) => s.select)
   const moveSlide = useDeck((s) => s.moveSlide)
   const addSlide = useDeck((s) => s.addSlide)
+  const look = useLook(deck)
   const info = pageInfo(deck.slides)
   const sections = useStableSections(info)
   // 끌기는 마우스로만. dnd-kit의 키보드 끌기는 Space와 Enter로 시작해서, 장을 고르려고 Enter를 누르면 끌기가 시작됐다.
@@ -112,31 +113,13 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
         )}
       >
         {(close) => (
-          <div className="menu menu-layouts">
-            {LAYOUT_GROUPS.map((g) => (
-              <div key={g.name} className="menu-group" role="group" aria-label={g.name}>
-                <p className="menu-h">{g.name}</p>
-                {g.layouts.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className="menu-item"
-                    onClick={() => {
-                      addSlide(id, selectedId ?? undefined)
-                      close()
-                    }}
-                  >
-                    <span className="menu-item-name">{LAYOUTS[id].name}</span>
-                    <span className="menu-item-desc">{LAYOUTS[id].description}</span>
-                  </button>
-                ))}
-              </div>
-            ))}
-            {/* 편집하던 화면은 그대로 두고 새 탭에서 모든 장을 크게 본다 */}
-            <a className="menu-foot" href={hashOf({ name: 'system' })} target="_blank" rel="noopener">
-              장 모음 보기
-            </a>
-          </div>
+          <AddSlide
+            look={look}
+            onPick={(id) => {
+              addSlide(id, selectedId ?? undefined)
+              close()
+            }}
+          />
         )}
       </Popover>
     </nav>

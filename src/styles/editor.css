@@ -232,9 +232,137 @@
   width: 100%;
 }
 
+/* 장 추가: 왼쪽은 묶음, 오른쪽은 그 묶음의 장을 그림으로 (AddSlide.tsx). 장 목록 위로 열고 슬라이드 쪽으로 넓게 */
 .sl-add-pop {
   top: auto;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 8px);
+  padding: 0;
+}
+
+.add-slide {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  width: 760px;
+  max-width: calc(100vw - 40px);
+  /* 1280×600에서도 위 머리 줄 아래로 들어오게 */
+  max-height: calc(100vh - 120px);
+}
+
+.add-slide-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--line);
+}
+
+.add-slide-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.add-slide-tab:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.add-slide-tab.is-on {
+  background: var(--sel-soft);
+  color: var(--sel);
+}
+
+.add-slide-n {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.add-slide-tab.is-on .add-slide-n {
+  color: inherit;
+}
+
+.add-slide-all {
+  margin-top: auto;
+  padding: 8px 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+
+.add-slide-all:hover {
+  color: var(--ink);
+}
+
+.add-slide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 16px 14px;
+  min-height: 0;
+  padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.add-slide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.add-slide-pic {
+  display: block;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--line);
+  transition: box-shadow 0.14s, translate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.add-slide-card:hover .add-slide-pic,
+.add-slide-card:focus-visible .add-slide-pic {
+  box-shadow: 0 0 0 2px var(--sel), 0 8px 20px rgb(16 20 31 / 0.1);
+  translate: 0 -2px;
+}
+
+.add-slide-card:hover,
+.add-slide-card:focus-visible {
+  color: var(--ink);
+}
+
+.add-slide-card:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-slide-pic {
+    transition: none;
+  }
 }
 
 .thumb {
