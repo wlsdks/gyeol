@@ -24,7 +24,6 @@ export function startIndex(deck: Deck, shown: Deck['slides'], startId?: string):
 export function Present({ deck, startId, onExit }: { deck: Deck; startId?: string; onExit: () => void }) {
   const slides = useMemo(() => deck.slides.filter((s) => !s.hidden), [deck.slides])
   const info = pageInfo(deck.slides)
-  const transition = transitionOf(deck)
   const engine = useMemo(() => motionEngine(), [])
   // play: 이 장을 움직일지 (앞으로 넘겨 온 장). 움직임이 없는 장도 엔진에 맡긴다: '누르면' 나오는 컴포넌트는 누를 때까지 감춘다
   const [view, setView] = useState(() => ({ index: startIndex(deck, slides, startId), play: true }))
@@ -52,6 +51,8 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
       if (to === from) return
       const dir = to > from ? 1 : -1
       // 앞으로 넘길 때만 움직인다. 이전 장으로 돌아가면 다 보인 상태로 (PowerPoint와 같게).
+      // 전환은 넘어가는 장에 정한 것 (앞으로 가든 뒤로 가든 그 두 장 사이의 전환이 같게, 뒤로 갈 때는 떠나는 장의 것)
+      const transition = transitionOf(deck, slides[dir > 0 ? to : from])
       engine.swap(
         () => {
           flushSync(() => setView({ index: to, play: dir > 0 }))
@@ -63,7 +64,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
         dir,
       )
     },
-    [slides, deck, engine, transition],
+    [slides, deck, engine],
   )
 
   /** 다음으로: '누르면' 나오는 컴포넌트가 남았으면 그것을, 아니면 다음 장 */

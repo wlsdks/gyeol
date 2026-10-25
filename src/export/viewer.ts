@@ -77,7 +77,8 @@ function show(n,first){
     // 앞으로 넘긴 장만 움직인다. 이전 장으로 돌아가면 다 보인 상태로. 움직임이 없는 장도 엔진에 맡긴다('누르면' 나오는 컴포넌트를 감춘다)
     if(forward)stopMotion=engine.play(slides[i],level);
   }
-  if(first)apply();else engine.swap(apply,transitionOf(slides[next]),forward?1:-1);
+  // 전환은 넘어가는 장에 정한 것 (뒤로 갈 때는 떠나는 장의 것). 앱의 발표 화면과 같다
+  if(first)apply();else engine.swap(apply,transitionOf(slides[forward?next:i]),forward?1:-1);
 }
 // 다음으로: 이 장에 '누르면' 나오는 컴포넌트가 남았으면 그것을, 아니면 다음 장
 function forwardOne(){if(stopMotion&&stopMotion.next())return;show(i+1)}

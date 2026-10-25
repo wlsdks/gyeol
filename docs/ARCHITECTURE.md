@@ -130,7 +130,7 @@
 | `src/export/exportHtml.test.ts` | 내보낸 HTML의 CSP, 다시 열기 |
 | `src/deck/blocks.test.ts` | 부품 장으로 바꿔도 글을 잃지 않는다. 자리 규칙. 모든 부품의 높이를 쟀다 |
 | `src/deck/frame.test.ts`, `src/slides/css.test.ts` | TS의 값과 CSS의 값이 같다(틀, 글자 칸 목록, 부품 간격) |
-| `src/motion/engine.test.ts`, `src/slides/fitBlocks.test.ts` | 레이아웃과 부품마다 연출이 있고, 고를 수 있는 때, 빠르기, 쪽을 엔진이 안다. 엔진과 글자 맞추기가 바깥 이름 없이 소스만으로 다시 만들어진다(내보낸 HTML에 소스째 들어간다) |
+| `src/motion/engine.test.ts`, `src/slides/fitBlocks.test.ts` | 레이아웃과 부품마다 연출이 있고, 고를 수 있는 때, 빠르기, 쪽, 장 넘기기를 엔진이 안다. 엔진과 글자 맞추기가 바깥 이름 없이 소스만으로 다시 만들어진다(내보낸 HTML에 소스째 들어간다) |
 | `src/deck/generate.test.ts` | 구성 규칙(결론부터, 시간에 맞는 장 수, 듣는 사람). 레이아웃 묶음과 예시 |
 | `compat`, `migrate`, `storage`, `deckStore` | 예전 파일과 새 파일, 두 벌 맞추기, 되돌리기 |
 

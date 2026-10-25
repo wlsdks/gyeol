@@ -143,6 +143,34 @@
     animation: mo-vt-push 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  /* 이어 움직이기: 짝이 있는 것(engine.ts의 pairUp)은 새 자리와 크기로 미끄러져 가고, 나머지는 흐리게처럼 서로 옅어진다.
+     짝이 없는 앞 장의 것은 제자리에서 같이 옅어진다 */
+  html[data-mo-swap='morph']::view-transition-image-pair(root) {
+    isolation: isolate;
+  }
+
+  html[data-mo-swap='morph']::view-transition-old(root),
+  html[data-mo-swap='morph']::view-transition-new(root) {
+    mix-blend-mode: plus-lighter;
+  }
+
+  html[data-mo-swap='morph']::view-transition-old(root) {
+    animation: mo-vt-fade-out 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  html[data-mo-swap='morph']::view-transition-new(root) {
+    animation: mo-vt-fade-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  html[data-mo-swap='morph']::view-transition-group(*) {
+    animation-duration: 720ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  html[data-mo-swap='morph']::view-transition-old(*):only-child {
+    animation: mo-vt-fade-out 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
   html[data-mo-swap='zoom']::view-transition-old(root) {
     animation: mo-vt-zoom-out 240ms cubic-bezier(0.2, 0, 0, 1) both;
   }

@@ -92,7 +92,7 @@ export const SlideCanvas = memo(function SlideCanvas({
           `m-${mode}`,
           // 움직임과 전환은 클래스로 남겨 내보낸 파일의 뷰어도 같은 값을 읽게 한다
           `mo-${motionOf(deck, slide)}`,
-          `tr-${transitionOf(deck)}`,
+          `tr-${transitionOf(deck, slide)}`,
           `va-${variantOf(slide)}`,
           size,
           tone !== 'base' && `tone-${tone}`,

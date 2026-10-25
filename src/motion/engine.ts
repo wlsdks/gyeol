@@ -93,7 +93,8 @@ export function motionEngine(): MotionEngine {
     timing: { easing: string; duration: number },
     pseudoElement?: string,
   ) {
-    if (still) return null
+    // 이어 움직이기로 앞 장에서 옮겨 온 것(data-mo-keep)은 이미 제자리에 와 있어서 다시 들이지 않는다
+    if (still || el.closest('[data-mo-keep]')) return null
     // 키프레임 하나만 주면 Web Animations는 그것을 '끝' 모습으로 본다. 여기서는 늘 '시작' 모습이라 offset 0을 붙인다.
     const keyframes = frames.length === 1 ? [{ ...frames[0], offset: 0 }] : frames
     const a = el.animate(keyframes, {
@@ -345,7 +346,7 @@ export function motionEngine(): MotionEngine {
    * 장을 바꾸는 중이면 다음 장의 움직임을 이만큼 늦게 시작한다. 앞 장이 사라지기 전에 다음 장의 글이 나오면
    * 두 장의 글이 겹쳐 보인다(motion.css의 전환 시간과 맞춘다). 밀기는 다음 장이 거의 다 들어온 뒤에 글이 나온다
    */
-  const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 200, slide: 220 }
+  const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 200, slide: 220, morph: 200 }
 
   function play(root: Element, levelName: MotionLevel, opts?: PlayOptions): MotionPlay {
     // 움직임 없음과 '동작 줄이기'에서도 '누르면' 나오는 부품은 누를 때까지 감춘다(발표하는 사람이 짚어 가며 말하는 차례라서)
@@ -361,6 +362,8 @@ export function motionEngine(): MotionEngine {
     let waits: Promise<void>[] = []
     const idle = Object.assign(() => {}, { next: () => false, left: () => 0 })
     if (!slide) return idle
+    // 이어 움직이기로 넘어오는 중이면 앞 장의 것과 짝을 맞춘다 (짝이 된 것은 움직임 없이 옮겨 온다)
+    if (morphFrom && !cellOnly && slide.closest(CURRENT)) pairUp(slide)
     // 부품 하나를 움직이는 동안에는 그 칸 안에서만 찾고, 시간은 그 부품이 시작하는 때부터 센다
     let scope: Element = slide
     let t0 = 0
@@ -404,7 +407,7 @@ export function motionEngine(): MotionEngine {
     }
     /** 낱말마다 아래에서 올라오는 제목. 생동감은 살짝 기울었다가 바로 선다. */
     const words = (el: Element | null, at: number, gap = L.word, blur = false) => {
-      if (!el || still) return at
+      if (!el || still || el.closest('[data-mo-keep]')) return at
       // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 통째로 올라온다
       if (el.closest('.m-edit')) {
         rise(el, at, L.y * 0.6)
@@ -422,8 +425,8 @@ export function motionEngine(): MotionEngine {
       return at + split.words.length * gap + 160
     }
     const count = (el: Element | null, at: number) => {
-      // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게)
-      if (!el || still || el.closest('.m-edit')) return
+      // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게). 옮겨 온 숫자는 다시 굴리지 않는다
+      if (!el || still || el.closest('.m-edit, [data-mo-keep]')) return
       // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
       const lively = levelName === 'lively'
       // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
@@ -436,7 +439,7 @@ export function motionEngine(): MotionEngine {
      * 발표하는 사람이 말을 시작한 뒤에도 장 한쪽이 계속 깜빡였다
      */
     const pulse = (el: HTMLElement | null, at: number) => {
-      if (!el || still || el.closest('.m-edit')) return
+      if (!el || still || el.closest('.m-edit, [data-mo-keep]')) return
       const ring = document.createElement('span')
       ring.className = 'mo-ring'
       ring.setAttribute('aria-hidden', 'true')
@@ -1362,28 +1365,103 @@ export function motionEngine(): MotionEngine {
     return Object.assign(finish, { next, left: () => waiting.length })
   }
 
+  // ---------- 이어 움직이기 ----------
+  // 앞 장과 다음 장에 같은 것이 있으면 사라졌다 나타나지 않고 새 자리와 크기로 옮겨 간다(View Transitions의 이름 붙인 요소).
+  // 같은 것: 글이 같은 제목(표지 제목이 다음 장의 제목이 되는 것도), 글이 같은 컴포넌트, 두 장에 하나씩뿐인 같은 종류의 컴포넌트
+  // (숫자만 바뀐 차트가 제자리에서 바뀌게). 복제한 장은 id가 새로 나와서 id가 아니라 내용으로 짝을 맞춘다
+
+  /** 발표 화면과 내보낸 HTML에서 지금 보이는 장 */
+  const CURRENT = ':is(.present-slide, .v-slide.is-current)'
+  /** 앞 장에서 이름을 붙인 열쇠 → 이름. 다음 장을 그릴 때(play, 아니면 swap) 짝을 맞추고 비운다 */
+  let morphFrom: Map<string, string> | null = null
+  /** 이름을 붙인 요소들. 전환이 끝나면 이름을 뗀다 */
+  const named: HTMLElement[] = []
+
+  /** 요소마다 짝을 찾을 열쇠들 (앞의 것일수록 먼저 맞춘다) */
+  function morphKeys(slide: Element): { el: HTMLElement; keys: string[] }[] {
+    const text = (el: Element) => (el.textContent || '').replace(/\s+/g, ' ').trim()
+    const out: { el: HTMLElement; keys: string[] }[] = []
+    const titles = Array.prototype.slice.call(slide.querySelectorAll(':scope > .s-head .s-title, .cv-title, .sc-title, .st-title')) as HTMLElement[]
+    for (const el of titles) if (text(el)) out.push({ el, keys: ['title:' + text(el)] })
+    const cells = Array.prototype.slice.call(slide.querySelectorAll('.bk-area > .bk')) as HTMLElement[]
+    const count: Record<string, number> = {}
+    for (const el of cells) count[el.dataset.type || ''] = (count[el.dataset.type || ''] || 0) + 1
+    for (const el of cells) {
+      const type = el.dataset.type || ''
+      const keys = ['bk:' + type + ':' + text(el)]
+      if (count[type] === 1) keys.push('bk1:' + type)
+      out.push({ el, keys })
+    }
+    return out
+  }
+
+  /** 앞 장의 것에 이름을 붙인다 (전환이 앞 장을 찍기 전에) */
+  function nameFrom(slide: Element) {
+    morphFrom = new Map()
+    morphKeys(slide).forEach(({ el, keys }, i) => {
+      const name = 'mo-k' + i
+      el.style.setProperty('view-transition-name', name)
+      named.push(el)
+      for (const k of keys) if (!morphFrom!.has(k)) morphFrom!.set(k, name)
+    })
+  }
+
+  /** 다음 장에서 짝이 있는 것에 같은 이름을 붙이고, 다시 들이지 않게 표시한다. 글이 같은 짝을 먼저, 종류만 같은 짝은 그다음 */
+  function pairUp(slide: Element) {
+    const from = morphFrom
+    morphFrom = null
+    if (!from) return
+    // 앞 장은 이미 찍혔다. 앞 장이 그대로 남는 곳(내보낸 HTML은 모든 장이 문서에 있다)에서 이름이 겹치지 않게 앞 장의 이름을 뗀다
+    for (const el of named.splice(0)) el.style.removeProperty('view-transition-name')
+    const used = new Set<string>()
+    const fresh = morphKeys(slide)
+    const taken = new Set<HTMLElement>()
+    for (const pass of [0, 1]) {
+      for (const { el, keys } of fresh) {
+        const name = keys[pass] && from.get(keys[pass])
+        if (!name || used.has(name) || taken.has(el)) continue
+        used.add(name)
+        taken.add(el)
+        el.style.setProperty('view-transition-name', name)
+        el.setAttribute('data-mo-keep', '')
+        named.push(el)
+      }
+    }
+  }
+
   // ---------- 장 바꾸기 ----------
 
-  /** 장을 바꾼다. kind는 전환 이름(fade, slide, zoom, none). 예전처럼 움직임 정도(calm, lively)를 넘겨도 된다. */
+  /** 장을 바꾼다. kind는 전환 이름(fade, slide, zoom, morph, none). 예전처럼 움직임 정도(calm, lively)를 넘겨도 된다. */
   function swap(update: () => void, kind: string, direction: 1 | -1) {
     type Transition = { finished: Promise<void>; ready: Promise<void>; updateCallbackDone: Promise<void> }
     const doc = document as Document & { startViewTransition?: (cb: () => void) => Transition }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
     const name = kind === 'calm' ? 'fade' : kind === 'lively' ? 'slide' : kind
-    if ((name !== 'fade' && name !== 'slide' && name !== 'zoom') || reduced || !doc.startViewTransition) {
+    if ((name !== 'fade' && name !== 'slide' && name !== 'zoom' && name !== 'morph') || reduced || !doc.startViewTransition) {
       update()
       return
     }
     const html = document.documentElement
+    // 앞의 전환이 끝나기 전에 또 넘기면 앞의 이름을 먼저 뗀다 (이름이 겹치면 전환이 멈춘다)
+    unname()
     html.dataset.moSwap = name
     html.dataset.moDir = direction > 0 ? 'next' : 'prev'
+    if (name === 'morph') {
+      const old = document.querySelector(CURRENT + ' .slide')
+      if (old) nameFrom(old)
+    }
     const done = () => {
       delete html.dataset.moSwap
       delete html.dataset.moDir
+      unname()
     }
     try {
       const t = doc.startViewTransition(() => {
         update()
+        // 다음 장을 움직이지 않으면(앞 장으로 돌아갈 때) play가 짝을 맞추지 않았으니 여기서
+        const fresh = morphFrom && document.querySelector(CURRENT + ' .slide')
+        if (fresh) pairUp(fresh)
+        morphFrom = null
         // 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕을 다음 장의 바탕색으로 (motion.css의 ::view-transition).
         // 비워 두면 브라우저의 흰 바탕이 비쳐서, 검은 장끼리 넘길 때 화면이 잠깐 회색으로 번쩍였다
         const next = document.querySelector(':is(.present-slide, .v-slide.is-current) .slide')
@@ -1396,6 +1474,14 @@ export function motionEngine(): MotionEngine {
     } catch {
       done()
       update()
+    }
+  }
+
+  function unname() {
+    morphFrom = null
+    for (const el of named.splice(0)) {
+      el.style.removeProperty('view-transition-name')
+      el.removeAttribute('data-mo-keep')
     }
   }
 

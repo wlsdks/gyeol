@@ -70,6 +70,7 @@ import { FRAME } from './frame'
 import { makeSlide } from './generate'
 import { LAYOUT_ORDER } from './layouts'
 import { showcaseSlides } from './showcase'
+import { transitionOf } from './themes'
 import type { Block, BlockRow, Slide } from './types'
 
 const row = (...blocks: Block[]): BlockRow => ({ id: `r-${blocks.map((b) => b.id).join('-')}`, blocks })
@@ -540,6 +541,14 @@ describe('발표할 때 나오는 차례', () => {
     expect(fromOf({ ...b, effect: 'fade', from: 'left' })).toBeNull()
   })
 
+  it('장마다 고른 장 넘기기가 발표 전체 설정보다 먼저다', () => {
+    const deck = { motion: 'calm' as const, theme: { id: 'white' as const, transition: 'zoom' as const } }
+    const s = makeSlide('kpi')
+    expect(transitionOf(deck, s)).toBe('zoom')
+    expect(transitionOf(deck, { ...s, options: { transition: 'morph' } })).toBe('morph')
+    // 장마다의 '움직임에 맞춰'는 따로 정하지 않은 것과 같다
+    expect(transitionOf(deck, { ...s, options: { transition: 'auto' } })).toBe('zoom')
+  })
 })
 
 describe('항목 순서 바꾸기', () => {

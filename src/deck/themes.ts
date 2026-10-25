@@ -137,6 +137,7 @@ export const TRANSITIONS: { id: Transition; name: string; description: string }[
   { id: 'fade', name: '흐리게', description: '앞 장이 흐려지며 다음 장이 나타나요.' },
   { id: 'slide', name: '밀기', description: '다음 장이 옆에서 밀고 들어와요.' },
   { id: 'zoom', name: '다가오기', description: '다음 장이 앞으로 다가오듯 커지며 나타나요.' },
+  { id: 'morph', name: '이어 움직이기', description: '두 장에 같은 제목이나 컴포넌트가 있으면 사라지지 않고 새 자리와 크기로 옮겨 가요. 나머지는 흐리게 바뀌어요.' },
 ]
 
 /** 제목 덩어리의 자리 (표지, 섹션). 장 위에서 제목을 위아래로 끌거나 이 장 설정에서 고른다 */
@@ -269,8 +270,13 @@ export function motionOf(deck: Pick<Deck, 'motion'>, slide?: Pick<Slide, 'option
   return deck.motion ?? 'calm'
 }
 
-/** 장을 넘길 때의 전환. '움직임에 맞춰'면 움직임 정도로 정한다 */
-export function transitionOf(deck: Pick<Deck, 'theme' | 'motion'>): Exclude<Transition, 'auto'> {
+/**
+ * 장을 넘길 때의 전환. slide를 주면 그 장으로 넘어올 때의 전환(장에 정한 값, 없으면 발표 전체 값).
+ * '움직임에 맞춰'면 움직임 정도로 정한다
+ */
+export function transitionOf(deck: Pick<Deck, 'theme' | 'motion'>, slide?: Pick<Slide, 'options'>): Exclude<Transition, 'auto'> {
+  const own = slide?.options.transition
+  if (own && own !== 'auto' && TRANSITIONS.some((x) => x.id === own)) return own as Exclude<Transition, 'auto'>
   const t = deck.theme.transition
   if (t && t !== 'auto' && TRANSITIONS.some((x) => x.id === t)) return t as Exclude<Transition, 'auto'>
   const m = deck.motion ?? 'calm'

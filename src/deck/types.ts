@@ -66,8 +66,11 @@ export type FontId = 'sans' | 'serif' | 'suit' | 'myeongjo'
 export type TextSize = 'small' | 'normal' | 'large'
 /** 슬라이드 아래의 단락 지도와 쪽 번호 */
 export type FooterMode = 'section' | 'all' | 'page' | 'none'
-/** 장을 넘길 때의 화면 전환. auto는 움직임 정도에 맞춘다 */
-export type Transition = 'auto' | 'none' | 'fade' | 'slide' | 'zoom'
+/**
+ * 장을 넘길 때의 화면 전환. auto는 움직임 정도에 맞춘다(장에 정하면 발표 전체 설정을 따른다).
+ * morph는 이어 움직이기: 앞 장과 다음 장에 같은 것(같은 제목, 같은 컴포넌트)이 있으면 사라지지 않고 새 자리로 옮겨 간다
+ */
+export type Transition = 'auto' | 'none' | 'fade' | 'slide' | 'zoom' | 'morph'
 /** 장의 바탕. invert는 테마의 반대(밝은 테마면 어둡게), accent는 강조색 면 */
 export type Tone = 'base' | 'invert' | 'accent'
 /** 제목 덩어리의 자리 (표지, 섹션). 값 목록은 themes.ts의 PLACES */
@@ -111,6 +114,8 @@ export interface SlideOptions {
   tone?: Tone
   /** 제목 덩어리를 위, 가운데, 아래 중 어디에 둘지 (LayoutSpec.place가 있는 레이아웃). 없으면 레이아웃 기본 */
   place?: Place
+  /** 이 장으로 넘어올 때의 전환. 없거나 auto면 발표 전체 설정을 따른다 */
+  transition?: Transition
   /**
    * 부품 장: 발표할 때 부품이 나오는 차례(부품 id). 없거나 빠진 부품은 읽는 차례(위 줄부터, 왼쪽부터)로 그 뒤에.
    * 자리와 나오는 차례를 따로 정할 수 있게 (오른쪽 숫자를 먼저 보이고 왼쪽 설명을 뒤에)
