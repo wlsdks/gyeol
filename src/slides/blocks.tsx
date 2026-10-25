@@ -22,6 +22,7 @@ import { Flow } from './blocks/Flow'
 import { Network } from './blocks/Network'
 import { Merge } from './blocks/Merge'
 import { Split } from './blocks/Split'
+import { Tiles } from './blocks/Tiles'
 import { Faq } from './blocks/Faq'
 import { Gantt } from './blocks/Gantt'
 import { Goal } from './blocks/Goal'
@@ -78,6 +79,7 @@ const NATIVE_VIEWS: Record<NativeBlockType, () => ReactNode> = {
   network: Network,
   split: Split,
   merge: Merge,
+  tiles: Tiles,
 }
 
 const FOLDS = new Map<BlockType, ReadonlySet<string>>()

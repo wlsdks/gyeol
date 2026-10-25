@@ -1568,6 +1568,63 @@ export function motionEngine(): MotionEngine {
           else count(total, line + 160)
           break
         }
+        case 'tiles': {
+          // 흩어져 있던 칸이 단마다 왼쪽부터 날아와 한 판으로 맞춰지고(모두 옅은 칸으로), 다 맞춰질 즈음 채운 칸이 차례로(왼쪽 단부터,
+          // 단마다 아래에서 위로) 물든다. 숫자는 칸이 물드는 만큼 오른다
+          fade(one('.bk-tl-l'), 60, 500)
+          rise(one('.bk-tl-v'), 120, L.y * 0.4)
+          fade(one('.bk-tl-of'), 200, 500)
+          fade(one('.bk-tl-n'), 260, 500)
+          const root = one('.bk-tl')
+          const grid = one('.bk-tl-grid')
+          const sqs = $('.bk-tl-sq')
+          if (!root || !grid || !sqs.length) {
+            count(one('.bk-tl-v'), 160)
+            break
+          }
+          const lively = levelName === 'lively'
+          const size = sqs[0].offsetWidth || 24
+          const rows = Math.max(1, Math.round(parseFloat(getComputedStyle(grid).getPropertyValue('--rr')) || 1))
+          const cols = Math.ceil(sqs.length / rows)
+          const off = getComputedStyle(root).getPropertyValue('--tl-off').trim()
+          // 칸마다 늘 같은 자리에서 날아오게(다시 움직여도 같은 모습) 번호로 만든 흩어짐
+          const scatter = (i: number, k: number) => {
+            const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453
+            return x - Math.floor(x) - 0.5
+          }
+          const spread = size * (lively ? 6 : 3.5)
+          const turn = lively ? 120 : 60
+          const wave = Math.min(lively ? 38 : 32, 480 / cols)
+          const fly = lively ? SPRINGS.bounce : SPRINGS.glide
+          sqs.forEach((sq, i) => {
+            const at = 140 + Math.floor(i / rows) * wave + (i % rows) * 8
+            run(
+              anims,
+              sq,
+              [
+                { translate: `${scatter(i, 1) * 2 * spread}px ${scatter(i, 2) * 2 * spread}px`, rotate: `${scatter(i, 3) * turn}deg`, scale: '0.4', opacity: 0, offset: 0 },
+                { opacity: 1, offset: 0.3 },
+                { translate: '0 0', rotate: '0deg', scale: '1', opacity: 1, offset: 1 },
+              ],
+              s(at),
+              fly,
+            )
+          })
+          // 채운 칸이 물드는 차례: 판이 거의 다 맞춰진 뒤(옅은 판이 한 번 보이게) 0.6초 안에
+          const on = sqs.filter((sq) => sq.classList.contains('is-on'))
+          const paint = 140 + (cols - 1) * wave + 420
+          const each = Math.min(14, 600 / Math.max(1, on.length))
+          if (off) on.forEach((sq, i) => run(anims, sq, [{ backgroundColor: off }], s(paint + i * each), { easing: OUT, duration: d(260) }))
+          // 숫자는 단마다 그 단까지 물든 몫만큼
+          const marks: { at: number; upto: number }[] = []
+          for (let k = rows; k < on.length + rows; k += rows) {
+            const upto = Math.min(k, on.length)
+            marks.push({ at: paint + (upto - 1) * each, upto: upto / on.length })
+          }
+          if (marks.length) tally(one('.bk-tl-v'), marks)
+          else count(one('.bk-tl-v'), 160)
+          break
+        }
         default:
           rise(cell, 0)
       }

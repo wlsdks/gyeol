@@ -144,6 +144,8 @@ export const BLOCK_HEIGHTS: Record<string, Partial<Record<number, number[]>>> = 
   'table.base.plain': { 12: [120, 120, 190, 260, 360, 400, 470, 530] },
   'text.base.card': { 4: [250], 6: [210], 8: [170], 12: [170] },
   'text.base.plain': { 4: [140], 6: [140], 8: [100], 12: [100] },
+  'tiles.base.card': { 4: [410], 6: [410], 8: [240], 12: [240] },
+  'tiles.base.plain': { 4: [330], 6: [330], 8: [170], 12: [170] },
   'timeline.base.card': { 12: [260, 260, 260, 260, 260, 250, 250] },
   'timeline.base.plain': { 12: [260, 260, 260, 260, 260, 250, 250] },
   'timeline.steps.card': { 12: [160, 160, 160, 260, 400, 450, 550] },

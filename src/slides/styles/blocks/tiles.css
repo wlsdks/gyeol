@@ -1,0 +1,155 @@
+/* ---------- 칸 조립 ----------
+   큰 숫자(강조색)와 작은 네모 칸의 판. 칸은 사이를 좁게(한 변의 16%) 두어 점을 늘어놓은 것이 아니라 한 판으로 읽힌다.
+   채운 칸은 강조색, 나머지는 글자색을 아주 옅게. 판은 단으로 채운다(grid-auto-flow: column): 왼쪽 단부터 칸이 차서, 단 하나가
+   전체의 열에 하나(100칸이면 10%)다. 판을 위아래로 뒤집어(scaleY(-1)) 단마다 아래에서 위로 쌓인다(칸에는 글자가 없어 뒤집어도
+   모양이 같다). 남는 자리(6줄 8칸에 47칸)는 마지막 단의 위가 빈다 */
+
+.bk-tl {
+  --tl-g: 0.16;
+  --tl-max: 56px;
+  --tl-off: color-mix(in srgb, var(--ink) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 36px;
+  height: 100%;
+}
+
+.bk-tl-text {
+  flex: none;
+}
+
+.bk-tl-l {
+  --fs: var(--t-label);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-tl-v {
+  --fs: 108px;
+  margin-top: 8px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.bk-tl-of {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 20px;
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-tl-whole {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.bk-tl-k,
+.bk-tl-t,
+.bk-tl-pct {
+  --fs: var(--t-small);
+}
+
+/* 전체와 몫 사이 */
+.bk-tl-whole + .bk-tl-pct::before {
+  margin-right: 20px;
+  content: '·';
+}
+
+.bk-tl-n {
+  --fs: var(--t-small);
+  margin-top: 12px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+
+/* 판의 자리: 칸이 가장 클 때(--tl-max)의 높이까지만 잡고 모자라면 줄어든다(몇 중 몇과 같은 까닭: 남는 높이를 다 가져가면
+   판이 칸 아래에 붙어 숫자와 떨어졌다) */
+.bk-tl-box {
+  --rr: var(--r);
+  --cc: var(--c);
+  display: grid;
+  flex: 0 1 calc(var(--tl-max) * (var(--r) + (var(--r) - 1) * var(--tl-g)));
+  align-content: start;
+  container-type: size;
+  /* 칸이 낮아도 판은 눕힌 배치에서 칸 한 변이 20px은 되게(그보다 작으면 뒤에서 판으로 읽히지 않는다). 모자라면 칸이 넘쳐
+     글자 맞추기가 알아채고, 높이 표(blockHeights.ts)도 그만큼 높게 잡힌다 */
+  min-height: max(40px, calc(var(--rf) * 20px + (var(--rf) - 1) * 3.2px));
+}
+
+.bk-tl-grid {
+  --d: min(
+    calc(100cqw / (var(--cc) + (var(--cc) - 1) * var(--tl-g))),
+    calc(100cqh / (var(--rr) + (var(--rr) - 1) * var(--tl-g))),
+    var(--tl-max)
+  );
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rr), var(--d));
+  grid-auto-columns: var(--d);
+  gap: calc(var(--d) * var(--tl-g));
+  justify-content: start;
+  transform: scaleY(-1);
+}
+
+/* 상자가 납작하면 줄을 반으로 줄여 옆으로 눕힌다. 어디서부터인지는 칸 수마다 달라서 Tiles.tsx가 계산한 비율(data-flat)을 넘는 상자에서만 */
+@container (min-aspect-ratio: 3 / 2) { .bk-tl-grid[data-flat='1.5'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 2 / 1) { .bk-tl-grid[data-flat='2'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 5 / 2) { .bk-tl-grid[data-flat='2.5'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 3 / 1) { .bk-tl-grid[data-flat='3'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 7 / 2) { .bk-tl-grid[data-flat='3.5'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 4 / 1) { .bk-tl-grid[data-flat='4'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 9 / 2) { .bk-tl-grid[data-flat='4.5'] { --rr: var(--rf); --cc: var(--cf); } }
+@container (min-aspect-ratio: 5 / 1) { .bk-tl-grid[data-flat='5'] { --rr: var(--rf); --cc: var(--cf); } }
+
+.bk-tl-sq {
+  border-radius: calc(var(--d) * 0.14);
+  background: var(--tl-off);
+}
+
+.bk-tl-sq.is-on {
+  background: var(--accent);
+}
+
+.bk-tl.is-demo .bk-tl-grid {
+  opacity: 0.4;
+}
+
+/* 넓은 칸: 숫자 옆에 판. 글 칸은 글만큼(44%까지) */
+@container bk (min-aspect-ratio: 16 / 9) and (min-width: 900px) {
+  .bk-tl {
+    flex-direction: row;
+    align-items: center;
+    gap: 72px;
+  }
+
+  .bk-tl-text {
+    flex: 0 1 auto;
+    max-width: 44%;
+  }
+
+  /* 판은 칸의 오른쪽 끝에 붙인다: 숫자는 왼쪽 끝, 판은 오른쪽 끝이라 넓은 칸에서도 판 옆이 통째로 비지 않는다 */
+  .bk-tl-box {
+    flex: 1 1 0;
+    align-self: stretch;
+    align-content: center;
+    justify-content: end;
+  }
+
+  /* 판이 칸 높이를 다 쓰고 스스로 가운데에 선다: 몇 중 몇처럼 내리는 묶음에서 뺀다 */
+  .bk.is-shared > .bk-in > .bk-tl {
+    --bk-lifts: 0;
+    padding-top: 0;
+  }
+}
