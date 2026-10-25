@@ -1,8 +1,9 @@
 /* ---------- 2×2 우선순위 ---------- */
 
+/* 판의 줄도 판의 내용보다 낮게 눌리지 않는다(아래 .mx-grid). 눌리면 판 안의 칸이 판의 아래 축 밖으로 나가 축이 글을 가로질렀다 */
 .mx {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
   gap: 20px;
   margin-top: 56px;
 }
@@ -46,11 +47,14 @@
   vertical-align: 0.04em;
 }
 
-/* 두 기준이 축: 왼쪽과 아래는 굵은 줄, 칸 사이는 가는 줄 */
+/* 두 기준이 축: 왼쪽과 아래는 굵은 줄, 칸 사이는 가는 줄.
+   줄은 내용보다 낮게 눌리지 않는다(min-content): minmax(0, 1fr)이면 낮은 자리에서 칸이 글보다 낮아져, 설명이 칸 사이 줄과
+   아래 축에 붙거나 걸쳤다(1096×388에서 칸 141px에 글 150px). 글이 칸 밖으로는 나가지 않아 맞추기와 높이 재기도 몰랐다.
+   넘치면 판이 칸보다 커져서 맞추기가 글자를 줄이고, 잘리지 않는 높이도 그만큼 높게 잰다 */
 .mx-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
   min-height: 0;
   border-bottom: 3px solid var(--ink);
   border-left: 3px solid var(--ink);
