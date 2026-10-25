@@ -383,6 +383,21 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key:
   }, [key, on, area])
 }
 
+/** 받은 글꼴 수. 그 사이에 글꼴이 오면 글자 폭이 바뀌어 다시 맞춰야 한다 */
+function loadedFonts(): number {
+  let n = 0
+  document.fonts?.forEach((f) => {
+    if (f.status === 'loaded') n++
+  })
+  return n
+}
+
+/** 본문 상자 밖에서 맞추기에 닿는 것: 본문 상자의 크기, 장의 클래스(테마, 글꼴, 글자 크기, 바탕)와 스타일(색), 받은 글꼴 */
+function outerSign(area: HTMLElement): string {
+  const slide = area.closest('.slide')
+  return `${area.clientWidth}x${area.clientHeight}|${slide?.className}|${slide?.getAttribute('style')}|${loadedFonts()}`
+}
+
 export function BlockArea() {
   const { slide, mode } = useSlide()
   const edit = useContext(BlockEditContext)
@@ -402,16 +417,51 @@ export function BlockArea() {
   const key = blocks.map((b) => `${b.id}:${b.at ? `${b.at.x},${b.at.y},${b.at.w},${b.at.h}` : ''}:${b.link ?? ''}:${b.linkBelow ?? ''}`).join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
   // 편집 화면이면 맞춘 뒤의 모습으로 부품마다 테두리 자리를 정한다 (blockFrame.ts)
-  const fitAll = (el: HTMLElement) => {
+  // 맞추기는 칸마다 글자 크기와 줄 사이를 바꿔 가며 몇 번씩 다시 재서 부품 장에서 가장 무거운 일이다. 예전에는 그릴 때마다,
+  // 그리고 장을 열면 글꼴이 다 왔을 때와 크기 지켜보기의 첫 알림에 한 번씩 더, 같은 장을 세 번 맞췄다. 장 제목이나 발표자 노트를
+  // 쓸 때도 글자마다 맞췄다. 본문 상자 안(부품, 글, 클래스)과 장의 클래스·스타일, 본문 상자의 크기, 받은 글꼴이 그대로면
+  // 다시 맞춰도 같은 값이 나오므로(맞추기는 앞의 값을 지우고 처음부터 잰다) 건너뛴다. 안이 바뀐 것은 MutationObserver로 안다
+  const watch = useRef<MutationObserver | null>(null)
+  const changed = useRef(true)
+  const fitted = useRef('')
+  const fitAll = (el: HTMLElement, rendered: boolean) => {
+    if (watch.current?.takeRecords().length) changed.current = true
+    const outer = outerSign(el)
+    if (outer === fitted.current) {
+      if (!changed.current) return
+      // 움직이는 동안(엔진이 data-mo-play를 붙인다) 안에서 바뀐 것은 엔진이 잠깐 바꾼 것(굴러가는 숫자, 나눈 낱말)이라 끝나면
+      // 되돌아온다. 그릴 때 바뀐 것이면 그때의 맞추기가 움직임이 끝난 뒤로 미뤄 두었다(fitBlocks의 later). 그래서 글꼴 준비나
+      // 크기 알림으로 불렸을 때는 건너뛴다. 예전에는 장을 넘길 때마다 움직임이 끝나면 같은 값으로 한 번 더 맞췄다
+      if (!rendered && (el.closest('[data-mo-play]') || el.querySelector('[data-mo-play]'))) return
+    }
     fitBlocks(el)
     frameCells(el)
+    // 맞추며 바꾼 값(칸의 스타일, 이름표 자리)은 바뀐 것으로 세지 않는다. 지켜보지 못하면 늘 다시 맞춘다
+    watch.current?.takeRecords()
+    changed.current = !watch.current
+    fitted.current = outer
   }
+  // 맞추기보다 먼저 지켜보기 시작한다 (같은 컴포넌트의 layout effect는 적은 차례대로 돈다)
   useLayoutEffect(() => {
-    if (ref.current) fitAll(ref.current)
+    const el = ref.current
+    if (!el || typeof MutationObserver === 'undefined') return
+    const mo = new MutationObserver(() => {
+      changed.current = true
+    })
+    mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true })
+    watch.current = mo
+    return () => {
+      mo.disconnect()
+      watch.current = null
+      changed.current = true
+    }
+  }, [])
+  useLayoutEffect(() => {
+    if (ref.current) fitAll(ref.current, true)
   })
   useEffect(() => {
     let on = true
-    const fit = () => on && ref.current && fitAll(ref.current)
+    const fit = () => on && ref.current && fitAll(ref.current, false)
     document.fonts?.ready.then(fit)
     // 그릴 때 안 보이던 장이 보이게 되거나, 제목이 두 줄이 되어 본문 상자가 낮아지면 다시 맞춘다.
     // 맞추기는 칸 안만 바꾸고 본문 상자의 크기는 바꾸지 않아서 되풀이되지 않는다
