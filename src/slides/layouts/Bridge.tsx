@@ -10,7 +10,7 @@ import { Head, Label, useItems } from './parts'
 
 /**
  * 증감 요인(폭포): 처음 값 → 요인마다 더하고 뺀 만큼 뜬 막대 → 끝 값. 끝 값은 계산한다(따로 적으면 서로 안 맞을 수 있어서).
- * 처음과 끝이 증감보다 훨씬 크면 바닥부터 세운 막대 때문에 증감이 안 보이므로, 바닥을 올리고 잘린 표시를 한다.
+ * 처음과 끝이 증감보다 훨씬 크면 바닥부터 세운 막대 때문에 증감이 안 보이므로, 바닥을 올리고 처음과 끝 막대 아래에 축을 끊은 표시(//)를 둔다.
  */
 export function Bridge() {
   const { slide, meta, mode } = useSlide()
@@ -48,6 +48,7 @@ export function Bridge() {
         <div className="wf-col wf-total" style={col(base, start, start)}>
           <div className="wf-plot">
             <span className="wf-bar" />
+            {cut && <span className="wf-cut" aria-hidden="true" />}
             <span className="wf-val">
               <T k="startValue" as="span" className="wf-num" oneLine />
               {(unit || mode !== 'final') && <T k="unit" as="span" className="wf-unit" oneLine />}
@@ -77,6 +78,7 @@ export function Bridge() {
         <div className="wf-col wf-total wf-end" style={col(base, end)}>
           <div className="wf-plot">
             <span className="wf-bar" />
+            {cut && <span className="wf-cut" aria-hidden="true" />}
             <span className="wf-val">
               <span className="wf-num">{known ? minusSigns(formatNumber(end)) : '–'}</span>
               {known && endUnit && <span className="wf-unit">{endUnit}</span>}

@@ -88,17 +88,26 @@
   content: '';
 }
 
-/* 바닥을 올렸을 때: 처음과 끝 막대의 아래쪽을 비스듬히 끊어, 아래로 더 이어진다(잘랐다)는 것을 보인다.
-   흐리게 사라지게 하면 막대가 꾸밈 그러데이션처럼 보인다. 끊는 띠는 바탕색(카드 위에서는 카드 면)이다 */
-.wf.is-cut .wf-total .wf-bar::after {
+/* 바닥을 올렸을 때: 처음과 끝 막대를 바닥줄에서 띄우고, 그 틈의 가운데에 축을 끊은 표시(//)를 둔다. 차트에서 흔히 쓰는 꼴이라
+   '바닥부터가 아니다'로 읽힌다. 예전처럼 막대 아래쪽을 바탕색 띠로 비스듬히 끊으면 낮은 줄에서 막대 바닥에 흰 금이 간 것처럼
+   그리다 만 자국으로 보였다. 흐리게 사라지게 하면 막대가 꾸밈 그러데이션처럼 보인다 */
+.wf.is-cut {
+  --wf-cut: 26px;
+}
+
+.wf.is-cut .wf-total .wf-bar {
+  bottom: var(--wf-cut);
+  height: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100 - var(--wf-cut)));
+}
+
+.wf-cut {
   position: absolute;
-  right: -4px;
-  bottom: 28px;
-  left: -4px;
-  height: 10px;
-  background: var(--bg);
-  transform: skewY(-10deg);
-  content: '';
+  bottom: 5px;
+  left: 50%;
+  width: 11px;
+  height: calc(var(--wf-cut) - 10px);
+  border-inline: 2px solid var(--ink-3);
+  transform: translateX(-50%) skewX(-30deg);
 }
 
 /* 값 자리는 막대 칸 너비라서, 한 줄로 줄이는 숫자(.one-line의 100cqi)의 기준으로 쓴다: 숫자가 칸보다 넓으면 칸에 맞게 작아진다.

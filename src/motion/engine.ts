@@ -776,6 +776,8 @@ export function motionEngine(): MotionEngine {
           const down = el.classList.contains('wf-down')
           fade(el.querySelector('.wf-label') || el.querySelector(':scope > .wf-title'), at, 500)
           grow(el.querySelector('.wf-bar'), at + 80, down ? 'down' : 'up')
+          // 축을 끊은 표시는 막대가 솟기 시작할 때 그 아래에 놓인다
+          fade(el.querySelector('.wf-cut'), at + 80, 300)
           rise(el.querySelector('.wf-val'), at + 220, L.y * 0.4)
           if (el.classList.contains('wf-total')) count(el.querySelector('.wf-num'), at + 120)
           const plot = el.querySelector('.wf-plot')
