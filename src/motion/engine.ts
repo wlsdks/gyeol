@@ -402,7 +402,11 @@ export function motionEngine(): MotionEngine {
       if (!roll(el, s(at), lively ? 900 : 800, lively, anims, restores))
         countUp(el, s(at), lively ? 1000 : 800, stops, waits)
     }
-    /** 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다 */
+    /**
+     * 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다.
+     * 두 고리는 겹쳐서 이어 퍼진다: 0.9초 간격, 1.4초씩이던 때는 생동감에서 점이 맺히고도 2.9초를 더 움직여서,
+     * 발표하는 사람이 말을 시작한 뒤에도 장 한쪽이 계속 깜빡였다
+     */
     const pulse = (el: HTMLElement | null, at: number) => {
       if (!el || el.closest('.m-edit')) return
       const ring = document.createElement('span')
@@ -421,8 +425,8 @@ export function motionEngine(): MotionEngine {
             { opacity: 0.6, scale: '1.15', offset: 0.1 },
             { opacity: 0, scale: '2.6', offset: 1 },
           ],
-          s(at) + k * d(900),
-          { easing: 'cubic-bezier(0.2, 0.6, 0.35, 1)', duration: d(1400) },
+          s(at) + k * d(650),
+          { easing: 'cubic-bezier(0.2, 0.6, 0.35, 1)', duration: d(1100) },
         )
       }
     }
@@ -716,8 +720,9 @@ export function motionEngine(): MotionEngine {
       case 'trend': {
         const t = head()
         fade(one('.tn-unit'), t, 500)
-        // 선은 왼쪽에서부터 그려지고, 점은 선이 닿을 때 하나씩 맺힌다. 그래서 선은 일정한 빠르기로
-        const draw = levelName === 'lively' ? 1500 : 1100
+        // 선은 왼쪽에서부터 그려지고, 점은 선이 닿을 때 하나씩 맺힌다. 그래서 선은 일정한 빠르기로.
+        // 생동감은 조금만 더 길게: 1500이던 때는 선이 1.65초 동안 기어가서 끝의 강조한 숫자가 3.2초에야 멈췄다
+        const draw = levelName === 'lively' ? 1150 : 1100
         const svg = one('.tn-svg')
         if (svg) run(anims, svg, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(t + 100), { easing: 'linear', duration: d(draw) })
         $('.tn-pt').forEach((el) => {
