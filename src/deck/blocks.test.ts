@@ -24,6 +24,7 @@ import {
   fitsWith,
   foldableFields,
   insertAt,
+  isLayoutBlock,
   isSolo,
   LINK_PAD,
   linkAt,
@@ -82,6 +83,12 @@ function texts(slide: Slide): string[] {
 }
 
 describe('부품 목록', () => {
+  it('레이아웃 부품인지는 Object의 이름(constructor 같은)에 속지 않는다', () => {
+    expect(isLayoutBlock('kpi')).toBe(true)
+    expect(isLayoutBlock('constructor')).toBe(false)
+    expect(isLayoutBlock('toString')).toBe(false)
+  })
+
   it('부품 고르기 묶음에 모든 부품이 한 번씩 있다', () => {
     const listed = BLOCK_GROUPS.flatMap((g) => g.types)
     expect(new Set(listed).size).toBe(listed.length)

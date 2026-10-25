@@ -742,7 +742,8 @@ const FROM_LAYOUT: Record<LayoutBlockType, { minSpan: number; prefSpan: number; 
 
 export const LAYOUT_BLOCKS = Object.keys(FROM_LAYOUT) as LayoutBlockType[]
 
-export const isLayoutBlock = (type: string): type is LayoutBlockType => type in FROM_LAYOUT
+// in이 아니라 hasOwn: in은 'constructor' 같은 Object의 이름도 받아서, 파일에서 읽은 부품 종류가 그런 이름이면 레이아웃 부품으로 보았다
+export const isLayoutBlock = (type: string): type is LayoutBlockType => Object.hasOwn(FROM_LAYOUT, type)
 
 function layoutBlockSpec(type: LayoutBlockType): BlockSpec {
   const l = LAYOUTS[type]
