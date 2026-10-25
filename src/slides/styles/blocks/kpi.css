@@ -40,6 +40,31 @@
   );
 }
 
+/* 숫자 하나를 면에 두면 묶음 아래의 여백(장에서 눈높이로 조금 올리는 40px)을 두지 않는다: 면 안에서 그만큼 아래만 넓었다 */
+:is(.bk-look-card, .bk-look-bold) > .bk-in > .kp[data-n='1'] {
+  padding-bottom: 0;
+}
+
+/* 숫자 하나, 넓은 칸(숫자 옆에 이름과 설명): 숫자의 줄 상자를 숫자 윗선과 바닥선으로 자른다. 명조는 숫자가 줄 상자 아래로 쏠려
+   면 안에서 위 여백이 아래보다 41px 넓었다(1680×700에서 위 257, 아래 216). 이름과 설명은 그대로 숫자의 아래 끝(바닥선)에 맞춰 선다.
+   좁은 칸(layout-small.css, 이름 아래에 숫자)은 이름과 숫자 사이가 붙어 보여 그대로 둔다 */
+@container bk (width > 1300px) {
+  .bk-in > .kp[data-n='1'] > .kp-item > .kp-value,
+  .bk-in > .kp[data-n='1'] > .kp-item > .kp-value > :is(.ed-input, .ed-hint) {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+/* 나란한 카드: 이름과 숫자 사이, 숫자와 설명 사이도 낮은 칸에서는 칸 높이를 따라 줄인다(looks.css의 카드 위아래 여백과 같이).
+   쌓은 줄, 둘씩 두 줄, 이름을 숫자 위에 둔 줄은 자리수가 높아 각자의 값이 이긴다 */
+:where(.va-cards > .bk-in) .kp > .kp-item > .kp-value {
+  padding-top: clamp(20px, 9cqh, 40px);
+}
+
+:where(.va-cards > .bk-in) .kp > .kp-item > .kp-body {
+  margin-top: clamp(16px, 8cqh, 36px);
+}
+
 /* 좁은 칸(반 칸, 3분의 2 칸)에 높이가 넉넉하면 숫자를 줄로 쌓는다. 나란히 두면 숫자가 칸의 3분의 1 너비에 맞춰 작아지고(44px),
    이름은 두 줄로 꺾이고, 칸 높이 가운데에 낮은 띠만 남아 위아래가 빈다. 줄로 쌓으면 줄이 칸 높이를 똑같이 나눠 칸을 채우고,
    숫자는 줄 높이와 칸 너비를 다 쓴다. 줄마다 100px(설명이 있으면 120px)이 안 되는 낮은 칸은 나란히 두는 쪽이 숫자가 크다.
@@ -188,6 +213,13 @@
     align-self: center;
     margin: 0;
     padding: 0;
+  }
+
+  /* 이름과 설명 옆 가운데에 두는 숫자는 줄 상자를 숫자 윗선과 바닥선으로 잘라 숫자 글자를 가운데에 둔다. 명조 글꼴은 숫자가
+     줄 상자 아래로 쏠려, 줄마다 면(카드) 위 여백이 아래보다 15px 넓었다(780×183에서 위 53, 아래 38). 편집 칸(.ed)은 안쪽 글상자를 */
+  .bk-in > .kp:not([data-n='1']) > .kp-item:has(> .kp-body) > .kp-value,
+  .bk-in > .kp:not([data-n='1']) > .kp-item:has(> .kp-body) > .kp-value > :is(.ed-input, .ed-hint) {
+    text-box: trim-both cap alphabetic;
   }
 
   .bk-in > .kp:not([data-n='1']) .kp-label {
