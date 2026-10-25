@@ -150,7 +150,8 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
   useTrackRect(
     () => canvasRef.current,
     () => {
-      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area .bk.is-selected') ?? null
+      // 고른 부품, 아니면 고른 이음표의 그림 (이음표만 고르면 도구가 붙을 데가 없어 보이지 않았다)
+      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area .bk.is-selected, .bk-area > .bk-link.is-selected > .bk-link-g') ?? null
       const bar = ref.current
       if (!el || !bar) return setSpot(null)
       // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다 (다음 프레임에)
@@ -161,7 +162,7 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
         return true
       }
       // 칸이 아니라 부품의 테두리(그린 것 둘레) 바로 위에: 칸 위에 두면 짧은 내용 위로 빈 데를 건너 떠 보인다
-      const r = frameRect(el)
+      const r = el.classList.contains('bk') ? frameRect(el) : el.getBoundingClientRect()
       const slide = el.closest('.slide')
       // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게)
       const key = `${r.left},${r.top},${r.width},${r.height}`
