@@ -178,9 +178,13 @@
   grid-auto-rows: minmax(min-content, 1fr);
 }
 
+/* 줄이 둘까지면 줄을 220px에서 멈추고 머리와 줄을 한 덩어리로 가운데에 둔다. 머리 줄이 auto면 남는 높이를 머리 줄이 받아
+   머리말과 첫 줄 사이가 130px 넘게 떴다 */
 .va-table .cp[data-n='1'],
 .va-table .cp[data-n='2'] {
+  grid-template-rows: min-content;
   grid-auto-rows: minmax(min-content, 220px);
+  align-content: center;
 }
 
 /* 머리는 맨 위 선 바로 아래 */
@@ -188,22 +192,20 @@
   align-items: normal;
 }
 
+/* 머리 위의 선은 머리말 칸의 윗선으로: 줄이 적어 덩어리째 가운데로 내려도 선이 머리말과 같이 간다 */
 .va-table .cp::before,
 .va-table .cp::after {
-  top: 0;
-  bottom: auto;
-  height: 2px;
-  border-radius: 0;
-  background: var(--line);
-}
-
-.va-table .cp::after {
-  background: var(--ink);
+  content: none;
 }
 
 .va-table .cp-h {
   --fs: 26px;
   padding: 40px 0 24px;
+  border-top: 2px solid var(--line);
+}
+
+.va-table .cp-hr {
+  border-color: var(--ink);
 }
 
 .va-table :is(.cp-hl, .cp-l) {
