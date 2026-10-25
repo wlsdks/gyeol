@@ -116,7 +116,7 @@
 }
 
 .icon-btn:hover:not(:disabled) {
-  background: #eceef1;
+  background: var(--hover-2);
   color: var(--ink);
 }
 
@@ -449,7 +449,7 @@
 }
 
 .menu-item:hover {
-  background: #f1f3f5;
+  background: var(--hover);
 }
 
 .menu-item.is-danger {

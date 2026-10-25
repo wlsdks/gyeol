@@ -10,6 +10,10 @@
   --ink-3: #8b909a;
   --sel: #3a6ff8;
   --sel-soft: #eaf0ff;
+  /* 흰 칸 위에서 마우스를 올린 줄, 메뉴 항목, 작은 단추 */
+  --hover: #f1f3f5;
+  /* 그림만 있는 단추에 올렸거나 눌러 연 것 (한 단계 짙게) */
+  --hover-2: #eceef1;
   --danger: #c8322b;
   --warn-bg: #fff6e0;
   --warn-ink: #7a5200;

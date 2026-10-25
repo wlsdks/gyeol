@@ -90,7 +90,7 @@
 }
 
 .sel-btn:hover:not(:disabled) {
-  background: #f1f3f5;
+  background: var(--hover);
   color: var(--ink);
 }
 

@@ -268,7 +268,7 @@ body.is-block-resizing * {
 
 .bk-tool:hover:not(:disabled),
 .bk-tool.is-on {
-  background: #f0f2f5;
+  background: var(--hover);
 }
 
 .bk-tool:disabled {
@@ -415,7 +415,7 @@ body.is-block-resizing * {
 
 .bk-menu-item:hover,
 .bk-menu-item:focus-visible {
-  background: #f3f5f8;
+  background: var(--hover);
 }
 
 .bk-menu-item b {
@@ -706,7 +706,7 @@ body.is-block-resizing * {
 }
 
 .lib-tab:hover:not(.is-on) {
-  background: #eef0f3;
+  background: var(--hover-2);
   color: var(--ink);
 }
 

@@ -72,7 +72,7 @@
 
 .save:hover,
 .save[aria-expanded='true'] {
-  background: #eceef1;
+  background: var(--hover-2);
   color: var(--ink-2);
 }
 
@@ -598,7 +598,7 @@
 
 .info:hover .info-btn,
 .info:focus-within .info-btn {
-  background: #eef0f3;
+  background: var(--hover-2);
   color: var(--ink);
 }
 
@@ -757,7 +757,7 @@
 }
 
 .ins-blank-n:hover {
-  background: #f1f3f5;
+  background: var(--hover);
 }
 
 .ins-blank-dot {
@@ -837,7 +837,7 @@
 }
 
 .ins-missing-btn:hover {
-  background: #f1f3f5;
+  background: var(--hover);
 }
 
 /* 고르기 한 줄: 이름은 왼쪽, 단추는 오른쪽. 단추가 많으면 이름 아래 한 줄을 다 쓴다 */

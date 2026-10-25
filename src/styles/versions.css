@@ -130,7 +130,7 @@
 
 .vp-item:hover,
 .vp-item:focus-within {
-  background: #f4f5f7;
+  background: var(--hover);
 }
 
 .vp-open {
@@ -306,7 +306,7 @@
 }
 
 .vpp-cap span {
-  color: #8b909a;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 

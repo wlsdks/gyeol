@@ -29,7 +29,7 @@
 }
 
 .ask-item:hover:not(:disabled) {
-  background: #f1f3f5;
+  background: var(--hover);
 }
 
 .ask-item:disabled {
@@ -173,7 +173,7 @@
 }
 
 .air-list li.is-skip .air-mark {
-  background: #eceef1;
+  background: var(--hover-2);
   color: var(--ink-3);
 }
 
