@@ -913,7 +913,14 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, 
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
     if (!root) return
+    let wait = 0
     const check = () => {
+      // 칸 너비나 줄 높이를 끄는 동안에는 바뀐 너비에 맞춰 다시 맞추기 전의 모습이 잠깐 넘쳐 보인다. 손을 뗀 뒤에 본다
+      if (document.body.matches('.is-block-resizing, .is-row-resizing, .is-block-dragging')) {
+        window.clearTimeout(wait)
+        wait = window.setTimeout(check, 300)
+        return
+      }
       const boxes = [root, ...root.querySelectorAll<HTMLElement>('.s-body, .ix-text, .cs-main, .cs-side, .cl-main, .cv-main, .ag, .bk-in')]
       // 빈칸의 옅은 면(.ed-halo)은 글보다 조금 넓게 깔려서 맨 아래 칸이면 상자 밖으로 나온다. 글이 넘친 것이 아니니 재는 동안만 숨긴다
       root.classList.add('is-measuring')
@@ -926,7 +933,10 @@ function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, 
     document.fonts?.ready.then(check)
     // 부품 장에서 부품이 자리를 옮기는 동안(움직임 중)에는 넘쳐 보일 수 있어서, 다 움직인 뒤에 한 번 더 본다
     const t = window.setTimeout(check, 800)
-    return () => window.clearTimeout(t)
+    return () => {
+      window.clearTimeout(t)
+      window.clearTimeout(wait)
+    }
   }, [ref, slide, look])
   return overflow
 }
