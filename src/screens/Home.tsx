@@ -272,7 +272,7 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
         <FolderIcon />
         <p>
           <b>‘{folder.name}’ 폴더와 다시 연결해 주세요.</b>
-          <Info label="다시 연결하는 까닭" align="start">
+          <Info label="다시 연결하는 이유" align="start">
             브라우저를 새로 열면 한 번 더 허용해야 해요. 허용하기 전까지는 이 브라우저에만 저장돼요.
           </Info>
         </p>
@@ -306,7 +306,7 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
       <span>
         <b>지금은 이 브라우저에만 저장돼요.</b> 크롬이나 엣지에서 열면 PC 폴더에 보관할 수 있어요.
         <Info label="보관 설명" align="start">
-          그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을 내려받아 두세요.
+          그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을 다운로드해 두세요.
         </Info>
       </span>
     </p>

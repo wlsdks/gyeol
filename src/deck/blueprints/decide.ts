@@ -24,7 +24,7 @@ export const decide: Blueprint = {
       priority: 1,
       focus: 'context',
       guide: '왜 검토하게 됐는지 한 문장으로 적어요.',
-      hints: { title: '검토하게 된 까닭을 한 문장으로', lead: '지금 무엇이 불편하거나 모자란지' },
+      hints: { title: '검토하게 된 이유를 한 문장으로', lead: '지금 무엇이 불편하거나 모자란지' },
     },
     {
       layout: 'kpi',

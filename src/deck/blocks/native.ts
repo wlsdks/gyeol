@@ -806,7 +806,7 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
   tiles: {
     name: '칸 조립',
     description: '비율을 작은 네모 칸으로 (100칸 중 86칸)',
-    motion: '흩어진 칸이 날아와 한 판으로 맞춰져요',
+    motion: '흩어진 칸이 날아와 하나로 맞춰져요',
     fields: [
       { key: 'label', label: '무엇의 비율', hint: '무엇을 센 것인지 (예: 보안 교육을 마친 직원)' },
       { key: 'value', label: '몇', hint: '86%' },

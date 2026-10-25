@@ -48,7 +48,7 @@ export const issue: Blueprint = {
       layout: 'points',
       purpose: '원인',
       priority: 1,
-      guide: '바로 원인과 그 뒤의 까닭까지 짚어요.',
+      guide: '바로 원인과 그 뒤의 이유까지 짚어요.',
       hints: {
         title: '저장 공간이 가득 찬 것을 몰랐어요',
         'items.title': '원인',

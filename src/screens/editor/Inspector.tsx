@@ -188,7 +188,7 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
       )}
       {panes && side !== null && (
         <>
-          <Opt label={`${panes.name} 위치`} tip="장 위에서 판의 이름표를 끌어 반대쪽에 놓아도 돼요.">
+          <Opt label={`${panes.name} 위치`} tip={`장 위에서 ${panes.name}의 이름표를 끌어 반대쪽에 놓아도 돼요.`}>
             <Segmented
               label={`${panes.name} 위치`}
               options={[
@@ -199,7 +199,7 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
               onPick={(at) => setOptions(slide.id, { flip: at === flipAt || undefined })}
             />
           </Opt>
-          <Opt label={`${panes.name} 너비`} wide={panes.sides.length > 3} tip="장 위에서 두 판 사이의 경계를 끌어도 돼요.">
+          <Opt label={`${panes.name} 너비`} wide={panes.sides.length > 3} tip="장 위에서 두 영역 사이의 경계를 끌어도 돼요.">
             <Segmented
               className={panes.sides.length > 3 ? 'seg-fill' : undefined}
               label={`${panes.name} 너비`}

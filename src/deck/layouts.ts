@@ -348,7 +348,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   funnel: {
     id: 'funnel',
     name: '깔때기',
-    description: '단계를 거치며 얼마나 남는지 (채용 단계, 신청에서 승인까지). 전환율은 저절로 계산돼요',
+    description: '단계를 거치며 얼마나 남는지 (채용 단계, 신청에서 승인까지). 전환율은 자동으로 계산돼요',
     highlight: { label: '강조할 단계', fallback: 'last' },
     fields: [title('전환을 요약하는 한 문장'), { key: 'unit', label: '단위', hint: '건', optional: true }, source],
     items: {

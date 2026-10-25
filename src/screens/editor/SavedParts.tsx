@@ -237,7 +237,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
                     className={cx('lib-card', !drag && 'is-tap', issue && 'is-blocked', why?.id === part.id && 'is-why')}
                     title={
                       issue
-                        ? `${part.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요`
+                        ? `${part.name}: 이 장에는 자리가 없어요. 눌러서 이유를 보세요`
                         : part.kind === 'slide'
                           ? `${part.name}: 눌러서 이 장 다음에 새 장으로 넣어요`
                           : part.kind === 'row'
@@ -334,7 +334,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
       )}
 
       {shownWhy && (
-        <div className="lib-why" role="dialog" aria-label={`${josa(shownWhy.part.name, '을', '를')} 넣을 수 없는 까닭`}>
+        <div className="lib-why" role="dialog" aria-label={`${josa(shownWhy.part.name, '을', '를')} 넣을 수 없는 이유`}>
           <p className="lib-why-t">{josa(shownWhy.part.name, '은', '는')} 이 장에 넣을 수 없어요</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>

@@ -86,12 +86,12 @@ function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () =>
           <AlertIcon />이 브라우저에 저장하지 못했어요
         </p>
         <p className="save-pop-p">
-          브라우저 저장 공간이 모자라면 저장되지 않아요. 고친 내용을 잃지 않게 먼저 작업 파일을 내려받아 두고, 쓰지 않는 발표를 지우거나 큰 이미지를 줄인 뒤 다시
+          브라우저 저장 공간이 모자라면 저장되지 않아요. 고친 내용을 잃지 않게 먼저 작업 파일을 다운로드해 두고, 쓰지 않는 발표를 지우거나 큰 이미지를 줄인 뒤 다시
           저장해 주세요.
         </p>
         <div className="save-pop-actions">
           <button type="button" className="btn btn-primary btn-sm" onClick={download}>
-            작업 파일 내려받기
+            작업 파일 다운로드
           </button>
           <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => run(() => saveToBrowser(current()))}>
             다시 저장하기
@@ -179,11 +179,11 @@ function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () =>
         <>
           <p className="save-pop-h">지금은 이 브라우저에만 저장돼요</p>
           <p className="save-pop-p">
-            이 브라우저는 폴더 저장을 지원하지 않아요. 크롬이나 엣지에서 열면 PC 폴더에 자동으로 보관돼요. 그 전까지는 작업 파일을 내려받아 두세요.
+            이 브라우저는 폴더 저장을 지원하지 않아요. 크롬이나 엣지에서 열면 PC 폴더에 자동으로 보관돼요. 그 전까지는 작업 파일을 다운로드해 두세요.
           </p>
           <div className="save-pop-actions">
             <button type="button" className="btn btn-primary btn-sm" onClick={download}>
-              작업 파일 내려받기
+              작업 파일 다운로드
             </button>
           </div>
         </>
@@ -196,7 +196,7 @@ function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () =>
       {folder && folder.kind !== 'unsupported' && (
         <p className="save-pop-foot">
           <button type="button" className="btn-link" onClick={download}>
-            작업 파일 내려받기
+            작업 파일 다운로드
           </button>
           <span>발표자 노트까지 들어 있어요. 다른 분께 보낼 때는 ‘내보내기’의 발표 파일을 쓰세요.</span>
         </p>

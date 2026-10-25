@@ -46,7 +46,7 @@ export const business: Blueprint = {
       priority: 3,
       focus: 'numbers',
       section: '배경',
-      guide: '노릴 부분 하나를 강조해요. 비중은 저절로 계산돼요.',
+      guide: '노릴 부분 하나를 강조해요. 비중은 자동으로 계산돼요.',
       hints: {
         title: '중소 제조가 시장의 절반이에요',
         unit: '억 원',

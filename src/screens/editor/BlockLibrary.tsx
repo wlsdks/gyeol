@@ -244,7 +244,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         key={type}
                         type="button"
                         className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
-                        title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요` : `${spec.name}: ${spec.motion}`}
+                        title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 이유를 보세요` : `${spec.name}: ${spec.motion}`}
                         onPointerDown={(e) => {
                           const card = e.currentTarget
                           blocks.pressCard(e, type, () => tap(card))
@@ -294,7 +294,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
       )}
 
       {shownWhy && (
-        <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 까닭`}>
+        <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 이유`}>
           <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 넣을 수 없어요</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
