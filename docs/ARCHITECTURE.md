@@ -32,7 +32,7 @@
 
 | 폴더 | 하는 일 | 가져와도 되는 것 |
 |---|---|---|
-| `lib/` | 어디에도 기대지 않는 작은 도구: 단축키 표기, 주소, 이미지 크기 읽기, 앱 버전 | 없음 |
+| `lib/` | 어디에도 기대지 않는 작은 도구: 단축키 표기, 발표 중의 키(`presentKeys`), 끄는 동안의 처리기(`pointerSession`), 조사 고르기(`josa`), 주소, 이미지 크기 읽기, 앱 버전 | 없음 |
 | `deck/` | 발표 모델: 꼴(`types.ts`), 구성(`blueprints.ts`와 발표 종류마다의 `blueprints/<id>.ts`, `generate.ts`), 레이아웃과 부품의 정의와 규칙, 테마 값, 예전 파일 읽기. 화면 없이 돈다 | `lib` |
 | `motion/` | 발표할 때의 움직임 엔진. 내보낸 HTML에 소스째 들어간다 | `lib` |
 | `present/` | 발표 화면과 발표자 화면 잇기 | `deck`, `lib` |
@@ -67,6 +67,9 @@
 | 빈 차트를 예시 값으로 옅게 그릴지 | `src/slides/context.ts`의 `demoOf` |
 | 발표할 때의 움직임 | `src/motion/engine.ts` |
 | 단축키 표기 | `src/lib/keys.ts` |
+| 발표 중의 키(앱의 발표 화면, 발표자 화면, 내보낸 HTML) | `src/lib/presentKeys.ts`의 `presentAction`. 내보낸 HTML에는 소스째 들어간다 |
+| 발표의 사본(복제, 버전 꺼내기): 새 id, AI 공유 끄기 | `src/store/copy.ts`의 `copyDeck` |
+| 컴포넌트를 놓을 자리(끌어 놓기, 눌러 넣기, 넣을 수 없음) | `src/screens/editor/planDrop.ts`의 `planDrop` |
 | 파일 이름 | `src/store/deckFile.ts`의 `safeFileName` |
 | CSP | `server/csp.ts`, 내보낸 HTML은 `src/export/exportHtml.tsx`의 `exportCsp` |
 
@@ -100,7 +103,20 @@
 - 여러 레이아웃이나 부품이 같이 쓰는 조각은 같은 폴더의 `parts.tsx`에 두고, 한 곳에서만 쓰는 도우미는 그 파일 안에 둔다.
 - `src/deck/blocks.ts`는 `deck/blocks/`의 창구다. 밖에서는 `deck/blocks`로만 가져온다.
 - CSS 파일의 `@import` 차례가 곧 덮어쓰는 차례다. 글자 칸 목록(`--fs` 규칙)은 `styles/base.css`에 있다.
-- 개발용 도구(갤러리, `checkFrame`, `checkEdit`, `checkCombos`, `measureBlocks`)는 `screens/`에 두고 `#/gallery`에서만 부른다.
+- 개발용 도구(갤러리, `checkFrame`, `checkEdit`, `checkCombos`, `measureBlocks`)는 `screens/`에 두고 `#/gallery`에서만 부른다. `App.tsx`가 `import.meta.env.DEV`일 때만 불러오므로 배포본에는 들어가지 않는다.
+
+**화면**
+
+| 무엇 | 어디 |
+|---|---|
+| 편집기의 틀(위 막대, 세 칸, 메뉴) | `screens/editor/Editor.tsx` |
+| 고치는 장(무대)과 그 위에 뜨는 것, 아래 단추줄 | `SlideStage.tsx`, `StageTools.tsx`, `SelectionBar.tsx`(레이아웃 장의 고른 것), `BlockTools.tsx`(컴포넌트 장의 고른 것) |
+| 컴포넌트 끌기, 눌러 넣기, 칸 너비, 줄 높이 | `BlockEditor.tsx`(다루기), `planDrop.ts`(어디에 놓을지), `RoomZone.tsx`(장 아래 빈자리) |
+| 띄운 것을 장 안의 것에 맞춰 두기 | `useTrackRect.ts`. 바뀔 만한 때만 잰다(매 프레임 재지 않는다) |
+| 발표 시작, 단축키, 내보내기, 오른쪽 칸 | `presentLaunch.tsx`, `shortcuts.ts`, `exports.tsx`, `sidePanel.ts` |
+| 고칠 때마다 저장, 자동 버전 | `src/store/autosave.ts` |
+| 화면 곳곳의 작은 부품(아이콘, 툴팁 `Info`, `Toggle`, 고르는 단추 줄 `Segmented`, 알림) | `screens/ui.tsx` |
+| 화면의 모양 | `src/styles/<화면>.css`. `app.css`는 `@import` 차례만 둔다. 마우스를 올린 회색은 `--hover`, `--hover-2` 둘 |
 
 ## 5. 약속을 지키는 테스트
 
