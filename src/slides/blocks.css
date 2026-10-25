@@ -192,7 +192,9 @@
 
 .bk-look-card > .bk-in,
 .bk-look-bold > .bk-in {
-  padding: 44px 52px;
+  /* 칸 높이(100cqh)로 크기를 정하는 그림(도넛)은 면의 위아래 여백을 빼야 한다: 칸 높이는 면 여백까지 센 높이다 */
+  --bk-py: 44px;
+  padding: var(--bk-py) 52px;
 }
 
 /* 면 위에서는 면의 가장자리가 이미 묶음을 보여서, 목록 맨 위의 굵은 줄은 뺀다 (면 바로 안쪽에 줄이 한 번 더 그어져 보인다) */
@@ -3564,7 +3566,7 @@
   }
 
   .va-donut > .bk-in .sh-ring {
-    width: min(540px, 100cqh - 24px);
+    width: min(540px, 100cqh - 24px - 2 * var(--bk-py, 0px));
   }
 }
 
