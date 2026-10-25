@@ -185,6 +185,8 @@
   color: #5b6170;
   cursor: pointer;
   opacity: 0;
+  /* 보이지 않는 동안은 누름을 받지 않는다: 안 보이는 단추가 그 아래 글 칸을 가로막았다 */
+  pointer-events: none;
   transition: opacity 0.12s, color 0.12s;
 }
 
@@ -195,6 +197,7 @@
 .it:hover > .it-remove,
 .it-remove:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .it-remove svg {
@@ -225,6 +228,7 @@
   color: #5b6170;
   cursor: grab;
   opacity: 0;
+  pointer-events: none;
   touch-action: none;
   transition: opacity 0.12s, color 0.12s;
 }
@@ -237,6 +241,7 @@
 .it-grip:focus-visible,
 .it.is-lifted > .it-grip {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .it-grip svg {
@@ -265,6 +270,19 @@
   top: calc(6px / var(--vs, 0.5));
   right: calc(var(--d) + 10px / var(--vs, 0.5));
   left: auto;
+}
+
+/* 가로로 놓인 낮은 항목은 도구를 항목 바로 아래 가운데에 (fields.tsx의 ItemTools가 잰다): 안쪽에 두면 글을 덮었다 */
+.slide.m-edit .bk .it[data-tools='below'] > .it-grip {
+  top: calc(100% + 4px / var(--vs, 0.5));
+  right: auto;
+  left: calc(50% - var(--d) - 2px / var(--vs, 0.5));
+}
+
+.slide.m-edit .bk .it[data-tools='below'] > .it-remove {
+  top: calc(100% + 4px / var(--vs, 0.5));
+  right: auto;
+  left: calc(50% + 2px / var(--vs, 0.5));
 }
 
 .slide.m-edit .bk-area.is-live:not(.is-dragging) .it:has(> :is(.it-grip, .it-remove)):hover {

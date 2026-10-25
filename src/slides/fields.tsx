@@ -419,6 +419,13 @@ export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
     const look = () => {
       const axis = itemsAcross(item) ? 'x' : 'y'
       if (el.dataset.axis !== axis) el.dataset.axis = axis
+      // 가로로 놓인 낮은 항목(차트 아래의 기간 이름 같은)은 도구를 항목 아래로 내린다: 컴포넌트 안에서는 도구가 항목 안쪽
+      // 오른쪽 위에 서는데, 항목이 도구보다 낮으면 도구가 글을 덮어 이름을 눌러 고칠 수 없었다(화면 px로 잰다, 도구는 22px)
+      const below = axis === 'x' && item.getBoundingClientRect().height < 48
+      if ((item.dataset.tools === 'below') !== below) {
+        if (below) item.dataset.tools = 'below'
+        else delete item.dataset.tools
+      }
     }
     item.addEventListener('pointerenter', look)
     el.addEventListener('focus', look)
