@@ -214,14 +214,14 @@
   opacity: 0.4;
 }
 
-/* 원인 순위: 앞에서부터 더한 비율 선. 막대와 같은 눈금이라 막대 칸의 숫자 자리 아래, 바닥 줄 위에 그린다 */
-/* 마지막 점(100%)은 오른쪽 끝에 앉아서 반쯤 칸 밖으로 나간다. 그만큼 안쪽에 그려 칸을 넘치지 않게 (넘치면 글자 맞추기가 글자를 줄인다) */
+/* 원인 순위: 앞에서부터 더한 비율 선. 막대와 같은 눈금이라 막대 칸의 숫자 자리 아래, 바닥 줄 위에 그린다.
+   그림은 막대 칸들과 같은 너비(양옆을 들이지 않는다)라서 점의 자리(--x, 칸의 가운데)가 곧 그 칸의 막대와 이름의 가운데다 */
 .bk-pa-canvas {
   position: relative;
   z-index: 1;
   grid-row: 1;
   grid-column: 1 / -1;
-  margin: var(--cc-top) 12px 2px 0;
+  margin: var(--cc-top) 0 2px;
   pointer-events: none;
 }
 
@@ -276,6 +276,11 @@
 .bk-pa .bk-cc-num {
   -webkit-text-stroke: 12px var(--bg);
   paint-order: stroke fill;
+}
+
+/* 첫 점은 첫 막대의 머리에 앉는다(첫 몫이 곧 첫 막대). 그 막대의 숫자만 점 지름(14px)만큼 더 올려, 점과 거기서 오르는 선에 닿지 않게 */
+.bk-pa-canvas + .bk-cc-col .bk-cc-v {
+  margin-bottom: calc(12px + 14px);
 }
 
 /* 낮은 그래프(가장 낮은 줄, 면 위의 좁은 칸): 막대 숫자를 바닥줄 아래, 이름 바로 위로 내린다. 막대 위에 두면 선이 숫자들의

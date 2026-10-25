@@ -30,8 +30,9 @@ export function Pareto() {
   // 단위가 서로 다른 값('3건', '40%')을 더한 몫은 틀린 숫자라 먼저 잡을 원인과 몫을 말하지 않는다
   const vital = total > 0 && series.ok ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
   const n = items.length
-  // 점은 막대 칸의 오른쪽 끝: 그 칸까지 더한 몫. 가운데에 찍으면 첫 점이 첫 막대의 숫자 위에 앉는다
-  const x = (i: number) => ((i + 1) / n) * 100
+  // 점은 그 칸의 가운데(막대와 이름 바로 위): 그 칸까지 더한 몫. 칸의 오른쪽 끝에 찍던 때는 점이 막대와 막대 사이,
+  // 이름과 이름 사이에 떠서 어느 원인까지 더한 몫인지 읽히지 않았다. 첫 점은 첫 막대의 머리에 앉는다(첫 몫이 곧 첫 막대)
+  const x = (i: number) => ((i + 0.5) / n) * 100
   const line = cum.map((c, i) => `${x(i).toFixed(2)},${(100 - c).toFixed(2)}`).join(' ')
   // 몇 개가 거의 다인지가 요점. 모두가 80% 안이면 몰린 곳이 없어서 말하지 않는다
   const sum =
@@ -60,7 +61,8 @@ export function Pareto() {
             </svg>
             {cum.map((c, i) => (
               <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) }}>
-                {i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
+                {/* 80%를 넘긴 점이 첫 점이면 몫을 적지 않는다: 첫 막대의 숫자 바로 옆이라 겹치고, 같은 몫을 위의 요점이 말한다 */}
+                {i > 0 && i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
               </span>
             ))}
           </div>
