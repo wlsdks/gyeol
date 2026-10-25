@@ -6,6 +6,7 @@
 // - AI가 적을 수 있는 글은 세 가지뿐이고 모두 사람에게 보이는 안내다: 제안 설명, 장 안내, 칸 안내 문구.
 
 import {
+  asCompose,
   autoTarget,
   BLOCK_EFFECT_IDS,
   BLOCK_LOOK_IDS,
@@ -16,7 +17,6 @@ import {
   changeRows,
   COMBOS,
   composeAreaH,
-  composeFrom,
   effectOf,
   fitsHeight,
   insertAt,
@@ -562,10 +562,11 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       case 'set_layout': {
         if (s.layout === 'compose' || op.layout === 'compose') {
           if (s.layout === op.layout) return fail('no_change')
-          // 부품 장으로: 글을 하나도 버리지 않고 같은 모습의 부품으로 옮긴다 (표지, 단락 장은 안 된다)
+          // 부품 장으로: 글을 하나도 버리지 않고 같은 모습의 부품으로 옮긴다 (표지, 단락 장은 안 된다).
+          // 예전에 부품 장이었던 장은 남겨 둔 줄을 되살린다(asCompose)
           if (op.layout === 'compose') {
             if (!canCompose(s.layout)) return fail('not_for_layout')
-            put(i, composeFrom(s))
+            put(i, asCompose(s))
             return done
           }
           // 부품 장에서: 그 레이아웃의 부품 하나뿐일 때만. 다른 부품이 있으면 되돌리면서 버리게 된다

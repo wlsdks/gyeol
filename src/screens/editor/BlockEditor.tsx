@@ -10,8 +10,8 @@ import {
   BLOCK_GAP,
   BLOCK_LOOKS,
   BLOCKS,
+  asCompose,
   canCompose,
-  composeFrom,
   copyBlock,
   dropTarget,
   effectOf,
@@ -321,7 +321,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     let composed = d.composed
     if (over) {
       if (s.layout === 'compose' || (d.kind === 'new' && canCompose(s.layout))) {
-        if (s.layout !== 'compose' && !composed) composed = composeFrom(s)
+        if (s.layout !== 'compose' && !composed) composed = asCompose(s)
         // 아직 부품 장으로 바뀌기 전이면 바뀐 뒤의 본문 상자를 어림한다
         const area = measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)
         const base = s.layout === 'compose' ? d.base : (composed?.rows ?? [])
@@ -538,7 +538,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       plan = target ? 'place' : 'next'
       if (!target) blocked = placeIssue(base, d.block, area?.size.h)
     } else if (canCompose(s.layout)) {
-      composed = composeFrom(s)
+      composed = asCompose(s)
       base = composed.rows ?? []
       const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
       const h = fr ? guessArea(fr).size.h : undefined
@@ -602,7 +602,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     if (s.layout === 'compose') return placeIssue(s.rows ?? [], block, measureArea(areaEl.current)?.size.h)
     if (!canCompose(s.layout)) return null
     const fr = document.querySelector<HTMLElement>('.ed-canvas .slide-frame')?.getBoundingClientRect()
-    return placeIssue(composeFrom(s).rows ?? [], block, fr ? guessArea(fr).size.h : undefined)
+    return placeIssue(asCompose(s).rows ?? [], block, fr ? guessArea(fr).size.h : undefined)
   }
 
   // ---------- 칸 너비 ----------
@@ -883,7 +883,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만
   const roomFits = (h: number) => {
-    const base = composeFrom(slide).rows ?? []
+    const base = asCompose(slide).rows ?? []
     return !whyNot(base, { kind: 'row', index: base.length }, makeBlock('message'), h)
   }
   const room =

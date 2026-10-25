@@ -208,6 +208,16 @@ describe('부품 장', () => {
     expect(checkShape(toShape(next))).toBe(true)
   })
 
+  it('예전에 부품 장이었던 장을 다시 부품 장으로 바꾸면 남겨 둔 줄을 되살린다 (덮어쓰면 그 안의 글이 지워진다)', () => {
+    // 편집기에서 부품 둘인 부품 장을 다른 레이아웃으로 바꾸면 줄은 장에 남겨 둔다
+    const kept = [{ id: 'r', blocks: [block('b1', { text: '남겨 둔 줄의 글' }), block('b2', { text: '두 번째 부품의 글' })] }]
+    const withKept = { ...deck, slides: deck.slides.map((s, i) => (i === at ? { ...s, rows: kept } : s)) }
+    const { deck: next, results } = applyOps(withKept, [{ op: 'set_layout', slide: sid(at), layout: 'compose' }])
+    expect(results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(next.slides[at].layout).toBe('compose')
+    expect(allText(next)).toEqual(allText(withKept))
+  })
+
   it('표지와 단락 장은 부품 장으로 바꾸지 않는다', () => {
     const cover = deck.slides.findIndex((s) => s.layout === 'cover')
     expect(applyOps(deck, [{ op: 'set_layout', slide: sid(cover), layout: 'compose' }]).results[0]).toEqual({ ok: false, code: 'not_for_layout' })

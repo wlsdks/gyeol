@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { canCompose, cleanDeckRows, composeFrom, copyBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
+import { asCompose, cleanDeckRows, copyBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
 import { plainTheme } from '../deck/themes'
 import { emptyItem, makeSlide, uid, withDefaultOptions } from '../deck/generate'
@@ -221,10 +221,9 @@ export const useDeck = create<DeckState>((set, get) => {
     changeLayout(slideId, layout) {
       commit((d) =>
         mapSlide(d, slideId, (s) => {
-          // 부품 장으로 바꿀 때는 내용을 부품으로 옮긴다. 레이아웃 부품 하나뿐인 부품 장은 그 레이아웃으로 되돌린다
-          // 예전에 부품 장이었던 장은 남겨 둔 부품을 다시 보여 준다
-          if (layout === 'compose')
-            return s.rows?.length || !canCompose(s.layout) ? { ...s, layout, rows: s.rows ?? [], variant: undefined } : composeFrom(s)
+          // 부품 장으로 바꿀 때는 내용을 부품으로 옮긴다(예전에 부품 장이었던 장은 남겨 둔 부품을 다시 보여 준다).
+          // 레이아웃 부품 하나뿐인 부품 장은 그 레이아웃으로 되돌린다
+          if (layout === 'compose') return asCompose(s)
           const unwrapped = unwrapCompose(s, layout)
           if (unwrapped) return unwrapped
           const spec = LAYOUTS[layout].items
@@ -255,7 +254,7 @@ export const useDeck = create<DeckState>((set, get) => {
       )
     },
     toCompose(slideId) {
-      commit((d) => mapSlide(d, slideId, (s) => composeFrom(s)))
+      commit((d) => mapSlide(d, slideId, (s) => asCompose(s)))
     },
     replaceSlide(slideId, slide) {
       commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId, ...(slide.rows ? { rows: tidyLinks(slide.rows) } : {}) })))

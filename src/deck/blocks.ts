@@ -1259,6 +1259,18 @@ export function composeFrom(slide: Slide): Slide {
   }
 }
 
+/**
+ * 장을 부품 장으로 바꾼다. 편집기(레이아웃 바꾸기, 부품 장으로 바꾸기, 부품 끌어 넣기)와 AI 제안(set_layout)이 모두 이것을 쓴다.
+ * 예전에 부품 장이었던 장은 다른 레이아웃으로 바꿔도 줄을 장에 남겨 두는데, 따로 composeFrom을 부르던 곳은 그 줄을 새 줄로
+ * 덮어써서 그 안의 글이 지워졌다. 남겨 둔 줄이 있으면 그 줄을 다시 보여 주고(지금 레이아웃의 글은 장에 그대로 남는다),
+ * 표지와 단락 장은 빈 부품 장으로, 나머지는 지금 내용을 부품으로 옮긴다
+ */
+export function asCompose(slide: Slide): Slide {
+  if (slide.layout === 'compose') return slide
+  if (slide.rows?.length || !canCompose(slide.layout)) return { ...slide, layout: 'compose', rows: slide.rows ?? [], variant: undefined }
+  return composeFrom(slide)
+}
+
 /** 레이아웃 부품 하나뿐인 부품 장을 그 레이아웃의 장으로 되돌린다. 그럴 수 없으면 null */
 export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
   const blocks = allBlocks(slide.rows ?? [])
