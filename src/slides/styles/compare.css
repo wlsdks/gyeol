@@ -113,9 +113,12 @@
   stroke-width: 3;
 }
 
-/* 모양: 표. 면 없이 줄로만. 머리 위의 선은 앞은 옅게, 바뀐 뒤는 글자색으로 (넓은 강조색 막대는 장식이라 쓰지 않는다) */
+/* 모양: 표. 면 없이 줄로만. 두 쪽이 가운데로 모여 줄마다 짝을 짓는다: 왼쪽은 오른쪽 끝에, 오른쪽은 왼쪽 끝에 붙이고
+   그 사이 가운데에 줄마다 작은 화살표. 예전에는 두 쪽 모두 왼쪽에 붙여서, 짧은 글이면 쪽마다 오른쪽 절반이 비고
+   왼쪽 쪽의 글과 오른쪽 쪽의 화살표 사이가 멀어 짝이 읽히지 않았다.
+   머리 위의 선은 앞은 옅게, 바뀐 뒤는 글자색으로 (넓은 강조색 막대는 장식이라 쓰지 않는다) */
 .va-table .cp {
-  --cp-mid: var(--gap);
+  --cp-mid: 136px;
   padding-bottom: 0;
 }
 
@@ -137,14 +140,18 @@
   padding: 40px 0 24px;
 }
 
+.va-table :is(.cp-hl, .cp-l) {
+  justify-content: flex-end;
+  text-align: right;
+}
+
 .va-table :is(.cp-l, .cp-r) {
   margin: 0;
-  padding-right: 48px;
+  padding-block: 28px;
 }
 
 .va-table .cp-r {
   border-color: var(--line);
-  padding-left: 80px;
 }
 
 .va-table .cp-row > .cp-arrow {
@@ -156,11 +163,10 @@
 }
 
 .va-table .cp-arrow {
-  left: calc(50% + var(--cp-mid) / 2);
-  transform: translate(0, -50%);
+  color: var(--ink-3);
 }
 
 .va-table .cp-arrow svg {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
