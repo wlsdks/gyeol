@@ -94,6 +94,11 @@
   padding-block: 12px;
 }
 
+/* 큰 글자로 편집할 때 일곱 줄: 빈 담당 칸의 안내까지 두 줄이라 18px 넘쳤다 */
+.sz-large.m-edit.l-progress .ps:not(.ps-board)[data-n='7'] .ps-row:not(.ps-headrow) {
+  padding-block: 5px;
+}
+
 .ps:is([data-n='6'], [data-n='7']) .ps-headrow {
   padding-bottom: 12px;
 }
@@ -209,4 +214,158 @@
 
 .ps.is-demo :is(.ps-fill, .ps-sum, .ps-chip) {
   opacity: 0.35;
+}
+
+/* 모양: 상태별. 과제를 상태마다 한 단에 모은다(있는 상태만). 단 머리에 상태와 과제 수, 그 아래로 과제마다 이름, 담당과 기한,
+   진행률 막대와 숫자. 단이 상태를 말하므로 상태 표시는 지연된 과제의 사정(예: 2주 지연)만 글로 남긴다. 편집할 때는 상태를 고쳐
+   다른 단으로 옮길 수 있게 모든 과제에 상태 칸을 보인다. 면(카드)을 깔지 않고, 단 머리의 윗줄만 상태 색이다 */
+.ps-board {
+  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+  align-content: safe center;
+  align-items: start;
+  column-gap: 56px;
+}
+
+.ps-lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 진행 중은 따로 정한 색이 없다(줄에서는 .ps-row의 강조색) */
+.ps-lane.is-doing {
+  --ps-c: var(--accent);
+}
+
+.ps-lane-h {
+  margin: 0;
+  padding: 22px 0 20px;
+  border-top: 6px solid var(--ps-c);
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.ps-lane-h .ps-count {
+  --fs: 30px;
+  gap: 14px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 단 머리의 점은 윗줄이 색을 대신한다 */
+.ps-lane-h .ps-count::before {
+  content: none;
+}
+
+.ps-lane-h .ps-count b {
+  color: var(--ps-c);
+}
+
+.ps-lane.is-todo .ps-lane-h .ps-count b {
+  color: var(--ink-3);
+}
+
+.ps-board .ps-row {
+  grid-column: auto;
+  /* 이름 옆 오른쪽 위에 진행률, 그 아래 막대: 막대 줄에 숫자를 따로 두면 과제마다 한 줄씩 높아져 한 단에 셋이면 장을 넘었다 */
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'name pct' 'track track' 'state state';
+  align-items: start;
+  gap: 0 20px;
+  padding: 24px 0;
+}
+
+.ps-board .ps-row:not(.ps-headrow) {
+  padding-block: 24px;
+}
+
+.ps-board .ps-name {
+  grid-area: name;
+  margin-bottom: 16px;
+}
+
+/* 진행률 숫자는 과제 이름 첫 줄의 바닥선에 */
+.ps-board .ps-pct {
+  line-height: 1.3;
+}
+
+.ps-board .ps-track {
+  grid-area: track;
+  height: 10px;
+}
+
+.ps-board .ps-pct {
+  --fs: 30px;
+  grid-area: pct;
+}
+
+.ps-board .ps-state {
+  grid-area: state;
+}
+
+/* 발표할 때는 지연된 과제의 사정만: 칩 없이 나쁨 색 글자로 */
+.slide:not(.m-edit) .ps-board .ps-row:not(.is-late) .ps-state {
+  display: none;
+}
+
+.ps-board .ps-row .ps-chip {
+  --fs: 22px;
+  margin-top: 12px;
+  padding: 0;
+  background: none;
+}
+
+.ps-board .ps-row .ps-chip::before {
+  content: none;
+}
+
+.ps-board .ps-row:is(.is-done, .is-doing, .is-late) .ps-chip {
+  background: none;
+}
+
+/* 과제가 다섯까지면 한 단에 많아야 둘셋이라 본문 위쪽에만 몰렸다. 글자를 한 단계, 줄 사이를 넓힌다 */
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-title {
+  --fs: 36px;
+}
+
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-meta {
+  --fs: 26px;
+  margin-top: 6px;
+}
+
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-row:not(.ps-headrow) {
+  padding-block: 36px;
+}
+
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-name {
+  margin-bottom: 24px;
+}
+
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-track {
+  height: 12px;
+}
+
+.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-pct {
+  --fs: 36px;
+}
+
+/* 단 안의 과제가 많으면(한 단에 넷 넘게) 줄 사이를 줄인다 */
+.ps-board:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
+  padding-block: 16px;
+}
+
+.ps-board:is([data-n='6'], [data-n='7']) .ps-name {
+  margin-bottom: 10px;
+}
+
+/* 큰 글자로 편집할 때 여섯, 일곱: 편집할 때는 과제마다 상태 칸이 한 줄 더 있어 한 단에 셋이면 장을 넘었다 */
+:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
+  padding-block: 10px;
+}
+
+:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-name {
+  margin-bottom: 6px;
+}
+
+:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-chip {
+  margin-top: 4px;
 }

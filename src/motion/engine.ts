@@ -824,6 +824,8 @@ export function motionEngine(): MotionEngine {
         const t = head()
         fade(one('.ps-sum'), t, 500)
         fade(one('.ps-headrow'), t + 80, 500)
+        // 상태별: 단 머리가 먼저 차례로 서고, 그 아래 과제가 단 순서대로
+        $('.ps-lane-h').forEach((el, k) => wipe(el, t + k * 90, 'left', 600))
         const end = items('.ps-row.it', t + 160, (el, at) => {
           ruled(el, at)
           rise(el.querySelector('.ps-name'), at, L.y * 0.5)

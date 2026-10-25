@@ -263,6 +263,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     id: 'progress',
     name: '진행 현황',
     description: '과제마다 얼마나 됐는지와 완료, 진행 중, 지연, 예정 상태',
+    variants: [
+      { id: 'base', name: '줄' },
+      { id: 'board', name: '상태별' },
+    ],
     fields: [title('진행 상황을 요약하는 한 문장'), source],
     items: {
       label: '과제',
