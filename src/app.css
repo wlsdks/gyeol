@@ -3509,7 +3509,7 @@ select {
   font-weight: 700;
 }
 
-.vp-title .icon {
+.vp-title > .icon {
   width: 18px;
   height: 18px;
   color: var(--ink-2);
@@ -3534,13 +3534,6 @@ select {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
-}
-
-.vp-note {
-  margin: 10px 0 0;
-  color: var(--ink-3);
-  font-size: 12px;
-  line-height: 1.6;
 }
 
 .vp-list {

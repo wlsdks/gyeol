@@ -20,7 +20,7 @@ import {
   type DeckVersion,
 } from '../../store/versions'
 import { particle } from './noRoom'
-import { CloseIcon, dialogOpen, HistoryIcon, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
+import { CloseIcon, dialogOpen, HistoryIcon, Info, Modal, MoreIcon, Popover, SAVE_HELP, useDialog } from '../ui'
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
@@ -154,6 +154,11 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
         <h2 className="vp-title">
           <HistoryIcon />
           버전 기록
+          {/* 늘 보이는 설명 대신 (i)에: 목록을 위로 끌어올린다 */}
+          <Info label="버전 기록 설명">
+            버전을 누르면 그때 모습을 보고 되돌릴 수 있어요. 이름 붙인 버전은 지우기 전까지 보관되고, 자동 저장은 고치는 중 10분마다, 발표하거나 내보내기 전에 남아요.
+            {folder?.kind === 'ready' && ` ‘${folder.name}/버전 기록’ 폴더에도 같이 저장돼요.`}
+          </Info>
         </h2>
         <button type="button" className="icon-btn" aria-label="닫기" onClick={onClose}>
           <CloseIcon />
@@ -192,10 +197,6 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
             지금 상태를 버전으로 남기기
           </button>
         )}
-        <p className="vp-note">
-          버전을 누르면 그때 모습을 보고 되돌릴 수 있어요. 이름 붙인 버전은 지우기 전까지 보관되고, 자동 저장은 고치는 중 10분마다, 발표하거나 내보내기 전에 남아요.
-          {folder?.kind === 'ready' && ` ‘${folder.name}/버전 기록’ 폴더에도 같이 저장돼요.`}
-        </p>
       </div>
 
       <div className="vp-list">
