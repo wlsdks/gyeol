@@ -11,6 +11,7 @@ import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
 import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf, type Grade, type Status } from './numbers'
+import { accentTint, TINT_COUNT } from './tints'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -962,11 +963,11 @@ export function partsOf(text: string): string[] {
     .split(/\s*[,·/|]\s*/)
     .map((t) => t.trim())
     .filter(Boolean)
-    .slice(0, STACK_TINTS.length)
+    .slice(0, STACK_PARTS)
 }
 
-/** 쌓은 막대의 칸 색: 맨 아래(첫째)가 강조색, 위로 갈수록 옅게. 칸 사이는 바탕색 틈으로 나눈다 */
-const STACK_TINTS = [100, 62, 38, 22, 12]
+/** 쌓은 막대에 나눌 수 있는 것의 수. 칸 색은 맨 아래(첫째)가 강조색, 위로 갈수록 옅게(accentTint), 칸 사이는 바탕색 틈 */
+const STACK_PARTS = Math.min(5, TINT_COUNT)
 
 /**
  * 쌓은 막대: 기간마다 합계 막대 하나를 나눈 것마다 칸으로 쌓는다. 값 그대로는 합계의 크기를, 100%로는 구성의 변화를 본다.
@@ -980,7 +981,7 @@ function Stack() {
   const partsText = readField(slide, meta, 'parts').trim() || (final ? '' : hintFor(slide.layout, slide.hints, 'parts'))
   const parts = partsOf(partsText)
   const pct = slide.variant === 'pct'
-  const width = parts.length || STACK_TINTS.length
+  const width = parts.length || STACK_PARTS
   // 막대끼리도 키를 견주므로 모든 막대의 값을 한 기준으로 읽는다 ('1.2억, 8,000만'이면 1.2와 0.8)
   const cells = items.map((it, i) =>
     tokensOf(demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)
@@ -992,7 +993,6 @@ function Stack() {
   const rows = cells.map((r) => r.map(() => Math.max(0, series.values[at++] ?? 0)))
   const totals = rows.map((r) => r.reduce((a, b) => a + b, 0))
   const top = Math.max(0, ...totals)
-  const tint = (j: number) => `color-mix(in srgb, var(--accent) ${STACK_TINTS[j]}%, var(--bg))`
   return (
     <div className={cx('bk-cc bk-st', demo && 'is-demo')} style={{ '--n': items.length }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
@@ -1001,7 +1001,7 @@ function Stack() {
           <span className="bk-st-keywrap">
             <span className="bk-st-keys">
               {parts.map((p, j) => (
-                <span key={j} className="bk-cc-lk" style={{ '--c': tint(j) }}>
+                <span key={j} className="bk-cc-lk" style={{ '--c': accentTint(j) }}>
                   <i aria-hidden="true" />
                   {p}
                 </span>
@@ -1029,7 +1029,7 @@ function Stack() {
                     // 칸 안 숫자는 그 칸이 막대 높이에서 차지하는 몫이 충분할 때만. 칸이 숫자보다 낮으면 CSS가 숨긴다
                     const room = (of * p) / 100 >= 6 && series.ok
                     return v > 0 ? (
-                      <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: tint(j) }}>
+                      <span key={j} className={cx('bk-st-seg', j === 0 && 'is-base')} style={{ flexGrow: v, background: accentTint(j) }}>
                         {room && <span className="bk-st-n">{pct ? pctText(of) : formatNumber(v)}</span>}
                       </span>
                     ) : null

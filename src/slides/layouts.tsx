@@ -9,6 +9,7 @@ import { useSlide } from './context'
 import { amountPair, formatNumber, isNumericCell, lineAxis, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T, textUnits } from './fields'
 import { placeLabels } from './fitBlocks'
+import { accentTint, greyTint } from './tints'
 
 function Head({ lead = false }: { lead?: boolean }) {
   return (
@@ -930,11 +931,6 @@ function Progress() {
   )
 }
 
-/** 강조하지 않는 조각의 회색 단계. 큰 조각부터 진하게 */
-const SHARE_GREYS = [64, 46, 32, 22, 15]
-/** 강조할 조각이 없을 때 강조색의 농담 */
-const SHARE_TINTS = [100, 68, 46, 30, 20, 13]
-
 /**
  * 구성비: 값을 더한 전체에서 각 항목의 비중. 띠는 한 줄 막대를 나누고, 도넛은 고리를 나눈다.
  * 모두 %로 적었으면 적은 그대로 보이고, 금액이나 건수로 적었으면 비중을 계산해 크게, 적은 값은 작게.
@@ -957,9 +953,10 @@ function Share() {
   const pctText = (p: number) => (!series.ok ? '–' : p > 0 && p < 1 ? '1% 미만' : `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`)
   let grey = 0
   const colors = items.map((_, i) => {
-    if (highlight < 0) return `color-mix(in srgb, var(--accent) ${SHARE_TINTS[i % SHARE_TINTS.length]}%, var(--bg))`
+    // 강조할 조각이 없으면 강조색의 농담, 있으면 그 조각만 강조색이고 나머지는 회색 농담(큰 조각부터 진하게)
+    if (highlight < 0) return accentTint(i)
     if (i === highlight) return 'var(--accent)'
-    return `color-mix(in srgb, var(--ink-3) ${SHARE_GREYS[grey++ % SHARE_GREYS.length]}%, var(--bg))`
+    return greyTint(grey++)
   })
   let start = 0
   const segs = pcts.map((p) => {
