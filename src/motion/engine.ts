@@ -451,18 +451,22 @@ export function motionEngine(): MotionEngine {
         const t = head()
         let at = Math.min(t, 420)
         const links = $('.bk-area > .bk-link')
-        for (const cell of $('.bk-area > .bk')) {
+        const cells = $('.bk-area > .bk')
+        // 부품 사이의 간격. 부품이 많으면 좁혀서 모든 부품이 정한 시간 안에 나오기 시작하게 한다. 녹화해 보니 생동감에서
+        // 부품 다섯인 장은 마지막 부품이 1.7초에야 나오기 시작해 4초 넘게 움직였다(발표하는 사람이 말을 시작해도 장이 채워지는 중)
+        const gap = Math.min(L.step * 2.6, (levelName === 'lively' ? 760 : 560) / Math.max(1, cells.length - 1))
+        for (const cell of cells) {
           block(cell, at)
           // 이음표는 앞의 부품이 나오고 다음 부품이 나오기 전에: 화살표는 가리키는 쪽으로 밀려 나오고, 나머지는 튀어나온다
           for (const lk of links) {
             if (lk.dataset.after !== cell.dataset.block) continue
             const g = lk.firstElementChild
-            const at2 = at + L.step * 1.6
+            const at2 = at + gap * 0.6
             if (lk.classList.contains('is-arrow')) {
               run(anims, g ?? lk, [{ opacity: 0, translate: lk.classList.contains('lk-v') ? `0 ${-L.y * 0.5}px` : `${-L.y * 0.5}px 0` }], s(at2), L.move)
             } else pop(g, at2)
           }
-          at += L.step * 2.6
+          at += gap
         }
         fade(one('.s-source'), at + 200)
         break
