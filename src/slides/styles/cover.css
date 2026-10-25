@@ -1,0 +1,231 @@
+/* ---------- 표지 ---------- */
+
+.l-cover {
+  flex-direction: row;
+  padding: 0;
+}
+
+.cv-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--pad-y) 112px var(--pad-y) var(--pad-x);
+}
+
+.cv-logo {
+  width: 360px;
+  height: 84px;
+}
+
+.cv-logo img {
+  object-position: left center;
+}
+
+.cv-text {
+  margin-top: auto;
+}
+
+/* 제목 덩어리의 마지막 줄 글자 아랫선이 아래 틀선에 */
+.cv-text > .cv-title:last-child {
+  margin-bottom: calc(-1em * ((1.12 - var(--head-box, 1.19)) / 2 + 0.16));
+}
+
+.cv-text > .cv-lead:last-child {
+  margin-bottom: calc(-1em * ((1.45 - 1.19) / 2 + 0.155));
+}
+
+.cv-title {
+  --fs: 90px;
+  max-width: 1120px;
+  font-weight: var(--display-weight);
+  line-height: 1.12;
+  letter-spacing: calc(var(--head-tracking) - 0.015em);
+}
+
+.cv-lead {
+  --fs: 36px;
+  max-width: 1040px;
+  margin-top: 40px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* 결정 요청 칸: 윗분이 처음부터 무엇을 판단할지 알고 듣게 한다 */
+.cv-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: var(--side-w, 640px);
+  padding: var(--pad-y) var(--pad-x) var(--pad-y) 80px;
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+/* 결정 요청 판을 왼쪽으로 옮긴 표지: 안쪽 여백도 좌우를 바꾼다 */
+.l-cover.va-base.is-flip {
+  flex-direction: row-reverse;
+}
+
+.l-cover.va-base.is-flip .cv-main {
+  padding: var(--pad-y) var(--pad-x) var(--pad-y) 112px;
+}
+
+.l-cover.va-base.is-flip .cv-side {
+  padding: var(--pad-y) 80px var(--pad-y) var(--pad-x);
+}
+
+.cv-label {
+  display: block;
+  margin-bottom: 20px;
+  font-size: 22px;
+  opacity: var(--o-mute);
+}
+
+.cv-side > .cv-ask:first-child > .cv-label:first-child {
+  margin-top: calc(-1em * ((1.55 - 1.19) / 2 + 0.155));
+}
+
+/* 발표자 칸의 마지막 값 글자 아랫선이 아래 틀선에 */
+.cv-meta > .meta-row:last-child dd {
+  margin-bottom: calc(-1em * ((1.3 - 1.19) / 2 + 0.155));
+}
+
+.cv-ask-text {
+  --fs: 52px;
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1.24;
+  letter-spacing: calc(var(--head-tracking) - 0.005em);
+  text-wrap: balance;
+}
+
+.cv-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding-top: 40px;
+  border-top: 2px solid var(--bold-line);
+}
+
+.cv-meta:empty {
+  display: none;
+}
+
+/* 모양: 아래 띠. 제목은 위에 넓게, 결정 요청과 발표자는 아래 색 띠에 한 줄로 */
+.l-cover:is(.va-band, .va-full) {
+  flex-direction: column;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-main {
+  padding: var(--pad-y) var(--pad-x) 72px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-title {
+  max-width: 1500px;
+}
+
+/* 띠 안의 결정 요청과 발표자는 아랫선을 맞춰 아래 틀선에 앉힌다 */
+.l-cover:is(.va-band, .va-full) .cv-side {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 96px;
+  width: auto;
+  min-height: 300px;
+  padding: 64px var(--pad-x) var(--pad-y);
+}
+
+.l-cover:is(.va-band, .va-full) .cv-ask-text {
+  margin-bottom: calc(-1em * ((1.24 - var(--head-box, 1.19)) / 2 + 0.16));
+}
+
+.l-cover:is(.va-band, .va-full) .cv-ask {
+  flex: 1;
+  max-width: 1080px;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-meta {
+  flex: none;
+  flex-direction: row;
+  gap: 56px;
+  padding: 0 0 0 56px;
+  border-top: 0;
+  border-left: 2px solid var(--bold-line);
+}
+
+/* 결정 요청이 없는 표지(나누고 알리는 발표): 발표자 줄이 띠의 왼쪽, 제목과 같은 선에서 시작한다.
+   오른쪽 끝에 두면 띠의 왼쪽이 통째로 빈다. 띠도 결정 요청 자리만큼 높게 두지 않는다 */
+.l-cover:is(.va-band, .va-full) .cv-side.no-ask {
+  justify-content: flex-start;
+  gap: 0;
+  min-height: 0;
+}
+
+.l-cover:is(.va-band, .va-full) .cv-side.no-ask .cv-meta {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* 모양: 색 면. 장 전체를 색 면으로, 결정 요청은 아래에 줄로 나눠 */
+.l-cover.va-full {
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+.l-cover.va-full .cv-lead {
+  color: inherit;
+  opacity: var(--o-sub);
+}
+
+.l-cover.va-full .cv-side {
+  margin: 0 var(--pad-x);
+  padding: 56px 0 var(--pad-y);
+  border-top: 2px solid var(--bold-line);
+  background: none;
+}
+
+.l-cover.va-full .cv-logo:not(.img-empty) {
+  width: auto;
+  max-width: 380px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  /* 어두운 면 위의 밝은 판: 박힌 색 대신 지금 면의 글자색(밝은 색)에 바탕을 조금 섞어 눈부시지 않게 */
+  background: color-mix(in srgb, var(--ink) 92%, var(--bg));
+}
+
+.l-cover.va-full .cv-logo:not(.img-empty) img {
+  width: auto;
+  max-width: 100%;
+}
+
+/* 제목 자리 (SlideOptions.place). 기본은 아래. 위로 올리면 로고는 아래로 내려 제목 자리를 비켜 주고,
+   가운데면 로고는 위에 띄워 두어(자리를 차지하지 않게) 제목이 장의 가운데에 온다. 글자 윗선과 아랫선은 틀선에 맞춘다 */
+.l-cover:is(.pl-top, .pl-middle) .cv-text > .cv-title:first-child {
+  margin-top: calc(-1em * ((1.12 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.l-cover.pl-top .cv-text {
+  order: -1;
+  margin-top: 0;
+}
+
+.l-cover.pl-top .cv-logo {
+  order: 1;
+  margin-top: auto;
+}
+
+.l-cover.pl-middle .cv-main {
+  position: relative;
+}
+
+.l-cover.pl-middle .cv-logo {
+  position: absolute;
+  top: var(--pad-y);
+}
+
+.l-cover.pl-middle .cv-text {
+  margin-block: auto;
+}

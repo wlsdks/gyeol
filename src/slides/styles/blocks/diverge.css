@@ -1,0 +1,113 @@
+/* ---------- 항목별 증감 ----------
+   0의 자리(--z)는 양쪽 가장 큰 값의 비율. 막대 끝 숫자 자리는 그쪽에 값이 있을 때만 남긴다(--dv-l, --dv-r).
+   가운데 선은 줄마다 그려 줄 사이 틈 없이 이어지게, 줄의 위아래 여백은 이름에 둔다 */
+.bk-dv {
+  --dv-l: 0px;
+  --dv-r: 0px;
+  --dv-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.is-dark .bk-dv {
+  --dv-bar: color-mix(in srgb, var(--ink) 30%, var(--bg));
+}
+
+.bk-dv.has-neg {
+  --dv-l: 140px;
+}
+
+.bk-dv.has-pos {
+  --dv-r: 140px;
+}
+
+.bk-dv > .bk-cc-key {
+  margin-bottom: 16px;
+}
+
+.bk-dv-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.34fr) minmax(0, 1fr);
+  column-gap: 32px;
+}
+
+.bk-dv-name {
+  --fs: var(--t-small);
+  align-self: center;
+  padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bk-dv-row.is-hl .bk-dv-name {
+  color: var(--ink);
+}
+
+.bk-dv-track {
+  position: relative;
+  min-height: calc(44px * var(--bk-fit, 1) + 2 * (10px * var(--bk-fit, 1) + var(--bk-air, 0px)));
+}
+
+.bk-dv-scale {
+  position: absolute;
+  inset: 0 var(--dv-r) 0 var(--dv-l);
+}
+
+.bk-dv-axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--z) * 1%);
+  width: 2px;
+  background: var(--ink);
+  translate: -50% 0;
+}
+
+.bk-dv-bar {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--z) * 1%);
+  width: calc(var(--p) * 1%);
+  height: calc(44px * var(--bk-fit, 1));
+  border-radius: 0 8px 8px 0;
+  background: var(--dv-bar);
+  translate: 0 -50%;
+}
+
+.bk-dv-row.is-neg .bk-dv-bar {
+  right: calc((100 - var(--z)) * 1%);
+  left: auto;
+  border-radius: 8px 0 0 8px;
+}
+
+.bk-dv-row.is-hl .bk-dv-bar {
+  background: var(--accent);
+}
+
+.bk-dv-v {
+  position: absolute;
+  top: 50%;
+  left: calc((var(--z) + var(--p)) * 1% + 14px);
+  white-space: nowrap;
+  translate: 0 -50%;
+}
+
+.bk-dv-row.is-neg .bk-dv-v {
+  right: calc((100 - var(--z) + var(--p)) * 1% + 14px);
+  left: auto;
+}
+
+.bk-dv-num {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-dv-row.is-hl .bk-dv-num {
+  color: var(--ink);
+}

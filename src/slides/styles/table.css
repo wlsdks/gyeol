@@ -1,0 +1,90 @@
+/* ---------- 표 ----------
+   면 없이 줄로만. 머리 아래 굵은 줄, 첫째 칸은 굵게. 칸 너비는 보이는 칸만으로 --cols 에 받는다. */
+
+.tb {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tb-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--cols);
+  column-gap: 48px;
+  align-items: baseline;
+  padding: 30px 24px;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.tb-headrow {
+  padding-top: 0;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--ink);
+}
+
+/* 크기는 글자 칸 목록(--fs)으로: 따로 잡으면 부품 칸의 맞추기(--bk-fit, --bk-w)를 받지 않아, 크게(1.2배)에서
+   본문은 줄어도 머리줄만 그대로라 표가 칸을 넘었다 */
+.tb-h {
+  --fs: var(--t-label);
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.tb-cell {
+  --fs: 30px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.tb:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4']) .tb-row:not(.tb-headrow) {
+  padding-block: 36px;
+}
+
+.tb-first {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tb :is(.tb-h, .tb-cell).is-num {
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tb-cell.is-num {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tb-row.is-hl {
+  background: var(--accent-soft);
+}
+
+/* 합계 줄: 위에 굵은 줄, 글은 모두 진하고 굵게 */
+.tb-row.is-total {
+  border-top: 3px solid var(--ink);
+  border-bottom: 0;
+}
+
+.tb-row.is-total .tb-cell {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 합계 바로 위 줄의 가는 줄은 굵은 줄과 겹치므로 뺀다 */
+.tb-row:has(+ .tb-row.is-total) {
+  border-bottom: 0;
+}
+
+.tb-row.is-hl .tb-first {
+  color: var(--accent);
+}
+
+.tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
+  padding-block: 20px;
+}
+
+.tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-cell {
+  --fs: 30px;
+}

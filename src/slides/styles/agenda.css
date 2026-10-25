@@ -1,0 +1,166 @@
+/* ---------- 목차 ---------- */
+
+/* 제목은 다른 장처럼 위에, 목록은 그 아래 본문 높이를 줄로 고르게 나눠 채운다. 항목 몇 개뿐인 장이라 이름을 크게 써서
+   글이 곧 장의 그림이 되게 하고, 번호는 줄 오른쪽 끝에 이름과 같은 크기로 가늘고 옅게 둔다. 번호를 이름 앞에 작은 강조색으로
+   두면 흔한 서식의 목록으로 보였고, 이름만 왼쪽에 있으면 줄의 오른쪽이 비었다 */
+.ag {
+  display: grid;
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr);
+  row-gap: var(--body-gap);
+  min-height: 0;
+}
+
+.ag-title {
+  --fs: var(--t-title);
+}
+
+/* 제목 글자의 윗선을 위 틀선에 */
+.ag > .ag-title:first-child {
+  margin-top: calc(-1em * ((1.2 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+/* 글 줄이 쌓이는 목록의 줄은 내용보다 낮아지지 않는다(min-content). 0까지 줄면 자리가 모자랄 때 줄끼리 올라타는데
+   넘친 것으로 보이지 않아서 부품 장의 글자 맞추기(slides/fitBlocks.ts)가 알아채지 못한다 */
+.ag-list {
+  position: relative;
+  display: grid;
+  grid-auto-rows: minmax(min-content, 1fr);
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* 목록 맨 위의 굵은 선과 줄마다의 가는 선은 따로 그린다: 발표할 때 왼쪽에서부터 긋는다(motion/engine.ts) */
+.ag-list::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  border-top: 3px solid var(--ink);
+  content: '';
+}
+
+.ag-item {
+  position: relative;
+  display: grid;
+  grid-template-areas: 't n';
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  align-items: baseline;
+  column-gap: 48px;
+}
+
+.ag-item::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-bottom: var(--rule) solid var(--line);
+  content: '';
+}
+
+.ag-t {
+  --fs: 52px;
+  grid-area: t;
+  line-height: 1.25;
+}
+
+.ag-n {
+  --fs: 52px;
+  grid-area: n;
+  color: var(--ink-3);
+  font-weight: 200;
+  line-height: 1.25;
+}
+
+/* 장 한 장에 쓸 때는 항목 수에 따라 크게: 본문 높이를 항목 수로 나눈 줄 높이에 맞춘 단계 */
+.l-agenda:not(.va-columns) .ag-list {
+  --ag-fs: 90px;
+}
+
+.l-agenda:not(.va-columns) .ag-list[data-n='4'] {
+  --ag-fs: 74px;
+}
+
+.l-agenda:not(.va-columns) .ag-list[data-n='5'] {
+  --ag-fs: 62px;
+}
+
+.l-agenda:not(.va-columns) .ag-list[data-n='6'] {
+  --ag-fs: 52px;
+}
+
+.l-agenda:not(.va-columns) :is(.ag-t, .ag-n) {
+  --fs: var(--ag-fs);
+  letter-spacing: calc(var(--head-tracking) - 0.01em);
+}
+
+/* 모양: 나란히. 칸마다 위에 굵은 선을 긋고(이어 보면 순서의 띠) 그 아래 번호와 이름. 칸 너비는 모두 같다 */
+.va-columns .ag-list {
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-rows: auto;
+  align-content: safe center;
+  column-gap: 32px;
+}
+
+.va-columns .ag-list::before {
+  content: none;
+}
+
+/* 칸이 좁으면(부품 장의 좁은 칸, 단락이 많을 때) 이름도 칸 너비를 따라 작게: 장 크기 그대로면 이름이 글자마다 줄이 바뀐다 */
+.va-columns .ag-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  padding-top: 32px;
+  container-type: inline-size;
+}
+
+.va-columns .ag-item::after {
+  top: 0;
+  bottom: auto;
+  border-top: 3px solid var(--ink);
+  border-bottom: 0;
+}
+
+.va-columns .ag-n {
+  --fs: var(--t-h);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.va-columns .ag-t {
+  --fs: min(52px, 24cqi);
+  text-wrap: balance;
+  word-break: keep-all;
+}
+
+/* 나란히를 장 한 장에 쓸 때: 제목을 단락 장처럼 크게 두고 띠를 본문 바닥에 앉힌다. 띠를 가운데나 위에 두면 짧은 이름
+   몇 개가 장 한가운데에 낮게 떠 보였다. 큰 제목과 바닥의 띠가 장의 위아래를 잡는다 */
+.l-agenda.va-columns .ag-title {
+  --fs: 108px;
+  font-weight: var(--display-weight);
+  line-height: 1.08;
+  letter-spacing: calc(var(--head-tracking) - 0.015em);
+}
+
+.l-agenda.va-columns .ag > .ag-title:first-child {
+  margin-top: calc(-1em * ((1.08 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.l-agenda.va-columns .ag-list {
+  align-content: end;
+}
+
+/* 띠가 본문 바닥에 앉으므로, 명조처럼 글자 상자가 줄 높이보다 큰 글꼴이면 이름 줄이 상자 아래로 몇 px 나온다.
+   그만큼을 안쪽 여백으로 받아 둔다(편집기가 '글이 넘쳤어요'를 띄우지 않게). 부품 칸 안의 목차는 칸이 재므로 장에서만 */
+.l-agenda.va-columns > .ag {
+  margin-bottom: -16px;
+  padding-bottom: 16px;
+}
+
+.l-agenda.va-columns .ag-list:is([data-n='2'], [data-n='3'], [data-n='4']) .ag-t {
+  --fs: min(62px, 24cqi);
+}

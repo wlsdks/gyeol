@@ -1,0 +1,14 @@
+/* ---------- 부품 하나만 (부품 고르기 카드, 끌고 있는 부품) ---------- */
+
+/* 장의 틀(--pad-x, --pad-y)이 아니라 카드 안에서 부품 하나를 크게 보이려는 좁은 여백이다 */
+.slide.is-solo {
+  padding: 40px;
+}
+
+.slide.is-solo :is(.s-head, .s-source) {
+  display: none;
+}
+
+.slide.is-solo .bk-area {
+  margin-top: 0;
+}

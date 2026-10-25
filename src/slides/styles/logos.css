@@ -1,0 +1,72 @@
+/* ---------- 로고 모음 ---------- */
+
+/* 한 줄의 로고 수는 logoColumns(deck/layouts.ts). 칸은 반 칸(--lg-half = 로고 수 × 2)으로 나누고 로고 하나가 반 칸 둘을 쓴다:
+   덜 찬 마지막 줄을 반 칸만큼 밀어 가운데에 둘 수 있게 */
+.lg {
+  display: grid;
+  grid-template-columns: repeat(var(--lg-half, 8), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 20px;
+  max-height: 100%;
+}
+
+.lg[data-rows='1'] {
+  grid-auto-rows: minmax(0, 320px);
+}
+
+.lg-cell {
+  grid-column-end: span 2;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: var(--surface);
+}
+
+/* 로고는 글자가 든 가로로 긴 그림이 많아 너비가 크기를 정한다. 좁은 칸에서도 알아볼 수 있게 판의 옆 여백은 좁게 */
+.lg-img {
+  width: 86%;
+  height: 112px;
+}
+
+.lg-img.img-empty {
+  background: transparent;
+}
+
+.lg-img img {
+  filter: grayscale(1);
+  opacity: 0.9;
+}
+
+.lg-name {
+  --fs: 22px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* 어두운 화면의 로고 모음: 밝은 판을 깔면 검은 장 위에 흰 타일이 줄지어 떠서 눈이 부시다.
+   판은 어두운 면 그대로 두고 로고를 흑백으로 뒤집어 밝게 한다. 흰 바탕 그림(JPG)의 바탕은 뒤집으면 검정이 되어
+   screen으로 겹치면 판 색에 묻힌다 */
+.is-dark .lg-img img {
+  filter: grayscale(1) invert(1);
+  mix-blend-mode: screen;
+}
+
+/* 표지, 사례의 회사 로고 하나는 색을 살려야 해서 밝은 판을 깐다 */
+.is-dark :is(.cv-logo, .cs-logo):not(.img-empty) {
+  width: auto;
+  max-width: 380px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  /* 어두운 면 위의 밝은 판: 박힌 색 대신 지금 면의 글자색(밝은 색)에 바탕을 조금 섞어 눈부시지 않게 */
+  background: color-mix(in srgb, var(--ink) 92%, var(--bg));
+}
+
+.is-dark :is(.cv-logo, .cs-logo):not(.img-empty) img {
+  width: auto;
+  max-width: 100%;
+}

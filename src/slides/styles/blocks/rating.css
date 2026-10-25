@@ -1,0 +1,248 @@
+/* ---------- 평가표 ---------- */
+
+/* 왼쪽은 기준, 오른쪽은 안마다 한 칸. 추천 띠는 안의 몇째인지(--pick)로 놓는다 (추진 일정의 지금 칸과 같은 짜임) */
+.bk-ev {
+  --lw: clamp(220px, 36%, 440px);
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-ev-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: var(--bk-h-gap);
+}
+
+.bk-ev-top:not(:has(.bk-h)) {
+  justify-content: flex-end;
+}
+
+/* 표시가 무엇인지: 제목 오른쪽에 작게 */
+.bk-ev-lg {
+  --fs: var(--t-source);
+  display: flex;
+  flex: none;
+  gap: 22px;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-ev-lk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bk-ev-lm {
+  --ev-c: var(--ink-3);
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.bk-ev-grid {
+  position: relative;
+}
+
+.bk-ev-head,
+.bk-ev-list {
+  position: relative;
+}
+
+.bk-ev-head,
+.bk-ev-row {
+  display: grid;
+  grid-template-columns: var(--lw) minmax(0, 1fr);
+  gap: 0 28px;
+}
+
+.bk-ev-pickset {
+  display: flex;
+  align-items: baseline;
+  align-self: end;
+  gap: 30px;
+  padding-bottom: 14px;
+}
+
+/* 추천 칸이 접혀 있으면(비어 있는 칸은 '칸 더하기'로 연다) 이름만 남지 않게 */
+:is(.bk-ev-pickset, .bk-gt-nowset):not(:has(.ed)) {
+  visibility: hidden;
+}
+
+.bk-ev-colwrap {
+  position: relative;
+  min-width: 0;
+}
+
+.bk-ev-colwrap > .bk-ev-optsed {
+  bottom: 14px;
+}
+
+.bk-ev-sk,
+.bk-ev-sv {
+  --fs: var(--t-source);
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+.bk-ev-sk {
+  font-weight: 700;
+}
+
+.bk-ev-cols,
+.bk-ev-track {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+}
+
+.bk-ev-cols {
+  align-items: end;
+  height: 100%;
+  padding-bottom: 14px;
+}
+
+.bk-ev-c {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bk-ev-cn {
+  --fs: var(--t-small);
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bk-ev-c.is-pick .bk-ev-cn {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.bk-ev-pk {
+  --fs: var(--t-source);
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 추천하는 안: 머리부터 마지막 줄까지 옅은 띠 */
+.bk-ev-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--lw) + 28px + (100% - var(--lw) - 28px) * var(--pick) / var(--n));
+  width: calc((100% - var(--lw) - 28px) / var(--n));
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+
+.bk-ev-row {
+  align-items: center;
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-ev-row:first-child {
+  border-top-color: var(--ink);
+}
+
+.bk-ev-row:last-child {
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.bk-ev-list[data-n='5'] .bk-ev-row,
+.bk-ev-list[data-n='6'] .bk-ev-row {
+  padding: calc(12px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-ev-label {
+  min-width: 0;
+}
+
+.bk-ev-t {
+  --fs: var(--t-body);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.bk-ev-m {
+  --fs: var(--t-source);
+  margin-top: 4px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+.bk-ev-track {
+  position: relative;
+  align-self: stretch;
+  align-items: center;
+  min-height: 40px;
+}
+
+.bk-ev-cell {
+  --ev-c: color-mix(in srgb, var(--ink) 46%, transparent);
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+.bk-ev-cell.is-pick {
+  --ev-c: var(--accent);
+}
+
+.bk-ev-mk {
+  display: block;
+  width: calc(40px * var(--bk-fit, 1));
+  height: calc(40px * var(--bk-fit, 1));
+}
+
+.bk-ev-ring {
+  fill: none;
+  stroke: var(--ev-c);
+  stroke-width: 2.5;
+}
+
+.bk-ev-fill {
+  fill: var(--ev-c);
+}
+
+/* 표시로 읽지 못한 글('1.9억' 같은)은 그 글 그대로 */
+.bk-ev-x {
+  --fs: var(--t-small);
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bk-ev-cell.is-pick .bk-ev-x {
+  color: var(--accent);
+}
+
+/* 표시 자리에서 고치는 평가: 칸 줄 왼쪽에서 조금 띄워 */
+.bk-ev-track > .bk-ev-p {
+  --fs: var(--t-source);
+  padding: 0 12px;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.bk-ev-row.is-hint .bk-ev-track > .bk-ev-cell,
+.bk-ev.is-demo :is(.bk-ev-cols, .bk-ev-band) {
+  opacity: 0.4;
+}

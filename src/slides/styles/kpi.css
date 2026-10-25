@@ -1,0 +1,267 @@
+/* ---------- 핵심 숫자 ---------- */
+/* 기본(나란히): 면 없이 세로 줄로 나눈 띠. 이름 → 숫자 → 설명 순으로 위에서 읽힌다.
+   칸 사이는 틈(--kp-gap)으로 비우고 나누는 줄은 그 틈 가운데에 긋는다. 예전처럼 칸마다 안쪽 여백을 달리 두면(첫 칸만 왼쪽 여백 없음)
+   글자 칸 너비가 칸마다 달라서, 칸 너비로 줄이는 숫자(.one-line의 100cqi)가 같은 폭을 써도 첫 칸만 크게 보였다 */
+
+.kp {
+  --kp-gap: 112px;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  column-gap: var(--kp-gap);
+  align-content: center;
+  padding-bottom: 40px;
+}
+
+.kp-item {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px 0 12px;
+}
+
+.kp-item + .kp-item::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((var(--kp-gap) + var(--rule)) / -2);
+  width: var(--rule);
+  background: var(--line);
+  content: '';
+}
+
+.kp-label {
+  --fs: 30px;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* 큰 숫자는 줄 높이를 1보다 낮게 잡아 위아래를 붙인다. 명조(한글과 숫자의 키가 크다)는 --tall만큼 늘려 이름, 설명과 겹치지 않게 (themes.ts) */
+.kp-value {
+  --fs: 154px;
+  margin-top: 28px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: calc(0.95 * var(--tall, 1));
+  letter-spacing: -0.035em;
+}
+
+.kp[data-n='2'] .kp-value {
+  --fs: 184px;
+}
+
+.kp[data-n='4'] .kp-value {
+  --fs: 108px;
+}
+
+.kp-body {
+  --fs: 30px;
+  margin-top: 36px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 칸이 본문 상자 높이를 다 차지해 나누는 줄이 본문 위에서 아래까지 서고,
+   숫자 묶음은 칸 가운데(눈높이로 조금 위)에. 줄을 묶음 높이만큼만 그으면 본문 가운데에 낮은 띠가 떠서 위아래가 비어 보였다.
+   빈 높이가 넉넉해서 숫자도 한 단계 크게 */
+.l-kpi.va-base .kp:not([data-n='1']) {
+  container-type: inline-size;
+  grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1.3fr);
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+/* 칸마다 따로 가운데에 두면 설명이 있는 칸만 이름과 숫자가 올라가 줄이 어긋난다. 이름, 숫자, 설명 줄을 모든 칸이 같이 쓴다(subgrid).
+   칸이 크기 상자(container)이면 subgrid가 되지 않아서, 크기 상자는 숫자 묶음 전체(.kp)로 두고 숫자는 한 칸 너비로 줄인다 */
+.l-kpi.va-base .kp:not([data-n='1']) .kp-item {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  padding: 0;
+  container-type: normal;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-value.one-line {
+  font-size: min(calc(var(--fs) * var(--fit, 1) * var(--scale, 1)), calc((100cqi - (var(--n) - 1) * var(--kp-gap)) / var(--n) / (var(--units, 1) * var(--glyph-k, 1))));
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-label {
+  grid-row: 2;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-value {
+  grid-row: 3;
+}
+
+.l-kpi.va-base .kp:not([data-n='1']) .kp-body {
+  grid-row: 4;
+}
+
+.l-kpi.va-base .kp[data-n='2'] .kp-value {
+  --fs: 220px;
+}
+
+.l-kpi.va-base .kp[data-n='3'] .kp-value {
+  --fs: 184px;
+}
+
+.l-kpi.va-base .kp[data-n='4'] .kp-value {
+  --fs: 128px;
+}
+
+.l-kpi.va-base .kp-value {
+  margin-top: 36px;
+}
+
+.l-kpi.va-base .kp-body {
+  margin-top: 44px;
+}
+
+/* 숫자 하나: 면 없이 아주 크게. 이름과 설명은 숫자 오른쪽 아래에 붙여 가로를 채운다 */
+.kp[data-n='1'] {
+  align-content: center;
+}
+
+.kp[data-n='1'] .kp-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 88px;
+  align-content: center;
+  padding: 0;
+}
+
+.kp[data-n='1'] .kp-value {
+  --fs: 264px;
+  grid-row: 1 / span 2;
+  align-self: end;
+  margin: 0;
+  line-height: calc(0.8 * var(--tall, 1));
+}
+
+.kp[data-n='1'] .kp-label {
+  --fs: 44px;
+  grid-column: 2;
+  align-self: end;
+  padding-top: 40px;
+  border-top: 3px solid var(--ink);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.kp[data-n='1'] .kp-body {
+  --fs: 30px;
+  grid-column: 2;
+  align-self: end;
+  max-width: 720px;
+  margin-top: 20px;
+}
+
+.kp[data-n='1'] .kp-item:not(:has(.kp-body)) .kp-label {
+  grid-row: 1 / span 2;
+}
+
+/* 모양: 카드. 숫자마다 면을 깔아 따로따로 */
+.va-cards .kp {
+  --kp-gap: var(--gap);
+  align-content: stretch;
+  gap: var(--gap);
+  padding-bottom: 0;
+}
+
+.va-cards .kp-item {
+  padding: 52px 56px 56px;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+:is(.va-cards, .va-focus) .kp-item::before {
+  content: none;
+}
+
+.va-cards .kp-value {
+  margin-top: auto;
+  padding-top: 40px;
+}
+
+.va-cards .kp[data-n='1'] .kp-item {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.va-cards .kp[data-n='1'] .kp-value {
+  margin: 0;
+  padding: 0;
+}
+
+/* 모양: 하나 크게. 첫 숫자가 답, 나머지는 오른쪽에 근거로 */
+.va-focus .kp:not([data-n='1']) {
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 1fr);
+  column-gap: 96px;
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item {
+  justify-content: center;
+  padding: 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child {
+  grid-row: 1 / span 3;
+  border-top: 0;
+}
+
+.va-focus .kp[data-n='2'] .kp-item:first-child {
+  grid-row: 1 / span 1;
+}
+
+.va-focus .kp[data-n='3'] .kp-item:first-child {
+  grid-row: 1 / span 2;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:nth-child(2) {
+  border-top: 0;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-value {
+  --fs: 220px;
+  order: -1;
+  margin: 0 0 40px;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:first-child .kp-label {
+  --fs: 36px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 32px;
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-value {
+  --fs: 74px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  color: var(--ink);
+}
+
+.va-focus .kp:not([data-n='1']) .kp-item:not(:first-child) .kp-body {
+  --fs: 26px;
+  margin-top: 10px;
+}

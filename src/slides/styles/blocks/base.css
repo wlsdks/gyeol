@@ -1,0 +1,83 @@
+.slide.l-compose {
+  --bk-gap: 48px;
+  --bk-h-gap: 28px;
+}
+
+.bk-area {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--bk-gap);
+  min-height: 0;
+  margin-top: var(--body-gap);
+}
+
+/* 제목과 부제를 비우면 부품이 장 위쪽부터 */
+.l-compose .s-head:empty {
+  display: none;
+}
+
+.l-compose .s-head:empty + .bk-area {
+  margin-top: 0;
+}
+
+.bk {
+  position: relative;
+  container: bk / size;
+  min-width: 0;
+  min-height: 0;
+  border-radius: var(--r-panel);
+}
+
+.bk-in {
+  /* 회의실 뒷자리에서도 읽히게: 칸이 작아도 글자는 출처 글자(22px)보다 작아지지 않는다 */
+  --fs-min: 22px;
+  /* 한 줄로 줄이는 글(.one-line의 100cqi)이 칸이 아니라 안쪽 여백을 뺀 너비에 맞게. 칸 크기 단계(@container bk)와 cqh는 그대로 칸을 본다 */
+  container-type: inline-size;
+  height: 100%;
+}
+
+/* 칸이 좁거나 낮으면 글자를 글자 크기 비율(1.2)의 단계로 작게: 반 칸, 3분의 1 칸이나 300px 밑은 한 단계(0.84),
+   4분의 1 칸은 두 단계(0.7). 높이로는 한 단계까지만: 낮은 칸은 글자를 줄이기보다 옆으로 눕힌다.
+   좁고 낮아도 곱하지 않고 작은 쪽 하나만 쓴다(min). 곱하면 좁고 낮은 칸에서
+   제목, 숫자, 본문이 모두 바닥(22px)까지 내려가 크기 차이가 없어진다. 그보다 작은 칸에서는 글자를 더 줄이지 않고
+   부품이 짜임을 바꾼다(부품마다의 좁은 칸, 낮은 줄 규칙). 그래도 안 되면 편집기가 그 자리에 넣지 않는다(blockHeights.ts) */
+@container bk (max-width: 1100px) {
+  .bk-in {
+    --bk-w: 0.84;
+  }
+}
+
+/* 한 줄에 부품이 둘 이상이면 넓은 칸(8칸)도 옆 칸과 같은 단계로: 칸마다 단계가 다르면 나란한 소제목과 글의 크기가 어긋나 줄이 비뚤어 보인다 */
+.bk.is-shared > .bk-in {
+  --bk-w: 0.84;
+}
+
+@container bk (max-width: 450px) {
+  .bk > .bk-in {
+    --bk-w: 0.7;
+  }
+}
+
+@container bk (max-height: 300px) {
+  .bk-in {
+    --bk-h: 0.84;
+  }
+}
+
+/* 한 줄에 부품이 둘 이상이면 모두 위에서부터: 가운데에 두면 내용이 적은 부품이 옆 부품과 다른 높이에 떠서
+   소제목의 윗선이 칸마다 어긋나 보인다. 대신 줄 안에서 가장 긴 내용을 기준으로 묶음째 가운데로 내린다(--bk-lift, fitBlocks.ts):
+   윗선은 맞으면서 높은 줄의 아래 절반이 통째로 비지 않는다. 혼자 한 줄을 쓰는 부품은 그 줄의 가운데에.
+   --bk-lifts는 fitBlocks가 내릴 수 있는 부품을 알아보는 표시다(목록을 두 곳에 따로 두지 않게) */
+.bk.is-shared > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
+  --bk-lifts: 1;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding-top: var(--bk-lift, 0px);
+}
+
+/* 칸 사이에 이음표가 선 줄은 이음표와 같이 가운데에: '앞 → 뒤'가 한 줄로 읽힌다 */
+.bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx) {
+  justify-content: center;
+}

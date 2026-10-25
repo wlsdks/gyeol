@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BLOCK_GAP, LINK_PAD } from '../deck/blocks'
+import { cssSource } from './cssSource'
 
 // CSS와 코드가 서로 기대는 약속. 어긋나도 오류 없이 모양만 틀어져서(글자 크기 설정이 먹지 않거나 자리 어림이 틀린다) 테스트로 본다
-const read = (name: string) => readFileSync(new URL(`./${name}`, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+const read = (name: string) => cssSource(new URL(`./${name}`, import.meta.url)).replace(/\/\*[\s\S]*?\*\//g, '')
 const slides = read('slides.css')
 const blocks = read('blocks.css')
 

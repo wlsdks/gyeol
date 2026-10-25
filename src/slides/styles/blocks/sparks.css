@@ -1,0 +1,258 @@
+/* ---------- 지표 흐름표 ----------
+   이름, 흐름 선, 지금, 바뀐 만큼. 머리와 줄이 표 하나의 격자를 나눠 써서(subgrid) 이름이 길어도 칸이 같은 자리에 선다.
+   줄은 목록형 부품과 같은 꼴(첫 줄 위는 글자색, 줄 사이와 아래는 옅은 선) */
+.bk-sx {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-sx > .bk-h {
+  margin-bottom: var(--bk-h-gap);
+}
+
+.bk-sx-table {
+  display: grid;
+  grid-template-columns: fit-content(30%) minmax(0, 1fr) max-content max-content;
+  column-gap: 40px;
+}
+
+.bk-sx-head,
+.bk-sx-list,
+.bk-sx-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  min-width: 0;
+}
+
+.bk-sx-head {
+  align-items: end;
+  padding-bottom: 12px;
+}
+
+.bk-sx-hk {
+  --fs: var(--t-source);
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.bk-sx-hk:is(.is-now, .is-chg) {
+  text-align: right;
+}
+
+.bk-sx-row {
+  align-items: center;
+  padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-sx-row:first-child {
+  border-top-color: var(--ink);
+}
+
+.bk-sx-row:last-child {
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.bk-sx-name {
+  --fs: var(--t-small);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* 선 끝의 점(지름 16px, 둘레 4px)이 칸 밖으로 나가지 않게 오른쪽을 띄운다.
+   칸에 높이가 남아 줄 사이를 넓히면(--bk-air, fitBlocks.ts) 선도 그만큼 높게: 줄 사이만 벌어지면 선이 넓은 줄 가운데 납작하게 떠 있다 */
+.bk-sx-plot {
+  position: relative;
+  height: calc(52px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  margin-right: 12px;
+}
+
+.bk-sx-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bk-sx-svg path {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+
+.bk-sx-dot {
+  position: absolute;
+  top: calc(var(--y) * 1%);
+  left: calc(var(--x) * 1%);
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+.bk-sx-now {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.bk-sx-v {
+  --fs: var(--t-h);
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 단위는 숫자보다 두 단계 작게 (36 → 26, 숫자의 꼴) */
+.bk-sx-u {
+  --fs: var(--t-small);
+  margin-left: 4px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.bk-sx-chg {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 흐름 숫자(편집할 때만): 선 위에서 고친다 (.on-chart, edit.css) */
+.bk-sx-plot > .bk-sx-in {
+  --fs: var(--t-source);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.bk-sx.is-demo :is(.bk-sx-svg, .bk-sx-dot, .bk-sx-v, .bk-sx-u:not(.ed), .bk-sx-chg) {
+  opacity: 0.4;
+}
+
+/* 지표가 많으면 줄 사이와 선을 낮게: 여섯 줄이 한 단계 낮은 줄에도 들어가게 */
+.bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-row {
+  padding: calc(10px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-plot {
+  height: calc(44px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+}
+
+/* 좁은 칸(반 칸): 칸 사이를 좁혀 선 자리를 지킨다 */
+@container bk (max-width: 900px) {
+  .bk-sx-table {
+    column-gap: 28px;
+  }
+}
+
+.bk-sx-head.is-more {
+  display: none;
+}
+
+/* 한 줄을 다 쓰는 넓은 칸에 지표가 넷 이상이면 두 단으로 흘린다(앞의 반은 왼쪽, 나머지는 오른쪽).
+   한 단이면 선이 1000px 넘게 길어져 오르내림이 납작해지고, 줄은 낮게 촘촘해진다. 두 단 사이는 칸 사이보다 넓게(가운데 빈 칸) */
+@container bk (min-width: 1400px) {
+  .bk-sx-table:has(> .bk-sx-list:is([data-n='4'], [data-n='5'], [data-n='6'])) {
+    grid-template-columns:
+      fit-content(14%) minmax(0, 1fr) max-content max-content
+      24px
+      fit-content(14%) minmax(0, 1fr) max-content max-content;
+
+    > .bk-sx-head {
+      grid-column: 1 / span 4;
+      grid-row: 1;
+    }
+
+    > .bk-sx-head.is-more {
+      display: grid;
+      grid-column: 6 / span 4;
+    }
+
+    > .bk-sx-list {
+      grid-auto-flow: row;
+    }
+
+    .bk-sx-row {
+      grid-column: 1 / span 4;
+    }
+
+    /* 왼쪽 단의 마지막 줄도 아래 선, 오른쪽 단의 첫 줄도 글자색 선 */
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(n + 3),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(n + 4) {
+      grid-column: 6 / span 4;
+    }
+
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(2),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(3) {
+      border-bottom: var(--rule) solid var(--line);
+    }
+
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(4) {
+      border-top-color: var(--ink);
+    }
+
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(4) {
+      grid-row: 1;
+    }
+
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(4),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(5) {
+      grid-row: 2;
+    }
+
+    .bk-sx-list[data-n='6'] > .bk-sx-row:nth-child(6) {
+      grid-row: 3;
+    }
+
+    /* 줄이 반이라 높이가 남는다: 다섯, 여섯도 넷과 같은 줄 높이 */
+    .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-row {
+      padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+    }
+
+    .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-plot {
+      height: calc(52px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+    }
+  }
+}
+
+/* 낮은 줄: 줄 사이와 선을 낮게. 흐름 선은 오르내림만 보이면 되어서 낮아도 읽히고, 글자를 줄이는 것보다 낫다 */
+@container bk (max-height: 460px) {
+  .bk-sx-row {
+    padding: calc(10px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  }
+
+  .bk-sx-plot {
+    height: calc(44px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  }
+
+  .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-row {
+    padding: calc(8px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  }
+
+  .bk-sx-list:is([data-n='5'], [data-n='6']) .bk-sx-plot {
+    height: calc(36px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  }
+}

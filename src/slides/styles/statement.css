@@ -1,0 +1,27 @@
+/* ---------- 한 문장 메시지 ---------- */
+
+.st {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 1600px;
+  margin-top: 0;
+  padding-bottom: 32px;
+}
+
+.st-title {
+  --fs: 90px;
+  line-height: 1.24;
+  letter-spacing: calc(var(--head-tracking) - 0.01em);
+}
+
+.st-lead {
+  --fs: 36px;
+  max-width: 1280px;
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: var(--rule) solid var(--line);
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}

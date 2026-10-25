@@ -1,0 +1,172 @@
+/* ---------- 레이아웃 부품이 장보다 작은 칸에 들어갈 때 ----------
+   레이아웃은 장 하나를 다 쓰는 크기로 짜여 있어서, 칸이 낮거나 좁으면 줄 사이와 고정 너비를 줄인다.
+   원래 규칙보다 앞서도록 [data-n]을 붙여 구체성을 맞춘다 */
+
+/* 깔때기는 칸 높이를 따라 막대와 사이를 고르게 줄인다. 620px에서 장 크기(88, 48)로 한 번에 바뀌면
+   그 바로 위 높이(630 남짓)에서는 아직 자리가 모자라 카드 여백을 먹는다 */
+.bk-in .fn:is([data-n]) {
+  --fn-h: clamp(56px, 12cqh, 88px);
+  --fn-gap: clamp(24px, 5cqh, 48px);
+}
+
+.bk-in .fn:is([data-n='5'], [data-n='6']) {
+  --fn-h: clamp(48px, 8cqh, 56px);
+  --fn-gap: clamp(20px, 3.5cqh, 30px);
+}
+
+/* 2×2 우선순위가 넓고 낮은 칸에 들면 칸마다 이름과 설명을 옆으로 눕힌다(이름 왼쪽, 설명 오른쪽, 위아래 가운데).
+   위아래로 쌓으면 칸 높이가 모자라 설명이 칸 아래 선에 붙었다. 글자를 줄이지 않고 짜임을 바꾼다.
+   이름 칸은 판의 격자를 나눠 써서(subgrid) 위아래 두 칸의 긴 이름에 맞춘다: 설명이 같은 자리에서 시작하고, 이름이 한 줄로 선다 */
+@container bk (min-width: 1200px) and (max-height: 560px) {
+  .bk-in .mx-grid {
+    grid-template-columns: fit-content(24%) minmax(0, 1fr) fit-content(24%) minmax(0, 1fr);
+  }
+
+  .bk-in .mx-cell {
+    display: grid;
+    grid-column: span 2;
+    grid-template-columns: subgrid;
+    /* 크게에서 설명이 두 줄이면 칸보다 높아진다: 위로 넘치지 않게(safe) 아래로 넘쳐 글자 맞추기가 잡게 */
+    align-content: safe center;
+    align-items: baseline;
+    gap: 8px 32px;
+    padding: 20px 40px;
+  }
+}
+
+/* 증감 요인: 칸이 좁으면 처음과 끝 값의 단위가 숫자 아래로 내려가 값이 두 줄이 된다. 막대 위에 그만큼 자리를 더 둔다 (장에서는 96px) */
+@container bk (max-width: 1300px) {
+  .bk-in .wf-bar,
+  .bk-in .wf-val,
+  .bk-in .wf-plot::after {
+    --area: calc(100% - 136px);
+  }
+}
+
+/* 가로 막대의 두께도 칸 높이를 따라 (장에서는 64px) */
+.bk-in .br:not(.va-columns *) .br-track {
+  height: clamp(28px, 6cqh, 64px);
+}
+
+/* 막대 줄, 목차 줄, 비교 줄의 위아래 여백: 장에서는 줄이 높아 여백이 저절로 생기지만, 낮은 칸에서는 글자 높이까지 줄어
+   숫자와 선이 붙는다. 여백을 줄 안에 두면 가장 낮은 높이(blockHeights.ts)도 이 여백까지 잰다 */
+.bk-in .br:not(.va-columns *) .br-row {
+  padding-block: clamp(10px, 1.8cqh, 20px);
+}
+
+.bk-agenda:not(.va-columns) .ag-item {
+  padding-block: clamp(10px, 2cqh, 24px);
+}
+
+.bk-in :is(.cp-l, .cp-r) {
+  padding-block: clamp(8px, 1.6cqh, 18px);
+}
+
+/* 넓고 낮은 칸에서 넷 이상이면 두 단으로(위에서 아래로 읽고 다음 단): 한 단이면 줄마다 이름 옆이 칸 끝까지 비고 줄이 붙는다.
+   바꾸는 높이는 항목 수마다 한 단으로 들어가는 가장 낮은 높이 바로 위: 그보다 낮게 잡으면 그 사이 높이에서는 어느 쪽으로도 들어가지 않는다 */
+.bk-agenda:not(.va-columns) .ag-list {
+  column-gap: 72px;
+}
+
+@container bk (min-width: 1300px) and (max-height: 420px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
+}
+
+@container bk (min-width: 1300px) and (max-height: 470px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='5'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
+}
+
+@container bk (min-width: 1300px) and (max-height: 560px) {
+  .bk-agenda:not(.va-columns) .ag-list[data-n='6'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(min-content, 1fr));
+    grid-auto-flow: column;
+  }
+}
+
+/* 나란히 목차가 좁은 칸에서 다섯, 여섯이면 셋씩 두 줄로: 한 줄로 늘어놓으면 반 칸에서 칸 하나가 83px라 이름이
+   바닥 글자(22px)로 줄고 글자마다 줄이 바뀌었다. 칸이 더 높아 줄로 쌓을 때(아래 --ag-stack)는 그 짜임을 쓴다 */
+@container bk (max-width: 1299px) {
+  @container style(not (--ag-stack: 1)) {
+    .bk-agenda.va-columns .ag-list:is([data-n='5'], [data-n='6']) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-flow: row;
+      row-gap: 48px;
+    }
+  }
+}
+
+/* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
+.bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
+  padding-block: calc(clamp(12px, 2.4cqh, 30px) + var(--bk-air, 0px));
+}
+
+.bk-in .ps:is([data-n='5']) .ps-row:not(.ps-headrow) {
+  padding-block: calc(clamp(12px, 1.6cqh, 20px) + var(--bk-air, 0px));
+}
+
+.bk-in .ps:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
+  padding-block: calc(8px + var(--bk-air, 0px));
+}
+
+.bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
+  padding-block: calc(clamp(16px, 2.6cqh, 36px) + var(--bk-air, 0px));
+}
+
+.bk-in .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
+  padding-block: calc(clamp(12px, 2cqh, 20px) + var(--bk-air, 0px));
+}
+
+.bk-in .pr-plan {
+  padding: clamp(34px, 5.5cqh, 52px) clamp(40px, 6cqh, 56px);
+}
+
+.bk-in .tl {
+  gap: clamp(32px, 5.2cqh, 56px);
+  padding-bottom: clamp(16px, calc(9cqh - 40px), 56px);
+}
+
+@container bk (max-height: 620px) {
+  .bk-in .sk:is([data-n]) .sk-row:not(.sk-headrow) {
+    padding-block: calc(12px + var(--bk-air, 0px));
+  }
+
+  .bk-in .sm:is([data-n]) .sm-row {
+    padding-block: calc(18px + var(--bk-air, 0px));
+  }
+}
+
+/* 큰 숫자 묶음의 숫자 하나: 장에서는 숫자 옆에 이름과 설명을 두지만, 장보다 좁은 칸에서는 숫자가 너비를 거의 다 써서
+   옆의 이름이 글자마다 줄이 바뀌고 칸 밖으로 밀린다. 그래서 숫자 아래로 내린다 */
+@container bk (max-width: 1300px) {
+  .bk-in .kp[data-n='1'] .kp-item {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    align-content: center;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-value {
+    --fs: 220px;
+    grid-row: auto;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-label,
+  .bk-in .kp[data-n='1'] .kp-item:not(:has(.kp-body)) .kp-label {
+    grid-row: auto;
+    grid-column: 1;
+    margin-top: 44px;
+    padding-top: 28px;
+  }
+
+  .bk-in .kp[data-n='1'] .kp-body {
+    grid-column: 1;
+  }
+}

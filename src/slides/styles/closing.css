@@ -1,0 +1,135 @@
+/* ---------- 마지막 장 ---------- */
+
+.l-closing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--side-w, 800px);
+  gap: 120px;
+  padding-bottom: var(--pad-y);
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+.l-closing:not(:has(.cl-steps)) {
+  grid-template-columns: 1fr;
+}
+
+/* 요청 목록을 왼쪽으로 옮긴 장 */
+.l-closing.is-flip:has(.cl-steps) {
+  grid-template-columns: var(--side-w, 800px) minmax(0, 1fr);
+}
+
+.l-closing.is-flip .cl-steps {
+  order: -1;
+}
+
+.cl-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  /* 연락처의 마지막 값은 글자 아랫선을 아래 틀선에 맞추느라 상자 아래로 조금 나온다(아래 margin-bottom).
+     그만큼을 안쪽 여백으로 받아 둔다: 받지 않으면 편집기가 모든 마지막 장에 '글이 넘쳤어요'를 띄웠다 */
+  margin-bottom: -16px;
+  padding-bottom: 16px;
+}
+
+.cl-title {
+  --fs: 108px;
+  font-weight: var(--display-weight);
+  line-height: 1.08;
+  letter-spacing: calc(var(--head-tracking) - 0.015em);
+}
+
+.cl-main > .cl-title:first-child {
+  margin-top: calc(-1em * ((1.08 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.cl-contact > .meta-row:last-child dd {
+  margin-bottom: calc(-1em * ((1.3 - 1.19) / 2 + 0.155));
+}
+
+.cl-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.cl-steps {
+  display: grid;
+  grid-auto-rows: minmax(min-content, 1fr);
+  min-height: 0;
+  border-top: 2px solid var(--bold-line);
+}
+
+.cl-steps:is([data-n='1'], [data-n='2']) {
+  grid-auto-rows: minmax(min-content, 260px);
+}
+
+/* 번호는 요청 제목과 같은 크기, 같은 글자선에 가늘고 옅게. 동그라미에 넣은 번호는 흔한 서식처럼 보였다(목차와 같은 말) */
+.cl-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: center;
+  align-items: first baseline;
+  column-gap: 40px;
+  border-bottom: 2px solid var(--bold-line);
+}
+
+.cl-n {
+  --fs: 36px;
+  min-width: 0.6em;
+  font-weight: 200;
+  line-height: 1.25;
+  opacity: var(--o-mute);
+}
+
+.cl-step-t {
+  --fs: 36px;
+  line-height: 1.25;
+}
+
+.cl-step-b {
+  --fs: 26px;
+  margin-top: 12px;
+  line-height: 1.45;
+  opacity: var(--o-sub);
+}
+
+/* 요청이 셋 이하면 줄마다 높이가 300px 가까이 남아서, 36px 제목과 26px 설명이 줄 가운데에 작은 띠로만 보였다.
+   한 단계씩 키운다 (넷 이상은 줄이 낮아 그대로) */
+.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) :is(.cl-step-t, .cl-n) {
+  --fs: 44px;
+}
+
+.cl-steps:is([data-n='1'], [data-n='2'], [data-n='3']) .cl-step-b {
+  --fs: 30px;
+}
+
+.l-closing .meta-row :is(dt, dd) {
+  color: inherit;
+}
+
+/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에 */
+.l-closing:not(.va-bold) {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.l-closing:not(.va-bold) :is(.cl-steps, .cl-step) {
+  border-color: var(--line);
+}
+
+.l-closing:not(.va-bold) .cl-n {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.l-closing:not(.va-bold) .cl-step-b {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.l-closing:not(.va-bold) .meta-row dt {
+  color: var(--ink-3);
+}

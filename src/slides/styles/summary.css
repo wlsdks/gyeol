@@ -1,0 +1,89 @@
+/* ---------- 한 장 요약: 결론 아래 요점. 이 장만 보고도 판단할 수 있게 요점을 크게 ---------- */
+
+.sm-title {
+  max-width: 1560px;
+}
+
+.sm {
+  display: grid;
+  grid-auto-rows: minmax(min-content, 1fr);
+  max-height: 100%;
+  border-top: 3px solid var(--ink);
+}
+
+.sm:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: minmax(min-content, 220px);
+}
+
+.sm-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.sm-label {
+  --fs: 30px;
+  align-self: center;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sm-body {
+  --fs: 36px;
+  max-width: 1300px;
+  font-weight: 500;
+  line-height: 1.42;
+  text-wrap: pretty;
+}
+
+.sm[data-n='5'] .sm-body {
+  --fs: 30px;
+}
+
+/* 모양: 네 칸. 줄 대신 칸마다 이름과 요점 */
+.va-grid .sm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(min-content, 1fr);
+  gap: var(--gap);
+  border-top: 0;
+}
+
+.va-grid .sm[data-n='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* 다섯이면 윗줄 셋, 아랫줄 둘. 세 칸 격자에 두면 아랫줄 오른쪽 한 칸이 비어 덜 채운 장처럼 보인다 */
+.va-grid .sm[data-n='5'] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.va-grid .sm[data-n='5'] > .sm-row {
+  grid-column: span 2;
+}
+
+.va-grid .sm[data-n='5'] > .sm-row:nth-child(n + 4) {
+  grid-column: span 3;
+}
+
+.va-grid .sm-row {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+  padding: 44px 52px;
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.va-grid .sm-body {
+  --fs: 36px;
+}
+
+.va-grid .sm[data-n='5'] .sm-body {
+  --fs: 30px;
+}

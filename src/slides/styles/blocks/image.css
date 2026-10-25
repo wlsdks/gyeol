@@ -1,0 +1,60 @@
+/* ---------- 그림 ---------- */
+
+.bk-img {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+}
+
+.bk-img-i {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.bk-img-c {
+  --fs: var(--t-small);
+  flex: none;
+  margin-top: 16px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* 전체 보이기: 칸 안에서 이미지 비율(--ar) 그대로 가장 크게, 가운데에. 둥근 모서리는 칸이 아니라 이미지에.
+   칸을 다 쓰는 회색 판 위에 이미지를 얹으면 화면 캡처 둘레에 판의 띠가 남아 그림 두 장을 겹친 것처럼 보였다.
+   설명은 이미지 바로 아래 가운데에: 이미지가 칸보다 좁으면 왼쪽에 둔 설명은 이미지와 떨어져 보인다 */
+.bk-img.is-fit > .bk-img-i:not(.img-empty) {
+  container-type: size;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  border-radius: 0;
+}
+
+/* 흰 바탕의 화면 캡처는 흰 장에서 가장자리가 사라져서 이미지 안쪽에 옅은 선을 긋는다(모서리를 따라 둥글게) */
+.bk-img.is-fit > .bk-img-i:not(.img-empty) > img {
+  width: min(100cqw, 100cqh * var(--ar));
+  height: auto;
+  aspect-ratio: var(--ar);
+  border-radius: 18px;
+  outline: var(--rule) solid var(--line);
+  outline-offset: calc(-1 * var(--rule));
+}
+
+.bk-img.is-fit > .bk-img-c {
+  text-align: center;
+}
+
+/* 칸이 이미지보다 세로로 길어 이미지가 칸 너비에 맞춰지면 위아래가 남는다. 이미지는 남은 높이의 가운데에 있으니
+   설명을 그 반만큼 올려 이미지 바로 밑에 붙인다(이미지와 설명이 한 덩어리로 가운데에). 그동안 설명은 칸 바닥에 남아
+   이미지와 떨어져 보였다. 100%는 설명 자신의 높이(두 줄이어도 맞다). 움직임은 translate를 쓰므로 transform으로 */
+.bk-img.is-fit:has(> .bk-img-i:not(.img-empty)) {
+  container-type: size;
+}
+
+.bk-img.is-fit:has(> .bk-img-i:not(.img-empty)) > .bk-img-c {
+  transform: translateY(calc(-1 * max(0px, (100cqh - 16px - 100% - 100cqw / var(--ar)) / 2)));
+}

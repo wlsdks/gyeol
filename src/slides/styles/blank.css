@@ -1,0 +1,25 @@
+/* ---------- 빈칸 ---------- */
+
+/* 미리보기에서 빈칸은 안내 문구를 흐리게 */
+.slide .is-hint {
+  opacity: 0.34;
+}
+
+/* 숫자를 넣기 전의 예시 막대와 달성률 */
+.slide .is-demo :is(.br-fill, .sk-fill, .sk-diff, .sk-mark, .sk-rate) {
+  opacity: 0.3;
+}
+
+.img-empty > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  font-size: 26px;
+}
+
+/* 어두운 바탕의 짙은 면: 지금 단락은 강조색으로 */
+.is-dark .sc-map li.is-on {
+  color: var(--accent);
+}

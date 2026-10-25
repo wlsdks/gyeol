@@ -1,0 +1,39 @@
+/* ---------- 인용 ---------- */
+
+.bk-q {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+  margin: 0;
+}
+
+.bk-q-mark {
+  display: block;
+  height: 0.5em;
+  margin-bottom: 28px;
+  /* 따옴표는 장식이라 강조색 대신 옅은 글자색으로, 크기도 글보다 조금 큰 정도로 */
+  color: color-mix(in srgb, var(--ink) 28%, var(--bg));
+  /* 따옴표는 본문 글꼴로: 명조 글꼴(Hahmlet, Noto Serif KR)의 “는 한 글자 폭의 오른쪽 반에 그려져서
+     따옴표가 글 첫 글자보다 반 글자 넘게 안으로 들어가 떠 보였다. 본문 글꼴은 늘 고딕이라 따옴표가 글의 왼쪽 선에 맞는다 */
+  font-family: var(--font-body);
+  font-size: calc(90px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bk-q-t {
+  --fs: 44px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.bk-q-by {
+  --fs: var(--t-small);
+  margin-top: 28px;
+  color: var(--ink-3);
+  font-weight: 600;
+}

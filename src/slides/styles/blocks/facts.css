@@ -1,0 +1,75 @@
+/* ---------- 개요 ---------- */
+
+.bk-fc-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 72px;
+}
+
+.bk-fc-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(110px, 0.32fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 32px;
+  padding: calc(24px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+/* 줄 사이 선. 발표할 때 왼쪽에서부터 그어진다 */
+.bk-fc-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--line);
+}
+
+.bk-fc-row:first-child::before {
+  background: var(--ink);
+}
+
+.bk-fc-list[data-n='5'] .bk-fc-row,
+.bk-fc-list[data-n='6'] .bk-fc-row {
+  padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-fc-k {
+  --fs: var(--t-small);
+  color: var(--ink-3);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.bk-fc-v {
+  --fs: var(--t-body);
+  font-weight: 500;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* 좁은 칸: 항목 칸은 항목 이름만큼만(가장 긴 이름, 목록 너비의 3분의 1까지). 이름은 '기간', '예산'처럼 짧은데 칸을 비율로 잡으면
+   이름 옆이 비고 내용 칸이 좁아져서, 내용이 줄마다 두 줄로 꺾이며 목록이 높아진다(글자를 줄여야 들어갔다).
+   줄마다 따로 재면 내용이 줄마다 다른 자리에서 시작해서, 항목 칸은 목록이 함께 정하고 줄은 그 칸을 나눠 쓴다(subgrid) */
+@container bk (max-width: 700px) {
+  .bk-fc-list {
+    grid-template-columns: fit-content(34%) minmax(0, 1fr);
+    column-gap: 28px;
+  }
+
+  .bk-fc-row {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: 28px;
+  }
+}
+
+/* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄 선은 둘 다 진하게 */
+@container bk (min-width: 1300px) {
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(2)::before {
+    background: var(--ink);
+  }
+}

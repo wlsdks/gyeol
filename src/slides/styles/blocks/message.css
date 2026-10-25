@@ -1,0 +1,27 @@
+/* ---------- 핵심 한 줄 ---------- */
+
+.bk-msg {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-msg-t {
+  --fs: 52px;
+  max-width: 1500px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.28;
+  text-wrap: balance;
+}
+
+.bk-msg-s {
+  --fs: var(--t-lead);
+  max-width: 1320px;
+  margin-top: 28px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  text-wrap: pretty;
+}

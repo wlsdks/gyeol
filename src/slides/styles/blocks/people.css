@@ -1,0 +1,254 @@
+/* ---------- 맡은 사람 ---------- */
+
+.bk-pp-list {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 40px;
+}
+
+.bk-pp-card {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 26px;
+}
+
+.bk-pp-av {
+  --av: calc(116px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+  display: grid;
+  place-items: center;
+  width: var(--av);
+  height: var(--av);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-family: var(--font-head);
+  font-size: calc(var(--av) * 0.42);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 나란히가 넓고 낮은 칸에 들면 동그라미를 이름 왼쪽에 둔다(--pp-side). 위아래로 쌓으면 한 사람이 제 단의 왼쪽 반만 써서
+   한 줄을 다 쓰는 세 사람이 칸 왼쪽에 몰리고 오른쪽이 비었고, 낮은 줄에서는 동그라미와 글이 단계로 작아졌다.
+   한 단이 동그라미와 글을 나란히 담는 너비(460px 남짓)일 때만: 하나는 늘, 둘은 8칸부터, 셋은 12칸, 넷은 늘 위아래로.
+   높은 칸(410부터)은 키워서 위아래로 쌓는 편이 칸을 채운다 */
+.va-row .bk-pp-card {
+  grid-template-columns: var(--pp-side, minmax(0, 1fr));
+  align-items: center;
+  gap: 26px 32px;
+}
+
+@container bk (max-height: 409px) {
+  .va-row .bk-pp-list[data-n='1'] {
+    --pp-side: auto minmax(0, 1fr);
+  }
+}
+
+@container bk (min-width: 960px) and (max-height: 409px) {
+  .va-row .bk-pp-list[data-n='2'] {
+    --pp-side: auto minmax(0, 1fr);
+    column-gap: 56px;
+  }
+}
+
+@container bk (min-width: 1460px) and (max-height: 409px) {
+  .va-row .bk-pp-list[data-n='3'] {
+    --pp-side: auto minmax(0, 1fr);
+    column-gap: 56px;
+  }
+}
+
+.bk-pp-av svg {
+  width: 50%;
+  height: 50%;
+  fill: currentColor;
+  opacity: 0.6;
+}
+
+.bk-pp-name {
+  --fs: 36px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.3;
+}
+
+.bk-pp-role {
+  --fs: var(--t-small);
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.bk-pp-b {
+  --fs: var(--t-small);
+  margin-top: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* 목록: 동그라미를 왼쪽에, 이름과 역할을 한 줄에 */
+.va-list .bk-pp-list {
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.va-list .bk-pp-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.va-list .bk-pp-card:first-child {
+  border-top-color: var(--ink);
+}
+
+.va-list .bk-pp-card:last-child {
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.va-list .bk-pp-av {
+  --av: calc(80px * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+}
+
+.va-list .bk-pp-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 18px;
+}
+
+.va-list .bk-pp-role {
+  margin-top: 0;
+}
+
+.va-list .bk-pp-b {
+  flex-basis: 100%;
+  margin-top: 6px;
+}
+
+/* 넓은 칸의 목록은 사람 수만큼 단으로(넷은 둘씩 두 줄): 한 단이면 이름 옆이 칸 끝까지 비고 사람 수만큼 높아진다.
+   셋을 두 단에 두면 마지막 줄에 하나만 남아서 셋은 세 단 */
+@container bk (min-width: 1300px) {
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='4']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 72px;
+  }
+
+  .va-list .bk-pp-list[data-n='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 56px;
+  }
+
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card:nth-child(-n + 3) {
+    border-top-color: var(--ink);
+  }
+
+  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(3) {
+    border-top-color: var(--line);
+  }
+
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card {
+    border-bottom: var(--rule) solid var(--line);
+  }
+
+  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+
+/* 체계도: 맨 앞 사람(이끄는 사람)을 위 가운데에, 나머지를 아래에 나란히 두고 선으로 잇는다.
+   격자는 세 줄(이끄는 사람, 잇는 선, 맡은 사람들). 가로 선은 목록의 ::before를 가운데 줄에 두고 양 끝 사람의 가운데까지만 긋는다.
+   세로 선은 이끄는 사람 아래(::after)와 맡은 사람마다 위(::before)에 반씩, 글에서 조금 띄운다(--pp-air).
+   동그라미는 빼고 글을 가운데로: 동그라미와 글을 옆으로 두면 세로 선이 둘 사이에 떨어져 글에 꽂혀 보였다 */
+.va-tree .bk-pp-list {
+  --pp-tg: calc(88px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
+  --pp-cg: 40px;
+  --pp-air: 14px;
+  --pp-cols: 1;
+  grid-auto-flow: row;
+  grid-template-columns: repeat(var(--pp-cols), minmax(0, 1fr));
+  grid-template-rows: auto var(--pp-tg) auto;
+  gap: 0 var(--pp-cg);
+}
+
+.va-tree .bk-pp-list[data-n='3'] {
+  --pp-cols: 2;
+}
+
+.va-tree .bk-pp-list[data-n='4'] {
+  --pp-cols: 3;
+}
+
+.va-tree .bk-pp-list[data-n='1'] {
+  grid-template-rows: auto;
+}
+
+.va-tree .bk-pp-list:not([data-n='1'])::before {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  align-self: center;
+  /* 맡은 사람 칸 하나의 너비의 반: 양 끝 사람의 가운데에서 멈춘다 */
+  margin: 0 calc((100% - (var(--pp-cols) - 1) * var(--pp-cg)) / var(--pp-cols) / 2);
+  border-top: var(--rule) solid var(--ink-3);
+  content: '';
+}
+
+.va-tree .bk-pp-card {
+  position: relative;
+  grid-row: 3;
+  justify-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.va-tree .bk-pp-card:first-child {
+  grid-row: 1;
+  grid-column: 1 / -1;
+}
+
+.va-tree .bk-pp-av {
+  display: none;
+}
+
+.va-tree .bk-pp-list:not([data-n='1']) > .bk-pp-card:first-child::after,
+.va-tree .bk-pp-card:not(:first-child)::before {
+  position: absolute;
+  left: 50%;
+  height: calc(var(--pp-tg) / 2 - var(--pp-air));
+  border-left: var(--rule) solid var(--ink-3);
+  content: '';
+}
+
+.va-tree .bk-pp-card:first-child::after {
+  top: calc(100% + var(--pp-air));
+}
+
+.va-tree .bk-pp-card:not(:first-child)::before {
+  bottom: calc(100% + var(--pp-air));
+}
+
+.va-tree .bk-pp-card:not(:first-child) .bk-pp-name {
+  --fs: 30px;
+}
+
+.va-tree .bk-pp-b {
+  margin-top: 8px;
+}
+
+/*
+ * 큰 칸에 혼자 있는 숫자, 강조 상자, 인용, 예상 질문, 맡은 사람은 칸에 맞게 키운다 (빈 면만 넓어 보이지 않게).
+ * 키운 뒤에도 잘리지 않아야 한다: 높이 기준은 가장 키 큰 '전과 후'가 키운 크기로 들어가는 410부터.
+ * 맡은 사람의 목록 모양은 줄이 사람 수만큼 늘어 키우면 넘치므로 뺀다 (갤러리 &fill=max&bv=list에서 잰다). 체계도는 두 층이라 같다
+ */
+@container bk (min-width: 1100px) and (min-height: 410px) {
+  :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list, .va-tree)) > .bk-in {
+    --bk-up: 1.2;
+  }
+}

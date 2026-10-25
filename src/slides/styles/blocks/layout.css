@@ -1,0 +1,59 @@
+/* ---------- 레이아웃 부품: 그 레이아웃의 본문만, 칸을 꽉 채워 ---------- */
+
+.bk-layout > .bk-in {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 머리와 출처는 부품 장 것을 쓴다. 편집 중 칸 규칙(.slide.m-edit .ed)보다 앞서게 구체성을 높인다 */
+.slide .bk.bk-layout > .bk-in :is(.s-head, .s-source, .ag-title) {
+  display: none;
+}
+
+.bk-layout .s-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0;
+}
+
+/* 부품 칸의 로고 모음: 한 줄의 로고 수를 로고 수가 아니라 칸 너비로 정한다(판이 180px 밑으로 좁아지지 않게).
+   로고 수로 정하면 반 칸에 열둘이 여섯 줄로 서서 판이 119×332로 세로로 길고 로고는 알아볼 수 없게 작았다.
+   판은 칸 높이를 줄 수만큼 나눠 채우되 정사각형보다 높아지지 않고(그보다 높은 칸에서는 가운데에), 덜 찬 마지막 줄은 가운데로 */
+.bk-layout .lg {
+  --c: min(2, var(--n));
+  --rows: round(up, var(--n) / var(--c), 1);
+  --tile: calc((100cqi - (var(--c) - 1) * 20px) / var(--c));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  height: 100%;
+}
+
+@container (min-width: 580px) { .bk-layout .lg { --c: min(3, var(--n)); } }
+@container (min-width: 780px) { .bk-layout .lg { --c: min(4, var(--n)); } }
+@container (min-width: 980px) { .bk-layout .lg { --c: min(5, var(--n)); } }
+@container (min-width: 1180px) { .bk-layout .lg { --c: min(6, var(--n)); } }
+
+.bk-layout .lg-cell {
+  flex: 0 0 var(--tile);
+  height: min(var(--tile), calc((100% - (var(--rows) - 1) * 20px) / var(--rows)));
+  min-height: 0;
+  gap: 12px;
+  padding: 20px 16px;
+}
+
+/* 로고는 판 높이를 따라: 큰 판 가운데에 장에서의 크기(112px) 그대로면 판만 넓어 보이고, 낮고 넓은 판에서
+   반도 안 쓰면 넓은 판 가운데에 로고가 점처럼 남는다 */
+.bk-layout .lg-img {
+  height: clamp(40px, 56%, 220px);
+}
+
+.bk-agenda .ag {
+  display: flex;
+  height: 100%;
+}
+
+.bk-agenda .ag-list {
+  flex: 1;
+}

@@ -1,0 +1,98 @@
+/* ---------- 걱정과 대책 ---------- */
+
+.bk-rk-head,
+.bk-rk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1.15fr);
+  align-items: center;
+  column-gap: 32px;
+}
+
+.bk-rk-head {
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.bk-rk-hk {
+  --fs: var(--t-small);
+  color: var(--ink-3);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-rk-hk.is-fix {
+  grid-column: 3;
+}
+
+.bk-rk-row {
+  padding: calc(26px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.bk-rk-list[data-n='4'] .bk-rk-row {
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-rk-t {
+  --fs: var(--t-body);
+  color: var(--ink-2);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.bk-rk-b {
+  --fs: var(--t-body);
+  font-weight: 600;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.bk-rk-arrow {
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+}
+
+.bk-rk-arrow svg {
+  width: 40px;
+  height: 40px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+/* 좁은 칸: 걱정 아래에 대책을 들여서 */
+@container bk (max-width: 980px) {
+  .bk-rk-head {
+    display: none;
+  }
+
+  .bk-rk-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    row-gap: 8px;
+    column-gap: 16px;
+    border-bottom: 0;
+    border-top: var(--rule) solid var(--line);
+  }
+
+  .bk-rk-row:last-child {
+    border-bottom: var(--rule) solid var(--line);
+  }
+
+  .bk-rk-t {
+    grid-column: 1 / -1;
+  }
+
+  .bk-rk-arrow {
+    align-self: start;
+    place-items: start;
+  }
+
+  .bk-rk-arrow svg {
+    width: 32px;
+    height: 32px;
+    margin-top: calc(var(--t-body) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1) * 0.2);
+  }
+}

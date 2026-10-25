@@ -1,0 +1,243 @@
+/* ---------- 요금제 ---------- */
+
+.pr {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--gap);
+}
+
+.pr-plan {
+  position: relative;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 52px 56px;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+/* 추천안은 넓은 면이라 쨍한 강조색 대신 색 면(--bold-bg)으로 깊게. 강조색은 '추천' 표만 */
+.pr-plan.is-hl {
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+/* 어두운 테마에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 */
+.is-dark .pr-plan.is-hl {
+  background: var(--bold-bg);
+  box-shadow: inset 0 0 0 3px var(--accent);
+  color: var(--ink);
+}
+
+.is-dark .pr-plan.is-hl .pr-price {
+  color: var(--accent);
+}
+
+.is-dark .pr-plan.is-hl .pr-tag {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.is-dark .pr-plan.is-hl .pr-body {
+  border-color: var(--bold-line);
+}
+
+.pr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pr-name {
+  --fs: 30px;
+  font-weight: 700;
+}
+
+.pr-tag {
+  flex: none;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pr-price {
+  --fs: 62px;
+  margin-top: 36px;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.pr-meta {
+  --fs: 26px;
+  margin-top: 14px;
+  color: var(--ink-3);
+}
+
+.pr-body {
+  --fs: 26px;
+  margin-top: 40px;
+  padding-top: 36px;
+  border-top: var(--rule) solid var(--line);
+  color: var(--ink-2);
+  line-height: 1.85;
+}
+
+.pr-plan.is-hl :is(.pr-meta, .pr-body) {
+  color: inherit;
+}
+
+.pr-plan.is-hl .pr-meta {
+  opacity: var(--o-mute);
+}
+
+.pr-plan.is-hl .pr-body {
+  border-color: var(--bold-line);
+  opacity: var(--o-sub);
+}
+
+/* 밝은 강조색을 바탕으로 깐 장은 강조색이 글자색(어두운 색)이 되어 색 면과 겹친다. 표를 색 면의 반대로 */
+.tone-accent:not(.is-dark) .pr-plan.is-hl .pr-tag {
+  background: var(--bold-ink);
+  color: var(--bold-bg);
+}
+
+/* 안이 하나면 고를 것이 없으니 한 장을 다 쓰는 판 하나로: 왼쪽에 이름과 비용, 오른쪽에 내용. 판 하나를 760px로 두던 때는
+   장의 오른쪽 절반이 통째로 비었다. :where로 낮춰 두어 표 모양(.va-rows)의 줄 짜임이 이긴다 */
+:where(.pr[data-n='1']) > .pr-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  column-gap: 80px;
+  padding: 64px 80px;
+}
+
+:where(.pr[data-n='1']) .pr-top {
+  grid-column: 1;
+  justify-content: flex-start;
+}
+
+:where(.pr[data-n='1']) :is(.pr-price, .pr-meta) {
+  grid-column: 1;
+}
+
+/* 하나뿐인 안의 비용이 이 장의 답이라 큰 숫자처럼 크게. 판이 장을 다 쓰는데 글이 그대로면 판 가운데에 작게 떠 보였다 */
+:where(.pr[data-n='1']) .pr-name {
+  --fs: 36px;
+}
+
+:where(.pr[data-n='1']) .pr-price {
+  --fs: 90px;
+  margin-top: 28px;
+}
+
+:where(.pr[data-n='1']) .pr-meta {
+  --fs: 30px;
+}
+
+:where(.pr[data-n='1']) .pr-body {
+  grid-row: 1 / span 3;
+  grid-column: 2;
+  align-self: center;
+  margin: 0;
+  --fs: 30px;
+  padding: 8px 0 8px 80px;
+  border-top: 0;
+  border-left: var(--rule) solid var(--line);
+}
+
+:where(.pr[data-n='1']) .pr-plan.is-hl .pr-body {
+  border-color: var(--bold-line);
+}
+
+/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄만 옅은 강조색 바탕 */
+.va-rows .pr,
+.va-rows .pr[data-n='1'] {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-auto-rows: minmax(min-content, 1fr);
+  gap: 0;
+  border-top: 3px solid var(--ink);
+}
+
+.va-rows .pr:is([data-n='1'], [data-n='2']) {
+  grid-auto-rows: minmax(min-content, 260px);
+}
+
+.va-rows .pr-plan,
+.va-rows .pr-plan.is-hl,
+.is-dark.va-rows .pr-plan.is-hl {
+  display: grid;
+  grid-template-columns: 360px 420px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 56px;
+  align-content: center;
+  padding: 0 40px;
+  border-bottom: var(--rule) solid var(--line);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+}
+
+.va-rows .pr-plan.is-hl,
+.is-dark.va-rows .pr-plan.is-hl {
+  background: var(--accent-soft);
+}
+
+.va-rows .pr-top {
+  grid-row: 1 / span 2;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.va-rows .pr-price {
+  grid-column: 2;
+  margin: 0;
+  align-self: end;
+}
+
+.va-rows .pr-plan.is-hl .pr-price {
+  color: var(--accent);
+}
+
+.va-rows .pr-meta {
+  grid-column: 2;
+  align-self: start;
+  margin-top: 10px;
+}
+
+.va-rows .pr-body,
+.va-rows .pr-plan.is-hl .pr-body {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--ink-2);
+  line-height: 1.6;
+  opacity: 1;
+}
+
+.va-rows .pr-plan.is-hl .pr-meta {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.va-rows .pr-tag,
+.is-dark.va-rows .pr-plan.is-hl .pr-tag {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

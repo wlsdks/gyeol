@@ -1,0 +1,206 @@
+/* ---------- 추이 ----------
+   점의 자리는 --x, --y(0~100)로만 받는다. 선은 늘어나는 SVG에 그리되 굵기는 그대로(non-scaling-stroke),
+   점과 숫자는 HTML이라 장 크기가 바뀌어도 찌그러지지 않는다. 위쪽 띠는 가장 높은 점의 숫자 자리. */
+
+.tn {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tn-plot {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.tn-canvas {
+  position: absolute;
+  inset: 104px 0 0;
+  /* 점 숫자의 자리를 그림 너비(cqi)로 재서 양끝에서 밖으로 나가지 않게 한다. 높이는 골짜기 숫자의 자리를 정할 때 본다 */
+  container-type: size;
+}
+
+.tn-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.tn-unit {
+  --fs: 22px;
+  color: var(--ink-3);
+}
+
+.tn-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tn-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tn-area {
+  display: none;
+  fill: var(--accent);
+  opacity: 0.16;
+}
+
+/* 모양: 면. 선 아래를 강조색으로 옅게 채우고, 아래로 갈수록 흐려진다 */
+.va-area .tn-area {
+  display: inline;
+}
+
+.va-area .tn-svg {
+  mask-image: linear-gradient(to bottom, #000 40%, rgb(0 0 0 / 0.25));
+}
+
+.tn-pt {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  bottom: calc(var(--y) * 1%);
+  width: 0;
+  height: 0;
+}
+
+.tn-dot {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 5px var(--accent);
+}
+
+.tn-pt.is-hl .tn-dot {
+  top: -15px;
+  left: -15px;
+  width: 30px;
+  height: 30px;
+  background: var(--accent);
+  box-shadow: 0 0 0 8px var(--bg), 0 0 0 20px var(--accent-soft);
+}
+
+.tn-pt.is-blank .tn-dot {
+  display: none;
+}
+
+.tn-val {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  /* 점 자리(.tn-pt)는 너비가 0이라 그대로 두면 숫자 상자가 가장 좁은 너비로 잡힌다. 그러면 아래 translate의
+     100%(상자 너비)가 글보다 작아 오른쪽 끝 점의 숫자가 그림 밖으로 나간다(편집 화면에서 글자를 줄이던 까닭) */
+  width: max-content;
+  /* 점 가운데에 두되, 양끝 점에서는 그림 안쪽으로 민다 */
+  translate: clamp(calc(var(--x) * -1cqi), -50%, calc((100 - var(--x)) * 1cqi - 100%)) 0;
+  white-space: nowrap;
+}
+
+.tn-pt.is-below .tn-val {
+  top: 24px;
+  bottom: auto;
+}
+
+/* 그림이 낮으면 골짜기 아래에 숫자를 둘 자리가 없다(아래 시기 이름과 부딪힌다). 다른 점처럼 위에 */
+@container (max-height: 200px) {
+  .tn-pt.is-below .tn-val {
+    top: auto;
+    bottom: 24px;
+  }
+}
+
+.tn-num {
+  --fs: 30px;
+  display: block;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  /* 목표선이나 선이 숫자를 가로지르지 않게 바탕색으로 둘레를 지운다 */
+  text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg), 0 0 12px var(--bg);
+}
+
+.tn-pt.is-hl .tn-val {
+  bottom: 40px;
+}
+
+.tn-pt.is-hl .tn-num {
+  --fs: 52px;
+  color: var(--accent);
+  font-family: var(--font-head);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+}
+
+.tn-target,
+.tn-zero {
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: calc(var(--y) * 1%);
+  height: 0;
+}
+
+.tn-target {
+  border-top: 2px dashed var(--ink-3);
+}
+
+.tn-zero {
+  border-top: var(--rule) solid var(--line);
+}
+
+.tn-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 그래프의 목표선과 같은 점선 */
+.tn-legend-line {
+  width: 40px;
+  border-top: 2px dashed var(--ink-3);
+}
+
+.tn-x {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  margin-top: 22px;
+}
+
+.tn-col {
+  position: relative;
+  min-width: 0;
+  text-align: center;
+}
+
+.tn-name {
+  --fs: 26px;
+  color: var(--ink-3);
+  line-height: 1.2;
+}
+
+.tn-col.is-hl .tn-name {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tn.is-demo :is(.tn-svg, .tn-dot, .tn-target) {
+  opacity: 0.3;
+}
+
+.tn.is-demo .tn-val > :not(.ed) {
+  opacity: 0.45;
+}

@@ -1,0 +1,276 @@
+/* ---------- 전과 후 ----------
+   무엇이 바뀌는지 → 전, 후 → 바뀐 만큼(후 바로 아래) → 덧붙임 글. 전과 후는 같은 너비의 칸에 같은 크기로(blocks.tsx의 units),
+   전은 옅게, 후는 강조색. 크기가 다르면 두 숫자의 글자 밑줄이 어긋나고 서로 다른 것을 재는 것처럼 보인다 */
+
+.bk-dl {
+  /* 전과 후 숫자의 글자 크기와 화살표 둘레(화살표와 양쪽 사이). 칸 너비(.bk-dl-row)도 이것으로 센다 */
+  --dl-v: 90px;
+  --dl-gaps: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-dl-l {
+  --fs: var(--t-label);
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.bk-dl-row {
+  /* 숫자의 글자 크기(--fs 목록과 같은 식)와 숫자 하나의 폭(.one-line과 같은 식: 글자 수 × 글꼴의 글자 폭 × 글자 크기) */
+  --dl-vs: calc(var(--dl-v) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+  --dl-w: calc(var(--dl-units, 4) * var(--glyph-k, 1) * var(--dl-vs));
+  display: grid;
+  /* 전의 칸은 숫자 폭만큼, 남는 너비는 후의 칸(아래에 바뀐 만큼이 선다). 칸 너비로 똑같이 나누면 넓은 칸에서
+     앞 숫자('11분') 오른쪽이 비어 화살표가 뒤 숫자에만 붙어 보였다. 좁아서 숫자 폭이 안 나오면 똑같이 나눈다 */
+  grid-template-columns: minmax(0, min(var(--dl-w), (100% - var(--dl-gaps)) / 2)) auto minmax(0, 1fr);
+  /* 이름표(전, 후)는 한 줄에, 값은 아래 줄에서 글자 밑줄을 맞추고, 그 아래 줄에 바뀐 만큼 */
+  grid-template-rows: auto auto auto;
+  align-items: end;
+  gap: 4px 28px;
+  /* 두 숫자와 화살표만큼만 넓게: 넓은 칸에서 전과 후가 멀리 떨어지지 않게. 바뀐 만큼이 들어갈 너비(480px)는 남긴다 */
+  max-width: min(1040px, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
+  margin-top: 24px;
+}
+
+.bk-dl-side {
+  display: grid;
+  grid-row: 1 / span 3;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
+
+/* 값은 이 칸 너비에 맞춰 한 줄로 줄어든다. 재는 칸(container)은 부모 줄을 나눠 쓸 수 없어서(subgrid) 값만 감싼다 */
+.bk-dl-vbox {
+  container-type: inline-size;
+  align-self: end;
+  min-width: 0;
+}
+
+.bk-dl-k {
+  --fs: var(--t-small);
+  display: block;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.bk-dl-v {
+  --fs: var(--dl-v);
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.bk-dl-from {
+  grid-column: 1;
+}
+
+.bk-dl-to {
+  grid-column: 3;
+}
+
+.bk-dl-from .bk-dl-v {
+  color: var(--ink-3);
+}
+
+.bk-dl-to .bk-dl-v {
+  color: var(--accent);
+}
+
+/* 화살표는 숫자 크기를 따라간다(숫자 90px에 상자 64, 아래 틈 12, 그림 48). 고정 크기면 칸이 모자라 글자를 줄여도
+   값 줄이 화살표 높이(76px) 밑으로 내려가지 않아서, 숫자만 두 단계 작아지고 덧붙임 글은 칸 밖에 남았다 */
+.bk-dl-arrow {
+  --dl-arrow: 0.71;
+  --dl-arrow-gap: 0.13;
+  --dl-arrow-svg: 0.53;
+  grid-row: 2;
+  grid-column: 2;
+  display: grid;
+  place-items: center;
+  width: calc(var(--dl-vs) * var(--dl-arrow));
+  height: calc(var(--dl-vs) * var(--dl-arrow));
+  margin-bottom: calc(var(--dl-vs) * var(--dl-arrow-gap));
+  color: var(--ink-3);
+}
+
+.bk-dl-arrow svg {
+  width: calc(var(--dl-vs) * var(--dl-arrow-svg));
+  height: calc(var(--dl-vs) * var(--dl-arrow-svg));
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.bk-dl-chip {
+  --fs: var(--t-small);
+  grid-row: 3;
+  justify-self: start;
+  margin-top: 12px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bk-dl-n {
+  --fs: var(--t-small);
+  margin-top: 24px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* 바뀐 만큼(▼ 2.1%p)은 한 덩어리: 좁은 칸에서 화살표와 숫자가 두 줄로 갈렸다 */
+.slide .bk-dl-chip {
+  white-space: nowrap;
+}
+
+.bk-dl.is-demo :is(.bk-dl-chip) {
+  opacity: 0.45;
+}
+
+/* 혼자 한 줄을 다 쓰는 넓고 높은 칸: 전과 후가 칸의 왼쪽 절반에 작게 몰리지 않게 숫자와 글을 키우고 사이를 넓힌다.
+   키운 글은 바뀐 만큼이 후 아래 줄에 서서 카드와 명조 제목까지 650px는 있어야 들어가서, 그보다 낮으면 보통 크기로 둔다
+   (그 사이 높이에서 키우면 넘친다) */
+@container bk (min-width: 1200px) and (min-height: 660px) {
+  .bk-dl-l {
+    --fs: var(--t-h);
+    color: var(--ink);
+    font-family: var(--font-head);
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+  }
+
+  .bk-dl {
+    /* 이 칸에서는 큰 칸 키우기(--bk-up 1.2)와 글자 맞추기의 키우기(1.2)가 함께 걸려 184px(핵심 숫자의 강조 숫자와 같은
+       단계)가 된다. 184에서 시작하면 265px가 되어 같은 장의 다른 큰 숫자(155px)보다 훨씬 크고 화살표가 숫자에 묻혔다 */
+    --dl-v: 128px;
+    --dl-gaps: 224px;
+  }
+
+  .bk-dl-row {
+    gap: 8px 64px;
+    max-width: min(1480px, max(720px, calc(2 * var(--dl-w) + var(--dl-gaps))));
+    margin-top: 40px;
+  }
+
+  .bk-dl-k {
+    --fs: var(--t-body);
+  }
+
+  /* 숫자 128px에 상자 96, 아래 틈 40, 그림 72 */
+  .bk-dl-arrow {
+    --dl-arrow: 0.75;
+    --dl-arrow-gap: 0.31;
+    --dl-arrow-svg: 0.56;
+  }
+
+  .bk-dl-chip {
+    --fs: var(--t-body);
+    margin-top: 20px;
+  }
+
+  .bk-dl-n {
+    --fs: var(--t-body);
+    margin-top: 32px;
+  }
+}
+
+/* 넓고 낮은 칸: 전과 후를 왼쪽에, 이름과 덧붙임 글을 그 오른쪽에 위아래로 (큰 숫자의 넓고 낮은 칸과 같은 짜임).
+   위아래로 쌓으면 낮은 줄에 들어가지 않는다. 예전에는 이름, 전과 후, 덧붙임 글을 한 줄에 셋으로 늘어놓아서
+   작은 이름이 칸 왼쪽 끝에, 덧붙임 글이 숫자에서 멀리 떨어져 떠 보였다. 전과 후의 칸은 두 숫자와 화살표만큼만 넓다 */
+@container bk (min-aspect-ratio: 3 / 1) and (min-width: 1000px) and (max-height: 589px) {
+  .bk-dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 64px;
+  }
+
+  .bk-dl-row {
+    grid-row: 1 / span 2;
+    grid-column: 1;
+    width: min(1040px, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
+    margin-top: 0;
+  }
+
+  .bk-dl-l {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: end;
+  }
+
+  .bk-dl-n {
+    grid-row: 2;
+    grid-column: 2;
+    align-self: start;
+    margin-top: 8px;
+  }
+}
+
+/* 한 줄을 다 쓰는 넓은 칸(1200px 넘고 높이의 두 배 넘게 넓은): 이름과 덧붙임 글은 격자의 왼쪽 4칸에, 전과 후는 5번째 칸부터.
+   전과 후 옆에 이름을 붙이거나 위에 쌓으면 묶음이 칸 왼쪽에 몰려 오른쪽 절반 가까이 비었다. '불량률 → 전 → 후' 차례로 읽히고,
+   격자의 칸 선에 맞춰서 위아래 줄의 칸 나눔과도 줄이 맞는다. 옆으로 눕혔으니 낮은 줄이어도 글자를 줄이지 않는다(--bk-h) */
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) {
+  .bk-delta > .bk-in {
+    --bk-h: 1;
+  }
+
+  .bk-dl {
+    display: grid;
+    grid-template-columns: calc((100% - 11 * var(--bk-gap)) / 12 * 4 + 3 * var(--bk-gap)) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: var(--bk-gap);
+  }
+
+  .bk-dl-row {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    width: min(100%, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
+    margin-top: 0;
+  }
+
+  .bk-dl-l,
+  .bk-dl-n {
+    grid-column: 1;
+  }
+
+  .bk-dl-l {
+    --fs: var(--t-body);
+    grid-row: 1;
+    align-self: end;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .bk-dl-n {
+    grid-row: 2;
+    align-self: start;
+    margin-top: 12px;
+  }
+}
+
+@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {
+  .bk-dl-l {
+    --fs: var(--t-h);
+    font-family: var(--font-head);
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+  }
+
+  .bk-dl-n {
+    --fs: var(--t-body);
+  }
+}

@@ -1,0 +1,74 @@
+/* ---------- 이미지와 설명 ---------- */
+
+.l-imageText {
+  padding: 0;
+}
+
+.ix {
+  display: grid;
+  grid-template-columns: var(--side-w, 1120px) 1fr;
+  height: 100%;
+}
+
+.ix.is-flip {
+  grid-template-columns: 1fr var(--side-w, 1120px);
+}
+
+.ix.is-flip .ix-img {
+  order: 2;
+}
+
+.ix-img {
+  height: 100%;
+}
+
+.ix-img.is-contain {
+  padding: var(--pad-y) 96px var(--pad-y) var(--pad-x);
+  background: var(--surface);
+}
+
+.ix.is-flip .ix-img.is-contain {
+  padding: var(--pad-y) var(--pad-x) var(--pad-y) 96px;
+}
+
+.ix-img.is-contain img {
+  filter: drop-shadow(0 24px 48px color-mix(in srgb, var(--ink) 14%, transparent));
+}
+
+.ix-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--pad-top) var(--pad-x) var(--pad-bottom) 96px;
+}
+
+.ix.is-flip .ix-text {
+  padding: var(--pad-top) 96px var(--pad-bottom) var(--pad-x);
+}
+
+.ix-title {
+  --fs: 52px;
+}
+
+.ix-body {
+  --fs: var(--t-body);
+  margin-top: 36px;
+  color: var(--ink-2);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+.l-imageText .s-foot {
+  left: calc(var(--side-w, 1120px) + 96px);
+}
+
+.l-imageText:has(.ix.is-flip) .s-foot {
+  right: calc(var(--side-w, 1120px) + 96px);
+  left: var(--pad-x);
+}
+
+/* 단락 지도는 좁은 칸에 다 들어가지 않으니 지금 단락만 */
+:is(.l-imageText, .l-case) .s-map li:not(.is-on) {
+  display: none;
+}

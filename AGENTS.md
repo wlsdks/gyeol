@@ -66,7 +66,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 | 위치 | 내용 |
 |---|---|
 | `src/deck/` | 데이터 모델(`types.ts`), 보고 종류별 구성(`blueprints.ts`), 레이아웃 정의와 묶음(`layouts.ts`), 부품과 자리 규칙(`blocks/`, 한 곳에서 내보내는 것은 `blocks.ts`), 구성 만들기(`generate.ts`), 예시 발표(`sample.ts`), 레이아웃별 예시 장(`showcase.ts`) |
-| `src/slides/` | 슬라이드 그리기(`layouts.tsx`), 부품 장(`blocks.tsx`, `blocks.css`), 슬라이드 디자인(`slides.css`), 편집 표시(`edit.css`) |
+| `src/slides/` | 슬라이드 그리기(`layouts.tsx`), 부품 장(`blocks.tsx`), 슬라이드 디자인(`slides.css`가 `styles/`의 레이아웃별 파일을, `blocks.css`가 `styles/blocks/`의 부품별 파일을 차례대로 묶는다), 편집 표시(`edit.css`) |
 | `src/screens/` | 홈, 마법사, 편집기(`editor/`), 발표 화면, 장 모음(`System.tsx`, 디자인 시스템) |
 | `src/store/` | 편집 상태(zustand), 저장(IndexedDB + 보관 폴더), 버전 |
 | `src/export/` | HTML 내보내기와 뷰어 |
@@ -81,7 +81,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 - 모든 장은 같은 틀 안에 그립니다: 좌우 `--pad-x`(120), 위아래 `--pad-y`(72), 제목 아래에서 본문까지 `--body-gap`(72, 레이아웃 장과 부품 장이 같이 씀). 표, 목록, 일정의 줄 선 굵기는 `--rule` 하나입니다. 위아래는 글자가 그려진 선으로 맞춥니다(제목 글자의 윗선, 하단 표시의 아랫선). 레이아웃의 여백은 이 값으로만 잡고 숫자를 따로 쓰지 않습니다. 레이아웃을 고치거나 더하면 갤러리(`&variants=1`, 두 테마와 명조, `&size=large`, `&mode=edit`)의 콘솔에서 `await checkFrame()`이 빈 목록인지 봅니다. 틀 값을 바꾸면 `src/deck/frame.ts`도 같이 고칩니다(`frame.test.ts`).
 - 색은 테마 변수(`--accent`, `--ink`, `--bold-bg`, `--bold-accent` 등)만 씁니다. 바탕은 흰색 아니면 검은색입니다. 강조색은 답(숫자, 고른 막대, 지금 단계)에만 씁니다. 이름표, 머리말, 역할, 날짜, 따옴표, Q 같은 반복 표시 글자는 글자색(`--ink-2`, `--ink-3`)입니다. 넓은 면은 짙은 면(`--bold-bg`: 흰 테마는 강조색을 깊게 한 색, 검은 테마는 한 단계 뜬 검정), 짙은 면 위의 강조는 `--bold-accent`입니다. 새까만 면, 크림색 같은 색 바탕, 쨍한 강조색의 넓은 면을 새로 만들지 않습니다. 단락 장과 마지막 장은 바탕이 기본이고 짙은 면은 고르는 모양입니다. 두 테마(화이트, 블랙. 블랙의 id는 `navy`), 강조색 9개(`ACCENT_COMBOS`), 장의 바탕(반대 색, 강조색), 명조 제목(갤러리 `theme=serif`)에서 모두 보기 좋아야 합니다(갤러리 `&accent=2F55D4`). 어두운 바탕만의 규칙은 `.t-navy`가 아니라 `.is-dark`에 씁니다.
 - 사용자가 바꿀 수 있는 것은 '고르는 값'으로 엽니다(테마 메뉴: 글꼴, 글자 크기, 아래 표시, 장 넘기기 / 이 장 설정: 모양, 바탕, 움직임). 값 목록은 `src/deck/themes.ts`에 두고 AI 카탈로그, 모양 파일, 제안(op)에 함께 넣습니다.
-- 새 글자 칸은 `slides.css`의 글자 칸 목록(`--fs` 규칙)에 이름을 넣어야 크기와 글자 크기 설정이 먹습니다. 글자 크기는 `slides.css` 맨 위의 단계(비율 1.2: 22, 26, 30, 36, 44, 52, 62 …)에서만 고릅니다. 34, 38 같은 단계 밖의 값을 새로 쓰지 않습니다.
+- 새 글자 칸은 `src/slides/styles/base.css`의 글자 칸 목록(`--fs` 규칙)에 이름을 넣어야 크기와 글자 크기 설정이 먹습니다(`css.test.ts`가 확인). 레이아웃이나 부품의 CSS는 그 이름의 파일에 쓰고, 새 파일은 `slides.css`나 `blocks.css`에 `@import`로 더합니다(차례가 곧 덮어쓰는 차례). 글자 크기는 `base.css` 맨 위의 단계(비율 1.2: 22, 26, 30, 36, 44, 52, 62 …)에서만 고릅니다. 34, 38 같은 단계 밖의 값을 새로 쓰지 않습니다.
 - 부품 장(`compose`)의 부품은 `src/deck/blocks/`에 일마다 나뉘어 있습니다(목록 `catalog.ts`·`native.ts`, 이음표 `links.ts`, 자리 규칙과 면 `rules.ts`, 부품 하나 `cells.ts`, 장과 부품 장 바꾸기 `convert.ts`, 너비와 높이 `sizing.ts`, 이미지 `images.ts`, 넣기·빼기·놓을 자리 `place.ts`, 파일 바로잡기 `clean.ts`). 가져다 쓸 때는 `src/deck/blocks.ts` 하나만 봅니다. 부품은 정해진 줄과 칸(12칸 격자의 정한 비율)에만 들어가고, 부품마다 잘리지 않는 높이는 모양, 바탕, 항목 수, 칸 너비마다 갤러리에서 잰 표(`src/deck/blockHeights.ts`)를 씁니다. 부품이나 그 CSS를 고치면 `#/gallery?set=blocks`에서 다시 재고(방법은 `screens/measureBlocks.ts` 맨 위), `#/gallery?set=combos&seed=1&n=60`에서 콘솔의 `await checkCombos()`로 조합 수백 개에 잘리거나 겹치는 칸이 없는지 봅니다(테마, `&size=large`도). 새 부품은 `BLOCK_GROUPS`와 예시, 움직임(`engine.ts`의 `nativeAuto`)이 있어야 합니다. 좁은 칸, 낮은 줄에서는 글자를 더 줄이지 말고 짜임을 바꿉니다(여러 단으로 흘리기, 옆으로 눕히기, 쌓기. [docs/DESIGN.md](docs/DESIGN.md)의 '짜임 바꾸기'). 글자 단계는 `--bk-w`, `--bk-h` 가운데 작은 쪽 하나만 씁니다. 레이아웃 부품은 레이아웃을 그대로 쓰므로 레이아웃을 고치면 부품도 같이 봅니다.
 - 부품 장으로 바꾸기(`composeFrom`)는 글을 하나도 잃으면 안 됩니다(`blocks.test.ts`가 모든 레이아웃을 확인).
 - 슬라이드를 고쳤으면 갤러리에서 세 테마를 직접 보고 확인합니다(`&variants=1`로 모든 모양, `&tone=invert|accent`로 바탕, `&hl=2`로 강조 항목, `&only=bridge,table`로 몇 장만). 화면을 고쳤으면 편집기를 직접 띄워 봅니다.

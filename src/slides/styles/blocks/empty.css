@@ -1,0 +1,18 @@
+/* ---------- 빈 장 ---------- */
+
+.bk-area.is-empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  border: 3px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: var(--r-panel);
+}
+
+.bk-empty-t {
+  --fs: var(--t-body);
+  color: var(--ink-3);
+}
+
+.slide.m-final .bk-area.is-empty {
+  border: 0;
+}

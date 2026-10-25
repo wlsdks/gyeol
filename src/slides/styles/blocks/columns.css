@@ -1,0 +1,400 @@
+/* ---------- 세로 막대 차트: 원인 순위, 기간별 달성, 쌓은 막대 ----------
+   항목마다 칸 하나(.bk-cc-col)가 막대 줄과 이름 줄을 subgrid로 나눠 쓴다. 막대 길이는 --p(0~100).
+   막대 칸 위에는 숫자 자리(--cc-top)를 남기고 나머지 높이를 100으로 본다. 바닥 줄은 칸마다 이어 그려 한 줄이 된다 */
+
+.bk-cc {
+  --cc-top: 60px;
+  /* 막대 너비: 칸의 반 남짓, 가장 넓어도 160px. 120px까지였을 때는 한 줄을 다 쓰는 막대 넷이 칸의 3분의 1도 안 돼
+     막대 사이가 막대의 두 배 넘게 비었다(쌓은 막대는 칸 안 숫자 자리도 좁았다). 목표 줄(.bk-tg-goal)도 이 너비를 따른다 */
+  --cc-w: min(56%, 160px);
+  --cc-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+}
+
+/* 줄을 적어 둔다: 소제목은 비어 있으면 접혀서(편집할 때도) 없을 때가 있다. 차례로 채우면 그래프가 높이 없는 줄로 밀려 사라진다.
+   소제목, 표시 줄, 그래프의 이 짜임은 색 표(.bk-hm-grid)도 같이 쓴다 */
+.bk-cc > * {
+  grid-column: 1 / -1;
+}
+
+.bk-cc > .bk-h {
+  grid-row: 1;
+}
+
+.bk-cc > .bk-cc-key {
+  grid-row: 2;
+}
+
+.bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
+  grid-row: 3;
+}
+
+/* 낮은 칸: 소제목과 표시 줄을 한 줄에 놓아 막대 높이를 지킨다. 글자를 줄이면 막대는 그대로 납작하다.
+   좁은 칸은 그대로: 한 줄에 놓으면 소제목이 두 줄로 꺾여 얻는 높이가 없다 */
+@container bk (max-height: 460px) and (min-width: 1000px) {
+  .bk-cc {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .bk-cc > .bk-h {
+    grid-column: 1;
+    align-self: end;
+    margin-bottom: 20px;
+  }
+
+  .bk-cc > .bk-cc-key {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: end;
+    margin: 0 0 20px 32px;
+  }
+
+  .bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
+    grid-row: 2;
+  }
+}
+
+.is-dark .bk-cc {
+  --cc-bar: color-mix(in srgb, var(--ink) 30%, var(--bg));
+}
+
+.bk-cc > .bk-h,
+.bk-dv > .bk-h {
+  margin-bottom: 18px;
+}
+
+/* 요점, 표시 설명, 단위를 그래프 위 한 줄에. 요점은 왼쪽, 나머지는 오른쪽 끝으로 */
+.bk-cc-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px 32px;
+  margin-bottom: 28px;
+}
+
+.bk-cc-sum {
+  --fs: var(--t-small);
+  margin-right: auto;
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-cc-sum b {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-cc-lk {
+  --fs: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-2);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.bk-cc-lk i {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--c, var(--accent));
+}
+
+.bk-cc-lk.is-line i,
+.bk-cc-lk.is-goal i {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink-2);
+}
+
+.bk-cc-lk.is-goal i {
+  background: var(--ink);
+}
+
+.bk-cc-u {
+  --fs: 22px;
+  color: var(--ink-3);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.bk-cc-plot {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.bk-cc-col {
+  position: relative;
+  display: grid;
+  grid-row: 1 / span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
+
+/* 막대 칸의 너비가 숫자(.one-line의 100cqi)의 기준: 숫자가 칸보다 넓으면 칸에 맞게 작아진다 */
+.bk-cc-bar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 0;
+  border-bottom: 2px solid var(--ink);
+  container-type: inline-size;
+}
+
+.bk-cc-v {
+  width: 100%;
+  padding: 0 4px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.bk-cc-num {
+  --fs: 30px;
+  display: block;
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-cc-fill {
+  flex: none;
+  width: var(--cc-w);
+  height: calc((100% - var(--cc-top)) * var(--p, 0) / 100);
+  border-radius: 8px 8px 0 0;
+  background: var(--cc-bar);
+}
+
+.bk-cc-col.is-hl .bk-cc-fill {
+  background: var(--accent);
+}
+
+.bk-cc-label {
+  display: flex;
+  flex-direction: column;
+  grid-row: 2;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px 6px 0;
+  text-align: center;
+}
+
+.bk-cc-name {
+  --fs: var(--t-small);
+  max-width: 100%;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bk-cc-col.is-hl .bk-cc-name {
+  color: var(--ink);
+}
+
+/* 예시 숫자로 그린 그래프는 흐리게. 계산해 붙이는 숫자(쌓은 막대의 합계, 칸 숫자)도 예시라 같이 */
+.bk-cc.is-demo :is(.bk-cc-fill, .bk-pa-canvas, .bk-tg-goal, .bk-st-n, .bk-st .bk-cc-v),
+.bk-dv.is-demo .bk-dv-bar {
+  opacity: 0.4;
+}
+
+/* 원인 순위: 앞에서부터 더한 비율 선. 막대와 같은 눈금이라 막대 칸의 숫자 자리 아래, 바닥 줄 위에 그린다 */
+/* 마지막 점(100%)은 오른쪽 끝에 앉아서 반쯤 칸 밖으로 나간다. 그만큼 안쪽에 그려 칸을 넘치지 않게 (넘치면 글자 맞추기가 글자를 줄인다) */
+.bk-pa-canvas {
+  position: relative;
+  z-index: 1;
+  grid-row: 1;
+  grid-column: 1 / -1;
+  margin: var(--cc-top) 12px 2px 0;
+  pointer-events: none;
+}
+
+.bk-pa-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bk-pa-svg polyline {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.bk-pa-pt {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  bottom: calc(var(--y) * 1%);
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--ink-2);
+  border-radius: 50%;
+  background: var(--bg);
+  translate: -50% 50%;
+}
+
+.bk-look-card .bk-pa-pt {
+  background: var(--surface);
+}
+
+/* 80%를 넘긴 점: 요점의 숫자와 같은 값이라 강조색으로 이어 준다. 숫자는 점의 왼쪽 위(앞 선이 아래에서 올라오는 쪽의 반대) */
+.bk-pa-pt.is-cut {
+  width: 20px;
+  height: 20px;
+  border-color: var(--accent);
+}
+
+.bk-pa-cut {
+  --fs: var(--t-small);
+  position: absolute;
+  right: 100%;
+  bottom: 100%;
+  margin: 0 4px 4px 0;
+  color: var(--accent);
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 기간별 달성: 막대 위에 실적 숫자, 목표는 막대보다 조금 넓은 가로 줄. 편집할 때는 실적 아래에 목표 칸이 한 줄 더 */
+.slide.m-edit .bk-tg {
+  --cc-top: 92px;
+}
+
+/* 낮고 넓은 칸: 기간 이름과 달성률을 나란히. 이름이 짧을 때만(is-short): 몇 칸만 꺾이면 줄이 들쭉날쭉해진다 */
+@container bk (max-height: 460px) and (min-width: 1300px) {
+  .bk-tg.is-short .bk-cc-label {
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 4px 10px;
+  }
+}
+
+.bk-cc-col.is-miss .bk-cc-fill {
+  background: var(--cc-bar);
+}
+
+.bk-tg-goal {
+  position: absolute;
+  bottom: calc((100% - var(--cc-top)) * var(--g, 0) / 100);
+  left: 50%;
+  width: calc(var(--cc-w) + 28px);
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink);
+  translate: -50% 50%;
+}
+
+.bk-tg-v {
+  position: absolute;
+  right: 0;
+  bottom: calc((100% - var(--cc-top)) * var(--m, 0) / 100 + 14px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  text-align: center;
+}
+
+.bk-tg-g {
+  --fs: 22px;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bk-tg-gv {
+  --fs: 22px;
+}
+
+.bk-tg-rate {
+  --fs: 22px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-cc-col.is-hl .bk-tg-rate {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* 쌓은 막대: 맨 아래 칸부터 위로. 칸 사이는 바탕색 틈(2px) */
+.bk-st-keywrap {
+  position: relative;
+  display: inline-flex;
+  margin-right: auto;
+}
+
+.bk-st-keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+}
+
+.bk-st-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  overflow: hidden;
+  background: none;
+}
+
+/* 칸마다 크기 상자: 칸 안 숫자는 칸이 숫자보다 높을 때만 보인다. 낮은 칸에서는 숫자가 칸 밖으로 넘쳐 이웃 칸을 덮는다.
+   칸의 글자 크기를 숫자와 같게 두고(--fs) 그 배수(em)로 잰다: 30px처럼 정해 두면 글자 크기 '크게'에서 숫자가 칸보다 커져 잘렸다 */
+.bk-st-seg {
+  --fs: 22px;
+  display: flex;
+  flex-basis: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  container-type: size;
+}
+
+@container (max-height: 1.4em) {
+  .bk-st-n {
+    visibility: hidden;
+  }
+}
+
+.bk-st-n {
+  --fs: 22px;
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-st-seg.is-base .bk-st-n {
+  color: var(--bg);
+}

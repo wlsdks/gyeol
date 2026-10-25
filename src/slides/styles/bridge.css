@@ -1,0 +1,188 @@
+/* ---------- 증감 요인 (폭포) ----------
+   처음과 끝은 짙은 면 색 막대, 더한 요인은 강조색, 뺀 요인은 속이 빈 막대. 좋고 나쁨이 아니라 방향만 보인다.
+   막대 위치는 --lo, --hi(0~100), 다음 막대로 잇는 선 높이는 --link 로만 받는다. */
+
+.wf {
+  --wf-gap: 16px;
+  --wf-total: var(--bold-bg);
+
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: var(--wf-gap);
+  margin-top: 24px;
+}
+
+/* 어두운 바탕에서는 짙은 면이 바탕과 가까워서 밝은 글자색 쪽으로 */
+.is-dark .wf {
+  --wf-total: color-mix(in srgb, var(--ink) 82%, var(--bg));
+}
+
+.wf-col {
+  position: relative;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
+}
+
+.wf-plot {
+  position: relative;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+/* 바닥줄은 칸 사이 틈까지 이어지게 */
+.wf-col:not(:last-child) .wf-plot::before {
+  position: absolute;
+  right: calc(var(--wf-gap) * -1);
+  bottom: -2px;
+  width: var(--wf-gap);
+  border-bottom: var(--rule) solid var(--line);
+  content: '';
+}
+
+/* 막대 위에 값이 들어갈 자리를 남긴다 */
+.wf-bar,
+.wf-val,
+.wf-plot::after {
+  --area: calc(100% - 96px);
+}
+
+.wf-bar {
+  position: absolute;
+  right: 22%;
+  bottom: calc(var(--area) * var(--lo) / 100);
+  left: 22%;
+  height: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100));
+  border-radius: 10px;
+  background: var(--accent);
+}
+
+.wf-total .wf-bar {
+  border-radius: 10px 10px 0 0;
+  background: var(--wf-total);
+}
+
+/* 뺀 요인: 옅은 회색에 빗금. 칠한 더한 요인과 한눈에 갈리고, 얇아도 빈 칸처럼 보이지 않는다 */
+.wf-down .wf-bar {
+  --wf-hatch: color-mix(in srgb, var(--ink-3) 30%, var(--bg));
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
+    color-mix(in srgb, var(--ink-3) 46%, var(--bg));
+}
+
+.is-dark .wf-down .wf-bar {
+  --wf-hatch: color-mix(in srgb, var(--ink-3) 46%, var(--bg));
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
+    color-mix(in srgb, var(--ink-3) 72%, var(--bg));
+}
+
+/* 다음 막대로 잇는 선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
+.wf-col:not(.wf-end) .wf-plot::after {
+  position: absolute;
+  bottom: calc(var(--area) * var(--link) / 100);
+  left: 78%;
+  width: calc(44% + var(--wf-gap));
+  border-top: 2px solid color-mix(in srgb, var(--ink-3) 45%, var(--bg));
+  content: '';
+}
+
+/* 바닥을 올렸을 때: 처음과 끝 막대의 아래쪽을 비스듬히 끊어, 아래로 더 이어진다(잘랐다)는 것을 보인다.
+   흐리게 사라지게 하면 막대가 꾸밈 그러데이션처럼 보인다. 끊는 띠는 바탕색(카드 위에서는 카드 면)이다 */
+.wf.is-cut .wf-total .wf-bar::after {
+  position: absolute;
+  right: -4px;
+  bottom: 28px;
+  left: -4px;
+  height: 10px;
+  background: var(--bg);
+  transform: skewY(-10deg);
+  content: '';
+}
+
+/* 값 자리는 막대 칸 너비라서, 한 줄로 줄이는 숫자(.one-line의 100cqi)의 기준으로 쓴다: 숫자가 칸보다 넓으면 칸에 맞게 작아진다.
+   (칸 .wf-col에 두면 container가 겹쳐 쓰는 layout containment 때문에 subgrid가 풀려 막대 높이가 어긋난다) */
+.wf-val {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--area) * var(--hi) / 100 + 18px);
+  left: 0;
+  container-type: inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 8px;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 처음과 끝 값(숫자와 단위)이 막대 칸보다 넓으면 옆 칸으로 넘치지 않고 단위가 숫자 아래로 내려간다.
+   옆으로 넘치면 좁은 칸(부품 장)에서 옆 막대와 그 값을 덮는다 */
+
+.wf-num {
+  --fs: 44px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-total .wf-num {
+  --fs: 52px;
+}
+
+.wf-up .wf-num {
+  color: var(--accent);
+}
+
+.wf-down .wf-num {
+  color: var(--ink-2);
+}
+
+.wf-unit {
+  --fs: 26px;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.wf-col > .wf-title,
+.wf-label {
+  padding: 24px 8px 0;
+  text-align: center;
+}
+
+.wf-title {
+  --fs: 30px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.wf-total .wf-title {
+  font-weight: 700;
+}
+
+.wf-meta {
+  --fs: 22px;
+  margin-top: 6px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* 아직 적지 않은 요인은 막대를 그리지 않는다 (0으로 보이지 않게) */
+.wf-col.is-blank .wf-bar {
+  visibility: hidden;
+}
+
+.wf.is-demo .wf-bar,
+.wf.is-demo .wf-plot::after {
+  opacity: 0.3;
+}
+
+.wf.is-demo .wf-val > :not(.ed),
+.wf.is-demo .wf-end .wf-val {
+  opacity: 0.45;
+}

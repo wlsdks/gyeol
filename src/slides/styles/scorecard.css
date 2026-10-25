@@ -1,0 +1,146 @@
+/* ---------- 목표 대비 실적 ---------- */
+
+/* 줄이 적어 줄 높이가 정해지면(190px) 남는 높이를 머리 줄(auto)이 먹지 않게 위에 붙인다 */
+.sk {
+  display: grid;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: start;
+  max-height: 100%;
+}
+
+.sk:is([data-n='2'], [data-n='3']) {
+  grid-auto-rows: minmax(min-content, 190px);
+}
+
+.sk-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px 250px 210px;
+  column-gap: 48px;
+  align-items: center;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.sk-headrow {
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.sk-h {
+  --fs: var(--t-source);
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.sk-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sk-title {
+  --fs: 36px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sk-body {
+  --fs: 22px;
+  margin-top: 8px;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+
+/* 막대: 실적만큼 채우고, 목표 자리에 세로 줄 */
+.sk-bar {
+  position: relative;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.sk-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--a, 0) * 1%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 30%, var(--bg));
+}
+
+/* 목표와 실적 사이: 넘었으면 목표 줄부터 실적까지 진하게, 모자라면 실적부터 목표 줄까지 빗금으로.
+   좋고 나쁨의 색(--good, --bad)은 쓰지 않는다. 불량률, 비용처럼 낮을수록 좋은 지표가 있어서 넘었다고 좋은 것이 아니다 */
+.sk-diff {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(min(var(--a, 0), var(--t, 0)) * 1%);
+  width: calc(max(var(--a, 0) - var(--t, 0), var(--t, 0) - var(--a, 0)) * 1%);
+}
+
+.is-met > .sk-bar .sk-diff {
+  border-radius: 0 6px 6px 0;
+  background: color-mix(in srgb, var(--ink) 72%, var(--bg));
+}
+
+.is-miss > .sk-bar .sk-diff {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--ink-3) 46%, var(--bg)) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+/* 강조한 지표는 막대가 강조색이라, 넘은 만큼도 강조색의 진한 쪽으로 */
+.sk-row.is-hl.is-met .sk-diff {
+  background: color-mix(in srgb, var(--accent) 70%, var(--ink));
+}
+
+.sk-mark {
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  left: calc(var(--t, 0) * 1% - 2px);
+  width: 4px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.sk-target {
+  --fs: 30px;
+  color: var(--ink-2);
+}
+
+.sk-value {
+  --fs: 36px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sk-rate {
+  --fs: 44px;
+  color: var(--ink);
+  font-family: var(--font-head);
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.sk-row.is-hl .sk-fill {
+  background: var(--accent);
+}
+
+.sk-row.is-hl :is(.sk-rate, .sk-value) {
+  color: var(--accent);
+}
+
+.sk:is([data-n='5'], [data-n='6']) .sk-title {
+  --fs: 30px;
+}
+
+.sk:is([data-n='5'], [data-n='6']) .sk-rate {
+  --fs: 36px;
+}

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { cssSource } from './cssSource'
 import { minusSigns, numberUnits, splitNumber, textUnits, UNIT_K } from './fields'
 
 // 숫자의 꼴은 그릴 때만 바꾼다 (docs/DESIGN.md '숫자의 꼴'). 저장한 글은 이 함수들을 거치지 않는다
@@ -44,7 +44,7 @@ describe('숫자의 꼴', () => {
   })
 
   it('단위의 크기가 CSS와 같다', () => {
-    const css = readFileSync(new URL('./slides.css', import.meta.url), 'utf8')
+    const css = cssSource(new URL('./slides.css', import.meta.url))
     const rule = /\.slide \.u \{[^}]*font-size: calc\(1em \/ ([\d.]+)\);/.exec(css)
     expect(rule).not.toBeNull()
     expect(1 / Number(rule![1])).toBeCloseTo(UNIT_K, 6)

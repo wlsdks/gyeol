@@ -1,0 +1,128 @@
+/* ---------- 준비 상황 ---------- */
+
+.bk-ck-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: var(--bk-h-gap);
+}
+
+.bk-ck-top:not(:has(.bk-h)) {
+  justify-content: flex-end;
+}
+
+.bk-ck-sum {
+  --fs: var(--t-small);
+  flex: none;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.bk-ck-sum b {
+  color: var(--good);
+  font-weight: 700;
+}
+
+.bk-ck-row {
+  --ck-c: color-mix(in srgb, var(--ink) 30%, transparent);
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-ck-row:first-child {
+  border-top-color: var(--ink);
+}
+
+.bk-ck-row:last-child {
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.bk-ck-list[data-n='5'] .bk-ck-row,
+.bk-ck-list[data-n='6'] .bk-ck-row {
+  padding: calc(12px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+}
+
+.bk-ck-row.is-done {
+  --ck-c: var(--good);
+}
+
+.bk-ck-row.is-doing {
+  --ck-c: var(--accent);
+}
+
+.bk-ck-row.is-late {
+  --ck-c: var(--bad);
+}
+
+.bk-ck-mark svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.bk-ck-ring {
+  fill: none;
+  stroke: var(--ck-c);
+  stroke-width: 2.5;
+}
+
+.bk-ck-fill {
+  fill: var(--ck-c);
+}
+
+.bk-ck-glyph {
+  fill: none;
+  stroke: var(--bg);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.2;
+}
+
+.bk-ck-t {
+  --fs: var(--t-body);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.bk-ck-m {
+  --fs: var(--t-source);
+  margin-top: 4px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+.bk-ck-s {
+  --fs: var(--t-small);
+  color: var(--ck-c);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.bk-ck-row:not(.is-done, .is-doing, .is-late) .bk-ck-s {
+  color: var(--ink-3);
+}
+
+/* 넓은 칸에서 넷 이상이면 두 단으로 흘린다(개요와 같이): 한 단이면 이름과 상태 사이가 칸 너비만큼 비고,
+   넷만 쌓아도 장 높이의 4분의 3을 써서 한 장에 다른 부품을 둘 수 없다. 두 단의 첫 줄 선은 둘 다 진하게, 단마다 끝줄 아래에 선 */
+@container bk (min-width: 1300px) {
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 72px;
+  }
+
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-child(2) {
+    border-top-color: var(--ink);
+  }
+
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-last-child(2) {
+    border-bottom: var(--rule) solid var(--line);
+  }
+}

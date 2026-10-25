@@ -1,0 +1,236 @@
+/* ---------- 섹션 구분 ---------- */
+
+.l-section {
+  justify-content: flex-end;
+  padding-bottom: var(--pad-y);
+  background: var(--bold-bg);
+  color: var(--bold-ink);
+}
+
+.sc-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 96px;
+}
+
+/* 단락 번호. 화면 밖으로 넘기지 않고, 숫자의 아랫단을 제목 덩어리의 아랫단과 같은 선에 맞춘다.
+   text-box로 글자 위아래 빈자리를 잘라 내야 숫자 모양 그대로 줄이 맞는다.
+   번호는 아주 크게, 획은 가늘게(200): 굵은 큰 숫자는 흔한 단락 장 서식처럼 보였고 면을 무겁게 눌렀다.
+   바탕 모양도 같은 자리에 옅은 글자색으로(반복 표시라 강조색이 아니다) */
+.sc-num {
+  flex: none;
+  /* 숫자의 오른쪽 끝을 오른쪽 틀선에. 숫자마다 글자 옆 빈칸이 달라서(고딕의 1은 넓고, 명조의 4는 글자가 상자 밖으로 나간다)
+     끝자리 숫자마다 당긴다. 값은 글꼴마다 굵기 200에서 캔버스로 잰 빈칸(em, 글자 사이 -0.05em 포함).
+     음수면 글자가 상자 밖으로 나가서 밀어 넣는다. SUIT는 400부터라 400의 값 */
+  margin-right: calc(-1em * var(--rb, 0.009));
+  /* 짙은 면 위에서 읽히게 밝힌 강조색(--deep-mark). 반투명으로 겹치면 강조색이 짙은 면과 섞여 탁해진다 */
+  color: var(--deep-mark, var(--accent));
+  font-size: 600px;
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: lining-nums;
+  text-box: trim-both cap alphabetic;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sc-num[data-d='1'] {
+  --rb: 0.081;
+}
+
+.sc-num[data-d='2'] {
+  --rb: 0.020;
+}
+
+.sc-num[data-d='3'] {
+  --rb: 0.018;
+}
+
+.sc-num[data-d='6'] {
+  --rb: 0.012;
+}
+
+.sc-num[data-d='7'] {
+  --rb: 0.002;
+}
+
+.sc-num[data-d='9'] {
+  --rb: 0.012;
+}
+
+.f-suit .sc-num {
+  --rb: 0.003;
+}
+
+.f-suit .sc-num[data-d='1'] {
+  --rb: 0.050;
+}
+
+.f-serif .sc-num {
+  --rb: 0.010;
+}
+
+.f-serif .sc-num[data-d='1'] {
+  --rb: -0.017;
+}
+
+.f-serif .sc-num[data-d='2'] {
+  --rb: -0.001;
+}
+
+.f-serif .sc-num[data-d='3'] {
+  --rb: 0.016;
+}
+
+.f-serif .sc-num[data-d='4'] {
+  --rb: -0.011;
+}
+
+.f-serif .sc-num[data-d='5'] {
+  --rb: 0.036;
+}
+
+.f-serif .sc-num[data-d='7'] {
+  --rb: -0.015;
+}
+
+.f-serif .sc-num[data-d='8'] {
+  --rb: 0.026;
+}
+
+.f-myeongjo .sc-num {
+  --rb: 0.005;
+}
+
+.f-myeongjo .sc-num[data-d='0'] {
+  --rb: -0.001;
+}
+
+.f-myeongjo .sc-num[data-d='1'] {
+  --rb: -0.002;
+}
+
+.f-myeongjo .sc-num[data-d='2'] {
+  --rb: -0.004;
+}
+
+.f-myeongjo .sc-num[data-d='3'] {
+  --rb: 0.016;
+}
+
+.f-myeongjo .sc-num[data-d='4'] {
+  --rb: -0.030;
+}
+
+.f-myeongjo .sc-num[data-d='9'] {
+  --rb: 0.009;
+}
+
+.sc-text {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 1240px;
+}
+
+.sc-title {
+  --fs: 108px;
+  font-weight: var(--display-weight);
+  line-height: 1.08;
+  letter-spacing: calc(var(--head-tracking) - 0.015em);
+}
+
+.sc-lead {
+  --fs: 36px;
+  margin-top: 32px;
+  line-height: 1.4;
+  opacity: var(--o-sub);
+}
+
+.sc-map {
+  position: relative;
+  display: flex;
+  gap: 64px;
+  margin-top: 112px;
+  padding-top: 36px;
+  border-top: 2px solid var(--bold-line);
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.sc-map li {
+  display: flex;
+  gap: 14px;
+  margin-bottom: calc(-1em * ((1.2 - 1.19) / 2 + 0.155));
+  opacity: var(--o-mute);
+}
+
+.sc-map li.is-on {
+  font-weight: 700;
+  opacity: 1;
+}
+
+.map-n {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 모양: 바탕. 색 면 대신 본문 장과 같은 바탕에. 짜임은 색 면과 같고 번호만 옅은 글자색 */
+.l-section:not(.va-bold) {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.l-section:not(.va-bold) .sc-num {
+  color: var(--ink-3);
+}
+
+.l-section:not(.va-bold) .sc-lead {
+  color: var(--ink-2);
+  opacity: 1;
+}
+
+.l-section:not(.va-bold) .sc-map {
+  border-top-color: var(--line);
+}
+
+.l-section:not(.va-bold) .sc-map li {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.l-section:not(.va-bold) .sc-map li.is-on {
+  color: var(--accent);
+}
+
+/* 제목 자리 (SlideOptions.place). 기본은 아래. 위면 제목 덩어리를 위 틀선에, 단락 지도는 아래 틀선에 둔다.
+   가운데면 제목 덩어리만 남은 높이의 가운데에 (단락 지도는 아래에 그대로) */
+.l-section.pl-top .sc-body {
+  align-items: flex-start;
+  margin-bottom: auto;
+}
+
+/* 큰 단락 번호는 아래에 그대로 두고 제목만 위로: 제목과 번호가 대각선으로 마주 본다
+   (번호를 같이 올리면 명조의 1처럼 깃이 글자 윗선 위로 솟는 숫자가 위 틀을 넘는다) */
+.l-section.pl-top .sc-body {
+  flex: 1;
+  align-items: stretch;
+  margin-bottom: 0;
+}
+
+.l-section.pl-top .sc-text {
+  align-self: flex-start;
+}
+
+.l-section.pl-top .sc-num {
+  align-self: flex-end;
+}
+
+.l-section.pl-top .sc-text > .sc-title:first-child {
+  margin-top: calc(-1em * ((1.08 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+.l-section.pl-middle .sc-body {
+  margin-block: auto;
+}

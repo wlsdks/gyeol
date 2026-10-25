@@ -1,0 +1,60 @@
+/* ---------- 예상 질문 ---------- */
+
+/* 질문 사이는 칸 높이를 따라 고르게 좁힌다 (질문 넷을 한 줄씩 쌓으면 장 높이의 반을 넘는다) */
+.bk-qa-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(clamp(16px, 3.6cqh, 32px) + var(--bk-air, 0px) * 2) 64px;
+}
+
+.bk-qa-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: clamp(6px, 1.4cqh, 12px) 20px;
+  padding-top: clamp(14px, 3cqh, 26px);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-qa-q {
+  display: contents;
+}
+
+.bk-qa-k {
+  --fs: 36px;
+  color: var(--ink-3);
+  font-family: var(--font-head);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.bk-qa-qt {
+  --fs: 36px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.36;
+  text-wrap: pretty;
+}
+
+.bk-qa-a {
+  grid-column: 2;
+}
+
+.bk-qa-at {
+  --fs: var(--t-small);
+  color: var(--ink-2);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+@container bk (min-width: 1300px) {
+  .bk-qa-list:is([data-n='2'], [data-n='4']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bk-qa-list[data-n='3'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

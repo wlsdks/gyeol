@@ -1,0 +1,82 @@
+/* ---------- 제목과 글, 점 목록 ---------- */
+
+.bk-tx,
+.bk-bl {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-label {
+  --fs: var(--t-label);
+  margin-bottom: 16px;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-h {
+  --fs: var(--t-h);
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-tracking);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.bk-body {
+  --fs: var(--t-body);
+  color: var(--ink-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.bk-h + .bk-body {
+  margin-top: 20px;
+}
+
+.bk-bl .bk-h {
+  margin-bottom: var(--bk-h-gap);
+}
+
+/* 항목 사이는 칸에 높이가 남으면 넓힌다 (--bk-air, slides/fitBlocks.ts). 목록, 표, 일정 막대가 같이 쓴다 */
+.bk-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(26px + var(--bk-air, 0px) * 2);
+}
+
+.bk-list[data-n='5'],
+.bk-list[data-n='6'] {
+  gap: calc(18px + var(--bk-air, 0px) * 2);
+}
+
+.bk-li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+}
+
+.bk-dot {
+  width: 14px;
+  height: 14px;
+  /* 첫 줄 가운데: 글자 크기를 바꾸는 배율(--scale, --fit)까지 글자와 같이 곱한다 */
+  margin-top: calc(var(--t-body) * var(--scale, 1) * var(--fit, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1) * 0.55);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.bk-li-t {
+  --fs: var(--t-body);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.bk-li-b {
+  --fs: var(--t-small);
+  margin-top: 6px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}

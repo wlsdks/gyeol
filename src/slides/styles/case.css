@@ -1,0 +1,141 @@
+/* ---------- 사례 ---------- */
+
+.l-case {
+  flex-direction: row;
+  padding: 0;
+}
+
+.cs-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--pad-top) 112px var(--pad-bottom) var(--pad-x);
+}
+
+.cs-title {
+  --fs: 62px;
+  line-height: 1.2;
+}
+
+/* 제목 글자의 윗선을 위 틀선에 (다른 장의 제목과 같은 자리) */
+.cs-main > .cs-title:first-child {
+  margin-top: calc(-1em * ((1.2 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+/* 대상은 결과 판의 로고 아래. 로고가 없으면 판의 첫 줄이라 글자 윗선을 틀선에 */
+.cs-client {
+  --fs: 30px;
+  margin-top: 28px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.cs-side > .cs-client:first-child {
+  margin-top: calc(-1em * ((1.45 - 1.19) / 2 + 0.155));
+}
+
+.cs-body {
+  --fs: var(--t-body);
+  max-width: 1020px;
+  margin-top: 40px;
+  color: var(--ink-2);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+/* 한마디는 본문 바로 뒤에 잇는다. 맨 아래에 붙이면 본문과 사이가 비어 보인다 */
+.cs-quote {
+  --fs: 36px;
+  position: relative;
+  max-width: 1020px;
+  margin-top: 72px;
+  padding: 0 0 0 76px;
+  font-family: var(--font-head);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.cs-quote::before {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  /* 따옴표는 장식이라 옅은 글자색, 테마의 제목 글꼴로 */
+  color: color-mix(in srgb, var(--ink) 28%, var(--bg));
+  font-family: var(--font-head);
+  font-size: 88px;
+  font-weight: 700;
+  line-height: 1;
+  content: '\201C';
+}
+
+.cs-side {
+  container-type: inline-size;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--side-w, 640px);
+  padding: var(--pad-y) var(--pad-x) var(--pad-y) 80px;
+  background: var(--surface);
+}
+
+.l-case.is-flip {
+  flex-direction: row-reverse;
+}
+
+.l-case.is-flip .cs-main {
+  padding: var(--pad-top) var(--pad-x) var(--pad-bottom) 112px;
+}
+
+.l-case.is-flip .cs-side {
+  padding: var(--pad-y) 80px var(--pad-y) var(--pad-x);
+}
+
+/* 결과 판을 좁게 골라도 로고가 판 밖으로 나가지 않게 */
+.cs-logo {
+  width: 300px;
+  max-width: 100%;
+  height: 96px;
+}
+
+.cs-logo img {
+  object-position: left center;
+}
+
+.cs-results {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  margin-top: auto;
+}
+
+.cs-res {
+  position: relative;
+}
+
+.cs-value {
+  --fs: 108px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.cs-label {
+  --fs: 30px;
+  margin-top: 18px;
+  font-weight: 600;
+}
+
+.cs-res:last-child .cs-label {
+  margin-bottom: calc(-1em * ((1.55 - 1.19) / 2 + 0.155));
+}
+
+.l-case .s-foot {
+  right: calc(var(--side-w, 640px) + 112px);
+}
+
+.l-case.is-flip .s-foot {
+  right: var(--pad-x);
+  left: calc(var(--side-w, 640px) + 112px);
+}

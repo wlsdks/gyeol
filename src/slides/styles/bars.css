@@ -1,0 +1,176 @@
+/* ---------- 막대 비교 ---------- */
+
+.br-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 단위는 막대마다 되풀이하지 않고 숫자 줄 위 오른쪽에 한 번 */
+.br-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 14px;
+}
+
+.br-unit {
+  --fs: 22px;
+  color: var(--ink-3);
+}
+
+/* 줄은 내용(이름과 설명)보다 낮아지지 않는다. 0까지 줄면 자리가 모자랄 때 줄끼리 올라타는데 넘친 것으로 보이지 않아서
+   부품 장의 글자 맞추기(fitBlocks)가 알아채지 못한다 */
+.br {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(min-content, 168px);
+  /* 줄이 모자라면 아래로만 넘친다: 위로 넘치면 단위 줄을 덮는데 넘친 것으로 세지 않아서 글자 맞추기가 놓친다 */
+  align-content: safe center;
+  padding-bottom: 24px;
+}
+
+.br-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 400px 1fr 280px;
+  align-items: center;
+  gap: 48px;
+  border-bottom: var(--rule) solid var(--line);
+}
+
+.br-row:first-child {
+  border-top: var(--rule) solid var(--line);
+}
+
+.br-name {
+  --fs: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.br-meta {
+  --fs: 22px;
+  margin-top: 8px;
+  color: var(--ink-3);
+}
+
+.br-track {
+  height: 64px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.br-fill {
+  width: calc(var(--p, 0) * 1%);
+  height: 100%;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 22%, var(--bg));
+}
+
+.br-row.is-hl .br-fill {
+  background: var(--accent);
+}
+
+.br-value {
+  --fs: 52px;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  letter-spacing: -0.035em;
+}
+
+.br-row.is-hl .br-value {
+  color: var(--accent);
+}
+
+/* 가로 막대가 다섯, 여섯이면 설명을 이름 옆에 둔다: 이름 아래 한 줄씩 더 쓰면 줄이 높아져, 편집 화면(빈 설명 칸이 보인다)과
+   큰 글자에서 마지막 막대가 출처 줄에 닿았다. 막대도 조금 낮게. 부품 장은 장에도 va-base가 붙어 있어서, 세로 막대(va-columns)
+   부품을 빼는 것으로 가린다 */
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 16px;
+}
+
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-meta {
+  margin-top: 0;
+}
+
+.br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-track {
+  height: 52px;
+}
+
+/* 가로 막대: 막대와 숫자는 묶음 없이 줄의 칸(이름, 막대, 숫자)에 */
+.br-bar {
+  display: contents;
+}
+
+/* 모양: 세로 막대. 기간(분기, 월)처럼 순서가 있는 숫자에. 숫자는 막대 위, 이름은 바닥 줄 아래.
+   막대마다 두 줄(막대 칸, 이름 칸)을 모든 막대가 같이 쓴다(subgrid): 막대마다 따로 쌓으면 설명이 두 줄로 꺾인
+   막대만 이름 칸이 높아져 그 막대의 바닥 줄이 위로 올라가 축이 끊겼다 */
+.va-columns .br {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  padding-bottom: 0;
+}
+
+.va-columns .br-row,
+.va-columns .br-row:first-child {
+  grid-row: 1 / span 2;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  align-items: stretch;
+  gap: 0;
+  border: 0;
+}
+
+.va-columns .br-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  grid-row: 1;
+  min-height: 0;
+}
+
+.va-columns .br-value {
+  --fs: 52px;
+  order: 1;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 높이는 막대 칸에서 숫자 자리를 뺀 만큼을 100으로 본다 */
+.va-columns .br-track {
+  order: 2;
+  flex: none;
+  height: calc((100% - 84px) * var(--p, 0) / 100);
+  min-height: 6px;
+  margin: 0 22%;
+  border-radius: 12px 12px 0 0;
+  background: none;
+}
+
+.va-columns .br-fill {
+  width: 100%;
+  border-radius: inherit;
+}
+
+.va-columns .br-label {
+  grid-row: 2;
+  padding-top: 24px;
+  border-top: 2px solid var(--ink);
+  text-align: center;
+}
+
+.va-columns .br-name {
+  --fs: 30px;
+}
+
+.va-columns .br:is([data-n='5'], [data-n='6']) .br-value {
+  --fs: 44px;
+}

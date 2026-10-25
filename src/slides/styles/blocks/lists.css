@@ -1,0 +1,18 @@
+/* ---------- 목록형 부품의 틀: 개요, 걱정과 대책, 예상 질문, 준비 상황, 맡은 사람 ----------
+   부품 안의 세로 가운데 맞춤은 모두 safe center: 예전 파일처럼 칸보다 내용이 많아도 위(장 제목)로 넘치지 않고 아래로만.
+   줄 사이 여백은 글자를 줄일 때(--bk-fit) 같이 줄인다 */
+
+.bk-fc,
+.bk-rk,
+.bk-qa,
+.bk-ck,
+.bk-pp {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+:is(.bk-fc, .bk-rk, .bk-qa, .bk-pp) > .bk-h {
+  margin-bottom: var(--bk-h-gap);
+}
