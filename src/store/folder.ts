@@ -1,6 +1,7 @@
 import { createStore, del, get, keys, set } from 'idb-keyval'
 import type { Deck } from '../deck/types'
 import { DECK_EXT, decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckFile'
+import { PARTS_EXT } from './partsFile'
 
 /*
  * 보관 폴더: 사용자가 고른 PC 폴더(또는 공유 드라이브)에 작업 파일을 자동으로 쓴다.
@@ -14,6 +15,8 @@ const VERSIONS_DIR = '버전 기록'
 const TRASH_DIR = '지운 발표'
 const AUTO_KEEP = 10
 const AUTO_SUFFIX = ` 자동${DECK_EXT}`
+/** 내 컴포넌트를 담는 파일 (발표 파일과 같은 폴더에 하나) */
+const PARTS_FILE = `내 컴포넌트${PARTS_EXT}`
 
 type Mode = { mode: 'readwrite' }
 const RW: Mode = { mode: 'readwrite' }
@@ -277,6 +280,30 @@ export function trashDeckInFolder(deck: Deck): Promise<void> {
       await dir.removeEntry(name)
     } catch {
       // 옮기지 못하면 파일을 그대로 둔다. 잃는 것보다 남는 편이 낫다.
+    }
+  })
+}
+
+/** 보관 폴더의 내 컴포넌트 파일. 없거나 폴더를 쓸 수 없으면 null */
+export async function readPartsFromFolder(): Promise<string | null> {
+  const dir = await readyFolder()
+  if (!dir) return null
+  try {
+    return await readText(await dir.getFileHandle(PARTS_FILE))
+  } catch {
+    return null
+  }
+}
+
+export function writePartsToFolder(text: string): Promise<boolean> {
+  return serial(async () => {
+    const dir = await readyFolder()
+    if (!dir) return false
+    try {
+      await writeText(dir, PARTS_FILE, text)
+      return true
+    } catch {
+      return false
     }
   })
 }

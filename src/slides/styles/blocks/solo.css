@@ -1,8 +1,9 @@
 /* ---------- 부품 하나만 (부품 고르기 카드, 끌고 있는 부품) ---------- */
 
-/* 장의 틀(--pad-x, --pad-y)이 아니라 카드 안에서 부품 하나를 크게 보이려는 좁은 여백이다 */
+/* 장의 틀(--pad-x, --pad-y)이 아니라 카드 안에서 부품 하나를 크게 보이려는 좁은 여백이다.
+   내 컴포넌트의 그림은 저장한 크기를 지키려고 남는 자리를 이 여백으로 채운다(--solo-py, --solo-px) */
 .slide.is-solo {
-  padding: 40px;
+  padding: var(--solo-py, 40px) var(--solo-px, 40px);
 }
 
 .slide.is-solo :is(.s-head, .s-source) {

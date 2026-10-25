@@ -9,11 +9,13 @@ import { josa } from '../../lib/josa'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
-import { soloSlide, type BlockEditing } from './BlockEditor'
+import { loadSaved, useSaved } from '../../store/saved'
+import { soloSlide, type BlockEditing, type LibraryView } from './BlockEditor'
 import { COL_W } from './canvas'
-import { dialogOpen, isTyping } from '../ui'
+import { dialogOpen, isTyping, Segmented, type Toast } from '../ui'
 import { useLook, type Look } from './look'
 import { noRoomText } from './noRoom'
+import { SavedParts } from './SavedParts'
 
 // 부품 고르기: 부품마다 예시 내용을 넣은 작은 그림을 보여 주고, 마우스를 올리면 발표할 때의 움직임을 한 번 보여 준다.
 // 카드를 슬라이드로 끌어다 놓거나, 누르면 알맞은 자리에 넣는다.
@@ -95,7 +97,7 @@ export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview' 
 /** 부품 고르기의 묶음 탭에 더하는 이음표 묶음 */
 const LINK_GROUP = { name: '이음표', short: '이음표', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
 
-export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: BlockEditing }) {
+export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
   const [group, setGroup] = useState<string | null>(null)
   // 이 장에 넣을 수 없는 카드를 눌렀을 때 그 까닭을 보여 줄 부품
   const [why, setWhy] = useState<{ type: BlockType; card: HTMLElement } | null>(null)
@@ -103,6 +105,13 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
   const engine = useMemo(() => motionEngine(), [])
   const playing = useRef(new WeakMap<Element, number>())
   const level = motionOf(deck, slide)
+  const saved = useSaved((s) => s.parts.length)
+  const mine = blocks.libraryView === 'mine'
+
+  // 내 컴포넌트는 열 때마다 다시 읽는다 (그 사이 보관 폴더를 허용했거나 다른 창에서 저장했을 수 있다)
+  useEffect(() => {
+    void loadSaved()
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -156,6 +165,20 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
 
   return (
     <div className="lib" role="tabpanel" aria-label="컴포넌트">
+      {/* 기본 컴포넌트와 내가 저장해 둔 것. 묶음 칩은 기본 컴포넌트에만 */}
+      <Segmented<LibraryView>
+        className="seg-fill lib-source"
+        label="보일 컴포넌트"
+        options={[
+          { id: 'base', name: '기본 컴포넌트' },
+          { id: 'mine', name: saved ? `내 컴포넌트 ${saved}` : '내 컴포넌트', description: '저장해 둔 컴포넌트, 줄, 장을 어느 발표에서든 다시 넣어요' },
+        ]}
+        value={blocks.libraryView}
+        onPick={(v) => {
+          setWhy(null)
+          blocks.setLibraryView(v)
+        }}
+      />
       {note && (
         <div className="lib-note">
           <p className="lib-note-t">{note}</p>
@@ -167,101 +190,107 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         </div>
       )}
 
-      {/* 묶음은 같은 폭의 글자 칩 한 줄. 긴 이름과 설명은 목록의 묶음 제목에 */}
-      <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
-        <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
-          전체
-        </button>
-        {BLOCK_GROUPS.map((g) => (
-          <button
-            key={g.name}
-            type="button"
-            className={cx('lib-tab', group === g.name && 'is-on')}
-            aria-pressed={group === g.name}
-            title={`${g.name}: ${g.description}`}
-            onClick={() => setGroup(g.name)}
-          >
-            {g.short}
-          </button>
-        ))}
-        <button
-          type="button"
-          className={cx('lib-tab', group === LINK_GROUP.name && 'is-on')}
-          aria-pressed={group === LINK_GROUP.name}
-          title={`${LINK_GROUP.name}: ${LINK_GROUP.description}`}
-          onClick={() => setGroup(LINK_GROUP.name)}
-        >
-          {LINK_GROUP.short}
-        </button>
-      </div>
+      {mine && <SavedParts deck={deck} slide={slide} blocks={blocks} toast={toast} />}
 
-      <div className="lib-list">
-        {groups.map((g) => (
-          <section key={g.name} className="lib-sec">
-            <h3 className="lib-group">
-              {g.name}
-              <span className="lib-group-n">{g.types.length}</span>
-            </h3>
-            <p className="lib-group-d">{g.description}</p>
-            <div className="lib-grid">
-              {g.types.map((type) => {
-                const spec = BLOCKS[type]
-                const issue = issues.get(type)
-                // 카드의 표는 몇 카드만 막혔을 때만 (다 막혔으면 위의 알림 한 줄로)
-                const marked = !!issue && !full
-                // 이 장에 넣을 수 없는 부품: 눌러도 바로 넣지 않고 까닭을 보여 준다 (끌어서 놓으면 다음 장에 들어간다)
-                const tap = (card: HTMLElement) => (issue ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
-                    title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요` : `${spec.name}: ${spec.motion}`}
-                    onPointerDown={(e) => {
-                      const card = e.currentTarget
-                      blocks.pressCard(e, type, () => tap(card))
-                    }}
-                    // 키보드로 누를 때만 (마우스는 위의 누르기에서 끌기와 나눠 다룬다)
-                    onClick={(e) => e.detail === 0 && tap(e.currentTarget)}
-                    onPointerEnter={(e) => preview(e.currentTarget)}
-                    onFocus={(e) => preview(e.currentTarget)}
-                  >
-                    <BlockThumb deck={look} type={type} />
-                    <span className="lib-name">{spec.name}</span>
-                    <span className="lib-desc">{spec.description}</span>
-                    {marked && <span className="lib-no">이 장엔 자리가 없어요</span>}
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        ))}
-        {showLinks && (
-          <section className="lib-sec">
-            <h3 className="lib-group">
-              {LINK_GROUP.name}
-              <span className="lib-group-n">{BLOCK_LINKS.length}</span>
-            </h3>
-            <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 장에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
-            <div className="lib-grid">
-              {BLOCK_LINKS.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  className={cx('lib-card', !linkable && 'is-blocked')}
-                  title={`${l.name}: ${l.description}`}
-                  onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
-                  onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
-                >
-                  <LinkThumb deck={look} link={l.id} />
-                  <span className="lib-name">{l.name}</span>
-                  <span className="lib-desc">{l.description}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+      {/* 묶음은 같은 폭의 글자 칩 한 줄. 긴 이름과 설명은 목록의 묶음 제목에 */}
+      {!mine && (
+        <>
+          <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
+            <button type="button" className={cx('lib-tab', !group && 'is-on')} aria-pressed={!group} onClick={() => setGroup(null)}>
+              전체
+            </button>
+            {BLOCK_GROUPS.map((g) => (
+              <button
+                key={g.name}
+                type="button"
+                className={cx('lib-tab', group === g.name && 'is-on')}
+                aria-pressed={group === g.name}
+                title={`${g.name}: ${g.description}`}
+                onClick={() => setGroup(g.name)}
+              >
+                {g.short}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={cx('lib-tab', group === LINK_GROUP.name && 'is-on')}
+              aria-pressed={group === LINK_GROUP.name}
+              title={`${LINK_GROUP.name}: ${LINK_GROUP.description}`}
+              onClick={() => setGroup(LINK_GROUP.name)}
+            >
+              {LINK_GROUP.short}
+            </button>
+          </div>
+
+          <div className="lib-list">
+            {groups.map((g) => (
+              <section key={g.name} className="lib-sec">
+                <h3 className="lib-group">
+                  {g.name}
+                  <span className="lib-group-n">{g.types.length}</span>
+                </h3>
+                <p className="lib-group-d">{g.description}</p>
+                <div className="lib-grid">
+                  {g.types.map((type) => {
+                    const spec = BLOCKS[type]
+                    const issue = issues.get(type)
+                    // 카드의 표는 몇 카드만 막혔을 때만 (다 막혔으면 위의 알림 한 줄로)
+                    const marked = !!issue && !full
+                    // 이 장에 넣을 수 없는 부품: 눌러도 바로 넣지 않고 까닭을 보여 준다 (끌어서 놓으면 다음 장에 들어간다)
+                    const tap = (card: HTMLElement) => (issue ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
+                        title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 까닭을 보세요` : `${spec.name}: ${spec.motion}`}
+                        onPointerDown={(e) => {
+                          const card = e.currentTarget
+                          blocks.pressCard(e, type, () => tap(card))
+                        }}
+                        // 키보드로 누를 때만 (마우스는 위의 누르기에서 끌기와 나눠 다룬다)
+                        onClick={(e) => e.detail === 0 && tap(e.currentTarget)}
+                        onPointerEnter={(e) => preview(e.currentTarget)}
+                        onFocus={(e) => preview(e.currentTarget)}
+                      >
+                        <BlockThumb deck={look} type={type} />
+                        <span className="lib-name">{spec.name}</span>
+                        <span className="lib-desc">{spec.description}</span>
+                        {marked && <span className="lib-no">이 장엔 자리가 없어요</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
+            {showLinks && (
+              <section className="lib-sec">
+                <h3 className="lib-group">
+                  {LINK_GROUP.name}
+                  <span className="lib-group-n">{BLOCK_LINKS.length}</span>
+                </h3>
+                <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 장에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
+                <div className="lib-grid">
+                  {BLOCK_LINKS.map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      className={cx('lib-card', !linkable && 'is-blocked')}
+                      title={`${l.name}: ${l.description}`}
+                      onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
+                      onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
+                    >
+                      <LinkThumb deck={look} link={l.id} />
+                      <span className="lib-name">{l.name}</span>
+                      <span className="lib-desc">{l.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </>
+      )}
 
       {shownWhy && (
         <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 까닭`}>

@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, shownLook, variantOfBlock, type NoRoom } from '../../deck/blocks'
+import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, shownLook, variantOfBlock, type NoRoom, type SavedKind } from '../../deck/blocks'
 import type { Block, BlockEffect } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { BookmarkIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
 import { noRoomText } from './noRoom'
 
 // 고른 컴포넌트 바로 위에 뜨는 도구 (옮기기, 바탕, 움직임, 모양, 항목과 칸 더하기, 복제, 빼기). 띄우는 자리는 SelectionBar의 FloatTools
+
+/** 내 컴포넌트로 저장하는 것의 이름 */
+const SAVE_NAMES: Record<SavedKind, string> = { block: '이 컴포넌트', row: '이 줄', slide: '이 장 전체' }
 
 /** 바탕 메뉴의 설명 */
 const LOOK_NOTES: Record<Block['look'] & string, string> = {
@@ -32,6 +35,8 @@ export function BlockTools({
   onOpenField,
   onDuplicate,
   onRemove,
+  saves,
+  onSave,
 }: {
   block: Block
   /** 항목을 더하거나 모양, 바탕을 바꾸면 장에 들어가지 않을 때 그 까닭 */
@@ -54,9 +59,12 @@ export function BlockTools({
   onOpenField(key: string): void
   onDuplicate(): void
   onRemove(): void
+  /** 내 컴포넌트로 저장할 수 있는 것과 든 컴포넌트 수 */
+  saves: { kind: SavedKind; count: number }[]
+  onSave(kind: SavedKind): void
 }) {
   const spec = BLOCKS[block.type]
-  const [menu, setMenu] = useState<'look' | 'motion' | 'variant' | 'fields' | null>(null)
+  const [menu, setMenu] = useState<'look' | 'motion' | 'variant' | 'fields' | 'save' | null>(null)
   const menuRef = useRef<HTMLUListElement>(null)
   // 메뉴는 도구 아래로 연다. 고른 부품이 장 아래쪽이라 아래에 자리가 모자라면 위로 (위 끝은 머리 띠 아래).
   // 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
@@ -281,6 +289,39 @@ export function BlockTools({
         </div>
       )}
       <span className="bk-tool-sep" />
+      {/* 내 컴포넌트로 저장: 이 컴포넌트, 이 줄, 이 장 가운데 고른다 (다른 장, 다른 발표에서 다시 넣는다) */}
+      <div className="bk-tool-menu">
+        <button
+          type="button"
+          className={cx('bk-tool is-icon', menu === 'save' && 'is-on')}
+          aria-expanded={menu === 'save'}
+          title="내 컴포넌트로 저장"
+          aria-label="내 컴포넌트로 저장"
+          onClick={() => setMenu(menu === 'save' ? null : 'save')}
+        >
+          <BookmarkIcon />
+        </button>
+        {menu === 'save' && (
+          <ul ref={menuRef} className="bk-menu is-save" role="menu" aria-label="내 컴포넌트로 저장">
+            {saves.map((x) => (
+              <li key={x.kind}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onSave(x.kind)
+                    setMenu(null)
+                  }}
+                >
+                  <b>{SAVE_NAMES[x.kind]}</b>
+                  <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 움직임까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 움직임까지`}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <button type="button" className="bk-tool is-icon" title="복제" aria-label="복제" onClick={onDuplicate}>
         <CopyIcon />
       </button>

@@ -1,0 +1,197 @@
+/* ---------- 컴포넌트 고르기의 기본 / 내 컴포넌트 (screens/editor/SavedParts.tsx) ---------- */
+
+/* 맨 위의 고르기: 기본 컴포넌트와 내 컴포넌트. 묶음 칩 위에 한 줄 */
+.lib-source {
+  width: auto;
+  margin: 12px 16px 0;
+}
+
+/* 끌지 않고 누르기만 하는 카드 (한 줄, 장 하나) */
+.lib-card.is-tap {
+  cursor: pointer;
+}
+
+.mine-list {
+  border-top: 0;
+}
+
+/* 개수와 파일 단추 한 줄. 목록과 함께 스크롤된다 */
+.mine-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 10px;
+}
+
+.mine-head .lib-group-n {
+  margin-right: auto;
+}
+
+.mine-head-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mine-head-btn:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.mine-head-btn .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* 줄과 장은 넓적해서 한 칸에 하나씩 (두 칸이면 글자가 읽히지 않는다) */
+.mine-grid {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mine-item {
+  min-width: 0;
+}
+
+.mine-item .lib-card {
+  width: 100%;
+}
+
+.mine-item .lib-thumb {
+  margin-bottom: 6px;
+}
+
+/* 이름, 무엇인지, 메뉴. 이름은 두 번 눌러서도 바꾼다 */
+.mine-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 4px;
+  align-items: center;
+}
+
+.mine-name,
+.mine-rename {
+  grid-column: 1;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.mine-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mine-rename {
+  height: 26px;
+  margin: -2px 0 -2px -6px;
+  padding: 0 6px;
+  border: 1px solid var(--sel);
+  border-radius: var(--r-sm);
+  outline: none;
+  background: var(--panel);
+  font: inherit;
+  font-weight: 600;
+}
+
+.mine-kind {
+  grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mine-meta .pop-wrap {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.mine-more {
+  width: 30px;
+  height: 30px;
+}
+
+.mine-menu {
+  min-width: 150px;
+}
+
+/* 아직 저장한 것이 없을 때: 무엇을 하면 되는지 한 번에 */
+.mine-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 36px 24px 0;
+  text-align: center;
+}
+
+.mine-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--hover);
+  color: var(--ink-2);
+}
+
+.mine-empty-icon .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.mine-empty-t {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mine-empty-p {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mine-empty-p .icon {
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+}
+
+.mine-empty .btn .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* 컴포넌트 도구의 '내 컴포넌트로 저장' 메뉴: 작은 그림 없이 무엇을 저장하는지와 무엇이 같이 가는지 */
+.bk-menu.is-save {
+  width: 260px;
+}
+
+.bk-menu.is-save .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bk-menu.is-save .bk-menu-item b,
+.bk-menu.is-save .bk-menu-d {
+  grid-column: 1;
+}

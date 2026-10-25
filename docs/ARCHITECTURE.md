@@ -114,7 +114,8 @@
 | 컴포넌트 끌기, 눌러 넣기, 칸 너비, 줄 높이 | `BlockEditor.tsx`(다루기), `planDrop.ts`(어디에 놓을지), `RoomZone.tsx`(장 아래 빈자리) |
 | 띄운 것을 장 안의 것에 맞춰 두기 | `useTrackRect.ts`. 바뀔 만한 때만 잰다(매 프레임 재지 않는다) |
 | 발표 시작, 단축키, 내보내기, 오른쪽 칸 | `presentLaunch.tsx`, `shortcuts.ts`, `exports.tsx`, `sidePanel.ts`(탭과 좁은 창) |
-| 오른쪽 칸의 탭 | `Inspector.tsx`(이 장 설정), `MotionPanel.tsx`(움직임: 장 넘기기, 나오는 차례와 때), `BlockLibrary.tsx`(컴포넌트) |
+| 오른쪽 칸의 탭 | `Inspector.tsx`(이 장 설정), `MotionPanel.tsx`(움직임: 장 넘기기, 나오는 차례와 때), `BlockLibrary.tsx`(컴포넌트: 기본 컴포넌트), `SavedParts.tsx`(내 컴포넌트) |
+| 내 컴포넌트 | 떼어 내고 다시 넣기는 `deck/blocks/saved.ts`, 두는 곳은 `store/saved.ts`(브라우저와 보관 폴더), 파일은 `store/partsFile.ts` |
 | 고칠 때마다 저장, 자동 버전 | `src/store/autosave.ts` |
 | 화면 곳곳의 작은 부품(아이콘, 툴팁 `Info`, `Toggle`, 고르는 단추 줄 `Segmented`, 알림) | `screens/ui.tsx` |
 | 화면의 모양 | `src/styles/<화면>.css`. `app.css`는 `@import` 차례만 둔다. 마우스를 올린 회색은 `--hover`, `--hover-2` 둘 |
@@ -133,6 +134,7 @@
 | `src/deck/frame.test.ts`, `src/slides/css.test.ts` | TS의 값과 CSS의 값이 같다(틀, 글자 칸 목록, 부품 간격) |
 | `src/motion/engine.test.ts`, `src/slides/fitBlocks.test.ts` | 레이아웃과 부품마다 연출이 있고, 고를 수 있는 때, 빠르기, 쪽, 장 넘기기를 엔진이 안다. 엔진과 글자 맞추기가 바깥 이름 없이 소스만으로 다시 만들어진다(내보낸 HTML에 소스째 들어간다) |
 | `src/deck/generate.test.ts` | 구성 규칙(결론부터, 시간에 맞는 장 수, 듣는 사람). 레이아웃 묶음과 예시 |
+| `src/deck/saved.test.ts`, `src/store/partsFile.test.ts` | 내 컴포넌트: 저장한 것이 장과 따로 놀고, 넣을 때마다 새 id, 자리가 없으면 넣지 않는다. 파일에서는 아는 것만 읽는다 |
 | `compat`, `migrate`, `storage`, `deckStore` | 예전 파일과 새 파일, 두 벌 맞추기, 되돌리기 |
 
 테스트로 볼 수 없는 것은 갤러리의 콘솔에서 본다. 장의 틀은 `await checkFrame()`, 부품 조합은 `await checkCombos()`, 편집 화면의 칸은 `await checkEdit()`로 본다. 코드만 정리할 때는 정리 전과 후의 갤러리를 장마다 찍어 화소로 견준다.

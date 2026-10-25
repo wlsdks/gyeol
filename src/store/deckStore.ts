@@ -65,6 +65,8 @@ interface DeckState {
   replaceSlide(slideId: string, slide: Slide): void
   /** 부품을 넣은 부품 장을 새로 만들어 이 장 뒤에 */
   addComposeSlide(rows: BlockRow[], afterId?: string): void
+  /** 만들어 둔 장(내 컴포넌트의 장 하나)을 이 장 뒤에 넣고 고른다 */
+  insertSlide(slide: Slide, afterId?: string): void
 
   addSlide(layout: LayoutId, afterId?: string): void
   duplicateSlide(slideId: string): void
@@ -248,13 +250,15 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => mapSlide(d, slideId, () => ({ ...slide, id: slideId, ...(slide.rows ? { rows: tidyLinks(slide.rows) } : {}) })))
     },
     addComposeSlide(rows, afterId) {
-      const slide = { ...makeSlide('compose'), rows }
+      get().insertSlide({ ...makeSlide('compose'), rows }, afterId)
+    },
+    insertSlide(slide, afterId) {
       commit((d) => {
         const at = afterId ? d.slides.findIndex((s) => s.id === afterId) + 1 : d.slides.length
         const prev = d.slides[at - 1]
-        if (prev) slide.section = prev.section
         const slides = [...d.slides]
-        slides.splice(at, 0, slide)
+        // 앞 장과 같은 단락에 둔다
+        slides.splice(at, 0, prev ? { ...slide, section: prev.section } : slide)
         return { ...d, slides }
       })
       set({ selectedId: slide.id })

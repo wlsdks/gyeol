@@ -261,7 +261,7 @@ function EditorBody({ deck }: { deck: Deck }) {
                 </button>
               </div>
               {side.tab === 'library' ? (
-                <BlockLibrary deck={deck} slide={slide} blocks={blocks} />
+                <BlockLibrary deck={deck} slide={slide} blocks={blocks} toast={toast} />
               ) : side.tab === 'motion' ? (
                 <MotionPanel deck={deck} slide={slide} blocks={blocks} />
               ) : (

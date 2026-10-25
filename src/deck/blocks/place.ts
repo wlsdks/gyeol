@@ -73,6 +73,30 @@ function roomyRows(rows: BlockRow[], areaH?: number): BlockRow[] {
   return out
 }
 
+/**
+ * 줄 여럿(내 컴포넌트의 한 줄이나 장 하나)을 index 자리에 새 줄로 넣은 줄들. 줄 수나 부품 수가 넘치면 null.
+ * 넣는 부품의 면이 장의 면과 어긋나면 바탕 없이(settleLook), 장보다 높으면 칸 너비를 다시 나눠 본다(insertAt과 같게).
+ * 들어가는지(높이)는 rowsIssue가 본다
+ */
+export function insertRows(rows: BlockRow[], index: number, add: BlockRow[], areaH?: number): BlockRow[] | null {
+  if (!add.length || index < 0 || index > rows.length) return null
+  if (rows.length + add.length > MAX_ROWS || blockCount(rows) + blockCount(add) > MAX_BLOCKS) return null
+  // 넣는 줄의 높이 비중은 버린다: 장의 다른 줄과 함께 다시 똑같이 나눈다
+  let next = [...rows.slice(0, index), ...add.map(({ grow: _, ...r }) => r), ...rows.slice(index)]
+  for (const b of allBlocks(add)) next = settleLook(next, b)
+  return roomyRows(tidyLinks(next), areaH)
+}
+
+/** 줄 여럿을 이 장 맨 아래에 넣을 수 없는 까닭. 넣을 수 있으면 null */
+export function rowsIssue(rows: BlockRow[], add: BlockRow[], areaH?: number): NoRoom | null {
+  if (blockCount(rows) + blockCount(add) > MAX_BLOCKS) return { kind: 'full' }
+  if (rows.length + add.length > MAX_ROWS) return { kind: 'rows' }
+  const next = insertRows(rows, rows.length, add, areaH)
+  if (!next) return { kind: 'rows' }
+  if (areaH !== undefined && !fitsHeight(next, areaH)) return { kind: 'height', need: Math.round(needH(next)), room: Math.round(areaH) }
+  return null
+}
+
 /** 부품을 뺀 줄들. 빈 줄은 없애고, 남은 칸은 너비를 다시 고른다. 설 자리가 없어진 이음표도 뺀다 */
 export function removeBlock(rows: BlockRow[], blockId: string, areaH?: number): BlockRow[] {
   const next = tidyLinks(

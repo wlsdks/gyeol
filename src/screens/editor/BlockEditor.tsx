@@ -17,6 +17,7 @@ import {
   insertAt,
   lookChangeIssue,
   makeBlock,
+  partFrom,
   placeIssue,
   removeBlock,
   sameTarget,
@@ -31,17 +32,20 @@ import {
   withLook,
   type DropTarget,
   type NoRoom,
+  type SavedKind,
 } from '../../deck/blocks'
 import { FRAME } from '../../deck/frame'
 import { uid } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockRow, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { particle } from '../../lib/josa'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
+import { addSaved } from '../../store/saved'
 import { BlocksIcon, dialogOpen, isTyping, undoAction, type Toast } from '../ui'
 import { BlockTools } from './BlockTools'
 import { CANVAS, COL_W } from './canvas'
@@ -115,6 +119,22 @@ function guessArea(frame: DOMRect) {
   return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
 }
 
+/** 컴포넌트 고르기에 보이는 것: 기본 컴포넌트, 내 컴포넌트(저장해 둔 것) */
+export type LibraryView = 'base' | 'mine'
+
+/**
+ * 고른 부품에서 내 컴포넌트로 저장할 수 있는 것과 든 컴포넌트 수: 이 컴포넌트, 옆에 다른 컴포넌트가 있으면 이 줄,
+ * 그리고 이 장(제목 칸과 장 설정까지)
+ */
+function saveChoices(slide: Slide, blockId: string): { kind: SavedKind; count: number }[] {
+  const rows = slide.rows ?? []
+  const row = rows.find((r) => r.blocks.some((b) => b.id === blockId))
+  const out: { kind: SavedKind; count: number }[] = [{ kind: 'block', count: 1 }]
+  if (row && row.blocks.length > 1) out.push({ kind: 'row', count: row.blocks.length })
+  out.push({ kind: 'slide', count: rows.reduce((n, r) => n + r.blocks.length, 0) })
+  return out
+}
+
 export interface BlockEditing {
   /** 무대의 부품 장에 넣어 주는 것 */
   edit: BlockEdit
@@ -126,15 +146,23 @@ export interface BlockEditing {
   toolbar: ReactNode
   libraryOpen: boolean
   setLibraryOpen(open: boolean): void
-  /** 부품 고르기 카드를 누르기 시작할 때. 끌면 끌어다 놓기, 그냥 떼면 알아서 넣기 (onTap을 주면 그것을) */
-  pressCard(e: ReactPointerEvent<HTMLElement>, type: BlockType, onTap?: () => void): void
+  /** 컴포넌트 고르기의 무엇을 보이는지: 기본 컴포넌트, 내 컴포넌트 */
+  libraryView: LibraryView
+  setLibraryView(view: LibraryView): void
+  /**
+   * 부품 고르기 카드를 누르기 시작할 때. 끌면 끌어다 놓기, 그냥 떼면 알아서 넣기 (onTap을 주면 그것을).
+   * 종류 대신 미리 채운 부품(내 컴포넌트)을 주면 그 부품을 끈다
+   */
+  pressCard(e: ReactPointerEvent<HTMLElement>, what: BlockType | Block, onTap?: () => void): void
   insert(type: BlockType, from?: HTMLElement | null): void
   /** 미리 채운 부품 하나를 알아서 고른 자리에 (자리가 없으면 다음 장에) */
   insertBlock(block: Block, from?: HTMLElement | null): void
   /** 미리 채운 부품 하나를 화면의 이 자리에 (끌어다 놓기와 같은 자리 찾기) */
   dropBlock(block: Block, x: number, y: number): void
-  /** 이 부품을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
-  issueFor(type: BlockType): NoRoom | null
+  /** 이 부품(종류, 또는 미리 채운 부품)을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
+  issueFor(what: BlockType | Block): NoRoom | null
+  /** 지금 장에 넣을 본문 높이 (부품 장이 아닌 장은 부품 장으로 바꿨을 때의 어림). 잴 수 없으면 undefined */
+  areaHeight(): number | undefined
   /** 이음표 카드를 누르기 시작할 때. 끌면 컴포넌트 사이에 놓고, 그냥 떼면 알아서 고른 사이에 넣는다 */
   pressLinkCard(e: ReactPointerEvent<HTMLElement>, link: BlockLink): void
   insertLink(link: BlockLink): void
@@ -155,6 +183,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   // 놓은 뒤 끌던 그림이 칸으로 날아가는 동안 (id가 없으면 집어 온 카드로 돌아가 사라진다)
   const [landing, setLanding] = useState<{ id: string | null; ghost: Drag } | null>(null)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [libraryView, setLibraryView] = useState<LibraryView>('base')
   // 장 아래 빈자리의 '여기에 부품 넣기'로 부품 고르기를 열었으면, 눌러 넣는 부품을 그 자리(맨 아래 새 줄)에
   const [toBottom, setToBottom] = useState(false)
   useEffect(() => {
@@ -469,15 +498,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   const pressCard = useCallback(
-    (e: ReactPointerEvent<HTMLElement>, type: BlockType, onTap?: () => void) => {
+    (e: ReactPointerEvent<HTMLElement>, what: BlockType | Block, onTap?: () => void) => {
       const card = e.currentTarget
+      const make = () => (typeof what === 'string' ? makeBlock(what) : what)
       press(
         e,
         (x, y) => {
           const from = card.getBoundingClientRect()
-          begin(newDrag(makeBlock(type), from, x, y), x, y, from)
+          begin(newDrag(make(), from, x, y), x, y, from)
         },
-        onTap ?? (() => insert(type, card)),
+        onTap ?? (() => insertBlock(make(), card)),
       )
     },
     // eslint 없음: newDrag와 insert는 그릴 때마다 새로 만들어지지만 slideRef로 지금 장을 읽는다
@@ -542,10 +572,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
 
   /** 부품 고르기 카드마다: 지금 장 어디에도 넣을 수 없으면 그 까닭. 부품 장이 아닌 장은 부품 장으로 바꾼 모습으로 본다 */
-  function issueFor(type: BlockType): NoRoom | null {
+  function issueFor(what: BlockType | Block): NoRoom | null {
     const s = slideRef.current
     const at = dropRows(s)
-    return at && placeIssue(at.rows, makeBlock(type), roomOf(s))
+    return at && placeIssue(at.rows, typeof what === 'string' ? makeBlock(what) : what, roomOf(s))
   }
 
   // ---------- 칸 너비 ----------
@@ -638,6 +668,41 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     store.setRows(s.id, insertAt(s.rows ?? [], t, copy, uid(), area?.size.h)!)
     setSelected(copy.id)
   }
+  /** 저장할 컴포넌트(하나, 또는 그 줄)가 장에서 차지한 크기 (캔버스 px). 목록의 작은 그림을 그 비율로 그린다 */
+  const savedSize = (b: Block, kind: SavedKind) => {
+    const area = measureArea(areaEl.current)
+    const row = (slideRef.current.rows ?? []).find((r) => r.blocks.some((x) => x.id === b.id))
+    if (!area || !row || kind === 'slide') return undefined
+    const ids = kind === 'block' ? [b.id] : row.blocks.map((x) => x.id)
+    const rects = ids.flatMap((id) => {
+      const cell = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(id)}"]`)
+      return cell ? [cell.getBoundingClientRect()] : []
+    })
+    if (!rects.length) return undefined
+    const w = Math.max(...rects.map((r) => r.right)) - Math.min(...rects.map((r) => r.left))
+    const h = Math.max(...rects.map((r) => r.bottom)) - Math.min(...rects.map((r) => r.top))
+    return { w: w / area.k, h: h / area.k }
+  }
+  /** 내 컴포넌트로 저장한다. 이름은 컴포넌트 이름으로 지어 두고, 내 컴포넌트 목록에서 바꾼다 */
+  const save = (b: Block, kind: SavedKind) => {
+    const part = partFrom(slideRef.current, kind, b.id, savedSize(b, kind))
+    if (!part) return
+    void addSaved(part).then((ok) =>
+      toast.show(
+        ok ? `‘${part.name}’${particle(part.name, '을', '를')} 내 컴포넌트에 저장했어요` : '이 브라우저에 저장하지 못했어요. 저장 공간이 모자란지 확인해 주세요.',
+        ok
+          ? {
+              label: '보기',
+              run: () => {
+                setLibraryView('mine')
+                setLibraryOpen(true)
+              },
+            }
+          : undefined,
+        6000,
+      ),
+    )
+  }
   /** 접어 둔 칸을 열고 그 칸(항목이면 처음 빈 항목)에 바로 쓰게 한다 */
   const openField = (b: Block, key: string) => {
     setOpened((o) => new Set(o).add(`${b.id} ${key}`))
@@ -692,6 +757,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       onOpenField={(key) => openField(b, key)}
       onDuplicate={() => duplicate(b)}
       onRemove={() => remove(b)}
+      saves={saveChoices(slide, b.id)}
+      onSave={(kind) => save(b, kind)}
     />
   )
 
@@ -845,11 +912,14 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     toolbar,
     libraryOpen,
     setLibraryOpen,
+    libraryView,
+    setLibraryView,
     pressCard,
     insert,
     insertBlock,
     dropBlock,
     issueFor,
+    areaHeight: () => roomOf(slideRef.current),
     pressLinkCard: links.pressCard,
     insertLink: links.insert,
     selected,
