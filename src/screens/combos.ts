@@ -23,6 +23,7 @@ import {
 import { sampleBlock } from '../deck/blockSamples'
 import { makeSlide } from '../deck/generate'
 import type { Block, BlockType, Slide } from '../deck/types'
+import { innerProblems } from './comboChecks'
 import { clashes } from './measureBlocks'
 
 /*
@@ -194,6 +195,8 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
       if (fit < least) problems.push(`${what}: 글자를 ${fit}까지 줄였어요`)
       const left = clashes(cell)
       if (left.length) problems.push(`${what}: ${left.slice(0, 3).join(', ')}`)
+      // 칸 안이 깨진 곳: 글이 줄 선에 닿거나 항목 밖으로 나가는 것, 가려진 글, 면 안의 위아래 여백 (comboChecks.ts)
+      for (const p of innerProblems(cell)) problems.push(`${what}: ${p}`)
     }
     // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다
     for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {

@@ -2,6 +2,7 @@ import { BLOCKS, BLOCK_COL_GAP, BLOCK_TYPES, LINK_PAD } from '../deck/blocks'
 import { FONTS } from '../deck/themes'
 import type { BlockType } from '../deck/types'
 import { blockFigures, blockOverflows, blockTextLines, fitBlocks } from '../slides/fitBlocks'
+import { innerProblems } from './comboChecks'
 
 /*
  * 부품의 잘리지 않는 높이(deck/blockHeights.ts)를 재는 개발용 도구. 갤러리에서 브라우저 콘솔로 부른다:
@@ -160,13 +161,15 @@ export function clashes(cell: HTMLElement): string[] {
 
 /**
  * 이 크기에서 괜찮은지: 화면처럼 fitBlocks로 맞춘 뒤, 글자를 줄이지 않았고(칸 크기로 정한 단계 그대로)
- * 넘치거나 잘리거나 겹친 글이 없어야 한다 (fitBlocks가 보지 않는 '잘림'도 여기서 본다)
+ * 넘치거나 잘리거나 겹친 글이 없어야 한다 (fitBlocks가 보지 않는 '잘림'도 여기서 본다).
+ * 칸 안이 깨진 것(글이 줄 선에 닿는 것, 항목의 글이 줄 밖으로 나가는 것, 면 안 아래 여백이 붙은 것, comboChecks.ts)도 본다:
+ * 조합 검사(checkCombos)가 깨졌다고 보는 높이를 편집기가 허락하지 않게. 칸이 높을수록 늘 더 비는 것(fill)은 높이로 고칠 일이 아니라 뺀다
  */
 function fine(cell: HTMLElement, el: HTMLElement): boolean {
   const area = cell.closest<HTMLElement>('.bk-area')
   if (area) fitBlocks(area)
   const k = Number(cell.style.getPropertyValue('--bk-fit') || 1)
-  return k >= 1 && !scrollOver(el) && clashList(cell, false).length === 0
+  return k >= 1 && !scrollOver(el) && clashList(cell, false).length === 0 && innerProblems(cell, { fill: false, covered: false }).length === 0
 }
 
 /** 진단용: 이 너비에서 860부터 100까지 10px마다 재어 안 되는 높이를 모두 (위에서 끊기지 않고). 높이 사이에 구멍이 있는지 볼 때 */
