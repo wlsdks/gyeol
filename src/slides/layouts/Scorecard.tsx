@@ -16,6 +16,9 @@ export function Scorecard() {
   const { slide, meta, mode } = useSlide()
   const items = useItems()
   const highlight = highlightOf(slide)
+  // 나란히를 편집할 때 목표와 실적의 이름은 첫 단의 이름 자리에서 고친다(다른 단은 같은 이름을 CSS로 붙인다).
+  // 머리 줄을 따로 두면 편집할 때만 64px가 늘어, 발표 화면으로 잰 높이에 맞춘 칸에서 글자를 두 단계 줄였다
+  const sideEdit = slide.variant === 'side' && mode !== 'final'
   // 편집할 때 목표와 실적이 둘 다 비어 있으면 안내 문구의 예시 숫자로 막대를 흐리게 그린다.
   // 한쪽만 적었으면 예시와 섞지 않는다 (엉뚱한 달성률이 보이지 않게).
   const pair = (i: number) => {
@@ -66,6 +69,12 @@ export function Scorecard() {
                 {known && actual !== target && <span className="sk-diff" />}
                 {known && <span className="sk-mark" />}
               </div>
+              {sideEdit && i === 0 && (
+                <>
+                  <Label k="metaTitle" fallback="목표" className="sk-h sk-k sk-kt" />
+                  <Label k="valueTitle" fallback="실적" className="sk-h sk-k sk-kv" />
+                </>
+              )}
               <IT i={i} k="meta" className="sk-target sk-num" />
               <IT i={i} k="value" className="sk-value sk-num" />
               <span className="sk-rate sk-num">{known && rate > 0 ? `${Math.round(rate * 100)}%` : '–'}</span>

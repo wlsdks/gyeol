@@ -170,23 +170,8 @@
   --sk-cols: 5;
 }
 
-/* 머리 줄은 편집할 때만, 목표와 실적의 이름을 고치는 한 줄로 (발표할 때는 단마다 이름이 붙는다) */
+/* 머리 줄은 없다: 단마다 목표와 실적 앞에 이름이 붙고, 편집할 때 그 이름은 첫 단에서 고친다(Scorecard.tsx의 sideEdit) */
 .va-side .sk-headrow {
-  display: none;
-}
-
-.m-edit.va-side .sk-headrow,
-.m-edit .va-side .sk-headrow {
-  display: flex;
-  grid-column: 1 / -1;
-  justify-content: flex-end;
-  gap: 32px;
-  margin-bottom: 20px;
-  padding-bottom: 8px;
-  border-bottom: var(--rule) solid var(--line);
-}
-
-.va-side .sk-headrow > .sk-h:is(:nth-child(1), :nth-child(2), :nth-child(5)) {
   display: none;
 }
 
@@ -272,6 +257,26 @@
   content: var(--sk-kv, '실적');
 }
 
+/* 편집할 때 첫 단의 이름은 고칠 수 있는 칸이 그 자리에 선다 */
+.va-side .sk-row:has(> .sk-k)::before,
+.va-side .sk-row:has(> .sk-k)::after {
+  content: none;
+}
+
+.va-side .sk-h.sk-k {
+  --fs: 22px;
+  align-self: baseline;
+}
+
+.va-side .sk-h.sk-kt {
+  grid-area: kt;
+}
+
+.va-side .sk-h.sk-kv {
+  grid-area: kv;
+  margin-top: 10px;
+}
+
 .va-side .sk-target {
   --fs: 26px;
   grid-area: target;
@@ -309,7 +314,7 @@
   margin: 28px 0 24px;
 }
 
-/* 큰 글자나 편집할 때(머리 줄이 더 보인다) 여섯: 두 줄이 장 높이를 넘었다. 달성률을 한 단계, 줄 사이를 조금 줄인다 */
+/* 큰 글자나 편집할 때(빈 설명 칸의 안내가 보인다) 여섯: 두 줄이 장 높이를 넘었다. 달성률을 한 단계, 줄 사이를 조금 줄인다 */
 :is(.sz-large.va-side, .sz-large .va-side, .m-edit.va-side, .m-edit .va-side) .sk[data-n='6'] .sk-rate {
   --fs: 52px;
   margin-top: 20px;
@@ -324,7 +329,7 @@
   padding-top: 28px;
 }
 
-/* 큰 글자로 편집할 때 여섯: 머리 줄과 빈 설명 칸의 안내까지 더해 31px 넘쳤다 */
+/* 큰 글자로 편집할 때 여섯: 빈 설명 칸의 안내까지 더해 넘쳤다 */
 :is(.sz-large.m-edit.va-side, .sz-large.m-edit .va-side) .sk[data-n='6'] .sk-rate {
   margin-top: 10px;
 }
