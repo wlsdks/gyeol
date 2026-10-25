@@ -1,0 +1,119 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { pageInfo } from '../../deck/fields'
+import type { Deck } from '../../deck/types'
+import { downloadHtml } from '../../export/exportHtml'
+import { downloadPptx } from '../../export/exportPptx'
+import { exposePptDebug } from '../../export/rasterize'
+import { pageProps, SlideCanvas } from '../../slides/SlideCanvas'
+import { downloadDeckFile } from '../../store/deckFile'
+import { useDeck } from '../../store/deckStore'
+import type { VersionReason } from '../../store/versions'
+import type { Toast } from '../ui'
+
+/** 내보내기 메뉴(HTML, PDF, PPT, 작업 파일)의 할 일. 내보내기 전에는 버전을 남긴다 */
+export function useExports(deck: Deck, markVersion: (reason: VersionReason) => void, toast: Toast) {
+  const [printing, setPrinting] = useState(false)
+
+  const printPdf = useCallback(() => {
+    markVersion('export')
+    setPrinting(true)
+  }, [markVersion])
+
+  const exportHtml = async () => {
+    markVersion('export')
+    toast.show('발표 파일을 만들고 있어요')
+    try {
+      await downloadHtml(deck)
+      toast.show('발표 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
+    } catch {
+      toast.show('발표 파일을 만들지 못했어요. 다시 시도해 주세요.')
+    }
+  }
+
+  // PPT는 장마다 그림을 그려서 장이 많으면 오래 걸린다. 지금 몇 장째인지 보이고, 두 번 눌러도 한 번만 만든다
+  const pptBusy = useRef(false)
+  const exportPpt = async () => {
+    if (pptBusy.current) {
+      toast.show('PPT를 만들고 있어요. 다 되면 알려 드릴게요.')
+      return
+    }
+    const total = deck.slides.filter((s) => !s.hidden).length
+    if (!total) {
+      toast.show('모든 장을 숨겨서 PPT에 넣을 장이 없어요. 장 하나 이상의 숨기기를 풀어 주세요.')
+      return
+    }
+    pptBusy.current = true
+    markVersion('export')
+    try {
+      await downloadPptx(deck, (done, all) => toast.show(`PPT를 만드는 중이에요 (${done}/${all})`, undefined, 60000))
+      toast.show('PPT 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
+    } catch {
+      toast.show('PPT 파일을 만들지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      pptBusy.current = false
+    }
+  }
+  // 콘솔에서 PPT의 장 그림만 볼 수 있게 (그림 점검용. rasterize.tsx의 exposePptDebug).
+  // 개발 서버에서만: 배포본의 window에 점검 함수를 걸어 두지 않고, 빌드에서는 함수째 빠진다
+  useEffect(() => {
+    if (import.meta.env.DEV) return exposePptDebug(() => useDeck.getState().deck)
+  }, [])
+
+  const saveDeckFile = () => {
+    downloadDeckFile(deck)
+    toast.show('작업 파일을 저장했어요. 다운로드 폴더를 확인해 주세요.')
+  }
+
+  return {
+    exportHtml,
+    exportPpt,
+    printPdf,
+    saveDeckFile,
+    /** PDF로 내보내는 동안 인쇄할 장들 (body에 붙는다) */
+    print: printing ? <PrintDeck deck={deck} onDone={() => setPrinting(false)} /> : null,
+  }
+}
+
+function PrintDeck({ deck, onDone }: { deck: Deck; onDone: () => void }) {
+  const info = pageInfo(deck.slides)
+  const doneRef = useRef(onDone)
+  doneRef.current = onDone
+
+  useEffect(() => {
+    let cancelled = false
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      doneRef.current()
+    }
+    window.addEventListener('afterprint', finish)
+    const run = async () => {
+      await document.fonts?.ready
+      await Promise.all([...document.querySelectorAll<HTMLImageElement>('.print-root img')].map((img) => img.decode().catch(() => {})))
+      if (cancelled) return
+      window.print()
+      // 일부 브라우저는 afterprint를 보내지 않는다
+      window.setTimeout(finish, 1000)
+    }
+    run()
+    return () => {
+      cancelled = true
+      window.removeEventListener('afterprint', finish)
+    }
+  }, [])
+
+  return createPortal(
+    <div className="print-root">
+      {deck.slides
+        .filter((s) => !s.hidden)
+        .map((s) => (
+          <div key={s.id} className="print-page">
+            <SlideCanvas deck={deck} slide={s} mode="final" {...pageProps(info, s.id)} />
+          </div>
+        ))}
+    </div>,
+    document.body,
+  )
+}

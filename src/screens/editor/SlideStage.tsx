@@ -1,0 +1,205 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { AiAsk } from '../../ai/useAiAsk'
+import type { AiShare } from '../../ai/useAiShare'
+import { composeAreaH, withImage } from '../../deck/blocks'
+import { pageInfo } from '../../deck/fields'
+import { motionOf } from '../../deck/themes'
+import type { Deck, LayoutId, Slide } from '../../deck/types'
+import { cx } from '../../lib/cx'
+import { motionEngine } from '../../motion/engine'
+import { BlockEditContext } from '../../slides/blockEdit'
+import type { SlideActions } from '../../slides/context'
+import { slideOverflow } from '../../slides/overflow'
+import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
+import { useDeck } from '../../store/deckStore'
+import { useEscape } from '../ui'
+import type { BlockEditing } from './BlockEditor'
+import { PREVIEW_MOTION } from './DeckMenus'
+import { layoutPreview } from './Inspector'
+import { useLook } from './look'
+import { FloatTools, SelectionBar } from './SelectionBar'
+import type { SidePanel } from './sidePanel'
+import { StageTools } from './StageTools'
+
+// 편집기 가운데: 고치는 장(무대), 그 위에 뜨는 도구, 아래 단추줄과 발표자 노트
+
+export function SlideStage({
+  deck,
+  slide,
+  ai,
+  ask,
+  blocks,
+  fileOver,
+  side,
+  layoutPeek,
+  onRemove,
+  onPresentHere,
+}: {
+  deck: Deck
+  slide: Slide
+  ai: AiShare
+  ask: AiAsk
+  blocks: BlockEditing
+  /** 이미지 파일을 장 위로 끌고 있을 때 (놓으면 이미지로 들어간다) */
+  fileOver: boolean
+  side: SidePanel
+  layoutPeek: LayoutId | null
+  onRemove: (s: Slide) => void
+  onPresentHere: () => void
+}) {
+  // 할 일(액션)만 쓴다: 덱 전체를 구독하면 고칠 때마다 이 장이 한 번 더 그려진다 (장과 덱은 위에서 받는다)
+  const store = useDeck.getState()
+  const info = pageInfo(deck.slides)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const look = useLook(deck)
+  // 테마, 글꼴, 글자 크기, 발표 정보(아래 표시의 이름, 소속)를 바꿔도 다시 잰다
+  const overflow = useOverflow(canvasRef, slide, look)
+
+  const actions = useMemo<SlideActions>(
+    () => ({
+      setField: (key, value) => useDeck.getState().setField(slide.id, key, value),
+      setItem: (index, key, value) => useDeck.getState().setItem(slide.id, index, key, value),
+      removeItem: (index) => useDeck.getState().removeItem(slide.id, index),
+      moveItem: (from, to, key) => useDeck.getState().moveItem(slide.id, from, to, key),
+      setOptions: (options, key) => useDeck.getState().setOptions(slide.id, options, key),
+      setVariant: (variant, key) => useDeck.getState().setVariant(slide.id, variant, key),
+      updateBlock: (blockId, fn, key) => useDeck.getState().updateBlock(slide.id, blockId, fn, key),
+      placeImage: (blockId, url) => {
+        const st = useDeck.getState()
+        const cur = st.deck?.slides.find((s) => s.id === slide.id)
+        if (!cur || !st.deck) return
+        st.setRows(cur.id, withImage(cur.rows ?? [], blockId, url, composeAreaH(cur, st.deck, true)))
+      },
+    }),
+    [slide.id],
+  )
+  const peekSlide = useMemo(() => (layoutPeek ? layoutPreview(slide, layoutPeek) : null), [slide, layoutPeek])
+
+  // 테마 메뉴에서 움직임을 고르면 이 장에서 발표할 때처럼 한 번 보여 준다
+  const [preview, setPreview] = useState(0)
+  const previewRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const on = () => setPreview((n) => n + 1)
+    window.addEventListener(PREVIEW_MOTION, on)
+    return () => window.removeEventListener(PREVIEW_MOTION, on)
+  }, [])
+  // 이 장 미리보기: 편집 표시 없이 발표 화면 그대로 보여 주고 움직임을 한 번 돌린다.
+  // 발표를 시작하지 않고도 '윗분이 볼 모습'을 바로 확인하게. 슬라이드를 누르거나 Esc, 다른 장을 고르면 편집으로 돌아온다.
+  const [peek, setPeek] = useState(false)
+  useEffect(() => setPeek(false), [slide.id])
+  useEscape(() => setPeek(false), { active: peek })
+  const startPeek = () => {
+    setPeek(true)
+    setPreview((n) => n + 1)
+  }
+
+  const engine = useMemo(() => motionEngine(), [])
+  const level = motionOf(deck, slide)
+  useLayoutEffect(() => {
+    if (!preview) return
+    const stop = level !== 'none' && previewRef.current ? engine.play(previewRef.current, level) : undefined
+    const t = window.setTimeout(() => setPreview(0), 3200)
+    return () => {
+      window.clearTimeout(t)
+      stop?.()
+    }
+  }, [preview, level, engine])
+
+  return (
+    <main className="stage">
+      <div
+        className={cx('ed-canvas', fileOver && 'is-file-over')}
+        ref={canvasRef}
+        // 부품 밖을 누르면 부품 고르기를 끝낸다
+        onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
+      >
+        {(blocks.hint || fileOver) && (
+          <p className="bk-hint" role="status">
+            {blocks.hint ?? '놓으면 이 장에 이미지로 들어가요'}
+          </p>
+        )}
+        {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판, 부품 장은 고른 컴포넌트나 이음표. 둘 다 그 바로 위에 뜬다 */}
+        {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar deck={deck} slide={slide} canvasRef={canvasRef} />}
+        {!peek && blocks.toolbar && <FloatTools canvasRef={canvasRef}>{blocks.toolbar}</FloatTools>}
+        <FitSlide
+          padding={4}
+          belowHeight={56}
+          below={
+            <StageTools
+              deck={deck}
+              slide={slide}
+              ai={ai}
+              ask={ask}
+              blocks={blocks}
+              side={side}
+              peekSlide={peekSlide}
+              peek={peek}
+              overflow={overflow}
+              onTogglePeek={() => (peek ? setPeek(false) : startPeek())}
+              onReplay={() => setPreview((n) => n + 1)}
+              onPresentHere={onPresentHere}
+              onRemove={onRemove}
+            />
+          }
+        >
+          <div key={preview} ref={previewRef} className={cx(peek && 'stage-peeking')} onPointerDown={peek ? () => setPeek(false) : undefined}>
+            <BlockEditContext.Provider value={blocks.edit}>
+              <SlideCanvas
+                deck={look}
+                // 부품을 끌어 부품 장이 아닌 장 위에 오면, 놓았을 때 바뀔 모습을 미리 보여 준다
+                slide={peekSlide ?? (peek || preview > 0 ? slide : blocks.stageSlide)}
+                mode={peekSlide ? 'preview' : peek || preview > 0 ? 'final' : 'edit'}
+                actions={actions}
+                {...pageProps(info, slide.id)}
+              />
+            </BlockEditContext.Provider>
+          </div>
+        </FitSlide>
+        {blocks.ghost}
+        {!peek && !preview && blocks.room}
+      </div>
+
+      <label className="notes">
+        <span className="notes-label">발표자 노트</span>
+        <textarea
+          className="notes-input"
+          value={slide.notes}
+          placeholder="발표할 때 말할 내용을 적어 두세요. 발표 화면과 내보낸 파일에는 보이지 않아요."
+          onChange={(e) => store.setNotes(slide.id, e.target.value)}
+        />
+      </label>
+    </main>
+  )
+}
+
+/**
+ * 슬라이드 안의 글이 영역을 넘치는지('over') 확인한다. 부품 장은 넘치지 않게 줄 높이를 낮춰 맞추는데(fitBlocks의 --bk-sq),
+ * 그렇게 눌러 담은 것도('tight') 알린다. 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도
+ * 자리가 줄어서, 알리지 않으면 글자와 차트가 조용히 작아진다
+ */
+function useOverflow(ref: React.RefObject<HTMLDivElement | null>, slide: Slide, look: unknown): 'over' | 'tight' | null {
+  const [overflow, setOverflow] = useState<'over' | 'tight' | null>(null)
+  useLayoutEffect(() => {
+    const root = ref.current?.querySelector<HTMLElement>('.slide')
+    if (!root) return
+    let wait = 0
+    const check = () => {
+      // 칸 너비나 줄 높이를 끄는 동안에는 바뀐 너비에 맞춰 다시 맞추기 전의 모습이 잠깐 넘쳐 보인다. 손을 뗀 뒤에 본다
+      if (document.body.matches('.is-block-resizing, .is-row-resizing, .is-block-dragging')) {
+        window.clearTimeout(wait)
+        wait = window.setTimeout(check, 300)
+        return
+      }
+      setOverflow(slideOverflow(root))
+    }
+    check()
+    document.fonts?.ready.then(check)
+    // 부품 장에서 부품이 자리를 옮기는 동안(움직임 중)에는 넘쳐 보일 수 있어서, 다 움직인 뒤에 한 번 더 본다
+    const t = window.setTimeout(check, 800)
+    return () => {
+      window.clearTimeout(t)
+      window.clearTimeout(wait)
+    }
+  }, [ref, slide, look])
+  return overflow
+}
