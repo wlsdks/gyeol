@@ -1304,6 +1304,14 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
 /** 항목이 셋 이상인 부품: 칸이 이보다 낮으면 줄 사이가 붙어 빽빽해진다. 로고는 그림이라 빼고 */
 const LIST_FLOOR = 240
 
+/**
+ * 가로축이 있는 차트(막대, 선)는 한 줄을 다 쓰면(1680px) 바닥 높이를 이만큼 낮춘다. 납작해 보이는 것은 높이가 아니라
+ * 너비와 높이의 비율이라, 넓은 칸에서는 낮아도 막대와 선의 오르내림이 보인다. 이 덕에 핵심 숫자 한 줄 아래에
+ * 추이 한 줄이 들어간다(예전에는 편집 화면에서 장 높이를 18px 넘어 막혔다). 원, 점 판, 네 칸은 높이가 곧 크기라 그대로
+ */
+const WIDE_CUT = 80
+const AXIS_CHARTS = new Set<BlockType>(['bars', 'versus', 'bridge', 'trend', 'pareto', 'attain', 'stack'])
+
 /** 로고 모음: 로고 판 한 줄이 150px는 되어야 로고를 알아본다. 그림은 칸에 맞춰 줄어서 글처럼 잘리지 않으니 잰 높이로는 모른다 */
 const logoFloor = (n: number) => {
   const rows = Math.ceil(n / logoColumns(n))
@@ -1327,7 +1335,8 @@ export function blockMinH(block: Block, span: number): number {
   // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
   const measured = hs?.length ? hs[Math.min(n, hs.length - 1)] : 400
   if (measured >= NO_FIT) return measured
-  const floor = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
+  const base = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
+  const floor = span >= 12 && base && AXIS_CHARTS.has(block.type) ? base - WIDE_CUT : base
   return Math.max(measured, floor, n >= 3 && block.type !== 'logos' ? LIST_FLOOR : 0)
 }
 
