@@ -109,6 +109,12 @@ function Shown({ text, numeral }: { text: string; numeral?: boolean }) {
 function paint(el: HTMLElement, value: string, numeral?: boolean) {
   const parts = numeral ? splitNumber(value) : null
   if (!parts) {
+    // 처음 그리는 칸(아직 빈 칸)은 innerText를 읽지 않고 바로 넣는다. innerText는 읽을 때마다 화면을 다시 재야 해서(강제 레이아웃),
+    // 장을 고를 때 칸마다 읽고 쓰기를 번갈아 하면 칸 수만큼 레이아웃이 돌았다. 빈 칸의 innerText는 ''이라 결과는 같다
+    if (!el.firstChild) {
+      if (value) el.innerText = value
+      return
+    }
     if (el.innerText !== value || el.querySelector(':scope > .u')) el.innerText = value
     return
   }
