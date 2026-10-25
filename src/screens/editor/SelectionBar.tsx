@@ -107,6 +107,11 @@ const HINT_WEIGHT = 0.2
 const ART_WEIGHT = 0.5
 /** 장 아래 도구(미리 보기, 복제 같은): 고른 것을 다 고치고 나서 쓰는 것이라 잠깐 가려도 된다 */
 const TOOL_WEIGHT = 0.3
+/**
+ * 글을 적는 칸의 네모 (글자 줄 말고 칸 전체): 누르는 자리라 비어 있어도 가리면 못 누른다.
+ * 글자만 견주면 짧은 안내만 있는 빈 강조 상자 안쪽 위가 '아무것도 안 가리는 자리'가 되어, 막대가 칸 위에 올라앉아 적으려고 누르면 막대가 눌렸다
+ */
+const FIELD_WEIGHT = 0.3
 
 /**
  * 장 안의 글과 그림이 그려진 자리들 (고른 것 안의 것도: 장 위 여백이나 안쪽 위에 둘 때 그 글을 가리지 않게).
@@ -123,6 +128,10 @@ function contentRects(slide: Element | null, canvas: Element | null): TextRect[]
     const hint = !!n.parentElement?.closest('.ed-hint, .ed.is-empty')
     range.selectNodeContents(n)
     for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: hint ? HINT_WEIGHT : 1 })
+  }
+  for (const f of slide.querySelectorAll('[contenteditable]')) {
+    const r = f.getBoundingClientRect()
+    if (r.width && r.height) out.push({ r, w: FIELD_WEIGHT })
   }
   for (const g of slide.querySelectorAll('svg, img')) {
     const r = g.getBoundingClientRect()
