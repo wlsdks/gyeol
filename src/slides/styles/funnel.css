@@ -174,24 +174,30 @@
   font-weight: 600;
 }
 
-/* 처음부터 끝까지: 이름과 숫자 칸에 맞춘 맨 아래 줄 */
+/* 처음부터 끝까지: 첫 막대(가장 긴 막대)의 끝 위, 다른 줄의 넘어온 비율과 같은 줄 */
 .fn-total {
   --fs: 26px;
-  display: grid;
-  grid-column: 1 / 3;
-  grid-template-columns: subgrid;
+  display: flex;
+  grid-row: 1;
+  grid-column: 3;
   align-items: baseline;
-  margin: 4px 0 0;
-  padding-top: 24px;
-  border-top: var(--rule) solid var(--line);
+  justify-self: end;
+  gap: 14px;
+  margin: 0 0 12px;
   color: var(--ink-2);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .fn-total b {
-  justify-self: end;
   color: var(--ink);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+.fn:is([data-n='5'], [data-n='6']) .fn-total {
+  --fs: 22px;
+  margin-bottom: 8px;
 }
 
 .fn.is-demo :is(.fn-bar, .fn-zone) {
@@ -218,7 +224,7 @@
   row-gap: 8px;
 }
 
-.sz-large .fn:is([data-n='5'], [data-n='6']) .fn-rate {
+.sz-large .fn:is([data-n='5'], [data-n='6']) :is(.fn-rate, .fn-total) {
   margin-bottom: 4px;
 }
 
@@ -240,8 +246,8 @@
 }
 
 .bk .fn-total {
-  margin-top: 0;
-  padding-top: 16px;
+  --fs: 22px;
+  margin-bottom: 6px;
 }
 
 /* 좁은 칸(부품 장의 반): 칸 사이를 좁히고 숫자를 한 단계 */

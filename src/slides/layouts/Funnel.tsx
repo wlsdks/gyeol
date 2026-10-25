@@ -35,6 +35,11 @@ export function Funnel() {
   const widths = values.map((v) => (top > 0 ? Math.max(3, (v / top) * 100) : 0))
   const first = values[0]
   const last = values[values.length - 1]
+  // 처음부터 끝까지 남은 비율: '지원에서 합격까지'처럼 단계 이름으로 읽는다. 이름이 길거나 비었으면 '전체 전환율'
+  const nameOf = (i: number) => (demo ? hintFor(slide.layout, slide.hints, 'title', 'title', i) : (items[i]?.title ?? '')).trim()
+  const ends = [nameOf(0), nameOf(items.length - 1)]
+  const totalLabel = ends.every((n) => n && !n.includes('\n') && [...n].length <= 8) ? `${ends[0]}에서 ${ends[1]}까지` : '전체 전환율'
+  const total = first > 0 && last > 0 && items.length > 2 && series.ok ? rateText((last / first) * 100) : null
   return (
     <>
       <Head />
@@ -61,6 +66,14 @@ export function Funnel() {
               </div>
               {/* 앞 단계에서 넘어온 비율: 이 막대의 시작 위에 */}
               {rate !== null && <span className="fn-rate">{rateText(rate)}</span>}
+              {/* 처음부터 끝까지는 가장 긴 첫 막대의 끝 위에: 넘어온 비율이 없는 줄이라 자리가 비어 있고, 막대 그림 안에서 읽힌다.
+                  예전에는 이름과 숫자 칸 아래에 '처음부터 끝까지' 줄을 따로 두어 무엇의 비율인지 알기 어려웠다 */}
+              {i === 0 && total && (
+                <p className="fn-total">
+                  <span>{totalLabel}</span>
+                  <b>{total}</b>
+                </p>
+              )}
               <div className="fn-zone">
                 <span className="fn-bar" />
               </div>
@@ -72,12 +85,6 @@ export function Funnel() {
             </div>
           )
         })}
-        {first > 0 && last > 0 && items.length > 2 && series.ok && (
-          <p className="fn-total">
-            <span>처음부터 끝까지</span>
-            <b>{rateText((last / first) * 100)}</b>
-          </p>
-        )}
       </div>
     </>
   )
