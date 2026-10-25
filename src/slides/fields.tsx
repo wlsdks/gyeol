@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ElementType } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ElementType } from 'react'
 import { readField } from '../deck/fields'
 import { hintFor } from '../deck/layouts'
 import type { ItemKey } from '../deck/types'
@@ -375,21 +375,49 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
   )
 }
 
+/** 이 항목이 든 목록이 가로로 놓였는지 (앞의 두 항목이 옆으로 놓였으면) */
+function itemsAcross(item: HTMLElement): boolean {
+  const list = [...(item.parentElement?.children ?? [])].filter((c) => c.classList.contains('it'))
+  if (list.length < 2) return false
+  const a = list[0].getBoundingClientRect()
+  const b = list[1].getBoundingClientRect()
+  return Math.abs(b.left - a.left) > Math.abs(b.top - a.top)
+}
+
 /**
  * 항목 위에 올리면 보이는 도구: 왼쪽 위의 손잡이(끌어 순서 바꾸기), 오른쪽 위의 빼기.
+ * 컴포넌트 안에서는 둘 다 항목 안쪽 오른쪽 위에 모은다 (edit.css).
  * 자리가 값으로 정해지는 항목(위치 비교의 점)은 순서가 보이지 않아 손잡이를 두지 않는다
  */
 export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
   const { mode, actions, canRemoveItem, slide } = useSlide()
+  const move = actions?.moveItem
+  const grip = mode === 'edit' && sort && !!move && slide.items.length > 1
+  const gripRef = useRef<HTMLButtonElement>(null)
+  // 손잡이 그림은 항목이 놓인 쪽으로: 세로로 쌓인 목록은 위아래, 가로로 놓인 목록은 좌우 화살표.
+  // 좁은 칸에서는 같은 목록이 가로에서 세로로 짜임을 바꾸므로, 그릴 때마다 재지 않고 항목에 올리거나 손잡이로 들어올 때 잰다
+  useEffect(() => {
+    const el = gripRef.current
+    const item = el?.closest<HTMLElement>('.it')
+    if (!el || !item) return
+    const look = () => {
+      const axis = itemsAcross(item) ? 'x' : 'y'
+      if (el.dataset.axis !== axis) el.dataset.axis = axis
+    }
+    item.addEventListener('pointerenter', look)
+    el.addEventListener('focus', look)
+    return () => {
+      item.removeEventListener('pointerenter', look)
+      el.removeEventListener('focus', look)
+    }
+  }, [grip])
   if (mode !== 'edit' || !actions) return null
-  const move = actions.moveItem
-  const count = slide.items.length
-  const grip = sort && !!move && count > 1
   if (!grip && !canRemoveItem) return null
   return (
     <>
-      {grip && (
+      {grip && move && (
         <button
+          ref={gripRef}
           type="button"
           className="it-grip"
           data-i={i}
@@ -412,8 +440,9 @@ export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
             requestAnimationFrame(() => list?.querySelector<HTMLElement>(`:scope > .it > .it-grip[data-i="${i + d}"]`)?.focus())
           }}
         >
+          {/* 컴포넌트나 판을 옮기는 손잡이(점 여섯)와 같은 그림이면 무엇을 옮기는지 헷갈려서, 순서를 바꾸는 화살표로 */}
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />
+            <path d="M12 4.5v15M8.5 8L12 4.5 15.5 8M8.5 16l3.5 3.5 3.5-3.5" />
           </svg>
         </button>
       )}

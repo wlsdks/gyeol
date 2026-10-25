@@ -237,12 +237,35 @@
 }
 
 .it-grip svg {
-  width: 70%;
-  height: 70%;
+  width: 66%;
+  height: 66%;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
-  stroke-width: 3.4;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+/* 가로로 놓인 목록의 항목은 좌우 화살표 (fields.tsx의 ItemTools가 잰다) */
+.it-grip[data-axis='x'] svg {
+  rotate: 90deg;
+}
+
+/* 컴포넌트 안의 항목: 손잡이와 빼기를 항목 안쪽 오른쪽 위에 나란히 모으고, 올린 항목에 옅은 면을 깐다.
+   모서리에 반쯤 걸쳐 두면 첫 항목의 단추가 고른 컴포넌트의 테 모서리에 붙어서 컴포넌트를 옮기고 빼는 단추처럼 보였다 */
+.slide.m-edit .bk .it-remove {
+  top: calc(6px / var(--vs, 0.5));
+  right: calc(6px / var(--vs, 0.5));
+}
+
+.slide.m-edit .bk .it-grip {
+  top: calc(6px / var(--vs, 0.5));
+  right: calc(var(--d) + 10px / var(--vs, 0.5));
+  left: auto;
+}
+
+.slide.m-edit .bk-area.is-live:not(.is-dragging) .it:has(> :is(.it-grip, .it-remove)):hover {
+  background-image: linear-gradient(color-mix(in srgb, var(--sel) 7%, transparent) 0 0);
 }
 
 /* 끌고 있는 항목: 손에 들린 듯 위로 뜨고, 이웃은 그 아래로 미끄러진다 */
