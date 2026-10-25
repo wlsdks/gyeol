@@ -82,3 +82,30 @@
   color: var(--ink-2);
   line-height: 1.5;
 }
+
+/* 한 줄을 다 쓰는 넓은 칸(1300px 넘게): 한 단으로 두면 짧은 요점이 왼쪽 3분의 1에 몰리고 오른쪽이 통째로 빈다.
+   둘이나 셋이면 나란히 세우고(요점마다 한 단), 넷부터는 두 단으로 흘린다(왼쪽 단을 다 읽고 오른쪽 단으로).
+   단 사이는 옆 칸 사이와 같은 --bk-col-gap */
+@container bk (min-width: 1300px) {
+  .bk-list:is([data-n='2'], [data-n='3']) {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    column-gap: var(--bk-col-gap);
+  }
+
+  .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    column-gap: var(--bk-col-gap);
+  }
+
+  .bk-list[data-n='4'] {
+    grid-template-rows: repeat(2, auto);
+  }
+
+  .bk-list:is([data-n='5'], [data-n='6']) {
+    grid-template-rows: repeat(3, auto);
+  }
+}
