@@ -9,12 +9,12 @@ import { IT, ItemTools, T } from '../fields'
 import { isNumericCell } from '../numbers'
 import { Head, useItems } from './parts'
 
-/** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값, 기본 너비 */
-const TABLE_COLS: { head: string; key: ItemKey; fr: number }[] = [
-  { head: 'h1', key: 'title', fr: 1.3 },
-  { head: 'h2', key: 'meta', fr: 1 },
-  { head: 'h3', key: 'value', fr: 0.9 },
-  { head: 'h4', key: 'body', fr: 1.8 },
+/** 표의 칸: 머리말 칸 이름과 그 칸에 들어가는 항목 값. 너비는 글에 맞춘다(table.css) */
+const TABLE_COLS: { head: string; key: ItemKey }[] = [
+  { head: 'h1', key: 'title' },
+  { head: 'h2', key: 'meta' },
+  { head: 'h3', key: 'value' },
+  { head: 'h4', key: 'body' },
 ]
 
 export function Table() {
@@ -29,7 +29,7 @@ export function Table() {
     const filled = items.map((it) => it[key].trim()).filter(Boolean)
     return filled.length > 0 && filled.every(isNumericCell)
   }
-  const style = { '--cols': cols.map((c) => `minmax(0, ${c.fr}fr)`).join(' ') }
+  const style = { '--cols': cols.length }
   return (
     <>
       <Head />
