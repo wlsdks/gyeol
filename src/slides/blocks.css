@@ -1226,12 +1226,13 @@
   margin-right: 20px;
 }
 
-.bk-sp-fill,
+/* 선은 위아래로 점의 반지름(12px)만큼 띄운 상자 안에 그린다. 비율(10%~90%)로만 띄우던 때는 낮은 칸에서 10%가 6px도 안 되어
+   가장 낮은 끝의 점이 칸 아래로 나갔다(글자 크기 '크게'에서 4px) */
 .bk-sp-svg {
   position: absolute;
-  inset: 0;
+  inset: 12px 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 24px);
   overflow: visible;
 }
 
@@ -1247,7 +1248,7 @@
 
 .bk-sp-dot {
   position: absolute;
-  top: calc(var(--y) * 1%);
+  top: calc(12px + (100% - 24px) * var(--y) / 100);
   left: calc(var(--x) * 1%);
   width: 24px;
   height: 24px;

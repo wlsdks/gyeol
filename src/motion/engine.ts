@@ -988,7 +988,7 @@ export function motionEngine(): MotionEngine {
           count(one('.bk-sp-v'), 120)
           // 선은 왼쪽부터 같은 빠르기로 그려지고, 끝점(지금)이 선이 닿을 때 맺힌다
           const draw = levelName === 'lively' ? 1300 : 1000
-          for (const el of $('.bk-sp-fill, .bk-sp-svg')) run(anims, el, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(200), { easing: 'linear', duration: d(draw) })
+          for (const el of $('.bk-sp-svg')) run(anims, el, [{ clipPath: 'inset(-10% 100% -10% 0)' }, { clipPath: 'inset(-10% 0 -10% 0)' }], s(200), { easing: 'linear', duration: d(draw) })
           pop(one('.bk-sp-dot'), 200 + draw)
           fade(one('.bk-sp-n'), 400, 500)
           break

@@ -338,8 +338,8 @@ function Spark() {
   const pts = seriesOf(read('series')).slice(-24)
   const lo = Math.min(...pts)
   const hi = Math.max(...pts)
-  // 위아래 끝에 점이 잘리지 않게 조금 띄운다
-  const at = pts.map((v, i) => ({ x: (i / Math.max(1, pts.length - 1)) * 100, y: hi === lo ? 50 : 90 - ((v - lo) / (hi - lo)) * 80 }))
+  // 위아래 끝의 점이 잘리지 않게 띄우는 것은 그림 상자가 한다 (blocks.css의 .bk-sp-svg): 여기서는 위아래를 다 쓴다
+  const at = pts.map((v, i) => ({ x: (i / Math.max(1, pts.length - 1)) * 100, y: hi === lo ? 50 : 100 - ((v - lo) / (hi - lo)) * 100 }))
   const line = at.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
   const last = at[at.length - 1]
   return (
