@@ -26,6 +26,10 @@ describe('모양만 고르기', () => {
     const shape = toShape(secretDeck())
     const compose = shape.slides.find((x) => x.layout === 'compose')!
     expect(compose.blocks?.map((r) => r.map((b) => b.type))).toEqual([['message', 'bullets'], ['kpi']])
+    // 쌓은 부품도 종류와 칸 상태만, 너비는 칸과 같다 (모르는 종류, 쌓은 부품의 이음표와 또 쌓은 부품은 빠진다)
+    const stack = compose.blocks?.[0][0].stack
+    expect(stack?.map((b) => b.type)).toEqual(['number', 'delta'])
+    expect(stack?.every((b) => b.span === compose.blocks?.[0][0].span && !b.link && !b.stack && /^b/.test(b.id!))).toBe(true)
     expect(compose.blocks?.[0][0]).toMatchObject({ look: 'plain', effect: 'auto', variant: 'base', fields: { text: 'filled' } })
     expect(compose.blocks?.[0].reduce((a, b) => a + b.span, 0)).toBe(12)
     // 이음표는 카탈로그의 말만: 맞지 않는 값과 설 데가 없는 것(줄의 끝, 마지막 줄 아래)은 빠진다
@@ -103,6 +107,15 @@ describe('모양만 고르기', () => {
     expect(badBlocks((b) => (b.when = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.speed = SECRET))).toBe(false)
     expect(badBlocks((b) => (b.from = SECRET))).toBe(false)
+    // 쌓은 부품: 글, 이음표, 또 쌓은 것, 칸과 다른 너비, 너무 많이 쌓은 것은 받지 않는다
+    const member = (b: Record<string, unknown>) => (b.stack as Record<string, unknown>[])[0]
+    expect(badBlocks((b) => ((member(b).fields as Record<string, string>).value = SECRET))).toBe(false)
+    expect(badBlocks((b) => (member(b).link = 'arrow'))).toBe(false)
+    expect(badBlocks((b) => (member(b).stack = [structuredClone(member(b))]))).toBe(false)
+    expect(badBlocks((b) => (member(b).span = (b.span as number) - 1))).toBe(false)
+    expect(badBlocks((b) => (b.stack = [...(b.stack as unknown[]), structuredClone(member(b))]))).toBe(false)
+    expect(badBlocks((b) => (b.stack = []))).toBe(false)
+    expect(badBlocks((b) => (b.stack = SECRET))).toBe(false)
     // 나오는 차례는 부품 장에만, 해시 id로만
     const badCompose = (fn: (o: Record<string, unknown>) => void) => {
       const copy = structuredClone(withBlocks) as unknown as { slides: { layout: string; options: Record<string, unknown> }[] }

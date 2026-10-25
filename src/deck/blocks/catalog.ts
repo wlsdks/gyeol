@@ -21,6 +21,11 @@ export interface BlockSpec {
   /** 이만큼은 되어야 보기 좋은 너비. 알아서 놓을 때와 비율을 고를 때 쓴다 */
   prefSpan: number
   look?: BlockLook
+  /**
+   * 작은 부품(소제목, 숫자 한 줄, 주석 같은): 칸 안에 다른 부품과 쌓고, 넷까지 한 줄에 나란히 놓는다.
+   * 한 장에 큰 부품을 넣는 수(MAX_LARGE)에 세지 않는다
+   */
+  small?: boolean
   /** 부품 고르기 그림과 장 모음 예시에 쓰는 지어낸 내용. variant는 예시가 가장 잘 보이는 모양(없으면 첫째). 레이아웃 부품은 장 모음의 예시 장에서 가져온다 */
   sample?: { fields: Record<string, string>; items?: Partial<Item>[]; variant?: string }
 }

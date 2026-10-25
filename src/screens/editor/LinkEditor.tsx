@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { BLOCK_LINKS, fitsHeight, linkAt, linkTargets, sameLinkTarget, withLink, type LinkTarget } from '../../deck/blocks'
-import type { BlockLink, BlockRow, Slide } from '../../deck/types'
+import { BLOCK_LINKS, fitsHeight, linkAt, linkTargets, membersOf, placeOf, sameLinkTarget, withLink, type LinkTarget } from '../../deck/blocks'
+import type { Block, BlockLink, BlockRow, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { LinkGlyph } from '../../slides/blocks'
@@ -41,21 +41,29 @@ const NO_PAIR = '컴포넌트가 둘 이상 있어야 그 사이에 이음표를
 /** 지금 그려진 칸들로 놓을 자리를 잰다. 양쪽 칸이 똑같이 비켜 나서, 미리 보기로 칸이 움직여도 가운데는 그대로다 */
 function measureSpots(area: HTMLElement, rows: BlockRow[]): Spot[] {
   const cells = new Map<string, DOMRect>()
-  for (const el of area.querySelectorAll<HTMLElement>(':scope > .bk')) cells.set(el.dataset.block!, el.getBoundingClientRect())
+  for (const el of area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk')) cells.set(el.dataset.block!, el.getBoundingClientRect())
+  // 칸 하나가 차지한 상자: 쌓은 칸이면 맨 위 부품의 윗선부터 맨 아래 부품의 아랫선까지
+  const box = (cell: Block) => {
+    const rs = membersOf(cell).flatMap((m) => cells.get(m.id) ?? [])
+    if (!rs.length) return undefined
+    const top = Math.min(...rs.map((r) => r.top))
+    const bottom = Math.max(...rs.map((r) => r.bottom))
+    return { left: Math.min(...rs.map((r) => r.left)), right: Math.max(...rs.map((r) => r.right)), top, bottom }
+  }
   const a = area.getBoundingClientRect()
   const out: Spot[] = []
   for (const t of linkTargets(rows)) {
     const row = rows[t.row]
     if (t.dir === 'h') {
-      const l = cells.get(row.blocks[t.col].id)
-      const r = cells.get(row.blocks[t.col + 1].id)
+      const l = box(row.blocks[t.col])
+      const r = box(row.blocks[t.col + 1])
       if (!l || !r) continue
       const lo = Math.min(l.top, r.top)
       const hi = Math.max(l.bottom, r.bottom)
       out.push({ t, x: (l.right + r.left) / 2, y: (lo + hi) / 2, lo, hi })
     } else {
-      const up = row.blocks.map((b) => cells.get(b.id)).filter((r) => !!r)
-      const down = rows[t.row + 1].blocks.map((b) => cells.get(b.id)).filter((r) => !!r)
+      const up = row.blocks.map(box).filter((r) => !!r)
+      const down = rows[t.row + 1].blocks.map(box).filter((r) => !!r)
       if (!up.length || !down.length) continue
       const y = (Math.max(...up.map((r) => r.bottom)) + Math.min(...down.map((r) => r.top))) / 2
       out.push({ t, x: a.left + a.width / 2, y, lo: a.left, hi: a.right })
@@ -234,9 +242,9 @@ export function useLinkEditing({
     const free = (t: LinkTarget) => !linkAt(rows, t) && !why(rows, t, link)
     const all = linkTargets(rows)
     if (selectedBlock) {
-      const row = rows.findIndex((r) => r.blocks.some((b) => b.id === selectedBlock))
-      if (row >= 0) {
-        const col = rows[row].blocks.findIndex((b) => b.id === selectedBlock)
+      const at = placeOf(rows, selectedBlock)
+      if (at) {
+        const { row, col } = at
         const near: LinkTarget[] = [{ dir: 'h', row, col }, { dir: 'h', row, col: col - 1 }, { dir: 'v', row }, { dir: 'v', row: row - 1 }]
         const t = near.find((n) => all.some((a) => sameLinkTarget(a, n)) && free(n))
         if (t) return t

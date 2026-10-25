@@ -490,7 +490,8 @@ export function motionEngine(): MotionEngine {
     const links = !cellOnly && layout === 'compose' ? $('.bk-area > .bk-link') : []
     const groups: HTMLElement[][] = [[]]
     if (!cellOnly && layout === 'compose') {
-      const cells = $('.bk-area > .bk')
+      // 쌓은 칸(.bk-stack) 안의 부품도 하나씩 제 차례에 나온다
+      const cells = $('.bk-area > .bk, .bk-area > .bk-stack > .bk')
         .map((el, i) => ({ el, k: el.dataset.seq === undefined ? i : Number(el.dataset.seq) }))
         .sort((a, b) => a.k - b.k)
         .map((c) => c.el)
@@ -1763,7 +1764,7 @@ export function motionEngine(): MotionEngine {
     const out: { el: HTMLElement; keys: string[] }[] = []
     const titles = Array.prototype.slice.call(slide.querySelectorAll(':scope > .s-head .s-title, .cv-title, .sc-title, .st-title')) as HTMLElement[]
     for (const el of titles) if (text(el)) out.push({ el, keys: ['title:' + text(el)] })
-    const cells = Array.prototype.slice.call(slide.querySelectorAll('.bk-area > .bk')) as HTMLElement[]
+    const cells = Array.prototype.slice.call(slide.querySelectorAll('.bk-area > .bk, .bk-area > .bk-stack > .bk')) as HTMLElement[]
     const count: Record<string, number> = {}
     for (const el of cells) count[el.dataset.type || ''] = (count[el.dataset.type || ''] || 0) + 1
     for (const el of cells) {

@@ -6,7 +6,7 @@ import { makeSlide, uid } from '../generate'
 import { MOTIONS, TONES, TRANSITIONS } from '../themes'
 import type { Block, BlockRow, Motion, Slide, SlideOptions, Tone, Transition } from '../types'
 import { BLOCKS } from './catalog'
-import { allBlocks, blockCount } from './cells'
+import { allBlocks, asCell, blockCount, membersOf } from './cells'
 import { cleanRows } from './clean'
 import { tidyLinks } from './links'
 import { MAX_BLOCKS, MAX_ROWS } from './rules'
@@ -55,11 +55,13 @@ export function partFrom(slide: Slide, kind: SavedKind, blockId: string | null, 
   let picked: BlockRow[]
   if (kind === 'slide') picked = cloneRows(rows)
   else {
-    const row = rows.find((r) => r.blocks.some((b) => b.id === blockId))
-    const block = row?.blocks.find((b) => b.id === blockId)
+    const row = rows.find((r) => allBlocks([r]).some((b) => b.id === blockId))
+    const block = row && allBlocks([row]).find((b) => b.id === blockId)
     if (!row || !block) return null
     const { link: _, grow: __, ...bare } = row
-    picked = kind === 'block' ? [{ id: uid(), blocks: [structuredClone(block)] }] : cloneRows([bare])
+    // 컴포넌트 하나는 그 부품만: 칸 아래에 쌓은 부품은 따라가지 않는다
+    const { stack: ___, ...one } = block
+    picked = kind === 'block' ? [{ id: uid(), blocks: [structuredClone(one)] }] : cloneRows([bare])
   }
   picked = tidyLinks(picked.map(({ link, ...r }, i) => (i < picked.length - 1 && link ? { ...r, link } : r)))
   if (!blockCount(picked)) return null
@@ -81,7 +83,7 @@ export function freshRows(rows: BlockRow[]): { rows: BlockRow[]; ids: Map<string
     ids.set(b.id, id)
     return { ...structuredClone(b), id, items: b.items.map((it) => ({ ...it, id: uid() })) }
   }
-  return { rows: rows.map((r) => ({ ...structuredClone(r), id: uid(), blocks: r.blocks.map(fresh) })), ids }
+  return { rows: rows.map((r) => ({ ...structuredClone(r), id: uid(), blocks: r.blocks.map((cell) => asCell(membersOf(cell).map(fresh), cell.link)) })), ids }
 }
 
 /** 장 하나를 저장한 것으로 새 부품 장을 만든다 (제목 칸과 장 설정까지, 나오는 차례는 새 id로) */

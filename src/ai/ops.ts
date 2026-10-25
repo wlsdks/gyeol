@@ -6,6 +6,7 @@
 // - AI가 적을 수 있는 글은 세 가지뿐이고 모두 사람에게 보이는 안내다: 제안 설명, 장 안내, 칸 안내 문구.
 
 import {
+  allBlocks,
   asCompose,
   autoTarget,
   BLOCK_EFFECT_IDS,
@@ -31,6 +32,8 @@ import {
   lookOf,
   makeBlock,
   MAX_BLOCKS,
+  MAX_SMALL_IN_ROW,
+  placeOf,
   MAX_ROWS,
   needH,
   playOrder,
@@ -74,13 +77,13 @@ type SlideRef = string
 type BlockRef = string
 
 /**
- * 부품을 놓을 자리. row만 있으면 그 차례에 새 줄(0이 맨 위), beside가 있으면 그 부품의 줄에서 앞(before)이나 뒤(after).
- * 둘 다 없으면 편집기에서 '넣기'를 누를 때처럼 알아서 (마지막 줄 옆이나 아래)
+ * 부품을 놓을 자리. row만 있으면 그 차례에 새 줄(0이 맨 위), beside가 있으면 그 부품의 줄에서 앞(before)이나 뒤(after),
+ * 또는 그 부품과 같은 칸에 위(above)나 아래(below)로 쌓기. 둘 다 없으면 편집기에서 '넣기'를 누를 때처럼 알아서 (마지막 줄 옆이나 아래)
  */
 interface Place {
   row?: number
   beside?: BlockRef
-  side?: 'before' | 'after'
+  side?: 'before' | 'after' | 'above' | 'below'
 }
 
 export type Op =
@@ -278,7 +281,7 @@ export const OP_KEYS = {
 function parsePlace(v: Record<string, unknown>): Place | null {
   if (v.row !== undefined && !isInt(v.row, 0, 3)) return null
   if (v.beside !== undefined && !blockRef(v.beside)) return null
-  if (v.side !== undefined && v.side !== 'before' && v.side !== 'after') return null
+  if (v.side !== undefined && !['before', 'after', 'above', 'below'].includes(v.side as string)) return null
   if (v.row !== undefined && v.beside !== undefined) return null
   if (v.side !== undefined && v.beside === undefined) return null
   return { row: v.row as number | undefined, beside: v.beside as string | undefined, side: v.side as Place['side'] }
@@ -355,7 +358,7 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     case 'set_spans': {
       const block = blockRef(v.block)
       if (!onlyKeys(v, OP_KEYS.set_spans) || !block) return null
-      if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > 3 || !v.spans.every((x) => isInt(x, 1, 12))) return null
+      if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > MAX_SMALL_IN_ROW || !v.spans.every((x) => isInt(x, 1, 12))) return null
       return { op: 'set_spans', slide, block, spans: v.spans as number[] }
     }
     case 'set_link': {
@@ -578,21 +581,20 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
   }
   /** 장 안의 부품. 모양 파일의 id가 둘 이상 맞으면 찾지 못한 것으로 친다 */
   const findBlock = (s: Slide, ref: BlockRef): Block | undefined => {
-    const blocks = (s.rows ?? []).flatMap((r) => r.blocks)
+    const blocks = allBlocks(s.rows ?? [])
     if (NEW_BLOCK.test(ref)) return blocks.find((b) => b.id === blockNamed.get(ref))
     const hits = blocks.filter((b) => shapeBlockId(b) === ref)
     return hits.length === 1 ? hits[0] : undefined
   }
-  /** 놓을 자리. 알아서 고르면 null, 옆에 둘 부품이 없으면 'no_block' */
-  const placeOf = (s: Slide, rows: BlockRow[], p: Place): DropTarget | null | 'no_block' => {
+  /** 놓을 자리. 알아서 고르면 null, 옆에 둘 부품이 없으면 'no_block'. 위(above), 아래(below)는 그 부품과 같은 칸에 쌓기 */
+  const targetFor = (s: Slide, rows: BlockRow[], p: Place): DropTarget | null | 'no_block' => {
     if (p.row !== undefined) return { kind: 'row', index: p.row }
     if (p.beside === undefined) return null
     const next = findBlock(s, p.beside)
-    for (let r = 0; next && r < rows.length; r++) {
-      const c = rows[r].blocks.findIndex((b) => b.id === next.id)
-      if (c >= 0) return { kind: 'cell', row: r, index: c + (p.side === 'before' ? 0 : 1) }
-    }
-    return 'no_block'
+    const at = next && placeOf(rows, next.id)
+    if (!at) return 'no_block'
+    if (p.side === 'above' || p.side === 'below') return { kind: 'stack', row: at.row, index: at.col, at: at.at + (p.side === 'below' ? 1 : 0) }
+    return { kind: 'cell', row: at.row, index: at.col + (p.side === 'before' ? 0 : 1) }
   }
   // 부품 장의 본문 높이: 잴 수 없으니 제목, 부제 길이와 발표 설정(글자 크기, 보내는 자료)으로 어림한다
   const areaOf = (s: Slide) => composeAreaH(s, { meta: deck.meta, theme })
@@ -743,13 +745,13 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           const variant = op.variant === blockVariantIds(op.type)[0] ? undefined : op.variant
           block = { ...makeBlock(op.type), ...(variant ? { variant } : {}), ...(op.look ? { look: op.look } : {}), ...(op.effect ? { effect: op.effect } : {}) }
         } else {
-          // 옆 부품과 잇던 이음표는 두고 간다 (편집기에서 끌어 옮길 때와 같다)
-          const { link: _, ...bare } = moving!
+          // 옆 부품과 잇던 이음표와 그 아래에 쌓은 부품은 두고 간다 (편집기에서 끌어 옮길 때와 같다)
+          const { link: _, stack: __, ...bare } = moving!
           block = bare
         }
         // 옮길 때는 편집기에서 끌 때처럼 부품을 뺀 줄들을 기준으로 자리를 센다
         const base = moving ? removeBlock(rows, moving.id) : rows
-        const place = placeOf(s, base, op)
+        const place = targetFor(s, base, op)
         if (place === 'no_block') return fail('no_block')
         if (place?.kind === 'row' && place.index > base.length) return fail('out_of_range')
         const area = areaOf(s)
@@ -759,7 +761,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         if (whyNot(base, target, block, area)) return fail('no_room')
         const placed = insertAt(base, target, block, undefined, area)!
         // 장의 다른 면과 어긋나는 면은 넣을 때 바탕 없이 바뀐다. AI가 그 면을 골랐으면 알린다
-        if (op.op === 'add_block' && op.look && placed.flatMap((r) => r.blocks).some((b) => b.id === block.id && lookOf(b) !== op.look)) return fail('look_clash')
+        if (op.op === 'add_block' && op.look && allBlocks(placed).some((b) => b.id === block.id && lookOf(b) !== op.look)) return fail('look_clash')
         put(i, { ...s, rows: placed })
         if (op.op === 'add_block' && op.as) blockNamed.set(op.as, block.id)
         return done
@@ -830,7 +832,7 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         const b = findBlock(s, op.block)
         if (!b) return fail('no_block')
         const rows = s.rows ?? []
-        const r = rows.findIndex((x) => x.blocks.some((y) => y.id === b.id))
+        const r = placeOf(rows, b.id)!.row
         const row = rows[r]
         if (!(COMBOS[row.blocks.length] ?? []).some((c) => sameSpans(c, op.spans))) return fail('out_of_range')
         if (sameSpans(spansOf(row), op.spans)) return fail('no_change')
@@ -846,8 +848,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
         const b = findBlock(s, op.block)
         if (!b) return fail('no_block')
         const rows = s.rows ?? []
-        const row = rows.findIndex((x) => x.blocks.some((y) => y.id === b.id))
-        const col = rows[row].blocks.findIndex((y) => y.id === b.id)
+        // 쌓은 부품이면 그 칸의 오른쪽, 그 줄의 아래
+        const { row, col } = placeOf(rows, b.id)!
         const t: LinkTarget = op.side === 'right' ? { dir: 'h', row, col } : { dir: 'v', row }
         // 줄의 마지막 부품의 오른쪽, 마지막 줄의 아래에는 이음표가 설 데가 없다
         if (op.side === 'right' ? col >= rows[row].blocks.length - 1 : row >= rows.length - 1) return fail('out_of_range')

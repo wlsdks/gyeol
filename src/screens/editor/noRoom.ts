@@ -1,4 +1,4 @@
-import { BLOCKS, MAX_BLOCKS, MAX_IN_ROW, MAX_ROWS, type NoRoom, type SpanLimit } from '../../deck/blocks'
+import { BLOCKS, MAX_BLOCKS, MAX_IN_ROW, MAX_LARGE, MAX_ROWS, MAX_SMALL_IN_ROW, MAX_STACK, type NoRoom, type SpanLimit } from '../../deck/blocks'
 import type { BlockType } from '../../deck/types'
 import { josa } from '../../lib/josa'
 
@@ -36,8 +36,22 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
       return where === 'here'
         ? { why: `줄은 ${MAX_ROWS}개까지라 새 줄을 만들 수 없어요.`, fix: '다른 컴포넌트 옆에 놓아 보세요.' }
         : { why: `줄 ${MAX_ROWS}개가 다 찼고, 어느 줄에도 옆에 놓을 자리가 없어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
+    case 'large':
+      return {
+        why: `작은 컴포넌트가 아닌 것은 한 장에 ${MAX_LARGE}개까지 넣어요. 더 많으면 어디를 봐야 할지 흐려져요.`,
+        fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요. 소제목, 숫자 한 줄 같은 작은 컴포넌트는 더 넣을 수 있어요.',
+      }
     case 'row-full':
-      return { why: `한 줄에는 ${MAX_IN_ROW}개까지 나란히 놓아요.`, fix: '위나 아래에 새 줄로 놓아 보세요.' }
+      return { why: `한 줄에는 ${MAX_IN_ROW}개까지(작은 컴포넌트만이면 ${MAX_SMALL_IN_ROW}개까지) 나란히 놓아요.`, fix: '위나 아래에 새 줄로 놓거나, 옆 컴포넌트의 위아래에 쌓아 보세요.' }
+    case 'stack':
+      return r.why === 'full'
+        ? { why: `한 칸에는 ${MAX_STACK}개까지 쌓아요.`, fix: '옆 칸이나 새 줄에 놓아 보세요.' }
+        : r.why === 'none'
+          ? { why: `${josa(BLOCKS[r.type].name, '은', '는')} 칸에 쌓지 않아요. 칸 높이를 나눠 쓰면 그림 비율이 맞지 않아요.`, fix: '옆 칸이나 새 줄에 놓아 보세요.' }
+          : {
+              why: `${josa(BLOCKS[r.type].name, '이', '가')} 있는 칸에는 숫자나 작은 컴포넌트만 쌓아요. 큰 컴포넌트 둘을 한 칸에 쌓으면 둘 다 작아져요.`,
+              fix: '옆 칸이나 새 줄에 놓아 보세요.',
+            }
     case 'narrow':
       return {
         why: `${josa(name, '은', '는')} 장 너비의 ${WIDTH[r.span] ?? '절반'} 이상이 있어야 해서, 이 줄에 끼우면 너무 좁아져요.`,

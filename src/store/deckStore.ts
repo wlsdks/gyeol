@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { asCompose, cleanDeckRows, copyBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
+import { asCompose, cleanDeckRows, copyCell, mapBlock, tidyLinks, unwrapCompose } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
 import { relayout, withOneMore } from '../deck/edits'
 import { makeSlide, uid } from '../deck/generate'
@@ -238,7 +238,8 @@ export const useDeck = create<DeckState>((set, get) => {
         (d) =>
           mapSlide(d, slideId, (s) => ({
             ...s,
-            rows: (s.rows ?? []).map((r) => (r.blocks.some((b) => b.id === blockId) ? { ...r, blocks: r.blocks.map((b) => (b.id === blockId ? fn(b) : b)) } : r)),
+            // 칸 아래에 쌓은 부품도 찾는다
+            rows: mapBlock(s.rows ?? [], blockId, fn),
           })),
         key,
       )
@@ -294,7 +295,7 @@ export const useDeck = create<DeckState>((set, get) => {
         ...structuredClone(source),
         id: uid(),
         items: source.items.map((it) => ({ ...it, id: uid() })),
-        ...(source.rows ? { rows: source.rows.map((r) => ({ ...r, id: uid(), blocks: r.blocks.map(copyBlock) })) } : {}),
+        ...(source.rows ? { rows: source.rows.map((r) => ({ ...r, id: uid(), blocks: r.blocks.map(copyCell) })) } : {}),
       }
       commit((d) => {
         const slides = [...d.slides]

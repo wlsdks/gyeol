@@ -5,10 +5,10 @@ import { FRAME, HEAD, TEXT_SCALE, TITLE_TRIM } from '../frame'
 import { hintFor, logoColumns } from '../layouts'
 import type { Block, BlockLook, BlockRow, BlockType, Slide } from '../types'
 import { BLOCK_GROUPS, BLOCKS } from './catalog'
-import { blockItems, variantOfBlock } from './cells'
+import { blockItems, mapBlock, membersOf, placeOf, variantOfBlock } from './cells'
 import { LINK_PAD, linkAt } from './links'
 import type { NoRoom } from './place'
-import { BLOCK_GAP, COMBOS, lookIssue, shownLook, withLook } from './rules'
+import { BLOCK_GAP, COMBOS, lookIssue, maxInRow, shownLook, withLook } from './rules'
 
 /**
  * 이 부품이 들어갈 가장 좁은 칸. 로고 모음은 로고가 많을수록 넓어야 한다: 칸 너비를 로고 수로 나눠 쓰므로
@@ -21,8 +21,14 @@ export function minSpanOf(block: Block): number {
   return Math.max(base, n > 8 ? 12 : n > 4 ? 8 : 6)
 }
 
+/** 칸이 들어갈 가장 좁은 너비: 쌓은 부품 가운데 가장 넓어야 하는 것 */
+export const cellMinSpan = (cell: Block) => Math.max(...membersOf(cell).map(minSpanOf))
+
+/** 이 너비에서 칸을 막는 부품: 그 너비보다 넓어야 하거나, 그 너비로는 높이가 아무리 높아도 잘리는 것. 다 들어가면 null */
+export const cellBlocker = (cell: Block, span: number): Block | null => membersOf(cell).find((b) => span < minSpanOf(b) || blockMinH(b, span) >= NO_FIT) ?? null
+
 // 그 너비로는 높이가 아무리 높아도 잘리는 부품(blockHeights.ts의 999)도 그 너비에 넣지 않는다
-const fits = (blocks: Block[], combo: number[]) => combo.every((s, i) => s >= minSpanOf(blocks[i]) && blockMinH(blocks[i], s) < NO_FIT)
+const fits = (cells: Block[], combo: number[]) => combo.every((s, i) => !cellBlocker(cells[i], s))
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
 /**
@@ -31,14 +37,14 @@ const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, 
  */
 export function fitSpans(blocks: Block[], spans?: number[]): number[] | null {
   const combos = COMBOS[blocks.length]
-  if (!combos) return null
+  if (!combos || blocks.length > maxInRow(blocks)) return null
   if (spans && combos.some((c) => same(c, spans)) && fits(blocks, spans)) return spans
   let best: number[] | null = null
   let bestScore = -Infinity
   for (const c of combos) {
     if (!fits(blocks, c)) continue
     // 바라는 너비를 얼마나 채우는지가 먼저, 같으면 똑같이 나눈 쪽
-    const score = c.reduce((n, s, i) => n + Math.min(s, BLOCKS[blocks[i].type].prefSpan), 0) * 10 - (c.every((s) => s === c[0]) ? 0 : 1)
+    const score = c.reduce((n, s, i) => n + Math.min(s, cellPrefSpan(blocks[i])), 0) * 10 - (c.every((s) => s === c[0]) ? 0 : 1)
     if (score > bestScore) {
       best = c
       bestScore = score
@@ -138,9 +144,39 @@ export function blockMinH(block: Block, span: number): number {
 /** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */
 export const blockPrefH = (block: Block) => blockMinH(block, BLOCKS[block.type].prefSpan)
 
+/** 칸이 보기 좋은 너비: 쌓은 부품 가운데 가장 넓은 것 */
+export const cellPrefSpan = (cell: Block) => Math.max(...membersOf(cell).map((b) => BLOCKS[b.type].prefSpan))
+
+/** 칸 안에 쌓은 부품마다 가장 낮은 높이 (위에서부터) */
+export const stackMins = (cell: Block, span: number) => membersOf(cell).map((b) => blockMinH(b, span))
+
+/** 칸이 잘리지 않을 높이: 쌓은 부품마다의 가장 낮은 높이와 그 사이 간격 */
+export function cellMinH(cell: Block, span: number, gap = BLOCK_GAP): number {
+  const mins = stackMins(cell, span)
+  return mins.reduce((a, h) => a + h, 0) + (mins.length - 1) * gap
+}
+
+/**
+ * 칸 안에 쌓은 부품마다 남는 높이를 받는 몫: 높이를 받으면 커지는 부품(차트, 표)이 있으면 그것만 받고,
+ * 없으면 모두 똑같이. 차트 아래 주석까지 높아지면 주석 칸 아래가 빈다. CSS(blocks.css의 .bk-stack > .bk)의 flex와 같다
+ */
+export function stackGrows(cell: Block): number[] {
+  const s = membersOf(cell).map((b) => (STRETCHY.has(b.type) ? 1 : 0))
+  return s.some(Boolean) ? s : s.map(() => 1)
+}
+
+/** 칸 높이(h)를 쌓은 부품마다 나눈 높이 (캔버스 px): 가장 낮은 높이에 남는 높이를 몫대로 더한다 */
+export function stackHeights(cell: Block, span: number, h: number, gap = BLOCK_GAP): number[] {
+  const mins = stackMins(cell, span)
+  const grows = stackGrows(cell)
+  const spare = Math.max(0, h - mins.reduce((a, m) => a + m, 0) - (mins.length - 1) * gap)
+  const g = grows.reduce((a, x) => a + x, 0) || 1
+  return mins.map((m, i) => m + (spare * grows[i]) / g)
+}
+
 export const rowMinH = (row: BlockRow) => {
   const spans = spansOf(row)
-  return Math.max(0, ...row.blocks.map((b, i) => blockMinH(b, spans[i])))
+  return Math.max(0, ...row.blocks.map((b, i) => cellMinH(b, spans[i])))
 }
 
 /** 줄마다 잘리지 않을 높이. 줄 사이에 이음표가 서면 위아래 줄이 그만큼 비켜 주므로 그 몫을 더한다 */
@@ -161,7 +197,10 @@ export const unweighted = (rows: BlockRow[]): BlockRow[] => rows.map(({ grow: _,
 
 /** 한 칸의 자리: 몇째 줄, 12칸 격자의 어디서부터 몇 칸 */
 export interface CellBox {
+  /** 칸의 맨 위 부품 */
   block: Block
+  /** 칸에 쌓은 부품들 (맨 위 부품부터) */
+  members: Block[]
   rowId: string
   row: number
   rows: number
@@ -178,7 +217,7 @@ export function cellBoxes(rows: BlockRow[]): CellBox[] {
     const spans = spansOf(row)
     let start = 0
     row.blocks.forEach((block, c) => {
-      out.push({ block, rowId: row.id, row: r, rows: rows.length, col: c, cols: row.blocks.length, start, span: spans[c] })
+      out.push({ block, members: membersOf(block), rowId: row.id, row: r, rows: rows.length, col: c, cols: row.blocks.length, start, span: spans[c] })
       start += spans[c]
     })
   })
@@ -208,7 +247,7 @@ const STRETCHY = new Set<BlockType>([
  * 모든 줄에 똑같이 나누면 차트 위의 핵심 한 줄도 차트만큼 높아져서, 칸이 내용보다 훨씬 크게 잡히고 칸 안 위아래가 비었다
  */
 export function stretchRows(rows: BlockRow[]): boolean[] {
-  const s = rows.map((r) => r.blocks.some((b) => STRETCHY.has(b.type)))
+  const s = rows.map((r) => r.blocks.some((c) => membersOf(c).some((b) => STRETCHY.has(b.type))))
   return s.some(Boolean) ? s : rows.map(() => true)
 }
 
@@ -301,11 +340,9 @@ export function fitsHeight(rows: BlockRow[], areaH: number, gap = BLOCK_GAP): bo
 
 /** 부품 하나를 바꾼 줄들. 바뀐 부품이 지금 너비에 들어가지 않으면 그 줄의 너비를 다시 고른다 (놓을 때와 같은 규칙) */
 export function changeRows(rows: BlockRow[], blockId: string, fn: (b: Block) => Block): BlockRow[] {
-  return rows.map((r) => {
-    if (!r.blocks.some((b) => b.id === blockId)) return r
-    const blocks = r.blocks.map((b) => (b.id === blockId ? fn(b) : b))
-    return { ...r, blocks, spans: fitSpans(blocks, r.spans) ?? r.spans }
-  })
+  const at = placeOf(rows, blockId)
+  if (!at) return rows
+  return mapBlock(rows, blockId, fn).map((r, i) => (i === at.row ? { ...r, spans: fitSpans(r.blocks, r.spans) ?? r.spans } : r))
 }
 
 /** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
@@ -365,14 +402,33 @@ export interface Rect {
   h: number
 }
 
-/** 칸마다의 자리를 px로 (본문 상자 크기 기준). 부품 id로 찾는다 */
-export function cellRects(rows: BlockRow[], size: { w: number; h: number }, gap = BLOCK_GAP): Map<string, Rect> {
+/** 칸마다의 자리를 px로 (본문 상자 크기 기준). 맨 위 부품의 id로 찾는다 (쌓은 칸이면 칸 전체) */
+export function boxRects(rows: BlockRow[], size: { w: number; h: number }, gap = BLOCK_GAP): Map<string, Rect> {
   const colW = (size.w - 11 * gap) / 12
   const heights = rowHeights(rows, size.h, gap)
   const tops = heights.map((_, i) => heights.slice(0, i).reduce((a, h) => a + h + gap, 0))
   const out = new Map<string, Rect>()
   for (const b of cellBoxes(rows)) {
     out.set(b.block.id, { x: b.start * (colW + gap), y: tops[b.row], w: b.span * colW + (b.span - 1) * gap, h: heights[b.row] })
+  }
+  return out
+}
+
+/** 부품마다의 자리를 px로 (본문 상자 크기 기준). 부품 id로 찾는다. 쌓은 부품은 칸 높이를 나눠 가진 자리 (stackHeights) */
+export function cellRects(rows: BlockRow[], size: { w: number; h: number }, gap = BLOCK_GAP): Map<string, Rect> {
+  const boxes = boxRects(rows, size, gap)
+  const out = new Map<string, Rect>()
+  for (const b of cellBoxes(rows)) {
+    const r = boxes.get(b.block.id)!
+    if (b.members.length === 1) {
+      out.set(b.block.id, r)
+      continue
+    }
+    let y = r.y
+    stackHeights(b.block, b.span, r.h, gap).forEach((h, i) => {
+      out.set(b.members[i].id, { x: r.x, y, w: r.w, h })
+      y += h + gap
+    })
   }
   return out
 }

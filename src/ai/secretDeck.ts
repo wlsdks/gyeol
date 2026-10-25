@@ -61,9 +61,18 @@ function composeSecret(s: (k: string) => string): Deck['slides'] {
       options: { transition: s('transition'), order: [s('order'), s('block-3'), s('block-1')] } as unknown as Deck['slides'][number]['options'],
       fields: { title: s('ct'), lead: s('cl') },
       items: [],
-      // 이음표 자리에도: 첫 줄은 맞는 이음표, 둘째 줄과 마지막 부품은 비밀
+      // 이음표 자리에도: 첫 줄은 맞는 이음표, 둘째 줄과 마지막 부품은 비밀.
+      // 첫 칸에는 부품을 쌓았다: 쌓은 부품의 글과 id, 쌓은 부품의 이음표와 또 쌓은 부품, 모르는 종류에도 비밀
       rows: [
-        { id: s('row-1'), spans: [s('span')] as unknown as number[], blocks: [{ ...block('message', 1), link: 'arrow' }, { ...block('bullets', 2), link: s('link') } as unknown as Block], link: 'plus' },
+        {
+          id: s('row-1'),
+          spans: [s('span')] as unknown as number[],
+          blocks: [
+            { ...block('message', 1), link: 'arrow', stack: [{ ...block('number', 5), link: s('link'), stack: [block('ring', 7)] } as unknown as Block, block(s('type'), 8), block('delta', 6)] },
+            { ...block('bullets', 2), link: s('link') } as unknown as Block,
+          ],
+          link: 'plus',
+        },
         { id: s('row-2'), blocks: [{ ...block('kpi', 3), link: s('link') } as unknown as Block, block(s('type'), 4)], link: s('rowlink') } as unknown as BlockRow,
       ],
     },

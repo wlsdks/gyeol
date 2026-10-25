@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import {
+  allBlocks,
   BLOCK_GAP,
   BLOCKS,
   blockCount,
@@ -7,6 +8,7 @@ import {
   freshRows,
   insertRows,
   MAX_BLOCKS,
+  MAX_LARGE,
   MAX_ROWS,
   needH,
   rowsIssue,
@@ -94,6 +96,7 @@ function rowsNoRoomText(r: NoRoom, part: SavedPart, slide: Slide): NoRoomText {
   const rows = dropRows(slide)?.rows ?? []
   const fix = '다음 장에 새로 넣거나, 이 장의 컴포넌트를 줄여 주세요.'
   if (r.kind === 'full') return { why: `이 장의 컴포넌트 ${blockCount(rows)}개에 ${blockCount(part.rows)}개를 더하면 한 장에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
+  if (r.kind === 'large') return { why: `차트나 표 같은 큰 컴포넌트는 한 장에 ${MAX_LARGE}개까지 넣어요.`, fix }
   if (r.kind === 'rows') return { why: `이 장의 줄 ${rows.length}개에 ${part.rows.length}줄을 더하면 한 장에 두는 ${MAX_ROWS}줄을 넘어요.`, fix }
   return { why: '넣으면 줄들이 장보다 높아져서 글이 잘려요.', fix }
 }
@@ -148,7 +151,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
       return
     }
     const { rows } = freshRows(part.rows)
-    const ids = rows.flatMap((r) => r.blocks.map((b) => b.id))
+    const ids = allBlocks(rows).map((b) => b.id)
     const at = next ? null : dropRows(slide)
     const placed = at && !rowsIssue(at.rows, rows, blocks.areaHeight()) ? insertRows(at.rows, at.rows.length, rows, blocks.areaHeight()) : null
     if (at && placed) {

@@ -34,12 +34,50 @@ export function makeBlock(type: BlockType): Block {
   return { id: uid(), type, fields: {}, items: Array.from({ length: count }, emptyItem), ...(highlight !== undefined ? { highlight } : {}) }
 }
 
-export function blockCount(rows: BlockRow[]): number {
-  return rows.reduce((n, r) => n + r.blocks.length, 0)
+/** 칸 하나의 부품들: 맨 위 부품(칸의 너비와 이음표를 갖는다)과 그 아래에 쌓은 부품, 위에서부터 */
+export const membersOf = (cell: Block): Block[] => (cell.stack?.length ? [cell, ...cell.stack] : [cell])
+
+/**
+ * 부품들을 한 칸으로: 첫째가 맨 위, 나머지는 그 아래에 쌓는다. 칸의 이음표(오른쪽 칸과 잇는 것)는 link로 받는다.
+ * 쌓은 부품에는 이음표와 또 쌓은 부품을 두지 않는다
+ */
+export function asCell(members: Block[], link = members[0]?.link): Block {
+  const bare = members.map(({ stack: _, link: __, ...b }) => b)
+  const [top, ...rest] = bare
+  return { ...top, ...(link ? { link } : {}), ...(rest.length ? { stack: rest } : {}) }
 }
 
+/** 칸 안의 부품을 하나씩 바꾼 칸. 쌓은 부품이 없으면 맨 위 부품만 */
+export const mapMembers = (cell: Block, fn: (b: Block) => Block): Block => {
+  const top = fn(cell)
+  return cell.stack?.length ? { ...top, stack: cell.stack.map(fn) } : top
+}
+
+/** 장의 모든 부품 수 (쌓은 부품까지) */
+export function blockCount(rows: BlockRow[]): number {
+  return rows.reduce((n, r) => n + r.blocks.reduce((m, b) => m + membersOf(b).length, 0), 0)
+}
+
+/** 장의 모든 부품, 읽는 차례대로 (줄마다 왼쪽 칸부터, 칸 안은 위에서부터) */
 export function allBlocks(rows: BlockRow[]): Block[] {
-  return rows.flatMap((r) => r.blocks)
+  return rows.flatMap((r) => r.blocks.flatMap(membersOf))
+}
+
+/** 부품이 있는 자리: 몇째 줄, 줄 안의 몇째 칸, 칸 안의 몇째(맨 위가 0). 없으면 null */
+export function placeOf(rows: BlockRow[], blockId: string): { row: number; col: number; at: number } | null {
+  for (let r = 0; r < rows.length; r++)
+    for (let c = 0; c < rows[r].blocks.length; c++) {
+      const at = membersOf(rows[r].blocks[c]).findIndex((b) => b.id === blockId)
+      if (at >= 0) return { row: r, col: c, at }
+    }
+  return null
+}
+
+/** 부품 하나를 바꾼 줄들 (쌓은 부품이어도). 칸 너비는 그대로 */
+export function mapBlock(rows: BlockRow[], blockId: string, fn: (b: Block) => Block): BlockRow[] {
+  const at = placeOf(rows, blockId)
+  if (!at) return rows
+  return rows.map((r, i) => (i !== at.row ? r : { ...r, blocks: r.blocks.map((cell, c) => (c !== at.col ? cell : mapMembers(cell, (b) => (b.id === blockId ? fn(b) : b)))) }))
 }
 
 /** 부품 장의 부품이 보이는 항목. 최대 개수를 넘는 항목은 지우지 않고 숨긴다 */
@@ -195,7 +233,11 @@ export function withItem(b: Block): Block {
   return items === b.items ? b : { ...b, items }
 }
 
-/** 같은 내용의 부품 (새 id) */
+/** 같은 내용의 부품 (새 id). 그 부품 하나만: 칸 아래에 쌓은 부품과 이음표는 따라가지 않는다 */
 export function copyBlock(b: Block): Block {
-  return { ...b, id: uid(), fields: { ...b.fields }, items: b.items.map((it) => ({ ...it, id: uid() })), hints: b.hints && { ...b.hints } }
+  const { stack: _, link: __, ...rest } = b
+  return { ...rest, id: uid(), fields: { ...b.fields }, items: b.items.map((it) => ({ ...it, id: uid() })), hints: b.hints && { ...b.hints } }
 }
+
+/** 같은 내용의 칸: 쌓은 부품과 이음표까지, 모두 새 id (장을 복사할 때) */
+export const copyCell = (cell: Block): Block => asCell(membersOf(cell).map(copyBlock), cell.link)

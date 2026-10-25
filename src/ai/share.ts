@@ -4,7 +4,7 @@
 // 글자는 카탈로그(레이아웃 이름, 장 역할 같은 이 앱에 원래 있는 말)에 있는 것만 넣는다.
 // 그리고 앱, 로컬 서버, MCP 서버가 각각 checkShape로 다시 확인한다.
 
-import { allBlocks, blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_FROMS, BLOCK_FROM_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_SPEEDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHENS, BLOCK_WHEN_IDS, BLOCKS, effectOf, fromOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_ROWS, speedOf, spansOf, variantOfBlock, weighted, whenOf } from '../deck/blocks'
+import { allBlocks, blockItems, cleanRows, COMBOS, MAX_BLOCKS, BLOCK_EFFECTS, BLOCK_EFFECT_IDS, BLOCK_FROMS, BLOCK_FROM_IDS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_LOOK_IDS, BLOCK_SPEEDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHENS, BLOCK_WHEN_IDS, BLOCKS, effectOf, fromOf, isGrow, isLink, linkAt, lookOf, looksFor, MAX_IN_ROW, MAX_LARGE, MAX_ROWS, MAX_SMALL_IN_ROW, MAX_STACK, speedOf, spansOf, variantOfBlock, weighted, whenOf } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
@@ -63,6 +63,8 @@ export interface ShapeBlock {
   link?: BlockLink
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
+  /** 같은 칸에서 이 부품 아래에 쌓은 부품들 (위에서부터, 너비는 이 부품과 같다). 쌓은 부품에는 이음표와 또 쌓은 부품이 없다. 없으면 빠진다 */
+  stack?: ShapeBlock[]
 }
 
 export interface ShapeDeck {
@@ -164,6 +166,8 @@ export function catalog() {
         description: spec.description,
         motion: spec.motion,
         minSpan: spec.minSpan,
+        // 작은 부품: 한 칸에 쌓고, 작은 것끼리는 한 줄에 넷까지 놓이며, 큰 부품 수(blockRules.maxLarge)에 세지 않는다
+        small: !!spec.small,
         looks: looksFor(type),
         variants: (spec.variants ?? [{ id: 'base', name: spec.name }]).map((v) => ({ id: v.id, name: v.name })),
         highlight: (spec.layout && LAYOUTS[spec.layout].highlight?.label) || null,
@@ -178,8 +182,17 @@ export function catalog() {
           : null,
       }
     }),
-    // 부품 장의 짜임: 줄 수, 한 줄의 부품 수, 한 장의 부품 수, 한 줄에 고를 수 있는 너비 (12 기준)
-    blockRules: { maxRows: MAX_ROWS, maxInRow: MAX_IN_ROW, maxBlocks: MAX_BLOCKS, spans: [1, 2, 3].map((n) => COMBOS[n]) },
+    // 부품 장의 짜임: 줄 수, 한 줄의 칸 수(작은 부품만이면 maxSmallInRow), 한 칸에 쌓는 부품 수, 한 장의 부품 수와 그 가운데
+    // 작은 부품(카탈로그 blocks[].small)이 아닌 부품 수, 한 줄에 고를 수 있는 너비 (12 기준, 칸 수마다)
+    blockRules: {
+      maxRows: MAX_ROWS,
+      maxInRow: MAX_IN_ROW,
+      maxSmallInRow: MAX_SMALL_IN_ROW,
+      maxStack: MAX_STACK,
+      maxBlocks: MAX_BLOCKS,
+      maxLarge: MAX_LARGE,
+      spans: [1, 2, 3, 4].map((n) => COMBOS[n]),
+    },
     blockLooks: BLOCK_LOOKS.map((m) => ({ id: m.id, name: m.name })),
     blockEffects: BLOCK_EFFECTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     // 부품이 언제 나오는지(이어서, 함께, 누르면), 빠르기, 들어오는 쪽(올라오기, 밀려오기, 펼치기만)
@@ -311,7 +324,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
       return r.blocks.map((b, i) => {
         const sb = shapeBlock(b, spans[i])
         const link = linkAt(rows, { dir: 'h', row: ri, col: i })
-        return link ? { ...sb, link } : sb
+        const stack = (b.stack ?? []).map((m) => shapeBlock(m, spans[i]))
+        return { ...sb, ...(link ? { link } : {}), ...(stack.length ? { stack } : {}) }
       })
     })
     if (weighted(rows)) out.rowGrow = rows.map((r) => r.grow!)
@@ -352,8 +366,13 @@ function checkStates(v: unknown, keys: string[]): boolean {
   return isObj(v) && Object.keys(v).length === keys.length && keys.every((k) => STATES.includes(v[k] as FieldState))
 }
 
-function checkBlock(v: unknown): boolean {
-  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link', 'fields', 'items'])) return false
+function checkBlock(v: unknown, top = true): boolean {
+  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'when', 'speed', 'from', 'variant', 'highlight', 'link', 'fields', 'items', 'stack'])) return false
+  // 쌓은 부품: 칸 맨 위 부품에만, 둘 이상 셋 아래로, 너비는 맨 위와 같고 이음표와 또 쌓은 부품은 없다
+  if (v.stack !== undefined) {
+    if (!top || !Array.isArray(v.stack) || !v.stack.length || v.stack.length > MAX_STACK - 1) return false
+    if (!v.stack.every((m) => checkBlock(m, false) && isObj(m) && m.link === undefined && m.span === v.span)) return false
+  }
   if (v.when !== undefined && !BLOCK_WHEN_IDS.includes(v.when as BlockWhen)) return false
   if (v.speed !== undefined && !BLOCK_SPEED_IDS.includes(v.speed as BlockSpeed)) return false
   if (v.from !== undefined && !BLOCK_FROM_IDS.includes(v.from as BlockFrom)) return false
@@ -376,7 +395,7 @@ function checkSlide(v: unknown): boolean {
   if (!onlyKeys(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks', 'rowGrow', 'rowLinks'])) return false
   if (v.blocks !== undefined) {
     if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_ROWS) return false
-    if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_IN_ROW && r.every(checkBlock))) return false
+    if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_SMALL_IN_ROW && r.every((b) => checkBlock(b)))) return false
     // 줄의 마지막 부품에는 오른쪽 이음표가 없다
     if (!v.blocks.every((r) => !(r as Record<string, unknown>[])[r.length - 1].link)) return false
   }

@@ -261,7 +261,8 @@ export function blockFitter() {
     if (n < 2 || floor.length !== n || floor.some((m) => !(m >= 0))) return
     const inners = floor.map((_, i) =>
       cells
-        .filter((c) => c.style.gridRow === String(i + 1))
+        // 남는 높이의 몫이 없는 쌓은 부품(차트 아래의 주석)은 줄을 높여도 커지지 않아서 넘쳐도 줄을 높이지 않는다
+        .filter((c) => c.dataset.row === String(i) && !(c.classList.contains('is-stacked') && c.style.getPropertyValue('--bk-g') === '0'))
         .map((c) => c.querySelector<HTMLElement>(':scope > .bk-in'))
         .filter((el): el is HTMLElement => !!el),
     )
@@ -403,8 +404,9 @@ export function blockFitter() {
   function lift(cells: HTMLElement[]): void {
     const rows = new Map<string, HTMLElement[]>()
     for (const c of cells) {
-      if (!c.classList.contains('is-shared') || c.classList.contains('lk-row')) continue
-      const key = c.style.gridRow || '1'
+      // 쌓은 부품은 칸 높이를 나눠 쓰므로 가운데로 내리지 않는다
+      if (!c.classList.contains('is-shared') || c.classList.contains('lk-row') || c.classList.contains('is-stacked')) continue
+      const key = c.dataset.row || '0'
       rows.set(key, (rows.get(key) || []).concat(c))
     }
     // 칸 높이를 다 쓰는지 (캔버스 16px까지는 다 쓴 것으로)
@@ -490,7 +492,8 @@ export function blockFitter() {
         later(area, mover, () => fit(area))
         continue
       }
-      const cells = Array.from(area.children).filter((c) => c instanceof HTMLElement && c.classList.contains('bk')) as HTMLElement[]
+      // 쌓은 칸(.bk-stack) 안의 부품도 칸 하나로 맞춘다 (줄은 data-row로 본다)
+      const cells = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk'))
       // 안 보이는 장(자리를 재지 못한다)은 맞춘 값을 지우지 않고 건너뛴다. 내보낸 파일은 발표하는 동안 다른 장을 숨겨 두는데,
       // 그때 글꼴이 와서 다시 맞추면 숨긴 장의 값이 모두 지워져 넘겨 보면 글자가 다른 크기였다
       if (!cells.length || !area.clientHeight) continue

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
+  allBlocks,
   autoTarget,
+  blockCount,
   blockFieldPrefix,
   blockItems,
   blockPrefH,
@@ -128,10 +130,10 @@ export type LibraryView = 'base' | 'mine'
  */
 function saveChoices(slide: Slide, blockId: string): { kind: SavedKind; count: number }[] {
   const rows = slide.rows ?? []
-  const row = rows.find((r) => r.blocks.some((b) => b.id === blockId))
+  const row = rows.find((r) => allBlocks([r]).some((b) => b.id === blockId))
   const out: { kind: SavedKind; count: number }[] = [{ kind: 'block', count: 1 }]
-  if (row && row.blocks.length > 1) out.push({ kind: 'row', count: row.blocks.length })
-  out.push({ kind: 'slide', count: rows.reduce((n, r) => n + r.blocks.length, 0) })
+  if (row && blockCount([row]) > 1) out.push({ kind: 'row', count: blockCount([row]) })
+  out.push({ kind: 'slide', count: blockCount(rows) })
   return out
 }
 
@@ -447,15 +449,15 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const startMove = useCallback(
     (block: Block, x: number, y: number) => {
       const s = slideRef.current
-      const cell = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(block.id)}"]`)
+      const cell = areaEl.current?.querySelector<HTMLElement>(`.bk[data-block="${CSS.escape(block.id)}"]`)
       const area = measureArea(areaEl.current)
       if (!cell || !area) return
       const r = cell.getBoundingClientRect()
       const canvas = { w: cell.offsetWidth + 80, h: cell.offsetHeight + 80 }
       const ghost = ghostSize(canvas, area.k)
       const grab = { x: Math.min(1, Math.max(0, (x - r.left) / r.width)), y: Math.min(1, Math.max(0, (y - r.top) / r.height)) }
-      // 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
-      const { link: _, ...bare } = block
+      // 옆 부품과 잇던 이음표와 그 아래에 쌓은 부품은 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
+      const { link: _, stack: __, ...bare } = block
       begin(
         {
           kind: 'move',
@@ -671,11 +673,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   /** 저장할 컴포넌트(하나, 또는 그 줄)가 장에서 차지한 크기 (캔버스 px). 목록의 작은 그림을 그 비율로 그린다 */
   const savedSize = (b: Block, kind: SavedKind) => {
     const area = measureArea(areaEl.current)
-    const row = (slideRef.current.rows ?? []).find((r) => r.blocks.some((x) => x.id === b.id))
+    const row = (slideRef.current.rows ?? []).find((r) => allBlocks([r]).some((x) => x.id === b.id))
     if (!area || !row || kind === 'slide') return undefined
-    const ids = kind === 'block' ? [b.id] : row.blocks.map((x) => x.id)
+    const ids = kind === 'block' ? [b.id] : allBlocks([row]).map((x) => x.id)
     const rects = ids.flatMap((id) => {
-      const cell = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(id)}"]`)
+      const cell = areaEl.current?.querySelector<HTMLElement>(`.bk[data-block="${CSS.escape(id)}"]`)
       return cell ? [cell.getBoundingClientRect()] : []
     })
     if (!rects.length) return undefined
@@ -715,7 +717,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     })
   }
   const preview = (b: Block, effect: BlockEffect) => {
-    const cell = areaEl.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(b.id)}"]`)
+    const cell = areaEl.current?.querySelector<HTMLElement>(`.bk[data-block="${CSS.escape(b.id)}"]`)
     if (!cell || effect === 'none') return
     const level = motionOf(deck, slideRef.current)
     const old = [...cell.classList].filter((c) => c.startsWith('fx-'))
@@ -726,7 +728,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     cell.classList.add(...old)
   }
 
-  const selectedBlock = selected ? (slide.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected) : undefined
+  const selectedBlock = selected ? allBlocks(slide.rows ?? []).find((x) => x.id === selected) : undefined
   /** 부품을 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 본문 상자는 화면에서 잰다 */
   const issue = (b: Block, fn: (x: Block) => Block) => {
     const area = measureArea(areaEl.current)
@@ -735,7 +737,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const tools = (b: Block) => (
     <BlockTools
       block={b}
-      inRow={(slide.rows ?? []).find((r) => r.blocks.some((x) => x.id === b.id))?.blocks.length ?? 1}
+      inRow={(slide.rows ?? []).find((r) => allBlocks([r]).some((x) => x.id === b.id))?.blocks.length ?? 1}
       itemIssue={issue(b, withItem)}
       variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}
       lookIssue={(lk) => lookChangeIssue(slide.rows ?? [], b.id, lk ?? 'plain', measureArea(areaEl.current)?.size.h)}
@@ -771,7 +773,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       if (e.defaultPrevented || dialogOpen()) return
       if (e.key === 'Escape') setSelected(null)
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        const b = (slideRef.current.rows ?? []).flatMap((r) => r.blocks).find((x) => x.id === selected)
+        const b = allBlocks(slideRef.current.rows ?? []).find((x) => x.id === selected)
         if (b) {
           e.preventDefault()
           remove(b)

@@ -337,6 +337,29 @@ describe('부품 장', () => {
     expect(results.map((r) => r.code)).toEqual(['has_content', 'out_of_range'])
   })
 
+  it('빈 부품을 다른 부품과 같은 칸에 쌓고, 쌓은 부품도 해시 id로 가리켜 뺀다. 쌓을 수 없는 조합은 건너뛴다', () => {
+    const { deck: next, results } = applyOps(deck, [
+      { op: 'add_slide', after: sid(0), layout: 'compose', as: 'n1' },
+      { op: 'add_block', slide: 'n1', type: 'number', as: 'p1' },
+      { op: 'add_block', slide: 'n1', type: 'bars', beside: 'p1' },
+      { op: 'add_block', slide: 'n1', type: 'delta', beside: 'p1', side: 'below', as: 'p2' },
+      // 이미지는 쌓지 않는다
+      { op: 'add_block', slide: 'n1', type: 'image', beside: 'p1', side: 'above' },
+      { op: 'set_block', slide: 'n1', block: 'p2', effect: 'rise' },
+    ])
+    expect(results.map((r) => r.code)).toEqual(['applied', 'applied', 'applied', 'applied', 'no_room', 'applied'])
+    const cell = next.slides[1].rows![0].blocks[0]
+    expect([cell.type, ...(cell.stack ?? []).map((b) => b.type)]).toEqual(['number', 'delta'])
+    expect(cell.stack![0].effect).toBe('rise')
+    // 모양 파일에서 쌓은 부품의 id로 가리킨다
+    const shaped = toShape(next).slides[1]
+    const member = shaped.blocks![0][0].stack![0].id!
+    const removed = applyOps(next, [{ op: 'remove_block', slide: shaped.id, block: member }])
+    expect(removed.results[0]).toEqual({ ok: true, code: 'applied' })
+    expect(removed.deck.slides[1].rows![0].blocks[0].stack).toBeUndefined()
+    expect(parseOp({ op: 'add_block', slide: shaped.id, type: 'number', beside: member, side: 'under' })).toBeNull()
+  })
+
   it('자리가 모자라면 넣지 않는다', () => {
     const sh = cshape()
     const ops: Op[] = Array.from({ length: 8 }, () => ({ op: 'add_block' as const, slide: sh.id, type: 'number' as const }))

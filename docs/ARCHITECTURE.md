@@ -60,7 +60,7 @@
 | 새 버전에서 만든 발표 알아보기 | `src/deck/compat.ts` |
 | 브라우저와 보관 폴더 중 어느 쪽을 남길지 | `src/store/reconcile.ts` |
 | 장의 틀(여백, 제목 크기, 글자 크기 배율) | `src/deck/frame.ts`. CSS와 같은 값인지 `frame.test.ts`가 본다 |
-| 부품 장의 자리 규칙(줄 셋, 칸 셋, 너비 비율) | `src/deck/blocks/rules.ts`, `sizing.ts` |
+| 부품 장의 자리 규칙(줄 셋, 칸 셋, 한 칸에 쌓기, 너비 비율) | `src/deck/blocks/rules.ts`, `sizing.ts` |
 | 부품이 잘리지 않는 높이 | `src/deck/blockHeights.ts`(갤러리에서 잰 값, 손으로 고치지 않는다) |
 | 칸의 글에서 숫자 읽기, 선 그래프의 축 | `src/slides/numbers.ts`(`seriesIn`, `amountPair`, `lineAxis`) |
 | 조각 색의 단계(구성비, 쌓은 막대) | `src/slides/tints.ts` |

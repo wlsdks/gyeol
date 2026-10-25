@@ -5,7 +5,7 @@ import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share
 import { mcpCommand } from '../../ai/client'
 import type { AiAsk, AskJob } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
-import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
+import { allBlocks, BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
 import { MOTIONS, THEMES, TONES, TRANSITIONS } from '../../deck/themes'
@@ -328,11 +328,12 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
   // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
   const blockName = (ref: string) => {
     if (/^p\d+$/.test(ref)) return named.get(ref) ?? '새 컴포넌트'
-    const b = deck.slides.flatMap((s) => (s.rows ?? []).flatMap((r) => r.blocks)).find((x) => shapeBlockId(x) === ref)
+    const b = deck.slides.flatMap((s) => allBlocks(s.rows ?? [])).find((x) => shapeBlockId(x) === ref)
     return b ? `‘${BLOCKS[b.type].name}’ 컴포넌트` : '없는 컴포넌트'
   }
-  const placeText = (p: { row?: number; beside?: string; side?: 'before' | 'after' }) =>
-    p.row !== undefined ? `${p.row + 1}번째 줄로` : p.beside ? `${blockName(p.beside)} ${p.side === 'before' ? '앞에' : '옆에'}` : '빈자리에'
+  const SIDE_TEXT = { before: '앞에', after: '옆에', above: '위에 쌓아', below: '아래에 쌓아' } as const
+  const placeText = (p: { row?: number; beside?: string; side?: keyof typeof SIDE_TEXT }) =>
+    p.row !== undefined ? `${p.row + 1}번째 줄로` : p.beside ? `${blockName(p.beside)} ${SIDE_TEXT[p.side ?? 'after']}` : '빈자리에'
   const slide =
     'slide' in op
       ? /^n\d+$/.test(op.slide)
@@ -398,7 +399,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 옮기기`, detail: placeText(op) }
     case 'set_block': {
       const parts: string[] = []
-      const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => (s.rows ?? []).flatMap((r) => r.blocks)).find((x) => shapeBlockId(x) === op.block)
+      const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => allBlocks(s.rows ?? [])).find((x) => shapeBlockId(x) === op.block)
       if (op.variant) parts.push(`모양: ${(b && BLOCKS[b.type].variants?.find((v) => v.id === op.variant)?.name) ?? op.variant}`)
       if (op.look) parts.push(`바탕: ${BLOCK_LOOKS.find((l) => l.id === op.look)?.name}`)
       if (op.effect) parts.push(`움직임: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)

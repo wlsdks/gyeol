@@ -106,7 +106,8 @@ export function imageBlock(url: string): Block {
  */
 export function fitPlaced(rows: BlockRow[], block: Block, areaH?: number): BlockRow[] {
   if (areaH === undefined) return rows
-  const row = rows.find((r) => r.blocks.some((b) => b.id === block.id))
+  // 쌓은 부품을 넣었어도 그 줄의 이미지에 다시 맞춘다 (이미지는 쌓지 않아서 칸 맨 위에만 있다)
+  const row = rows.find((r) => allBlocks([r]).some((b) => b.id === block.id))
   const img = row?.blocks.find((b) => aspectOf(b))
   if (!img) return rows
   const fitted = fitImage(rows, img.id, aspectOf(img)!, areaH)

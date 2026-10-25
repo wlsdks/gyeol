@@ -125,6 +125,7 @@ describe('끌어 놓기', () => {
     const full = compose(row(block('kpi', 'a'), block('kpi', 'b'), block('kpi', 'c')), row(block('kpi', 'd'), block('kpi', 'e'), block('kpi', 'f')))
     const plan = planDrop(full, fresh(full, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 300 }, size: SIZE } })
     expect(plan.plan).toBe('next')
-    expect(plan.blocked).toEqual({ kind: 'full' })
+    // 핵심 숫자는 작은 부품이 아니라 큰 부품 수가 찬다
+    expect(plan.blocked).toEqual({ kind: 'large' })
   })
 })

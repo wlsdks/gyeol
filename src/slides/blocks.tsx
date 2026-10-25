@@ -5,7 +5,7 @@
 // 부품 장만의 부품 하나의 그리기는 blocks/<이름>.tsx, 여러 부품이 같이 쓰는 조각은 blocks/parts.tsx
 
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockMinH, blockSlide, cellBoxes, cellStyle, effectOf, fromOf, knownRows, linkAt, playOrder, rowMins, sameLinkTarget, shownLook, shownRows, speedOf, spansOf, variantOfBlock, whenOf, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
+import { areaStyle, BLOCK_LINKS, BLOCKS, blockFieldPrefix, foldableFields, blockItems, blockSlide, cellBoxes, cellMinH, cellStyle, membersOf, effectOf, fromOf, knownRows, linkAt, playOrder, rowMins, sameLinkTarget, shownLook, shownRows, speedOf, spansOf, stackGrows, stackMins, variantOfBlock, whenOf, withLink, type CellBox, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn } from '../deck/fields'
 import type { Block, BlockLink, BlockRow, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -188,12 +188,13 @@ function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live
     const below = !!linkAt(rows, { dir: 'v', row: b.row })
     const above = b.row > 0 && !!linkAt(rows, { dir: 'v', row: b.row - 1 })
     const side = below && !above ? 'lk-up' : above && !below ? 'lk-down' : undefined
-    if (link) marks.push({ key: `h${b.rowId}-${b.col}`, t, link, area: { gridRow: `${b.row + 1} / span 1`, gridColumn: `${b.start + 1} / span ${b.span}` }, after: b.block.id, side })
+    // 쌓은 칸이면 칸의 마지막 부품 다음에
+    if (link) marks.push({ key: `h${b.rowId}-${b.col}`, t, link, area: { gridRow: `${b.row + 1} / span 1`, gridColumn: `${b.start + 1} / span ${b.span}` }, after: b.members[b.members.length - 1].id, side })
   }
   rows.forEach((r, i) => {
     const t: LinkTarget = { dir: 'v', row: i }
     const link = linkAt(rows, t)
-    if (link) marks.push({ key: `v${r.id}`, t, link, area: { gridRow: `${i + 1} / span 1`, gridColumn: '1 / -1' }, after: r.blocks[r.blocks.length - 1].id })
+    if (link) marks.push({ key: `v${r.id}`, t, link, area: { gridRow: `${i + 1} / span 1`, gridColumn: '1 / -1' }, after: membersOf(r.blocks[r.blocks.length - 1]).at(-1)!.id })
   })
   return (
     <>
@@ -221,8 +222,11 @@ function Links({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; live
   )
 }
 
-function BlockCell({ box, live, rows, seq }: { box: CellBox; live: BlockEdit | null; rows: BlockRow[]; seq?: number }) {
-  const b = box.block
+/**
+ * 칸 하나(또는 쌓은 칸 안의 부품 하나). 쌓은 칸이면 칸의 자리와 이음표의 비켜 서기는 묶음(.bk-stack)이 갖고,
+ * 부품은 묶음 안에서 가장 낮은 높이(--bk-m)와 남는 높이의 몫(--bk-g)으로 칸 높이를 나눠 쓴다(deck/blocks.ts의 stackHeights와 같다)
+ */
+function BlockCell({ box, block: b, live, rows, seq, at }: { box: CellBox; block: Block; live: BlockEdit | null; rows: BlockRow[]; seq?: number; at?: { min: number; grow: number } }) {
   const spec = BLOCKS[b.type]
   const when = whenOf(b)
   const speed = speedOf(b)
@@ -234,7 +238,8 @@ function BlockCell({ box, live, rows, seq }: { box: CellBox; live: BlockEdit | n
     <div
       className={cx(
         'bk',
-        ...linkSides(rows, box),
+        ...(at ? linkSides(rows, box).filter((c) => c === 'lk-row') : linkSides(rows, box)),
+        at && 'is-stacked',
         `bk-${b.type}`,
         `bk-look-${look}`,
         `fx-${effectOf(b)}`,
@@ -244,7 +249,7 @@ function BlockCell({ box, live, rows, seq }: { box: CellBox; live: BlockEdit | n
         selected && 'is-selected',
         slot && 'is-slot',
       )}
-      style={cellStyle(box)}
+      style={at ? ({ '--bk-m': at.min, '--bk-g': at.grow } as React.CSSProperties) : cellStyle(box)}
       data-block={b.id}
       data-type={b.type}
       data-row={box.row}
@@ -318,12 +323,15 @@ function RowGaps({ rows, live }: { rows: BlockRow[]; live: BlockEdit }) {
 
 type Box = { x: number; y: number; w: number; h: number }
 
+/** 본문 상자 안의 모든 칸: 바로 아래의 칸과 쌓은 칸(.bk-stack) 안의 부품 */
+const CELLS = ':scope > .bk, :scope > .bk-stack > .bk'
+
 /** 칸들이 지금 화면에 보이는 자리 (움직이는 중이면 움직이는 중의 자리). 캔버스 px, 본문 상자 기준 */
 function visualBoxes(area: HTMLElement): Map<string, Box> {
   const a = area.getBoundingClientRect()
   const k = area.offsetWidth ? a.width / area.offsetWidth : 1
   const out = new Map<string, Box>()
-  for (const el of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
+  for (const el of area.querySelectorAll<HTMLElement>(CELLS)) {
     const r = el.getBoundingClientRect()
     out.set(el.dataset.block!, { x: (r.left - a.left) / k, y: (r.top - a.top) / k, w: r.width / k, h: r.height / k })
   }
@@ -343,11 +351,13 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key:
     const first = before.current
     before.current = null
     if (!on || !el || !first || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    for (const cell of el.querySelectorAll<HTMLElement>(':scope > .bk')) {
+    for (const cell of el.querySelectorAll<HTMLElement>(CELLS)) {
       const id = cell.dataset.block!
       const f = first.get(id)
       cell.getAnimations().forEach((a) => a.cancel())
-      const last = { x: cell.offsetLeft, y: cell.offsetTop, w: cell.offsetWidth, h: cell.offsetHeight }
+      // 쌓은 부품은 묶음 안의 자리라 묶음의 자리를 더한다 (visualBoxes처럼 본문 상자 기준으로 견준다)
+      const wrap = cell.parentElement !== el ? cell.parentElement! : null
+      const last = { x: cell.offsetLeft + (wrap?.offsetLeft ?? 0), y: cell.offsetTop + (wrap?.offsetTop ?? 0), w: cell.offsetWidth, h: cell.offsetHeight }
       if (!f) {
         cell.animate([{ opacity: 0, scale: '0.94' }, { opacity: 1, scale: '1' }], { duration: 420, easing: FLIP_EASING })
         continue
@@ -390,7 +400,7 @@ export function BlockArea() {
   const key = rows
     .map((r) => {
       const spans = spansOf(r)
-      return `${r.blocks.map((b, i) => `${b.id}:${blockMinH(b, spans[i])}:${b.link ?? ''}`).join(',')}|${spans.join(',')}|${r.link ?? ''}`
+      return `${r.blocks.map((b, i) => `${b.id}${(b.stack ?? []).map((m) => `+${m.id}`).join('')}:${cellMinH(b, spans[i])}:${b.link ?? ''}`).join(',')}|${spans.join(',')}|${r.link ?? ''}`
     })
     .join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
@@ -424,9 +434,18 @@ export function BlockArea() {
       data-mins={rows.length ? rowMins(rows) : undefined}
     >
       {!rows.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
-      {boxes.map((box) => (
-        <BlockCell key={box.block.id} box={box} live={live} rows={rows} seq={seq.get(box.block.id)} />
-      ))}
+      {boxes.map((box) => {
+        if (box.members.length === 1) return <BlockCell key={box.block.id} box={box} block={box.block} live={live} rows={rows} seq={seq.get(box.block.id)} />
+        const mins = stackMins(box.block, box.span)
+        const grows = stackGrows(box.block)
+        return (
+          <div key={`stack-${box.rowId}-${box.col}`} className={cx('bk-stack', ...linkSides(rows, box).filter((c) => c !== 'lk-row'))} style={cellStyle(box)} data-row={box.row}>
+            {box.members.map((m, i) => (
+              <BlockCell key={m.id} box={box} block={m} live={live} rows={rows} seq={seq.get(m.id)} at={{ min: Math.round(mins[i]), grow: grows[i] }} />
+            ))}
+          </div>
+        )
+      })}
       <Links rows={rows} boxes={boxes} live={live} />
       {live && !live.dragId && <Gutters rows={rows} boxes={boxes} live={live} />}
       {live && !live.dragId && rows.length > 1 && <RowGaps rows={rows} live={live} />}

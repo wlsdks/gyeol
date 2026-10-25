@@ -1,4 +1,4 @@
-import { BLOCK_LINK_IDS, BLOCK_TYPES, BLOCKS, composeAreaH, fitsHeight, insertAt, linkTargets, lookChangeIssue, lookOf, placeIssue, validTargets, whyNot, withLink, withLook } from '../deck/blocks'
+import { allBlocks, blockCount, BLOCK_LINK_IDS, BLOCK_TYPES, BLOCKS, composeAreaH, fitsHeight, insertAt, linkTargets, lookChangeIssue, lookOf, placeIssue, validTargets, whyNot, withLink, withLook } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { makeSlide } from '../deck/generate'
 import type { Block, BlockRow, Slide } from '../deck/types'
@@ -55,8 +55,9 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
     const areaH = composeAreaH(base, look, edit)
     let rows: BlockRow[] = []
     const refused: Combo['refused'] = []
-    const want = 1 + Math.floor(rand() * 6)
-    for (let tries = 0; tries < 14 && rows.reduce((a, r) => a + r.blocks.length, 0) < want; tries++) {
+    // 놓을 자리는 넣을 수 있는 모든 자리(새 줄, 옆 칸, 칸 안에 쌓기) 가운데 하나라 쌓은 칸도 섞인다
+    const want = 1 + Math.floor(rand() * 8)
+    for (let tries = 0; tries < 16 && blockCount(rows) < want; tries++) {
       const b = randomBlock(rand, `c${k}-b${tries}`)
       const valid = validTargets(rows, b, areaH)
       if (!valid.length) {
@@ -69,7 +70,7 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       if (whyNot(rows, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
       rows = insertAt(rows, t, b, `r${k}-${tries}`, areaH)!
       // 편집기에서 면을 고를 때처럼 같은 줄은 같은 면으로. 그러면 장을 넘칠 때는 편집기처럼 고를 수 없으니 그대로
-      const placed = rows.flatMap((r) => r.blocks).find((x) => x.id === b.id)!
+      const placed = allBlocks(rows).find((x) => x.id === b.id)!
       if (!lookChangeIssue(rows, b.id, lookOf(placed), areaH)) rows = withLook(rows, b.id, lookOf(placed))
     }
     // 이음표: 칸 사이와 줄 사이마다 셋에 하나꼴로. 줄 사이는 높이가 들어갈 때만 (편집기와 같은 규칙)
@@ -101,7 +102,7 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
     if (used > area.clientHeight + 1) problems.push(`${i + 1}번 장: 줄이 본문 상자보다 ${Math.round(used - area.clientHeight)} 높아요`)
     // 글자 크기 '크게'(1.2배)는 한 단계(1/1.2, fitBlocks.ts)까지 줄여도 보통 크기와 같다
     const least = area.closest('.slide')?.classList.contains('sz-large') ? 1 / 1.2 : 1
-    for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
+    for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk')) {
       cells++
       const fit = Number(cell.style.getPropertyValue('--bk-fit') || 1)
       const what = `${i + 1}번 장 ${cell.dataset.type} ${[...cell.classList].filter((c) => c.startsWith('va-') || c.startsWith('bk-look-')).join(' ')} 항목 ${cell.querySelectorAll('.it').length} 너비 ${Math.round(cell.offsetWidth)}×${Math.round(cell.offsetHeight)}`
@@ -110,7 +111,7 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
       if (left.length) problems.push(`${what}: ${left.slice(0, 3).join(', ')}`)
     }
     // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다
-    const boxes = [...area.querySelectorAll<HTMLElement>(':scope > .bk')].map((c) => c.getBoundingClientRect())
+    const boxes = [...area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk')].map((c) => c.getBoundingClientRect())
     for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
       const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
       const hit = boxes.some((r) => g.left < r.right - 0.5 && g.right > r.left + 0.5 && g.top < r.bottom - 0.5 && g.bottom > r.top + 0.5)

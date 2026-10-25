@@ -4,6 +4,16 @@ import {
   BLOCK_GAP,
   areaStyle,
   allBlocks,
+  asCell,
+  cellMinH,
+  cellRects,
+  copyCell,
+  mapBlock,
+  MAX_STACK,
+  membersOf,
+  placeOf,
+  stackHeights,
+  stackIssue,
   autoTarget,
   BLOCK_GROUPS,
   BLOCK_TYPES,
@@ -39,6 +49,7 @@ import {
   lookOf,
   makeBlock,
   MAX_BLOCKS,
+  MAX_LARGE,
   minSpanOf,
   MAX_IN_ROW,
   MAX_ROWS,
@@ -292,7 +303,8 @@ describe('자리 정하기', () => {
       if (!t) break
       rows = insertAt(rows, t, b)!
     }
-    expect(blockCount(rows)).toBe(MAX_BLOCKS)
+    // 강조 상자는 작은 부품이 아니라 큰 부품 수(MAX_LARGE)에서 멈춘다
+    expect(blockCount(rows)).toBe(MAX_LARGE)
     expect(rows.length).toBeLessThanOrEqual(MAX_ROWS)
     expect(rows.every((r) => r.blocks.length <= MAX_IN_ROW)).toBe(true)
     expect(autoTarget(rows, block('callout', 'more'))).toBeNull()
@@ -482,8 +494,8 @@ describe('자리 정하기', () => {
     const rows = [row(block('number', 'n'))]
     const dragged = block('callout', 'c')
     const left = { kind: 'cell', row: 0, index: 0 } as const
-    // 끄는 부품을 뺀 모습으로는 큰 숫자의 위쪽(새 줄)이지만, 보이는 모습에서는 왼쪽 옆자리 칸 안
-    const p = { x: size.w * 0.2, y: size.h * 0.2 }
+    // 끄는 부품을 뺀 모습으로는 큰 숫자의 윗선 둘레(새 줄)이지만, 보이는 모습에서는 왼쪽 옆자리 칸 안
+    const p = { x: size.w * 0.2, y: size.h * 0.03 }
     expect(dropTarget(rows, dragged, p, size)).toEqual({ kind: 'row', index: 0 })
     expect(dropTarget(rows, dragged, p, size, undefined, left)).toEqual(left)
     // 그 칸을 벗어나면 다시 찾는다
@@ -497,6 +509,117 @@ describe('자리 정하기', () => {
     // 차트는 6칸보다 좁아지지 않는다
     expect(spansAt(r, 0, 0.2)[0]).toBeGreaterThanOrEqual(BLOCKS.trend.minSpan)
     expect(spansOf({ ...r, spans: [1, 11] })).not.toEqual([1, 11])
+  })
+})
+
+describe('한 칸에 쌓기', () => {
+  const SIZE = { w: 1680, h: 640 }
+  const stackAt = (row: number, index: number, at: number) => ({ kind: 'stack', row, index, at }) as const
+
+  it('칸 위나 아래에 쌓으면 칸 너비는 그대로 두고, 칸의 가장 낮은 높이는 쌓은 부품의 높이와 그 사이 간격의 합이다', () => {
+    const rows = [{ ...row(block('number', 'n'), block('bars', 'c')), spans: [4, 8] }]
+    const next = insertAt(rows, stackAt(0, 0, 1), block('delta', 'd'))!
+    expect(membersOf(next[0].blocks[0]).map((b) => b.id)).toEqual(['n', 'd'])
+    expect(spansOf(next[0])).toEqual([4, 8])
+    expect(blockCount(next)).toBe(3)
+    expect(cellMinH(next[0].blocks[0], 4)).toBe(blockMinH(block('number'), 4) + blockMinH(block('delta'), 4) + BLOCK_GAP)
+    expect(placeOf(next, 'd')).toEqual({ row: 0, col: 0, at: 1 })
+    // 위에 쌓으면 맨 위가 바뀌어도 칸의 이음표는 칸에 남는다
+    const linked = withLink(rows, { dir: 'h', row: 0, col: 0 }, 'arrow')
+    const top = insertAt(linked, stackAt(0, 0, 0), block('delta', 'd'))!
+    expect(membersOf(top[0].blocks[0]).map((b) => b.id)).toEqual(['d', 'n'])
+    expect(linkAt(top, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
+    expect(top[0].blocks[0].stack!.every((m) => !m.link)).toBe(true)
+  })
+
+  it('쌓을 수 없는 조합은 넣지 않고 까닭을 알린다: 큰 부품 둘, 이미지, 셋 넘게', () => {
+    const chart = [row(block('bars', 'c'))]
+    expect(stackIssue([block('bars'), block('table')])).toBe('large')
+    expect(whyNot(chart, stackAt(0, 0, 1), block('table', 't'))).toEqual({ kind: 'stack', why: 'large', type: 'bars' })
+    expect(insertAt(chart, stackAt(0, 0, 1), block('table', 't'))).toBeNull()
+    expect(whyNot(chart, stackAt(0, 0, 1), block('image', 'i'))).toEqual({ kind: 'stack', why: 'none', type: 'image' })
+    const three = [row(asCell([block('number', 'a'), block('delta', 'b'), block('callout', 'c')]))]
+    expect(MAX_STACK).toBe(3)
+    expect(whyNot(three, stackAt(0, 0, 3), block('number', 'd'))?.kind).toBe('stack')
+    // 쌓을 수 있는 자리 목록에도 들지 않는다
+    expect(validTargets(chart, block('table', 't'), SIZE.h).some((t) => t.kind === 'stack')).toBe(false)
+  })
+
+  it('남는 높이는 차트가 받고, 차트가 없으면 똑같이 나눈다 (그린 칸과 끌어 놓을 때 재는 칸이 같다)', () => {
+    const withChart = asCell([block('number', 'n'), block('bars', 'c')])
+    const [n, c] = stackHeights(withChart, 6, 700)
+    expect(n).toBe(blockMinH(block('number'), 6))
+    expect(n + c + BLOCK_GAP).toBe(700)
+    const plain = asCell([block('number', 'n'), block('delta', 'd')])
+    const [a, b] = stackHeights(plain, 6, 700)
+    expect(a - blockMinH(block('number'), 6)).toBeCloseTo(b - blockMinH(block('delta'), 6))
+    const rects = cellRects([row(plain, block('text', 't'))], SIZE)
+    expect(rects.get('d')!.y).toBeCloseTo(rects.get('n')!.y + rects.get('n')!.h + BLOCK_GAP)
+  })
+
+  it('쌓은 부품을 빼면 칸은 남고, 맨 위를 빼면 그 아래 부품이 칸의 이음표를 받는다', () => {
+    const rows = withLink([{ ...row(asCell([block('number', 'n'), block('delta', 'd')]), block('text', 't')), spans: [4, 8] }], { dir: 'h', row: 0, col: 0 }, 'plus')
+    const next = removeBlock(rows, 'n')
+    expect(next[0].blocks.map((b) => b.id)).toEqual(['d', 't'])
+    expect(next[0].blocks[0].stack).toBeUndefined()
+    expect(linkAt(next, { dir: 'h', row: 0, col: 0 })).toBe('plus')
+    expect(spansOf(next[0])).toEqual([4, 8])
+  })
+
+  it('끌어 놓을 때: 칸의 맨 위·아래 가장자리는 새 줄, 그 안쪽 위·아래는 쌓기, 가운데는 옆 칸', () => {
+    const rows = [row(block('number', 'n'), block('delta', 'd'))]
+    const r = cellRects(rows, SIZE).get('n')!
+    const at = (u: number, v: number) => dropTarget(rows, block('callout', 'x'), { x: r.x + r.w * u, y: r.y + r.h * v }, SIZE)
+    expect(at(0.5, 0.05)).toEqual({ kind: 'row', index: 0 })
+    expect(at(0.5, 0.25)).toEqual(stackAt(0, 0, 0))
+    expect(at(0.5, 0.75)).toEqual(stackAt(0, 0, 1))
+    expect(at(0.5, 0.95)).toEqual({ kind: 'row', index: 1 })
+    expect(at(0.2, 0.5)).toEqual({ kind: 'cell', row: 0, index: 0 })
+    // 쌓을 수 없는 부품이면 같은 자리에서 새 줄로
+    const charts = [row(block('bars', 'c'), block('delta', 'd'))]
+    const cr = cellRects(charts, SIZE).get('c')!
+    expect(dropTarget(charts, block('table', 't'), { x: cr.x + cr.w / 2, y: cr.y + cr.h * 0.25 }, SIZE)?.kind).not.toBe('stack')
+  })
+
+  it('복사하면 쌓은 부품까지 새 id로, 글을 고치면 쌓은 부품도 찾는다', () => {
+    const cell = asCell([block('number', 'n'), block('delta', 'd')])
+    const copy = copyCell(cell)
+    expect(membersOf(copy).map((b) => b.type)).toEqual(['number', 'delta'])
+    expect(membersOf(copy).some((b) => b.id === 'n' || b.id === 'd')).toBe(false)
+    const rows = mapBlock([row(cell)], 'd', (b) => ({ ...b, fields: { ...b.fields, value: '12%' } }))
+    expect(rows[0].blocks[0].stack![0].fields.value).toBe('12%')
+  })
+
+  it('파일에서 읽을 때 쌓은 부품의 꼴을 맞춘다: 또 쌓은 것과 이음표는 빼고, 셋 넘는 것과 맞지 않는 조합은 버린 것으로 센다', () => {
+    const lost = { n: 0 }
+    const raw = [
+      {
+        id: 'r',
+        blocks: [
+          { ...block('number', 'n'), stack: [{ ...block('delta', 'd'), link: 'arrow', stack: [block('ring', 'x')] }, block('callout', 'c'), block('goal', 'g')] },
+          { ...block('bars', 'b'), stack: [block('table', 't')] },
+        ],
+      },
+    ]
+    const rows = cleanRows(raw, lost)
+    expect(membersOf(rows[0].blocks[0]).map((b) => b.id)).toEqual(['n', 'd', 'c'])
+    expect(rows[0].blocks[0].stack!.every((m) => !m.link && !m.stack)).toBe(true)
+    expect(membersOf(rows[0].blocks[1]).map((b) => b.id)).toEqual(['b'])
+    // 이음표, 또 쌓은 것, 넷째(goal), 큰 부품 둘(table)
+    expect(lost.n).toBe(4)
+    // 몇 번을 거쳐도 같다
+    expect(cleanRows(rows)).toEqual(rows)
+  })
+
+  it('발표할 때 비워 둔 쌓은 부품은 빠지고, 맨 위가 비면 그 아래가 맨 위가 된다', () => {
+    const filled = (b: Block): Block => ({ ...b, fields: { ...b.fields, value: '3' } })
+    const rows = withLink([row(asCell([block('number', 'n'), filled(block('delta', 'd'))]), filled(block('text', 't')))], { dir: 'h', row: 0, col: 0 }, 'arrow')
+    const shown = shownRows(rows)
+    expect(shown[0].blocks.map((b) => b.id)).toEqual(['d', 't'])
+    expect(linkAt(shown, { dir: 'h', row: 0, col: 0 })).toBe('arrow')
+    // 쌓은 부품의 이음표는 설 데가 없어 tidyLinks가 뺀다
+    const stray = [row({ ...block('number', 'n'), stack: [{ ...block('delta', 'd'), link: 'arrow' }] })]
+    expect(tidyLinks(stray)[0].blocks[0].stack![0].link).toBeUndefined()
   })
 })
 

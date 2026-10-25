@@ -149,7 +149,7 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
   useTrackRect(
     () => canvasRef.current,
     () => {
-      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area > .is-selected') ?? null
+      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area .bk.is-selected') ?? null
       const bar = ref.current
       if (!el || !bar) return setSpot(null)
       // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다 (다음 프레임에)

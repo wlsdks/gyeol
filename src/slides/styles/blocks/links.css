@@ -6,19 +6,19 @@
   --lk-pad: 24px;
 }
 
-.bk.lk-r {
+:is(.bk, .bk-stack).lk-r {
   margin-right: var(--lk-pad);
 }
 
-.bk.lk-l {
+:is(.bk, .bk-stack).lk-l {
   margin-left: var(--lk-pad);
 }
 
-.bk.lk-b {
+:is(.bk, .bk-stack).lk-b {
   margin-bottom: var(--lk-pad);
 }
 
-.bk.lk-t {
+:is(.bk, .bk-stack).lk-t {
   margin-top: var(--lk-pad);
 }
 

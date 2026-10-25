@@ -11,6 +11,7 @@
 
 @import './styles/blocks/base.css';
 @import './styles/blocks/links.css';
+@import './styles/blocks/stack.css';
 @import './styles/blocks/looks.css';
 @import './styles/blocks/layout.css';
 @import './styles/blocks/message.css';

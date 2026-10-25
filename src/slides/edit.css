@@ -400,27 +400,27 @@
   margin: 0;
 }
 
-.slide.m-edit .bk-area.is-live > .bk {
+.slide.m-edit .bk-area.is-live .bk {
   outline: calc(1.5px / var(--vs, 0.5)) solid transparent;
   outline-offset: 14px;
   transition: outline-color 0.16s;
 }
 
 /* 장에 올리면 부품마다 옅은 테두리: 어떻게 짜였는지 보인다 */
-.slide.m-edit .bk-area.is-live:hover:not(.is-dragging) > .bk {
+.slide.m-edit .bk-area.is-live:hover:not(.is-dragging) .bk {
   outline-color: color-mix(in srgb, var(--sel) 14%, transparent);
 }
 
-.slide.m-edit .bk-area.is-live:not(.is-dragging) > .bk:hover {
+.slide.m-edit .bk-area.is-live:not(.is-dragging) .bk:hover {
   outline-color: color-mix(in srgb, var(--sel) 45%, transparent);
 }
 
-.slide.m-edit .bk-area.is-live > .bk.is-selected,
-.slide.m-edit .bk-area.is-live:not(.is-dragging) > .bk.is-selected:hover {
+.slide.m-edit .bk-area.is-live .bk.is-selected,
+.slide.m-edit .bk-area.is-live:not(.is-dragging) .bk.is-selected:hover {
   outline-color: var(--sel);
 }
 
-.bk-area > .bk.is-slot {
+.bk-area .bk.is-slot {
   outline: 0;
   background: none;
 }
@@ -468,13 +468,13 @@
 }
 
 /* 고른 부품은 위에 뜬 도구의 이름표가 손잡이를 맡는다 (editor/SelectionBar.tsx의 FloatTools) */
-.bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
+.bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
   pointer-events: auto;
 }
 
 /* 칸 너비나 줄 높이를 끄는 동안에는 손 아래를 지나는 컴포넌트의 이름표를 띄우지 않는다 (말풍선처럼 이웃 칸을 가린다) */
-:is(body.is-block-resizing, body.is-row-resizing) .bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
+:is(body.is-block-resizing, body.is-row-resizing) .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 0;
   pointer-events: none;
 }

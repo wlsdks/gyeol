@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allBlocks, blockCount, cleanPart, freshRows, insertRows, makeBlock, MAX_BLOCKS, MAX_IN_ROW, needH, partFrom, rowsIssue, SAVED_NAME_MAX, slideFromPart } from './blocks'
+import { allBlocks, blockCount, cleanPart, freshRows, insertRows, makeBlock, MAX_IN_ROW, MAX_LARGE, needH, partFrom, rowsIssue, SAVED_NAME_MAX, slideFromPart } from './blocks'
 import { makeSlide } from './generate'
 import type { Block, BlockRow, Slide } from './types'
 
@@ -91,10 +91,10 @@ describe('내 컴포넌트 넣기', () => {
     expect(next.map((r) => r.blocks.map((b) => b.type))).toEqual([['message'], ['kpi', 'callout']])
     expect(rowsIssue(rows, add)).toBeNull()
 
-    // 부품 수: 한 장에 MAX_BLOCKS까지
+    // 부품 수: 한 장에 큰 부품은 MAX_LARGE까지
     const many = [row('a', block('text', 't1'), block('text', 't2'), block('text', 't3')), row('b', block('text', 't4'), block('text', 't5'))]
-    expect(blockCount(many) + blockCount(add)).toBeGreaterThan(MAX_BLOCKS)
-    expect(rowsIssue(many, add)).toEqual({ kind: 'full' })
+    expect(blockCount(many) + blockCount(add)).toBeGreaterThan(MAX_LARGE)
+    expect(rowsIssue(many, add)).toEqual({ kind: 'large' })
     expect(insertRows(many, many.length, add)).toBeNull()
 
     // 줄 수
@@ -146,8 +146,9 @@ describe('파일에서 읽은 내 컴포넌트 하나 (cleanPart)', () => {
     const lost = { n: 0 }
     const many = Array.from({ length: 9 }, (_, i) => block('text', `t${i}`))
     const part = cleanPart({ kind: 'slide', rows: [row('a', ...many.slice(0, 4)), row('b', ...many.slice(4, 7)), row('c', ...many.slice(7))] }, lost)!
-    expect(blockCount(part.rows)).toBe(MAX_BLOCKS)
+    // 글 부품은 큰 부품이라 MAX_LARGE까지 (모든 부품의 끝 MAX_BLOCKS보다 먼저 닿는다)
+    expect(blockCount(part.rows)).toBe(MAX_LARGE)
     expect(part.rows.every((r) => r.blocks.length <= MAX_IN_ROW)).toBe(true)
-    expect(lost.n).toBe(9 - MAX_BLOCKS)
+    expect(lost.n).toBe(9 - MAX_LARGE)
   })
 })
