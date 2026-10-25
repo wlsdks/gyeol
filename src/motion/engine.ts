@@ -825,15 +825,17 @@ export function motionEngine(): MotionEngine {
       }
       case 'funnel': {
         const t = head()
-        // 위 단계부터 막대가 가운데에서 양옆으로 벌어지고, 잇는 면과 전환율은 막대가 선 뒤에
+        // 첫 단계부터 막대가 왼쪽에서 자라고, 그 단계에서 빠진 옅은 면이 뒤따라 깔린다. 넘어온 비율은 막대가 선 뒤에
         const end = items('.fn-row', t, (el, at) => {
           rise(el.querySelector('.fn-label'), at, L.y * 0.5)
-          const bar = el.querySelector('.fn-bar')
-          if (bar) run(anims, bar, [{ scale: '0 1' }, { scale: '1 1' }], s(at + 80), L.grow)
-          fade(el.querySelector('.fn-link'), at, 400)
-          pop(el.querySelector('.fn-rate'), at + 260)
+          grow(el.querySelector('.fn-bar'), at + 80, 'x')
+          // 빠진 면은 튀지 않게(생동감의 스프링이면 앞 단계 길이를 넘었다가 돌아와 계단이 잠깐 어긋났다)
+          const zone = el.querySelector('.fn-zone')
+          const from = { scale: '0 1', transformOrigin: 'left center' }
+          if (zone) run(anims, zone, [from, { ...from, scale: '1 1' }], s(at + 260), { easing: OUT, duration: d(700) }, '::before')
+          fade(el.querySelector('.fn-rate'), at + 300, 400)
           count(el.querySelector('.fn-num'), at + 120)
-          // 단위는 숫자와 함께: 숫자보다 먼저 나오면 막대 옆에 '곳'만 떠 있다
+          // 단위는 숫자와 함께: 숫자보다 먼저 나오면 막대 옆에 '명'만 떠 있다
           fade(el.querySelector('.fn-val'), at + 120, 240)
         }, L.step * 1.3)
         fade(one('.fn-total'), end + 100, 500)

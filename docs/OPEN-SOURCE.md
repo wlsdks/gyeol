@@ -59,6 +59,7 @@
 | [IBM Carbon: Data table, Legends](https://carbondesignsystem.com/components/data-table/style/) | Apache-2.0 | 줄 높이를 정한 단계로만 줄인다, 범례는 줄 수를 정해 둔다 |
 | [Apache ECharts 문서: Media query](https://apache.googlesource.com/echarts-doc/+/refs/heads/v4/en/tutorial/media-query.md) | Apache-2.0 | 차트 자리의 너비, 높이, 가로세로비로 조건을 나눠 범례 자리와 방향을 바꾼다 |
 | [ONS Service Manual: Data visualisation](https://service-manual.ons.gov.uk/data-visualisation/guidance/chart-text) | OGL v3.0 | 제목은 요점을 먼저, 범례는 차트 위 한 줄 |
+| [ONS Service Manual: Bar charts](https://service-manual.ons.gov.uk/data-visualisation/chart-types/bar-charts) | OGL v3.0 | 항목 비교는 가로 막대, 세로 막대는 시간 순서에, 막대는 0에서 시작(깔때기를 가로 막대로) |
 | [ECMA-376 Office Open XML](https://ecma-international.org/publications-and-standards/standards/ecma-376/) (ISO/IEC 29500) | Ecma 표준: 누구나 무료로 받아 보고 구현할 수 있음. Microsoft는 Open Specification Promise로 이 규격을 구현하는 것에 특허를 주장하지 않기로 함 | PPT로 내보내기(그림)의 .pptx 짜임(부분, 관계, 장·틀·노트 XML). 다른 라이브러리의 코드는 옮기지 않고 규격을 보고 직접 씀 |
 | [PKWARE APPNOTE (ZIP 형식)](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) | 공개 문서. 기본 기능(그대로 두기, deflate)만 쓰고, 특허가 걸린 강한 암호화 기능은 쓰지 않음 | .pptx를 묶는 ZIP(로컬 머리, 중앙 목록, CRC-32). 직접 씀 |
 

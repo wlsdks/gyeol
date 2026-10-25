@@ -1126,33 +1126,35 @@ function Funnel() {
   return (
     <>
       <Head />
-      <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length}>
+      <div className={cx('s-body fn', demo && 'is-demo')} data-n={items.length} style={{ '--n': items.length } as CSSProperties}>
         {items.map((it, i) => {
           // 빈 단계로 들어가거나 나오는 사이는 잇지 않는다. 앞 단계보다 늘어난 단계는 전환율이 아니라(1,333%) 적지 않는다
           const linked = i > 0 && values[i - 1] > 0 && values[i] > 0
           const rate = linked && series.ok && values[i] <= values[i - 1] ? (values[i] / values[i - 1]) * 100 : null
-          // 단계의 농담: 첫 단계가 가장 옅고 갈수록 진하게 (강조할 단계는 강조색 그대로)
-          const tint = items.length > 1 ? 24 + (46 * i) / (items.length - 1) : 46
-          const style = { '--w': widths[i].toFixed(2), '--pw': (i > 0 ? widths[i - 1] : widths[i]).toFixed(2), '--t': tint.toFixed(0) } as CSSProperties
           return (
-            <div key={it.id} className={cx('it fn-row', i === highlight && 'is-hl', !values[i] && 'is-blank')} style={style}>
+            <div
+              key={it.id}
+              className={cx('it fn-row', i === highlight && 'is-hl', !values[i] && 'is-blank')}
+              // --pw: 앞 단계의 길이. 이 단계에서 빠진 만큼(앞 길이에서 이 길이까지)을 막대 뒤에 옅게 깐다
+              style={{ '--w': widths[i].toFixed(2), '--pw': (linked ? widths[i - 1] : widths[i]).toFixed(2) } as CSSProperties}
+            >
+              <div className="fn-val">
+                <IT i={i} k="value" as="span" className="fn-num" oneLine numeral />
+                {/* 단위는 편집할 때 첫 단계의 숫자 옆에서 고친다. 아래에 '단위' 줄을 따로 두면 편집 화면에서만 장이 높아진다 */}
+                {mode === 'edit' && i === 0 ? (
+                  <T k="unit" as="span" className="fn-unit" oneLine />
+                ) : (
+                  unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>
+                )}
+              </div>
+              {/* 앞 단계에서 넘어온 비율: 이 막대의 시작 위에 */}
+              {rate !== null && <span className="fn-rate">{rateText(rate)}</span>}
+              <div className="fn-zone">
+                <span className="fn-bar" />
+              </div>
               <div className="fn-label">
                 <IT i={i} k="title" className="fn-name" />
                 <IT i={i} k="meta" className="fn-meta" />
-              </div>
-              <div className="fn-zone">
-                {linked && <span className="fn-link" />}
-                {rate !== null && <span className="fn-rate">{rateText(rate)}</span>}
-                <span className="fn-bar" />
-                <div className="fn-val">
-                  <IT i={i} k="value" as="span" className="fn-num" oneLine />
-                  {/* 단위는 편집할 때 첫 단계의 숫자 옆에서 고친다. 아래에 '단위' 줄을 따로 두면 편집 화면에서만 장이 높아진다 */}
-                  {mode === 'edit' && i === 0 ? (
-                    <T k="unit" as="span" className="fn-unit" oneLine />
-                  ) : (
-                    unit && (!final || it.value.trim()) && <span className="fn-unit">{unit}</span>
-                  )}
-                </div>
               </div>
               <ItemTools i={i} />
             </div>
@@ -1160,9 +1162,8 @@ function Funnel() {
         })}
         {first > 0 && last > 0 && items.length > 2 && series.ok && (
           <p className="fn-total">
-            <span>
-              처음부터 끝까지 <b>{rateText((last / first) * 100)}</b>
-            </span>
+            <span>처음부터 끝까지</span>
+            <b>{rateText((last / first) * 100)}</b>
           </p>
         )}
       </div>
