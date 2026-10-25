@@ -3609,6 +3609,9 @@
 
 .bk-cc {
   --cc-top: 60px;
+  /* 막대 너비: 칸의 반 남짓, 가장 넓어도 160px. 120px까지였을 때는 한 줄을 다 쓰는 막대 넷이 칸의 3분의 1도 안 돼
+     막대 사이가 막대의 두 배 넘게 비었다(쌓은 막대는 칸 안 숫자 자리도 좁았다). 목표 줄(.bk-tg-goal)도 이 너비를 따른다 */
+  --cc-w: min(56%, 160px);
   --cc-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
@@ -3777,7 +3780,7 @@
 
 .bk-cc-fill {
   flex: none;
-  width: min(56%, 120px);
+  width: var(--cc-w);
   height: calc((100% - var(--cc-top)) * var(--p, 0) / 100);
   border-radius: 8px 8px 0 0;
   background: var(--cc-bar);
@@ -3901,7 +3904,7 @@
   position: absolute;
   bottom: calc((100% - var(--cc-top)) * var(--g, 0) / 100);
   left: 50%;
-  width: calc(min(56%, 120px) + 28px);
+  width: calc(var(--cc-w) + 28px);
   height: 4px;
   border-radius: 2px;
   background: var(--ink);
