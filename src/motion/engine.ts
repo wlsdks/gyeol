@@ -176,7 +176,7 @@ export function motionEngine(): MotionEngine {
    * 0부터 그 숫자까지(한 바퀴 더) 굴린다. 왼쪽 자리부터 차례로 멈춘다. 다 굴러가면 창을 걷고 원래 글자로.
    * 글자 상자를 잴 수 없으면(안 보이는 칸) false를 돌려준다. 그때는 0부터 올리기로.
    */
-  function roll(el: Element, at: number, duration: number, easing: string, anims: Animation[], restores: (() => void)[]) {
+  function roll(el: Element, at: number, duration: number, lively: boolean, anims: Animation[], restores: (() => void)[]) {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     let node = walker.nextNode() as Text | null
     while (node && !/\d/.test(node.nodeValue || '')) node = walker.nextNode() as Text | null
@@ -233,9 +233,13 @@ export function motionEngine(): MotionEngine {
       // 0부터 한 바퀴(0~9) 돈 뒤 그 숫자에서 멈춘다. 마지막 칸이 꼭 그 숫자여야 한다(9 + digit까지만 넣으면 하나 모자라
       // 3.7에서 멈췄다가 원래 글자로 돌아올 때 4.8로 튄다)
       for (let d = 0; d <= 10 + digit; d++) seq.push(String(d % 10))
+      const stop = seq.length - 1
+      // 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아온다. 지나친 자리에도 다음 숫자가 있어야 한다(없으면 창이 비어
+      // 녹화해 보니 4.8이 '4. '로, 1.1이 ' . '로 잠깐 비었다가 위에서 다시 내려왔다)
+      seq.push(String((digit + 1) % 10))
       strip.textContent = seq.join('\n')
       strip.style.lineHeight = h + 'px'
-      strip.style.translate = `0 ${-(seq.length - 1) * h}px`
+      strip.style.translate = `0 ${-stop * h}px`
       const cover = document.createElement('span')
       cover.className = 'mo-od'
       cover.setAttribute('aria-hidden', 'true')
@@ -248,7 +252,23 @@ export function motionEngine(): MotionEngine {
       covers.push(cover)
       c.className = 'mo-odc'
       // 왼쪽 자리가 먼저 멈추고 오른쪽으로 갈수록 조금씩 늦게
-      run(anims, strip, [{ translate: '0 0' }], at, { easing, duration: duration + (n > 1 ? (i / (n - 1)) * duration * 0.25 : 0) })
+      const time = duration + (n > 1 ? (i / (n - 1)) * duration * 0.25 : 0)
+      // 지나치는 만큼은 창 높이의 16%(글자는 창 가운데 60%쯤이라 글자 윗선이 창의 흐린 가장자리까지만 간다).
+      // 스프링 이징을 띠 전체에 걸면 지나치는 만큼이 굴러간 거리(열 몇 칸)에 비례해서 두 칸 넘게 지나쳤다.
+      // 그래서 끝 숫자를 지나 멈췄다가(속도 0) 되돌아오는 두 토막으로 짠다
+      if (lively)
+        run(
+          anims,
+          strip,
+          [
+            { translate: '0 0', easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' },
+            { translate: `0 ${-(stop + 0.16) * h}px`, offset: 0.74, easing: 'cubic-bezier(0.45, 0, 0.35, 1)' },
+            { translate: `0 ${-stop * h}px` },
+          ],
+          at,
+          { easing: 'linear', duration: time },
+        )
+      else run(anims, strip, [{ translate: '0 0' }], at, { easing: 'cubic-bezier(0.25, 0.8, 0.15, 1)', duration: time })
     })
     restores.push(undo)
     return true
@@ -342,7 +362,7 @@ export function motionEngine(): MotionEngine {
       // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
       const lively = levelName === 'lively'
       // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
-      if (!roll(el, s(at), lively ? 900 : 800, lively ? SPRINGS.bounce.easing : 'cubic-bezier(0.25, 0.8, 0.15, 1)', anims, restores))
+      if (!roll(el, s(at), lively ? 900 : 800, lively, anims, restores))
         countUp(el, s(at), lively ? 1000 : 800, stops, waits)
     }
     /** 지금 점(강조한 점)이 맺힌 뒤 고리가 두 번 퍼진다. 고리는 그동안만 점 안에 넣는다 */
