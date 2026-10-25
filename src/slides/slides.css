@@ -1869,20 +1869,26 @@
   padding: var(--pad-top) 112px var(--pad-bottom) var(--pad-x);
 }
 
-.cs-client {
-  --fs: 26px;
-  color: var(--ink-2);
-  font-weight: 700;
-}
-
-.cs-main > .cs-client:first-child {
-  margin-top: calc(-1em * ((1.55 - 1.19) / 2 + 0.155));
-}
-
 .cs-title {
   --fs: 62px;
-  margin-top: 24px;
   line-height: 1.2;
+}
+
+/* 제목 글자의 윗선을 위 틀선에 (다른 장의 제목과 같은 자리) */
+.cs-main > .cs-title:first-child {
+  margin-top: calc(-1em * ((1.2 - var(--head-box, 1.19)) / 2 + var(--head-gap, 0.15)));
+}
+
+/* 대상은 결과 판의 로고 아래. 로고가 없으면 판의 첫 줄이라 글자 윗선을 틀선에 */
+.cs-client {
+  --fs: 30px;
+  margin-top: 28px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.cs-side > .cs-client:first-child {
+  margin-top: calc(-1em * ((1.45 - 1.19) / 2 + 0.155));
 }
 
 .cs-body {

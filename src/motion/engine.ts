@@ -575,12 +575,13 @@ export function motionEngine(): MotionEngine {
       case 'case': {
         if (levelName === 'lively') wipe(one('.cs-side'), 0, flipped ? 'left' : 'right', 1000)
         else fade(one('.cs-side'), 0)
-        rise(one('.cs-client'), 80, L.y * 0.5)
         const t = words(one('.cs-title'), 160)
         rise(one('.cs-body'), Math.min(t, 600), L.y * 0.6)
         rise(one('.cs-quote'), Math.min(t, 600) + 200, L.y * 0.6)
         pop(one('.cs-quote'), Math.min(t, 600) + 260, '::before')
         fade(one('.cs-logo'), 300)
+        // 대상은 로고 아래에서 로고와 함께
+        rise(one('.cs-client'), 360, L.y * 0.5)
         items('.cs-res', 500, (el, at) => {
           rise(el, at)
           count(el.querySelector('.cs-value'), at + 100)
