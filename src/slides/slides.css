@@ -3247,6 +3247,11 @@
   padding-block: 8px;
 }
 
+/* 큰 글자에서 다섯 줄이면 줄 높이(127px)의 합이 본문보다 높아 머리줄이 제목 아래 틈으로 올라갔다. 줄 위아래 틈을 줄인다 */
+.sz-large.l-progress .ps[data-n='5'] .ps-row:not(.ps-headrow) {
+  padding-block: 12px;
+}
+
 .ps:is([data-n='6'], [data-n='7']) .ps-headrow {
   padding-bottom: 12px;
 }
