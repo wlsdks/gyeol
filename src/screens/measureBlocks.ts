@@ -85,6 +85,15 @@ function clashList(cell: HTMLElement, all: boolean): string[] {
       if (!all) return out
     }
   }
+  // 글이 없는 그림(몇 중 몇의 점, 차트)도 칸 안에 들어야 한다. 글만 보면 카드 안의 점 칸이 카드의 안쪽 여백을 지나
+  // 칸 밖으로 46px 나가도 넘치지 않은 것으로 보아서, 카드의 높이를 낮게 잡았다
+  for (const fig of figures(cell)) {
+    const r = fig.getBoundingClientRect()
+    if (r.bottom > box.bottom + 1 || r.top < box.top - 1 || r.right > box.right + 1 || r.left < box.left - 1) {
+      out.push(`그림이 칸 밖: ${fig.getAttribute('class')?.split(' ')[0] ?? fig.tagName}`)
+      if (!all) return out
+    }
+  }
   for (let i = 0; i < lines.length; i++) {
     for (let j = i + 1; j < lines.length; j++) {
       if (lines[i].n === lines[j].n) continue
@@ -99,6 +108,15 @@ function clashList(cell: HTMLElement, all: boolean): string[] {
 }
 
 const inner = (cell: HTMLElement) => cell.querySelector<HTMLElement>(':scope > .bk-in')
+
+/** 칸 안의 글 없는 그림: 맨 바깥 svg와 읽지 않는 그림 상자(aria-hidden). 크기가 없는 것은 뺀다 */
+function figures(cell: HTMLElement): Element[] {
+  return Array.from(cell.querySelectorAll(':scope > .bk-in svg, :scope > .bk-in [aria-hidden="true"]')).filter((el) => {
+    if (el.parentElement?.closest('svg')) return false
+    const r = el.getBoundingClientRect()
+    return r.width > 0 && r.height > 0
+  })
+}
 // fitBlocks가 줄일지 볼 때(over)와 같은 4px: 다르면 화면에서는 그대로 둔 글자를 여기서는 넘쳤다고 본다
 const scrollOver = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 4 || el.scrollWidth > el.clientWidth + 4
 
