@@ -13,6 +13,7 @@ import {
   type FolderStatus,
 } from './folder'
 import { deleteDeck, listDecks, loadDeck, saveDeck } from './library'
+import { reconcile } from './reconcile'
 import { unshareDeck } from '../ai/client'
 import { uid } from '../deck/generate'
 import { deckSignature, deleteDeckVersions, listVersions, saveVersion } from './versions'
@@ -107,15 +108,12 @@ export async function syncWithFolder(): Promise<void> {
     // 편집기에 열려 있는 발표는 저장소가 아니라 화면에 있는 것과 비교한다
     const editing = useDeck.getState().deck
     const local = editing?.id === fileDeck.id ? editing : await loadDeck(fileDeck.id)
-    if (!local) {
-      await saveDeck(fileDeck)
-    } else if (fileDeck.updatedAt > local.updatedAt) {
-      if (deckSignature(local) !== deckSignature(fileDeck)) await saveVersion(local, { reason: 'file' })
+    const r = reconcile(local, fileDeck)
+    if (r.action === 'take') {
+      if (local && r.backup) await saveVersion(local, { reason: 'file' })
       await saveDeck(fileDeck)
       if (editing?.id === fileDeck.id) useDeck.getState().open(fileDeck)
-    } else if (local.updatedAt > fileDeck.updatedAt) {
-      await writeDeckToFolder(local)
-    }
+    } else if (r.action === 'write' && local) await writeDeckToFolder(local)
   }
   // 폴더에 없는 발표: 다른 PC에서 지웠으면 여기서도 목록에서 뺀다. 그 밖에는 폴더로 옮겨 둔다.
   const trashed = await trashedDeckIds()
@@ -135,16 +133,13 @@ export async function loadBestDeck(id: string): Promise<Deck | undefined> {
   const status = await useStorage.getState().refresh()
   if (status.kind !== 'ready') return local
   const fileDeck = await readFolderDeck(id)
-  if (!fileDeck) {
-    if (local) void writeDeckToFolder(local)
-    return local
-  }
-  if (!local || fileDeck.updatedAt > local.updatedAt) {
-    if (local && deckSignature(local) !== deckSignature(fileDeck)) await saveVersion(local, { reason: 'file' })
+  const r = reconcile(local, fileDeck)
+  if (r.action === 'take' && fileDeck) {
+    if (local && r.backup) await saveVersion(local, { reason: 'file' })
     await saveDeck(fileDeck)
     return fileDeck
   }
-  if (local.updatedAt > fileDeck.updatedAt) void writeDeckToFolder(local)
+  if (r.action === 'write' && local) void writeDeckToFolder(local)
   return local
 }
 

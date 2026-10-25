@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createDeck } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckFile'
+import { reconcile } from './reconcile'
 import { deckSignature, slideSignatures, versionChanges, type DeckVersion } from './versions'
 
 const deck = () =>
@@ -91,5 +92,28 @@ describe('버전 비교', () => {
   it('내용이 같으면 바뀐 것이 없다', () => {
     const d = deck()
     expect(versionChanges(version(d), version(structuredClone(d)))).toEqual({ changed: [], added: [], removed: [] })
+  })
+})
+
+describe('두 벌 맞추기 (브라우저와 보관 폴더)', () => {
+  const at = (d: Deck, updatedAt: number, title = d.title): Deck => ({ ...d, updatedAt, title })
+
+  it('더 최근에 고친 쪽을 남긴다', () => {
+    const d = deck()
+    expect(reconcile(at(d, 1), at(d, 2, '다른 PC에서 고친 제목'))).toEqual({ action: 'take', backup: true })
+    expect(reconcile(at(d, 2), at(d, 1))).toEqual({ action: 'write' })
+    expect(reconcile(at(d, 1), at(d, 1))).toEqual({ action: 'none' })
+  })
+
+  it('파일이 더 최근이어도 내용이 같으면 버전을 남기지 않는다', () => {
+    const d = deck()
+    expect(reconcile(at(d, 1), at(d, 2))).toEqual({ action: 'take', backup: false })
+  })
+
+  it('한쪽에만 있으면 그쪽을 다른 쪽으로 옮긴다', () => {
+    const d = deck()
+    expect(reconcile(undefined, d)).toEqual({ action: 'take', backup: false })
+    expect(reconcile(d, undefined)).toEqual({ action: 'write' })
+    expect(reconcile(undefined, undefined)).toEqual({ action: 'none' })
   })
 })
