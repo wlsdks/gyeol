@@ -470,6 +470,24 @@
   text-wrap: pretty;
 }
 
+/* 한 줄을 다 쓰는 높은 칸의 강조 상자: 면이 넓은 만큼 글을 한 단계 크게(큰 칸 키우기와 함께 62px), 면 안쪽 여백도 넓게.
+   보통 크기(키워도 44px)면 1680×680 짙은 면의 가운데에 작은 한 줄만 떠서 면이 빈 판처럼 보였다 */
+@container bk (min-width: 1100px) and (min-height: 410px) {
+  .bk-call-t {
+    --fs: 52px;
+    max-width: 1400px;
+  }
+
+  .bk-call-l {
+    --fs: var(--t-body);
+    margin-bottom: 24px;
+  }
+
+  .bk-callout:is(.bk-look-card, .bk-look-bold) > .bk-in {
+    padding-inline: 88px;
+  }
+}
+
 /* ---------- 큰 숫자 ---------- */
 
 .bk-num {
