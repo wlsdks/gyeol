@@ -1306,6 +1306,20 @@ export function motionEngine(): MotionEngine {
           // 원인 순위는 막대가 다 선 뒤에 누적 비율 선이 왼쪽부터 그어지고, 선이 닿는 점마다 맺힌다
           rise(one('.bk-h'), 60, L.y * 0.5)
           fade(one('.bk-cc-key'), 120, 500)
+          // 원인 순위의 가로 막대: 줄마다 앞까지 더한 몫이 먼저 깔리고, 그 끝에서 이 원인의 몫이 뻗는다. 80% 줄은 처음에 한 번
+          if (one('.bk-pr-list')) {
+            fade(one('.bk-pr-head'), 120, 500)
+            fade(one('.bk-pr-guide'), 160, 600)
+            items('.bk-pr-row', 160, (el, at) => {
+              fade(el.querySelector('.bk-pr-name'), at, 400)
+              fade(el.querySelector('.bk-pr-before'), at, 300)
+              grow(el.querySelector('.bk-pr-fill'), at + 120, 'x')
+              fade(el.querySelector('.bk-pr-num'), at + 260, 400)
+              count(el.querySelector('.bk-pr-num'), at + 260)
+              fade(el.querySelector('.bk-pr-cum'), at + 420, 400)
+            }, 120)
+            break
+          }
           const end = items('.bk-cc-col', 180, (el, at) => {
             fade(el.querySelector('.bk-cc-label'), at, 400)
             const stack = el.querySelector('.bk-st-stack')

@@ -457,6 +457,11 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     name: '원인 순위',
     description: '많은 것부터 막대로, 누적 비율을 선으로 (파레토)',
     motion: '막대가 차례로 자라고, 누적 비율 선이 그어져요',
+    // 가로 막대: 원인 이름이 길 때. 몫이 계단처럼 쌓여 어느 원인에서 80%를 넘는지 줄로 보인다
+    variants: [
+      { id: 'base', name: '세로 막대' },
+      { id: 'rows', name: '가로 막대' },
+    ],
     fields: [
       { key: 'heading', label: '소제목', hint: '예: 9월 불량 원인', optional: true },
       { key: 'unit', label: '단위', hint: '건', optional: true },

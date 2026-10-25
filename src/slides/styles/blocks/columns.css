@@ -28,7 +28,7 @@
   grid-row: 2;
 }
 
-.bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
+.bk-cc > :is(.bk-cc-plot, .bk-hm-grid, .bk-pr-list) {
   grid-row: 3;
 }
 
@@ -52,7 +52,7 @@
     margin: 0 0 20px 32px;
   }
 
-  .bk-cc > :is(.bk-cc-plot, .bk-hm-grid) {
+  .bk-cc > :is(.bk-cc-plot, .bk-hm-grid, .bk-pr-list) {
     grid-row: 2;
   }
 }
@@ -322,6 +322,171 @@
   line-height: 1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+/* 원인 순위의 가로 막대: 원인마다 한 줄(이름, 막대 칸, 수, 누적). 막대 칸은 전체 100%이고, 앞 원인들까지 더한 몫(옅게) 끝에
+   이 원인의 몫(진하게)을 잇는다. 줄들이 칸 나눔(subgrid)을 같이 써서 이름이 길어도 막대 칸이 모든 줄에서 같은 자리에 선다.
+   80% 줄은 막대 칸 하나를 머리부터 끝 줄까지 세로로 지나는 점선이고, 막대 뒤에 그려 막대가 지나는 자리에서는 가려진다 */
+.bk-pr-list {
+  display: grid;
+  grid-template-columns: fit-content(32%) minmax(0, 1fr) max-content max-content;
+  grid-template-rows: auto repeat(var(--n), minmax(min-content, 1fr));
+  column-gap: 32px;
+  min-height: 0;
+  /* 막대 굵기를 줄 높이에 맞춘다 (아래 .bk-pr-track) */
+  container: pr-list / size;
+}
+
+.bk-pr-head,
+.bk-pr-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.bk-pr-head {
+  grid-row: 1;
+  padding-bottom: 12px;
+}
+
+.bk-pr-mark {
+  --fs: 22px;
+  position: relative;
+  grid-column: 2;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.2;
+  /* 막대 칸의 80% 자리에 가운데를 맞춘다 (여백의 %는 막대 칸 너비 기준) */
+  justify-self: start;
+  margin-left: 80%;
+  translate: -50% 0;
+  white-space: nowrap;
+}
+
+.bk-pr-cumh {
+  --fs: 22px;
+  grid-column: 4;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.bk-pr-guide {
+  position: relative;
+  grid-row: 2 / -1;
+  grid-column: 2;
+  pointer-events: none;
+}
+
+.bk-pr-guide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 80%;
+  border-left: 2px dashed var(--line-2);
+}
+
+.bk-pr-row {
+  position: relative;
+  z-index: 1;
+  padding: 8px 0;
+}
+
+.bk-pr-name {
+  --fs: var(--t-small);
+  min-width: 0;
+  color: var(--ink-2);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bk-pr-row.is-hl .bk-pr-name {
+  color: var(--ink);
+}
+
+/* 막대 굵기는 줄 높이의 3분의 1 남짓 (24~48px): 원인이 셋이면 줄이 높아 28px 막대는 줄 사이에 가늘게 떠 보였고,
+   여덟이면 줄이 낮아 굵은 막대가 줄끼리 붙어 보인다 */
+.bk-pr-track {
+  position: relative;
+  height: clamp(24px, calc(100cqh / (var(--n) + 0.5) * 0.36), 48px);
+}
+
+.bk-pr-before,
+.bk-pr-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+/* 앞 원인들까지 더한 몫: 바탕에 가까운 옅은 면. 이 원인의 몫과는 2px 바탕색 틈으로 나눈다 */
+.bk-pr-before {
+  left: 0;
+  width: calc(var(--a) * 1%);
+  border-radius: 6px 0 0 6px;
+  background: color-mix(in srgb, var(--ink) 9%, var(--bg));
+}
+
+.bk-pr-fill {
+  left: calc(var(--a) * 1%);
+  width: max(6px, calc(var(--p) * 1%));
+  border-left: 2px solid var(--bg);
+  border-radius: 0 6px 6px 0;
+  background: var(--cc-bar);
+}
+
+.bk-look-card .bk-pr-fill {
+  border-left-color: var(--surface);
+}
+
+.bk-look-card .bk-pr-before {
+  background: color-mix(in srgb, var(--ink) 9%, var(--surface));
+}
+
+/* 첫 원인은 앞이 없어서 왼쪽 끝도 둥글게 (틈도 없다) */
+.bk-pr-row.is-first .bk-pr-fill {
+  border-left: 0;
+  border-radius: 6px;
+}
+
+.bk-pr-row.is-hl .bk-pr-fill {
+  background: var(--accent);
+}
+
+.bk-pr-num {
+  --fs: 30px;
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-pr-cum {
+  --fs: 22px;
+  min-width: 3.2em;
+  color: var(--ink-3);
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bk-pr-row.is-hl .bk-pr-cum {
+  color: var(--ink-2);
+}
+
+/* 80%를 넘긴 줄의 누적: 요점의 숫자와 같은 값이라 강조색 */
+.bk-pr-row.is-cut .bk-pr-cum {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.bk-cc.is-demo :is(.bk-pr-fill, .bk-pr-before, .bk-pr-cum) {
+  opacity: 0.4;
 }
 
 /* 기간별 달성: 막대 위에 실적 숫자, 목표는 막대보다 조금 넓은 가로 줄. 편집할 때는 실적 아래에 목표 칸이 한 줄 더 */

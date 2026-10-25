@@ -3,6 +3,8 @@
 import { BLOCKS } from '../../deck/blocks'
 import { readField } from '../../deck/fields'
 import { hintFor } from '../../deck/layouts'
+import type { ReactNode } from 'react'
+import type { Item } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
@@ -41,6 +43,7 @@ export function Pareto() {
         {vital === 1 ? '가장 많은 하나가' : `상위 ${vital}개가`} 전체의 <b>{pctText(cum[vital - 1])}</b>
       </>
     ) : undefined
+  if (slide.variant === 'rows') return <ParetoRows items={items} share={share} cum={cum} vital={vital} sum={sum} demo={demo} />
   return (
     <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
@@ -86,3 +89,44 @@ export function Pareto() {
     </div>
   )
 }
+
+/**
+ * 가로 막대: 원인마다 한 줄. 막대 칸은 전체(100%)이고, 앞 원인들까지 더한 몫은 옅게, 이 원인의 몫은 그 끝에 이어 진하게 그린다.
+ * 그래서 위에서 아래로 읽으면 몫이 계단처럼 쌓여 마지막 줄에서 100%가 되고, 어느 줄에서 80%를 넘는지가 80% 줄로 보인다.
+ * 원인 이름이 길어도(‘포장재 규격 변경 누락’) 한 줄에 읽힌다. 숫자는 오른쪽에 원인의 수, 그 옆에 더한 몫
+ */
+function ParetoRows({ items, share, cum, vital, sum, demo }: { items: Item[]; share: number[]; cum: number[]; vital: number; sum: ReactNode; demo: boolean }) {
+  const n = items.length
+  return (
+    <div className={cx('bk-cc bk-pa bk-pr', demo && 'is-demo')} data-n={n} style={{ '--n': n }}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey sum={sum} />
+      <div className="bk-pr-list">
+        {/* 눈금 머리: 80% 줄의 자리와 더한 몫 칸의 이름. 줄과 같은 칸 나눔이라 80%가 막대 칸의 80%에 선다 */}
+        <div className="bk-pr-head" aria-hidden="true">
+          <span className="bk-pr-mark">80%</span>
+          <span className="bk-pr-cumh">누적</span>
+        </div>
+        <span className="bk-pr-guide" aria-hidden="true" />
+        {items.map((it, i) => (
+          <div
+            key={it.id}
+            className={cx('it bk-pr-row', i === 0 && 'is-first', i < vital && 'is-hl', i === vital - 1 && vital < n && 'is-cut')}
+            // 줄 자리를 적어 둔다: 80% 줄이 막대 칸을 머리 아래부터 끝까지 차지해서, 적지 않으면 줄들이 그 아래 새 줄로 밀려난다
+            style={{ '--a': (cum[i] - share[i]).toFixed(2), '--p': share[i].toFixed(2), gridRow: i + 2 }}
+          >
+            <IT i={i} k="title" className="bk-pr-name" />
+            <div className="bk-pr-track" aria-hidden="true">
+              <span className="bk-pr-before" />
+              <span className="bk-pr-fill" />
+            </div>
+            <IT i={i} k="value" as="span" className="bk-pr-num" oneLine />
+            <span className="bk-pr-cum">{pctText(cum[i])}</span>
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
