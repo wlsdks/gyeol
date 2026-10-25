@@ -68,6 +68,13 @@ const FLOOR: Partial<Record<BlockType, (variant: string) => number>> = {
 const LIST_FLOOR = 240
 
 /**
+ * 잰 높이에 더하는 여유. 잰 높이는 글이 딱 들어가는 높이(10px 단위)라, 같은 부품을 다른 때 다른 창에서 다시 재면 10~20px씩 달랐다
+ * (줄바꿈이 갈리는 자리의 글자 폭이 그리는 환경마다 조금씩 다르다). 윈도우의 글자 그리기는 맥과 또 달라서, 딱 맞춘 칸은
+ * 다른 창에서 글자를 한 단계 줄이거나 두 단계까지 줄였다(조합 시험: 구성비의 칸 모양이 440px에서 넘쳐 0.7로)
+ */
+const HEIGHT_SLACK = 10
+
+/**
  * 선 차트는 한 줄을 다 쓰면(1680px) 바닥 높이를 이만큼 낮춘다. 납작해 보이는 것은 높이가 아니라 너비와 높이의
  * 비율이라, 넓은 칸에서는 낮아도 선의 오르내림이 보인다. 이 덕에 핵심 숫자 한 줄 아래에 추이 한 줄이 들어간다.
  * 막대 차트는 낮추지 않는다: 막대 위 숫자, 아래 이름과 증감 같은 글 자리는 너비와 상관없이 그대로라 낮춘 만큼이
@@ -114,13 +121,14 @@ export function blockMinH(block: Block, span: number): number {
   // 그려지는 면으로 본다: 판 너비를 다 쓰면 혼자인 줄이라 고른 면이 있어도 바탕 없이 그려진다 (shownLook)
   const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${shownLook(block, span >= BOARD_COLS) === 'plain' ? 'plain' : 'card'}`]
   // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
-  const measured = measuredAt(table, span, n) ?? 400
-  if (measured >= NO_FIT) return measured
+  const found = measuredAt(table, span, n)
+  if (found !== undefined && found >= NO_FIT) return found
+  const measured = (found ?? 400) + HEIGHT_SLACK
   const base = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
   const floor = span >= 12 && base && lineChart(block.type, variant) ? base - WIDE_CUT : base
   // 항목이 옆으로 늘어서는 너비(항목 수가 늘어도 높이가 같은 너비)에서는 줄 사이가 붙을 일이 없어 바닥을 두지 않는다.
   // 한 줄을 다 쓰는 점 목록 셋은 한 줄로 100px인데 바닥 240을 받아 판에서 칸 높이의 절반을 가져갔다
-  const sideways = measured <= (measuredAt(table, span, 1) ?? 0)
+  const sideways = (found ?? 400) <= (measuredAt(table, span, 1) ?? 0)
   return Math.max(measured, floor, n >= 3 && block.type !== 'logos' && !sideways ? LIST_FLOOR : 0)
 }
 
