@@ -74,11 +74,14 @@ function clippedBy(n: Node, r: Box, cell: HTMLElement, cache: Map<Element, Box |
 /**
  * 글이 없는 그림의 가장 작은 크기 (캔버스 px, [가로, 세로]). 그림은 칸에 맞춰 줄어들 뿐 넘치지 않아서 글만 보면 놓친다:
  * 낮은 칸에서 목표 대비의 막대가 높이 0으로 사라지고, 비율 원이 지름 50px대로 줄어 안의 숫자가 10px가 됐다.
- * 세로 막대는 가장 긴 막대(--p 100)가 60px는 되어야 한다: 낮은 줄에서 막대 자리를 숫자가 다 가져가 막대가 납작한 띠가 되거나 사라졌다
+ * 세로 막대는 가장 긴 막대(--p 100)가 60px는 되어야 한다: 낮은 줄에서 막대 자리를 숫자가 다 가져가 막대가 납작한 띠가 되거나 사라졌다.
+ * 로고 모음의 로고는 48px는 되어야 한다
  */
 const FIGURE_MIN: [string, number, number][] = [
   ['.bk-gl-bar', 0, 16],
   ['.va-columns .br-row[style*="--p: 100."] .br-track', 0, 60],
+  // 로고 모음의 판이 줄 수만큼 나뉘어 낮아지면 로고가 알아볼 수 없게 작아진다
+  ['.bk-layout .lg-img', 0, 48],
   ['.bk-rg:not(.is-gauge) .bk-rg-sq', 120, 120],
   ['.bk-rg.is-gauge .bk-rg-sq', 160, 0],
 ]

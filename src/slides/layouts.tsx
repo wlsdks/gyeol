@@ -340,7 +340,7 @@ function Logos() {
   return (
     <>
       <Head lead />
-      <div className="s-body lg" data-n={items.length} data-rows={rows} style={{ '--lg-half': cols * 2 } as CSSProperties}>
+      <div className="s-body lg" data-n={items.length} data-rows={rows} style={{ '--lg-half': cols * 2, '--n': items.length } as CSSProperties}>
         {items.map((it, i) => (
           <div key={it.id} className="it lg-cell" style={last < cols && i === (rows - 1) * cols ? { gridColumnStart: cols - last + 1 } : undefined}>
             <ImageSlot i={i} className="lg-img" contain />
