@@ -1619,10 +1619,12 @@ select {
   text-wrap: balance;
 }
 
-/* 오른쪽 칸: 고른 것으로 만들어질 장 */
+/* 오른쪽 칸: 고른 것으로 만들어질 장.
+   칸은 왼쪽 고르는 것과 높이를 맞추므로, 장이 적어 두 줄이면 아래만 비었다(1280×600에서 47px). 내용을 칸 가운데로 */
 .wz-plan {
   display: flex;
   flex-direction: column;
+  justify-content: safe center;
   min-width: 0;
   padding: 22px;
   border-radius: var(--r-lg);
