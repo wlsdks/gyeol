@@ -275,7 +275,9 @@ export async function measureAll(
           return it ? n >= it.min && n <= it.max : n === 1
         })
         if (!types.length) continue
-        await show(`set=blocks&mode=final&bl=${look}&fill=${n}${bv ? `&bv=${bv}` : ''}${extra ? `&${extra}` : ''}&types=${types.join(',')}`, types)
+        // 진행 현황의 상태별은 항목 수가 아니라 한 단에 모인 과제 수로 잰다: 과제를 모두 한 단에 (blocks/sizing.ts의 heightCount)
+        const lane = bv === 'board' ? '&lane=1' : ''
+        await show(`set=blocks&mode=final&bl=${look}&fill=${n}${bv ? `&bv=${bv}` : ''}${lane}${extra ? `&${extra}` : ''}&types=${types.join(',')}`, types)
         const m = await measureBlocks(look)
         for (const t of types) {
           const v = bv ?? BLOCKS[t].variants?.[0].id ?? 'base'

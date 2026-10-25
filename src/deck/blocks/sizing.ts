@@ -3,6 +3,7 @@
 import { BLOCK_HEIGHTS } from '../blockHeights'
 import { FRAME, HEAD, TEXT_SCALE, TITLE_TRIM } from '../frame'
 import { hintFor, logoColumns } from '../layouts'
+import { laneRows } from '../status'
 import type { Block, BlockAt, BlockLook, BlockType, Deck, Slide } from '../types'
 import { BOARD_COLS, BOARD_ROWS, type Fit, needRows, settle } from './board'
 import { BLOCK_GROUPS, BLOCKS } from './catalog'
@@ -109,7 +110,7 @@ function measuredAt(table: Partial<Record<number, number[]>> | undefined, span: 
 export function blockMinH(block: Block, span: number): number {
   const spec = BLOCKS[block.type]
   const variant = variantOfBlock(block)
-  const n = spec.items ? blockItems(block).length : 0
+  const n = spec.items ? heightCount(block, variant) : 0
   // 그려지는 면으로 본다: 판 너비를 다 쓰면 혼자인 줄이라 고른 면이 있어도 바탕 없이 그려진다 (shownLook)
   const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${shownLook(block, span >= BOARD_COLS) === 'plain' ? 'plain' : 'card'}`]
   // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
@@ -121,6 +122,20 @@ export function blockMinH(block: Block, span: number): number {
   // 한 줄을 다 쓰는 점 목록 셋은 한 줄로 100px인데 바닥 240을 받아 판에서 칸 높이의 절반을 가져갔다
   const sideways = measured <= (measuredAt(table, span, 1) ?? 0)
   return Math.max(measured, floor, n >= 3 && block.type !== 'logos' && !sideways ? LIST_FLOOR : 0)
+}
+
+/**
+ * 잰 높이를 찾는 항목 수. 진행 현황의 상태별은 과제가 상태마다 한 단에 쌓여서 가장 많이 모인 단의 과제 수다
+ * (잰 표도 그 수로 잰다: measureBlocks.ts의 lane). 항목 수로 찾으면 과제가 한 단에 몰릴 때 칸이 모자라 글자를 줄였다.
+ * 진행률과 상태를 다 비웠으면 편집할 때는 예시(안내 문구)로, 발표할 때는 모두 예정 단에 그려지므로 둘 중 많은 쪽으로 센다
+ */
+function heightCount(block: Block, variant: string): number {
+  const items = blockItems(block)
+  if (block.type !== 'progress' || variant !== 'board') return items.length
+  const rows = laneRows(items.map((it) => ({ state: it.body, value: it.value })))
+  if (!items.every((it) => !it.value.trim() && !it.body.trim())) return rows
+  const hint = (k: 'value' | 'body', i: number) => hintFor('progress', block.hints ?? {}, k, k, i)
+  return Math.max(rows, laneRows(items.map((_, i) => ({ state: hint('body', i), value: hint('value', i) }))))
 }
 
 /** 부품 고르기 그림처럼 놓일 너비를 모를 때: 보기 좋은 너비에 놓았을 때 */

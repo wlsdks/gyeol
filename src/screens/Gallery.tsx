@@ -107,7 +107,7 @@ function edgeSlides(): Slide[] {
  * 핵심 한 줄과 같이 들어가지 않는 부품은 혼자 둔다(편집기도 그 장에는 넣지 않는다).
  * 함께 놓는 부품(fill-)은 높이를 잴 때(measureBlocks) 건너뛴다.
  */
-function blockSlides(fill: string | null, only?: string[], variant?: string | null, look?: string | null): Slide[] {
+function blockSlides(fill: string | null, only?: string[], variant?: string | null, look?: string | null, lane?: boolean): Slide[] {
   return BLOCK_TYPES.flatMap((type, n) => {
     if (only && !only.includes(type)) return []
     const spec = BLOCKS[type]
@@ -120,10 +120,13 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
         : fill === 'default'
           ? spec.items.default
           : Math.min(spec.items.max, Math.max(spec.items.min, Number(fill) || 0))
-    const items =
+    const filled =
       count && sample.items.length
         ? Array.from({ length: count }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${type}-it${i}` }))
         : sample.items
+    // &lane=1: 진행 현황의 과제를 모두 한 단에(상태별 모양의 높이는 가장 많이 모인 단의 과제 수로 잰다, blocks/sizing.ts).
+    // 지연 단이라 과제마다 사정 글이 이름 줄 끝에 선다: 단 너비가 가장 좁은 경우
+    const items = lane && type === 'progress' ? filled.map((it) => ({ ...it, body: '2주 지연' })) : filled
     // &bv=list: 그 모양이 있는 부품은 그 모양으로
     const v = variant && spec.variants?.some((x) => x.id === variant) ? { variant } : {}
     const lk = BLOCK_LOOK_IDS.find((x) => x === look) ? { look: look as BlockLook } : {}
@@ -182,7 +185,7 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   }
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
-  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl')) }
+  if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl'), params.get('lane') === '1') }
   if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }, params.get('mode') === 'edit').map((c) => c.slide) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }

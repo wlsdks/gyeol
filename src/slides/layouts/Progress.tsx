@@ -4,6 +4,7 @@ import { hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools } from '../fields'
+import { laneOf } from '../../deck/status'
 import { statusOf, STATUS_NAMES, type Status } from '../numbers'
 import { Head, numberOrNull, useItems } from './parts'
 
@@ -26,7 +27,7 @@ export function Progress() {
     const pct = n === null ? null : Math.max(0, Math.min(100, n))
     // 편집할 때 상태 칸이 비어 있으면 색을 짐작하지 않는다. 안내 글과 색이 어긋나 보이지 않게
     const status = !final && !demo && !it.body.trim() ? null : statusOf(stateText, pct)
-    return { pct, status }
+    return { pct, status, lane: laneOf(stateText, pct) }
   })
   const counts = STATUS_ORDER.map((s) => ({ s, n: rows.filter((r) => r.status === s).length })).filter((c) => c.n > 0)
   const row = (it: (typeof items)[number], i: number) => {
@@ -50,13 +51,14 @@ export function Progress() {
     )
   }
   if (slide.variant === 'board') {
-    // 단을 정할 때는 상태를 모르는 과제(편집 중 상태 칸이 비었다)도 진행률로 짐작해 넣고, 그것도 없으면 예정에
-    const lane = (i: number) => rows[i].status ?? statusOf('', rows[i].pct) ?? 'todo'
-    const lanes = STATUS_ORDER.map((s) => ({ s, at: items.map((_, i) => i).filter((i) => lane(i) === s) })).filter((l) => l.at.length > 0)
+    // 단을 정할 때는 상태를 모르는 과제(편집 중 상태 칸이 비었다)도 진행률로 짐작해 넣고, 그것도 없으면 예정에 (laneOf)
+    const lanes = STATUS_ORDER.map((s) => ({ s, at: items.map((_, i) => i).filter((i) => rows[i].lane === s) })).filter((l) => l.at.length > 0)
+    // 짜임(줄 사이, 진행률 자리)과 부품 높이는 가장 많이 모인 단의 과제 수로 고른다 (progress.css, blocks/sizing.ts)
+    const most = Math.max(1, ...lanes.map((l) => l.at.length))
     return (
       <>
         <Head />
-        <div className={cx('s-body ps ps-board', demo && 'is-demo')} data-n={items.length} style={{ '--cols': lanes.length }}>
+        <div className={cx('s-body ps ps-board', demo && 'is-demo')} data-n={items.length} data-rows={most} style={{ '--cols': lanes.length }}>
           {lanes.map((l) => (
             <section key={l.s} className={`ps-lane is-${l.s}`}>
               <p className="ps-lane-h">

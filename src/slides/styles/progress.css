@@ -266,18 +266,14 @@
 
 .ps-board .ps-row {
   grid-column: auto;
-  /* 이름 아래 막대, 막대 끝에 진행률. 이름 옆에 진행률을 두면 단 너비(넷이면 380px)에서 열 글자 남짓한 이름도 두 줄이 됐다 */
+  /* 이름 아래 막대, 막대 끝에 진행률. 이름 옆에 진행률을 두면 단 너비(넷이면 380px)에서 열 글자 남짓한 이름도 두 줄이 됐다.
+     상태 글(편집할 때는 모든 과제, 발표할 때는 지연된 과제의 사정)은 이름 줄의 오른쪽 끝에: 따로 한 줄을 두면 편집할 때만
+     과제마다 한 줄씩 높아져 부품 칸을 넘었고, 지연 단만 높았다 */
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'name name' 'track pct' 'state state';
-  align-items: center;
+  grid-template-areas: 'name state' 'track pct';
+  align-items: baseline;
   gap: 0 20px;
   padding: 24px 0;
-}
-
-/* 여섯, 일곱이면 한 단에 셋 넘게 쌓여 장을 넘으므로 진행률을 이름 옆으로 올려 과제마다 한 줄을 줄인다 */
-.ps-board:is([data-n='6'], [data-n='7']) .ps-row {
-  grid-template-areas: 'name pct' 'track track' 'state state';
-  align-items: start;
 }
 
 .ps-board .ps-row:not(.ps-headrow) {
@@ -289,19 +285,16 @@
   margin-bottom: 16px;
 }
 
-/* 이름 옆에 올렸을 때(여섯, 일곱) 진행률 숫자는 과제 이름 첫 줄과 같은 줄 높이로 */
-.ps-board:is([data-n='6'], [data-n='7']) .ps-pct {
-  line-height: 1.3;
-}
-
 .ps-board .ps-track {
   grid-area: track;
+  align-self: center;
   height: 10px;
 }
 
 .ps-board .ps-pct {
   --fs: 30px;
   grid-area: pct;
+  align-self: center;
 }
 
 .ps-board .ps-state {
@@ -315,9 +308,9 @@
 
 .ps-board .ps-row .ps-chip {
   --fs: 22px;
-  margin-top: 12px;
   padding: 0;
   background: none;
+  white-space: nowrap;
 }
 
 .ps-board .ps-row .ps-chip::before {
@@ -328,50 +321,81 @@
   background: none;
 }
 
-/* 과제가 다섯까지면 한 단에 많아야 둘셋이라 본문 위쪽에만 몰렸다. 글자를 한 단계, 줄 사이를 넓힌다 */
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-title {
+/* 짜임은 항목 수가 아니라 가장 많이 모인 단의 과제 수(data-rows)로 고른다: 과제 다섯이 한 단에 몰리면 단 하나가 다섯 줄이다.
+   둘까지면 본문 위쪽에만 몰리므로 글자를 한 단계, 줄 사이를 넓힌다 */
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-title {
   --fs: 36px;
 }
 
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-meta {
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-meta {
   --fs: 26px;
   margin-top: 6px;
 }
 
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-row:not(.ps-headrow) {
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-row:not(.ps-headrow) {
   padding-block: 36px;
 }
 
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-name {
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-name {
   margin-bottom: 24px;
 }
 
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-track {
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-track {
   height: 12px;
 }
 
-.ps-board:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4'], [data-n='5']) .ps-pct {
+.ps-board:is([data-rows='1'], [data-rows='2']) .ps-pct {
   --fs: 36px;
 }
 
-/* 단 안의 과제가 많으면(한 단에 넷 넘게) 줄 사이를 줄인다 */
-.ps-board:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
+/* 넷부터는 진행률을 이름 줄 끝으로 올려 과제마다 한 줄을 줄이고 줄 사이를 좁힌다 */
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3']) .ps-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'name state pct' 'track track track';
+}
+
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3']) .ps-row:not(.ps-headrow) {
   padding-block: 16px;
 }
 
-.ps-board:is([data-n='6'], [data-n='7']) .ps-name {
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3']) .ps-name {
   margin-bottom: 10px;
 }
 
-/* 큰 글자로 편집할 때 여섯, 일곱: 편집할 때는 과제마다 상태 칸이 한 줄 더 있어 한 단에 셋이면 장을 넘었다 */
-:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
-  padding-block: 10px;
+/* 진행률을 이름 옆에 올렸을 때는 과제 이름 첫 줄과 같은 바닥선에 */
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3']) .ps-pct {
+  align-self: baseline;
 }
 
-:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-name {
+/* 다섯부터는 한 단이 본문 높이를 다 쓰므로 이름을 한 단계 작게, 줄 사이를 더 좁힌다 */
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3'], [data-rows='4']) .ps-title {
+  --fs: 26px;
+}
+
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3'], [data-rows='4']) .ps-meta {
+  --fs: 22px;
+}
+
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3'], [data-rows='4']) .ps-row:not(.ps-headrow) {
+  padding-block: 8px;
+}
+
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3'], [data-rows='4']) .ps-name {
   margin-bottom: 6px;
 }
 
-:is(.sz-large.m-edit .ps-board, .sz-large.m-edit.l-progress .ps-board):is([data-n='6'], [data-n='7']) .ps-chip {
-  margin-top: 4px;
+.ps-board:not([data-rows='1'], [data-rows='2'], [data-rows='3'], [data-rows='4']) .ps-pct {
+  --fs: 26px;
+}
+
+/* 여섯부터는 담당과 기한을 이름 뒤 같은 줄에: 한 단에 여섯, 일곱이 쌓이면 이름 아래 한 줄씩만으로도 본문을 넘었다 */
+.ps-board:is([data-rows='6'], [data-rows='7']) .ps-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 16px;
+}
+
+.ps-board:is([data-rows='6'], [data-rows='7']) .ps-meta {
+  margin-top: 0;
 }
