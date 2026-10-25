@@ -3,6 +3,8 @@
 // 사람이 적은 글은 부탁에 넣지 않는다. AI에게 보내는 문장도 앱이 아니라 로컬 서버가 이 파일의
 // 정해진 말로 만든다. 그래서 앱에 버그가 있어도 부탁을 타고 발표 내용이 나갈 길이 없다.
 
+import { DECK_ID, SLIDE_ID } from './protocol'
+
 export type AskScope = 'slide' | 'deck'
 
 /** 로컬 서버가 띄운 Claude Code가 어디까지 했는지. 도구 이름으로만 짐작한다 */
@@ -95,9 +97,6 @@ export const ASKS = [
 export type AskId = (typeof ASKS)[number]['id']
 
 export const ASK_IDS: readonly AskId[] = ASKS.map((a) => a.id)
-
-const DECK_ID = /^d[0-9a-f]{8}$/
-const SLIDE_ID = /^s[0-9a-f]{8}$/
 
 export function askOf(id: unknown): (typeof ASKS)[number] | undefined {
   return ASKS.find((a) => a.id === id)

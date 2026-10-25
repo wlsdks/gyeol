@@ -10,8 +10,10 @@ import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
 import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, PLACES, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Audience, Block, BlockEffect, BlockLink, BlockLook, BlockType, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import { hasKey, HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
+import { HIGHLIGHT_MAX, HIGHLIGHT_MIN, OPAQUE_ID, REQUEST_ID, SHAPE_FORMAT } from './protocol'
 
-export const SHAPE_FORMAT = 'html-maker/shape'
+export { SHAPE_FORMAT }
 
 /** 칸의 상태. 글자 수 대신 세 단계만 알려 준다. */
 export type FieldState = 'empty' | 'filled' | 'long'
@@ -78,10 +80,6 @@ export interface ShapeDeck {
   slides: ShapeSlide[]
 }
 
-const isOneOf = <T extends string>(list: { id: T }[], v: unknown): v is T => list.some((x) => x.id === v)
-
-const OPAQUE_ID = /^[sdb][0-9a-f]{8}$/
-const HEX = /^#[0-9a-f]{6}$/i
 const ALL_TYPES: DeckType[] = [...DECK_TYPES, 'blank']
 
 /** FNV-1a 32비트. 원래 id를 드러내지 않고 다시 찾을 수 있게 한다. */
@@ -252,7 +250,7 @@ export function toShape(deck: Deck): ShapeDeck {
     footer: footerOf(deck),
     transition: isOneOf(TRANSITIONS, deck.theme.transition) ? deck.theme.transition : 'auto',
     updatedAt: Math.round(deck.updatedAt) || 0,
-    slides: deck.slides.filter((s) => s.layout in LAYOUTS).map((s) => shapeSlide(deck, s)),
+    slides: deck.slides.filter((s) => hasKey(LAYOUTS, s.layout)).map((s) => shapeSlide(deck, s)),
   }
 }
 
@@ -270,7 +268,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     : []
   const options: ShapeSlide['options'] = {}
   const o = slide.options ?? {}
-  if (spec.highlight && Number.isInteger(o.highlight)) options.highlight = o.highlight
+  // 가져온 파일이면 아무 수나 있을 수 있다. 범위 밖의 수를 그대로 넣으면 모양 전체가 꼴 확인에서 버려진다
+  if (spec.highlight && isInt(o.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) options.highlight = o.highlight
   // 두 판으로 나뉜 장: 옆 판의 자리와 너비 (고를 수 있는 값일 때만)
   const panes = LAYOUTS[slide.layout].panes
   if (panes) {
@@ -324,15 +323,12 @@ function shapeBlock(block: Block, span: number): ShapeBlock {
       })
     : []
   const out: ShapeBlock = { id: shapeBlockId(block), type: block.type, span, look: lookOf(block), effect: effectOf(block), variant: variantOfBlock(block), fields, items }
-  if (spec.layout && LAYOUTS[spec.layout].highlight && Number.isInteger(block.highlight)) out.highlight = block.highlight
+  if (spec.layout && LAYOUTS[spec.layout].highlight && isInt(block.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) out.highlight = block.highlight
   return out
 }
 
 // ---------- 확인: 모양 파일이 정해진 꼴 그대로인지. 하나라도 어긋나면 통째로 버린다. ----------
 
-const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
-const keysIn = (v: Record<string, unknown>, allowed: string[]) => Object.keys(v).every((k) => allowed.includes(k))
-const isInt = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max
 const STATES: FieldState[] = ['empty', 'filled', 'long']
 
 function checkStates(v: unknown, keys: string[]): boolean {
@@ -340,10 +336,10 @@ function checkStates(v: unknown, keys: string[]): boolean {
 }
 
 function checkBlock(v: unknown): boolean {
-  if (!isObj(v) || !keysIn(v, ['id', 'type', 'span', 'look', 'effect', 'variant', 'highlight', 'link', 'fields', 'items'])) return false
+  if (!isObj(v) || !onlyKeys(v, ['id', 'type', 'span', 'look', 'effect', 'variant', 'highlight', 'link', 'fields', 'items'])) return false
   if (v.link !== undefined && !isLink(v.link)) return false
   if (v.id !== undefined && !(typeof v.id === 'string' && OPAQUE_ID.test(v.id) && v.id[0] === 'b')) return false
-  if (v.highlight !== undefined && !isInt(v.highlight, -1, 20)) return false
+  if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return false
   if (!BLOCK_TYPES.includes(v.type as BlockType)) return false
   const spec = BLOCKS[v.type as BlockType]
   if (!isInt(v.span, 1, 12)) return false
@@ -357,7 +353,7 @@ function checkBlock(v: unknown): boolean {
 
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks', 'rowGrow', 'rowLinks'])) return false
+  if (!onlyKeys(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks', 'rowGrow', 'rowLinks'])) return false
   if (v.blocks !== undefined) {
     if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_ROWS) return false
     if (!v.blocks.every((r) => Array.isArray(r) && r.length >= 1 && r.length <= MAX_IN_ROW && r.every(checkBlock))) return false
@@ -372,7 +368,7 @@ function checkSlide(v: unknown): boolean {
     if (!Array.isArray(v.blocks) || !Array.isArray(v.rowGrow) || v.rowGrow.length !== v.blocks.length || v.rowGrow.length < 2 || !v.rowGrow.every(isGrow)) return false
   }
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
-  if (typeof v.layout !== 'string' || !(v.layout in LAYOUTS)) return false
+  if (!hasKey(LAYOUTS, v.layout)) return false
   const spec = LAYOUTS[v.layout as LayoutId]
   if (!variantIds(v.layout as LayoutId).includes(v.variant as string)) return false
   if (v.role !== null && !(typeof v.role === 'string' && roleStrings().has(v.role))) return false
@@ -383,10 +379,10 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !keysIn(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'])) return false
+  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place'])) return false
   if (o.place !== undefined && !isOneOf(PLACES, o.place)) return false
   if (o.pane !== undefined && !isInt(o.pane, 1, 12)) return false
-  if (o.highlight !== undefined && !isInt(o.highlight, -1, 20)) return false
+  if (o.highlight !== undefined && !isInt(o.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return false
   if (o.motion !== undefined && !isOneOf(MOTIONS, o.motion)) return false
   if (o.tone !== undefined && !isOneOf(TONES, o.tone)) return false
   if (o.flip !== undefined && typeof o.flip !== 'boolean') return false
@@ -396,7 +392,7 @@ function checkSlide(v: unknown): boolean {
 
 export function checkShape(v: unknown): v is ShapeDeck {
   if (!isObj(v)) return false
-  if (!keysIn(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'updatedAt', 'slides']))
+  if (!onlyKeys(v, ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'updatedAt', 'slides']))
     return false
   if (v.format !== SHAPE_FORMAT || v.version !== 1) return false
   if (typeof v.deck !== 'string' || !OPAQUE_ID.test(v.deck) || v.deck[0] !== 'd') return false
@@ -422,7 +418,7 @@ export function checkShape(v: unknown): v is ShapeDeck {
 export function onlyKnownStrings(value: unknown, extra: Iterable<string> = []): boolean {
   const known = catalogStrings()
   const more = new Set(extra)
-  const ok = (s: string) => known.has(s) || more.has(s) || OPAQUE_ID.test(s) || HEX.test(s) || /^r[0-9a-f]{12}$/.test(s)
+  const ok = (s: string) => known.has(s) || more.has(s) || OPAQUE_ID.test(s) || HEX.test(s) || REQUEST_ID.test(s)
   const walk = (v: unknown): boolean => {
     if (typeof v === 'string') return ok(v)
     if (v === null || typeof v === 'number' || typeof v === 'boolean') return true

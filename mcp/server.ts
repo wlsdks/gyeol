@@ -15,17 +15,32 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSy
 import { dirname, join, sep } from 'node:path'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, REQUEST_FORMAT, REQUEST_ID, requestId, type ChangeRequest } from '../src/ai/ops'
+import { version } from '../package.json'
+import { isObj } from '../src/ai/guards'
+import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, ROLE_MAX, requestId, type ChangeRequest } from '../src/ai/ops'
+import {
+  deckOfFile,
+  DECK_ID,
+  HIGHLIGHT_MAX,
+  HIGHLIGHT_MIN,
+  MAX_ITEMS,
+  MCP_SERVER_NAME,
+  REQUEST_FORMAT,
+  REQUEST_ID,
+  RESULT_STATUSES,
+  SHARE_DIR_NAME,
+  SHARE_SUBDIRS,
+  type ShareSubdir,
+} from '../src/ai/protocol'
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
 import { BLOCK_EFFECT_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_TYPES, GROW_MAX, GROW_MIN, MAX_ROWS } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
-const SHARE_DIR_NAME = 'AI 공유'
-const VERSION = '0.1.0'
+// 판 번호는 package.json에서 빌드할 때 넣는다. 예전에는 따로 적어 두어 0.1.0에 멈춰 있었다
+const VERSION = version
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05']
 const MAX_PENDING_PER_DECK = 5
-const DECK_ID = /^d[0-9a-f]{8}$/
 
 // ---------- 정해진 말: 응답에 나가도 되는 글자 ----------
 
@@ -57,11 +72,7 @@ const PROTOCOL_WORDS = [
 
 // ---------- 'AI 공유' 폴더 ----------
 
-interface Dirs {
-  decks: string
-  requests: string
-  results: string
-}
+type Dirs = Record<ShareSubdir, string>
 
 /**
  * 폴더 안의 진짜 파일만 읽는다. 심볼릭 링크, 하드 링크(다른 이름이 또 있는 파일), 실제 위치가
@@ -96,8 +107,8 @@ function readShape(dirs: Dirs, deck: string): ShapeDeck | null {
 function listShapes(dirs: Dirs): ShapeDeck[] {
   if (!existsSync(dirs.decks)) return []
   return readdirSync(dirs.decks)
-    .filter((n) => /^d[0-9a-f]{8}\.json$/.test(n))
-    .map((n) => readShape(dirs, n.slice(0, -5)))
+    .map(deckOfFile)
+    .map((d) => (d ? readShape(dirs, d) : null))
     .filter((s): s is ShapeDeck => !!s)
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
@@ -194,11 +205,11 @@ const TOOLS = [
               slide: refSchema,
               after: { anyOf: [refSchema, { type: 'null' }] },
               layout: { type: 'string', enum: LAYOUT_ORDER },
-              role: { type: 'string', maxLength: 24 },
+              role: { type: 'string', maxLength: ROLE_MAX },
               as: { type: 'string', pattern: '^[np][0-9]{1,2}$' },
               hidden: { type: 'boolean' },
-              count: { type: 'integer', minimum: 0, maximum: 20 },
-              highlight: { type: 'integer', minimum: -1, maximum: 19 },
+              count: { type: 'integer', minimum: 0, maximum: MAX_ITEMS },
+              highlight: { type: 'integer', minimum: HIGHLIGHT_MIN, maximum: HIGHLIGHT_MAX },
               flip: { type: 'boolean' },
               pane: { anyOf: [{ type: 'integer', minimum: 1, maximum: 12 }, { type: 'null' }] },
               contain: { type: 'boolean' },
@@ -213,7 +224,7 @@ const TOOLS = [
               footer: { type: 'string', enum: FOOTERS.map((m) => m.id) },
               transition: { type: 'string', enum: TRANSITIONS.map((m) => m.id) },
               field: { type: 'string' },
-              item: { type: 'integer', minimum: 0 },
+              item: { type: 'integer', minimum: 0, maximum: MAX_ITEMS - 1 },
               text: { type: 'string' },
               block: blockRefSchema,
               type: { type: 'string', enum: BLOCK_TYPES },
@@ -289,7 +300,7 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
       if (!id) throw new ToolError(MESSAGES.unknownRequest)
       const result = readJson(join(dirs.results, `${id}.json`)) as { status?: unknown; results?: unknown } | undefined
       if (result && typeof result === 'object') {
-        const status = ['applied', 'rejected', 'invalid'].includes(result.status as string) ? result.status : 'invalid'
+        const status = (RESULT_STATUSES as readonly unknown[]).includes(result.status) ? result.status : 'invalid'
         const results = Array.isArray(result.results)
           ? result.results.map((r: { ok?: unknown; code?: unknown }) => ({ ok: r?.ok === true, code: typeof r?.code === 'string' ? r.code : 'unknown' }))
           : []
@@ -320,7 +331,7 @@ const INVALID = { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Inv
 
 export function handleMessage(dirs: Dirs, value: unknown): object | null {
   // null이나 숫자 같은 줄도 JSON으로는 맞다. 예전에는 null에서 msg.id를 읽다가 서버가 죽었다
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return INVALID
+  if (!isObj(value)) return INVALID
   const msg = value as Message
   const id = typeof msg.id === 'string' || typeof msg.id === 'number' ? msg.id : null
   const reply = (result: unknown) => ({ jsonrpc: '2.0', id, result })
@@ -337,7 +348,7 @@ export function handleMessage(dirs: Dirs, value: unknown): object | null {
       return reply({
         protocolVersion: PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0],
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'gyeol', version: VERSION },
+        serverInfo: { name: MCP_SERVER_NAME, version: VERSION },
         instructions: INSTRUCTIONS,
       })
     }
@@ -364,7 +375,7 @@ export function handleMessage(dirs: Dirs, value: unknown): object | null {
 }
 
 function serve(shareRoot: string) {
-  const dirs: Dirs = { decks: join(shareRoot, 'decks'), requests: join(shareRoot, 'requests'), results: join(shareRoot, 'results') }
+  const dirs = Object.fromEntries(SHARE_SUBDIRS.map((d) => [d, join(shareRoot, d)])) as Dirs
   if (!checkDirs(dirs)) {
     process.stderr.write('gyeol: AI 공유 폴더를 쓸 수 없어요.\n')
     process.exit(1)
@@ -405,7 +416,7 @@ function launch() {
 
   if (sandboxed) return serve(share)
 
-  for (const d of ['decks', 'requests', 'results']) mkdirSync(join(share, d), { recursive: true })
+  for (const d of SHARE_SUBDIRS) mkdirSync(join(share, d), { recursive: true })
   const child = spawn(
     process.execPath,
     [

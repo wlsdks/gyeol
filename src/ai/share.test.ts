@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { AUDIENCES, DECK_TYPES } from '../deck/blueprints'
 import { createDeck } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
-import type { Block, BlockRow, Deck } from '../deck/types'
+import { LAYOUTS } from '../deck/layouts'
+import type { Block, BlockRow, Deck, LayoutId } from '../deck/types'
+import { parseOp } from './ops'
+import { HIGHLIGHT_MAX, HIGHLIGHT_MIN } from './protocol'
 import { checkShape, onlyKnownStrings, toShape } from './share'
 
 export const SECRET = '기밀7731'
@@ -161,6 +164,37 @@ describe('모양만 고르기', () => {
     expect(badBlocks((b) => (b.id = 's12345678'))).toBe(false)
     expect(badBlocks((b) => delete b.id)).toBe(true)
     expect(badBlocks((b) => (b.highlight = SECRET))).toBe(false)
+  })
+
+  it('Object.prototype의 이름을 레이아웃으로 써도 예외 없이 거른다', () => {
+    // `in`으로 찾으면 constructor, toString도 레이아웃으로 알아서, 꼴 확인이 false 대신 예외를 던졌다
+    const shape = toShape(createSampleDeck())
+    for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+      const copy = structuredClone(shape) as unknown as { slides: Record<string, unknown>[] }
+      copy.slides[1].layout = name
+      expect(() => checkShape(copy), name).not.toThrow()
+      expect(checkShape(copy), name).toBe(false)
+      const deck = createSampleDeck()
+      deck.slides[1] = { ...deck.slides[1], layout: name as LayoutId }
+      expect(() => toShape(deck), name).not.toThrow()
+      expect(toShape(deck).slides).toHaveLength(deck.slides.length - 1)
+    }
+  })
+
+  it('강조할 항목 번호는 제안과 모양이 같은 범위를 받는다', () => {
+    const deck = createSampleDeck()
+    const at = deck.slides.findIndex((s) => LAYOUTS[s.layout].highlight)
+    const shape = toShape(deck)
+    for (const n of [HIGHLIGHT_MIN - 1, HIGHLIGHT_MIN, 0, HIGHLIGHT_MAX, HIGHLIGHT_MAX + 1]) {
+      const copy = structuredClone(shape)
+      copy.slides[at].options.highlight = n
+      const proposed = parseOp({ op: 'set_options', slide: shape.slides[at].id, highlight: n }) !== null
+      expect(checkShape(copy), String(n)).toBe(proposed)
+    }
+    // 가져온 파일의 범위 밖 번호는 모양에 넣지 않는다. 넣으면 모양 전체가 꼴 확인에서 버려진다
+    deck.slides[at] = { ...deck.slides[at], options: { ...deck.slides[at].options, highlight: 99 } }
+    expect(toShape(deck).slides[at].options.highlight).toBeUndefined()
+    expect(checkShape(toShape(deck))).toBe(true)
   })
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {

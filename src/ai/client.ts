@@ -3,11 +3,11 @@
 import type { Deck } from '../deck/types'
 import type { AskError, AskId, AskRun } from './asks'
 import type { ChangeRequest, OpResult } from './ops'
+import { AI_HEADER, AI_PREFIX } from './protocol'
 import { shapeDeckId, toShape, type ShapeDeck } from './share'
 
-const BASE = '/__html-maker/ai/'
 /** 다른 웹사이트가 이 창구를 쓰지 못하게 서버가 확인하는 머리글 */
-const HEADERS = { 'X-HTML-Maker': '1' }
+const HEADERS = { [AI_HEADER]: '1' }
 
 export interface AiStatus {
   shared: string[]
@@ -26,7 +26,7 @@ export function mcpCommand(status: AiStatus): string {
 
 async function call(path: string, init: RequestInit = {}): Promise<Response | null> {
   try {
-    const res = await fetch(BASE + path, { ...init, headers: { ...HEADERS, ...(init.headers ?? {}) }, cache: 'no-store' })
+    const res = await fetch(AI_PREFIX + path, { ...init, headers: { ...HEADERS, ...(init.headers ?? {}) }, cache: 'no-store' })
     return res
   } catch {
     return null

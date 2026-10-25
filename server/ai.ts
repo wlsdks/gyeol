@@ -14,16 +14,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, s
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { dirname, join } from 'node:path'
 import { validAsk, type AskError } from '../src/ai/asks'
-import { isOpCode, parseRequest, REQUEST_ID, type ChangeRequest, type OpCode } from '../src/ai/ops'
+import { isObj, onlyKeys } from '../src/ai/guards'
+import { isOpCode, MAX_OPS, parseRequest, type ChangeRequest, type OpCode } from '../src/ai/ops'
+import { AI_HEADER, AI_PREFIX, DECK_ID, deckOfFile, REQUEST_ID, RESULT_FORMAT, SHARE_SUBDIRS, type ResultStatus, type ShareSubdir } from '../src/ai/protocol'
 import { checkShape } from '../src/ai/share'
 import { ASK_RUN_ID, createAgent, type AgentCommand } from './agent'
 
-export const SHARE_DIR_NAME = 'AI 공유'
-export const AI_PREFIX = '/__html-maker/ai/'
-export const RESULT_FORMAT = 'html-maker/result'
 const MAX_BODY = 512 * 1024
 const KEEP_RESULTS_MS = 7 * 24 * 60 * 60 * 1000
-const DECK_ID = /^d[0-9a-f]{8}$/
 
 const README = `이 폴더는 결이 AI(Claude Code, Codex)와 주고받는 곳이에요.
 
@@ -35,20 +33,15 @@ const README = `이 폴더는 결이 AI(Claude Code, Codex)와 주고받는 곳�
 지워도 괜찮아요. 공유를 켠 발표를 다시 열면 새로 만들어져요.
 `
 
-export interface ShareDirs {
-  root: string
-  decks: string
-  requests: string
-  results: string
-}
+export type ShareDirs = { root: string } & Record<ShareSubdir, string>
 
 export function shareDirs(root: string): ShareDirs {
-  return { root, decks: join(root, 'decks'), requests: join(root, 'requests'), results: join(root, 'results') }
+  return { root, ...(Object.fromEntries(SHARE_SUBDIRS.map((d) => [d, join(root, d)])) as Record<ShareSubdir, string>) }
 }
 
 export function ensureShareDir(root: string): ShareDirs {
   const dirs = shareDirs(root)
-  for (const d of [dirs.decks, dirs.requests, dirs.results]) mkdirSync(d, { recursive: true })
+  for (const d of SHARE_SUBDIRS) mkdirSync(dirs[d], { recursive: true })
   const readme = join(root, '읽어 주세요.txt')
   // 윈도우 메모장이 한글을 바로 알아보게 BOM과 CRLF로 쓴다
   if (!existsSync(readme)) writeFileSync(readme, '\uFEFF' + README.replace(/\n/g, '\r\n'))
@@ -96,8 +89,8 @@ export function pruneResults(dirs: ShareDirs, now = Date.now()) {
 function sharedDecks(dirs: ShareDirs): string[] {
   try {
     return readdirSync(dirs.decks)
-      .filter((n) => /^d[0-9a-f]{8}\.json$/.test(n))
-      .map((n) => n.slice(0, -5))
+      .map(deckOfFile)
+      .filter((d): d is string => d !== null)
   } catch {
     return []
   }
@@ -122,23 +115,16 @@ export function pendingRequests(dirs: ShareDirs): ChangeRequest[] {
   return out.sort((a, b) => a.createdAt - b.createdAt)
 }
 
-export type ResultStatus = 'applied' | 'rejected' | 'invalid'
-
 export function writeResult(dirs: ShareDirs, id: string, status: ResultStatus, results: { ok: boolean; code: OpCode }[]) {
   writeJsonAtomic(join(dirs.results, `${id}.json`), { format: RESULT_FORMAT, version: 1, request: id, status, decidedAt: Date.now(), results })
 }
 
 function parseResultBody(v: unknown): { status: ResultStatus; results: { ok: boolean; code: OpCode }[] } | null {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
-  const o = v as Record<string, unknown>
-  if (!Object.keys(o).every((k) => k === 'status' || k === 'results')) return null
-  if (o.status !== 'applied' && o.status !== 'rejected') return null
-  if (!Array.isArray(o.results) || o.results.length > 40) return null
-  const ok = o.results.every(
-    (r) =>
-      r && typeof r === 'object' && Object.keys(r).length === 2 && typeof (r as { ok: unknown }).ok === 'boolean' && isOpCode((r as { code: unknown }).code),
-  )
-  return ok ? { status: o.status, results: o.results as { ok: boolean; code: OpCode }[] } : null
+  if (!isObj(v) || !onlyKeys(v, ['status', 'results'])) return null
+  if (v.status !== 'applied' && v.status !== 'rejected') return null
+  if (!Array.isArray(v.results) || v.results.length > MAX_OPS) return null
+  const ok = v.results.every((r) => isObj(r) && Object.keys(r).length === 2 && typeof r.ok === 'boolean' && isOpCode(r.code))
+  return ok ? { status: v.status, results: v.results as { ok: boolean; code: OpCode }[] } : null
 }
 
 function readBody(req: IncomingMessage): Promise<string | null> {
@@ -237,7 +223,7 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
 
   async function route(req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
     const origin = req.headers.origin
-    if (req.headers['x-html-maker'] !== '1' || (origin !== undefined && origin !== `http://${req.headers.host}`)) {
+    if (req.headers[AI_HEADER.toLowerCase()] !== '1' || (origin !== undefined && origin !== `http://${req.headers.host}`)) {
       empty(res, 403)
       return true
     }
@@ -252,8 +238,8 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
 
     if (method === 'POST' && path.join('/') === 'asks') {
       const v = await readJsonBody(req)
-      const o = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
-      const keysOk = !!o && Object.keys(o).every((k) => k === 'ask' || k === 'deck' || k === 'slide')
+      const o = isObj(v) ? v : null
+      const keysOk = !!o && onlyKeys(o, ['ask', 'deck', 'slide'])
       if (!o || !keysOk || !validAsk(o.ask, o.deck, o.slide ?? null)) {
         json(res, 400, { error: 'bad_ask' })
         return true

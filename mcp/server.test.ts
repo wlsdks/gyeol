@@ -5,7 +5,9 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { SECRET, secretDeck } from '../src/ai/share.test'
+import pkg from '../package.json'
 import { OP_CODES, OP_KEYS } from '../src/ai/ops'
+import { MCP_TOOLS, RESULT_FORMAT } from '../src/ai/protocol'
 import { toShape } from '../src/ai/share'
 import { createSampleDeck } from '../src/deck/sample'
 
@@ -14,6 +16,7 @@ const repo = join(import.meta.dirname, '..')
 const base = mkdtempSync(join(tmpdir(), 'gyeol-mcp-'))
 const share = join(base, 'AI 공유')
 let child: ChildProcessWithoutNullStreams
+let serverInfo: unknown
 let nextId = 1
 const waiting = new Map<number, (v: { result?: { content: { text: string }[]; isError?: boolean } & Record<string, unknown>; error?: unknown }) => void>()
 const raw: string[] = []
@@ -64,7 +67,7 @@ beforeAll(async () => {
     const msg = JSON.parse(line)
     waiting.get(msg.id)?.(msg)
   })
-  await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
+  serverInfo = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })).result?.serverInfo
 }, 60000)
 
 afterAll(() => {
@@ -76,6 +79,12 @@ describe('MCP 서버', () => {
     const res = await rpc('tools/list')
     const names = (res.result!.tools as { name: string }[]).map((t) => t.name)
     expect(names).toEqual(['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'])
+    // 'AI에게 부탁'이 Claude Code에 허락하는 도구도 이것뿐이다
+    expect([...MCP_TOOLS]).toEqual(names)
+  })
+
+  it('이름과 판 번호는 결의 것이다', () => {
+    expect(serverInfo).toEqual({ name: 'gyeol', version: pkg.version })
   })
 
   it('제안의 꼴은 앱이 받는 키와 같다', async () => {
@@ -154,7 +163,7 @@ describe('MCP 서버', () => {
     // 정해진 말에 없는 코드가 하나라도 있으면 마지막 그물에 걸려 결과 대신 오류가 나간다
     const id = 'r00000000c0de'
     const results = OP_CODES.map((code) => ({ ok: code === 'applied', code }))
-    writeFileSync(join(share, 'results', `${id}.json`), JSON.stringify({ format: 'html-maker/result', version: 1, request: id, status: 'applied', decidedAt: 1, results }))
+    writeFileSync(join(share, 'results', `${id}.json`), JSON.stringify({ format: RESULT_FORMAT, version: 1, request: id, status: 'applied', decidedAt: 1, results }))
     const { value, isError } = await tool('get_result', { request: id })
     expect(isError).toBe(false)
     expect(value).toEqual({ request: id, status: 'applied', results })

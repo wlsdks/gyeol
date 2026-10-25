@@ -10,7 +10,8 @@ import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs'
 import { createServer, get, type IncomingMessage, type ServerResponse } from 'node:http'
 import { dirname, extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createAiHandler, SHARE_DIR_NAME } from './ai'
+import { SHARE_DIR_NAME } from '../src/ai/protocol'
+import { createAiHandler } from './ai'
 import { CSP } from './csp'
 
 export { CSP }

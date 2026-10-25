@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { askPrompt, REASON_MAX, type AskError, type AskId, type AskRun, type AskState } from '../src/ai/asks'
+import { MCP_SERVER_NAME, MCP_TOOLS } from '../src/ai/protocol'
 
 /** 띄울 프로그램. args는 결이 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
 export interface AgentCommand {
@@ -41,7 +42,7 @@ export interface AgentOptions {
 export const ASK_RUN_ID = /^a[0-9a-f]{12}$/
 const TIMEOUT_MS = 3 * 60 * 1000
 const KEEP_MS = 10 * 60 * 1000
-const TOOLS = ['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'].map((t) => `mcp__gyeol__${t}`)
+const TOOLS = MCP_TOOLS.map((t) => `mcp__${MCP_SERVER_NAME}__${t}`)
 
 const isFile = (f: string) => {
   try {
@@ -191,7 +192,7 @@ export function createAgent(opts: AgentOptions) {
       writeFileSync(
         config,
         JSON.stringify({
-          mcpServers: { gyeol: { type: 'stdio', command: opts.nodePath, args: [opts.mcpPath], env: { GYEOL_SHARE: opts.shareRoot } } },
+          mcpServers: { [MCP_SERVER_NAME]: { type: 'stdio', command: opts.nodePath, args: [opts.mcpPath], env: { GYEOL_SHARE: opts.shareRoot } } },
         }),
       )
       const cleanup = () => rmSync(dir, { recursive: true, force: true })

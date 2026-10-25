@@ -48,9 +48,11 @@ import { emptyItem, makeSlide, withDefaultOptions } from '../deck/generate'
 import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, panesOf, variantIds, variantOf } from '../deck/layouts'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockLook, BlockRow, BlockType, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import { HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
+import { DECK_ID, HIGHLIGHT_MAX, HIGHLIGHT_MIN, MAX_ITEMS, REQUEST_FORMAT, REQUEST_ID } from './protocol'
 import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
 
-export const REQUEST_FORMAT = 'html-maker/request'
+export { REQUEST_FORMAT, REQUEST_ID }
 export const MAX_OPS = 40
 export const NOTE_MAX = 300
 export const GUIDE_MAX = 200
@@ -188,14 +190,10 @@ export interface OpResult {
   code: OpCode
 }
 
-const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const REF = /^(s[0-9a-f]{8}|n[0-9]{1,2})$/
 const NEW_REF = /^n[0-9]{1,2}$/
 const BLOCK_REF = /^(b[0-9a-f]{8}|p[0-9]{1,2})$/
 const NEW_BLOCK = /^p[0-9]{1,2}$/
-const HEX = /^#[0-9a-f]{6}$/i
-const oneOf = (list: { id: string }[], v: unknown) => list.some((x) => x.id === v)
-export const REQUEST_ID = /^r[0-9a-f]{12}$/
 
 /** 한 줄 안내 글. 줄바꿈과 보이지 않는 제어 문자는 받지 않는다. */
 function cleanText(v: unknown, max: number, multiline = false): string | null {
@@ -212,10 +210,8 @@ function refOrNull(v: unknown): SlideRef | null | undefined {
   return typeof v === 'string' && REF.test(v) ? v : undefined
 }
 
-const only = (v: Record<string, unknown>, keys: readonly string[]) => Object.keys(v).every((k) => keys.includes(k))
 const isLayout = (v: unknown): v is LayoutId => typeof v === 'string' && LAYOUT_ORDER.includes(v as LayoutId)
 const blockRef = (v: unknown): BlockRef | undefined => (typeof v === 'string' && BLOCK_REF.test(v) ? v : undefined)
-const isInt = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max
 
 /**
  * op마다 받는 키. parseOp가 이것으로 모르는 키를 거르고, MCP 서버가 AI에게 보여 주는 꼴(inputSchema)도 이것과 같아야 한다(시험이 확인).
@@ -264,7 +260,7 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
   if (!slide) return null
   switch (v.op) {
     case 'add_block': {
-      if (!only(v, OP_KEYS.add_block)) return null
+      if (!onlyKeys(v, OP_KEYS.add_block)) return null
       if (!BLOCK_TYPES.includes(v.type as BlockType) || !parseLooks(v)) return null
       if (v.as !== undefined && !(typeof v.as === 'string' && NEW_BLOCK.test(v.as))) return null
       const place = parsePlace(v)
@@ -282,20 +278,20 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     }
     case 'remove_block': {
       const block = blockRef(v.block)
-      return only(v, OP_KEYS.remove_block) && block ? { op: 'remove_block', slide, block } : null
+      return onlyKeys(v, OP_KEYS.remove_block) && block ? { op: 'remove_block', slide, block } : null
     }
     case 'move_block': {
       const block = blockRef(v.block)
-      if (!only(v, OP_KEYS.move_block) || !block) return null
+      if (!onlyKeys(v, OP_KEYS.move_block) || !block) return null
       const place = parsePlace(v)
       if (!place || (place.row === undefined && place.beside === undefined)) return null
       return { op: 'move_block', slide, block, ...place }
     }
     case 'set_block': {
       const block = blockRef(v.block)
-      if (!only(v, OP_KEYS.set_block) || !block || !parseLooks(v)) return null
-      if (v.count !== undefined && !isInt(v.count, 0, 20)) return null
-      if (v.highlight !== undefined && !isInt(v.highlight, -1, 19)) return null
+      if (!onlyKeys(v, OP_KEYS.set_block) || !block || !parseLooks(v)) return null
+      if (v.count !== undefined && !isInt(v.count, 0, MAX_ITEMS)) return null
+      if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return null
       if ([v.variant, v.look, v.effect, v.count, v.highlight].every((x) => x === undefined)) return null
       return {
         op: 'set_block',
@@ -310,13 +306,13 @@ function parseBlockOp(v: Record<string, unknown>): Op | null {
     }
     case 'set_spans': {
       const block = blockRef(v.block)
-      if (!only(v, OP_KEYS.set_spans) || !block) return null
+      if (!onlyKeys(v, OP_KEYS.set_spans) || !block) return null
       if (!Array.isArray(v.spans) || v.spans.length < 1 || v.spans.length > 3 || !v.spans.every((x) => isInt(x, 1, 12))) return null
       return { op: 'set_spans', slide, block, spans: v.spans as number[] }
     }
     case 'set_link': {
       const block = blockRef(v.block)
-      if (!only(v, OP_KEYS.set_link) || !block) return null
+      if (!onlyKeys(v, OP_KEYS.set_link) || !block) return null
       if (v.side !== 'right' && v.side !== 'below') return null
       if (v.link !== null && !isLink(v.link)) return null
       return { op: 'set_link', slide, block, side: v.side, link: v.link as BlockLink | null }
@@ -338,12 +334,12 @@ export function parseOp(v: unknown): Op | null {
       return parseBlockOp(v)
     case 'set_row_grow': {
       const slide = refOrNull(v.slide)
-      if (!only(v, OP_KEYS.set_row_grow) || !slide) return null
+      if (!onlyKeys(v, OP_KEYS.set_row_grow) || !slide) return null
       if (!Array.isArray(v.grow) || v.grow.length > MAX_ROWS || !v.grow.every(isGrow)) return null
       return { op: 'set_row_grow', slide, grow: v.grow as number[] }
     }
     case 'add_slide': {
-      if (!only(v, OP_KEYS.add_slide)) return null
+      if (!onlyKeys(v, OP_KEYS.add_slide)) return null
       const after = refOrNull(v.after ?? null)
       if (after === undefined) return null
       if (v.layout !== undefined && !isLayout(v.layout)) return null
@@ -363,37 +359,37 @@ export function parseOp(v: unknown): Op | null {
     case 'set_hint': {
       const slide = refOrNull(v.slide)
       if (!slide) return null
-      if (v.op === 'remove_slide') return only(v, OP_KEYS.remove_slide) ? { op: v.op, slide } : null
+      if (v.op === 'remove_slide') return onlyKeys(v, OP_KEYS.remove_slide) ? { op: v.op, slide } : null
       if (v.op === 'set_layout') {
-        if (!only(v, OP_KEYS.set_layout) || !isLayout(v.layout)) return null
+        if (!onlyKeys(v, OP_KEYS.set_layout) || !isLayout(v.layout)) return null
         if (v.variant !== undefined && !variantIds(v.layout).includes(v.variant as string)) return null
         return { op: v.op, slide, layout: v.layout, variant: v.variant as string | undefined }
       }
       if (v.op === 'set_hidden') {
-        return only(v, OP_KEYS.set_hidden) && typeof v.hidden === 'boolean' ? { op: v.op, slide, hidden: v.hidden } : null
+        return onlyKeys(v, OP_KEYS.set_hidden) && typeof v.hidden === 'boolean' ? { op: v.op, slide, hidden: v.hidden } : null
       }
       if (v.op === 'set_item_count') {
-        return only(v, OP_KEYS.set_item_count) && Number.isInteger(v.count) && (v.count as number) >= 0 && (v.count as number) <= 20
+        return onlyKeys(v, OP_KEYS.set_item_count) && isInt(v.count, 0, MAX_ITEMS)
           ? { op: v.op, slide, count: v.count as number }
           : null
       }
       if (v.op === 'set_guide') {
         const text = cleanText(v.text, GUIDE_MAX, true)
-        return only(v, OP_KEYS.set_guide) && text ? { op: v.op, slide, text } : null
+        return onlyKeys(v, OP_KEYS.set_guide) && text ? { op: v.op, slide, text } : null
       }
       if (v.op === 'move_slide') {
         const after = refOrNull(v.after ?? null)
-        return only(v, OP_KEYS.move_slide) && after !== undefined ? { op: v.op, slide, after } : null
+        return onlyKeys(v, OP_KEYS.move_slide) && after !== undefined ? { op: v.op, slide, after } : null
       }
       if (v.op === 'set_options') {
-        if (!only(v, OP_KEYS.set_options)) return null
-        if (v.pane !== undefined && v.pane !== null && !(Number.isInteger(v.pane) && (v.pane as number) >= 1 && (v.pane as number) <= 12)) return null
-        if (v.highlight !== undefined && !(Number.isInteger(v.highlight) && (v.highlight as number) >= -1 && (v.highlight as number) < 20)) return null
+        if (!onlyKeys(v, OP_KEYS.set_options)) return null
+        if (v.pane !== undefined && v.pane !== null && !isInt(v.pane, 1, 12)) return null
+        if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return null
         if (v.flip !== undefined && typeof v.flip !== 'boolean') return null
         if (v.contain !== undefined && typeof v.contain !== 'boolean') return null
-        if (v.motion !== undefined && v.motion !== null && !oneOf(MOTIONS, v.motion)) return null
-        if (v.tone !== undefined && !oneOf(TONES, v.tone)) return null
-        if (v.place !== undefined && v.place !== null && !oneOf(PLACES, v.place)) return null
+        if (v.motion !== undefined && v.motion !== null && !isOneOf(MOTIONS, v.motion)) return null
+        if (v.tone !== undefined && !isOneOf(TONES, v.tone)) return null
+        if (v.place !== undefined && v.place !== null && !isOneOf(PLACES, v.place)) return null
         if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place].every((x) => x === undefined)) return null
         return {
           op: v.op,
@@ -408,22 +404,22 @@ export function parseOp(v: unknown): Op | null {
         }
       }
       // set_hint
-      if (!only(v, OP_KEYS.set_hint)) return null
+      if (!onlyKeys(v, OP_KEYS.set_hint)) return null
       const text = cleanText(v.text, HINT_MAX)
       if (!text || typeof v.field !== 'string' || !/^[a-zA-Z]{1,20}$/.test(v.field)) return null
-      if (v.item !== undefined && !(Number.isInteger(v.item) && (v.item as number) >= 0 && (v.item as number) < 20)) return null
+      if (v.item !== undefined && !isInt(v.item, 0, MAX_ITEMS - 1)) return null
       if (v.block !== undefined && !blockRef(v.block)) return null
       return { op: 'set_hint', slide, ...(v.block !== undefined ? { block: v.block as string } : {}), field: v.field, item: v.item as number | undefined, text }
     }
     case 'set_theme': {
-      if (!only(v, OP_KEYS.set_theme)) return null
+      if (!onlyKeys(v, OP_KEYS.set_theme)) return null
       if (v.theme !== undefined && !THEME_ORDER.includes(v.theme as ThemeId)) return null
       if (v.accent !== undefined && v.accent !== null && !(typeof v.accent === 'string' && HEX.test(v.accent))) return null
-      if (v.motion !== undefined && !oneOf(MOTIONS, v.motion)) return null
-      if (v.font !== undefined && v.font !== null && !oneOf(FONTS, v.font)) return null
-      if (v.size !== undefined && !oneOf(TEXT_SIZES, v.size)) return null
-      if (v.footer !== undefined && !oneOf(FOOTERS, v.footer)) return null
-      if (v.transition !== undefined && !oneOf(TRANSITIONS, v.transition)) return null
+      if (v.motion !== undefined && !isOneOf(MOTIONS, v.motion)) return null
+      if (v.font !== undefined && v.font !== null && !isOneOf(FONTS, v.font)) return null
+      if (v.size !== undefined && !isOneOf(TEXT_SIZES, v.size)) return null
+      if (v.footer !== undefined && !isOneOf(FOOTERS, v.footer)) return null
+      if (v.transition !== undefined && !isOneOf(TRANSITIONS, v.transition)) return null
       if ([v.theme, v.accent, v.motion, v.font, v.size, v.footer, v.transition].every((x) => x === undefined)) return null
       return {
         op: 'set_theme',
@@ -443,10 +439,10 @@ export function parseOp(v: unknown): Op | null {
 
 /** 요청 파일 전체를 확인한다. 하나라도 어긋나면 요청을 통째로 받지 않는다. */
 export function parseRequest(v: unknown): ChangeRequest | null {
-  if (!isObj(v) || !only(v, ['format', 'version', 'id', 'deck', 'createdAt', 'note', 'ops'])) return null
+  if (!isObj(v) || !onlyKeys(v, ['format', 'version', 'id', 'deck', 'createdAt', 'note', 'ops'])) return null
   if (v.format !== REQUEST_FORMAT || v.version !== 1) return null
   if (typeof v.id !== 'string' || !REQUEST_ID.test(v.id)) return null
-  if (typeof v.deck !== 'string' || !/^d[0-9a-f]{8}$/.test(v.deck)) return null
+  if (typeof v.deck !== 'string' || !DECK_ID.test(v.deck)) return null
   if (!Number.isInteger(v.createdAt)) return null
   const note = v.note === '' ? '' : cleanText(v.note, NOTE_MAX, true)
   if (note === null) return null

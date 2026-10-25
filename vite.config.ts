@@ -2,8 +2,9 @@
 import { join } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { createAiHandler, SHARE_DIR_NAME } from './server/ai'
+import { createAiHandler } from './server/ai'
 import { CSP } from './server/csp'
+import { SHARE_DIR_NAME } from './src/ai/protocol'
 
 /** 빌드한 화면에도 서버와 같은 CSP를 넣는다. 다른 방법으로 열어도 이 PC 밖으로는 연결하지 못한다. */
 function cspMeta(): Plugin {
