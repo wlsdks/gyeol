@@ -60,3 +60,46 @@
 .bk-agenda .ag-list {
   flex: 1;
 }
+
+/* 단계 흐름의 칸 모양: 면은 부품 칸 높이를 다 쓰고, 번호와 이름과 설명의 묶음은 면 가운데에 둔다.
+   모든 단계가 같은 줄(subgrid)을 써서 번호와 이름의 윗선이 단계마다 맞고, 묶음 위아래의 남는 높이(1fr)를 똑같이 나눠
+   가장 긴 단계의 위 여백과 아래 여백이 같다. 예전에는 면이 장에서의 높이(440px)로 서고 글을 위에 붙여서,
+   칸이 높으면 면의 아래만 182px 비었다(위 49px). 장 한 장의 칸 모양(process.css의 .l-process.va-cards)은 그대로다.
+   면의 위아래 안쪽 여백은 빈 줄의 가장 낮은 높이(--pc-py)로 둔다: subgrid의 안쪽 여백은 맨 끝 줄에 든 글에 얹혀 재는데
+   끝 줄이 비어 있으면 얹을 데가 없어, 칸이 낮을 때 글이 면 끝까지 올라왔다 */
+.bk-process.va-cards .pc {
+  --pc-py: 44px;
+  grid-template-rows: minmax(var(--pc-py), 1fr) auto auto auto minmax(var(--pc-py), 1fr);
+  align-content: stretch;
+  row-gap: 0;
+}
+
+.bk-process.va-cards .pc:is([data-n='5'], [data-n='6']) {
+  --pc-py: 36px;
+}
+
+.bk-process.va-cards .pc-step {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  min-height: 0;
+  padding-block: 0;
+}
+
+.bk-process.va-cards .pc-head {
+  display: contents;
+}
+
+.bk-process.va-cards .pc-n {
+  grid-row: 2;
+}
+
+.bk-process.va-cards .pc-title {
+  grid-row: 3;
+  margin-top: 20px;
+  padding-right: 0;
+}
+
+.bk-process.va-cards .pc-text {
+  grid-row: 4;
+}
