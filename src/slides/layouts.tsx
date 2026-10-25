@@ -8,7 +8,7 @@ import { cx } from '../lib/cx'
 import { useSlide } from './context'
 import { amountPair, formatNumber, isNumericCell, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { Compose } from './blocks'
-import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T } from './fields'
+import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T, textUnits } from './fields'
 import { placeLabels } from './fitBlocks'
 
 function Head({ lead = false }: { lead?: boolean }) {
@@ -478,6 +478,11 @@ function Versus() {
       .filter(Boolean)
       .join(' ')
   const at = (v: number, i: number) => ({ '--x': x(i).toFixed(2), '--y': y(v).toFixed(2) }) as CSSProperties
+  // 좁은 막대에서 숫자는 막대 너비에 맞게 줄어드는데(.one-line), 숫자마다 제 길이로 줄이면 '96'은 크고 '104'는 작아
+  // 막대마다 크기가 달랐다. 앞 값끼리, 뒤 값끼리는 가장 긴 숫자에 맞춘 한 크기로
+  const shown = (k: 'meta' | 'value', i: number) => items[i][k].trim() || (final ? '' : hintFor(slide.layout, slide.hints, k, k, i))
+  const widest = (k: 'meta' | 'value') => Math.max(1, ...items.map((_, i) => textUnits(shown(k, i))))
+  const [ua, ub] = [widest('meta'), widest('value')]
   return (
     <>
       <Head lead />
@@ -523,8 +528,8 @@ function Versus() {
                   </div>
                   {/* 읽는 차례대로 앞 값, 뒤 값, 바뀐 비율. 비율은 계산한 표시라 칸이 아니다 */}
                   <div className="vs-nums">
-                    <IT i={i} k="meta" as="span" className="vs-num is-a" oneLine />
-                    <IT i={i} k="value" as="span" className="vs-num is-b" oneLine />
+                    <IT i={i} k="meta" as="span" className="vs-num is-a" oneLine units={ua} />
+                    <IT i={i} k="value" as="span" className="vs-num is-b" oneLine units={ub} />
                     <span className="vs-change">{change(i) ?? ''}</span>
                   </div>
                   <ItemTools i={i} />
@@ -554,7 +559,7 @@ function Versus() {
                     <div key={`${it.id}-a`} className={cx('vs-pt is-a', below && 'is-below', va === null && 'is-blank')} style={at(va ?? base, i)}>
                       <span className="vs-dot" />
                       <span className="vs-val">
-                        <IT i={i} k="meta" as="span" className="vs-num" oneLine />
+                        <IT i={i} k="meta" as="span" className="vs-num" oneLine units={ua} />
                       </span>
                     </div>
                   ),
@@ -566,7 +571,7 @@ function Versus() {
                     >
                       <span className="vs-dot" />
                       <span className="vs-val">
-                        <IT i={i} k="value" as="span" className="vs-num" oneLine />
+                        <IT i={i} k="value" as="span" className="vs-num" oneLine units={ub} />
                       </span>
                     </div>
                   ),
@@ -580,13 +585,13 @@ function Versus() {
                 <div className="vs-bars">
                   <div className="vs-bar is-a" style={{ '--p': bar(a[i]).toFixed(2) } as CSSProperties}>
                     <span className="vs-val">
-                      <IT i={i} k="meta" as="span" className="vs-num" oneLine />
+                      <IT i={i} k="meta" as="span" className="vs-num" oneLine units={ua} />
                     </span>
                     <span className="vs-fill" />
                   </div>
                   <div className="vs-bar is-b" style={{ '--p': bar(b[i]).toFixed(2) } as CSSProperties}>
                     <span className="vs-val">
-                      <IT i={i} k="value" as="span" className="vs-num" oneLine />
+                      <IT i={i} k="value" as="span" className="vs-num" oneLine units={ub} />
                     </span>
                     <span className="vs-fill" />
                   </div>
