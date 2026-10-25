@@ -34,7 +34,7 @@ export const lookOf = (b: Pick<Block, 'type' | 'look'>): BlockLook => (b.look &&
 export const isSolo = (type: BlockType) => BLOCKS[type].minSpan >= 12
 
 /** 안에 이미 칸이나 면이 있는 부품. 면을 깔면 상자 안에 상자가 된다 */
-const FLAT: BlockType[] = ['logos', 'compare', 'pricing', 'matrix', 'agenda', 'image']
+const FLAT: BlockType[] = ['logos', 'compare', 'pricing', 'matrix', 'agenda', 'image', 'flow']
 /** 진한 면을 깔 수 있는 부품: 한 장의 결론이 되는 숫자와 말. 목록이나 그림을 검게 칠하면 장이 무겁고 어디가 결론인지 흐려진다 */
 const BOLD_OK: BlockType[] = ['callout', 'number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'quote', 'text', 'message']
 

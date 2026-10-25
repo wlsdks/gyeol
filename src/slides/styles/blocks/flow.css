@@ -1,0 +1,224 @@
+/* ---------- 흐름 ----------
+   단계마다 옅은 면의 상자(이름, 설명, 아래 끝에 오가는 양), 사이는 화살표 끝의 선. 강조할 단계(기본은 마지막)만 강조색:
+   옅은 강조 면과 테두리, 양 숫자. 선과 화살표는 글자색을 옅게 한 색(답이 아니라 관계라서, 이음표와 같은 까닭).
+   좁은 칸에서는 상자를 세로로 쌓는다(아래 @container). 발표할 때 선이 그어지고 그 위로 데이터 조각이 건너간다(engine.ts) */
+
+.bk-fw {
+  /* 단계 사이 선의 자리: 가로로 놓일 때의 너비, 세로로 쌓일 때의 높이 */
+  --fw-lw: 104px;
+  --fw-lh: 44px;
+  --fw-line: 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  height: 100%;
+}
+
+.bk-fw-key {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: var(--bk-h-gap);
+  color: var(--ink-2);
+}
+
+/* 오가는 것 앞의 작은 선: 단계 사이 선을 줄인 꼴이라 '이 선으로 오가는 것'으로 읽힌다 */
+.bk-fw-kg {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 16px;
+}
+
+.bk-fw-kg::before,
+.bk-fw-link::before {
+  position: absolute;
+  top: 50%;
+  height: var(--fw-line);
+  margin-top: calc(var(--fw-line) / -2);
+  border-radius: var(--fw-line);
+  background: var(--ink-3);
+  content: '';
+}
+
+.bk-fw-kg::before {
+  right: 2px;
+  left: 0;
+}
+
+/* 화살표 끝: 꺾쇠 하나. 선 끝과 꺾쇠 끝이 한 점에서 만나게 꺾쇠를 선 끝 안쪽으로 둔다 */
+.bk-fw-kg::after,
+.bk-fw-link::after {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-top: var(--fw-line) solid var(--ink-3);
+  border-right: var(--fw-line) solid var(--ink-3);
+  border-top-right-radius: 2px;
+  content: '';
+  translate: 0 -50%;
+  rotate: 45deg;
+}
+
+.bk-fw-kg::after {
+  right: 2px;
+}
+
+.bk-fw-what {
+  --fs: var(--t-label);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.bk-fw-list {
+  display: flex;
+  align-items: stretch;
+}
+
+.bk-fw-node {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  padding: 32px 36px 30px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.bk-fw-t {
+  --fs: var(--t-h);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bk-fw-m {
+  --fs: var(--t-small);
+  margin-top: 8px;
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+
+/* 오가는 양은 상자 아래 끝에: 나란한 단계끼리 한 줄에 서서 단계를 지나며 줄어드는 양을 견줘 읽는다 */
+.bk-fw-v {
+  --fs: var(--t-h);
+  margin-top: auto;
+  padding-top: 28px;
+  font-family: var(--font-head);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.bk-fw-node.is-hl {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 var(--fw-line) var(--accent);
+}
+
+.bk-fw-node.is-hl .bk-fw-v {
+  color: var(--accent);
+}
+
+.bk-fw-link {
+  position: relative;
+  flex: none;
+  align-self: center;
+  width: var(--fw-lw);
+  height: 24px;
+}
+
+.bk-fw-link::before {
+  right: 20px;
+  left: 18px;
+}
+
+.bk-fw-link::after {
+  right: 20px;
+}
+
+/* ---------- 좁은 칸: 세로로 쌓기 ----------
+   단계 상자 하나가 210px 남짓보다 좁아지면 가로로 둔 이름이 두세 글자마다 꺾인다. 그 너비는 단계 수마다 달라서 수마다 문턱을 둔다.
+   쌓으면 상자는 한 줄을 다 쓰고, 이름과 설명은 왼쪽에, 양은 오른쪽 끝에 선다. 선은 상자 사이에서 아래를 본다 */
+@container bk (max-width: 560px) {
+  .bk-fw[data-n='2'] {
+    --fw-stack: 1;
+  }
+}
+
+@container bk (max-width: 860px) {
+  .bk-fw[data-n='3'] {
+    --fw-stack: 1;
+  }
+}
+
+@container bk (max-width: 1150px) {
+  .bk-fw[data-n='4'] {
+    --fw-stack: 1;
+  }
+}
+
+@container bk (max-width: 1440px) {
+  .bk-fw[data-n='5'] {
+    --fw-stack: 1;
+  }
+}
+
+@container style(--fw-stack: 1) {
+  .bk-fw-list {
+    flex-direction: column;
+  }
+
+  .bk-fw-node {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+    padding: 20px 28px;
+  }
+
+  /* 이름과 설명을 한 줄에(설명이 길면 이름 아래로 내려간다): 위아래로 두면 상자 하나가 두 줄 높이라 넷만 쌓아도 칸을 넘친다 */
+  .bk-fw-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 16px;
+    min-width: 0;
+  }
+
+  .bk-fw-m {
+    margin-top: 0;
+  }
+
+  .bk-fw-v {
+    flex: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bk-fw-link {
+    width: 24px;
+    height: var(--fw-lh);
+  }
+
+  .bk-fw-link::before {
+    top: 8px;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    width: var(--fw-line);
+    height: auto;
+    margin: 0 0 0 calc(var(--fw-line) / -2);
+  }
+
+  .bk-fw-link::after {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    translate: -50% 0;
+    rotate: 135deg;
+  }
+}

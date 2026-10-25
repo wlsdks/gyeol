@@ -960,6 +960,37 @@ export function motionEngine(): MotionEngine {
     }
     }
 
+    /** 데이터 조각이 오가는 길의 이징: 천천히 떠나 빠르게 건너고 천천히 닿는다. 선 긋기와 같은 이징이라 조각이 선 끝을 타고 간다 */
+    const CARRY = 'cubic-bezier(0.45, 0, 0.25, 1)'
+    /**
+     * 데이터 조각: 길(path, host 안의 캔버스 px 점들)을 따라 건너가는 작은 네모(motion.css의 .mo-pk). 꺾이는 길은 길이대로 나눠
+     * 같은 빠르기로 지난다. 떠날 때와 닿을 때 흐려져서 앞 상자에서 나와 다음 상자로 들어가는 것처럼 보인다.
+     * 끝 모습에는 없다: 움직이는 동안만 붙였다가 뗀다
+     */
+    const packet = (host: Element | null, path: [number, number][], at: number, duration: number) => {
+      if (!host || path.length < 2) return
+      const p = document.createElement('span')
+      p.className = 'mo-pk'
+      p.setAttribute('aria-hidden', 'true')
+      host.appendChild(p)
+      restores.push(() => p.remove())
+      const lens = path.slice(1).map((q, i) => Math.hypot(q[0] - path[i][0], q[1] - path[i][1]))
+      const total = lens.reduce((a, b) => a + b, 0) || 1
+      let walked = 0
+      const frames = path.map((q, i) => {
+        walked += i ? lens[i - 1] : 0
+        return { translate: `${q[0]}px ${q[1]}px`, offset: walked / total }
+      })
+      run(anims, p, frames, s(at), { easing: CARRY, duration: d(duration) })
+      run(anims, p, [{ opacity: 0, scale: '0.5' }, { opacity: 1, scale: '1', offset: 0.14 }, { opacity: 1, scale: '1', offset: 0.86 }, { opacity: 0, scale: '0.5' }], s(at), { easing: 'linear', duration: d(duration) })
+    }
+    /** 선 하나를 긋는다(요소나 가짜 요소). 조각과 같은 이징, 같은 시간이라 조각이 그어지는 선 끝을 탄다 */
+    const draw = (el: Element | null, at: number, duration: number, origin: string, pseudo?: string) => {
+      if (!el) return
+      const from = origin.startsWith('center') ? '1 0' : '0 1'
+      run(anims, el, [{ scale: from, transformOrigin: origin }, { scale: '1 1', transformOrigin: origin }], s(at), { easing: CARRY, duration: d(duration) }, pseudo)
+    }
+
     /** 부품 장만의 부품이 알아서 움직이는 모습. 면이 있는 부품은 면이 먼저 자리 잡고 안의 글이 뒤따른다 */
     function nativeAuto(cell: HTMLElement, type: string) {
       if (!cell.classList.contains('bk-look-plain')) card(cell, 0)
@@ -1247,6 +1278,50 @@ export function motionEngine(): MotionEngine {
           const img = one('.bk-img-i img')
           if (img && !fit) run(anims, img, [{ scale: '1.12' }, { scale: '1' }], s(0), { easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)', duration: 2200 })
           fade(one('.bk-img-c'), 600, 500)
+          break
+        }
+        case 'flow': {
+          // 첫 단계가 나오고, 다음 단계로 선이 그어지는 동안 데이터 조각이 선 끝을 따라 건너가서, 닿을 때 다음 단계가 받아 나타난다.
+          // 끝까지 닿으면 조각이 처음부터 끝까지 한 번 더 빠르게 지나가고 멈춘다. 되풀이하지 않는다:
+          // 보고를 듣는 동안 장 한쪽이 계속 움직이면 눈을 빼앗는다
+          fade(one('.bk-fw-key'), 60, 500)
+          const nodes = $('.bk-fw-node')
+          const links = $('.bk-fw-link')
+          // 단계가 많아도 1.5초 안에 끝 단계까지 닿게
+          const hop = Math.min(levelName === 'lively' ? 400 : 360, 1500 / Math.max(1, links.length))
+          // 선의 양 끝(flow.css의 선 자리): 가로면 왼쪽에서 오른쪽, 세로로 쌓였으면 위에서 아래
+          const tall = (link: HTMLElement) => link.offsetHeight > link.offsetWidth
+          const ends = (link: HTMLElement): [number, number][] => {
+            const w = link.offsetWidth
+            const h = link.offsetHeight
+            return tall(link) ? [[w / 2, 8], [w / 2, h - 10]] : [[18, h / 2], [w - 20, h / 2]]
+          }
+          let at = 40
+          nodes.forEach((node, i) => {
+            const link = links[i - 1]
+            if (link) {
+              draw(link, at, hop, tall(link) ? 'center top' : 'left center', '::before')
+              run(anims, link, [{ opacity: 0 }], s(at + hop * 0.7), { easing: OUT, duration: d(260) }, '::after')
+              packet(link, ends(link), at, hop)
+              at += hop
+            }
+            // 받는 단계는 조각이 들어가기 직전부터 커지며 나타난다
+            run(anims, node, [{ opacity: 0, scale: String(L.scale) }], s(Math.max(0, at - 80)), L.pop)
+            rise(node.querySelector('.bk-fw-text'), at, L.y * 0.4)
+            // 숫자는 끝 단계(강조)만 굴린다. 단계마다 굴리면 조각보다 숫자에 눈이 간다
+            if (node.classList.contains('is-hl')) countIn(node.querySelector('.bk-fw-v'), at + 40)
+            else fade(node.querySelector('.bk-fw-v'), at + 60, 400)
+          })
+          // 한 번 더: 조각이 선을 이어 건너간다(단계 안은 들어갔다 나오는 것처럼 건너뛴다). 끝 단계(강조)가 받으며 살짝 부풀었다 돌아온다
+          const fast = hop * 0.6
+          let again = at + 260
+          for (const link of links) {
+            packet(link, ends(link), again, fast)
+            again += fast
+          }
+          const hl = one('.bk-fw-node.is-hl')
+          // 부풀기는 transform으로: 나타날 때 쓴 scale과 같은 속성이면 늦게 만든 이것이 시작 전(fill backwards)부터 scale을 덮어 나타나기가 사라진다
+          if (hl && links.length) run(anims, hl, [{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], s(again - 60), { easing: 'ease-in-out', duration: d(480) })
           break
         }
         default:

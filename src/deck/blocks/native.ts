@@ -678,4 +678,32 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
       ],
     },
   },
+  flow: {
+    name: '흐름',
+    description: '일이나 데이터가 단계와 시스템을 거쳐 가는 흐름',
+    motion: '단계가 이어지며 데이터가 선을 따라 건너가요',
+    fields: [{ key: 'what', label: '오가는 것', hint: '오가는 것 (예: 신청 데이터)', optional: true }],
+    items: {
+      label: '단계',
+      // 하나면 흐름이 아니라 상자 하나다. 여섯부터는 한 줄을 다 써도 단계 이름이 네 글자마다 꺾인다
+      min: 2,
+      max: 5,
+      default: 3,
+      fields: [
+        { key: 'title', label: '이름', hint: '단계나 시스템 이름', hints: ['신청 접수', '팀장 승인', '교육 배정', '결과 알림', '보관'] },
+        { key: 'meta', label: '설명', hint: '짧은 설명', hints: ['사내 포털', '결재 시스템', '인사 시스템', '메일', '문서 보관함'], optional: true },
+        { key: 'value', label: '양', hint: '오가는 양 (예: 320건)', hints: ['320건', '296건', '288건', '288건', '288건'], optional: true },
+      ],
+    },
+    minSpan: 4,
+    prefSpan: 12,
+    sample: {
+      fields: { what: '교육 신청 데이터' },
+      items: [
+        { title: '신청 접수', meta: '사내 포털', value: '320건' },
+        { title: '팀장 승인', meta: '결재 시스템', value: '296건' },
+        { title: '교육 배정', meta: '인사 시스템', value: '288건' },
+      ],
+    },
+  },
 }

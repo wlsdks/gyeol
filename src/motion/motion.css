@@ -54,6 +54,20 @@
   visibility: hidden;
 }
 
+/* 선을 따라 건너가는 데이터 조각(engine.ts의 packet). 엔진이 길을 따라 옮기고, 다 보인 모습에서는 없다 */
+.mo-pk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 4px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- 장 바꾸기 ---------- */
 
 @keyframes mo-vt-fade-out {
