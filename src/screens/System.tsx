@@ -29,8 +29,8 @@ const TOKENS: { v: string; name: string; use: string }[] = [
   { v: '--ink', name: '글자', use: '제목과 본문' },
   { v: '--ink-2', name: '보조 글자', use: '이끄는 말, 설명' },
   { v: '--ink-3', name: '흐린 글자', use: '출처, 보충, 쪽 번호' },
-  { v: '--line', name: '줄', use: '칸과 칸 사이' },
-  { v: '--surface', name: '면', use: '칸, 막대의 바탕' },
+  { v: '--line', name: '줄', use: '표와 목록의 나눔선' },
+  { v: '--surface', name: '면', use: '카드, 막대의 바탕' },
   { v: '--accent', name: '강조', use: '답에만: 숫자, 추천안, 강조한 막대' },
   { v: '--bold-bg', name: '진한 면', use: '섹션 장, 표지 옆면, 진한 면 컴포넌트. 강조색과 짝인 깊은 색' },
   { v: '--bold-accent', name: '진한 면 위 강조', use: '진한 면 안의 숫자와 점. 강조색을 밝힌 색' },
@@ -346,7 +346,7 @@ export function System() {
           <section id="sys-parts" className="sys-group">
             <h2 className="sys-h2">컴포넌트</h2>
             <p className="sys-group-desc">
-              컴포넌트 장에 끌어다 놓는 컴포넌트예요. 정해진 줄과 칸에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+              컴포넌트 장에 끌어다 놓는 컴포넌트예요. 정해진 줄과 너비에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
             </p>
             {width > 0 &&
               BLOCK_GROUPS.map((g) => (
@@ -362,7 +362,7 @@ export function System() {
             {width > 0 && (
               <div className="sys-parts">
                 <h3 className="sys-h3">이음표</h3>
-                <p className="sys-group-desc">컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요. 칸 사이의 빈자리에 혼자 서서 컴포넌트를 가리지 않아요.</p>
+                <p className="sys-group-desc">컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요. 컴포넌트 사이의 빈자리에 혼자 서서 컴포넌트를 가리지 않아요.</p>
                 <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` } as CSSProperties}>
                   {BLOCK_LINKS.map((l) => (
                     <figure key={l.id} className="sys-thumb sys-part">

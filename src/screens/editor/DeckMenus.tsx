@@ -75,7 +75,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <p className="menu-h">
             강조색
             <Info label="강조색 설명" align="start">
-              숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 마지막 칸에서 직접 골라요.
+              숫자와 강조할 항목에만 쓰여요. 바탕과 넓은 면은 늘 흰색이나 검은색이에요. 회사의 대표 색은 맨 끝의 ‘직접 고르기’에서 골라요.
             </Info>
           </p>
           <div className="swatches">

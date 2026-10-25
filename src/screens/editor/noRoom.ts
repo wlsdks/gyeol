@@ -55,12 +55,12 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
     case 'rows':
       return where === 'here'
         ? { why: `줄은 ${MAX_ROWS}개까지라 새 줄을 만들 수 없어요.`, fix: '다른 컴포넌트 옆에 놓아 보세요.' }
-        : { why: `줄 ${MAX_ROWS}개가 다 찼고, 어느 줄에도 옆에 놓을 칸이 없어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
+        : { why: `줄 ${MAX_ROWS}개가 다 찼고, 어느 줄에도 옆에 놓을 자리가 없어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
     case 'row-full':
       return { why: `한 줄에는 ${MAX_IN_ROW}개까지 나란히 놓아요.`, fix: '위나 아래에 새 줄로 놓아 보세요.' }
     case 'narrow':
       return {
-        why: `${josa(name, '은', '는')} 장 너비의 ${WIDTH[r.span] ?? '절반'} 이상이 있어야 해서, 이 줄에 끼우면 칸이 너무 좁아져요.`,
+        why: `${josa(name, '은', '는')} 장 너비의 ${WIDTH[r.span] ?? '절반'} 이상이 있어야 해서, 이 줄에 끼우면 너무 좁아져요.`,
         fix: '위나 아래에 새 줄로 놓아 보세요.',
       }
     case 'solo': {
@@ -79,7 +79,7 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
             ? { why: '혼자 한 줄을 다 쓰는 컴포넌트는 면 없이 써요. 넓은 면 안에 글이 한쪽에만 있어 비어 보여요.', fix: '옆에 컴포넌트를 하나 더 놓으면 둘 다 면을 깔 수 있어요.' }
             : r.why === 'no-bold'
               ? { why: '진한 면은 숫자나 강조할 말 하나에만 써요. 목록이나 그림을 검게 칠하면 장이 무거워 보여요.', fix: '옅은 면을 골라 보세요.' }
-              : { why: '이 컴포넌트는 면 없이 써요. 안에 이미 칸과 줄이 있어서 면을 깔면 상자 안에 상자가 돼요.', fix: '강조할 것은 큰 숫자나 강조 상자에 면을 깔아 보세요.' }
+              : { why: '이 컴포넌트는 면 없이 써요. 안에 이미 상자와 줄이 있어서 면을 깔면 상자 안에 상자가 돼요.', fix: '강조할 것은 큰 숫자나 강조 상자에 면을 깔아 보세요.' }
     case 'height': {
       // 몇 %인지는 쓰는 사람에게 뜻이 없다. 조금 넘치는지만 알려 주면 항목 하나만 빼도 되는지 가늠한다
       const over = r.need / Math.max(1, r.room) <= 1.1 ? '장 높이를 조금 넘어서' : '장 높이를 넘어서'

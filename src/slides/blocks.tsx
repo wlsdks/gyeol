@@ -1573,8 +1573,8 @@ function Gutters({ rows, boxes, live }: { rows: BlockRow[]; boxes: CellBox[]; li
             className={cx('bk-gutter', linkAt(rows, { dir: 'h', row: b.row, col: b.col - 1 }) && 'has-link')}
             style={{ gridRow: String(b.row + 1), gridColumn: `${b.start + 1} / span 1` }}
             role="separator"
-            aria-label="칸 너비 바꾸기"
-            title="끌어서 칸 너비 바꾸기"
+            aria-label="컴포넌트 너비 바꾸기"
+            title="끌어서 컴포넌트 너비 바꾸기"
             onPointerDown={(e) => live.onGutterPointerDown(e, b.rowId, b.col - 1)}
           >
             <span className="bk-gutter-grip" />

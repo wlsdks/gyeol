@@ -1072,12 +1072,67 @@ export function variantOfBlock(block: Block): string {
  * 부품은 발표할 때의 높이에 맞춰 놓으므로, 편집할 때 빈 안내를 다 펼치면 이웃 부품을 덮는다.
  * 고른 부품의 '칸 더하기'로 연다. 발표 전체의 값($소속 같은)은 부품 밖에서 적으므로 뺀다
  */
-export function foldableFields(type: BlockType): { key: string; label: string; item: boolean }[] {
+export function foldableFields(type: BlockType): { key: string; label: string; item: boolean; use: string }[] {
   const spec = BLOCKS[type]
+  const use = (key: string) => FOLD_USES[type]?.[key] ?? FOLD_USE_BY_KEY[key] ?? ''
   return [
-    ...spec.fields.filter((f) => f.optional && !f.named && !f.image && !f.key.startsWith('$')).map((f) => ({ key: f.key, label: f.label, item: false })),
-    ...(spec.items?.fields ?? []).filter((f) => f.optional && !f.image).map((f) => ({ key: `items.${f.key}`, label: f.label, item: true })),
+    ...spec.fields
+      .filter((f) => f.optional && !f.named && !f.image && !f.key.startsWith('$'))
+      .map((f) => ({ key: f.key, label: f.label, item: false, use: use(f.key) })),
+    ...(spec.items?.fields ?? []).filter((f) => f.optional && !f.image).map((f) => ({ key: `items.${f.key}`, label: f.label, item: true, use: use(`items.${f.key}`) })),
   ]
+}
+
+/**
+ * '칸 더하기' 메뉴에서 접어 둔 칸마다 무엇에 쓰는 칸인지 한 줄. 칸 이름('덧붙임', '단위')만으로는 꺼내면 어디에 무엇이 생기는지 알 수 없다.
+ * 항목마다 생기는 칸은 무엇마다인지 앞에 적는다. 적는 값에 따라 모양이 바뀌는 칸(몇 중 몇의 단위)은 그것도 적는다.
+ * 같은 이름이 여러 부품에서 같은 일을 하면 FOLD_USE_BY_KEY 하나로 (테스트가 모든 접는 칸에 있는지 본다)
+ */
+const FOLD_USE_BY_KEY: Record<string, string> = {
+  heading: '맨 위에 굵게 적는 한 줄',
+  unit: '숫자 뒤에 붙는 단위 (예: 억 원, 건)',
+  note: '숫자 아래 짧은 설명',
+}
+
+const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
+  message: { sub: '핵심 문장 아래 작은 글 한 줄' },
+  text: { label: '소제목 위의 작은 이름표 (예: 대상)', heading: '글 위에 굵게 적는 요점 한 줄' },
+  bullets: { 'items.body': '줄마다 요점 아래 덧붙이는 설명' },
+  quote: { by: '인용 아래에 누가 한 말인지' },
+  callout: { label: '강조할 내용 위의 이름표 (예: 주의할 점)' },
+  delta: { note: '전과 후를 잰 기준이나 기간' },
+  goal: { unit: '지금과 목표 뒤에 붙는 단위', note: '막대 아래 짧은 설명' },
+  ratio: { unit: '센 것의 단위. ‘명’이나 ‘분’이면 점이 사람 모양이 돼요' },
+  spark: { note: '숫자 아래 기간이나 기준' },
+  checks: { 'items.body': '할 일마다 완료, 진행 중, 지연, 예정 표시', 'items.meta': '할 일마다 누가, 언제까지' },
+  gantt: { now: '지금인 기간을 띠로 짚어요 (예: 12월)', 'items.meta': '할 일마다 맡은 팀이나 사람' },
+  people: { 'items.body': '사람마다 맡은 일 한 줄' },
+  image: { caption: '그림 아래 한 줄 설명' },
+  rating: { pick: '추천하는 안을 강조색으로 짚어요 (예: B안)', 'items.meta': '기준마다 한 줄 설명' },
+  market: { 'items.body': '원마다 어떤 시장인지 한 줄' },
+  diverge: { basis: '무엇과 견준 증감인지 (예: 작년 대비)' },
+  sparks: { period: '흐름을 본 기간 (예: 4월~9월)', 'items.meta': '지표마다 지금 값 뒤에 붙는 단위' },
+  kpi: { 'items.body': '숫자마다 아래 짧은 설명' },
+  scorecard: { 'items.body': '지표마다 짧은 설명이나 원인' },
+  bars: { 'items.meta': '막대마다 짧은 설명' },
+  bridge: { 'items.meta': '요인마다 짧은 설명' },
+  trend: { target: '이 값에 목표 가로선을 그어요' },
+  share: { 'items.meta': '항목마다 짧은 설명' },
+  funnel: { 'items.meta': '단계마다 짧은 설명' },
+  progress: { 'items.meta': '과제마다 누가, 언제까지', 'items.body': '과제마다 완료, 진행 중, 지연, 예정' },
+  process: { 'items.meta': '단계마다 누가, 얼마나 걸리는지', 'items.body': '단계마다 하는 일 한 줄' },
+  timeline: { 'items.body': '단계마다 하는 일 한 줄' },
+  position: { 'items.body': '점마다 짧은 설명' },
+  pricing: { 'items.meta': '안마다 기간, 인력 같은 조건' },
+  table: {
+    h2: '표 맨 위, 둘째 칸의 이름 (예: 담당)',
+    h3: '표 맨 위, 셋째 칸의 이름 (예: 기한)',
+    h4: '표 맨 위, 넷째 칸의 이름 (예: 비고)',
+    'items.meta': '줄마다 둘째 칸에 적는 내용',
+    'items.value': '줄마다 셋째 칸에 적는 내용',
+    'items.body': '줄마다 넷째 칸에 적는 내용',
+  },
+  logos: { 'items.title': '로고마다 회사 이름' },
 }
 
 /** 칸에 붙이는 data-field 앞머리. 같은 장의 다른 부품과 칸 이름이 겹치지 않게 */

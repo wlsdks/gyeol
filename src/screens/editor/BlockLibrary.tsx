@@ -161,7 +161,7 @@ export function BlockLibrary({ deck, slide, blocks }: { deck: Deck; slide: Slide
         <div className="lib-note">
           <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
-            <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 칸마다 컴포넌트로 나뉘어 옮길 수 있게 돼요" onClick={blocks.convert}>
+            <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 내용이 컴포넌트로 나뉘어 하나씩 옮길 수 있게 돼요" onClick={blocks.convert}>
               컴포넌트 장으로 바꾸기
             </button>
           )}

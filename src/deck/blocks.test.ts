@@ -22,6 +22,7 @@ import {
   fitSpans,
   fitsHeight,
   fitsWith,
+  foldableFields,
   insertAt,
   isSolo,
   LINK_PAD,
@@ -94,6 +95,14 @@ describe('부품 목록', () => {
       expect(spec.minSpan).toBeLessThanOrEqual(spec.prefSpan)
       expect(spec.prefSpan).toBeLessThanOrEqual(12)
       expect(blockMinH(makeBlock(type), spec.prefSpan)).toBeGreaterThan(0)
+    }
+  })
+
+  it("'칸 더하기'로 꺼내는 칸마다 무엇에 쓰는 칸인지 적혀 있고, 한 부품 안에서 겹치지 않는다", () => {
+    for (const type of BLOCK_TYPES) {
+      const folds = foldableFields(type)
+      for (const f of folds) expect(f.use, `${type} ${f.key}`).not.toBe('')
+      expect(new Set(folds.map((f) => f.use)).size, type).toBe(folds.length)
     }
   })
 

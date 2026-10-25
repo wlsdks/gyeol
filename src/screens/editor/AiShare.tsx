@@ -405,7 +405,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)}의 ${blockName(op.block)} 모양 바꾸기`, detail: parts.join(', ') }
     }
     case 'set_spans':
-      return { text: `${name(op.slide)}의 칸 너비 바꾸기`, detail: `${blockName(op.block)}가 있는 줄을 ${op.spans.join(' : ')}로` }
+      return { text: `${name(op.slide)}의 컴포넌트 너비 바꾸기`, detail: `${blockName(op.block)}가 있는 줄을 ${op.spans.join(' : ')}로` }
     case 'set_link': {
       const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}의 줄과 아래 줄 사이`
       const kind = BLOCK_LINKS.find((l) => l.id === op.link)?.name

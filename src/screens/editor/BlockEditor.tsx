@@ -830,7 +830,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
-        <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 아무 데나 놓아도 줄과 칸이 맞춰져요.</p>
+        <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 아무 데나 놓아도 줄과 너비가 반듯하게 맞춰져요.</p>
         <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
           <BlocksIcon />
           컴포넌트 고르기
@@ -1075,7 +1075,7 @@ function BlockTools({
   onVariant(variant: string): void
   onAddItem(): void
   /** 비어 있어서 접어 둔 칸. '칸 더하기'로 연다 */
-  adds: { key: string; label: string; item: boolean }[]
+  adds: { key: string; label: string; item: boolean; use: string }[]
   onOpenField(key: string): void
   onDuplicate(): void
   onRemove(): void
@@ -1297,7 +1297,7 @@ function BlockTools({
                     }}
                   >
                     <b>{f.label}</b>
-                    <span className="bk-menu-d">{f.item ? `${spec.items?.label ?? '항목'}마다 한 칸씩` : '이 컴포넌트에 한 칸'}</span>
+                    <span className="bk-menu-d">{f.use}</span>
                   </button>
                 </li>
               ))}
