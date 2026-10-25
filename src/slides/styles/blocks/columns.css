@@ -257,6 +257,48 @@
   background: var(--surface);
 }
 
+/* 막대 숫자는 누적 비율 선 위에 그리고, 숫자 둘레를 바탕색으로 지운다. 원인들의 몫이 비슷하면 선이 다음 막대의 숫자
+   바로 위를 지나서 숫자 윗부분을 긋고 지나갔다. 이제는 선이 숫자 앞에서 끊긴다.
+   선은 막대와 만나지 않아서(늘 그 칸의 막대보다 높다) 막대 칸 전체를 선 위로 올려도 된다 */
+.bk-pa {
+  /* 막대 숫자 한 줄의 높이 (base.css의 글자 칸 꼴과 같은 셈, .bk-cc-num의 30px) */
+  --pa-vh: max(var(--fs-min, 0px), calc(30px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1)));
+}
+
+.bk-pa .bk-cc-plot {
+  container: pa-plot / size;
+}
+
+.bk-pa .bk-cc-bar {
+  z-index: 2;
+}
+
+.bk-pa .bk-cc-num {
+  -webkit-text-stroke: 12px var(--bg);
+  paint-order: stroke fill;
+}
+
+/* 낮은 그래프(가장 낮은 줄, 면 위의 좁은 칸): 막대 숫자를 바닥줄 아래, 이름 바로 위로 내린다. 막대 위에 두면 선이 숫자들의
+   높이를 지나가서 숫자와 점이 한 줄로 꿰인 띠가 됐다. 그래프 안에는 막대와 선, 80%의 점만 남고, 숫자는 이름과 한 칸에 읽힌다.
+   막대 위에 남겨 두던 숫자 자리(--cc-top)는 선의 끝 점과 80% 숫자가 들 만큼만 */
+@container pa-plot (max-height: 320px) {
+  .bk-pa-canvas,
+  .bk-pa .bk-cc-col {
+    --cc-top: 36px;
+  }
+
+  .bk-pa .bk-cc-v {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin: 12px 0 0;
+  }
+
+  .bk-pa .bk-cc-label {
+    padding-top: calc(12px + var(--pa-vh) + 10px);
+  }
+}
+
 /* 80%를 넘긴 점: 요점의 숫자와 같은 값이라 강조색으로 이어 준다. 숫자는 점의 왼쪽 위(앞 선이 아래에서 올라오는 쪽의 반대) */
 .bk-pa-pt.is-cut {
   width: 20px;
