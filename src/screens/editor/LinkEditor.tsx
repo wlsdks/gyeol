@@ -362,13 +362,13 @@ export function useLinkEditing({
           <span className="lk-ghost-g">
             <LinkGlyph link={drag.link} />
           </span>
-          {drag.blocked && <p className="bk-ghost-why lk-ghost-why">{drag.blocked}</p>}
         </div>,
         document.body,
       )
     : null
 
-  const hint = drag ? (drag.spots.length ? '컴포넌트 사이에 놓으면 그 둘을 이어요' : NO_PAIR) : null
+  // 놓을 수 없는 까닭도 무대 위쪽의 한 줄 안내로 (손 아래에 붙여 두면 놓일 자리와 이웃 컴포넌트를 가렸다)
+  const hint = drag ? (drag.blocked ?? (drag.spots.length ? '컴포넌트 사이에 놓으면 그 둘을 이어요' : NO_PAIR)) : null
 
   return {
     selectedLink,

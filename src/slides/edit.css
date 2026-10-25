@@ -473,6 +473,12 @@
   pointer-events: auto;
 }
 
+/* 칸 너비나 줄 높이를 끄는 동안에는 손 아래를 지나는 컴포넌트의 이름표를 띄우지 않는다 (말풍선처럼 이웃 칸을 가린다) */
+:is(body.is-block-resizing, body.is-row-resizing) .bk-area.is-live:not(.is-dragging) > .bk:hover:not(.is-selected) > .bk-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- 두 판으로 나뉜 장: 옆 판 옮기기와 너비 (panes.tsx) ----------
    판 위에 겹쳐 그리지만 손은 막지 않는다(글 칸을 그대로 누를 수 있게). 이름표와 판 사이만 손을 받는다 */
 .pn-tools {

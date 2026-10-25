@@ -117,6 +117,12 @@ export function installTooltips() {
     'pointerover',
     (e) => {
       if (e.pointerType === 'touch') return
+      // 누른 채로 끄는 중(컴포넌트, 항목, 칸 너비, 줄 높이)에는 지나가는 단추와 손잡이의 말풍선을 띄우지 않는다.
+      // 컴포넌트를 끌고 줄 사이를 지나면 '끌어서 줄 높이 바꾸기'가 떠서 놓을 자리를 가렸다
+      if (e.buttons) {
+        if (owner) hide()
+        return
+      }
       // 올려 둔 단추 안에서 움직이는 것은 그대로 (title을 떼어 둬서 바깥 칸의 title을 잡지 않게)
       if (owner && e.target instanceof Node && owner.contains(e.target)) return
       const el = targetOf(e.target)

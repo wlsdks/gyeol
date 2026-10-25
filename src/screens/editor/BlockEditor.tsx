@@ -80,9 +80,16 @@ interface Drag {
   ghost: { w: number; h: number }
   grab: { x: number; y: number }
   source: DOMRect | null
+  /** 손이 장 위에 있는지. 장 위에서는 손의 그림을 작게 줄인다 (놓일 자리는 장 위에 미리 보인다) */
+  over: boolean
 }
 
 const GHOST_MAX = { w: 340, h: 230 }
+/**
+ * 장 위에 온 손의 그림 크기 (몫). 놓일 자리는 장 위의 빈 칸이 제 크기로 보여 주니, 손의 그림은 무엇을 드는지만 알면 된다.
+ * 예전에는 제 크기 그대로 손 아래에 있어서, 손 아래에 생기는 놓일 자리와 장 아래 단추를 덮었다
+ */
+const GHOST_OVER = 0.42
 const SPRING =
   'linear(0, 0.0576, 0.1409, 0.2066, 0.3123, 0.4188, 0.5204, 0.6135, 0.6697, 0.7445, 0.8079, 0.8604, 0.9029, 0.9261, 0.9543, 0.9755, 0.991, 1.0019, 1.007, 1.0122, 1.0151, 1.0162, 1.0161, 1.0156, 1.0143, 1.0127, 1.011, 1.0093, 1.0082, 1.0066, 1.0052, 1.004, 1.003, 1.0025, 1.0017, 1.0011, 1.0007, 1.0004, 1.0002, 1, 1)'
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -229,6 +236,12 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     if (!landing) return
     const g = ghostEl.current
     const d = landing.ghost
+    // 장 위에서 줄여 든 그림은 집은 자리(grab)를 가운데로 줄어 있다. 날려 보내기 전에 잡는 점을 옮겨도 그 자리에 그대로 보이게,
+    // 줄인 몫(s0)과 잡는 점이 바뀐 만큼 처음 자리를 고친다
+    const s0 = d.over ? GHOST_OVER : 1
+    const at = (g?.style.translate || '0px 0px').split(' ').map(parseFloat)
+    const from = (ox: number, oy: number) =>
+      `${at[0] + (d.grab.x * d.ghost.w - ox) * (1 - s0)}px ${(at[1] ?? 0) + (d.grab.y * d.ghost.h - oy) * (1 - s0)}px`
     if (!landing.id) {
       if (!g || !d.source || reduced()) {
         setLanding(null)
@@ -237,7 +250,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const r = d.source
       const back = g.animate(
         [
-          { translate: g.style.translate, scale: '1', opacity: 1 },
+          { translate: from(0, 0), scale: String(s0), opacity: 1 },
           { translate: `${r.left}px ${r.top}px`, scale: `${r.width / d.ghost.w} ${r.height / d.ghost.h}`, opacity: 0 },
         ],
         { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' },
@@ -273,12 +286,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     )
     // 넣은 뒤에 발표할 때의 움직임을 이어서 틀지 않는다: 자리에 맞춰진 내용이 사라졌다가 조각조각 다시 나타나서
     // 넣자마자 깨진 것처럼 보였다. 움직임은 '이 장 설정'의 움직임 ▶나 컴포넌트 도구의 움직임에서 미리 본다
-    const end = { x: r.left + r.width / 2 - gr.width / 2, y: r.top + r.height / 2 - gr.height / 2 }
+    const end = { x: r.left + r.width / 2 - d.ghost.w / 2, y: r.top + r.height / 2 - d.ghost.h / 2 }
+    const start = from(d.ghost.w / 2, d.ghost.h / 2)
     g.style.transformOrigin = '50% 50%'
     const fly = g.animate(
       [
-        { translate: g.style.translate, scale: '1', rotate: g.style.rotate || '0deg', opacity: 1 },
-        { translate: `${end.x}px ${end.y}px`, scale: String(Math.min(r.width / gr.width, r.height / gr.height)), rotate: '0deg', opacity: 0 },
+        { translate: start, scale: String(s0), rotate: g.style.rotate || '0deg', opacity: 1 },
+        { translate: `${end.x}px ${end.y}px`, scale: String(s0 * Math.min(r.width / gr.width, r.height / gr.height)), rotate: '0deg', opacity: 0 },
       ],
       { duration: 300, easing: 'cubic-bezier(0.3, 0, 0.2, 1)', fill: 'forwards' },
     )
@@ -329,8 +343,15 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       } else if (d.kind === 'new') plan = 'next'
     }
     const base = s.layout === 'compose' ? d.base : (composed?.rows ?? d.base)
-    if (plan !== d.plan || !sameTarget(target, d.target) || composed !== d.composed || room !== d.room || JSON.stringify(blocked) !== JSON.stringify(d.blocked)) {
-      const next = { ...d, plan, target, blocked, composed, base, room }
+    if (
+      over !== d.over ||
+      plan !== d.plan ||
+      !sameTarget(target, d.target) ||
+      composed !== d.composed ||
+      room !== d.room ||
+      JSON.stringify(blocked) !== JSON.stringify(d.blocked)
+    ) {
+      const next = { ...d, plan, target, blocked, composed, base, room, over }
       // 놓는 순간에도 바로 읽을 수 있게 그리기를 기다리지 않고 맞춘다
       dragRef.current = next
       setDrag(next)
@@ -364,7 +385,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         if (!g) return
         moveGhost(x, y)
         g.style.transformOrigin = `${d.grab.x * d.ghost.w}px ${d.grab.y * d.ghost.h}px`
-        if (from && !reduced()) g.animate([{ scale: String(from.width / d.ghost.w), opacity: 0.6 }, { scale: '1', opacity: 1 }], { duration: 380, easing: SPRING })
+        if (from && !reduced()) g.animate([{ scale: String(from.width / d.ghost.w), opacity: 0.6 }, { scale: String(d.over ? GHOST_OVER : 1), opacity: 1 }], { duration: 380, easing: SPRING })
       })
       let raf = 0
       const onMove = (e: PointerEvent) => {
@@ -445,7 +466,20 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       // 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
       const { link: _, ...bare } = block
       begin(
-        { kind: 'move', block: bare, base: removeBlock(s.rows ?? [], block.id), composed: null, target: targetOf(s.rows ?? [], block.id), blocked: null, plan: 'place', canvas, ghost, grab, source: r },
+        {
+          kind: 'move',
+          block: bare,
+          base: removeBlock(s.rows ?? [], block.id),
+          composed: null,
+          target: targetOf(s.rows ?? [], block.id),
+          blocked: null,
+          plan: 'place',
+          canvas,
+          ghost,
+          grab,
+          source: r,
+          over: true,
+        },
         x,
         y,
         r,
@@ -463,7 +497,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const canvas = { w: spec.prefSpan * (colW + BLOCK_GAP) - BLOCK_GAP + 80, h: Math.max(blockPrefH(block), 300) + 80 }
     const ghost = ghostSize(canvas, k)
     const grab = from ? { x: Math.min(1, Math.max(0, (x - from.left) / from.width)), y: Math.min(1, Math.max(0, (y - from.top) / from.height)) } : { x: 0.5, y: 0.5 }
-    return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from }
+    return { kind: 'new', block, base: s.rows ?? [], composed: null, target: null, blocked: null, plan: null, canvas, ghost, grab, source: from, over: false }
   }
 
   const pressCard = useCallback(
@@ -808,10 +842,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     },
   }
 
+  // 끄는 동안의 안내는 무대 위쪽 가운데의 한 줄로만 (손 아래에는 놓일 자리가 생기니 가리지 않게)
   const hint = links.hint
     ? links.hint
     : !drag
     ? null
+    : drag.blocked && drag.target && (drag.plan === 'place' || drag.plan === 'convert')
+      ? `${noRoomText(drag.blocked, drag.block.type, 'here').why} 가장 가까운 자리에 놓을게요.`
     : drag.plan === 'convert'
       ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
@@ -827,8 +864,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     ? createPortal(
         <div
           ref={ghostEl}
-          className={cx('bk-ghost', drag && 'is-held', drag?.plan === 'next' && 'is-next')}
-          style={{ width: shown.ghost.w, height: shown.ghost.h }}
+          className={cx('bk-ghost', drag && 'is-held', drag?.plan === 'next' && 'is-next', drag?.blocked && drag.target && 'is-elsewhere')}
+          style={{ width: shown.ghost.w, height: shown.ghost.h, scale: shown.over ? String(GHOST_OVER) : undefined }}
           aria-hidden="true"
         >
           <div className="bk-ghost-clip">
@@ -836,13 +873,6 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
               <SlideCanvas deck={look} slide={soloSlide(shown.block)} mode="preview" solo={shown.canvas} />
             </div>
           </div>
-          {/* 손 아래 자리에 놓을 수 없을 때: 왜 안 되는지와 대신 어디에 놓이는지 */}
-          {drag?.blocked && drag.target && (
-            <p className="bk-ghost-why">
-              <b>여기에는 못 놓아요</b>
-              {noRoomText(drag.blocked, drag.block.type, 'here').why} 가장 가까운 자리에 놓을게요.
-            </p>
-          )}
         </div>,
         document.body,
       )
