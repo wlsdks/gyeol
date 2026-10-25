@@ -170,8 +170,21 @@ class Measure {
 
   /** dir 쪽으로 가장 작은 크기 (다른 쪽 크기 cross를 정했을 때). most까지 안 되면 Infinity */
   least(t: Tree, dir: 'h' | 'v', cross: number, most: number): number {
-    for (let n = 1; n <= most; n++) if (dir === 'h' ? this.fits(t, n, cross) : this.fits(t, cross, n)) return n
-    return Infinity
+    if (dir === 'h') {
+      // 너비는 넓힌다고 늘 들어가지 않아서(넓을수록 더 높아지는 부품) 좁은 쪽부터 하나씩
+      for (let n = 1; n <= most; n++) if (this.fits(t, n, cross)) return n
+      return Infinity
+    }
+    // 높이는 높일수록 늘 들어가서 반씩 나눠 찾는다
+    if (!this.fits(t, cross, most)) return Infinity
+    let lo = 1
+    let hi = most
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (this.fits(t, cross, mid)) hi = mid
+      else lo = mid + 1
+    }
+    return lo
   }
 
   stretchy(t: Tree): boolean {
