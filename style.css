@@ -604,17 +604,16 @@ h3 {
   left: calc(var(--k) * 120);
   width: calc(var(--k) * 1680);
   height: calc(var(--k) * 715.6);
-  /* 점 크기: 편집기는 화면에서 3px. 그림이 작아지는 폰에서는 줄인다 */
-  --dot: clamp(1.5px, calc(var(--k) * 7.5), 3px);
-  background-image: radial-gradient(circle at calc(100% - var(--col-gap) / 2) calc(100% - var(--row-gap) / 2), color-mix(in srgb, var(--sel) 55%, transparent) 0 var(--dot), transparent calc(var(--dot) + 0.5px));
+  /* 그림에서는 점이 늘 보여서, 편집기(끌 때만 고르기 색 55%, 3px)보다 훨씬 옅고 작게 바탕 무늬처럼 둔다.
+     폰에서는 그림이 작아지니 점도 줄인다 */
+  --dot: clamp(1.25px, calc(var(--k) * 5.8), 2px);
+  background-image: radial-gradient(circle at calc(100% - var(--col-gap) / 2) calc(100% - var(--row-gap) / 2), color-mix(in srgb, var(--sel) 22%, transparent) 0 var(--dot), transparent calc(var(--dot) + 0.5px));
   background-size: calc((100% + var(--col-gap)) / 12) calc((100% + var(--row-gap)) / 12);
-  /* 편집기에서는 컴포넌트가 점 위에 그려져서 면이 있는 컴포넌트(이 그림의 결정 요청, 가로 9~12칸, 세로 0~6칸)는 점을 가린다.
-     그 자리만 비운다: 왼쪽 (1752 × 9/12) ÷ 1680, 높이 (763.6 × 6/12 − 48) ÷ 715.6 */
-  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  mask-size: 100% 100%, 21.79% 46.65%;
-  mask-position: 0 0, 100% 0;
+  /* 글, 숫자, 차트, 면이 있는 컴포넌트 자리에는 찍지 않고 칸 사이와 빈 곳에만 둔다.
+     images/compose-mask.svg는 그림과 같은 장을 앱에서 그려 그 자리를 잰 것(판 크기 1680×715.6 기준) */
+  mask-image: url("images/compose-mask.svg");
+  mask-size: 100% 100%;
   mask-repeat: no-repeat;
-  mask-composite: exclude;
   pointer-events: none;
 }
 
