@@ -202,7 +202,9 @@ function composeExample(): Slide {
   ).rows![0].blocks[0]
   return {
     ...makeSlide('compose'),
-    fields: { title: '시범 라인 석 달 만에 불량률이 3분의 1로 줄었어요', source: '품질관리 시스템, 9월 말 기준' },
+    // 출처 줄은 빼 둔다: 위 줄(전과 후, 큰 숫자, 강조 상자)과 아래 줄(추이 차트의 바닥 높이)이 본문 높이를 다 써서,
+    // 출처 한 줄만큼 줄 높이를 줄이면 전과 후의 덧붙임 글이 칸 밖으로 나왔다(편집기가 '글이 넘쳤어요'를 띄웠다)
+    fields: { title: '시범 라인 석 달 만에 불량률이 3분의 1로 줄었어요' },
     rows: [
       {
         id: 'sample-row-1',

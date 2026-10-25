@@ -662,8 +662,9 @@
 }
 
 .bk-dl-row {
-  /* 숫자 하나의 폭: .one-line과 같은 식(글자 수 × 글꼴의 글자 폭 × 글자 크기) */
-  --dl-w: calc(var(--dl-units, 4) * var(--glyph-k, 1) * var(--dl-v) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+  /* 숫자의 글자 크기(--fs 목록과 같은 식)와 숫자 하나의 폭(.one-line과 같은 식: 글자 수 × 글꼴의 글자 폭 × 글자 크기) */
+  --dl-vs: calc(var(--dl-v) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
+  --dl-w: calc(var(--dl-units, 4) * var(--glyph-k, 1) * var(--dl-vs));
   display: grid;
   /* 전의 칸은 숫자 폭만큼, 남는 너비는 후의 칸(아래에 바뀐 만큼이 선다). 칸 너비로 똑같이 나누면 넓은 칸에서
      앞 숫자('11분') 오른쪽이 비어 화살표가 뒤 숫자에만 붙어 보였다. 좁아서 숫자 폭이 안 나오면 똑같이 나눈다 */
@@ -723,20 +724,25 @@
   color: var(--accent);
 }
 
+/* 화살표는 숫자 크기를 따라간다(숫자 90px에 상자 64, 아래 틈 12, 그림 48). 고정 크기면 칸이 모자라 글자를 줄여도
+   값 줄이 화살표 높이(76px) 밑으로 내려가지 않아서, 숫자만 두 단계 작아지고 덧붙임 글은 칸 밖에 남았다 */
 .bk-dl-arrow {
+  --dl-arrow: 0.71;
+  --dl-arrow-gap: 0.13;
+  --dl-arrow-svg: 0.53;
   grid-row: 2;
   grid-column: 2;
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 12px;
+  width: calc(var(--dl-vs) * var(--dl-arrow));
+  height: calc(var(--dl-vs) * var(--dl-arrow));
+  margin-bottom: calc(var(--dl-vs) * var(--dl-arrow-gap));
   color: var(--ink-3);
 }
 
 .bk-dl-arrow svg {
-  width: 48px;
-  height: 48px;
+  width: calc(var(--dl-vs) * var(--dl-arrow-svg));
+  height: calc(var(--dl-vs) * var(--dl-arrow-svg));
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -803,15 +809,11 @@
     --fs: var(--t-body);
   }
 
+  /* 숫자 128px에 상자 96, 아래 틈 40, 그림 72 */
   .bk-dl-arrow {
-    width: 96px;
-    height: 96px;
-    margin-bottom: 40px;
-  }
-
-  .bk-dl-arrow svg {
-    width: 72px;
-    height: 72px;
+    --dl-arrow: 0.75;
+    --dl-arrow-gap: 0.31;
+    --dl-arrow-svg: 0.56;
   }
 
   .bk-dl-chip {
