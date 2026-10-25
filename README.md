@@ -104,4 +104,4 @@ npm run licenses   # 쓰는 패키지의 라이선스 확인
 npm run pack       # 라이선스 확인 후 나눠 줄 폴더와 zip 만들기
 ```
 
-설계와 앞으로 할 일은 [docs/DESIGN.md](docs/DESIGN.md), AI 에이전트가 이 저장소에서 지킬 규칙은 [AGENTS.md](AGENTS.md)에 있습니다.
+설계와 앞으로 할 일은 [docs/DESIGN.md](docs/DESIGN.md), 코드의 구조는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), AI 에이전트가 이 저장소에서 지킬 규칙은 [AGENTS.md](AGENTS.md)에 있습니다.

@@ -12,7 +12,7 @@
 - 발표 종류와 듣는 사람, 시간을 고르면 구성(장 순서, 레이아웃, 칸마다 안내)이 잡히고, 사람은 내용만 채웁니다. 종류와 듣는 사람은 `src/deck/blueprints.ts`(`DECK_GROUPS`, `AUDIENCES`)에 있습니다.
 - **개인 PC에서 `127.0.0.1`로만** 띄웁니다. 크롬과 엣지만 지원합니다.
 - 쓰는 사람 대부분은 **윈도우**입니다. 개발과 기능 테스트는 맥에서 하므로, 맥에서 볼 때도 윈도우 조건을 떠올립니다(아래 ‘윈도우’).
-- 설계는 [docs/DESIGN.md](docs/DESIGN.md), 라이선스는 [docs/OPEN-SOURCE.md](docs/OPEN-SOURCE.md)에 있습니다.
+- 설계는 [docs/DESIGN.md](docs/DESIGN.md), 코드의 구조(층, 한 곳에서 정하는 것, 파일 나누기)는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), 라이선스는 [docs/OPEN-SOURCE.md](docs/OPEN-SOURCE.md)에 있습니다.
 
 ## 꼭 지킬 것
 
