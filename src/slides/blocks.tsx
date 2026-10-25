@@ -5,7 +5,7 @@
 // 부품 장만의 부품 하나의 그리기는 blocks/<이름>.tsx, 여러 부품이 같이 쓰는 조각은 blocks/parts.tsx
 
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { behind, BLOCK_LINKS, BLOCKS, blockFieldPrefix, boardInfo, foldableFields, blockItems, blockSlide, effectOf, fromOf, guttersOf, isAlone, knownBlocks, linkAt, playOrder, sameLinkTarget, shownBlocks, shownLook, speedOf, variantOfBlock, whenOf, withLink, type Gutter, type LinkTarget } from '../deck/blocks'
+import { behind, BLOCK_LINKS, BLOCKS, blockFieldPrefix, boardInfo, byReading, foldableFields, blockItems, blockSlide, effectOf, fromOf, guttersOf, isAlone, knownBlocks, linkAt, playOrder, sameLinkTarget, shownBlocks, shownLook, speedOf, variantOfBlock, whenOf, withLink, type Gutter, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn } from '../deck/fields'
 import type { Block, BlockLink, BlockType, NativeBlockType } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -432,7 +432,8 @@ export function BlockArea() {
       {!blocks.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
       {/* 끌거나 크기를 바꾸는 동안 판의 칸을 점으로 보여 준다 (부품이 붙는 자리) */}
       {live && blocks.length > 0 && <div className="bk-board" aria-hidden="true" />}
-      {blocks.map((b) => (
+      {/* 읽는 차례로 그린다: 칸 사이를 Tab으로 옮겨 다니는 차례와 화면 읽기 차례가 보이는 차례와 같게 (넣은 차례로 그리면 왼쪽에 넣은 부품이 나중에 온다) */}
+      {byReading(blocks).map((b) => (
         <BlockCell key={b.id} block={b} blocks={blocks} live={live} seq={seq.get(b.id)} band={info.get(b.id)} linked={(info.get(b.id)?.size ?? 1) > 1 && linked.has(info.get(b.id)?.band)} />
       ))}
       <Links blocks={blocks} live={live} />
