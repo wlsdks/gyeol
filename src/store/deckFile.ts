@@ -1,6 +1,6 @@
 import type { Deck } from '../deck/types'
 
-// 작업 파일(.deck): 발표자 노트까지 모두 담는다. 고객에게 보내는 HTML과 다른 파일이다.
+// 작업 파일(.deck): 발표자 노트까지 모두 담는다. 듣는 분께 나눠 주는 발표 파일(HTML)과 다른 파일이다.
 
 export const DECK_EXT = '.deck'
 const FORMAT = 'html-maker/deck'

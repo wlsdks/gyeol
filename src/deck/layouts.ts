@@ -171,7 +171,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       default: 3,
       fields: [
         { key: 'value', label: '숫자', hint: '30%', hints: ['4.8억 원', '3년', '22%', '120곳'] },
-        { key: 'title', label: '이름', hint: '지표 이름', hints: ['예상 매출', '계약 기간', '예상 이익률', '대상 고객'] },
+        { key: 'title', label: '이름', hint: '지표 이름', hints: ['한 해 절감액', '회수 기간', '줄인 시간', '대상 지점'] },
         { key: 'body', label: '설명', hint: '짧은 설명', multiline: true, optional: true },
       ],
     },
@@ -193,9 +193,9 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '영업이익', '신규 고객', '처리 기간', '이익률', '방문 건수'] },
-        { key: 'meta', label: '목표', hint: '117억 원', hints: ['117억 원', '14억 원', '5곳', '5일 이하', '12%', '300건'] },
-        { key: 'value', label: '실적', hint: '131억 원', hints: ['131억 원', '15.2억 원', '4곳', '4.2일', '11%', '320건'] },
+        { key: 'title', label: '지표', hint: '지표 이름', hints: ['매출', '영업이익', '신규 채용', '처리 기간', '이익률', '문의 처리'] },
+        { key: 'meta', label: '목표', hint: '117억 원', hints: ['117억 원', '14억 원', '5명', '5일 이하', '12%', '300건'] },
+        { key: 'value', label: '실적', hint: '131억 원', hints: ['131억 원', '15.2억 원', '4명', '4.2일', '11%', '320건'] },
         { key: 'body', label: '설명', hint: '짧은 설명이나 원인', optional: true },
       ],
     },
@@ -218,7 +218,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 3,
       fields: [
-        { key: 'title', label: '요인', hint: '요인 이름', hints: ['신규 고객', '단가 인상', '기존 고객 이탈', '환율', '할인', '기타'] },
+        { key: 'title', label: '요인', hint: '요인 이름', hints: ['신제품', '가격 조정', '거래 감소', '환율', '원가 절감', '기타'] },
         { key: 'value', label: '증감', hint: '+9', hints: ['+9', '+7', '-2', '+3', '-1', '+1'] },
         { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
       ],
@@ -262,8 +262,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 7,
       default: 5,
       fields: [
-        { key: 'title', label: '과제', hint: '과제 이름', hints: ['견적 자동 계산', '단가표 공유', '승인 단계 줄이기', '현장 교육', '효과 점검', '양식 정리', '결과 보고'] },
-        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true, hints: ['기획팀, 10월', '구매팀, 11월', '사업본부, 11월', '교육팀, 12월', '기획팀, 1월', '기획팀, 1월', '사업본부, 2월'] },
+        { key: 'title', label: '과제', hint: '과제 이름', hints: ['신청 화면 만들기', '규정 정리', '승인 단계 줄이기', '직원 교육', '효과 점검', '양식 정리', '결과 보고'] },
+        { key: 'meta', label: '담당과 기한', hint: '담당, 기한', optional: true, hints: ['정보기술팀, 10월', '인사팀, 11월', '사업본부, 11월', '교육팀, 12월', '기획팀, 1월', '기획팀, 1월', '사업본부, 2월'] },
         { key: 'value', label: '진행률', hint: '80%', hints: ['100%', '80%', '40%', '20%', '0%', '50%', '0%'] },
         {
           key: 'body',
@@ -278,7 +278,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   share: {
     id: 'share',
     name: '구성비',
-    description: '전체를 나눈 비중 (매출 구성, 비용 구성, 시장 점유)',
+    description: '전체를 나눈 비중 (비용 구성, 인력 구성, 매출 구성)',
     variants: [
       { id: 'base', name: '띠' },
       { id: 'donut', name: '도넛' },
@@ -291,7 +291,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '항목', hint: '항목 이름', hints: ['제조', '유통', '금융', '공공', '기타', '그 밖'] },
+        { key: 'title', label: '항목', hint: '항목 이름', hints: ['급여', '시설', '운영', '교육', '기타', '그 밖'] },
         { key: 'value', label: '숫자', hint: '48', hints: ['48', '31', '14', '7', '5', '3'] },
         { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
       ],
@@ -313,7 +313,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '단계', hint: '단계 이름', hints: ['요청 접수', '견적 작성', '검토와 승인', '고객에게 보내기', '계약', '사후 관리'] },
+        { key: 'title', label: '단계', hint: '단계 이름', hints: ['요청 접수', '내용 확인', '검토와 승인', '비용 처리', '최종 결재', '사후 관리'] },
         {
           key: 'meta',
           label: '담당과 시간',
@@ -327,7 +327,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
           hint: '이 단계에서 하는 일',
           multiline: true,
           optional: true,
-          hints: ['고객 요청을 시스템에 남겨요', '단가표로 견적을 바로 계산해요', '한 번에 검토하고 승인해요', '정해진 양식으로 보내요', '계약 조건을 확정해요', '쓰는 모습을 살펴요'],
+          hints: ['요청을 시스템에 남겨요', '빠진 서류를 바로 챙겨요', '한 번에 검토하고 승인해요', '정해진 계정으로 처리해요', '금액이 크면 한 번 더 봐요', '쓰는 모습을 살펴요'],
         },
       ],
     },
@@ -344,7 +344,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '단계', hint: '단계 이름', hints: ['첫 만남', '제안', '협상', '계약', '재계약', '추천'] },
+        { key: 'title', label: '단계', hint: '단계 이름', hints: ['지원', '서류 통과', '면접', '최종 합격', '입사', '수습 통과'] },
         { key: 'value', label: '숫자', hint: '120', hints: ['120', '48', '20', '9', '6', '3'] },
         { key: 'meta', label: '보충', hint: '짧은 설명', optional: true },
       ],
@@ -369,14 +369,14 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 7,
       default: 4,
       fields: [
-        { key: 'title', label: '첫째 칸', hint: '과제 이름', hints: ['견적 양식 통일', '단가표 공유', '승인 단계 줄이기', '효과 점검'] },
-        { key: 'meta', label: '둘째 칸', hint: '담당', hints: ['기획팀', '구매팀', '사업본부', '기획팀'], optional: true },
+        { key: 'title', label: '첫째 칸', hint: '과제 이름', hints: ['보고 양식 통일', '규정집 공유', '승인 단계 줄이기', '효과 점검'] },
+        { key: 'meta', label: '둘째 칸', hint: '담당', hints: ['기획팀', '인사팀', '사업본부', '기획팀'], optional: true },
         { key: 'value', label: '셋째 칸', hint: '기한', hints: ['11월', '12월', '1월', '2월'], optional: true },
         {
           key: 'body',
           label: '넷째 칸',
           hint: '짧은 설명',
-          hints: ['팀마다 다른 양식을 하나로', '분기마다 새로 올림', '세 단계를 두 단계로', '견적 시간을 다시 잼'],
+          hints: ['팀마다 다른 양식을 하나로', '분기마다 새로 올림', '세 단계를 두 단계로', '처리 시간을 다시 잼'],
           multiline: true,
           optional: true,
         },
@@ -452,7 +452,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   position: {
     id: 'position',
     name: '위치 비교',
-    description: '우리와 경쟁사가 두 기준에서 어디쯤인지 점으로 (포지셔닝 맵)',
+    description: '여러 안이나 회사가 두 기준에서 어디쯤인지 점으로 (포지셔닝 맵)',
     highlight: { label: '강조할 점', fallback: 0 },
     fields: [
       title('위치가 말해 주는 결론'),
@@ -466,7 +466,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       max: 6,
       default: 4,
       fields: [
-        { key: 'title', label: '이름', hint: '회사나 안 이름', hints: ['우리', 'A사', 'B사', 'C사', 'D사', 'E사'] },
+        { key: 'title', label: '이름', hint: '안이나 회사 이름', hints: ['우리', 'A사', 'B사', 'C사', 'D사', 'E사'] },
         { key: 'value', label: '가로 점수', hint: '0~10', hints: ['8', '4', '7', '3', '5', '6'] },
         { key: 'meta', label: '세로 점수', hint: '0~10', hints: ['8', '6', '3', '4', '7', '2'] },
         { key: 'body', label: '한 줄', hint: '짧은 설명', optional: true },
@@ -502,10 +502,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     description: '비슷한 사례와 그 결과',
     panes: { name: '결과', el: '.cs-side', sides: [3, 4, 5], base: 4 },
     fields: [
-      { key: 'client', label: '대상', hint: '고객사, 업종 또는 부서' },
+      { key: 'client', label: '대상', hint: '부서, 지점 또는 협력사' },
       { key: 'title', label: '결과', hint: '얻은 결과를 한 문장으로', multiline: true },
       { key: 'body', label: '내용', hint: '어떤 과제를 어떻게 해결했는지', multiline: true },
-      { key: 'quote', label: '한마디', hint: '담당자나 고객의 한마디', multiline: true, optional: true },
+      { key: 'quote', label: '한마디', hint: '담당자나 써 본 사람의 한마디', multiline: true, optional: true },
       { key: 'image', label: '로고 또는 사진', hint: '로고', optional: true, image: true },
     ],
     items: {
@@ -556,7 +556,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
   logos: {
     id: 'logos',
     name: '로고 모음',
-    description: '고객사나 협력사 로고 모음',
+    description: '협력사, 계열사, 쓰는 서비스의 로고 모음',
     fields: [title('로고들을 묶는 제목'), lead('한 줄 설명')],
     items: {
       label: '로고',
@@ -699,7 +699,7 @@ export const LAYOUT_GROUPS: { name: string; description: string; layouts: Layout
   { name: '숫자와 차트', description: '실적, 규모, 변화를 숫자로', layouts: ['kpi', 'scorecard', 'bars', 'versus', 'bridge', 'trend', 'share', 'funnel'] },
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
   { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'position', 'pricing', 'table'] },
-  { name: '자료와 사례', description: '화면, 사례, 고객사', layouts: ['imageText', 'case', 'logos'] },
+  { name: '자료와 사례', description: '화면, 사례, 로고', layouts: ['imageText', 'case', 'logos'] },
   { name: '시작과 끝', description: '표지, 목차, 섹션, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
 ]
 
