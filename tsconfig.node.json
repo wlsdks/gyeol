@@ -5,5 +5,5 @@
     "types": ["node"],
     "allowImportingTsExtensions": true
   },
-  "include": ["server", "mcp", "vite.config.ts", "vite.node.config.ts"]
+  "include": ["server", "mcp", "vite.config.ts", "vite.node.config.ts", "src/lib/cssVars.d.ts"]
 }
