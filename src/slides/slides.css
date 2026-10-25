@@ -1386,6 +1386,32 @@
   --fs: 26px;
 }
 
+/* 장 한 장에 줄이 서넛뿐이면 이름과 설명을 한 단계씩 키운다. 그대로면 줄마다 높이의 반 넘게 비어 글이 작아 보였다.
+   보내는 자료는 한 단계 작게(다른 글과 같은 차이) */
+.l-points:not(.va-columns, .va-tiles) .pt:is([data-n='2'], [data-n='3']) .pt-title {
+  --fs: 52px;
+}
+
+.l-points:not(.va-columns, .va-tiles) .pt:is([data-n='2'], [data-n='3']) .pt-body {
+  --fs: 36px;
+}
+
+.l-points:not(.va-columns, .va-tiles) .pt[data-n='4'] .pt-title {
+  --fs: 44px;
+}
+
+.d-read.l-points:not(.va-columns, .va-tiles) .pt:is([data-n='2'], [data-n='3']) .pt-title {
+  --fs: 44px;
+}
+
+.d-read.l-points:not(.va-columns, .va-tiles) .pt:is([data-n='2'], [data-n='3']) .pt-body {
+  --fs: 30px;
+}
+
+.d-read.l-points:not(.va-columns, .va-tiles) .pt[data-n='4'] .pt-title {
+  --fs: 36px;
+}
+
 /* 모양: 세로 칸. 포인트를 왼쪽에서 오른쪽으로 나란히 */
 /* 가운데에 두되 칸보다 높으면 위에서부터(safe). 그냥 가운데면 위아래로 똑같이 넘쳐 맨 위 줄이 틀 밖으로 나간다 */
 .va-columns .pt {
@@ -1435,12 +1461,23 @@
 }
 
 .l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-title {
-  --fs: 52px;
+  --fs: 62px;
+  line-height: 1.16;
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 .l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-body {
   --fs: 36px;
   margin-top: 32px;
+}
+
+.d-read.l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-title {
+  --fs: 52px;
+}
+
+.d-read.l-points.va-columns .pt:is([data-n='2'], [data-n='3']) .pt-body {
+  --fs: 30px;
 }
 
 /* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
@@ -1476,6 +1513,32 @@
 }
 
 .va-tiles .pt-body {
+  --fs: 30px;
+}
+
+/* 타일을 장 한 장에 쓸 때: 이름을 면의 위에 크게, 설명은 면의 아래 끝에(포스터처럼). 이름이 작으면 면 가운데가
+   비어 빈 상자처럼 보였다. 한 면 안이라 이름과 설명은 떨어져 있어도 한 덩이로 읽힌다. 다섯, 여섯은 면이 낮아 그대로 */
+.l-points.va-tiles .pt-item {
+  padding: 56px 56px 60px;
+}
+
+.l-points.va-tiles .pt:is([data-n='2'], [data-n='3'], [data-n='4']) .pt-title {
+  --fs: 62px;
+  line-height: 1.16;
+  letter-spacing: calc(var(--head-tracking) - 0.01em);
+  text-wrap: balance;
+  word-break: keep-all;
+}
+
+.l-points.va-tiles .pt:is([data-n='2'], [data-n='3'], [data-n='4']) .pt-body {
+  --fs: 36px;
+}
+
+.d-read.l-points.va-tiles .pt:is([data-n='2'], [data-n='3'], [data-n='4']) .pt-title {
+  --fs: 52px;
+}
+
+.d-read.l-points.va-tiles .pt:is([data-n='2'], [data-n='3'], [data-n='4']) .pt-body {
   --fs: 30px;
 }
 
