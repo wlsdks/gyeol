@@ -1,0 +1,86 @@
+// 부품: 원인 순위 (pareto)
+
+import { BLOCKS } from '../../deck/blocks'
+import { readField } from '../../deck/fields'
+import { hintFor } from '../../deck/layouts'
+import { cx } from '../../lib/cx'
+import { demoOf, useSlide } from '../context'
+import { IT, ItemTools, T } from '../fields'
+import { seriesIn } from '../numbers'
+import { ChartKey, pctText } from './parts'
+
+/**
+ * 원인 순위(파레토): 막대는 전체에서 그 원인이 차지하는 몫, 선은 앞에서부터 더한 몫. 둘이 같은 눈금(전체 = 100)이라
+ * 눈금 하나로 읽는다(눈금 둘을 겹치지 않는다). 더한 몫이 80%에 닿기까지의 원인이 먼저 잡을 원인이라 강조색, 나머지는 회색.
+ * 원인은 적은 차례 그대로 둔다. 장 위에서 순서를 바꾼 대로 보여야 해서 저절로 줄 세우지 않는다(안내에 '많은 것부터')
+ */
+export function Pareto() {
+  const { slide, meta, mode } = useSlide()
+  const items = slide.items.slice(0, BLOCKS.pareto.items!.max)
+  const demo = demoOf(mode, items)
+  const series = seriesIn(
+    items.map((it, i) => (demo ? hintFor(slide.layout, slide.hints, 'value', 'value', i) : it.value)),
+    readField(slide, meta, 'unit'),
+  )
+  const values = series.values.map((v) => Math.max(0, v ?? 0))
+  const total = values.reduce((a, b) => a + b, 0)
+  const share = values.map((v) => (total > 0 ? (v / total) * 100 : 0))
+  const cum: number[] = []
+  share.forEach((p, i) => cum.push((cum[i - 1] ?? 0) + p))
+  // 단위가 서로 다른 값('3건', '40%')을 더한 몫은 틀린 숫자라 먼저 잡을 원인과 몫을 말하지 않는다
+  const vital = total > 0 && series.ok ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
+  const n = items.length
+  // 점은 막대 칸의 오른쪽 끝: 그 칸까지 더한 몫. 가운데에 찍으면 첫 점이 첫 막대의 숫자 위에 앉는다
+  const x = (i: number) => ((i + 1) / n) * 100
+  const line = cum.map((c, i) => `${x(i).toFixed(2)},${(100 - c).toFixed(2)}`).join(' ')
+  // 몇 개가 거의 다인지가 요점. 모두가 80% 안이면 몰린 곳이 없어서 말하지 않는다
+  const sum =
+    vital > 0 && vital < n ? (
+      <>
+        {vital === 1 ? '가장 많은 하나가' : `상위 ${vital}개가`} 전체의 <b>{pctText(cum[vital - 1])}</b>
+      </>
+    ) : undefined
+  return (
+    <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n }}>
+      <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
+      <ChartKey
+        sum={sum}
+        keys={
+          <span className="bk-cc-lk is-line">
+            <i aria-hidden="true" />
+            누적 비율
+          </span>
+        }
+      />
+      <div className="bk-cc-plot">
+        {total > 0 && (
+          <div className="bk-pa-canvas" aria-hidden="true">
+            <svg className="bk-pa-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polyline points={line} />
+            </svg>
+            {cum.map((c, i) => (
+              <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) }}>
+                {i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+        {items.map((it, i) => (
+          // 칸 자리를 적어 둔다: 선 그림이 첫 줄 전체를 차지해서, 적지 않으면 막대 칸이 그 옆 새 칸으로 밀려난다
+          <div key={it.id} className={cx('it bk-cc-col', i < vital && 'is-hl')} style={{ '--p': share[i].toFixed(2), gridColumn: i + 1 }}>
+            <div className="bk-cc-bar">
+              <span className="bk-cc-v">
+                <IT i={i} k="value" as="span" className="bk-cc-num" oneLine />
+              </span>
+              <span className="bk-cc-fill" />
+            </div>
+            <div className="bk-cc-label">
+              <IT i={i} k="title" className="bk-cc-name" />
+            </div>
+            <ItemTools i={i} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
