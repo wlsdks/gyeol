@@ -380,6 +380,8 @@ export function blockFitter() {
    */
   const boosts = [1.44, 1.2]
   const boostable = new Set(['number', 'delta', 'goal'])
+  // 자기 큰 숫자가 있는 그림(몇 중 몇, 비율 원) 옆에서는 키우지 않는다: 키우면 나란한 두 숫자가 한 장 안에서 크기가 달라진다
+  const figured = new Set(['ratio', 'ring'])
   /** 내용(첫 보이는 자식)이 --bk-lift로 내려가는 부품인지 (blocks.css가 정한다) */
   function liftable(c: HTMLElement): boolean {
     const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)
@@ -413,7 +415,7 @@ export function blockFitter() {
         const m = used(c)
         return !!m && m.used >= m.room - 16 * m.k
       })
-      if (tall) {
+      if (tall && !others.some((c) => figured.has(c.dataset.type || ''))) {
         for (const c of group) {
           if (!boostable.has(c.dataset.type || '')) continue
           const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
