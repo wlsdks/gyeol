@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
+import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lineAxis, lowerIsBetter, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 적은 숫자를 읽는다', () => {
@@ -265,5 +265,31 @@ describe('낮을수록 좋은 목표', () => {
   it('이하, 이내, 미만, ≤로 적은 목표를 알아본다', () => {
     for (const t of ['7분 이하', '3일 이내', '불량률 0.5% 미만', '≤ 2건', '<10%']) expect(lowerIsBetter(t), t).toBe(true)
     for (const t of ['117억 원', '90%', '5곳 이상']) expect(lowerIsBetter(t), t).toBe(false)
+  })
+})
+
+describe('선 그래프의 세로 축', () => {
+  it('0에서 먼 값들은 바닥을 가장 작은 값 아래로 잡는다 (흐름이 납작하지 않게)', () => {
+    const { floor, y } = lineAxis([110, 114, 118], 3)
+    expect(floor).toBe(106)
+    expect(y(110)).toBeGreaterThan(30)
+    expect(y(118)).toBeLessThan(100)
+  })
+
+  it('0에 가까우면 0부터, 0보다 작은 값이 있으면 0 아래까지', () => {
+    expect(lineAxis([2, 5, 9], 3).floor).toBe(0)
+    const neg = lineAxis([-4, 6], 2)
+    expect(neg.floor).toBeLessThan(-4)
+    expect(neg.y(0)).toBeGreaterThan(0)
+  })
+
+  it('차례는 칸 가운데에 놓는다', () => {
+    const { x } = lineAxis([1, 2], 4)
+    expect([0, 1, 2, 3].map(x)).toEqual([12.5, 37.5, 62.5, 87.5])
+  })
+
+  it('값이 하나거나 없어도 0으로 나누지 않는다', () => {
+    expect(Number.isFinite(lineAxis([5], 1).y(5))).toBe(true)
+    expect(Number.isFinite(lineAxis([], 1).y(0))).toBe(true)
   })
 })

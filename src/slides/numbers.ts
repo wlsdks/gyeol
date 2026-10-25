@@ -275,6 +275,22 @@ export function seriesIn(texts: string[], unit = ''): Series {
   return { values, ok, suffix: unit.trim() || ref.suffix }
 }
 
+/**
+ * 선 그래프(추이, 두 시점 비교의 선 모양)의 세로 축: 바닥과 천장, 값과 차례를 그릴 자리(0~100).
+ * 값이 모두 0 이상이고 0에서 멀면(가장 작은 값이 오르내림 폭의 1.2배보다 크면) 바닥을 0이 아니라 가장 작은 값의
+ * 폭 절반 아래로 잡는다. 0부터 그리면 110, 114, 118 같은 흐름이 위쪽에 납작한 선이 된다. 0보다 작은 값이 있으면
+ * 바닥을 조금 더 아래로(0 선이 보이게), 천장은 가장 큰 값의 점과 숫자가 위 끝에 붙지 않게 조금 위로.
+ * 두 레이아웃이 같은 축을 써야 장을 넘겨도 같은 값이 같은 높이로 보인다
+ */
+export function lineAxis(values: number[], n: number): { floor: number; ceil: number; y: (v: number) => number; x: (i: number) => number } {
+  const lo = values.length ? Math.min(...values) : 0
+  const hi = values.length ? Math.max(...values) : 1
+  const span = hi - lo || Math.abs(hi) || 1
+  const floor = lo >= 0 ? (lo - span * 1.2 > 0 ? lo - span * 0.5 : 0) : lo - span * 0.12
+  const ceil = hi + span * 0.06
+  return { floor, ceil, y: (v) => ((v - floor) / (ceil - floor || 1)) * 100, x: (i) => ((i + 0.5) / n) * 100 }
+}
+
 /** 계산한 값을 보이는 꼴: 천 단위 쉼표, 소수 둘째 자리까지 */
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(n)

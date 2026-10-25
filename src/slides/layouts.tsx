@@ -6,7 +6,7 @@ import { highlightOf, hintFor, logoColumns, variantOf } from '../deck/layouts'
 import type { ItemKey, LayoutId, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { useSlide } from './context'
-import { amountPair, formatNumber, isNumericCell, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
+import { amountPair, formatNumber, isNumericCell, lineAxis, lowerIsBetter, readNumber, seriesIn, statusOf, STATUS_NAMES, type Status } from './numbers'
 import { IT, ImageSlot, ItemTools, MetaRow, minusSigns, numberUnits, T, textUnits } from './fields'
 import { placeLabels } from './fitBlocks'
 
@@ -464,13 +464,7 @@ function Versus() {
   const top = Math.max(0, ...known)
   const bar = (v: number | null) => (v === null || top <= 0 ? 0 : Math.max(v > 0 ? 1.5 : 0, (Math.max(0, v) / top) * 100))
   // 선: 추이와 같은 바닥과 천장
-  const lo = known.length ? Math.min(...known) : 0
-  const hi = known.length ? Math.max(...known) : 1
-  const span = hi - lo || Math.abs(hi) || 1
-  const floor = lo >= 0 ? (lo - span * 1.2 > 0 ? lo - span * 0.5 : 0) : lo - span * 0.12
-  const ceil = hi + span * 0.06
-  const y = (v: number) => ((v - floor) / (ceil - floor || 1)) * 100
-  const x = (i: number) => ((i + 0.5) / items.length) * 100
+  const { floor, ceil, y, x } = lineAxis(known, items.length)
   const path = (vs: (number | null)[]) =>
     vs
       .map((v, i) => (v === null ? null : `${x(i).toFixed(2)},${(100 - y(v)).toFixed(2)}`))
@@ -783,14 +777,7 @@ function Trend() {
   const values = series.values.slice(0, items.length)
   const target = series.values[items.length]
   const known = values.filter((v): v is number => v !== null)
-  const all = target === null ? known : [...known, target]
-  const lo = all.length ? Math.min(...all) : 0
-  const hi = all.length ? Math.max(...all) : 1
-  const span = hi - lo || Math.abs(hi) || 1
-  const floor = lo >= 0 ? (lo - span * 1.2 > 0 ? lo - span * 0.5 : 0) : lo - span * 0.12
-  const ceil = hi + span * 0.06
-  const y = (v: number) => ((v - floor) / (ceil - floor || 1)) * 100
-  const x = (i: number) => ((i + 0.5) / items.length) * 100
+  const { floor, y, x } = lineAxis(target === null ? known : [...known, target], items.length)
   const pts = values.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
   const drawn = pts.filter((p): p is { x: number; y: number } => p !== null)
   const line = drawn.map((p) => `${p.x.toFixed(2)},${(100 - p.y).toFixed(2)}`).join(' ')
