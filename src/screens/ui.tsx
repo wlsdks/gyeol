@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
 import { undoLast } from '../store/deckStore'
@@ -84,6 +84,57 @@ export function Toggle({ label, on, onChange }: { label: string; on: boolean; on
       <span className="toggle-track" aria-hidden="true" />
       <span>{label}</span>
     </label>
+  )
+}
+
+/** 고르는 단추 하나. description은 마우스를 올리면 보이는 설명 (themes.ts의 값 목록을 그대로 넘길 수 있게 같은 이름) */
+export interface SegmentOption<T> {
+  id: T
+  name: ReactNode
+  description?: string
+  style?: CSSProperties
+}
+
+/**
+ * 몇 가지 가운데 하나를 고르는 단추 줄. 고른 단추에 is-on과 aria-pressed를 단다.
+ * 보통은 붙어 있는 단추(.seg: 오른쪽 칸, 테마 메뉴, 장 모음)이고 label이 그 묶음의 이름이다.
+ * chips면 떨어진 알약 단추(.chip: 마법사). 그때는 둘레의 fieldset과 legend가 이름을 맡아서 label 없이 쓴다
+ */
+export function Segmented<T extends string | number | undefined>({
+  label,
+  options,
+  value,
+  onPick,
+  className,
+  chips = false,
+}: {
+  label?: string
+  options: readonly SegmentOption<T>[]
+  value: T
+  onPick: (id: T) => void
+  /** 둘레에 더할 class (seg-full은 칸 너비를 다 쓰고, seg-fill은 단추가 많으면 줄을 바꾼다) */
+  className?: string
+  chips?: boolean
+}) {
+  return (
+    <div className={cx(!chips && 'seg', className)} role={label ? 'group' : undefined} aria-label={label}>
+      {options.map((o) => {
+        const on = o.id === value
+        return (
+          <button
+            key={String(o.id)}
+            type="button"
+            className={cx(chips ? 'chip' : 'seg-btn', on && 'is-on')}
+            style={o.style}
+            title={o.description}
+            aria-pressed={on}
+            onClick={() => onPick(o.id)}
+          >
+            {o.name}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 

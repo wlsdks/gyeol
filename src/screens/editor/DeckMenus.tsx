@@ -7,7 +7,7 @@ import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { keys } from '../../lib/keys'
 import { presenterAuto, setPresenterAuto } from '../../present/link'
-import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Toggle } from '../ui'
+import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Segmented, Toggle } from '../ui'
 
 /** 편집 화면의 슬라이드가 이 신호를 받으면 발표할 때의 움직임을 한 번 보여 준다 */
 export const PREVIEW_MOTION = 'html-maker:preview-motion'
@@ -113,48 +113,27 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           </div>
           <p className="menu-h">글꼴</p>
           {/* 제목과 본문을 맞춰 본 짝 하나를 고른다. 단추 이름을 그 글꼴로 써서 고르기 전에 모양이 보이게 */}
-          <div className="seg seg-full" role="group" aria-label="글꼴">
-            {FONTS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                className={cx('seg-btn', font === o.id && 'is-on')}
-                style={fontPreview(o.id)}
-                title={o.description}
-                aria-pressed={font === o.id}
-                onClick={() => setLook({ font: o.id })}
-              >
-                {o.name}
-              </button>
-            ))}
-          </div>
+          <Segmented className="seg-full" label="글꼴" options={FONTS.map((o) => ({ ...o, style: fontPreview(o.id) }))} value={font} onPick={(id) => setLook({ font: id })} />
           <p className="menu-h">글자 크기</p>
-          <Choice label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
+          <Segmented className="seg-full" label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>
-          <Choice label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
+          <Segmented className="seg-full" label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
           <p className="menu-h">발표할 때 움직임</p>
           <div className="theme-row">
-            <div className="seg seg-full" role="group" aria-label="발표할 때 움직임">
-              {MOTIONS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={cx('seg-btn', motion === m.id && 'is-on')}
-                  title={m.description}
-                  aria-pressed={motion === m.id}
-                  onClick={() => {
-                    setMotion(m.id)
-                    // 메뉴가 슬라이드를 가리지 않게 닫고 보여 준다
-                    if (m.id !== 'none') {
-                      close()
-                      window.dispatchEvent(new Event(PREVIEW_MOTION))
-                    }
-                  }}
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              className="seg-full"
+              label="발표할 때 움직임"
+              options={MOTIONS}
+              value={motion}
+              onPick={(id) => {
+                setMotion(id)
+                // 메뉴가 슬라이드를 가리지 않게 닫고 보여 준다
+                if (id !== 'none') {
+                  close()
+                  window.dispatchEvent(new Event(PREVIEW_MOTION))
+                }
+              }}
+            />
             {motion !== 'none' && (
               <button
                 type="button"
@@ -169,42 +148,10 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
             )}
           </div>
           <p className="menu-h">장 넘기기</p>
-          <Choice label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
+          <Segmented className="seg-full" label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
         </div>
       )}
     </Popover>
-  )
-}
-
-/** 몇 가지 중 하나를 고르는 줄. 설명은 마우스를 올리면 보인다 */
-function Choice<T extends string>({
-  label,
-  options,
-  value,
-  onPick,
-}: {
-  label: string
-  options: { id: T; name: string; description: string }[]
-  value: T
-  onPick: (id: T) => void
-}) {
-  return (
-    <>
-      <div className="seg seg-full" role="group" aria-label={label}>
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            className={cx('seg-btn', value === o.id && 'is-on')}
-            title={o.description}
-            aria-pressed={value === o.id}
-            onClick={() => onPick(o.id)}
-          >
-            {o.name}
-          </button>
-        ))}
-      </div>
-    </>
   )
 }
 

@@ -10,7 +10,7 @@ import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { useLook, type Look } from './look'
-import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Toggle, useEscape } from '../ui'
+import { BackIcon, CheckIcon, ChevronIcon, Info, PlayIcon, Segmented, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
@@ -143,6 +143,8 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
   const side = sideOf(slide)
   const place = placeOf(slide)
   const placeSpec = LAYOUTS[slide.layout].place
+  // 판을 반대쪽으로 옮긴(flip) 자리. 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
+  const flipAt = panes?.start ? 'right' : 'left'
   const hasOptions = !!highlight || slide.layout === 'imageText' || !!panes || !!place
   if (variants.length < 2 && !hasOptions) return null
   return (
@@ -167,71 +169,51 @@ function ShapeSection({ slide, look }: { slide: Slide; look: Look }) {
       )}
       {highlight && (
         <Opt label={highlight.label} wide={visibleItems(slide).length > 3}>
-          <div className="seg seg-fill" role="group" aria-label={highlight.label}>
-            {[-1, ...visibleItems(slide).map((_, i) => i)].map((i) => (
-              <button
-                key={i}
-                type="button"
-                className={cx('seg-btn', highlightOf(slide) === i && 'is-on')}
-                aria-pressed={highlightOf(slide) === i}
-                title={i < 0 ? '강조하지 않아요' : `${i + 1}번째 항목을 강조해요`}
-                onClick={() => setOptions(slide.id, { highlight: i })}
-              >
-                {i < 0 ? '없음' : i + 1}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            className="seg-fill"
+            label={highlight.label}
+            options={[-1, ...visibleItems(slide).map((_, i) => i)].map((i) => ({
+              id: i,
+              name: i < 0 ? '없음' : i + 1,
+              description: i < 0 ? '강조하지 않아요' : `${i + 1}번째 항목을 강조해요`,
+            }))}
+            value={highlightOf(slide)}
+            onPick={(i) => setOptions(slide.id, { highlight: i })}
+          />
         </Opt>
       )}
       {panes && side !== null && (
         <>
           <Opt label={`${panes.name} 위치`} tip="장 위에서 판의 이름표를 끌어 반대쪽에 놓아도 돼요.">
-            <div className="seg" role="group" aria-label={`${panes.name} 위치`}>
-              {(['left', 'right'] as const).map((at) => {
-                // 처음에 왼쪽에 있는 판(이미지)은 반대쪽이 오른쪽
-                const flip = panes.start ? at === 'right' : at === 'left'
-                const on = !!slide.options.flip === flip
-                return (
-                  <button key={at} type="button" className={cx('seg-btn', on && 'is-on')} aria-pressed={on} onClick={() => setOptions(slide.id, { flip: flip || undefined })}>
-                    {at === 'left' ? '왼쪽' : '오른쪽'}
-                  </button>
-                )
-              })}
-            </div>
+            <Segmented
+              label={`${panes.name} 위치`}
+              options={[
+                { id: 'left', name: '왼쪽' },
+                { id: 'right', name: '오른쪽' },
+              ]}
+              value={slide.options.flip ? flipAt : flipAt === 'left' ? 'right' : 'left'}
+              onPick={(at) => setOptions(slide.id, { flip: at === flipAt || undefined })}
+            />
           </Opt>
           <Opt label={`${panes.name} 너비`} wide={panes.sides.length > 3} tip="장 위에서 두 판 사이의 경계를 끌어도 돼요.">
-            <div className={cx('seg', panes.sides.length > 3 && 'seg-fill')} role="group" aria-label={`${panes.name} 너비`}>
-              {panes.sides.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={cx('seg-btn', side === n && 'is-on')}
-                  aria-pressed={side === n}
-                  onClick={() => setOptions(slide.id, { pane: n === panes.base ? undefined : n })}
-                >
-                  {sideName(n, panes.base)}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              className={panes.sides.length > 3 ? 'seg-fill' : undefined}
+              label={`${panes.name} 너비`}
+              options={panes.sides.map((n) => ({ id: n, name: sideName(n, panes.base) }))}
+              value={side}
+              onPick={(n) => setOptions(slide.id, { pane: n === panes.base ? undefined : n })}
+            />
           </Opt>
         </>
       )}
       {place && placeSpec && (
         <Opt label={`${placeSpec.name} 자리`} tip="장 위에서 제목을 누르고 위쪽 막대의 이름을 위아래로 끌어도 돼요.">
-          <div className="seg" role="group" aria-label={`${placeSpec.name} 자리`}>
-            {PLACES.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={cx('seg-btn', place === p.id && 'is-on')}
-                aria-pressed={place === p.id}
-                title={p.description}
-                onClick={() => setOptions(slide.id, { place: p.id === placeSpec.base ? undefined : p.id })}
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label={`${placeSpec.name} 자리`}
+            options={PLACES}
+            value={place}
+            onPick={(p) => setOptions(slide.id, { place: p === placeSpec.base ? undefined : p })}
+          />
         </Opt>
       )}
       {slide.layout === 'imageText' && (
@@ -250,20 +232,12 @@ function LookSection({ deck, slide }: { deck: Deck; slide: Slide }) {
       <h2 className="ins-h">꾸미기</h2>
       {!BOLD_LAYOUTS.includes(slide.layout) && (
         <Opt label="바탕">
-          <div className="seg" role="group" aria-label="바탕">
-            {TONES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={cx('seg-btn', toneOf(slide) === t.id && 'is-on')}
-                aria-pressed={toneOf(slide) === t.id}
-                title={t.description}
-                onClick={() => setOptions(slide.id, { tone: t.id === 'base' ? undefined : t.id })}
-              >
-                {t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="바탕"
+            options={TONES.map((t) => ({ ...t, name: t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name }))}
+            value={toneOf(slide)}
+            onPick={(t) => setOptions(slide.id, { tone: t === 'base' ? undefined : t })}
+          />
         </Opt>
       )}
       <Opt
@@ -277,23 +251,13 @@ function LookSection({ deck, slide }: { deck: Deck; slide: Slide }) {
           )
         }
       >
-        <div className="seg seg-fill" role="group" aria-label="이 장의 움직임">
-          {[{ id: undefined, name: '기본', description: '테마 메뉴에서 정한 발표 전체의 움직임을 따라요.' }, ...MOTIONS].map((m) => {
-            const on = (slide.options.motion ?? undefined) === m.id
-            return (
-              <button
-                key={m.id ?? 'deck'}
-                type="button"
-                className={cx('seg-btn', on && 'is-on')}
-                aria-pressed={on}
-                title={m.description}
-                onClick={() => setOptions(slide.id, { motion: m.id as Motion | undefined })}
-              >
-                {m.name}
-              </button>
-            )
-          })}
-        </div>
+        <Segmented<Motion | undefined>
+          className="seg-fill"
+          label="이 장의 움직임"
+          options={[{ id: undefined, name: '기본', description: '테마 메뉴에서 정한 발표 전체의 움직임을 따라요.' }, ...MOTIONS]}
+          value={slide.options.motion ?? undefined}
+          onPick={(m) => setOptions(slide.id, { motion: m })}
+        />
       </Opt>
     </section>
   )

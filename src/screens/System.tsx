@@ -15,7 +15,7 @@ import type { SlideMode } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { BlockThumb, LinkThumb } from './editor/BlockLibrary'
 import type { Look } from './editor/look'
-import { BackIcon, Brand, CheckIcon } from './ui'
+import { BackIcon, Brand, CheckIcon, Segmented } from './ui'
 
 /*
  * 장 모음: 만들 수 있는 모든 장과 모양, 테마의 색과 글자 크기를 한 화면에 늘어놓는다.
@@ -171,13 +171,7 @@ export function System() {
         <div className="sys-controls">
           <div className="sys-control">
             <span className="sys-control-k">테마</span>
-            <div className="seg" role="group" aria-label="테마">
-              {THEME_ORDER.map((id) => (
-                <button key={id} type="button" className={cx('seg-btn', themeId === id && 'is-on')} aria-pressed={themeId === id} onClick={() => pickTheme(id)}>
-                  {THEMES[id].name}
-                </button>
-              ))}
-            </div>
+            <Segmented label="테마" options={THEME_ORDER.map((id) => ({ id, name: THEMES[id].name }))} value={themeId} onPick={pickTheme} />
           </div>
           <div className="sys-control">
             <span className="sys-control-k">강조색</span>
@@ -212,14 +206,15 @@ export function System() {
           </div>
           <div className="sys-control">
             <span className="sys-control-k">보기</span>
-            <div className="seg" role="group" aria-label="보기">
-              <button type="button" className={cx('seg-btn', view === 'sample' && 'is-on')} aria-pressed={view === 'sample'} onClick={() => setView('sample')}>
-                예시 내용
-              </button>
-              <button type="button" className={cx('seg-btn', view === 'blank' && 'is-on')} aria-pressed={view === 'blank'} onClick={() => setView('blank')}>
-                빈 칸
-              </button>
-            </div>
+            <Segmented
+              label="보기"
+              options={[
+                { id: 'sample', name: '예시 내용' },
+                { id: 'blank', name: '빈 칸' },
+              ]}
+              value={view}
+              onPick={setView}
+            />
           </div>
         </div>
       </header>

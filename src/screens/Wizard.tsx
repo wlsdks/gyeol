@@ -9,7 +9,7 @@ import { cx } from '../lib/cx'
 import { go } from '../lib/router'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
-import { Brand, Info, SAVE_HELP, useToast } from './ui'
+import { Brand, Info, SAVE_HELP, Segmented, useToast } from './ui'
 
 // 발표 상황: 누구에게, 얼마나, 어떻게 발표하는지. 표지: 제목, 결정 요청(또는 부제), 발표자와 테마
 const STEPS = ['발표 종류', '발표 상황', '표지']
@@ -416,13 +416,8 @@ function Choice<T extends string | number>({
   return (
     <fieldset className="wz-group">
       <legend>{legend}</legend>
-      <div className="wz-chips">
-        {options.map((o) => (
-          <button key={o.id} type="button" className={cx('chip', value === o.id && 'is-on')} aria-pressed={value === o.id} onClick={() => onChange(o.id)}>
-            {o.name}
-          </button>
-        ))}
-      </div>
+      {/* 설명은 단추의 말풍선이 아니라 아래 한 줄에: 이름만 넘긴다 */}
+      <Segmented chips className="wz-chips" options={options.map((o) => ({ id: o.id, name: o.name }))} value={value} onPick={onChange} />
       {note && <p className="wz-note">{note}</p>}
     </fieldset>
   )
