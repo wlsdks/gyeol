@@ -719,7 +719,9 @@ export function motionEngine(): MotionEngine {
       }
       case 'trend': {
         const t = head()
-        fade(one('.tn-unit'), t, 500)
+        fade(one('.tn-meta > .tn-unit:not(.tn-legend)'), t, 500)
+        // 목표의 이름표는 목표선과 함께 나온다. 따로 두면 본문 상자와 함께 먼저 떠서, 가리킬 선이 없는 '목표 115'가 보였다
+        fade(one('.tn-legend'), t + 200, 600)
         // 선은 왼쪽에서부터 그려지고, 점은 선이 닿을 때 하나씩 맺힌다. 그래서 선은 일정한 빠르기로.
         // 생동감은 조금만 더 길게: 1500이던 때는 선이 1.65초 동안 기어가서 끝의 강조한 숫자가 3.2초에야 멈췄다
         const draw = levelName === 'lively' ? 1150 : 1100
