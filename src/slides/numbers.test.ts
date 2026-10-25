@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
+import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, isNumericCell, lowerIsBetter, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf } from './numbers'
 
 describe('숫자 읽기', () => {
   it('단위와 쉼표가 붙은 값에서 적은 숫자를 읽는다', () => {
@@ -187,6 +187,61 @@ describe('추진 일정의 기간', () => {
     expect(spanIn('11월', cols)).toEqual([0, 0])
     expect(spanIn('12월', cols)).toEqual([1, 1])
     expect(spanIn('1', colsOf('1 2 12'))).toEqual([0, 0])
+  })
+
+  it("띄어쓰기로만 적어도 '10월 1주'처럼 큰 기간 뒤의 작은 기간은 한 칸이다", () => {
+    expect(colsOf('10월 1주 10월 2주 10월 3주')).toEqual(['10월 1주', '10월 2주', '10월 3주'])
+    expect(colsOf('3월 상순 3월 중순 3월 하순')).toEqual(['3월 상순', '3월 중순', '3월 하순'])
+    expect(colsOf('1분기 말 2분기 말')).toEqual(['1분기 말', '2분기 말'])
+    expect(colsOf('2026년 1분기 2분기 3분기')).toEqual(['2026년 1분기', '2분기', '3분기'])
+    expect(colsOf('10월 1주 2주 3주 4주 11월 1주')).toEqual(['10월 1주', '2주', '3주', '4주', '11월 1주'])
+    expect(colsOf('1주 2주 3주')).toEqual(['1주', '2주', '3주'])
+    expect(colsOf('상순 중순 하순')).toEqual(['상순', '중순', '하순'])
+    expect(colsOf('A안 B안 C안')).toEqual(['A안', 'B안', 'C안'])
+  })
+
+  it('쉼표나 줄바꿈이 있으면 그것으로만 나눈다', () => {
+    expect(colsOf('10월 1주, 10월 2주, 10월 3주')).toEqual(['10월 1주', '10월 2주', '10월 3주'])
+    expect(colsOf('준비 기간, 시범 운영, 전체 적용')).toEqual(['준비 기간', '시범 운영', '전체 적용'])
+    expect(colsOf('준비 기간\n시범 운영')).toEqual(['준비 기간', '시범 운영'])
+    expect(colsOf('기획·설계, 개발, 시험')).toEqual(['기획·설계', '개발', '시험'])
+    expect(colsOf('A안/B안/C안')).toEqual(['A안', 'B안', 'C안'])
+    expect(colsOf('현행 유지 / 신규 도입')).toEqual(['현행 유지', '신규 도입'])
+    // 날짜 안의 빗금으로는 나누지 않는다
+    expect(colsOf('10/1 10/8 10/15')).toEqual(['10/1', '10/8', '10/15'])
+  })
+
+  it('칸 이름에 기간이 여럿이어도 사람이 적은 기간을 찾는다', () => {
+    const weeks = colsOf('10월 1주 10월 2주 10월 3주 10월 4주 11월 1주 11월 2주')
+    expect(spanIn('10월 2주~11월 1주', weeks)).toEqual([1, 4])
+    expect(spanIn('10월 2주 ~ 10월 3주', weeks)).toEqual([1, 2])
+    expect(spanIn('10월2주', weeks)).toEqual([1, 1])
+    // 큰 기간만 적으면 그 기간의 칸 모두
+    expect(spanIn('11월', weeks)).toEqual([4, 5])
+    expect(spanIn('10월 3주~11월', weeks)).toEqual([2, 5])
+    // 앞 칸에서 이어받은 기간까지 보고 찾는다 ('11월 2주'를 10월의 '2주' 칸에서 잡지 않는다)
+    const short = colsOf('10월 1주 2주 3주 4주 11월 1주 2주')
+    expect(spanIn('11월 2주', short)).toEqual([5, 5])
+    expect(spanIn('10월 2주~3주', short)).toEqual([1, 2])
+    expect(spanIn('10월', short)).toEqual([0, 3])
+    const halves = colsOf('3월 상순 3월 중순 3월 하순 4월 상순')
+    expect(spanIn('3월 하순', halves)).toEqual([2, 2])
+    expect(spanIn('3월 중순~4월 상순', halves)).toEqual([1, 3])
+    const quarters = colsOf('2026년 1분기 2분기 3분기 4분기')
+    expect(spanIn('2분기~3분기', quarters)).toEqual([1, 2])
+    // 칸보다 잘게 적은 때는 그 큰 기간의 칸 모두
+    expect(spanIn('10월 중', weeks)).toEqual([0, 3])
+    expect(spanIn('13월', colsOf('11월 12월'))).toBeNull()
+  })
+
+  it('기간 글에서 칸 이름 말고 더 적은 것이 있는지', () => {
+    const weeks = colsOf('10월 1주 2주 3주 4주')
+    expect(periodRest('10월 2주~3주', weeks)).toBe('')
+    expect(periodRest('10월 2주부터 4주까지', weeks)).toBe('')
+    expect(periodRest('12월~2월', cols)).toBe('')
+    expect(periodRest('12월 2주 ~ 2월 1주', cols)).toBe('2주1주')
+    expect(periodRest('내년 상반기', cols)).toBe('내년상반기')
+    expect(periodRest('10월 말', weeks)).toBe('10월말')
   })
 
   it('칸 이름이 없으면 막대를 그리지 않는다', () => {

@@ -331,12 +331,93 @@ export function gradesOf(text: string): string[] {
   return text.split(/[\s,·/|]+/).filter(Boolean)
 }
 
-/** 추진 일정의 기간 칸 이름. 띄어 쓰기나 쉼표로 나눈다. 너무 많으면 막대가 가늘어져서 열둘까지 */
+// ---------- 추진 일정의 기간 칸 ----------
+
+/** 기간 이름의 크기: 해 > 반기 > 분기 > 달 > 주 > 날. 기간 이름이 아니면 null */
+function periodRank(word: string): number | null {
+  if (/^'?\d{2,4}년도?$|^\d{4}$/.test(word)) return 6
+  if (/^[상하]?반기$|^H[12]$/i.test(word)) return 5
+  if (/^[1-4]분기$|^Q[1-4]$/i.test(word)) return 4
+  if (/^(?:1[0-2]|0?[1-9])월$/.test(word)) return 3
+  if (/^\d{1,2}주차?$|^W\d{1,2}$/i.test(word)) return 2
+  if (/^\d{1,2}일$/.test(word)) return 1
+  return null
+}
+
+/** 앞 기간에 붙어야 뜻이 되는 때 ('3월 상순', '1분기 말', '10월 초') */
+const TAIL_WORDS = '초순|상순|중순|하순|말경|초반|중반|후반|전반|초|중|말'
+const PERIOD_TAIL = new RegExp(`^(?:${TAIL_WORDS})$`)
+/** 큰 기간 뒤에 더 작은 기간이나 때가 오는지 ('10월 2주', '10월 하순', '2026년 Q1') */
+const FINER_AFTER = `(?!\\s*(?:\\d|[QWH]\\d|[상하]반기|${TAIL_WORDS}))`
+
+/** 칸 이름을 나누는 표시. 쉼표와 줄바꿈이 먼저다('기획·설계, 개발'은 두 칸). 빗금은 '10/1' 같은 날짜 안의 것은 빼고 */
+const COL_SEPS = [/\s*[,，、\n]\s*/, /\s*(?:[·|]|(?<!\d)\/|\/(?!\d))\s*/]
+
+/**
+ * 추진 일정의 기간 칸 이름(평가표의 안 이름, 색 표의 칸 이름도). 너무 많으면 막대가 가늘어져서 열둘까지.
+ * 쉼표나 줄바꿈이 있으면 그것으로만, 없고 가운뎃점이나 빗금이 있으면 그것으로만 나눈다(칸 이름 안의 띄어쓰기는 그대로: '준비 기간, 시범 운영').
+ * 띄어쓰기로만 적었으면 낱말마다 나누되, 큰 기간 뒤에 붙은 작은 기간과 때는 앞말과 한 칸으로 묶는다
+ * ('10월 1주 10월 2주', '2026년 1분기 2분기', '3월 상순 3월 중순')
+ */
 export function colsOf(text: string): string[] {
-  return text
-    .split(/[\s,·/|]+/)
-    .filter(Boolean)
-    .slice(0, 12)
+  const sep = COL_SEPS.find((s) => s.test(text))
+  if (sep)
+    return text
+      .split(sep)
+      .map((t) => t.trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+      .slice(0, 12)
+  const out: { words: string[]; rank: number | null }[] = []
+  for (const w of text.split(/\s+/).filter(Boolean)) {
+    const r = periodRank(w)
+    const last = out[out.length - 1]
+    // 때('초', '상순')는 바로 앞 낱말이 기간일 때만 붙는다. 기간은 앞 칸의 가장 작은 기간보다 작을 때만('10월' 뒤의 '1주')
+    const tail = PERIOD_TAIL.test(w) && !!last && periodRank(last.words[last.words.length - 1]) !== null
+    if (last && (tail || (r !== null && last.rank !== null && r < last.rank))) {
+      last.words.push(w)
+      if (r !== null) last.rank = r
+    } else out.push({ words: [w], rank: r })
+  }
+  return out.map((c) => c.words.join(' ')).slice(0, 12)
+}
+
+/** 칸마다 앞 칸에서 이어받은 큰 기간까지 붙인 낱말들: '10월 1주, 2주'의 둘째 칸은 10월 2주 */
+function fullNames(cols: string[]): string[][] {
+  let around: [number, string][] = []
+  return cols.map((c) => {
+    const words = c.split(/\s+/).filter(Boolean)
+    const first = periodRank(words[0] ?? '')
+    const full = [...(first === null ? [] : around.filter(([r]) => r > first).map(([, w]) => w)), ...words]
+    const ranked = full.flatMap((w): [number, string][] => {
+      const r = periodRank(w)
+      return r === null ? [] : [[r, w]]
+    })
+    if (ranked.length) around = ranked
+    return full
+  })
+}
+
+const escape = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/**
+ * 한 칸을 가리키는 말의 꼴. 앞뒤에 숫자가 붙은 것은 칸 이름으로 보지 않는다('1월'을 '11월' 안에서 잡지 않게). 띄어쓰기는 있어도 없어도 된다.
+ * - 이어받은 기간까지 붙인 이름 ('10월 2주')
+ * - 그보다 큰 기간만 적은 말: 그 기간의 칸 모두 ('10월'이면 10월 1주부터 4주까지). 뒤에 더 작은 기간이 오면('10월 2주') 아니다
+ * - 이어받은 기간을 뺀 이름 ('2주'): 위 둘로 찾은 칸이 하나도 없을 때만
+ * - 큰 기간 뒤에 칸에 없는 때가 온 말 ('10월 중', '10월 말'이면 10월의 칸 모두): 그래도 없을 때만
+ */
+function namePatterns(words: string[]): RegExp[][] {
+  const re = (ws: string[], end: string) => new RegExp(`(?<!\\d)${ws.map(escape).join('\\s*')}${end}`)
+  const exact = [re(words, '(?!\\d)')]
+  const loose: RegExp[] = []
+  const wide: RegExp[] = []
+  // 앞에서부터 기간인 낱말까지만 큰 기간으로 본다 ('준비 기간'의 '준비'는 아니다)
+  for (let k = 1; k < words.length && periodRank(words[k - 1]) !== null; k++) {
+    exact.push(re(words.slice(0, k), FINER_AFTER))
+    loose.push(re(words.slice(k), '(?!\\d)'))
+    wide.push(re(words.slice(0, k), '(?!\\s*\\d)'))
+  }
+  return [exact, loose, wide]
 }
 
 /**
@@ -344,6 +425,46 @@ export function colsOf(text: string): string[] {
  * '1월'이 '11월', '12월' 안에서 잡히지 않게 앞뒤에 숫자가 붙은 것은 칸 이름으로 보지 않는다
  */
 export function spanIn(text: string, cols: string[]): [number, number] | null {
-  const hit = cols.flatMap((c, i) => (new RegExp(`(?<!\\d)${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!\\d)`).test(text) ? [i] : []))
-  return hit.length ? [Math.min(...hit), Math.max(...hit)] : null
+  const pats = fullNames(cols).map(namePatterns)
+  const t = withContext(text)
+  for (let tier = 0; tier < 3; tier++) {
+    const hit = pats.flatMap((p, i) => (p[tier].some((r) => r.test(t)) ? [i] : []))
+    if (hit.length) return [Math.min(...hit), Math.max(...hit)]
+  }
+  return null
+}
+
+/** 글 안의 기간 이름 ('10월', '2주', '1분기') */
+const PERIOD_WORD = /(?<![\d'])(?:'?\d{2,4}년도?|[상하]반기|H[12]|[1-4]분기|Q[1-4]|\d{1,2}월|\d{1,2}주차?|W\d{1,2}|\d{1,2}일)/gi
+
+/** 기간 글에서 앞의 큰 기간을 빼고 적은 작은 기간에 그 큰 기간을 붙인다: '10월 2주~3주' → '10월 2주~10월 3주' */
+function withContext(text: string): string {
+  let path: [number, string][] = []
+  let prev: { rank: number; end: number } | null = null
+  return text.replace(PERIOD_WORD, (w, at: number) => {
+    const r = periodRank(w)
+    if (r === null) return w // '13월'처럼 기간 이름의 꼴이지만 아닌 것
+    // 바로 앞에 붙여 쓴 큰 기간이 있으면('10월 2주') 이미 다 적은 것이다
+    const joined = !!prev && prev.rank > r && !text.slice(prev.end, at).trim()
+    path = path.filter(([pr]) => pr > r)
+    const lead = joined ? '' : path.map(([, pw]) => `${pw} `).join('')
+    path.push([r, w])
+    prev = { rank: r, end: at + w.length }
+    return lead + w
+  })
+}
+
+/** 기간 글에서 칸 이름과 사이 표시(~, 부터, 까지)를 뺀 나머지. 비었으면 막대가 기간을 다 보여 준다 ('내년 상반기'는 남는다) */
+export function periodRest(text: string, cols: string[]): string {
+  // '10월 말'처럼 칸에 없는 때까지 적은 것(wide)은 남겨서 기간 글을 보인다
+  const pats = fullNames(cols)
+    .flatMap((w) => {
+      const [exact, loose] = namePatterns(w)
+      return [...exact, ...loose]
+    })
+    // 긴 이름부터 지워야 '10월 2주'의 '2주'만 지워지고 '10월'이 남지 않는다
+    .sort((a, b) => b.source.length - a.source.length)
+  let t = text
+  for (const p of pats) t = t.replace(new RegExp(p.source, 'g'), ' ')
+  return t.replace(/부터|까지|[\s~∼\-–—]/g, '')
 }

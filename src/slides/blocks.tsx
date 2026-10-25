@@ -10,7 +10,7 @@ import { SlideContext, useSlide, type SlideActions } from './context'
 import { fitBlocks } from './fitBlocks'
 import { IT, ImageSlot, ItemTools, minusSigns, numberUnits, splitNumber, T, textUnits } from './fields'
 import { LAYOUT_VIEWS } from './layouts'
-import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, readAmount, readNumber, seriesIn, spanIn, statusOf, type Grade, type Status } from './numbers'
+import { amountPair, changeOf, colsOf, formatNumber, gradeOf, gradesOf, periodRest, readAmount, readNumber, seriesIn, spanIn, statusOf, type Grade, type Status } from './numbers'
 
 // 부품 장(compose). 칸의 자리는 deck/blocks.ts가 계산하고, 여기서는 그 자리에 부품을 그린다.
 // 부품 안의 칸은 슬라이드의 칸 그리기(T, IT, 그림 칸)를 그대로 쓴다. 부품을 장처럼 보이게 한
@@ -575,7 +575,7 @@ function Gantt() {
             const span = spanIn(period, cols)
             const state = !span || now < 0 ? null : span[1] < now ? 'done' : span[0] > now ? 'later' : 'now'
             // 막대가 기간을 보여 주므로, 기간 글은 칸 이름 말고 더 적은 것이 있을 때만 ('12월 2주~2월 1주', '내년 상반기')
-            const more = !span || cols.reduce((t, c) => t.split(c).join(''), period).replace(/[\s~\-–—부터까지]/g, '') !== ''
+            const more = !span || periodRest(period, cols) !== ''
             return (
               <li key={it.id} className={cx('it bk-gt-row', state && `is-${state}`, !it.body.trim() && 'is-hint')}>
                 <div className="bk-gt-label">
