@@ -110,8 +110,10 @@
   grid-template-rows: subgrid;
 }
 
+/* 설명과 담당 줄 사이는 300px(설명, 틈, 담당 줄을 합친 높이)까지만 벌리고, 남는 높이는 띠 전체의 위아래로 나눈다. 끝까지 벌리면
+   설명이 한 줄일 때 단계마다 설명 아래가 360px 넘게 비어 칸이 덜 찬 것처럼 보였다. 설명이 길면 틈이 줄고, 넘치면 줄이 늘어난다 */
 .l-process.va-base .pc:has(.pc-meta) {
-  align-content: stretch;
+  grid-template-rows: auto auto minmax(min-content, 300px);
 }
 
 .l-process.va-base .pc:not(:has(.pc-meta)) {
