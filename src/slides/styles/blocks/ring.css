@@ -154,11 +154,14 @@
 /* 낮은 칸: 원을 왼쪽에, 이름과 덧붙임을 오른쪽에. 위아래로 쌓으면 이름과 덧붙임이 높이를 먼저 가져가 원이 지름 50px대로
    줄고 안의 숫자를 읽을 수 없었다. 이름은 이름표 크기로 (넓은 칸처럼 키우면 좁은 글 자리에서 세 줄이 된다) */
 @container bk (min-aspect-ratio: 6 / 5) and (max-height: 440px) and (min-width: 380px) {
+  /* 이름과 덧붙임은 한 묶음으로 원 옆 가운데에(위아래 빈 줄이 남는 높이를 똑같이 나눠 가진다). 이름을 가운데 선 위에,
+     덧붙임을 그 아래에 두던 때는 이름이 두 줄이면 묶음이 위로 치우쳐, 면 위에서는 이름이 면의 위 여백까지 올라가고
+     아래만 비었다(위 42, 아래 61) */
   .bk-rg {
-    grid-template: minmax(0, 1fr) minmax(0, 1fr) / auto minmax(0, 1fr);
-    grid-template-areas: 'box l' 'box n';
+    grid-template: minmax(0, 1fr) auto auto minmax(0, 1fr) / auto minmax(0, 1fr);
+    grid-template-areas: 'box .' 'box l' 'box n' 'box .';
     justify-items: start;
-    gap: 12px 40px;
+    gap: 0 40px;
     text-align: left;
   }
 
@@ -182,16 +185,16 @@
 
   .bk-rg-n {
     align-self: start;
-    margin-top: 0;
+    margin-top: 12px;
   }
 }
 
 @container bk (min-aspect-ratio: 3 / 2) and (min-width: 700px) {
   .bk-rg {
-    grid-template: minmax(0, 1fr) minmax(0, 1fr) / auto minmax(0, 1fr);
-    grid-template-areas: 'box l' 'box n';
+    grid-template: minmax(0, 1fr) auto auto minmax(0, 1fr) / auto minmax(0, 1fr);
+    grid-template-areas: 'box .' 'box l' 'box n' 'box .';
     justify-items: start;
-    gap: 14px 64px;
+    gap: 0 64px;
     text-align: left;
   }
 
@@ -215,7 +218,7 @@
   .bk-rg-n {
     --fs: var(--t-body);
     align-self: start;
-    margin-top: 0;
+    margin-top: 14px;
   }
 }
 
