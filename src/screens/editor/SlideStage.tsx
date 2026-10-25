@@ -202,7 +202,7 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
       setOverflow(slideOverflow(root))
     }
     check()
-    document.fonts?.ready.then(check)
+    if (document.fonts?.status === 'loading') document.fonts.ready.then(check)
     // 부품 장에서 부품이 자리를 옮기는 동안(움직임 중)에는 넘쳐 보일 수 있어서, 다 움직인 뒤에 한 번 더 본다
     const t = window.setTimeout(check, 800)
     return () => {

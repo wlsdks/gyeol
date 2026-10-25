@@ -96,7 +96,7 @@ export function useHalos(ref: RefObject<HTMLElement | null>, on: boolean) {
     placeHalos(el)
     const later = setTimeout(() => placeHalos(el), 700)
     let alive = true
-    document.fonts?.ready.then(() => alive && placeHalos(el))
+    if (document.fonts?.status === 'loading') document.fonts.ready.then(() => alive && placeHalos(el))
     const ro = new ResizeObserver(() => placeHalos(el))
     ro.observe(el)
     return () => {
