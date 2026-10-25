@@ -109,6 +109,31 @@ describe('AI 공유 창구', () => {
     expect((await call('/__html-maker/ai/status', { headers: { ...AI, Origin: `http://${HOST}:${port}` } })).status).toBe(200)
   })
 
+  it('정해진 주소와 방법이 아니면 404로 답한다', async () => {
+    const status = async (path: string, method = 'GET', body?: string) => (await call(`/__html-maker/ai/${path}`, { method, headers: AI, body })).status
+    expect(await status('nope')).toBe(404)
+    expect(await status('status/')).toBe(404)
+    expect(await status('status', 'POST')).toBe(404)
+    expect(await status('requests', 'DELETE')).toBe(404)
+    expect(await status('asks')).toBe(404)
+    expect(await status('asks/a000000000000')).toBe(404)
+    expect(await status('asks/a000000000000', 'DELETE')).toBe(404)
+    expect(await status('asks/a000000000000', 'POST')).toBe(404)
+    expect(await status('asks/x')).toBe(404)
+    expect(await status(`decks/${shape.deck}`)).toBe(404)
+    expect(await status('decks/d123', 'PUT', JSON.stringify(shape))).toBe(404)
+    expect(await status('decks/D00000000', 'DELETE')).toBe(404)
+    expect(await status('requests/r0123456789ab/result')).toBe(404)
+    expect(await status('requests/r0123456789ab', 'POST')).toBe(404)
+    expect(await status('requests/r0123456789ab/result/x', 'POST')).toBe(404)
+    // 꼴이 맞는 주소라도 몸통이 틀리면 400
+    expect(await status('requests/r0123456789ab/result', 'POST', '{')).toBe(400)
+    expect(await status('asks', 'POST', '[]')).toBe(400)
+    expect(await status(`decks/${shape.deck}`, 'PUT', 'null')).toBe(400)
+    // 머리글이 없으면 모르는 주소라도 403
+    expect((await call('/__html-maker/ai/nope')).status).toBe(403)
+  })
+
   it('모양 파일만 받고, 글이 섞이면 쓰지 않는다', async () => {
     const put = (body: unknown) => call(`/__html-maker/ai/decks/${shape.deck}`, { method: 'PUT', headers: AI, body: JSON.stringify(body) })
     expect((await put(shape)).status).toBe(204)

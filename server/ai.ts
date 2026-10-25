@@ -176,6 +176,35 @@ function empty(res: ServerResponse, status: number) {
   res.end()
 }
 
+/** 앱이 보낸 요청인지: 앱만 붙이는 머리글이 있고, Origin이 있으면 이 서버 주소와 같다 */
+function fromApp(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  return req.headers[AI_HEADER.toLowerCase()] === '1' && (origin === undefined || origin === `http://${req.headers.host}`)
+}
+
+/** 주소의 한 마디: 정해진 말이거나, 꼴이 맞아야 하는 id */
+type Segment = string | RegExp
+
+interface Route {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  path: Segment[]
+  /** id: 주소에서 꼴(RegExp)로 받은 마디. 없으면 빈 글자 */
+  handle(req: IncomingMessage, res: ServerResponse, id: string): void | Promise<void>
+}
+
+/** 맞으면 주소에서 받은 id(없으면 빈 글자), 아니면 null */
+function match(route: Route, method: string, path: string[]): string | null {
+  if (route.method !== method || route.path.length !== path.length) return null
+  let id = ''
+  for (const [i, seg] of route.path.entries()) {
+    if (typeof seg === 'string') {
+      if (seg !== path[i]) return null
+    } else if (seg.test(path[i])) id = path[i]
+    else return null
+  }
+  return id
+}
+
 /**
  * /__html-maker/ai/ 요청을 처리한다. 처리했으면 true.
  *
@@ -207,108 +236,91 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
   })
   process.once('exit', () => agent.stopAll())
 
+  function status(res: ServerResponse) {
+    json(res, 200, { ok: true, shared: sharedDecks(dirs), mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath, agent: agent.available() })
+  }
+
+  /** 부탁 id와 해시 id만 받는다. 사람이 적은 글을 받는 칸은 없다 */
+  async function startAsk(req: IncomingMessage, res: ServerResponse) {
+    const v = await readJsonBody(req)
+    if (!isObj(v) || !onlyKeys(v, ['ask', 'deck', 'slide']) || !validAsk(v.ask, v.deck, v.slide ?? null)) return json(res, 400, { error: 'bad_ask' })
+    const run = agent.start(v.ask as Parameters<typeof agent.start>[0], v.deck as string, (v.slide as string | undefined) ?? null)
+    if (typeof run === 'string') json(res, ASK_ERROR_STATUS[run], { error: run })
+    else json(res, 202, run)
+  }
+
+  function askRun(res: ServerResponse, id: string) {
+    const run = agent.get(id)
+    if (run) json(res, 200, run)
+    else empty(res, 404)
+  }
+
+  /** 모양 파일은 checkShape를 지난 것만 쓴다. 글이 섞인 파일은 쓰지 않는다 */
+  async function putShape(req: IncomingMessage, res: ServerResponse, deck: string) {
+    const shape = await readJsonBody(req)
+    if (!checkShape(shape) || shape.deck !== deck) return empty(res, 400)
+    // 폴더를 지웠으면 안내 파일까지 다시 만든다 (안내 파일이 그렇게 약속한다)
+    ensureShareDir(shareRoot)
+    writeJsonAtomic(join(dirs.decks, `${deck}.json`), shape)
+    empty(res, 204)
+  }
+
+  function unshare(res: ServerResponse, deck: string) {
+    rmSync(join(dirs.decks, `${deck}.json`), { force: true })
+    // 공유를 끄면 그 발표에 온 제안도 거절로 정리한다
+    for (const r of pendingRequests(dirs)) {
+      if (r.deck !== deck) continue
+      rmSync(join(dirs.requests, `${r.id}.json`), { force: true })
+      writeResult(dirs, r.id, 'rejected', r.ops.map(() => ({ ok: false, code: 'not_reviewed' as const })))
+    }
+    empty(res, 204)
+  }
+
+  /** 사람이 적용하거나 거절한 결과를 남기고 제안을 지운다 */
+  async function postResult(req: IncomingMessage, res: ServerResponse, id: string) {
+    const file = join(dirs.requests, `${id}.json`)
+    const parsed = parseResultBody(await readJsonBody(req))
+    if (!parsed) return empty(res, 400)
+    if (!existsSync(file)) return empty(res, 404)
+    writeResult(dirs, id, parsed.status, parsed.results)
+    rmSync(file, { force: true })
+    empty(res, 204)
+  }
+
+  const routes: Route[] = [
+    { method: 'GET', path: ['status'], handle: (_req, res) => status(res) },
+    { method: 'POST', path: ['asks'], handle: startAsk },
+    { method: 'GET', path: ['asks', ASK_RUN_ID], handle: (_req, res, id) => askRun(res, id) },
+    { method: 'DELETE', path: ['asks', ASK_RUN_ID], handle: (_req, res, id) => empty(res, agent.cancel(id) ? 204 : 404) },
+    { method: 'PUT', path: ['decks', DECK_ID], handle: putShape },
+    { method: 'DELETE', path: ['decks', DECK_ID], handle: (_req, res, id) => unshare(res, id) },
+    { method: 'GET', path: ['requests'], handle: (_req, res) => json(res, 200, { requests: pendingRequests(dirs) }) },
+    { method: 'POST', path: ['requests', REQUEST_ID, 'result'], handle: postResult },
+  ]
+
   return async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1')
     if (!url.pathname.startsWith(AI_PREFIX)) return false
     try {
-      await route(req, res, url)
+      if (!fromApp(req)) {
+        empty(res, 403)
+        return true
+      }
+      const path = url.pathname.slice(AI_PREFIX.length).split('/')
+      const method = req.method ?? 'GET'
+      for (const route of routes) {
+        const id = match(route, method, path)
+        if (id === null) continue
+        await route.handle(req, res, id)
+        return true
+      }
+      empty(res, 404)
     } catch {
       // 폴더를 지웠거나 쓰지 못할 때. 예전에는 이 예외가 처리되지 않아 서버가 꺼졌다.
       // 오류 메시지에는 경로가 들어 있어서 내보내지 않는다
       if (!res.headersSent) empty(res, 500)
       else res.destroy()
     }
-    return true
-  }
-
-  async function route(req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
-    const origin = req.headers.origin
-    if (req.headers[AI_HEADER.toLowerCase()] !== '1' || (origin !== undefined && origin !== `http://${req.headers.host}`)) {
-      empty(res, 403)
-      return true
-    }
-    const path = url.pathname.slice(AI_PREFIX.length).split('/')
-    const method = req.method ?? 'GET'
-
-    if (method === 'GET' && path.join('/') === 'status') {
-      const shared = sharedDecks(dirs)
-      json(res, 200, { ok: true, shared, mcpPath: setup.mcpPath, nodePath: setup.nodePath ?? process.execPath, agent: agent.available() })
-      return true
-    }
-
-    if (method === 'POST' && path.join('/') === 'asks') {
-      const v = await readJsonBody(req)
-      const o = isObj(v) ? v : null
-      const keysOk = !!o && onlyKeys(o, ['ask', 'deck', 'slide'])
-      if (!o || !keysOk || !validAsk(o.ask, o.deck, o.slide ?? null)) {
-        json(res, 400, { error: 'bad_ask' })
-        return true
-      }
-      const run = agent.start(o.ask as Parameters<typeof agent.start>[0], o.deck as string, (o.slide as string | undefined) ?? null)
-      if (typeof run === 'string') json(res, ASK_ERROR_STATUS[run], { error: run })
-      else json(res, 202, run)
-      return true
-    }
-
-    if (path[0] === 'asks' && path.length === 2 && ASK_RUN_ID.test(path[1])) {
-      if (method === 'GET') {
-        const run = agent.get(path[1])
-        if (run) json(res, 200, run)
-        else empty(res, 404)
-        return true
-      }
-      if (method === 'DELETE') {
-        empty(res, agent.cancel(path[1]) ? 204 : 404)
-        return true
-      }
-    }
-
-    if (path[0] === 'decks' && path.length === 2 && DECK_ID.test(path[1])) {
-      const file = join(dirs.decks, `${path[1]}.json`)
-      if (method === 'PUT') {
-        const shape = await readJsonBody(req)
-        if (!checkShape(shape) || shape.deck !== path[1]) {
-          empty(res, 400)
-          return true
-        }
-        // 폴더를 지웠으면 안내 파일까지 다시 만든다 (안내 파일이 그렇게 약속한다)
-        ensureShareDir(shareRoot)
-        writeJsonAtomic(file, shape)
-        empty(res, 204)
-        return true
-      }
-      if (method === 'DELETE') {
-        rmSync(file, { force: true })
-        // 공유를 끄면 그 발표에 온 제안도 거절로 정리한다
-        for (const r of pendingRequests(dirs)) {
-          if (r.deck !== path[1]) continue
-          rmSync(join(dirs.requests, `${r.id}.json`), { force: true })
-          writeResult(dirs, r.id, 'rejected', r.ops.map(() => ({ ok: false, code: 'not_reviewed' as const })))
-        }
-        empty(res, 204)
-        return true
-      }
-    }
-
-    if (method === 'GET' && path.join('/') === 'requests') {
-      json(res, 200, { requests: pendingRequests(dirs) })
-      return true
-    }
-
-    if (method === 'POST' && path[0] === 'requests' && path.length === 3 && REQUEST_ID.test(path[1]) && path[2] === 'result') {
-      const file = join(dirs.requests, `${path[1]}.json`)
-      const parsed = parseResultBody(await readJsonBody(req))
-      if (!parsed || !existsSync(file)) {
-        empty(res, parsed ? 404 : 400)
-        return true
-      }
-      writeResult(dirs, path[1], parsed.status, parsed.results)
-      rmSync(file, { force: true })
-      empty(res, 204)
-      return true
-    }
-
-    empty(res, 404)
     return true
   }
 }
