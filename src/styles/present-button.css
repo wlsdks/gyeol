@@ -25,10 +25,15 @@
   width: 320px;
 }
 
+/* 메뉴 이름 옆의 단축키. 글꼴은 화면 글꼴 그대로 (font 줄임말에 inherit를 섞으면 줄 전체가 무시되어
+   브라우저의 고정폭 글꼴로 보였다) */
 .menu-item kbd {
   margin-left: 6px;
   color: var(--ink-3);
-  font: 500 12px/1 inherit;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .menu-toggle {
