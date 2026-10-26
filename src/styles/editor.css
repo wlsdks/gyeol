@@ -481,7 +481,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e8a317;
+  background: var(--blank);
 }
 
 /* 가운데 작업 영역 */
@@ -1028,7 +1028,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #e8a317;
+  background: var(--blank);
 }
 
 .ins-blank-chev {
@@ -1095,7 +1095,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e8a317;
+  background: var(--blank);
   content: '';
 }
 
