@@ -55,8 +55,8 @@
   --pm-in-y: 44px;
   position: relative;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 45%, var(--line));
-  border-left: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 45%, var(--line));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
+  border-left: var(--rule-hair) solid var(--line-strong);
 }
 
 .pm-mid {

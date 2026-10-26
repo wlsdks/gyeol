@@ -4,7 +4,7 @@
    남는 높이는 판 아래에 둔다.
    --mx-line: 축과 칸 나눔의 선색. 옅은 선색(--line)은 바탕에 묻혀 판이 보이지 않아서 글자색 쪽으로 한 단계 진하게(VISUAL-RULES 2-1) */
 .mx {
-  --mx-line: color-mix(in srgb, var(--ink-3) 45%, var(--line));
+  --mx-line: var(--line-strong);
   display: grid;
   grid-template-rows: auto auto auto;
   align-content: start;

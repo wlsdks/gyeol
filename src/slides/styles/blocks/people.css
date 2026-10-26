@@ -114,7 +114,7 @@
    동그라미는 빼고 글을 가운데로: 동그라미와 글을 옆으로 두면 세로 선이 둘 사이에 떨어져 글에 꽂혀 보였다.
    잇는 선은 누가 누구를 이끄는지 보이는 구조라 옅은 선색보다 한 단계 진하게(--pp-line): --line은 바탕에 묻혀 선이 보이지 않았다(VISUAL-RULES 2-1) */
 .va-tree .bk-pp-list {
-  --pp-line: color-mix(in srgb, var(--ink-3) 45%, var(--line));
+  --pp-line: var(--line-strong);
   --pp-tg: calc(88px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
   --pp-cg: 40px;
   --pp-air: 14px;
