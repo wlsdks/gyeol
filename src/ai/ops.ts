@@ -505,6 +505,9 @@ export function parseOp(v: unknown): Op | null {
   }
 }
 
+/** 제안 설명. 비었으면 '', 꼴이 틀리면(너무 길거나 제어 문자) null */
+export const cleanNote = (v: unknown): string | null => (v === '' ? '' : cleanText(v, NOTE_MAX, true))
+
 /** 요청 파일 전체를 확인한다. 하나라도 어긋나면 요청을 통째로 받지 않는다. */
 export function parseRequest(v: unknown): ChangeRequest | null {
   if (!isObj(v) || !onlyKeys(v, ['format', 'version', 'id', 'deck', 'createdAt', 'note', 'ops'])) return null
@@ -512,7 +515,7 @@ export function parseRequest(v: unknown): ChangeRequest | null {
   if (typeof v.id !== 'string' || !REQUEST_ID.test(v.id)) return null
   if (typeof v.deck !== 'string' || !DECK_ID.test(v.deck)) return null
   if (!Number.isInteger(v.createdAt)) return null
-  const note = v.note === '' ? '' : cleanText(v.note, NOTE_MAX, true)
+  const note = cleanNote(v.note)
   if (note === null) return null
   if (!Array.isArray(v.ops) || !v.ops.length || v.ops.length > MAX_OPS) return null
   const ops = v.ops.map(parseOp)

@@ -162,7 +162,7 @@ export function createAgent(opts: AgentOptions) {
     if (event.type === 'assistant') {
       for (const c of event.message?.content ?? []) {
         if (c.type !== 'tool_use' || typeof c.name !== 'string') continue
-        if (c.name.endsWith('propose_changes')) run.step = 'proposing'
+        if (c.name.endsWith('propose_changes') || c.name.endsWith('check_changes')) run.step = 'proposing'
         else if (run.step === 'starting') run.step = 'looking'
       }
     }

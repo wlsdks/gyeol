@@ -80,10 +80,10 @@ afterAll(() => {
 })
 
 describe('MCP 서버', () => {
-  it('도구는 모양을 다루는 다섯 개뿐이다', async () => {
+  it('도구는 모양을 다루는 여섯 개뿐이다', async () => {
     const res = await rpc('tools/list')
     const names = (res.result!.tools as { name: string }[]).map((t) => t.name)
-    expect(names).toEqual(['list_decks', 'get_catalog', 'get_shape', 'propose_changes', 'get_result'])
+    expect(names).toEqual(['list_decks', 'get_catalog', 'get_shape', 'check_changes', 'propose_changes', 'get_result'])
     // 'AI에게 부탁'이 Claude Code에 허락하는 도구도 이것뿐이다
     expect([...MCP_TOOLS]).toEqual(names)
   })
@@ -95,7 +95,10 @@ describe('MCP 서버', () => {
   it('제안의 꼴은 앱이 받는 키와 같다', async () => {
     // 꼴에 없는 키는 AI가 보낼 수 없고(additionalProperties: false), 꼴에만 있는 키는 보내도 거절된다
     const res = await rpc('tools/list')
-    const propose = (res.result!.tools as { name: string; inputSchema: any }[]).find((t) => t.name === 'propose_changes')!
+    const tools = res.result!.tools as { name: string; inputSchema: any }[]
+    const propose = tools.find((t) => t.name === 'propose_changes')!
+    // 미리 돌려 보기는 보낼 제안과 같은 꼴을 받는다
+    expect(tools.find((t) => t.name === 'check_changes')!.inputSchema).toEqual(propose.inputSchema)
     const items = propose.inputSchema.properties.ops.items
     expect(items.additionalProperties).toBe(false)
     expect(Object.keys(items.properties).sort()).toEqual([...new Set(Object.values(OP_KEYS).flat())].sort())
@@ -204,7 +207,53 @@ describe('MCP 서버', () => {
     writeFileSync(join(share, 'results', `${id}.json`), JSON.stringify({ format: RESULT_FORMAT, version: 1, request: id, status: 'applied', decidedAt: 1, results }))
     const { value, isError } = await tool('get_result', { request: id })
     expect(isError).toBe(false)
-    expect(value).toEqual({ request: id, status: 'applied', results })
+    expect(value.request).toBe(id)
+    expect(value.status).toBe('applied')
+    expect(value.results).toEqual(results)
+    // 빠진 코드마다 무엇을 고치면 되는지 정해진 말이 붙는다
+    expect(Object.keys(value.help).sort()).toEqual(OP_CODES.filter((c) => c !== 'applied').sort())
+    expect(Object.values(value.help).every((t) => typeof t === 'string' && t.length > 10)).toBe(true)
+  })
+
+  it('미리 돌려 보기는 op마다 결과와 고칠 것을 알려 주고, 제안은 남기지 않는다', async () => {
+    const { value: list } = await tool('list_decks')
+    const { value: shape } = await tool('get_shape', { deck: list.decks[0].deck })
+    const before = readdirSync(join(share, 'requests')).length
+    const compose = shape.slides.find((x: { layout: string }) => x.layout === 'compose')
+    const { value, isError } = await tool('check_changes', {
+      deck: shape.deck,
+      note: '흐름을 다듬었어요',
+      ops: [
+        { op: 'add_slide', after: shape.slides[1].id, role: '위험과 대응', as: 'n1' },
+        { op: 'move_slide', slide: 'n1', after: null },
+        { op: 'set_options', slide: shape.slides[1].id, scene: 'answer', highlight: 0 },
+        { op: 'set_options', slide: shape.slides[3].id, scene: 'film' },
+        { op: 'set_options', slide: 's00000000', tone: 'invert' },
+        { op: 'set_block', slide: compose.id, block: compose.blocks[0].id, [SECRET]: 1 },
+      ],
+    })
+    expect(isError).toBe(false)
+    expect(readdirSync(join(share, 'requests'))).toHaveLength(before)
+    expect(value.accepted).toBe(false)
+    expect(value.applied).toBe(2)
+    expect(value.skipped).toBe(4)
+    expect(value.results.map((r: { code: string }) => r.code)).toEqual(['applied', 'applied', 'not_for_layout', 'invalid', 'no_slide', 'invalid'])
+    expect(value.results[2].key).toBe('highlight')
+    expect(value.results[3].key).toBe('scene')
+    // AI가 지어낸 키 이름은 돌려보내지 않는다
+    expect(value.results[5].key).toBeUndefined()
+    expect(Object.keys(value.help).sort()).toEqual(['invalid', 'no_slide', 'not_for_layout'])
+    expect(raw.join('\n')).not.toContain(SECRET)
+
+    // 고친 것은 받아 준다
+    const fixed = await tool('check_changes', { deck: shape.deck, ops: [{ op: 'set_options', slide: shape.slides[1].id, scene: 'answer' }] })
+    expect(fixed.value).toMatchObject({ accepted: true, applied: 1, skipped: 0 })
+    // 너무 긴 설명도 propose_changes가 받지 않으니 미리 알린다
+    const long = await tool('check_changes', { deck: shape.deck, note: 'x'.repeat(301), ops: [{ op: 'set_hidden', slide: shape.slides[2].id, hidden: true }] })
+    expect(long.value).toMatchObject({ accepted: false, note: 'invalid' })
+    // 공유되지 않은 발표, 빈 ops는 정해진 말로만 답한다
+    expect((await tool('check_changes', { deck: 'd00000000', ops: [{ op: 'set_theme', motion: 'calm' }] })).isError).toBe(true)
+    expect((await tool('check_changes', { deck: shape.deck, ops: [] })).isError).toBe(true)
   })
 
   it('객체가 아닌 요청에는 틀린 요청이라고 답하고 꺼지지 않는다', async () => {

@@ -17,7 +17,8 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { version } from '../package.json'
 import { isObj } from '../src/ai/guards'
-import { MAX_OPS, NOTE_MAX, OP_NAMES, parseRequest, ROLE_MAX, requestId, type ChangeRequest } from '../src/ai/ops'
+import { checkOps } from '../src/ai/check'
+import { cleanNote, MAX_OPS, NOTE_MAX, OP_CODES, OP_KEYS, OP_NAMES, parseRequest, ROLE_MAX, requestId, type ChangeRequest, type OpCode } from '../src/ai/ops'
 import {
   deckOfFile,
   DECK_ID,
@@ -49,14 +50,43 @@ const MAX_PENDING_PER_DECK = 5
 const MESSAGES = {
   noDeck: '공유된 발표가 아니에요. list_decks로 확인하세요.',
   badShape: '모양 파일을 읽을 수 없어요. 앱에서 발표를 다시 열면 새로 만들어져요.',
-  badRequest: '제안의 꼴이 맞지 않아요. 도구 설명의 규칙을 확인하세요.',
+  badRequest: '제안의 꼴이 맞지 않아요. check_changes로 보내면 어느 op의 어느 키가 틀렸는지 알려 줘요.',
   tooMany: '이 발표에 아직 보지 않은 제안이 많아요. 사람이 앱에서 확인한 뒤에 다시 보내세요.',
   unknownRequest: '모르는 제안 id예요.',
   blocked: '응답에 내보낼 수 없는 값이 있어서 막았어요.',
   unknownTool: '모르는 도구예요.',
   pending: '앱에서 사람이 확인하면 적용돼요. get_result로 결과를 볼 수 있어요.',
+  checked:
+    '미리 돌려 보기만 했고 아무것도 보내지 않았어요. ok가 false인 op는 help의 그 코드 풀이대로 고치거나 빼고 propose_changes로 보내세요. ' +
+    '노트나 제목의 실제 길이처럼 모양에 없는 것 때문에 앱에서 조금 다를 수 있어요.',
   internal: '처리하지 못했어요.',
 } as const
+
+/**
+ * 결과 코드마다 AI가 무엇을 고치면 되는지. 정해진 말이라 응답에 나가도 된다.
+ * Record라서 OpCode에 코드를 더하면 여기도 채워야 컴파일된다 (예전에는 코드만 보고 AI가 같은 op를 다시 보냈다)
+ */
+const CODE_HELP: Record<Exclude<OpCode, 'applied'> | 'invalid', string> = {
+  no_slide: '그 장이 이 발표에 없어요. get_shape의 slides[].id나 같은 제안에서 add_slide의 as로 붙인 이름을 쓰세요.',
+  has_content: '사람이 적은 글이 있어서 지우거나 줄일 수 없어요. 장은 set_hidden으로 발표에서 빼고, 항목과 부품은 그대로 두세요.',
+  out_of_range: '고를 수 있는 범위 밖이에요. 카탈로그의 항목 수(items.min, max), 옆 판 너비(panes.sides), 지금 항목 수, 판 끝(이음표)을 확인하세요.',
+  not_for_layout: '이 장이나 부품의 레이아웃에서는 쓸 수 없는 값이에요. 카탈로그 layouts[]나 blocks[]에 그 값(highlight, panes, place, variants, fields)이 있는지 보세요. 표지, 섹션, 결정 요청 장은 바탕(tone)을 바꿀 수 없어요.',
+  last_slide: '남은 장이 하나뿐이라 지울 수 없어요.',
+  unknown_role: '카탈로그 deckTypes[].roles[].role에 있는 역할 이름이 아니에요. 그 이름을 그대로 쓰거나 layout을 같이 주세요.',
+  no_change: '이미 그 값이라 바뀌는 것이 없어요. 이 op는 빼세요.',
+  not_reviewed: '사람이 이 op를 적용하지 않고 넘겼어요.',
+  no_block: '그 부품이 이 장에 없어요. get_shape의 blocks[].id나 같은 제안에서 add_block의 as로 붙인 이름을 쓰세요.',
+  no_room: '장에 자리가 모자라요. 부품 수를 줄이거나 다른 자리에 넣고, 부품의 가장 좁은 너비(blocks[].minSpan)를 확인하세요.',
+  look_clash: '한 장에는 면 한 가지만 써요: 옅은 면(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. 혼자 장 너비를 다 쓰는 부품은 면 없이 그려져요.',
+  link_clash: '이음표가 잇는 두 부품의 갈래(blocks[].kind)가 맞지 않아요. 더하기와 견주기는 같은 갈래끼리, 결과는 숫자나 한마디로 맺을 때만 써요.',
+  scene_unfit: '이 장에 맞지 않는 장면이에요. 카탈로그 scenes[].layouts와 blocks를 보고 맞는 장면을 고르거나 빼세요.',
+  invalid: '꼴이 맞지 않아요: 그 op에 없는 키, 목록에 없는 값, 빠진 값, 너무 긴 글. key가 있으면 그 키를 고치세요. 이런 op가 하나라도 있으면 propose_changes는 제안을 통째로 받지 않아요.',
+}
+/** 빠진 op들의 코드마다 풀이 하나씩. op마다 붙이면 같은 글이 되풀이되어 AI가 읽을 것만 늘었다 */
+function helpFor(results: { ok: boolean; code: string }[]): Record<string, string> {
+  const codes = results.filter((r) => !r.ok && Object.hasOwn(CODE_HELP, r.code)).map((r) => r.code as keyof typeof CODE_HELP)
+  return Object.fromEntries([...new Set(codes)].map((c) => [c, CODE_HELP[c]]))
+}
 
 const PROTOCOL_WORDS = [
   // 모양 파일
@@ -72,6 +102,8 @@ const PROTOCOL_WORDS = [
   'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash', 'link_clash', 'scene_unfit',
   ...OP_NAMES,
   ...Object.values(MESSAGES),
+  // 미리 돌려 보기(check_changes)와 결과의 풀이
+  'help', 'key', 'accepted', 'skipped', 'note', ...new Set(Object.values(OP_KEYS).flat()), ...OP_CODES, ...Object.values(CODE_HELP),
 ]
 
 // ---------- 'AI 공유' 폴더 ----------
@@ -132,6 +164,70 @@ class ToolError extends Error {}
 const refSchema = { type: 'string', description: '장 id(s로 시작하는 9글자) 또는 같은 제안에서 add_slide의 as로 붙인 이름(n1, n2...)' }
 const blockRefSchema = { type: 'string', description: '부품 id(get_shape의 blocks[].id, b로 시작하는 9글자) 또는 같은 제안에서 add_block의 as로 붙인 이름(p1, p2...)' }
 
+/** 제안의 꼴. propose_changes와 check_changes가 같이 쓴다 */
+const CHANGES_SCHEMA = {
+  type: 'object',
+  properties: {
+    deck: { type: 'string' },
+    note: { type: 'string', maxLength: NOTE_MAX, description: '무엇을 왜 바꾸는지 사용자에게 보여 줄 짧은 설명' },
+    ops: {
+      type: 'array',
+      minItems: 1,
+      maxItems: MAX_OPS,
+      items: {
+        type: 'object',
+        properties: {
+          op: { type: 'string', enum: OP_NAMES },
+          slide: refSchema,
+          after: { anyOf: [refSchema, { type: 'null' }] },
+          layout: { type: 'string', enum: LAYOUT_ORDER },
+          role: { type: 'string', maxLength: ROLE_MAX },
+          as: { type: 'string', pattern: '^[np][0-9]{1,2}$' },
+          hidden: { type: 'boolean' },
+          count: { type: 'integer', minimum: 0, maximum: MAX_ITEMS },
+          highlight: { type: 'integer', minimum: HIGHLIGHT_MIN, maximum: HIGHLIGHT_MAX },
+          flip: { type: 'boolean' },
+          pane: { anyOf: [{ type: 'integer', minimum: 1, maximum: 12 }, { type: 'null' }] },
+          contain: { type: 'boolean' },
+          variant: { type: 'string', maxLength: 24 },
+          theme: { type: 'string', enum: THEME_ORDER },
+          accent: { anyOf: [{ type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }, { type: 'null' }] },
+          motion: { anyOf: [{ type: 'string', enum: MOTIONS.map((m) => m.id) }, { type: 'null' }] },
+          tone: { type: 'string', enum: TONES.map((m) => m.id) },
+          place: { anyOf: [{ type: 'string', enum: PLACES.map((m) => m.id) }, { type: 'null' }] },
+          font: { anyOf: [{ type: 'string', enum: FONTS.map((m) => m.id) }, { type: 'null' }] },
+          size: { type: 'string', enum: TEXT_SIZES.map((m) => m.id) },
+          footer: { type: 'string', enum: FOOTERS.map((m) => m.id) },
+          transition: { anyOf: [{ type: 'string', enum: TRANSITIONS.map((m) => m.id) }, { type: 'null' }] },
+          scene: { anyOf: [{ type: 'string', enum: SCENE_IDS }, { type: 'null' }] },
+          field: { type: 'string' },
+          item: { type: 'integer', minimum: 0, maximum: MAX_ITEMS - 1 },
+          text: { type: 'string' },
+          block: blockRefSchema,
+          type: { type: 'string', enum: BLOCK_TYPES },
+          look: { type: 'string', enum: BLOCK_LOOK_IDS },
+          effect: { type: 'string', enum: BLOCK_EFFECT_IDS },
+          when: { type: 'string', enum: BLOCK_WHEN_IDS },
+          speed: { type: 'string', enum: BLOCK_SPEED_IDS },
+          from: { type: 'string', enum: BLOCK_FROM_IDS },
+          order: { type: 'array', maxItems: MAX_BLOCKS, items: blockRefSchema },
+          beside: blockRefSchema,
+          side: { type: 'string', enum: ['before', 'after', 'above', 'below', 'right'] },
+          edge: { type: 'string', enum: ['top', 'bottom'] },
+          swap: blockRefSchema,
+          w: { type: 'integer', minimum: 1, maximum: BOARD_COLS },
+          h: { type: 'integer', minimum: 1, maximum: BOARD_ROWS },
+          link: { anyOf: [{ type: 'string', enum: BLOCK_LINK_IDS }, { type: 'null' }] },
+        },
+        required: ['op'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['deck', 'ops'],
+  additionalProperties: false,
+}
+
 const TOOLS = [
   {
     name: 'list_decks',
@@ -166,11 +262,21 @@ const TOOLS = [
     annotations: { readOnlyHint: true, openWorldHint: false },
   },
   {
+    name: 'check_changes',
+    description:
+      'propose_changes와 같은 인자를 받아 미리 돌려 보기만 한다. 아무것도 보내지 않고 사용자에게도 보이지 않는다. ' +
+      'op마다 앱에서 적용하면 어떻게 될지(ok, code)가 나오고, 안 되는 op에는 까닭이 된 키(key)가 붙는다. help에는 나온 코드마다 무엇을 고치면 되는지 나온다. ' +
+      'ops는 차례로, 앞의 op가 적용된 위에서 본다(add_slide, add_block의 as 이름도 쓸 수 있다). code가 invalid인 op가 있으면 propose_changes가 제안을 통째로 받지 않으니(accepted가 false) 고치거나 뺀다. ' +
+      'propose_changes를 부르기 전에 한 번 부르고, ok가 false인 op를 고치거나 빼서 보낸다. 모양에 없는 것(노트, 제목의 실제 길이) 때문에 앱의 결과와 조금 다를 수 있다.',
+    inputSchema: CHANGES_SCHEMA,
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
+  {
     name: 'propose_changes',
     description: [
       '발표의 모양을 바꾸자는 제안을 보낸다. 바로 바뀌지 않고, 사용자가 앱에서 미리 보고 적용하거나 거절한다. 적용 전 상태는 버전으로 남는다.',
       '사람이 적은 글은 쓸 수도 지울 수도 없다. 쓸 수 있는 글은 note(사용자에게 보이는 제안 설명), set_guide(장 안내), set_hint(칸의 회색 안내 문구)뿐이고 모두 안내다. 내용처럼 보이는 문장(숫자, 회사명, 결론)을 안내 문구에 넣지 않는다.',
-      'ops는 차례로 적용되고, 되지 않는 것은 건너뛴다.',
+      'ops는 차례로 적용되고, 되지 않는 것은 건너뛴다. 한 op에 고르는 값을 여럿 담으면 하나만 안 돼도 그 op가 통째로 빠지니, 될지 모르는 값(장면, 강조, 바탕)은 따로 담는다. 보내기 전에 check_changes로 같은 인자를 미리 돌려 본다.',
       '- add_slide {after: 장 id 또는 null(맨 앞), role?: 카탈로그의 역할 이름, layout?: 레이아웃 id, as?: "n1"} role이나 layout 중 하나는 있어야 한다.',
       '- remove_slide {slide} 빈 장만 지운다. 내용이 있으면 has_content로 실패하니 set_hidden을 쓴다.',
       '- move_slide {slide, after: 장 id 또는 null(맨 앞)}',
@@ -201,73 +307,12 @@ const TOOLS = [
       '- set_link {slide, block, side, link} 이음표(카탈로그 blockLinks)를 부품 사이의 선에 끼운다. side가 right면 그 부품의 오른쪽 선, below면 아래 선에 서서 선 건너편 부품과 잇는다. link가 null이면 뺀다. 지금 이음표는 모양의 blocks[].link와 linkBelow. ' +
         '두 부품이 이어지거나(화살표), 함께이거나(더하기), 모여 결과가 되거나(결과), 견줄 때(견주기)만 쓴다. 더하기와 견주기는 같은 갈래(blocks[].kind)끼리, 화살표는 같은 갈래끼리이거나 숫자(number)나 한마디(words)로 맺을 때, 결과는 숫자나 한마디로 맺을 때만. 어긋나면 link_clash. 이음표는 높이가 더 들어서 모자라면 no_room.',
     ].join('\n'),
-    inputSchema: {
-      type: 'object',
-      properties: {
-        deck: { type: 'string' },
-        note: { type: 'string', maxLength: NOTE_MAX, description: '무엇을 왜 바꾸는지 사용자에게 보여 줄 짧은 설명' },
-        ops: {
-          type: 'array',
-          minItems: 1,
-          maxItems: MAX_OPS,
-          items: {
-            type: 'object',
-            properties: {
-              op: { type: 'string', enum: OP_NAMES },
-              slide: refSchema,
-              after: { anyOf: [refSchema, { type: 'null' }] },
-              layout: { type: 'string', enum: LAYOUT_ORDER },
-              role: { type: 'string', maxLength: ROLE_MAX },
-              as: { type: 'string', pattern: '^[np][0-9]{1,2}$' },
-              hidden: { type: 'boolean' },
-              count: { type: 'integer', minimum: 0, maximum: MAX_ITEMS },
-              highlight: { type: 'integer', minimum: HIGHLIGHT_MIN, maximum: HIGHLIGHT_MAX },
-              flip: { type: 'boolean' },
-              pane: { anyOf: [{ type: 'integer', minimum: 1, maximum: 12 }, { type: 'null' }] },
-              contain: { type: 'boolean' },
-              variant: { type: 'string', maxLength: 24 },
-              theme: { type: 'string', enum: THEME_ORDER },
-              accent: { anyOf: [{ type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }, { type: 'null' }] },
-              motion: { anyOf: [{ type: 'string', enum: MOTIONS.map((m) => m.id) }, { type: 'null' }] },
-              tone: { type: 'string', enum: TONES.map((m) => m.id) },
-              place: { anyOf: [{ type: 'string', enum: PLACES.map((m) => m.id) }, { type: 'null' }] },
-              font: { anyOf: [{ type: 'string', enum: FONTS.map((m) => m.id) }, { type: 'null' }] },
-              size: { type: 'string', enum: TEXT_SIZES.map((m) => m.id) },
-              footer: { type: 'string', enum: FOOTERS.map((m) => m.id) },
-              transition: { anyOf: [{ type: 'string', enum: TRANSITIONS.map((m) => m.id) }, { type: 'null' }] },
-              scene: { anyOf: [{ type: 'string', enum: SCENE_IDS }, { type: 'null' }] },
-              field: { type: 'string' },
-              item: { type: 'integer', minimum: 0, maximum: MAX_ITEMS - 1 },
-              text: { type: 'string' },
-              block: blockRefSchema,
-              type: { type: 'string', enum: BLOCK_TYPES },
-              look: { type: 'string', enum: BLOCK_LOOK_IDS },
-              effect: { type: 'string', enum: BLOCK_EFFECT_IDS },
-              when: { type: 'string', enum: BLOCK_WHEN_IDS },
-              speed: { type: 'string', enum: BLOCK_SPEED_IDS },
-              from: { type: 'string', enum: BLOCK_FROM_IDS },
-              order: { type: 'array', maxItems: MAX_BLOCKS, items: blockRefSchema },
-              beside: blockRefSchema,
-              side: { type: 'string', enum: ['before', 'after', 'above', 'below', 'right'] },
-              edge: { type: 'string', enum: ['top', 'bottom'] },
-              swap: blockRefSchema,
-              w: { type: 'integer', minimum: 1, maximum: BOARD_COLS },
-              h: { type: 'integer', minimum: 1, maximum: BOARD_ROWS },
-              link: { anyOf: [{ type: 'string', enum: BLOCK_LINK_IDS }, { type: 'null' }] },
-            },
-            required: ['op'],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ['deck', 'ops'],
-      additionalProperties: false,
-    },
+    inputSchema: CHANGES_SCHEMA,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   },
   {
     name: 'get_result',
-    description: '보낸 제안을 사용자가 어떻게 했는지: pending(아직 안 봄), applied(적용), rejected(거절), invalid(꼴이 맞지 않음). 적용했으면 op마다 결과 코드가 나온다.',
+    description: '보낸 제안을 사용자가 어떻게 했는지: pending(아직 안 봄), applied(적용), rejected(거절), invalid(꼴이 맞지 않음). 적용했으면 op마다 결과 코드가 나오고, help에 빠진 코드마다 무엇을 고치면 되는지 나온다.',
     inputSchema: {
       type: 'object',
       properties: { request: { type: 'string', description: 'propose_changes가 돌려준 request (r로 시작)' } },
@@ -300,6 +345,23 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
       if (!shape) throw new ToolError(MESSAGES.noDeck)
       return shape
     }
+    case 'check_changes': {
+      const shape = typeof args.deck === 'string' ? readShape(dirs, args.deck) : null
+      if (!shape) throw new ToolError(MESSAGES.noDeck)
+      if (!Array.isArray(args.ops) || !args.ops.length || args.ops.length > MAX_OPS) throw new ToolError(MESSAGES.badRequest)
+      const results = checkOps(shape, args.ops).map((r) => ({ op: r.op ?? 'unknown', ok: r.ok, code: r.code, ...(r.key ? { key: r.key } : {}) }))
+      const noteOk = args.note === undefined || cleanNote(args.note) !== null
+      return {
+        deck: shape.deck,
+        accepted: noteOk && results.every((r) => r.code !== 'invalid'),
+        ...(noteOk ? {} : { note: 'invalid' }),
+        applied: results.filter((r) => r.ok).length,
+        skipped: results.filter((r) => !r.ok).length,
+        results,
+        help: helpFor(results),
+        message: MESSAGES.checked,
+      }
+    }
     case 'propose_changes': {
       const deck = typeof args.deck === 'string' ? args.deck : ''
       if (!readShape(dirs, deck)) throw new ToolError(MESSAGES.noDeck)
@@ -322,7 +384,9 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
         const results = Array.isArray(result.results)
           ? result.results.map((r: { ok?: unknown; code?: unknown }) => ({ ok: r?.ok === true, code: typeof r?.code === 'string' ? r.code : 'unknown' }))
           : []
-        return { request: id, status, results }
+        // 빠진 op의 코드마다 무엇을 고치면 되는지. 다음 제안에서 같은 op를 다시 보내지 않게
+        const help = helpFor(results)
+        return { request: id, status, results, ...(Object.keys(help).length ? { help } : {}) }
       }
       if (existsSync(join(dirs.requests, `${id}.json`))) return { request: id, status: 'pending', results: [] }
       throw new ToolError(MESSAGES.unknownRequest)
@@ -339,7 +403,7 @@ type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unk
 const INSTRUCTIONS =
   'Framo(gyeol)는 보고, 제안, 공유 같은 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
   '사람이 적은 글은 보안 때문에 이 서버에 없고, 사용자에게 붙여 달라고 하지도 않는다. ' +
-  '순서: list_decks → get_catalog → get_shape → propose_changes → (사용자가 앱에서 적용) → get_result.'
+  '순서: list_decks → get_catalog → get_shape → check_changes(미리 돌려 보고 고치기) → propose_changes → (사용자가 앱에서 적용) → get_result.'
 
 function toolText(value: unknown, isError = false) {
   return { content: [{ type: 'text', text: JSON.stringify(value) }], isError }
