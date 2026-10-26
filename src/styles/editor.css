@@ -384,6 +384,8 @@
   grid-template-columns: 14px minmax(0, 1fr);
   gap: 4px;
   margin-bottom: 10px;
+  /* 고른 장을 보이는 곳으로 올릴 때(scrollIntoView) 목록 끝에 딱 붙이면 고른 테의 위나 아래가 잘린다 */
+  scroll-margin: 12px 0;
 }
 
 .thumb.is-drag {
