@@ -1,14 +1,13 @@
 /* ---------- 핵심 포인트: 이름과 설명을 줄마다 나란히 ---------- */
 
+/* 줄 높이는 내용에 정해진 사이(위아래 --pt-pad)를 더한 만큼이고, 남는 높이는 맨 아래에 모인다(docs/VISUAL-RULES.md 6).
+   예전에는 줄을 본문 높이로 나눠(1fr) 늘려서 첫 줄이 장 제목 아래 --body-gap보다 100px 넘게 아래에서 시작했고 줄마다 위아래가 비었다.
+   사이는 이름 글자 크기에 비례하는 한 값이다. 줄 사이 선은 항목 사이에만(lines.css) */
 .pt {
+  --pt-pad: 40px;
   display: grid;
-  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: start;
   max-height: 100%;
-  border-top: var(--rule-hair) solid var(--line);
-}
-
-.pt:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(min-content, 240px);
 }
 
 .pt-item {
@@ -17,8 +16,23 @@
   /* 이름 칸은 장에서 560px, 좁은 칸에서는 너비의 36%: 고정 너비면 좁은 칸에서 설명이 몇 글자씩 줄이 바뀐다 */
   grid-template-columns: minmax(0, min(560px, 36%)) minmax(0, 1fr);
   gap: min(64px, 4%);
-  align-items: center;
+  /* 이름과 설명은 첫 줄의 글자선을 맞춘다: 가운데에 두면 설명이 두 줄일 때 이름이 설명 가운데로 내려가 왼쪽 끝 줄이 들쭉날쭉했다 */
+  align-items: baseline;
+  padding-block: var(--pt-pad);
   border-bottom: var(--rule-hair) solid var(--line);
+}
+
+/* 첫 줄은 본문 윗선에서, 마지막 줄 아래는 여백이 닫는다 */
+.pt-item:first-child {
+  padding-top: 0;
+}
+
+.pt-item:last-child {
+  padding-bottom: 0;
+}
+
+.pt:is([data-n='2'], [data-n='3']) {
+  --pt-pad: 52px;
 }
 
 .pt-title {
@@ -68,25 +82,22 @@
   --fs: 36px;
 }
 
-/* 모양: 세로 칸. 포인트를 왼쪽에서 오른쪽으로 나란히 */
-/* 가운데에 두되 칸보다 높으면 위에서부터(safe). 그냥 가운데면 위아래로 똑같이 넘쳐 맨 위 줄이 틀 밖으로 나간다 */
+/* 모양: 세로 칸. 포인트를 왼쪽에서 오른쪽으로 나란히. 본문 윗선에서 시작하고 남는 높이는 아래로: 가운데에 두던 때는 낮은 띠가
+   본문 가운데에 떠서 제목과 칸 사이가 크게 벌어졌다. 칸 위의 선(지금은 없다)을 위한 위 여백도 걷는다 */
 .va-columns .pt {
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   grid-auto-rows: auto;
-  gap: 56px;
-  align-content: safe center;
-  border-top: 0;
-  padding-bottom: 40px;
+  gap: var(--body-gap);
+  align-content: start;
 }
 
 .va-columns .pt-item {
   grid-template-columns: 1fr;
   align-content: start;
   gap: 28px;
-  padding-top: 40px;
-  border-top: var(--rule-hair) solid var(--line);
-  border-bottom: 0;
+  padding: 0;
+  border: 0;
 }
 
 .va-columns .pt-title {
@@ -136,33 +147,27 @@
   --fs: 30px;
 }
 
-/* 모양: 타일. 면을 깔아 칸마다 또렷하게 */
+/* 모양: 타일. 두 줄(또는 세 칸)의 격자에 칸마다 이름과 설명. 칸 사이는 여백만(--body-gap)으로, 칸 안(이름과 설명 사이)보다 넓어
+   칸이 하나씩 묶여 읽힌다. 칸 높이는 내용만큼이고 남는 높이는 아래로 */
 .va-tiles .pt {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(min-content, 1fr);
-  gap: var(--gap);
-  border-top: 0;
+  gap: var(--body-gap);
 }
 
 .va-tiles .pt:is([data-n='3'], [data-n='5'], [data-n='6']) {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.va-tiles .pt:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(min-content, 1fr);
-}
-
+/* 면도 선도 없이 장의 왼쪽 선에서: 면을 칠하던 때의 안쪽 여백(56px)이 남아 이름이 장 제목보다 들어가 떠 보였고,
+   이름은 위 끝, 설명은 아래 끝으로 갈라(space-between) 한 칸이 둘로 찢어져 보였다. 설명은 이름 바로 아래에 */
 .va-tiles .pt-item {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 52px 56px 56px;
+  justify-content: flex-start;
+  gap: 28px;
+  padding: 0;
   border: 0;
-  /* 면을 칠하지 않고 타일마다 위에 옅은 줄 선 하나(항목을 나누는 선). 옅은 회색 둥근 타일은 흔한 서식처럼 보였고, 위아래 굵은 선으로
-     묶으면 타일마다 갇혀 표 칸처럼 보였다(핵심 숫자의 카드와 같은 꼴). 안쪽 여백은 면일 때 그대로 */
-  box-shadow: inset 0 var(--rule-hair) 0 var(--line);
 }
 
 .va-tiles .pt-title {
@@ -173,12 +178,7 @@
   --fs: 30px;
 }
 
-/* 타일을 장 한 장에 쓸 때: 이름을 면의 위에 크게, 설명은 면의 아래 끝에(포스터처럼). 이름이 작으면 면 가운데가
-   비어 빈 상자처럼 보였다. 한 면 안이라 이름과 설명은 떨어져 있어도 한 덩이로 읽힌다. 다섯, 여섯은 면이 낮아 그대로 */
-.l-points.va-tiles .pt-item {
-  padding: 56px 56px 60px;
-}
-
+/* 타일을 장 한 장에 쓸 때: 칸이 적으면 이름을 크게(글자 단계를 올리는 짜임). 다섯, 여섯은 칸이 낮아 그대로 */
 .l-points.va-tiles .pt:is([data-n='2'], [data-n='3'], [data-n='4']) .pt-title {
   --fs: 62px;
   line-height: 1.16;
@@ -199,12 +199,7 @@
   --fs: 30px;
 }
 
-/* 넷은 두 줄로 쌓여(2×2) 면의 높이가 반이라 한 단계씩 작게, 위아래 여백도 줄인다. 셋과 같은 크기면 부제가 있을 때
-   아래 줄 타일이 하단 표시까지 내려갔다 */
-.l-points.va-tiles .pt[data-n='4'] .pt-item {
-  padding-block: 44px 48px;
-}
-
+/* 넷은 두 줄로 쌓여(2×2) 칸이 낮아 한 단계씩 작게. 셋과 같은 크기면 부제가 있을 때 아래 줄이 하단 표시까지 내려갔다 */
 .l-points.va-tiles .pt[data-n='4'] .pt-title {
   --fs: 52px;
 }
@@ -237,9 +232,4 @@
 
 .sz-large.l-points.va-tiles .pt[data-n='4'] .pt-body {
   --fs: 26px;
-}
-
-/* 큰 글자에서 넷이면 편집할 때 부제 칸의 안내가 한 줄을 차지해, 아래 줄 타일이 본문 상자를 13px 넘었다 */
-.sz-large.l-points.va-tiles .pt[data-n='4'] .pt-item {
-  padding-block: 36px 40px;
 }
