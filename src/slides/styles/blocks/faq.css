@@ -74,6 +74,12 @@
   .bk-qa-list[data-n='3'] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  /* 여러 단이면 질문 위 선을 긋지 않는다: 첫 질문만 지우던 때(lines.css)는 둘째, 셋째 단의 첫 질문 위에만 선이 섰고,
+     넷이면 아랫줄 선이 단마다 끊겨 섰다(칸마다 끊어 긋는 선, VISUAL-RULES 2). 단 사이와 줄 사이는 여백이 나눈다 */
+  .bk-qa-list:is([data-n='2'], [data-n='3'], [data-n='4']) > .bk-qa-item {
+    border-top-color: transparent;
+  }
 }
 
 /* 장 제목이 있으면 질문은 장 제목의 두 단계 아래(62에 44, 줄인 제목 52·44에 36)까지만: 큰 칸에서 키운 질문(52, 큰 글자 62)이

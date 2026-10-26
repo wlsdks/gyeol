@@ -958,7 +958,8 @@
     align-content: start;
     column-gap: 14px;
     padding: 24px 0 0;
-    border-top: var(--rule-hair) solid var(--line);
+    /* 칸마다 끊어 긋는 위 선은 쓰지 않는다(VISUAL-RULES 2): 넷이 나란하면 선 넷이 끊겨 섰다. 높이는 그대로 두려고 투명하게 */
+    border-top: var(--rule-hair) solid transparent;
     border-bottom: 0;
   }
 

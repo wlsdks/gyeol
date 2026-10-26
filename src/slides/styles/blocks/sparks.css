@@ -213,15 +213,17 @@
       grid-column: 1 / span 4;
     }
 
-    /* 왼쪽 단의 마지막 줄도 아래 선, 오른쪽 단의 첫 줄도 글자색 선 */
+    /* 뒤의 반은 오른쪽 단에 */
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(n + 3),
     .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(n + 4) {
       grid-column: 6 / span 4;
     }
 
-    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(2),
-    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(3) {
-      border-bottom: var(--rule-hair) solid var(--line);
+    /* 오른쪽 단의 첫 줄도 위 선 없이, 왼쪽 단의 끝 줄도 아래 선 없이 (lines.css의 첫 줄, 끝 줄과 같이): 왼쪽 단 끝 줄 아래와
+       오른쪽 단 첫 줄 위에 선을 긋던 때는 두 단의 선이 한 줄씩 어긋나 섰다(왼쪽은 머리 아래가 비고 끝에 선, 오른쪽은 머리 아래에 선) */
+    .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),
+    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(4) {
+      border-top-color: transparent;
     }
 
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),

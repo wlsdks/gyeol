@@ -159,6 +159,11 @@
   .bk-mk-row:last-child {
     border-bottom: 0;
   }
+
+  /* 가로로 놓으면 모두 첫 줄이라 위 선을 긋지 않는다: 첫 줄만 지우던 때(lines.css)는 둘째, 셋째 시장 위에만 선이 섰다 */
+  .bk-mk-list > .bk-mk-row {
+    border-top-color: transparent;
+  }
 }
 
 /* 둘이면 한 칸이 넉넉해서 덜 넓어도 가로로 */
@@ -172,5 +177,9 @@
 
   .bk-mk[data-n='2'] .bk-mk-row:last-child {
     border-bottom: 0;
+  }
+
+  .bk-mk[data-n='2'] .bk-mk-row {
+    border-top-color: transparent;
   }
 }
