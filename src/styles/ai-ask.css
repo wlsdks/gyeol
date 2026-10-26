@@ -5,6 +5,7 @@
   top: auto;
   bottom: calc(100% + 6px);
   width: 340px;
+  animation-name: pop-up-in;
   padding: 6px;
 }
 

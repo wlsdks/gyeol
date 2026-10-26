@@ -365,6 +365,15 @@
   border-radius: var(--r);
   background: var(--panel);
   box-shadow: var(--shadow-pop);
+  /* 연 단추 쪽에서 4px 내려오며 나타난다. 크기를 키우며 튀어나오지 않고 조용히 */
+  animation: pop-in var(--t) var(--ease-out);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
 }
 
 .pop-right {
@@ -375,10 +384,18 @@
   left: 0;
 }
 
-/* 아래에 자리가 없어 위로 연 창 (Popover의 flip) */
+/* 아래에 자리가 없어 위로 연 창 (Popover의 flip). 단추 쪽, 곧 아래에서 올라온다 */
 .pop.pop-up {
   top: auto;
   bottom: calc(100% + 6px);
+  animation-name: pop-up-in;
+}
+
+@keyframes pop-up-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
 }
 
 .menu {
@@ -601,7 +618,23 @@
   color: #fff;
   font-size: 14px;
   font-weight: 500;
-  transform: translateX(-50%);
+  /* 가운데 맞춤은 translate로 두고, 나타날 때는 transform만 움직인다 */
+  translate: -50% 0;
+  animation: toast-in 0.24s var(--ease-out);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop,
+  .toast {
+    animation: none;
+  }
 }
 
 .toast-action {
