@@ -30,6 +30,15 @@ export type EditTarget = DropTarget | { kind: 'stay' }
 export const sameEditTarget = (a: EditTarget | null | undefined, b: EditTarget | null | undefined) =>
   !!a && !!b && (a.kind === 'stay' ? b.kind === 'stay' : b.kind !== 'stay' && sameTarget(a, b))
 
+/** 두 판의 부품마다 자리가 같은지 */
+export function sameBoard(a: Block[], b: Block[]): boolean {
+  const at = new Map(a.map((x) => [x.id, x.at]))
+  return a.length === b.length && b.every((x) => {
+    const p = at.get(x.id)
+    return !!p && !!x.at && p.x === x.at.x && p.y === x.at.y && p.w === x.at.w && p.h === x.at.h
+  })
+}
+
 /**
  * 컴포넌트를 놓을 판: 부품 장이면 그 판, 부품 장으로 바꿀 수 있는 장이면 바꾼 모습(composed)의 판.
  * 표지, 섹션처럼 바꿀 수 없는 장이면 null. composed를 주면 이미 바꿔 둔 모습을 그대로 쓴다 (끄는 동안 같은 모습을 기준으로)
@@ -165,9 +174,21 @@ export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
         else {
           const current = d.target && d.target.kind !== 'stay' ? d.target : null
           const found = dropTarget(base, d.block, p, size, current, d.moving ?? undefined, shown)
+          // 새로 찾은 자리. 옮기는 컴포넌트를 손 아래 둘레 어디에도 놓을 수 없으면 제자리에 (까닭을 알린다)
+          const fresh: EditTarget | null = found ?? (d.kind === 'move' && d.moving ? { kind: 'stay' } : null)
+          // 놓은 뒤의 판. 같은 곳을 여러 자리로 가리킬 수 있어서(판 맨 위, 아래 줄의 위) 붙들지는 자리가 아니라 판으로 견준다:
+          // 자리로 견주던 때는 원래 자리를 다른 이름으로 가리킨 것을 다른 자리로 보아, 손이 1~2px 움직이자 표가 판 아래로 뒤집혔다
+          const after = (t: EditTarget | null) => (t ? dropResult(d, base, t, room) : null)
+          const sameAfter = (a: EditTarget | null, b: Block[] | null) => {
+            const x = after(a)
+            return !!x && !!b && sameBoard(x, b)
+          }
+          // 옮겨도 그대로인 자리 (제자리, 또는 원래 자리를 다른 이름으로 가리킨 것)
+          const home = (t: EditTarget | null) => !!d.moving && (t?.kind === 'stay' || sameAfter(t, d.moving))
           let keep = false
-          if (d.target && !sameEditTarget(found, d.target)) {
-            // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
+          if (d.target && !sameEditTarget(fresh, d.target)) {
+            const was = after(d.target)
+            // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 판이면 그대로 둔다
             const near = current
               ? [-30, 30].flatMap((o) => [
                   dropTarget(base, d.block, { x: p.x + o, y: p.y }, size, null, d.moving ?? undefined, shown),
@@ -176,15 +197,17 @@ export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
               : []
             // 지금 자리를 고른 곳에서 손이 조금밖에 움직이지 않았어도 그대로 (미리 보인 판이 바뀌어 손 아래가 달라진 것뿐이다).
             // 제자리로 돌아간 것도 같다: 제자리로 돌아간 판을 다시 재면 옆자리가 나와, 손을 멈춘 채로 두 자리를 오갔다
-            keep = near.some((t) => sameTarget(t, current)) || (!!shown && !!d.anchor && Math.hypot(p.x - d.anchor.x, p.y - d.anchor.y) < MIN_TRAVEL)
+            keep = near.some((t) => sameAfter(t, was)) || (!!shown && !!d.anchor && Math.hypot(p.x - d.anchor.x, p.y - d.anchor.y) < MIN_TRAVEL)
+            // 둘 다 제자리면 붙들지 않는다: 판이 그대로라 떨리지 않고, 손 아래에 놓을 수 없는 까닭을 새로 알릴 수 있다. 붙들던 때는
+            // 표를 옆에 둘 수 없는 자리로 끌어도 지나온 판 맨 위(표의 원래 자리)를 붙들어 까닭 없이 그대로였다
+            if (keep && home(d.target) && home(fresh)) keep = false
           }
           if (keep) {
             // 자리를 그대로 두면 그 까닭도 그대로: 새로 재면 달라진 손 아래의 까닭이 붙어, 원하는 곳에 들어갔는데 '여기는 안 돼요'가 떴다
             target = d.target
             blocked = d.blocked ?? null
           } else {
-            // 옮기는 컴포넌트를 손 아래 둘레 어디에도 놓을 수 없으면 제자리에 (까닭을 알린다)
-            target = found ?? (d.kind === 'move' && d.moving ? { kind: 'stay' } : null)
+            target = fresh
             // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
             const wanted = pointerTarget(base, p, size, shown)
             blocked = !target

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { asCompose, autoPlace, dropTarget, insertAt, makeBlock, moveAt, movingBase, placeIssue, removeBlock, type Shown } from '../../deck/blocks'
 import { makeSlide } from '../../deck/generate'
 import type { Block, Slide } from '../../deck/types'
-import { dropBlocks, planDrop, type DropState } from './planDrop'
+import { dropBlocks, planDrop, sameBoard, type DropState } from './planDrop'
 
 const block = (type: Block['type'], id: string = type): Block => ({ ...makeBlock(type), id })
 /** 1920×1080 장의 본문 상자 (위아래 틀과 제목을 뺀 어림) */
@@ -225,6 +225,36 @@ describe('끌어 놓기', () => {
     expect(far.target).toEqual({ kind: 'spot', spot: { at: 'm', side: 'right' } })
     // 끌기를 막 시작했을 때(고른 곳이 없으면)는 바로 옮긴다
     expect(planDrop(s, { ...d, anchor: null }, { by: 'pointer', over: true, at: { p: { x: 700, y: 150 }, size: SIZE, shown } }).target).toEqual(far.target)
+  })
+
+  it('옮겨도 판이 그대로인 자리는 붙들지 않는다: 손 아래에 놓을 수 없으면 그 까닭을 알린다', () => {
+    // 표(장 너비를 혼자 쓴다)가 위, 아래 줄에 큰 숫자와 주석. 보이는 판은 덜 찬 장을 눈높이로 내린 자리
+    const area = { w: 1680, h: 705 }
+    const t = { ...block('table', 't'), at: { x: 0, y: 0, w: 12, h: 7 } }
+    const s: Slide = { ...makeSlide('compose'), blocks: [t, { ...block('number', 'n'), at: { x: 0, y: 7, w: 3, h: 5 } }, { ...block('note', 'o'), at: { x: 3, y: 7, w: 9, h: 5 } }] }
+    const shown: Shown = {
+      cells: new Map([
+        ['n', { cell: { x: 0, y: 523, w: 366, h: 266 }, ink: { x: -14, y: 510, w: 224, h: 184 } }],
+        ['o', { cell: { x: 438, y: 520, w: 1242, h: 266 }, ink: { x: 424, y: 509, w: 168, h: 59 } }],
+      ]),
+      slot: { cell: { x: 0, y: 117, w: 1680, h: 391 }, ink: { x: -14, y: 103, w: 1708, h: 372 } },
+    }
+    // 끌고 내려오는 길에 판 맨 위(표의 원래 자리라 옮겨도 그대로)를 골랐다
+    const top = { kind: 'spot' as const, spot: { at: null, side: 'above' as const } }
+    expect(sameBoard(moveAt(s.blocks!, 't', top, area.h)!, s.blocks!)).toBe(true)
+    const d: DropState = { kind: 'move', block: t, base: movingBase(s.blocks!, 't', area.h), moving: s.blocks!, composed: null, target: top, anchor: { x: 600, y: 480 }, blocked: null }
+    // 주석 왼쪽(큰 숫자와 주석 사이)에 놓으려 한다: 표는 옆에 둘 수 없다. 30px 위는 판 맨 위지만 붙들지 않고 그 까닭을 알린다
+    const plan = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 423, y: 537 }, size: area, shown } })
+    expect(sameBoard(plan.result!, s.blocks!)).toBe(true)
+    expect(plan.blocked).toEqual({ kind: 'solo', type: 'table' })
+
+    // 같은 판(표의 원래 자리)을 다른 이름으로 가리킨 자리도 지금 자리로 친다: 주석 위쪽 절반에서 고른 자리(주석이 든 줄 위)를, 손이
+    // 가운데 선을 넘었다고 표를 판 아래로 뒤집지 않는다. 30px 위는 판 맨 위라는 다른 이름의 같은 판이다
+    const above1 = { kind: 'spot' as const, spot: { at: 'o', side: 'above' as const, up: 1 } }
+    expect(sameBoard(moveAt(s.blocks!, 't', above1, area.h)!, s.blocks!)).toBe(true)
+    const held = planDrop(s, { ...d, target: above1, anchor: { x: 552, y: 510 }, blocked: { kind: 'narrow', span: 12 } }, { by: 'pointer', over: true, at: { p: { x: 507.6, y: 538.6 }, size: area, shown } })
+    expect(sameBoard(held.result!, s.blocks!)).toBe(true)
+    expect(held.blocked).toEqual({ kind: 'narrow', span: 12 })
   })
 
   it('장에 자리가 없으면 새 컴포넌트는 다음 장에, 그 까닭을 남긴다', () => {

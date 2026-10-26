@@ -53,7 +53,7 @@ import { CANVAS, COL_W } from './canvas'
 import { useLinkEditing } from './LinkEditor'
 import { useLook } from './look'
 import { narrowText, noRoomText, refuseText } from './noRoom'
-import { dropBlocks, dropResult, planDrop, sameEditTarget, type DropPlanKind, type EditTarget } from './planDrop'
+import { dropBlocks, dropResult, planDrop, sameBoard, sameEditTarget, type DropPlanKind, type EditTarget } from './planDrop'
 import { RoomZone } from './RoomZone'
 
 // 부품 장 편집: 부품을 고르고, 끌어다 놓고, 판을 나누는 선을 끌어 크기를 바꾸는 일.
@@ -171,15 +171,6 @@ function shownOf(area: HTMLElement, dragId: string, expect: Block[]): Shown | nu
     else cells.set(id, { cell, ink })
   }
   return { cells, slot }
-}
-
-/** 두 판의 부품마다 자리가 같은지 */
-function sameBoard(a: Block[], b: Block[]): boolean {
-  const at = new Map(a.map((x) => [x.id, x.at]))
-  return a.length === b.length && b.every((x) => {
-    const p = at.get(x.id)
-    return !!p && !!x.at && p.x === x.at.x && p.y === x.at.y && p.w === x.at.w && p.h === x.at.h
-  })
 }
 
 /** 컴포넌트 고르기에 보이는 것: 기본 컴포넌트, 내 컴포넌트(저장해 둔 것) */
