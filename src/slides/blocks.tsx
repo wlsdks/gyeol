@@ -305,29 +305,49 @@ function BlockCell({ block: b, blocks, live, seq, band, linked }: { block: Block
 function Lines({ gutters, blocks, live }: { gutters: Gutter[]; blocks: Block[]; live: BlockEdit }) {
   // 고른 부품의 가장자리에 닿는 선: 그 손잡이만 옅게 보여 크기를 바꿀 수 있는 곳을 알린다 (edit.css)
   const sel = blocks.find((b) => b.id === live.selected)?.at
-  const near = (g: Gutter) =>
+  const near = (g: Gutter, from: number, to: number) =>
     !!sel &&
     (g.dir === 'h'
-      ? (sel.x === g.at || sel.x + sel.w === g.at) && sel.y < g.to && g.from < sel.y + sel.h
-      : (sel.y === g.at || sel.y + sel.h === g.at) && sel.x < g.to && g.from < sel.x + sel.w)
+      ? (sel.x === g.at || sel.x + sel.w === g.at) && sel.y < to && from < sel.y + sel.h
+      : (sel.y === g.at || sel.y + sel.h === g.at) && sel.x < to && from < sel.x + sel.w)
   return (
     <>
-      {gutters.map((g) => (
-        <div
-          key={`${g.dir}${g.at}-${g.from}-${g.key}`}
-          className={cx('bk-line', `is-${g.dir}`, near(g) && 'is-near')}
-          style={{ '--at': g.at, '--from': g.from, '--to': g.to } as React.CSSProperties}
-          role="separator"
-          aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
-          aria-label={g.dir === 'h' ? '컴포넌트 너비 바꾸기' : '컴포넌트 높이 바꾸기'}
-          title={g.dir === 'h' ? '끌어서 너비 바꾸기' : '끌어서 높이 바꾸기'}
-          onPointerDown={(e) => live.onGutterPointerDown(e, g)}
-        >
-          <span className="bk-line-grip" />
-        </div>
-      ))}
+      {gutters.flatMap((g) =>
+        lineParts(g, blocks).map(({ from, to }) => (
+          <div
+            key={`${g.dir}${g.at}-${from}-${to}-${g.key}`}
+            className={cx('bk-line', `is-${g.dir}`, near(g, from, to) && 'is-near')}
+            style={{ '--at': g.at, '--from': from, '--to': to } as React.CSSProperties}
+            role="separator"
+            aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
+            aria-label={g.dir === 'h' ? '컴포넌트 너비 바꾸기' : '컴포넌트 높이 바꾸기'}
+            title={g.dir === 'h' ? '끌어서 너비 바꾸기' : '끌어서 높이 바꾸기'}
+            onPointerDown={(e) => live.onGutterPointerDown(e, g)}
+          >
+            <span className="bk-line-grip" />
+          </div>
+        )),
+      )}
     </>
   )
+}
+
+/**
+ * 줄 사이 선(is-v)을 그 선에 닿는 위아래 부품의 단 경계마다 나눈 조각들. 어느 조각을 끌어도 같은 선을 옮긴다.
+ * 편집 화면은 부품마다 바로 위 부품의 그린 것 아래로 올려 붙여서(fitBlocks.ts의 pack), 네 귀퉁이 장처럼 단마다 위 부품이 다르면 단마다
+ * 틈의 높이가 다르다. 한 줄로 그으면 두 틈 사이의 가운데에 서서 아래 부품의 제목을 가로질렀고, 제목을 누르면 크기 바꾸기가 되었다.
+ * 조각마다 fitBlocks.ts의 gutters가 그 단의 틈 가운데로 옮긴다. 옆 칸 사이 선(is-h)은 단 사이에 서서 글을 지나지 않는다
+ */
+function lineParts(g: Gutter, blocks: Block[]): { from: number; to: number }[] {
+  if (g.dir !== 'v') return [{ from: g.from, to: g.to }]
+  const cuts = new Set<number>()
+  for (const { at: a } of blocks) {
+    if (!a || a.x >= g.to || a.x + a.w <= g.from || (a.y + a.h !== g.at && a.y !== g.at)) continue
+    cuts.add(a.x)
+    cuts.add(a.x + a.w)
+  }
+  const edges = [g.from, ...[...cuts].filter((x) => x > g.from && x < g.to).sort((p, q) => p - q), g.to]
+  return edges.slice(1).map((to, i) => ({ from: edges[i], to }))
 }
 
 type Box = { x: number; y: number; w: number; h: number }
