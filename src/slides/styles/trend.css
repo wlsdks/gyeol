@@ -93,7 +93,8 @@
   width: 30px;
   height: 30px;
   background: var(--accent);
-  box-shadow: 0 0 0 8px var(--bg), 0 0 0 20px var(--accent-soft);
+  /* 바탕색 틈만 두르고 옅은 강조색 고리는 두르지 않는다: 고리는 점을 두 배로 키워 보이는 장식이었다(VISUAL-RULES 4) */
+  box-shadow: 0 0 0 8px var(--bg);
 }
 
 .tn-pt.is-blank .tn-dot {
