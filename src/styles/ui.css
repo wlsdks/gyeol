@@ -526,6 +526,8 @@
   font-size: 12px;
   font-weight: 500;
   line-height: 1.45;
+  /* 두 줄로 넘어가면 끝에 한 낱말만 남지 않게 ('시간이 / 보여요.') */
+  text-wrap: pretty;
 }
 
 .menu-export {
