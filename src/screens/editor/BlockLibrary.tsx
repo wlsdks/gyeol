@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
@@ -166,6 +166,13 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   // 판의 모든 자리를 다시 재서 한 번에 150ms씩 걸려 끄는 것이 끊겼다
   const areaH = blocks.areaHeight()
   const issues = useMemo(() => new Map(TYPES.map((t) => [t, blocks.issueFor(t)])), [slide, areaH])
+  // 그릴 때 읽은 본문 높이가 그린 뒤와 다르면 한 번 더 그려 잠금을 다시 본다. 레이아웃 장을 '컴포넌트 장으로 바꾸기'로 바꾼 바로 그때는
+  // 바뀐 본문 상자가 아직 그려지지 않아 높이를 몰라서 어느 카드도 잠그지 않았다: 모든 카드가 열려 보였는데, 눌러 보면 한 장 요약 장에서는
+  // 서른하나가 '함께 넣을 수 없어요'로 들어가지 않았다. 끄는 동안은 다시 재지 않는다
+  const [, redraw] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => {
+    if (!document.body.classList.contains('is-block-dragging') && !Object.is(blocks.areaHeight(), areaH)) redraw()
+  })
   // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 위에 한 번 더 알린다. 카드마다의 잠금 표시는 그대로 둔다
   const full = counted || (slide.layout === 'compose' && TYPES.every((t) => issues.get(t)))
   // 넣기 전부터 장 높이를 넘은 장: '하나를 빼면 더 넣을 수 있어요'라고 했는데 작은 것을 빼면 그대로 잠겨 있었다
