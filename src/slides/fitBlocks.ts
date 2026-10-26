@@ -232,6 +232,8 @@ export function blockFitter() {
       const outside = (r: DOMRect) =>
         Math.max(0, P.left + 4 * k - r.left) + Math.max(0, r.bottom - (P.bottom - 4 * k)) + Math.max(0, r.right - (P.right + 24 * k)) + Math.max(0, P.top - 24 * k - r.top)
       const dots = pts.map((p) => p.querySelector<HTMLElement>('.pm-dot')?.getBoundingClientRect() ?? null)
+      // 판을 넷으로 나누는 가운데 선: 이름표가 걸치면 선이 글을 취소선처럼 지나간다(편집할 때 이름표 아래에 붙는 점수 줄이 가운데 가로선에 걸렸다)
+      const mids = Array.from(plot.querySelectorAll<HTMLElement>(':scope > .pm-mid')).map((m) => m.getBoundingClientRect()).filter((m) => m.width || m.height)
       const taken: DOMRect[] = []
       pts.forEach((p, i) => {
         const label = p.querySelector<HTMLElement>('.pm-label')
@@ -249,6 +251,7 @@ export function blockFitter() {
           dots.forEach((d, j) => {
             if (j !== i && d) cost += meet(r, d) * 2
           })
+          for (const m of mids) cost += meet(r, m)
           if (cost < best) {
             best = cost
             pick = o
