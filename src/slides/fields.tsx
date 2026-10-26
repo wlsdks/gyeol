@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ElementType } from 'react'
 import { readField } from '../deck/fields'
-import { hintFor, labelFor } from '../deck/layouts'
+import { hintFor, labelIn, LAYOUTS } from '../deck/layouts'
 import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
 import { imageToDataUrl, pickImage } from '../lib/imageFile'
@@ -294,12 +294,12 @@ function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
 
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
-  const { slide, meta, actions, fieldPrefix = '', folds } = useSlide()
+  const { slide, meta, actions, fieldPrefix = '', folds, labels } = useSlide()
   return (
     <Field
       value={readField(slide, meta, k)}
       hint={hintFor(slide.layout, slide.hints, k)}
-      label={labelFor(slide.layout, k)}
+      label={labelIn(labels ?? LAYOUTS[slide.layout], k)}
       fieldId={fieldPrefix + k}
       onChange={actions && ((v) => actions.setField(k, v))}
       fold={folds?.has(k)}
@@ -310,7 +310,7 @@ export function T({ k, ...props }: TextProps & { k: string }) {
 
 /** 항목 칸 */
 export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
-  const { slide, mode, actions, fieldPrefix = '', folds } = useSlide()
+  const { slide, mode, actions, fieldPrefix = '', folds, labels } = useSlide()
   // 글자 수 단계는 목록에서 가장 긴 항목으로 모두 같이 고른다: 항목마다 고르면 긴 이름만 한 단계 작아져
   // 나란한 항목의 제목 크기가 줄마다 달랐다(핵심 포인트의 세 제목이 44, 44, 52px)
   const fitText = props.fit
@@ -322,7 +322,7 @@ export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
     <Field
       value={slide.items[i]?.[k] ?? ''}
       hint={hintFor(slide.layout, slide.hints, k, k, i)}
-      label={labelFor(slide.layout, k, k, i)}
+      label={labelIn(labels ?? LAYOUTS[slide.layout], k, k, i)}
       fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       fold={folds?.has(`items.${k}`)}

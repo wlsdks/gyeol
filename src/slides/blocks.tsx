@@ -156,6 +156,7 @@ function BlockBody({ block, span }: { block: Block; span: number }) {
         actions,
         canRemoveItem: !!spec.items && blockItems(block).length > spec.items.min,
         fieldPrefix: blockFieldPrefix(block.id),
+        labels: spec,
         folds,
         span,
       }}

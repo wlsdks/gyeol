@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { presentable } from './fields'
 import { emptyItem, makeSlide } from './generate'
-import { labelFor, LAYOUTS } from './layouts'
+import { BLOCKS } from './blocks'
+import { labelFor, labelIn, LAYOUTS } from './layouts'
 import type { Item } from './types'
 
 const item = (title: string): Item => ({ ...emptyItem(), title })
@@ -50,5 +51,13 @@ describe('칸의 이름 (labelFor)', () => {
       for (const f of spec.fields) expect(labelFor(spec.id, f.key), `${spec.id}.${f.key}`).not.toBe('')
       for (const f of spec.items?.fields ?? []) expect(labelFor(spec.id, f.key, f.key, 0), `${spec.id}.items.${f.key}`).not.toBe('')
     }
+  })
+
+  it('컴포넌트 장의 모든 컴포넌트의 칸에도 이름이 있다', () => {
+    for (const spec of Object.values(BLOCKS)) {
+      for (const f of spec.fields) expect(labelIn(spec, f.key), `${spec.type}.${f.key}`).not.toBe('')
+      for (const f of spec.items?.fields ?? []) expect(labelIn(spec, f.key, f.key, 0), `${spec.type}.items.${f.key}`).not.toBe('')
+    }
+    expect(labelIn(BLOCKS.bullets, 'title', 'title', 1)).toBe('줄 2 요점')
   })
 })
