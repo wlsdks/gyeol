@@ -568,6 +568,14 @@
   white-space: nowrap;
 }
 
+/* 가려지는 칸이 있다는 말은 잘리지 않게 두 줄까지 */
+.stage-peek.is-hiding {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
 .stage-tools .btn.is-on {
   border-color: var(--ink);
   background: var(--ink);
@@ -1061,6 +1069,28 @@
   width: 16px;
   height: 16px;
   color: #1f8a4c;
+}
+
+/* 레이아웃에 없어 가려진 칸 (Inspector의 Unshown). 빈칸 줄 아래에 같은 크기로.
+   (i)가 칸 가운데쯤에 있어 설명을 (i)에 맞추면 좁은 창에서 칸 밖으로 잘린다: 줄의 왼쪽 끝에 맞춰 줄 아래에 연다 */
+.ins-unshown {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.ins-unshown > .info {
+  position: static;
+}
+
+.ins-unshown > .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3);
 }
 
 .ins-blank-wrap .ins-missing {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
+import { withLayout } from '../../deck/blocks'
 import { LAYOUTS } from '../../deck/layouts'
-import { visibleItems } from '../../deck/fields'
+import { unshownCount, visibleItems } from '../../deck/fields'
 import type { Deck, Slide } from '../../deck/types'
 import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
@@ -40,6 +41,20 @@ function useTightTools(ref: RefObject<HTMLDivElement | null>) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [check, ref])
+}
+
+/**
+ * '레이아웃 바꾸기'에서 그림에 마우스를 올린 동안 장 아래의 말. 바꿨을 때 가려질 칸이 있으면 그 수도 말한다:
+ * 미리 보이는 장에서 글이 사라져도 지워지는지 남는지 알 수 없었다
+ */
+function PeekNote({ slide, layout }: { slide: Slide; layout: Slide['layout'] }) {
+  const hides = unshownCount(withLayout(slide, layout))
+  const text = `‘${LAYOUTS[layout].name}’ 레이아웃으로 바꾸면 이렇게 보여요. ${hides ? `채워 둔 칸 ${hides}곳은 이 레이아웃에 없어 가려지지만 지우지는 않아요.` : '누르면 바뀌어요.'}`
+  return (
+    <p className={cx('stage-peek', hides > 0 && 'is-hiding')} title={text}>
+      {text}
+    </p>
+  )
 }
 
 /** 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 미리 보기, 발표, 그리고 '더 보기'(복제, 빼기, 지우기) */
@@ -86,7 +101,7 @@ export function StageTools({
     <div ref={toolsRef} className="stage-tools">
       {peekSlide ? (
         <div className="stage-tools-l">
-          <p className="stage-peek">‘{LAYOUTS[peekSlide.layout].name}’ 레이아웃으로 바꾸면 이렇게 보여요. 누르면 바뀌어요.</p>
+          <PeekNote slide={slide} layout={peekSlide.layout} />
         </div>
       ) : peek ? (
         <div className="stage-tools-l">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { presentable } from './fields'
+import { presentable, unshownCount } from './fields'
 import { emptyItem, makeSlide } from './generate'
-import { BLOCKS } from './blocks'
+import { BLOCKS, withLayout } from './blocks'
 import { labelFor, labelIn, LAYOUTS } from './layouts'
 import type { Item } from './types'
 
@@ -36,6 +36,55 @@ describe('발표 화면에 그릴 장 (presentable)', () => {
     const slide = { ...makeSlide('kpi'), items: [emptyItem(), item('가'), item('나')] }
     expect(presentable({ ...slide, options: { highlight: 2 } }).options.highlight).toBe(1)
     expect(presentable({ ...slide, options: { highlight: 0 } }).options.highlight).toBe(-1)
+  })
+})
+
+describe('레이아웃에 없어 가려진 칸 (unshownCount)', () => {
+  const points = () => ({
+    ...makeSlide('points'),
+    fields: { title: '다음 주 할 일', lead: '' },
+    items: [
+      { ...item('양식 배포'), body: '모든 팀에 새 양식을 보내요' },
+      { ...item('사용법 안내'), body: '짧은 안내 글을 붙여요' },
+      { ...item('의견 모으기'), body: '두 주 뒤에 설문을 해요' },
+    ],
+  })
+
+  it('레이아웃이 그리는 칸만 채웠으면 0', () => {
+    expect(unshownCount(points())).toBe(0)
+  })
+
+  it('항목이 없는 레이아웃으로 바꾸면 항목의 칸이 모두, 설명을 그리지 않는 레이아웃이면 설명만 가려진다', () => {
+    expect(unshownCount(withLayout(points(), 'statement'))).toBe(6)
+    expect(unshownCount(withLayout(points(), 'bars'))).toBe(3)
+    // 되돌리면 다시 보인다 (지우지 않았다)
+    expect(unshownCount(withLayout(withLayout(points(), 'statement'), 'points'))).toBe(0)
+  })
+
+  it('컴포넌트 장으로 바꾸면 글을 컴포넌트로 옮겨 가려지는 칸이 없다', () => {
+    expect(unshownCount(withLayout(points(), 'compose'))).toBe(0)
+  })
+
+  it('컴포넌트 장을 다른 레이아웃으로 바꾸면 남겨 둔 컴포넌트의 칸이 모두 가려진다', () => {
+    const composed = withLayout(points(), 'compose')
+    // 핵심 포인트 부품 하나뿐이면 그 레이아웃으로 되돌려서 가려지는 칸이 없다
+    expect(unshownCount(withLayout(composed, 'points'))).toBe(0)
+    // 다른 레이아웃이면 부품이 남아 그 안의 글 여섯 곳이 가려진다
+    expect(unshownCount(withLayout(composed, 'statement'))).toBe(6)
+  })
+
+  it('최대 수 너머의 항목과, 컴포넌트 장이 아닌 장에 남은 컴포넌트의 칸도 센다', () => {
+    const five = { ...points(), items: [...points().items, item('넷째'), item('다섯째')] }
+    // 핵심 포인트는 넷까지: 다섯째 항목의 이름이 가려진다
+    expect(unshownCount(five)).toBe(1)
+    const composed = withLayout(points(), 'compose')
+    const back = { ...composed, layout: 'points' as const, blocks: [...composed.blocks!, { ...composed.blocks![0], id: 'b2' }] }
+    expect(unshownCount(back)).toBeGreaterThanOrEqual(6)
+  })
+
+  it('표지의 소속, 발표자처럼 발표 전체의 값은 세지 않는다', () => {
+    const cover = { ...makeSlide('cover'), fields: { title: '분기 보고', $org: '품질팀' } }
+    expect(unshownCount(cover)).toBe(0)
   })
 })
 

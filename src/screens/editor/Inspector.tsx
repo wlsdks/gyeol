@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { missingFields, visibleItems, type Missing } from '../../deck/fields'
+import { missingFields, unshownCount, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
 import { isDarkLook, PLACES, toneOf, TONES } from '../../deck/themes'
@@ -9,7 +9,7 @@ import { BOLD_LAYOUTS } from '../../slides/layouts'
 import { sideName } from '../../slides/panes'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { useAfterPaint, useLook, type Look } from './look'
-import { BackIcon, CheckIcon, ChevronIcon, Info, Segmented, Toggle, useEscape } from '../ui'
+import { BackIcon, CheckIcon, ChevronIcon, EyeOffIcon, Info, Segmented, Toggle, useEscape } from '../ui'
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
@@ -77,10 +77,30 @@ export function Inspector({
           </span>
         </button>
         <Blanks deck={deck} slide={slide} onFocusField={onFocusField} />
+        <Unshown slide={slide} />
       </section>
       <ShapeSection slide={slide} shown={shown} look={look} />
       <LookSection deck={deck} slide={slide} />
     </div>
+  )
+}
+
+/**
+ * 채워 두었지만 이 레이아웃에 칸이 없어 장에 보이지 않는 곳. 레이아웃을 바꾸면 글이 말없이 사라져 지운 것처럼 보였다.
+ * 지우지 않았다는 것과 다시 보이게 하는 법은 (i)에
+ */
+function Unshown({ slide }: { slide: Slide }) {
+  const n = unshownCount(slide)
+  if (!n) return null
+  return (
+    <p className="ins-unshown">
+      <EyeOffIcon />
+      가려진 칸 {n}곳
+      <Info label="가려진 칸 설명" align="start">
+        채워 둔 칸 가운데 이 레이아웃에는 없는 칸이라 장에 보이지 않아요. 지우지 않고 남겨 두었으니, 그 칸이 있는 레이아웃으로 바꾸면 다시
+        보여요.
+      </Info>
+    </p>
   )
 }
 

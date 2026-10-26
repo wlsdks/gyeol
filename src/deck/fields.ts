@@ -1,6 +1,6 @@
-import { allBlocks, blockMissing, blockNames } from './blocks'
+import { allBlocks, blockMissing, blockNames, BLOCKS } from './blocks'
 import { LAYOUTS } from './layouts'
-import type { Deck, DeckMeta, ItemKey, MetaKey, Slide } from './types'
+import type { Deck, DeckMeta, Item, ItemKey, MetaKey, Slide } from './types'
 
 export function isMetaKey(key: string): boolean {
   return key.startsWith('$')
@@ -97,6 +97,38 @@ export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
     })
   }
   return out
+}
+
+type CellSpec = { fields: { key: string }[]; items?: { max: number; fields: { key: ItemKey }[] } }
+type Cells = { fields: Record<string, string>; items: Item[] }
+
+/** 칸 정의가 그리는 칸만 남긴 것: 정의에 없는 칸, 정의에 없는 항목의 칸, 최대 수 너머의 항목을 뺀다 */
+function within<T extends Cells>(x: T, spec: CellSpec): T {
+  const keys = new Set(spec.fields.map((f) => f.key))
+  const parts = new Set(spec.items?.fields.map((f) => f.key))
+  const fields = Object.fromEntries(Object.entries(x.fields).filter(([key]) => isMetaKey(key) || keys.has(key)))
+  const items = x.items.slice(0, spec.items?.max ?? 0).map((item) => ({ ...item, ...Object.fromEntries(ITEM_TEXT.filter((key) => !parts.has(key)).map((key) => [key, ''])) }))
+  return { ...x, fields, items }
+}
+
+/** 장에 그려지는 칸만 남긴 장. 부품 장이면 부품마다 그 부품이 그리는 칸만, 부품 장이 아니면 남겨 둔 부품은 뺀다 */
+function shownOnly(slide: Slide): Slide {
+  return { ...within(slide, LAYOUTS[slide.layout]), blocks: slide.layout === 'compose' ? slide.blocks?.map((b) => within(b, BLOCKS[b.type])) : undefined }
+}
+
+/** 채운 칸의 수 (발표 전체의 값은 빼고, 부품 안의 칸까지) */
+function filledCount(slide: Slide): number {
+  const count = (x: Cells) =>
+    Object.entries(x.fields).filter(([key, v]) => !isMetaKey(key) && v?.trim()).length + x.items.reduce((n, item) => n + ITEM_TEXT.filter((key) => item[key]?.trim()).length, 0)
+  return count(slide) + (slide.blocks ?? []).reduce((n, b) => n + count(b), 0)
+}
+
+/**
+ * 채워 두었지만 지금 레이아웃이 보여 주지 않는 칸의 수. 레이아웃을 바꿔도 글과 그림은 지우지 않고 남겨 두는데
+ * (edits.ts의 relayout, 부품 장이었던 장의 남겨 둔 부품), 새 레이아웃에 그 칸이 없으면 장에서 말없이 사라져 지운 것처럼 보였다
+ */
+export function unshownCount(slide: Slide): number {
+  return filledCount(slide) - filledCount(shownOnly(slide))
 }
 
 export function deckMissingCount(deck: Deck): number {

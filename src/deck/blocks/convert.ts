@@ -1,5 +1,6 @@
 // 장을 부품 장으로, 부품 장을 다시 장으로. 사람이 적은 글은 하나도 버리지 않는다
 
+import { relayout } from '../edits'
 import { uid } from '../generate'
 import { sceneFits } from '../scenes'
 import type { Block, BlockType, Item, LayoutBlockType, LayoutId, Slide } from '../types'
@@ -113,4 +114,13 @@ export function unwrapCompose(slide: Slide, layout: LayoutId): Slide | null {
     options: { ...slide.options, ...(b.highlight !== undefined ? { highlight: b.highlight } : {}) },
     blocks: undefined,
   }
+}
+
+/**
+ * 편집기의 '레이아웃 바꾸기'로 바꾼 장. 부품 장으로는 내용을 부품으로 옮기고(예전에 부품 장이었던 장은 남겨 둔 부품을 다시 보여 준다),
+ * 레이아웃 부품 하나뿐인 부품 장은 그 레이아웃으로 되돌리고, 그 밖에는 글을 그대로 두고 모양만 바꾼다
+ */
+export function withLayout(slide: Slide, layout: LayoutId): Slide {
+  if (layout === 'compose') return asCompose(slide)
+  return unwrapCompose(slide, layout) ?? relayout(slide, layout)
 }

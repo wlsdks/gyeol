@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import { asCompose, cleanDeckBlocks, copyBlocks, mapBlock, settleDeck, tidyLinks, unwrapCompose } from '../deck/blocks'
+import { asCompose, cleanDeckBlocks, copyBlocks, mapBlock, settleDeck, tidyLinks, withLayout } from '../deck/blocks'
 import { unknownParts } from '../deck/compat'
-import { relayout, withOneMore } from '../deck/edits'
+import { withOneMore } from '../deck/edits'
 import { makeSlide, uid } from '../deck/generate'
 import { followIndex, isMetaKey, moveIn } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
@@ -303,14 +303,7 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, hidden })))
     },
     changeLayout(slideId, layout) {
-      commit((d) =>
-        mapSlide(d, slideId, (s) => {
-          // 부품 장으로 바꿀 때는 내용을 부품으로 옮긴다(예전에 부품 장이었던 장은 남겨 둔 부품을 다시 보여 준다).
-          // 레이아웃 부품 하나뿐인 부품 장은 그 레이아웃으로 되돌린다
-          if (layout === 'compose') return asCompose(s)
-          return unwrapCompose(s, layout) ?? relayout(s, layout)
-        }),
-      )
+      commit((d) => mapSlide(d, slideId, (s) => withLayout(s, layout)))
     },
     setVariant(slideId, variant, key) {
       commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })), key)
