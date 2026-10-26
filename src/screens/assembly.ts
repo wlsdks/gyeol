@@ -604,6 +604,9 @@ function sides(area: HTMLElement, k: number): string[] {
         if (el.parentElement?.closest('svg') || el.closest(EDIT_UI)) return false
         const tag = el.tagName.toLowerCase()
         if (tag === 'svg' || tag === 'img') return true
+        // 글 없는 그림 상자(aria-hidden, 범위의 눈금처럼 ::before로 긋는 축): 상자째 그림이다. 칠한 띠만 보면 눈금 축을 몰라서,
+        // 왼쪽 이름과 눈금 위 표시의 이름(고리 아래)을 찢어진 글과 덧붙임으로 알았다
+        if (el.getAttribute('aria-hidden') === 'true') return true
         const cs = getComputedStyle(el)
         return (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') || cs.backgroundImage !== 'none'
       })
@@ -626,6 +629,8 @@ function sides(area: HTMLElement, k: number): string[] {
         // 사이에 다른 글이나 그려진 것이 있으면 찢어진 것이 아니다 (막대 옆 숫자, 표의 칸)
         if (ls.some((o) => o !== p && o !== q && o.l >= p.r - 1 && o.r <= q.l + 1 && Math.min(o.b, p.b) - Math.max(o.t, p.t) > 0)) continue
         if (drawnBoxes.some((o) => o.left < q.l && o.right > p.r && Math.min(o.bottom, p.b + 24 * k) - Math.max(o.top, p.t - 24 * k) > 0)) continue
+        // 오른쪽 글이 그림 바로 위나 아래(그 글 한 줄 반 안)에 그 그림과 겹쳐 서면 덧붙임이 아니라 그림의 이름표다(범위 눈금 위 고리의 이름)
+        if (drawnBoxes.some((o) => o.left < q.r && o.right > q.l && Math.max(o.top - q.b, q.t - o.bottom) < 1.5 * (q.b - q.t))) continue
         torn = Math.max(torn, q.l - p.r)
       }
     }
