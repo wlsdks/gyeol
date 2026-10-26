@@ -25,9 +25,11 @@
   grid-column: 3;
 }
 
-/* 줄 선은 줄 사이에만: 머리 아래 선이 첫 줄 위를 맡고, 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2) */
+/* 줄 선은 줄 사이에만: 머리 아래 선이 첫 줄 위를 맡고, 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2).
+   줄 사이는 한 줄 내용의 두 배 안: 32px씩 위아래에 바람(--bk-air)까지 다 더하던 때는 줄 사이가 90px로 내용(40px)의 두 배를 넘어
+   걱정과 대책의 짝이 줄마다 떨어진 섬으로 보였다. 바람은 줄 사이 하나에 한 번만 들어가게 반씩 */
 .bk-rk-row {
-  padding: calc(32px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  padding: calc(22px * var(--bk-fit, 1) + var(--bk-air, 0px) / 2) 0;
   border-bottom: var(--rule-hair) solid var(--line);
 }
 
@@ -36,7 +38,7 @@
 }
 
 .bk-rk-list[data-n='4'] .bk-rk-row {
-  padding: calc(24px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px) / 2) 0;
 }
 
 .bk-rk-t {

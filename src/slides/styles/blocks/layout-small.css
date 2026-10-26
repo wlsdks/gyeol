@@ -59,6 +59,11 @@
   padding-block: clamp(10px, 1.8cqh, 20px);
 }
 
+/* 부품 칸의 가로 막대: 줄 사이는 줄 안 여백이 맡고, 장이 덜 차면 쌓기가 주는 바람(--bk-air)을 줄 사이에 한 번만 */
+.bk-in .br:not(.va-columns *) {
+  row-gap: calc(var(--bk-air, 0px) / 2);
+}
+
 .bk-agenda:not(.va-columns) .ag-item {
   padding-block: clamp(10px, 2cqh, 24px);
 }
@@ -115,25 +120,27 @@
   }
 }
 
-/* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지) */
+/* 줄 사이도 같다: 칸이 낮을수록 고르게 좁힌다 (장에서의 값까지).
+   줄 사이는 글자와 함께 크고(--bk-fit) 한 줄 내용의 두 배를 넘지 않는다(VISUAL-RULES 6). 글자를 키운 장에서 36px씩에 바람(--bk-air)을
+   위아래에 다 더하던 때는 한 줄짜리 표의 줄 사이가 79px로 글 높이(39px)의 두 배를 넘어 줄이 따로 떠 보였다. 바람은 줄 사이에 한 번만 */
 .bk-in .ps:is([data-n]) .ps-row:not(.ps-headrow) {
-  padding-block: calc(clamp(12px, 2.4cqh, 30px) + var(--bk-air, 0px));
+  padding-block: calc(clamp(10px, 1.8cqh, 18px) * var(--bk-fit, 1) + var(--bk-air, 0px) / 2);
 }
 
 .bk-in .ps:is([data-n='5']) .ps-row:not(.ps-headrow) {
-  padding-block: calc(clamp(12px, 1.6cqh, 20px) + var(--bk-air, 0px));
+  padding-block: calc(clamp(10px, 1.6cqh, 16px) * var(--bk-fit, 1) + var(--bk-air, 0px) / 2);
 }
 
 .bk-in .ps:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
-  padding-block: calc(8px + var(--bk-air, 0px));
+  padding-block: calc(8px + var(--bk-air, 0px) / 2);
 }
 
 .bk-in .tb:is([data-n]) .tb-row:not(.tb-headrow) {
-  padding-block: calc(clamp(16px, 2.6cqh, 36px) + var(--bk-air, 0px));
+  padding-block: calc(clamp(10px, 1.8cqh, 18px) * var(--bk-fit, 1) + var(--bk-air, 0px) / 2);
 }
 
 .bk-in .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
-  padding-block: calc(clamp(12px, 2cqh, 20px) + var(--bk-air, 0px));
+  padding-block: calc(clamp(10px, 1.6cqh, 16px) * var(--bk-fit, 1) + var(--bk-air, 0px) / 2);
 }
 
 

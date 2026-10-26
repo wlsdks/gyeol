@@ -659,12 +659,14 @@
   }
 }
 
+/* 줄은 내용 높이에 정해진 사이만: 칸 높이를 줄마다 나눠(1fr) 늘리던 때는 세 줄 목차의 줄 사이가 130px로 이름(47px)의 두 배를 넘어
+   줄마다 떨어진 섬으로 보였다(VISUAL-RULES 6). 남는 높이는 목록 아래에, 장이 덜 차면 쌓기의 바람(--bk-air)을 줄 사이에 한 번만 */
 @container style(--ag-stack: 1) {
   .va-columns > .bk-in > .ag > .ag-list:is([data-n]) {
     grid-auto-columns: auto;
     grid-auto-flow: row;
-    grid-auto-rows: minmax(min-content, 1fr);
-    align-content: stretch;
+    grid-auto-rows: auto;
+    align-content: start;
   }
 
   .va-columns > .bk-in > .ag > .ag-list:is([data-n])::before {
@@ -675,8 +677,13 @@
     display: grid;
     align-items: baseline;
     gap: 0 48px;
-    padding: 0;
+    padding: calc(clamp(14px, 2.4cqh, 28px) + var(--bk-air, 0px) / 2) 0;
     container-type: normal;
+  }
+
+  /* 첫 줄은 칸 맨 위에서: 위 사이를 두면 옆 칸의 첫 글줄보다 그만큼 내려간다 */
+  .va-columns > .bk-in > .ag > .ag-list > .ag-item:first-of-type {
+    padding-top: 0;
   }
 
   .va-columns > .bk-in > .ag > .ag-list > .ag-item::after {
