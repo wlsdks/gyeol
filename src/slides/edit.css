@@ -38,6 +38,14 @@
   display: none;
 }
 
+/* 넘침을 재는 동안 부품 장의 칸은 판의 자리로 본다. 덜 찬 장을 눈높이로 내린 만큼(--bk-shift)은 칸 상자째 내려가서, 그려진 글은
+   본문 안인데 칸 아래쪽의 빈 곳이 장 밖으로 나가 핵심 한 줄 하나뿐인 장에 '글이 넘쳤어요'가 떴다. 칸 안의 넘침은 .bk-in이 따로 본다.
+   칸과 같이 옮긴 크기 손잡이(.bk-line)와 이음표도 판의 자리로 */
+.slide.is-measuring .bk-area > :is(.bk, .bk-line, .bk-link) {
+  --bk-shift: 0px !important;
+  --bk-shift-x: 0px !important;
+}
+
 /* 빈칸은 파워포인트의 개체 틀처럼 흐린 안내 글로만 보인다. 옅은 면을 늘 깔면 면이 글보다 옆으로 번져서
    채운 제목과 빈 부제의 왼쪽 끝이 어긋나 보이고, 빈칸이 많은 장은 회색 상자로 덮인다. 면은 올렸을 때만 */
 .slide.m-edit .ed.is-empty:hover > .ed-halo {
@@ -285,7 +293,8 @@
   left: calc(50% + 2px / var(--vs, 0.5));
 }
 
-.slide.m-edit .bk-area.is-live:not(.is-dragging) .it:has(> :is(.it-grip, .it-remove)):hover {
+/* 맞추는 동안(is-fitting)은 칠하지 않는다: 그려진 것으로 세면 항목 위에 손만 올려도 장 전체가 몇 px씩 오르내렸다 (fitBlocks.ts의 drawn) */
+.slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover {
   background-image: linear-gradient(color-mix(in srgb, var(--sel) 7%, transparent) 0 0);
 }
 

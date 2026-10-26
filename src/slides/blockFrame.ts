@@ -21,6 +21,16 @@ const painted = (el: Element) => {
   return hasBg || hasLine
 }
 
+/**
+ * ::before, ::after가 글자로 그리는 것(점 목록의 01, 02 같은 번호, 따옴표). 글 마디가 아니라서 글자 줄로는 잡히지 않아,
+ * 점 목록을 고르면 테두리가 번호를 빼고 요점 글에만 둘러졌다
+ */
+const generated = (el: Element) =>
+  ['::before', '::after'].some((w) => {
+    const s = getComputedStyle(el, w)
+    return s.content !== 'none' && s.content !== 'normal' && s.content !== '""' && s.display !== 'none' && s.visibility !== 'hidden'
+  })
+
 /** 칸 안에 그려진 것(글자 줄, 그림, 면과 선)을 모두 덮는 네모 (화면 px). 그린 것이 없으면 null */
 export function inkBox(cell: HTMLElement): { left: number; top: number; right: number; bottom: number } | null {
   const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
@@ -47,7 +57,7 @@ export function inkBox(cell: HTMLElement): { left: number; top: number; right: n
     if (el.closest(SKIP)) continue
     // 그림은 통째로, 그 안의 도형은 보지 않는다 (svg의 네모가 곧 그림의 자리)
     if (el instanceof SVGElement && el.ownerSVGElement) continue
-    if (el.matches('svg, img, canvas') || painted(el)) add(el.getBoundingClientRect())
+    if (el.matches('svg, img, canvas') || painted(el) || generated(el)) add(el.getBoundingClientRect())
   }
   return Number.isFinite(left) ? { left, top, right, bottom } : null
 }

@@ -106,8 +106,12 @@ export function blockFitter() {
     return v
   }
 
-  /** 칸 안쪽(.bk-in)의 글 줄마다 글자가 그려지는 자리(화면 px). 꾸밈 글자(인용 부호처럼 aria-hidden)는 일부러 글 뒤에 깔아서 뺀다 */
-  function lines(inner: HTMLElement): { n: Node; t: number; b: number; l: number; r: number }[] {
+  /**
+   * 칸 안쪽(.bk-in)의 글 줄마다 글자가 그려지는 자리(화면 px). 꾸밈 글자(인용 부호처럼 aria-hidden)는 일부러 글 뒤에 깔아서 뺀다.
+   * hints면 편집 화면의 빈칸 안내(.ed-hint)도 글로 센다: 자리를 재는 일(drawn, drawnX, 쌓기의 첫 글줄)이 안내를 빼면 빈 부품은
+   * 그려진 것이 없어서 위아래 균형에서 빠졌다가, 첫 글자를 치는 순간 들어와 부품이 수백 px 내려갔다
+   */
+  function lines(inner: HTMLElement, hints = false): { n: Node; t: number; b: number; l: number; r: number }[] {
     const out: { n: Node; t: number; b: number; l: number; r: number }[] = []
     if (!range) range = document.createRange()
     const walk = document.createTreeWalker(inner, NodeFilter.SHOW_TEXT)
@@ -115,7 +119,9 @@ export function blockFitter() {
       const n = walk.currentNode
       const text = (n.textContent || '').trim()
       const el = n.parentElement
-      if (!text || !el || el.closest('[aria-hidden="true"]')) continue
+      if (!text || !el) continue
+      const hidden = el.closest('[aria-hidden="true"]')
+      if (hidden && !(hints && hidden.classList.contains('ed-hint'))) continue
       // 일부러 숨긴 글(쌓은 막대에서 칸보다 큰 칸 안 숫자)은 그려지지 않으니 넘침으로 세지 않는다
       const cs = getComputedStyle(el)
       if (cs.visibility === 'hidden') continue
@@ -511,7 +517,7 @@ export function blockFitter() {
     const k = inner.offsetWidth ? inner.getBoundingClientRect().width / inner.offsetWidth : 1
     let t = Infinity
     let b = -Infinity
-    for (const q of lines(inner)) {
+    for (const q of lines(inner, true)) {
       t = Math.min(t, q.t)
       b = Math.max(b, q.b)
     }
@@ -540,8 +546,10 @@ export function blockFitter() {
       b = Math.max(b, e.bottom)
     }
     // 칸 밖 위에 긋는 머리 괘선(.bk::before, blocks/base.css)도 그려진 것이다. 안쪽 상자만 보면 이 선을 몰라서, 쌓기가 칸의 글을
-    // 앞 줄 소제목 바로 아래(headGap)로 올렸고 칸 위 23px에 선 선이 소제목의 덧붙임 글을 가운데로 그었다(취소선처럼 보였다)
-    for (const w of ['::before', '::after']) {
+    // 앞 줄 소제목 바로 아래(headGap)로 올렸고 칸 위 23px에 선 선이 소제목의 덧붙임 글을 가운데로 그었다(취소선처럼 보였다).
+    // 편집 화면의 ::after는 고른 부품의 테두리(edit.css)라 뺀다: 세면 부품을 고를 때와 풀 때 그려진 범위가 달라져 장이 오르내렸다
+    const live = !!c.closest('.bk-area.is-live')
+    for (const w of live ? ['::before'] : ['::before', '::after']) {
       const ps = getComputedStyle(c, w)
       if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.position !== 'absolute' || ps.visibility === 'hidden') continue
       const h = parseFloat(ps.height) || 0
@@ -765,7 +773,7 @@ export function blockFitter() {
     const firstTop = new Map<HTMLElement, number>()
     for (const x of items) {
       const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
-      const ls = inner ? lines(inner) : []
+      const ls = inner ? lines(inner, true) : []
       if (!ls.length || !x.c.classList.contains('is-shared') || x.c.classList.contains('lk-row')) continue
       const t = Math.min(...ls.map((q) => q.t))
       if (t - x.ink!.t < 8 * k || x.c.classList.contains('bk-look-card')) firstTop.set(x.c, t)
@@ -855,7 +863,12 @@ export function blockFitter() {
     }
     // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게). 다만 한 줄의 첫 글줄 윗선을 맞춘 것(lineUp)은 몇 px라도
     // 옮긴다: 결론 한 줄(44px)과 목차(52px)의 윗선이 15px 어긋났는데, 맞추려 한쪽을 7px 내리고 다른 쪽을 8px 올린 것이 둘 다 8px 밑이라 버려졌다
-    if (!lineUp.size && Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) return
+    if (!lineUp.size && Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) {
+      // 칸은 그대로 두어도 편집 화면의 선은 양옆 칸의 그려진 범위로 줄인다: 한 줄뿐인 장(옆으로 나란한 둘)은 여기서 끝나 선이 판 높이
+      // 그대로 남았고, 눈높이로 내린 만큼 장 아래로 길게 나가 '글이 넘쳤어요'가 떴다
+      if (edit) gutters(items, new Map(items.map((x) => [x.c, 0])), area, k)
+      return
+    }
     for (const x of items) {
       const px = Math.round(dy.get(x.c)! / k)
       if (px) x.c.style.setProperty('--bk-shift', px + 'px')
@@ -1000,7 +1013,7 @@ export function blockFitter() {
     if (!inner) return null
     let l = Infinity
     let r = -Infinity
-    for (const q of lines(inner)) {
+    for (const q of lines(inner, true)) {
       l = Math.min(l, q.l)
       r = Math.max(r, q.r)
     }
