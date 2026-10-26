@@ -126,11 +126,9 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
   // 부품 장에서는 적은 글(무게 1)을 조금이라도 덮는 자리를 한 번 더 크게 친다: 덮은 넓이로만 치면 이웃 글의 끝 두세 글자를 덮는 바로 아래가
   // 145px 떨어진 장 위 여백보다 싸서, 1280×600에서 핵심 한 줄, 컴포넌트, 기준을 쌓은 장의 가운데를 고르면 막대가 기준 글의 끝을 덮었다.
   // 덮인 글은 읽지도 누르지도 못하니 COVER_COST만큼 더 떨어지더라도 덮지 않는 자리가 낫다. 글자 줄 상자의 가장자리 몇 px는 글자가 아니라 뺀다.
-  // 장 아래 띠의 발표 이름과 쪽 번호(mark)는 적는 글이 아니고 장마다 같아서 덮어도 된다: 이것까지 크게 치면 맨 아래 컴포넌트를 고를 때
-  // 바로 아래 대신 장 위 여백까지 180px 떨어져 떴다
   const hides = (s: { x: number; y: number }) =>
     beside &&
-    others.some(({ r: o, w, mark }) => w === 1 && !mark && Math.min(s.x + bw, o.right) - Math.max(s.x, o.left) > 3 && Math.min(s.y + bh, o.bottom) - Math.max(s.y, o.top) > 3)
+    others.some(({ r: o, w }) => w === 1 && Math.min(s.x + bw, o.right) - Math.max(s.x, o.left) > 3 && Math.min(s.y + bh, o.bottom) - Math.max(s.y, o.top) > 3)
   const score = (s: { x: number; y: number }) => hit(s.x, s.y) + away(s.y) * AWAY_COST + (sides.includes(s) ? 50 * AWAY_COST : 0) + (hides(s) ? COVER_COST : 0)
   const best = [...spots, ...[...more, ...sides].filter((s) => !covers(s))].reduce((b, s) => (score(s) < score(b) - 1 ? s : b))
   return { x: best.x, y: best.y, room: area ? area.width - 16 : innerWidth }
@@ -144,10 +142,9 @@ const OWN_WEIGHT = 4
 const COVER_COST = 200 * AWAY_COST
 
 /**
- * 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다. tool은 장 아래 도구 줄의 것,
- * mark는 장 아래 띠의 발표 이름과 쪽 번호(적는 글이 아닌 표시)
+ * 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다. tool은 장 아래 도구 줄의 것
  */
-type TextRect = { r: DOMRect; w: number; tool?: boolean; mark?: boolean }
+type TextRect = { r: DOMRect; w: number; tool?: boolean }
 const HINT_WEIGHT = 0.2
 /** 차트와 원 같은 그림: 그림의 네모에는 빈 곳도 있어서 글보다 덜 친다 */
 const ART_WEIGHT = 0.5
@@ -174,9 +171,12 @@ function contentRects(slide: Element | null, canvas: Element | null): TextRect[]
     if (!n.nodeValue?.trim() || n.parentElement?.closest('.bk-handle')) continue
     // 빈 부제의 안내를 피하느라 아래로 내려가 차트의 숫자를 가렸다(1366×650의 핵심 숫자 아래 추이)
     const hint = !!n.parentElement?.closest('.ed-hint, .ed.is-empty')
+    // 장 아래 띠의 발표 이름과 쪽 번호는 적는 글이 아니고 장마다 같아서 덮어도 되니 빈칸 안내만큼만 친다. 적은 글로 치면 맨 아래 컴포넌트를
+    // 고를 때 바로 아래 대신 장 위 여백까지 150~180px 떨어져 떴다: 1280×600에서는 이 짧은 표시 하나(250점 남짓)로 바로 아래와 장 위 여백이
+    // 1점 차이로 비겨서, 짜임이 거의 같은 두 장에서 막대가 한 장은 바로 아래, 한 장은 위 컴포넌트 너머 장 위에 떴다
     const mark = !!n.parentElement?.closest('.s-mark')
     range.selectNodeContents(n)
-    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: hint ? HINT_WEIGHT : 1, mark })
+    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: hint || mark ? HINT_WEIGHT : 1 })
   }
   for (const f of slide.querySelectorAll('[contenteditable]')) {
     // 컴포넌트 안의 글 칸은 그 컴포넌트의 테두리(그린 것 둘레) 안만 친다: 한 줄 글 칸은 칸 너비를 다 차지해서, 짧은 상태 글의 옆이나
