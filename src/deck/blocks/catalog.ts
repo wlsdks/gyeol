@@ -105,7 +105,8 @@ export const BLOCK_GROUPS: { name: string; short: string; description: string; t
 
 export const BLOCK_LOOKS: { id: BlockLook; name: string }[] = [
   { id: 'plain', name: '바탕 없음' },
-  { id: 'card', name: '옅은 면' },
+  // 예전 '옅은 면'. 지면의 말투(괘선)로 바꾸며 칠하지 않고 위 머리 괘선과 아래 줄 선으로 묶는다(docs/DESIGN.md)
+  { id: 'card', name: '위아래 선' },
   { id: 'bold', name: '진한 면' },
 ]
 

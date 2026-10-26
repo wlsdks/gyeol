@@ -78,7 +78,7 @@ const CODE_HELP: Record<Exclude<OpCode, 'applied'> | 'invalid', string> = {
   not_reviewed: '사람이 이 op를 적용하지 않고 넘겼어요.',
   no_block: '그 부품이 이 장에 없어요. get_shape의 blocks[].id나 같은 제안에서 add_block의 as로 붙인 이름을 쓰세요.',
   no_room: '장에 자리가 모자라요. 부품 수를 줄이거나 다른 자리에 넣고, 부품의 가장 좁은 너비(blocks[].minSpan)를 확인하세요.',
-  look_clash: '한 장에는 면 한 가지만 써요: 옅은 면(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. 혼자 장 너비를 다 쓰는 부품은 면 없이 그려져요.',
+  look_clash: '한 장에는 면 한 가지만 써요: 위아래 선(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. 혼자 장 너비를 다 쓰는 부품은 면 없이 그려져요.',
   link_clash: '이음표가 잇는 두 부품의 갈래(blocks[].kind)가 맞지 않아요. 더하기와 견주기는 같은 갈래끼리, 결과는 숫자나 한마디로 맺을 때만 써요.',
   scene_unfit: '이 장에 맞지 않는 장면이에요. 카탈로그 scenes[].layouts와 blocks를 보고 맞는 장면을 고르거나 빼세요.',
   invalid: '꼴이 맞지 않아요: 그 op에 없는 키, 목록에 없는 값, 빠진 값, 너무 긴 글. key가 있으면 그 키를 고치세요. 이런 op가 하나라도 있으면 propose_changes는 제안을 통째로 받지 않아요.',
@@ -304,8 +304,8 @@ const TOOLS = [
       '부품 장(compose): 본문은 가로 12칸, 세로 12칸의 판이고 부품들이 빈틈없이 나눠 덮는다(빈 칸은 없다). 부품을 넣으면 옆이나 위아래 부품이 자리를 나눠 주고, 빼면 이웃이 그 자리를 덮는다. ' +
         '높이는 앱이 글이 잘리지 않게 맞추고, 넓은 부품은 남는 높이를 받는다. 한 장의 부품 수와 작은 부품(blocks[].small)이 아닌 부품 수는 카탈로그 blockRules. ' +
         '부품마다 가장 좁은 너비는 blocks[].minSpan(12면 그 부품은 장 너비를 혼자 쓴다). 장에 자리가 모자라면 no_room으로 건너뛴다. ' +
-        '면(look)은 부품마다 고를 수 있는 것(blocks[].looks)에서, 한 장에 한 가지만: 옅은 면(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. ' +
-        '옅은 면은 나란한 부품이 함께 바뀌고, 혼자 장 너비를 다 쓰는 부품은 면 없이 그려진다. 어긋나면 look_clash로 건너뛴다. ' +
+        '면(look)은 부품마다 고를 수 있는 것(blocks[].looks)에서, 한 장에 한 가지만: 위아래 선(card)끼리, 또는 진한 면(bold) 하나와 바탕 없는(plain) 부품들. ' +
+        '위아래 선은 나란한 부품이 함께 바뀌고, 혼자 장 너비를 다 쓰는 부품은 면 없이 그려진다. 어긋나면 look_clash로 건너뛴다. ' +
         '뜻이 이어지는 것끼리 둔다: 숫자 옆에 그 숫자의 추이 차트, 목록 옆에 그 결론 한마디처럼. 서로 관계없는 차트 둘을 나란히 두지 않는다.',
       '- add_block {slide, type, variant?, look?, effect?, as?: "p1", 자리} 빈 부품을 넣는다. 자리: beside(그 부품)와 side(before는 왼쪽, after는 오른쪽, above는 위, below는 아래; 기본 after. 그 부품이 자리를 나눠 준다) 또는 edge(top은 판 맨 위, bottom은 맨 아래에 장 너비로). 자리를 빼면 앱의 넣기처럼 알아서 놓는다.',
       '- remove_block {slide, block} 빈 부품만 뺀다. 내용이 있으면 has_content.',
