@@ -88,7 +88,7 @@ export function Home() {
       const text = await file.text()
       const deck = file.name.endsWith(DECK_EXT) ? decodeDeckFile(text) : readDeckFromHtml(text)
       if (!deck) {
-        toast.show('결에서 저장한 작업 파일이나 내보낸 발표 파일(HTML)만 열 수 있어요.')
+        toast.show('Framo에서 저장한 작업 파일이나 내보낸 발표 파일(HTML)만 열 수 있어요.')
         return
       }
       const opened = await importDeck(deck)

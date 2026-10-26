@@ -23,7 +23,7 @@ import { ASK_RUN_ID, createAgent, type AgentCommand } from './agent'
 const MAX_BODY = 512 * 1024
 const KEEP_RESULTS_MS = 7 * 24 * 60 * 60 * 1000
 
-const README = `이 폴더는 결이 AI(Claude Code, Codex)와 주고받는 곳이에요.
+const README = `이 폴더는 Framo가 AI(Claude Code, Codex)와 주고받는 곳이에요.
 
 - decks: 공유를 켠 발표의 '모양'만 있어요. 장 순서, 레이아웃, 칸이 비었는지, 테마.
   제목, 적은 글, 이미지, 발표자 노트, 소속과 이름은 들어 있지 않아요. 파일을 열어 직접 확인해 보세요.

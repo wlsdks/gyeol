@@ -180,7 +180,7 @@ function fail(message: string): never {
 async function main() {
   if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) return fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
   if (await alreadyRunning()) {
-    console.log(`결이 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
+    console.log(`Framo가 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
     openBrowser(ORIGIN)
     return
   }
@@ -198,7 +198,7 @@ async function main() {
     fail(err.message)
   })
   server.listen(PORT, HOST, () => {
-    console.log(`결이 켜졌어요: ${ORIGIN}`)
+    console.log(`Framo가 켜졌어요: ${ORIGIN}`)
     console.log('이 PC 안에서만 열리고, 발표 내용은 어디로도 보내지 않아요. 끄려면 이 창을 닫거나 Ctrl+C를 누르세요.')
     openBrowser(ORIGIN)
   })

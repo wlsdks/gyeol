@@ -178,7 +178,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     if (!file) return
     const read = decodePartsFile(await file.text().catch(() => ''))
     if (!read || !read.parts.length) {
-      toast.show(`내 컴포넌트 파일을 읽지 못했어요. 결에서 내보낸 ${PARTS_EXT} 파일을 골라 주세요.`, undefined, 6000)
+      toast.show(`내 컴포넌트 파일을 읽지 못했어요. Framo에서 내보낸 ${PARTS_EXT} 파일을 골라 주세요.`, undefined, 6000)
       return
     }
     await addManySaved(read.parts)

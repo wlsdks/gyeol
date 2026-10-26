@@ -86,7 +86,7 @@ function NewerDeck({ deck }: { deck: Deck }) {
         있어요.
       </p>
       <p>
-        결을 새 버전으로 바꾼 뒤 열어 주세요(지금은 {APP_VERSION} 버전). 지금 꼭 고쳐야 하면, 없는 것만 뺀 사본을 만들어 고칠 수
+        Framo를 새 버전으로 바꾼 뒤 열어 주세요(지금은 {APP_VERSION} 버전). 지금 꼭 고쳐야 하면, 없는 것만 뺀 사본을 만들어 고칠 수
         있어요.
       </p>
       <div className="newer-actions">
