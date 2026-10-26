@@ -1,5 +1,5 @@
 #!/bin/bash
-# 더블클릭하면 결을 켜고 크롬(없으면 엣지)으로 엽니다. 이 PC 안에서만 열려요.
+# 더블클릭하면 Framo를 켜고 크롬(없으면 엣지)으로 엽니다. 이 PC 안에서만 열려요.
 cd "$(dirname "$0")" || exit 1
 
 # 함께 들어 있는 Node.js를 이 맥에 맞게 고른다 (애플 실리콘은 arm64, 인텔은 x64). 없으면 설치된 Node.js를 쓴다
@@ -31,5 +31,5 @@ if [ ! -f dist/index.html ] || [ ! -f dist-node/serve.mjs ]; then
   fi
 fi
 
-echo "결을 켜고 있어요. 발표를 만드는 동안 이 창은 닫지 말고 내려 두세요 (닫으면 결이 꺼져요)."
+echo "Framo를 켜고 있어요. 발표를 만드는 동안 이 창은 닫지 말고 내려 두세요 (닫으면 Framo가 꺼져요)."
 "$NODE" dist-node/serve.mjs

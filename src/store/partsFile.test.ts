@@ -4,7 +4,7 @@ import { makeSlide } from '../deck/generate'
 import type { Block, Slide } from '../deck/types'
 import { decodePartsFile, encodePartsFile } from './partsFile'
 
-// 내 컴포넌트 파일(.components): 보관 폴더에 두고 다른 사람과 주고받는다. 읽을 때는 결의 파일만, 아는 것만
+// 내 컴포넌트 파일(.components): 보관 폴더에 두고 다른 사람과 주고받는다. 읽을 때는 Framo의 파일만, 아는 것만
 
 const block = (type: Block['type'], id: string = type, fields: Record<string, string> = {}): Block => ({ ...makeBlock(type), id, fields: { ...makeBlock(type).fields, ...fields } })
 
@@ -41,7 +41,7 @@ describe('내 컴포넌트 파일', () => {
     ])
   })
 
-  it('결의 파일이 아니거나 깨진 글이면 읽지 않는다', () => {
+  it('Framo의 파일이 아니거나 깨진 글이면 읽지 않는다', () => {
     expect(decodePartsFile('{"nope":1}')).toBeNull()
     expect(decodePartsFile('{')).toBeNull()
     expect(decodePartsFile(JSON.stringify({ format: 'html-maker/deck', parts: [] }))).toBeNull()

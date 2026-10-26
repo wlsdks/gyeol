@@ -517,7 +517,7 @@ function AiMore({ deck, ai, onBack }: { deck: Deck; ai: AiShare; onBack: () => v
           <p className="ai-pop-step">{isMac ? '터미널' : 'PowerShell'}에 한 번만 넣어요. 쓰는 쪽 하나면 돼요.</p>
           <Command label="Claude Code" text={`claude mcp add gyeol -- ${mcpCommand(ai.status)}`} />
           <Command label="Codex" text={`codex mcp add gyeol -- ${mcpCommand(ai.status)}`} />
-          <p className="ai-pop-step">그다음 이 발표를 보여 주고 말로 부탁해요. 예: “결에 공유한 발표를 본부장 보고에 맞게 다듬어 줘”</p>
+          <p className="ai-pop-step">그다음 이 발표를 보여 주고 말로 부탁해요. 예: “Framo에 공유한 발표를 본부장 보고에 맞게 다듬어 줘”</p>
           <div className="ai-pop-toggle">
             <Toggle label="이 발표를 AI에게 보여 주기" on={!!deck.aiShare} onChange={setAiShare} />
           </div>

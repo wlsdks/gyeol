@@ -1,4 +1,4 @@
-// 결을 이 PC 안에서만 띄우는 작은 서버. 외부 패키지 없이 Node만으로 돈다.
+// Framo를 이 PC 안에서만 띄우는 작은 서버. 외부 패키지 없이 Node만으로 돈다.
 //
 // - 127.0.0.1에만 묶는다. 같은 네트워크의 다른 PC에서는 접속할 수 없다.
 // - 포트를 고정한다. 브라우저 저장소는 주소(포트 포함)마다 따로라서, 포트가 바뀌면 저장한 발표가 안 보인다.
@@ -110,7 +110,7 @@ export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(AP
   })
 }
 
-/** 이미 이 PC에서 결이 떠 있는지. 답하는 말은 예전 이름 그대로 둔다 (예전 판이 떠 있어도 알아보게) */
+/** 이미 이 PC에서 Framo가 떠 있는지. 답하는 말은 예전 이름 그대로 둔다 (예전 판이 떠 있어도 알아보게) */
 function alreadyRunning(): Promise<boolean> {
   return new Promise((resolve) => {
     const req = get({ host: HOST, port: PORT, path: HEALTH, headers: { Host: `${HOST}:${PORT}` }, timeout: 800 }, (res) => {

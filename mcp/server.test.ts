@@ -89,7 +89,7 @@ describe('MCP 서버', () => {
     expect([...MCP_TOOLS]).toEqual(names)
   })
 
-  it('이름과 판 번호는 결의 것이다', () => {
+  it('이름과 판 번호는 Framo의 것이다', () => {
     expect(serverInfo).toEqual({ name: 'gyeol', version: pkg.version })
   })
 

@@ -24,13 +24,12 @@ const EMPTY_STEPS: [string, string][] = [
   ['표지', '제목만 적으면 바로 채우기 시작해요'],
 ]
 
-/** 로고의 세 물결을 옅게. 빈 화면에 장식 그림 대신 결의 표시 하나만 둔다 */
+/** 로고의 뷰파인더(네 귀퉁이와 가운데 줄)를 옅게. 빈 화면에 장식 그림 대신 Framo의 표시 하나만 둔다 */
 function Waves() {
   return (
-    <svg className="home-waves" viewBox="0 0 28 22" aria-hidden="true">
-      <path d="M1.5 5q6.25-4.2 12.5 0t12.5 0" />
-      <path d="M1.5 11.5q6.25-4.2 12.5 0t12.5 0" />
-      <path d="M1.5 18q6.25-4.2 12.5 0t12.5 0" />
+    <svg className="home-waves" viewBox="2 2 20 20" aria-hidden="true">
+      <path d="M6 9.5v-2A1.5 1.5 0 0 1 7.5 6h2M14.5 6h2A1.5 1.5 0 0 1 18 7.5v2M18 14.5v2a1.5 1.5 0 0 1-1.5 1.5h-2M9.5 18h-2A1.5 1.5 0 0 1 6 16.5v-2" />
+      <path d="M9.5 12h5" />
     </svg>
   )
 }

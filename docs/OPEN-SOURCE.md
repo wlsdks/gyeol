@@ -46,7 +46,7 @@
 | Codex CLI | Apache-2.0 (오픈소스) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음 |
 | Claude Code | Anthropic 상용 약관 (오픈소스 아님) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음. 회사의 AI 도구 사용 정책을 따름 |
 
-결은 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI 회사의 SDK나 패키지를 쓰지 않습니다.
+Framo는 MCP를 공개된 규격(JSON-RPC)대로 직접 구현했고, AI 회사의 SDK나 패키지를 쓰지 않습니다.
 
 ## 참고한 공개 자료 (코드나 값을 옮기지 않음)
 

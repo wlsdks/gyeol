@@ -1,5 +1,5 @@
 // 'AI에게 부탁'을 누르면 이 PC에 깔린 Claude Code를 앱 대신 띄워 부탁을 전한다.
-// 사람이 터미널을 열고 결을 연결해 말을 거는 일을 버튼 하나로 줄인 것이다.
+// 사람이 터미널을 열고 Framo를 연결해 말을 거는 일을 버튼 하나로 줄인 것이다.
 //
 // 내용이 새지 않게 이렇게 띄운다.
 // 1. 받는 것은 부탁 id(src/ai/asks.ts)와 해시 id뿐이다. AI에게 보내는 문장은 askPrompt가 정해진 말로 만든다.
@@ -21,7 +21,7 @@ import { createInterface } from 'node:readline'
 import { askFits, askOf, askPrompt, REASON_MAX, type AskError, type AskId, type AskRun, type AskState } from '../src/ai/asks'
 import { MCP_SERVER_NAME, MCP_TOOLS } from '../src/ai/protocol'
 
-/** 띄울 프로그램. args는 결이 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
+/** 띄울 프로그램. args는 Framo가 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
 export interface AgentCommand {
   file: string
   args?: string[]
