@@ -197,7 +197,7 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
     return r.x + Math.min(r.w, w)
   }))
   const empty = 1 - right / AREA_W
-  if (empty > 0.2) cost += (empty - 0.2) * 200
+  if (empty > 0.2) cost += (empty - 0.2) * 400
   // 소제목이 그 아래 부품 위에 서지 않은 판 (사람이 끌어다 놓은 판을 견줄 때)
   if (!headsOk(t, last)) cost += 100
   // 숫자가 로고 모음 아래에 깔리면 답이 근거 밑으로 간다 (answersFirst)
