@@ -103,13 +103,14 @@
 
 /* 한 줄을 다 쓰는 넓은 칸(1300px 넘게): 한 단으로 두면 짧은 요점이 왼쪽 3분의 1에 몰리고 오른쪽이 통째로 빈다.
    둘이나 셋이면 나란히 세우고(요점마다 한 단), 넷부터는 두 단으로 흘린다(왼쪽 단을 다 읽고 오른쪽 단으로).
-   단 사이는 옆 칸 사이와 같은 --bk-col-gap */
+   나란한 단은 글 폭만큼만 차지하고 단 사이는 옆 칸 사이의 두 배(두 단 흘리기와 같은 꼴): 칸을 똑같이 나누면 짧은 요점 둘이
+   본문의 왼쪽 끝과 가운데로 갈라져 그 사이가 600px 넘게 비었다(한 묶음의 요점이 양쪽으로 찢어져 보였다) */
 @container bk (min-width: 1300px) {
   .bk-list:is([data-n='2'], [data-n='3']) {
     display: grid;
-    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-columns: minmax(0, max-content);
     grid-auto-flow: column;
-    column-gap: var(--bk-col-gap);
+    column-gap: calc(var(--bk-col-gap) * 2);
   }
 
   /* 나란히 세운 요점은 선 없이 단 사이의 틈과 차례 숫자로 나눈다(단마다 위에 줄 선을 긋던 때는 칸마다 끊긴 선이 늘어섰다).
