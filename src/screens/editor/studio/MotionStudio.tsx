@@ -73,7 +73,8 @@ export function MotionStudio({
   useEffect(() => {
     if (!selected || !ids.includes(selected)) setSelected(ids[0] ?? null)
   }, [ids, selected])
-  // 덮은 화면이라 대화 창처럼: 초점은 안에서만 돌고 Esc로 닫는다(편집기의 단축키는 그동안 쉰다)
+  // 덮은 화면이라 대화 창처럼: 초점은 안에서만 돌고 Esc로 닫는다(편집기의 단축키는 그동안 쉰다).
+  // 열 때 초점은 창 자체에(data-autofocus): 첫 단추('편집으로')에 두면 '재생 (Space)'을 보고 누른 Space가 그 단추를 눌러 창이 닫혔다
   const dialogRef = useRef<HTMLDivElement>(null)
   useDialog(dialogRef, onClose)
 
@@ -86,8 +87,8 @@ export function MotionStudio({
   const small = useLowWindow()
   const reduced = useReducedMotion()
 
-  // Space: 재생과 멈춤 (단추나 끌기 막대에 있을 때는 그것의 Space를 둔다). 되돌리기와 다시 하기는 편집기와 같은 키로
-  // (스튜디오가 덮은 동안 편집기의 단축키는 쉰다)
+  // Space: 재생과 멈춤 (단추나 글 칸에 있을 때는 그것의 Space를 둔다. 바늘은 Space로 할 일이 없어 재생한다: 끌어 본 자리에서
+  // 이어 보려고 누른 Space가 아무 일도 하지 않았다). 되돌리기와 다시 하기는 편집기와 같은 키로 (스튜디오가 덮은 동안 편집기의 단축키는 쉰다)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase()
@@ -106,7 +107,7 @@ export function MotionStudio({
         return
       }
       if (e.key !== ' ' || e.repeat) return
-      if ((e.target as Element).closest?.('button, input, textarea, select, [role="slider"], [contenteditable]')) return
+      if ((e.target as Element).closest?.('button, input, textarea, select, [contenteditable]')) return
       e.preventDefault()
       player.toggle()
     }
@@ -179,7 +180,7 @@ export function MotionStudio({
   const pickPreset = (id: MotionPreset) => store.replaceSlide(slide.id, withPreset(slide, id))
 
   return (
-    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="움직임 편집" tabIndex={-1}>
+    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="움직임 편집" tabIndex={-1} data-autofocus>
       <header className="ms-top">
         <button type="button" className="btn btn-ghost btn-sm ms-back" onClick={onClose} title="편집으로 돌아가기 (Esc)">
           <BackIcon />

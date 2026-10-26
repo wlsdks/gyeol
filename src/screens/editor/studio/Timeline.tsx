@@ -66,8 +66,10 @@ export function Timeline({
   }
   const onScrub = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
+    // 글이 골라지지 않게 기본 동작을 막으면 초점도 오지 않는다. 바늘로 옮겨 둔다: 누른 뒤의 ←, →가 바늘 대신 장을 넘겼다
     e.preventDefault()
     const el = e.currentTarget
+    el.focus({ preventScroll: true })
     el.setPointerCapture(e.pointerId)
     player.seek(at(e))
     const move = (ev: PointerEvent) => player.seek(at(ev))

@@ -287,7 +287,7 @@ export function useEscape(onClose: () => void, { active = true, typing = true }:
 }
 
 /**
- * 대화 창의 초점: 열 때 안으로 옮기고([data-autofocus]가 있으면 그것), Tab은 창 안에서만 돌고,
+ * 대화 창의 초점: 열 때 안으로 옮기고([data-autofocus]가 있으면 그것. 창 자체에 있으면 창), Tab은 창 안에서만 돌고,
  * 닫으면 창을 연 단추로 돌려준다. Esc는 맨 위의 창 하나만 닫는다.
  * Esc는 다른 단축키보다 먼저(잡는 단계에서) 받아 preventDefault로 표시한다. 그래야 뒤쪽 화면이 같은 Esc로
  * 컴포넌트 고르기를 닫거나 고른 컴포넌트를 놓지 않는다 (창은 그 사이에 이미 닫혀 있을 수 있어서 dialogOpen만으로는 모른다).
@@ -301,7 +301,7 @@ export function useDialog(ref: RefObject<HTMLElement | null>, onClose: () => voi
     const el = ref.current
     if (!el) return
     const prev = document.activeElement as HTMLElement | null
-    const start = el.querySelector<HTMLElement>('[data-autofocus]') ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el
+    const start = el.hasAttribute('data-autofocus') ? el : (el.querySelector<HTMLElement>('[data-autofocus]') ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el)
     start.focus({ preventScroll: true })
     // 창 위에 또 창이 뜨면(버전 미리 보기 위의 '되돌릴까요?') 맨 위 창만 키를 받는다
     const isTop = () => {

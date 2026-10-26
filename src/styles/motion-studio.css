@@ -11,6 +11,11 @@
   animation: ms-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 열 때 초점을 받는 창 자체에는 테두리를 그리지 않는다 (고르는 것이 아니다. 단추로는 Tab으로 간다) */
+.ms:focus {
+  outline: none;
+}
+
 @keyframes ms-in {
   from {
     opacity: 0;
