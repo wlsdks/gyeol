@@ -10,7 +10,7 @@ import { frameRect } from '../../slides/blockFrame'
 import { startItemDrag } from '../../slides/itemDrag'
 import { placeFor, sideName, sideZone, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
-import { CopyIcon, GripIcon, Icon, TrashIcon } from '../ui'
+import { CopyIcon, GripIcon, Icon, TrashIcon, useEscape } from '../ui'
 import { moving, useTrackRect } from './useTrackRect'
 import { VariantMenu } from './VariantMenu'
 
@@ -324,6 +324,9 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
 
   // 다른 장으로 가면 고른 것을 놓는다
   useEffect(() => setTarget(null), [slide.id])
+  // Esc로도 놓는다(컴포넌트 장의 고르기와 같게): 글을 쓰다 누른 첫 Esc는 쓰기를 끝내고 다음 Esc가 고른 것을 놓는다.
+  // 예전에는 Esc를 몇 번 눌러도 항목의 테와 도구 막대가 그대로 남았다
+  useEscape(() => setTarget(null), { active: !!target, typing: false })
 
   // 칸에 들어가거나(키보드도) 항목을 누르면 고르고, 슬라이드 밖을 누르면 놓는다
   useEffect(() => {
