@@ -412,6 +412,9 @@ function prefOf(t: Tree, fit: Fit): number {
   return t.dir === 'h' ? ps.reduce((a, p) => a + p, 0) : Math.max(...ps)
 }
 
+/** 옆에 큰 부품 하나와 둘뿐이면 가장 좁은 너비만 받는 짧은 글 부품 (inserted) */
+const BRIEF = new Set<string>(['note', 'status', 'date'])
+
 /** 그 자리에 마디(add)를 넣은 나무. 그 부품이 없으면 null. 크기는 아직 나누지 않았다(place가 나눈다) */
 function inserted(root: Tree, add: Tree, spot: Spot, fit: Fit): Tree | null {
   const t = clone(root)
@@ -449,6 +452,25 @@ function inserted(root: Tree, add: Tree, spot: Spot, fit: Fit): Tree | null {
   // 옆으로는 보기 좋은 너비, 위아래로는 가장 낮은 높이: 남는 높이는 차트처럼 커지는 부품이 받는다. 그래서 숫자 셋이 4·4·4로 나뉜다
   const m = new Measure(fit)
   for (const k of group.kids) k.want = dir === 'h' ? prefOf(k, fit) : Math.min(BOARD_ROWS, m.least(k, 'v', cross, BOARD_ROWS))
+  // 옆으로 둘뿐이고 하나가 작은 부품(주석, 날짜, 상태 같은)이면 작은 것은 들어가는 가장 좁은 너비, 나머지는 큰 것이 받는다
+  // (docs/VISUAL-RULES.md 6: 둘이면 내용 비율로). 보기 좋은 너비로 나누면 모으기(4칸) 옆 주석 한 줄이 8칸을 받아 그림이 왼쪽 좁은 칸에
+  // 작게 서고 주석 칸은 텅 비었다
+  if (dir === 'h' && group.kids.length === 2) {
+    // 둘뿐인 가지는 늘 새로 묶은 것이라(부모의 가지는 셋 이상) 그 너비는 넣기 전 마디의 너비다
+    const span = along(area, 'h')
+    // 글 한두 줄로 끝나는 작은 부품만: 숫자 한 줄(stat)은 옆 목록과 2 : 1이 보기 좋다
+    const smallOf = (k: Tree) => k.kind === 'leaf' && fit.small(k.block) && BRIEF.has(k.block.type)
+    const [a, b] = group.kids
+    if (smallOf(a) !== smallOf(b)) {
+      const sm = smallOf(a) ? a : b
+      const big = sm === a ? b : a
+      const least = m.least(sm, 'h', cross, span)
+      if (Number.isFinite(least) && prefOf(big, fit) < span - least) {
+        sm.want = least
+        big.want = span - least
+      }
+    }
+  }
   return tidy(parent || group === node ? t : group)
 }
 
