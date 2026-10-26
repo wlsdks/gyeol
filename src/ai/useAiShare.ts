@@ -14,6 +14,8 @@ export interface AiShare {
   resolve(request: ChangeRequest, status: 'applied' | 'rejected', results: OpResult[]): Promise<void>
   /** 기다리지 않고 바로 다시 가져온다 (부탁한 제안이 막 왔을 때) */
   refresh(): void
+  /** 이 PC에 Claude Code가 있는지 다시 본다. AI 창을 열 때마다: 창을 띄워 둔 채 설치하고 돌아와도 바로 '준비됨'이 되게 */
+  recheck(): void
 }
 
 /**
@@ -82,6 +84,11 @@ export function useAiShare(deck: Deck): AiShare {
   }, [ready, shared, deck.id, nudge])
 
   const refresh = useCallback(() => setNudge((n) => n + 1), [])
+  // 다시 볼 때 서버에 닿지 못했으면(null) 그대로 둔다. 잠깐 끊긴 것으로 창 전체를 '쓸 수 없음'으로 바꾸지 않게.
+  // Claude Code가 있는지만 달라졌을 때 바꾼다: 새 객체로 바꾸면 공유를 다시 올리는 효과들이 괜히 다시 돈다
+  const recheck = useCallback(() => {
+    void aiStatus().then((s) => s && setStatus((prev) => (prev && prev.agent === s.agent ? prev : s)))
+  }, [])
 
   const resolve = useCallback(async (request: ChangeRequest, result: 'applied' | 'rejected', results: OpResult[]) => {
     decided.current.set(request.id, { status: result, results })
@@ -89,5 +96,5 @@ export function useAiShare(deck: Deck): AiShare {
     if (await sendResult(request.id, result, results)) decided.current.set(request.id, null)
   }, [])
 
-  return { status, requests, resolve, refresh }
+  return { status, requests, resolve, refresh, recheck }
 }

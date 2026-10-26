@@ -251,7 +251,7 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
     >
       {(close) => (
         <div className="ask-pop">
-          <AiHead title="이 장에서 무엇을 맡길까요?" status={ai.status} />
+          <AiHead title="이 장에서 무엇을 맡길까요?" ai={ai} ask={ask} compact />
           <AskList scope="slide" deck={deck} slide={slide} ai={ai} ask={ask} onPicked={close} />
         </div>
       )}
@@ -331,31 +331,99 @@ export function AiMenu({ deck, ai, ask }: { deck: Deck; ai: AiShare; ask: AiAsk 
   )
 }
 
+const SHELL = isMac ? '터미널' : 'PowerShell'
+// Claude Code를 설치하는 공식 명령. 쓰는 사람 대부분이 윈도우라 PowerShell 쪽을 먼저.
+// 앱이 이 주소에 연결하는 것이 아니라, 사람이 복사해 자기 터미널에서 실행하는 글이다
+const INSTALL = isMac ? 'curl -fsSL https://claude.ai/install.sh | bash' : 'irm https://claude.ai/install.ps1 | iex'
+
 /**
- * 창의 머리: 무엇을 고르면 되는지 묻는 한 줄과, 그 아래에 이 PC의 사정 한 줄.
+ * 이 PC에서 AI를 쓸 수 있는지, 셋 가운데 하나로만: 준비됨, 로그인 필요, 설치 필요.
+ * 저마다 한 줄과 할 일 하나(로그인과 설치는 복사할 명령)만 둔다. 비개발자가 읽고 무엇을 할지 바로 알게.
+ * 로그인은 서버가 따로 알려 주지 않아서 부탁이 'login'으로 끝났을 때만 안다(그 전에는 준비됨으로 보인다)
+ */
+function AiConn({ ai, ask, compact }: { ai: AiShare; ask: AiAsk; compact?: boolean }) {
+  const { status, recheck } = ai
+  // 창을 열 때마다 다시 본다: 설치하고 돌아와 창을 다시 열면 바로 준비됨이 되게
+  useEffect(() => recheck(), [recheck])
+  if (status === undefined) return <p className="ai-env">연결을 확인하고 있어요</p>
+  if (status === null) return <p className="ai-env is-warn">‘결 시작’ 파일로 켰을 때만 쓸 수 있어요.</p>
+  if (status.agent && !ask.needsLogin) {
+    return (
+      <p className="ai-env is-ready">
+        <span className="ai-env-dot" aria-hidden="true" />
+        Claude Code 준비됐어요
+      </p>
+    )
+  }
+  const login = status.agent
+  const command = login ? 'claude' : INSTALL
+  // 슬라이드 아래 창: 위로 열려서 자리가 좁다(1280×600에서 명령 칸까지 두면 위가 잘렸다). 한 줄과 '명령 복사' 하나로
+  if (compact) {
+    return (
+      <p className="ai-env ai-conn-row">
+        <span className="ai-env-dot" aria-hidden="true" />
+        {login ? 'Claude Code에 로그인해 주세요' : 'Claude Code를 설치해 주세요'}
+        <Info label={login ? '로그인하는 법' : '설치하는 법'} align="start">
+          {login
+            ? `명령을 복사해 ${SHELL}에서 실행하고 안내대로 로그인해요. 그다음 부탁을 다시 눌러요.`
+            : `명령을 복사해 ${SHELL}에 붙여 넣어요. 설치하기 전에는 부탁을 누르면 복사돼요. Claude Code나 Codex에 붙여 넣으면 돼요.`}
+        </Info>
+        <CopyLink text={command} />
+      </p>
+    )
+  }
+  return (
+    <div className="ai-conn">
+      <p className="ai-env">
+        <span className="ai-env-dot" aria-hidden="true" />
+        {login ? `Claude Code에 로그인해 주세요. ${SHELL}에서 실행해요.` : `Claude Code를 설치해 주세요. ${SHELL}에 붙여 넣어요.`}
+      </p>
+      <Command label={SHELL} text={command} />
+      {!login && (
+        <p className="ai-conn-alt">
+          설치하기 전에는 부탁을 누르면 복사돼요
+          <Info label="복사한 부탁 쓰는 법">
+            Claude Code나 Codex에 붙여 넣으면 돼요. 설치한 뒤에는 이 창을 다시 열면 누르는 대로 바로 맡길 수 있어요.
+          </Info>
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 창의 머리: 무엇을 고르면 되는지 묻는 한 줄과, 그 아래에 이 PC의 사정(AiConn).
  * 예전에는 설명 두 줄과 'Claude Code를 찾지 못했어요' 두 줄이 부탁보다 먼저 와서 무엇부터 할지 몰랐다
  */
-function AiHead({ title, status }: { title: string; status: AiShare['status'] }) {
+function AiHead({ title, ai, ask, compact }: { title: string; ai: AiShare; ask: AiAsk; compact?: boolean }) {
   return (
     <header className="ai-head">
       <p className="ai-head-h">
         {title}
         <Info label="AI로 다듬기 설명">고르면 AI가 발표의 모양을 살펴보고 바꿀 것을 제안해요. 바뀌는 모습을 미리 보고 적용할지 정해요. 적용한 뒤에도 되돌릴 수 있어요.</Info>
       </p>
-      {status === undefined && <p className="ai-env">연결을 확인하고 있어요</p>}
-      {status === null && <p className="ai-env is-warn">‘결 시작’ 파일로 켰을 때만 쓸 수 있어요.</p>}
-      {status && (
-        <p className={cx('ai-env', status.agent && 'is-ready')}>
-          <span className="ai-env-dot" aria-hidden="true" />
-          {status.agent ? '이 PC의 Claude Code가 맡아요' : 'Claude Code가 없어서, 누르면 부탁을 복사해요'}
-          {!status.agent && (
-            <Info label="복사한 부탁 쓰는 법" align="start">
-              Claude Code나 Codex에 붙여 넣으면 돼요. 이 PC에 Claude Code를 설치하면 누르는 대로 바로 맡길 수 있어요.
-            </Info>
-          )}
-        </p>
-      )}
+      <AiConn ai={ai} ask={ask} compact={compact} />
     </header>
+  )
+}
+
+/** 글 사이의 작은 '명령 복사'. 복사하지 못하면 명령을 그 자리에 펼쳐 직접 고르게 한다 */
+function CopyLink({ text }: { text: string }) {
+  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setState('copied')
+      window.setTimeout(() => setState('idle'), 1600)
+    } catch {
+      setState('failed')
+    }
+  }
+  if (state === 'failed') return <code className="ai-conn-code">{text}</code>
+  return (
+    <button type="button" className="ask-link ai-conn-copy" onClick={copy}>
+      {state === 'copied' ? '복사했어요' : '명령 복사'}
+    </button>
   )
 }
 
@@ -369,7 +437,7 @@ function AiDetails({ deck, ai, ask, onPicked }: { deck: Deck; ai: AiShare; ask: 
       {more && <AiMore deck={deck} ai={ai} onBack={() => setMore(false)} />}
       {/* 넘어가도 숨기기만 한다: '무엇이 보이나요?'를 보고 돌아오면 묻던 자리가 그대로 있게 */}
       <div className="ai-pop" hidden={more}>
-        <AiHead title="발표 전체에서 무엇을 맡길까요?" status={ai.status} />
+        <AiHead title="발표 전체에서 무엇을 맡길까요?" ai={ai} ask={ask} />
         {ai.status && <AskList scope="deck" deck={deck} slide={null} ai={ai} ask={ask} onPicked={onPicked} onMore={() => setMore(true)} />}
         <footer className="ai-foot">
           {shared ? (

@@ -76,6 +76,69 @@
   margin-left: 0;
 }
 
+/* 로그인 필요, 설치 필요: 한 줄과 복사할 명령 하나. 해야 할 일이라 테 안에 모은다(경고색은 쓰지 않는다: 고장이 아니다) */
+.ai-conn {
+  margin-top: 8px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ai-conn .ai-env {
+  align-items: flex-start;
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-conn .ai-env-dot {
+  margin-top: 6px;
+}
+
+/* 위 줄이 어디에 붙여 넣는지 말하므로 이름 칸은 빼고, 명령은 잘리지 않게 다 보인다 */
+.ai-conn .ai-cmd {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 8px;
+  background: var(--panel);
+}
+
+.ai-conn .ai-cmd-label {
+  display: none;
+}
+
+.ai-conn .ai-cmd-text {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* 슬라이드 아래 창의 한 줄: 점, 할 일, (i), 오른쪽 끝에 '명령 복사' */
+.ai-conn-row {
+  flex-wrap: wrap;
+  color: var(--ink-2);
+}
+
+.ai-conn-row .ai-conn-copy {
+  margin-left: auto;
+  font-size: 12.5px;
+}
+
+.ai-conn-code {
+  flex-basis: 100%;
+  margin-top: 4px;
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.ai-conn-alt {
+  display: flex;
+  align-items: center;
+  margin: 8px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
 /* 아래 줄: 공유 중인지(그만 보여 주기), 그리고 한 장 뒤로 넘기는 '보이는 것, 직접 연결' */
 .ai-foot {
   position: sticky;

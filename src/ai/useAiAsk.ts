@@ -15,6 +15,11 @@ export interface AskJob extends AskRun {
 
 export interface AiAsk {
   job: AskJob | null
+  /**
+   * 마지막 부탁이 Claude Code에 로그인돼 있지 않아서 끝나지 못했는지. 서버가 로그인 여부를 따로 알려 주지 않아서
+   * 부탁이 'login'으로 끝난 것으로만 안다. 다음 부탁이 제안까지 가면(바꿀 게 없다고 해도) 풀린다
+   */
+  needsLogin: boolean
   start(ask: AskId, slide: Slide | null): Promise<void>
   cancel(): void
   dismiss(): void
@@ -72,5 +77,11 @@ export function useAiAsk(deck: Deck, share: () => void): AiAsk {
   }, [])
   const dismiss = useCallback(() => setJob(null), [])
 
-  return { job, start, cancel, dismiss }
+  const [needsLogin, setNeedsLogin] = useState(false)
+  useEffect(() => {
+    if (job?.state === 'failed' && job.error === 'login') setNeedsLogin(true)
+    else if (job?.state === 'done' || job?.state === 'no_change') setNeedsLogin(false)
+  }, [job])
+
+  return { job, needsLogin, start, cancel, dismiss }
 }
