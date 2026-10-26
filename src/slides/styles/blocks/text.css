@@ -94,6 +94,13 @@
     column-gap: var(--bk-col-gap);
   }
 
+  /* 나란히 세운 요점은 단마다 위에 줄 선을 긋는다: 한 줄짜리 짧은 요점 셋이 넓은 칸에 점 하나씩 떠 있으면 흩어져 약해 보였다.
+     선이 단을 나눠 위 줄의 핵심 숫자 단과 같은 짜임으로 읽힌다 */
+  .bk-list:is([data-n='2'], [data-n='3']) > .bk-li {
+    padding-top: 28px;
+    border-top: var(--rule) solid var(--line);
+  }
+
   .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
