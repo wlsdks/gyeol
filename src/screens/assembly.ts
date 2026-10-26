@@ -10,8 +10,8 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  * - 위계: 장 제목이 있으면, 부품 장만의 부품의 글이 제목만 하거나(같은 크기 이상) 제목과 같은 색, 굵기로 한 단계 안쪽이면(제목 ÷ 1.2 이상)
  *   제목과 다투는 것으로 본다. 강조색이나 버금 글자색의 글은 답이나 딸린 글이라,
  *   숫자와 단위는 답이라 제목과 다투지 않는다. 핵심 한 줄이 있으면 다른 부품의 문장이 그보다 크지 않아야 한다(결론이 넘어간다)
- * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 묶음 사이를 조금 벌린 뒤 맨 아래에 모인다.
- *   거꾸로 아래가 3분의 1 넘게 비었는데 묶음 사이를 벌리지 않은 장(위가 무겁다)도 잡는다.
+ * - 빈 띠와 세로 리듬(docs/VISUAL-RULES.md 6): 장 머리 아래와 부품 내용 사이, 부품 사이에 위아래로 빈 띠가 GAP_MAX(--body-gap의 1.5배)보다
+ *   넓은 곳, 묶음 사이가 줄마다 다른 것, 줄이 내용의 두 배 넘게 늘어난 것. 남는 높이는 맨 아래 한곳에 모인다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
  * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 면이 내용과 나란한 칸보다 훨씬 큰 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
@@ -24,8 +24,8 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
 
 /** 위아래로 빈 띠의 허용 폭. 장에서 가장 큰 사이(--body-gap, 72)에 칸 한 줄 몫의 끝수(판의 칸이 내용보다 조금 높다)를 더한 것 */
 const GAP_MAX = 72 * 1.5
-/** 남는 높이를 나눌 때 묶음 사이를 벌리는 가장 큰 폭(--bk-gap의 두 배, fitBlocks.ts의 pack)에서 끝수를 뺀 것 */
-const GAP_SPREAD = 48 * 2 - 8
+/** 묶음 사이가 줄마다 이만큼 넘게 다르면 들쭉날쭉해 보인다 (글꼴의 잉크 차이 몫) */
+const GAP_VARY = 24
 /** 한 줄의 가장 긴 폭 (글자 크기의 배수). 글 칸은 24em(한글로 34자 남짓)에서 꺾는다(blocks/base.css의 --measure). 글꼴 차이 몫을 더한 값 */
 const MEASURE_EM = 25.5
 /** 끝 줄이 가장 긴 줄의 이만큼도 안 되면 낱말 하나가 홀로 남은 것 */
@@ -137,38 +137,27 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   })
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
-  // 장 머리 아래의 빈 띠 (머리가 없으면 0)
-  let headGap = 0
+  // 본문은 장 제목 아래 --body-gap에서 시작한다(docs/VISUAL-RULES.md 6). 머리 아래가 그 1.5배를 넘으면 본문을 가운데로 띄운 것
   if (hasHead) {
     // 머리의 아래: 부제가 있으면 부제, 없으면 제목의 글 줄 아래
     const last = [...head!.querySelectorAll<HTMLElement>('.s-title, .s-lead')].filter((el) => el.textContent?.trim()).at(-1)
     const hb = last ? last.getBoundingClientRect().bottom : head!.getBoundingClientRect().bottom
     const gap = (merged[0].t - hb) / k
-    headGap = gap
-    // 내용이 적은 장은 남는 높이를 머리 아래와 맨 아래에 2 : 3으로 둔다(fitBlocks.ts 3-4). 그래서 머리 아래가 넓어도 아래가 그보다 넓으면
-    // 내용이 눈높이 가운데에 선 것이라 괜찮다. 아래보다 넓으면 내용이 가라앉은 것
-    const under = (area.getBoundingClientRect().bottom - merged[merged.length - 1].b) / k
-    if (gap > GAP_MAX + 24 && gap > under) out.push(`장 머리 아래가 ${Math.round(gap)}px 비어요`)
+    if (gap > GAP_MAX) out.push(`장 머리 아래가 ${Math.round(gap)}px 비어요(본문은 제목 아래 --body-gap에서)`)
   }
-  let widest = 0
+  // 묶음 사이: 남는 높이를 사이에 나누지 않아서 사이는 줄마다 같다(--bk-gap). 소제목 아래는 그 아래 부품과 한 덩어리라 좁은 것이 맞아 뺀다
+  const headsOnly = (s: Span) =>
+    all.every((c, i) => {
+      const p = inks[i]
+      return !p || p.b < s.t - 1 || p.t > s.b + 1 || c.dataset.type === 'heading'
+    })
+  const gaps: number[] = []
   for (let i = 1; i < merged.length; i++) {
     const gap = (merged[i].t - merged[i - 1].b) / k
-    widest = Math.max(widest, gap)
     if (gap > GAP_MAX) out.push(`부품 사이가 위아래로 ${Math.round(gap)}px 비어요`)
+    if (!headsOnly(merged[i - 1])) gaps.push(gap)
   }
-  // 아래로 몰린 빈 띠: 본문 아래 3분의 1 넘게 비었는데 묶음 사이는 아직 벌릴 수 있던 장(가장 넓은 사이가 --bk-gap 두 배 밑).
-  // 남는 높이를 맨 아래에만 모으면 내용이 위에 몰려 위가 무거워 보였다(fitBlocks.ts 3-4).
-  // 쌓기가 칸을 올려 붙여 생긴 빈 띠만 본다: 판이 맨 아래 칸에 높이를 주어 칸 안이 빈 것(칸이 본문 바닥까지 닿는다)은 쌓기 몫이 아니다
-  const ab = area.getBoundingClientRect().bottom
-  const bottom = (ab - merged[merged.length - 1].b) / k
-  // 칸이 본문 바닥에 닿는지는 캔버스 16px까지 봐준다: 첫 줄을 장 머리에 맞춰 몇 px 올린 칸도 판이 바닥까지 준 칸이다
-  const filled = all.some((c) => c.getBoundingClientRect().bottom >= ab - 16 * k)
-  // 벌릴 수 있는 사이가 있는지: 소제목 아래는 그 아래 부품과 한 덩어리라 벌리지 않는다
-  const at = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
-  const opens = all.some((p) => p.dataset.type !== 'heading' && all.some((q) => at(q, '--y') >= at(p, '--y') + at(p, '--h') && at(q, '--x') < at(p, '--x') + at(p, '--w') && at(p, '--x') < at(q, '--x') + at(q, '--w')))
-  // 남는 높이를 머리 아래에도 나눈 장(머리 아래가 아래 빈 띠의 반 넘게)은 내용이 눈높이 가운데에 선 것이라 몰린 것이 아니다
-  if (hasHead && opens && !filled && bottom > area.offsetHeight / 3 && widest < GAP_SPREAD && headGap < bottom / 2)
-    out.push(`내용이 위에 몰려 아래가 ${Math.round(bottom)}px 비어요`)
+  if (gaps.length > 1 && Math.max(...gaps) - Math.min(...gaps) > GAP_VARY) out.push(`묶음 사이가 줄마다 달라요(${gaps.map(Math.round).join(', ')}px)`)
   // 이음표는 그려진 것 사이의 빈자리에 혼자 서야 한다
   for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
     const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
@@ -540,6 +529,146 @@ function lineEconomy(area: HTMLElement, k: number): string[] {
   return out
 }
 
+/** 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 면째, 바탕 없는 칸은 글 줄과 그림 */
+function inkX(cell: HTMLElement): { l: number; r: number } | null {
+  if (!cell.classList.contains('bk-look-plain')) {
+    const q = cell.getBoundingClientRect()
+    return { l: q.left, r: q.right }
+  }
+  const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+  if (!inner) return null
+  let l = Infinity
+  let r = -Infinity
+  for (const q of blockTextLines(inner)) {
+    l = Math.min(l, q.l)
+    r = Math.max(r, q.r)
+  }
+  for (const f of inner.querySelectorAll('svg, img')) {
+    if (f.parentElement?.closest('svg') || f.closest(EDIT_UI)) continue
+    const q = f.getBoundingClientRect()
+    if (!q.width) continue
+    l = Math.min(l, q.left)
+    r = Math.max(r, q.right)
+  }
+  return l < r ? { l, r } : null
+}
+
+/** 한쪽이 이만큼 넘게 비면 판이 너비를 고르게 나누지 못한 것 */
+const SIDE_EMPTY = 0.25
+
+/**
+ * 가로 리듬(docs/VISUAL-RULES.md 6): 컴포넌트가 둘 이하인 장에서 본문의 한쪽이 SIDE_EMPTY 넘게 빈 것(둘이 왼쪽 70% 안에 붙고 오른쪽이
+ * 통째로 빈 장), 그리고 한 컴포넌트 안에서 같은 높이의 글과 덧붙임 사이가 본문 너비의 절반 넘게 빈 것(날짜가 한 줄을 다 쓸 때 왼쪽 글과
+ * 맨 오른쪽 덧붙임으로 찢어진 것). 글 하나뿐인 장은 글 폭(--measure)이 일부러 줄을 꺾어 오른쪽이 비는 것이라 보지 않는다
+ */
+function sides(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  const a = area.getBoundingClientRect()
+  const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  const lone = cells.length === 1 && TEXT_TYPES.has(cells[0].dataset.type ?? '') && cells[0].dataset.type !== 'heading'
+  if (cells.length <= 2 && !lone) {
+    const xs = cells.map(inkX).filter((x): x is { l: number; r: number } => !!x)
+    if (xs.length) {
+      const left = (Math.min(...xs.map((x) => x.l)) - a.left) / a.width
+      const right = (a.right - Math.max(...xs.map((x) => x.r))) / a.width
+      if (right > SIDE_EMPTY) out.push(`컴포넌트가 ${cells.length}개인데 본문 오른쪽이 ${Math.round(right * 100)}% 비어요`)
+      if (left > SIDE_EMPTY) out.push(`컴포넌트가 ${cells.length}개인데 본문 왼쪽이 ${Math.round(left * 100)}% 비어요`)
+    }
+  }
+  for (const cell of cells) {
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) continue
+    const ls = blockTextLines(inner).filter((q) => !q.n.parentElement?.closest(EDIT_UI))
+    // 그려진 것(막대, 그림, 칠한 상자, 선): 글 사이에 이것이 있으면 찢어진 것이 아니라 그림의 양쪽 이름표다
+    const drawnBoxes = [...inner.querySelectorAll<HTMLElement>('*')]
+      .filter((el) => {
+        if (el.parentElement?.closest('svg') || el.closest(EDIT_UI)) return false
+        const tag = el.tagName.toLowerCase()
+        if (tag === 'svg' || tag === 'img') return true
+        const cs = getComputedStyle(el)
+        return (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') || cs.backgroundImage !== 'none'
+      })
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0)
+    let torn = 0
+    for (const p of ls) {
+      for (const q of ls) {
+        if (p === q || q.l < p.r) continue
+        if (Math.min(p.b, q.b) - Math.max(p.t, q.t) < 0.5 * Math.min(p.b - p.t, q.b - q.t)) continue
+        // 한 항목(같은 .it, 또는 둘 다 항목 밖)의 글과 덧붙임만: 나란한 항목(강점과 약점의 두 칸, 표의 칸)은 따로 선 글이다
+        const pi = p.n.parentElement?.closest('.it') ?? null
+        const qi = q.n.parentElement?.closest('.it') ?? null
+        if (pi !== qi) continue
+        // 사이에 다른 글이나 그려진 것이 있으면 찢어진 것이 아니다 (막대 옆 숫자, 표의 칸)
+        if (ls.some((o) => o !== p && o !== q && o.l >= p.r - 1 && o.r <= q.l + 1 && Math.min(o.b, p.b) - Math.max(o.t, p.t) > 0)) continue
+        if (drawnBoxes.some((o) => o.left < q.l && o.right > p.r && Math.min(o.bottom, p.b + 24 * k) - Math.max(o.top, p.t - 24 * k) > 0)) continue
+        torn = Math.max(torn, q.l - p.r)
+      }
+    }
+    if (torn > 0.5 * a.width) out.push(`${cell.dataset.type}: 글과 덧붙임 사이가 ${Math.round(torn / k)}px 비어요(양 끝으로 찢어졌어요)`)
+  }
+  return out
+}
+
+/**
+ * 줄의 리듬(docs/VISUAL-RULES.md 6): 위아래로 쌓인 항목(표의 줄, 목록, 가격안의 줄)의 그려진 것 사이가 내용 높이의 두 배를 넘거나
+ * 줄마다 GAP_VARY 넘게 다른 것. 칸이 내용보다 높으면 격자의 1fr 줄이 남는 높이를 나눠 받아 줄 사이가 글자 크기의 몇 배로 벌어졌고,
+ * 두 줄짜리 항목 옆의 한 줄 항목은 사이가 더 벌어져 줄마다 달랐다. 줄의 상자가 아니라 그려진 것(글, 그림, 칠한 상자)으로 잰다
+ */
+function rowRhythm(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) continue
+    const lines = blockTextLines(inner)
+    const lists = new Set<Element>()
+    for (const it of inner.querySelectorAll('.it')) if (it.parentElement) lists.add(it.parentElement)
+    for (const list of lists) {
+      const items = [...list.children].filter((el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains('it') && el.offsetHeight > 0)
+      if (items.length < 2) continue
+      const spans = items.map((it) => {
+        let t = Infinity
+        let b = -Infinity
+        for (const q of lines) {
+          if (!it.contains(q.n)) continue
+          t = Math.min(t, q.t)
+          b = Math.max(b, q.b)
+        }
+        for (const el of it.querySelectorAll<HTMLElement>('svg, img, *')) {
+          if (el.parentElement?.closest('svg') || el.closest(EDIT_UI)) continue
+          const tag = el.tagName.toLowerCase()
+          const cs = getComputedStyle(el)
+          const paint = tag === 'svg' || tag === 'img' || (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent')
+          if (!paint) continue
+          const r = el.getBoundingClientRect()
+          if (!r.width || !r.height) continue
+          t = Math.min(t, r.top)
+          b = Math.max(b, r.bottom)
+        }
+        const r = it.getBoundingClientRect()
+        return { t, b, l: r.left, r: r.right }
+      })
+      // 위아래로 쌓인 이웃끼리만 (옆으로 나란한 항목은 줄이 아니다)
+      const gaps: number[] = []
+      for (let i = 1; i < spans.length; i++) {
+        const p = spans[i - 1]
+        const q = spans[i]
+        if (!Number.isFinite(p.b) || !Number.isFinite(q.t) || q.t < p.b - 1) continue
+        if (Math.min(p.r, q.r) - Math.max(p.l, q.l) < 0.5 * Math.min(p.r - p.l, q.r - q.l)) continue
+        const gap = (q.t - p.b) / k
+        const h = Math.max(p.b - p.t, q.b - q.t) / k
+        gaps.push(gap)
+        if (gap > 2 * h && gap > 48) {
+          out.push(`${cell.dataset.type}: 줄 사이(${Math.round(gap)}px)가 내용 높이(${Math.round(h)}px)의 두 배를 넘게 늘었어요`)
+          break
+        }
+      }
+      if (gaps.length > 1 && Math.max(...gaps) - Math.min(...gaps) > GAP_VARY) out.push(`${cell.dataset.type}: 줄 사이가 줄마다 달라요(${gaps.map(Math.round).join(', ')}px)`)
+    }
+  }
+  return [...new Set(out)]
+}
+
 /** 글과 글이 겹치는 것(다른 글 줄끼리 2px 넘게). 겹치면 그 짜임은 실패다 (docs/VISUAL-RULES.md 5) */
 function textOverlap(area: HTMLElement, k: number): string[] {
   const ls: { n: Node; t: number; b: number; l: number; r: number }[] = []
@@ -586,16 +715,92 @@ function paintedBoxes(area: HTMLElement, k: number): string[] {
   return [...new Set(out)]
 }
 
+/** 본문을 이만큼도 채우지 못하면 빈 장으로 본다 (docs/VISUAL-RULES.md 6: 60~85%가 기본) */
+const FILL_MIN = 0.6
+
+/**
+ * 채움: 그려진 내용이 본문 높이의 FILL_MIN에 못 미치는 장. 남는 높이는 맨 아래에 모이니, 내용이 적으면 아래가 40% 넘게 빈다.
+ * 사이를 벌리지 말고 글자와 그림의 단계를 올려 채운다(fitBlocks.ts의 fit 끝). 제목 없는 한 문장 장(가운데에 선다)은 뺀다
+ */
+function fill(slide: HTMLElement, area: HTMLElement): string[] {
+  const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  const head = slide.querySelector<HTMLElement>('.s-head')
+  const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
+  if (!hasHead && cells.length === 1) return []
+  const a = area.getBoundingClientRect()
+  const spans = cells.map(inkSpan).filter((x): x is Span => !!x)
+  if (!spans.length || !a.height) return []
+  const used = (Math.max(...spans.map((x) => x.b)) - a.top) / a.height
+  return used < FILL_MIN ? [`본문을 ${Math.round(used * 100)}%만 채워요(아래가 ${Math.round((1 - used) * 100)}% 비어요)`] : []
+}
+
+/**
+ * 잘림: 글이나 그림이 장 밖으로, 또는 넘침을 숨기는 상자(overflow hidden, clip) 밖으로 나가 보이지 않는 것. 레이아웃 장도 본다
+ * (진행 현황의 넷째 열이 장 밖으로 잘렸는데 칸 안만 보는 검사는 몰랐다). 편집 표시는 뺀다
+ */
+export function clipped(slide: HTMLElement): string[] {
+  const out = new Set<string>()
+  const k = slide.getBoundingClientRect().width / 1920
+  const sr = slide.getBoundingClientRect()
+  const tol = 2 * k
+  const boxes: { box: { l: number; t: number; r: number; b: number }; el: Element; what: string }[] = []
+  for (const inner of slide.querySelectorAll<HTMLElement>('.bk-in')) for (const q of blockTextLines(inner)) boxes.push({ box: q, el: q.n.parentElement!, what: `「${(q.n.textContent ?? '').trim().slice(0, 10)}」` })
+  if (!slide.querySelector('.bk-in')) {
+    // 레이아웃 장: 장 안의 글 줄 전부
+    const range = document.createRange()
+    const walk = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT)
+    while (walk.nextNode()) {
+      const n = walk.currentNode
+      const el = n.parentElement
+      if (!el || !(n.textContent ?? '').trim() || el.closest(EDIT_UI) || el.closest('[aria-hidden="true"]')) continue
+      if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue
+      range.selectNodeContents(n)
+      for (const q of range.getClientRects()) if (q.width && q.height) boxes.push({ box: { l: q.left, t: q.top, r: q.right, b: q.bottom }, el, what: `「${(n.textContent ?? '').trim().slice(0, 10)}」` })
+    }
+  }
+  for (const f of slide.querySelectorAll('svg, img')) {
+    if (f.parentElement?.closest('svg') || f.closest(EDIT_UI) || f.closest('[aria-hidden="true"]:not(svg)')) continue
+    const q = f.getBoundingClientRect()
+    if (q.width && q.height) boxes.push({ box: { l: q.left, t: q.top, r: q.right, b: q.bottom }, el: f, what: f.tagName.toLowerCase() })
+  }
+  for (const { box, el, what } of boxes) {
+    const cell = el.closest<HTMLElement>('.bk')
+    const name = cell ? `${cell.dataset.type}: ` : ''
+    if (box.l < sr.left - tol || box.r > sr.right + tol || box.t < sr.top - tol || box.b > sr.bottom + tol) {
+      out.add(`${name}${what}이(가) 장 밖으로 나가 잘려요`)
+      continue
+    }
+    for (let x = el.parentElement; x && x !== slide; x = x.parentElement) {
+      const cs = getComputedStyle(x)
+      const hideX = cs.overflowX === 'hidden' || cs.overflowX === 'clip'
+      const hideY = cs.overflowY === 'hidden' || cs.overflowY === 'clip'
+      if (!hideX && !hideY) continue
+      const r = x.getBoundingClientRect()
+      if ((hideX && (box.l < r.left - tol || box.r > r.right + tol)) || (hideY && (box.t < r.top - tol || box.b > r.bottom + tol))) {
+        out.add(`${name}${what}이(가) 상자 밖으로 나가 잘려요`)
+        break
+      }
+    }
+  }
+  return [...out]
+}
+
 export async function checkAssembly(): Promise<{ slides: number; problems: string[] }> {
   await document.fonts.ready
   await new Promise((r) => setTimeout(r, 300))
   const problems: string[] = []
   const areas = [...document.querySelectorAll<HTMLElement>('.bk-area')]
+  // 레이아웃 장(부품 장이 아닌 장)은 잘림만 본다: 장 번호는 갤러리의 장 차례
+  const slides = [...document.querySelectorAll<HTMLElement>('.slide')]
+  slides.forEach((slide, i) => {
+    if (slide.querySelector('.bk-area')) return
+    for (const p of clipped(slide)) problems.push(`${i + 1}번 장(레이아웃): ${p}`)
+  })
   areas.forEach((area, i) => {
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k), ...textOverlap(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k), ...textOverlap(area, k), ...rowRhythm(area, k), ...sides(area, k), ...fill(slide, area), ...clipped(slide)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }

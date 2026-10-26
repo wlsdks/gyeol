@@ -231,6 +231,8 @@ export function Gallery() {
   if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureAllFonts, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
   if (['combos', 'review', 'dirs'].includes(params.get('set') ?? '')) Object.assign(window, { checkCombos, comboSlides, checkAssembly })
+  // 잘림과 짜임 검사는 레이아웃 장 갤러리에서도 (레이아웃 장은 잘림만 본다)
+  else Object.assign(window, { checkAssembly })
   // 부품 하나를 항목 수와 칸 크기마다 재는 시험 (stress.ts). 콘솔에서 await checkStress()
   if (params.get('set') === 'stress') Object.assign(window, { checkStress, checkAssembly })
   // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()
