@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { presentable } from './fields'
 import { emptyItem, makeSlide } from './generate'
-import { LAYOUTS } from './layouts'
+import { labelFor, LAYOUTS } from './layouts'
 import type { Item } from './types'
 
 const item = (title: string): Item => ({ ...emptyItem(), title })
@@ -35,5 +35,20 @@ describe('발표 화면에 그릴 장 (presentable)', () => {
     const slide = { ...makeSlide('kpi'), items: [emptyItem(), item('가'), item('나')] }
     expect(presentable({ ...slide, options: { highlight: 2 } }).options.highlight).toBe(1)
     expect(presentable({ ...slide, options: { highlight: 0 } }).options.highlight).toBe(-1)
+  })
+})
+
+describe('칸의 이름 (labelFor)', () => {
+  it('항목 칸은 몇째 항목인지까지, 안내 문구(예시)는 쓰지 않는다', () => {
+    expect(labelFor('kpi', 'title')).toBe('제목')
+    expect(labelFor('kpi', 'title', 'title', 1)).toBe('숫자 2 이름')
+    expect(labelFor('kpi', 'value', 'value', 0)).toBe('숫자 1')
+  })
+
+  it('모든 레이아웃의 모든 칸에 이름이 있다', () => {
+    for (const spec of Object.values(LAYOUTS)) {
+      for (const f of spec.fields) expect(labelFor(spec.id, f.key), `${spec.id}.${f.key}`).not.toBe('')
+      for (const f of spec.items?.fields ?? []) expect(labelFor(spec.id, f.key, f.key, 0), `${spec.id}.items.${f.key}`).not.toBe('')
+    }
   })
 })

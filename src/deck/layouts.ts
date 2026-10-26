@@ -737,6 +737,22 @@ export function hintFor(
   return spec.fields.find((f) => f.key === key)?.hint ?? ''
 }
 
+/**
+ * 칸의 이름(스크린 리더가 읽는 이름). 안내 문구는 예시라서 채운 칸의 이름이 되면 틀린 말을 읽는다.
+ * 항목 칸은 '숫자 2 이름'처럼 몇째 항목인지까지. 정의에 없는 칸(표지의 소속 같은 덱 값)은 빈 글
+ */
+export function labelFor(layout: LayoutId, key: string, itemKey?: ItemKey, index?: number): string {
+  const spec = LAYOUTS[layout]
+  if (itemKey) {
+    const field = spec.items?.fields.find((x) => x.key === itemKey)?.label
+    const item = spec.items?.label
+    const head = item && (index !== undefined ? `${item} ${index + 1}` : item)
+    // 항목 이름과 칸 이름이 같으면 한 번만: '숫자 1 숫자'가 아니라 '숫자 1'
+    return [head, field !== item && field].filter(Boolean).join(' ')
+  }
+  return spec.fields.find((f) => f.key === key)?.label ?? ''
+}
+
 /** 이 레이아웃의 모양 id들. 한 가지뿐이면 ['base'] */
 export function variantIds(layout: LayoutId): string[] {
   return LAYOUTS[layout].variants?.map((v) => v.id) ?? ['base']

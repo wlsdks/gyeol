@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ElementType } from 'react'
 import { readField } from '../deck/fields'
-import { hintFor } from '../deck/layouts'
+import { hintFor, labelFor } from '../deck/layouts'
 import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
 import { imageToDataUrl, pickImage } from '../lib/imageFile'
@@ -150,6 +150,8 @@ function paint(el: HTMLElement, value: string, numeral?: boolean) {
 interface FieldProps extends TextProps {
   value: string
   hint: string
+  /** 스크린 리더가 읽는 칸 이름 (labelFor). 없으면 빈칸일 때 안내 문구를 이름으로 */
+  label?: string
   fieldId: string
   onChange?: (value: string) => void
   /** 비어 있으면 편집할 때도 그리지 않는 칸 (부품 안의 채우지 않아도 되는 칸) */
@@ -164,7 +166,7 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText }: FieldProps) {
+function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
@@ -191,6 +193,7 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
     <Editable
       value={value}
       hint={hint}
+      label={label}
       fieldId={fieldId}
       onChange={onChange}
       as={Tag}
@@ -205,6 +208,7 @@ function Field({ value, hint, fieldId, onChange, as: Tag = 'div', className, fit
 function Editable({
   value,
   hint,
+  label,
   fieldId,
   onChange,
   as: Tag = 'div',
@@ -236,7 +240,10 @@ function Editable({
         contentEditable="plaintext-only"
         suppressContentEditableWarning
         role="textbox"
-        aria-label={hint}
+        // 안내 문구는 예시라서 채운 칸의 이름으로 쓰면 틀린 말을 읽는다(한 일을 채운 칸을 '배경'으로).
+        // 이름은 칸의 이름('숫자 2 이름'), 예시는 aria-placeholder로 따로 준다
+        aria-label={label || (value ? undefined : hint)}
+        aria-placeholder={hint}
         aria-multiline={multiline || undefined}
         spellCheck={false}
         onInput={(e) => onChange!(clean(e.currentTarget.innerText, multiline))}
@@ -292,6 +299,7 @@ export function T({ k, ...props }: TextProps & { k: string }) {
     <Field
       value={readField(slide, meta, k)}
       hint={hintFor(slide.layout, slide.hints, k)}
+      label={labelFor(slide.layout, k)}
       fieldId={fieldPrefix + k}
       onChange={actions && ((v) => actions.setField(k, v))}
       fold={folds?.has(k)}
@@ -314,6 +322,7 @@ export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
     <Field
       value={slide.items[i]?.[k] ?? ''}
       hint={hintFor(slide.layout, slide.hints, k, k, i)}
+      label={labelFor(slide.layout, k, k, i)}
       fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       fold={folds?.has(`items.${k}`)}
