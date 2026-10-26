@@ -58,8 +58,9 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     motion: '따옴표가 먼저, 글이 뒤따라요',
     fields: [
       { key: 'quote', label: '인용할 말', hint: '그대로 옮길 한마디', multiline: true },
-      // 말한 사람은 접어 두지 않는다: 누구의 말인지 없으면 굵은 글 한 덩이로만 보여 인용으로 읽히지 않았다
-      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)' },
+      // 말한 사람은 접어 두지 않는다: 누구의 말인지 없으면 굵은 글 한 덩이로만 보여 인용으로 읽히지 않았다.
+      // 다만 출처를 밝히지 않는 인용도 흔해서 빈칸으로 세지는 않는다(채우라고 재촉하지 않게)
+      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)', optional: true, shown: true },
     ],
     minSpan: 4,
     prefSpan: 6,

@@ -95,7 +95,7 @@ export function foldableFields(type: BlockType): { key: string; label: string; i
   const use = (key: string) => FOLD_USES[type]?.[key] ?? FOLD_USE_BY_KEY[key] ?? ''
   return [
     ...spec.fields
-      .filter((f) => f.optional && !f.named && !f.image && !f.key.startsWith('$'))
+      .filter((f) => f.optional && !f.named && !f.shown && !f.image && !f.key.startsWith('$'))
       .map((f) => ({ key: f.key, label: f.label, item: false, use: use(f.key) })),
     ...(spec.items?.fields ?? []).filter((f) => f.optional && !f.image).map((f) => ({ key: `items.${f.key}`, label: f.label, item: true, use: use(`items.${f.key}`) })),
   ]

@@ -9,6 +9,8 @@ export interface FieldSpec {
   optional?: boolean
   /** 비워 두면 정해진 이름(목표, 실적 같은)으로 보이는 칸. 부품 안에서도 접지 않는다 */
   named?: boolean
+  /** 채우지 않아도 되지만(빈칸으로 세지 않는다) 부품 안에서 접지 않고 늘 보이는 칸 (인용의 말한 사람) */
+  shown?: boolean
   image?: boolean
 }
 
