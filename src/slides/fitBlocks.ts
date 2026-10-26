@@ -1093,6 +1093,15 @@ export function blockFitter() {
     for (const c of cells) bands.set(c.dataset.band ?? '', (bands.get(c.dataset.band ?? '') || []).concat(c))
     bands.forEach((band) => {
       if (band.some((c) => !c.classList.contains('bk-look-plain') || c.classList.contains('lk-row'))) return
+      // 다른 줄이 본문 오른쪽까지 그려져 있으면(오른쪽 4분의 1 안까지) 장의 오른쪽은 비지 않았다: 이 줄의 단을 옮기면 판의 칸 선에서 벗어나
+      // 그 줄과 어긋나기만 한다. 로고 모음 위의 숫자 둘이 0과 50%가 아니라 0과 70%로 벌어져 양쪽으로 찢어져 보였다
+      let others = -Infinity
+      for (const c of cells) {
+        if (band.includes(c)) continue
+        const x = drawnX(c)
+        if (x) others = Math.max(others, x.r)
+      }
+      if (others >= a.right - 0.25 * a.width) return
       // 단의 경계: 어느 칸도 가로지르지 않는 판의 세로 선
       const cuts = [0]
       for (let x = 1; x < 12; x++) if (band.some((c) => num(c, '--x') === x) && !band.some((c) => num(c, '--x') < x && x < num(c, '--x') + num(c, '--w'))) cuts.push(x)
