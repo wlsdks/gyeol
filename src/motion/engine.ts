@@ -58,20 +58,22 @@ export function motionEngine(): MotionEngine {
     return { easing: `linear(${out.join(', ')})`, duration: Math.round(t * 1000) }
   }
 
-  // 차분하게: 넘치지 않고 빠르게 자리 잡는다(보고 자리에서 기다리게 하지 않게).
-  // 생동감: 조금 넘쳤다가 되돌아오며 자리 잡는다.
+  // 모든 스프링은 넘치지 않는다(감쇠가 임계값 2√k 이상). 먹물이 번져 자리를 찾듯 빠르게 다가와 천천히 멈춘다.
+  // 예전 생동감은 넘쳤다가 되돌아오는 스프링(bounce, pop)이었는데, 글자와 막대가 튕겨서 보고 자리에 가볍고
+  // 흔한 템플릿처럼 보였다. 이제 두 단계는 거리, 시간, 차례 사이로만 다르다.
+  // 차분하게: 짧은 거리를 빠르게(보고 자리에서 기다리게 하지 않게). 생동감: 조금 먼 거리를 더 길게, 흐림에서 또렷해지며
   const SPRINGS = {
     quick: spring(300, 35),
-    glide: spring(170, 26),
+    glide: spring(170, 26.5),
     soft: spring(110, 21),
-    bounce: spring(200, 16),
-    pop: spring(320, 17),
+    settle: spring(120, 22),
+    firm: spring(220, 30),
   }
   const OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
   const LEVELS = {
-    calm: { y: 20, step: 60, word: 30, rot: 0, scale: 0.98, move: SPRINGS.quick, grow: SPRINGS.glide, pop: SPRINGS.quick, speed: 0.8 },
-    lively: { y: 64, step: 110, word: 55, rot: 3, scale: 0.92, move: SPRINGS.bounce, grow: SPRINGS.bounce, pop: SPRINGS.pop, speed: 1.1 },
+    calm: { y: 20, step: 60, word: 30, ink: 0, scale: 0.98, move: SPRINGS.quick, grow: SPRINGS.glide, pop: SPRINGS.quick, speed: 0.8 },
+    lively: { y: 44, step: 100, word: 50, ink: 5, scale: 0.96, move: SPRINGS.settle, grow: SPRINGS.settle, pop: SPRINGS.firm, speed: 1.1 },
   }
 
   type Level = (typeof LEVELS)['calm']
@@ -293,9 +295,6 @@ export function motionEngine(): MotionEngine {
       // 3.7에서 멈췄다가 원래 글자로 돌아올 때 4.8로 튄다)
       for (let d = 0; d <= 10 + digit; d++) seq.push(String(d % 10))
       const stop = seq.length - 1
-      // 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아온다. 지나친 자리에도 다음 숫자가 있어야 한다(없으면 창이 비어
-      // 녹화해 보니 4.8이 '4. '로, 1.1이 ' . '로 잠깐 비었다가 위에서 다시 내려왔다)
-      seq.push(String((digit + 1) % 10))
       strip.textContent = seq.join('\n')
       strip.style.lineHeight = h + 'px'
       // 멈춘 자리는 translate가 아니라 margin으로 둔다. 글자 높이는 px 소수라서, 소수 translate로 옮긴 글자는 원래 글자와
@@ -315,22 +314,9 @@ export function motionEngine(): MotionEngine {
       c.className = 'mo-odc'
       // 왼쪽 자리가 먼저 멈추고 오른쪽으로 갈수록 조금씩 늦게
       const time = duration + (n > 1 ? (i / (n - 1)) * duration * 0.25 : 0)
-      // 지나치는 만큼은 창 높이의 16%(글자는 창 가운데 60%쯤이라 글자 윗선이 창의 흐린 가장자리까지만 간다).
-      // 스프링 이징을 띠 전체에 걸면 지나치는 만큼이 굴러간 거리(열 몇 칸)에 비례해서 두 칸 넘게 지나쳤다.
-      // 그래서 끝 숫자를 지나 멈췄다가(속도 0) 되돌아오는 두 토막으로 짠다
-      if (lively)
-        run(
-          anims,
-          strip,
-          [
-            { translate: `0 ${stop * h}px`, easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' },
-            { translate: `0 ${-0.16 * h}px`, offset: 0.74, easing: 'cubic-bezier(0.45, 0, 0.35, 1)' },
-            { translate: '0 0' },
-          ],
-          at,
-          { easing: 'linear', duration: time },
-        )
-      else run(anims, strip, [{ translate: `0 ${stop * h}px` }], at, { easing: 'cubic-bezier(0.25, 0.8, 0.15, 1)', duration: time })
+      // 지나쳤다 돌아오지 않는다. 예전 생동감은 끝 숫자를 창 높이의 16%만큼 지나쳤다 돌아왔는데, 녹화해 보니 자리마다
+      // 따로 지나쳐서 0.4초쯤 숫자가 들쭉날쭉 어긋나 보였다. 생동감도 같은 감속 곡선으로, 조금 더 길게 굴러 천천히 멈춘다
+      run(anims, strip, [{ translate: `0 ${stop * h}px` }], at, { easing: lively ? 'cubic-bezier(0.2, 0.75, 0.1, 1)' : 'cubic-bezier(0.25, 0.8, 0.15, 1)', duration: time })
     })
     restores.push(undo)
     return true
@@ -411,7 +397,10 @@ export function motionEngine(): MotionEngine {
       const inset = { left: 'inset(0 100% 0 0)', right: 'inset(0 0 0 100%)', bottom: 'inset(100% 0 0 0)', top: 'inset(0 0 100% 0)' }[from]
       run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(duration) })
     }
-    /** 낱말마다 아래에서 올라오는 제목. 생동감은 살짝 기울었다가 바로 선다. */
+    /**
+   * 낱말마다 아래에서 올라오는 제목. 생동감은 번진 먹이 가라앉듯 조금 흐린 데서 또렷해지며 선다(L.ink).
+   * 예전에는 기울었다가(3도) 바로 섰는데, 낱말마다 고개를 까딱여서 흔한 프레젠테이션 효과처럼 보였다
+   */
     const words = (el: Element | null, at: number, gap = L.word, blur = false) => {
       if (!el || still || el.closest('[data-mo-keep]')) return at
       // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 통째로 올라온다
@@ -424,7 +413,9 @@ export function motionEngine(): MotionEngine {
       split.words.forEach((w, i) => {
         const frames: Keyframe[] = blur
           ? [{ opacity: 0, translate: '0 40%', filter: 'blur(18px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }]
-          : [{ translate: '0 115%', rotate: `${L.rot}deg`, transformOrigin: '0 100%' }, { translate: '0 0', rotate: '0deg', transformOrigin: '0 100%' }]
+          : L.ink
+            ? [{ translate: '0 105%', filter: `blur(${L.ink}px)` }, { translate: '0 0', filter: 'blur(0px)' }]
+            : [{ translate: '0 105%' }, { translate: '0 0' }]
         run(anims, w, frames, s(at + i * gap), blur ? { easing: OUT, duration: 1100 } : L.move)
       })
       // 다음 차례는 마지막 낱말이 반쯤 올라왔을 때
@@ -433,7 +424,7 @@ export function motionEngine(): MotionEngine {
     const count = (el: Element | null, at: number) => {
       // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게). 옮겨 온 숫자는 다시 굴리지 않는다
       if (!el || still || el.closest('.m-edit, [data-mo-keep]')) return
-      // 자리마다 굴린다. 생동감은 맞는 숫자를 살짝 지나쳤다가 돌아와 멈춘다. 굴릴 수 없는 칸은 0부터 올린다
+      // 자리마다 굴린다. 생동감은 조금 더 길게 구른다. 굴릴 수 없는 칸은 0부터 올린다
       const lively = levelName === 'lively'
       // 숫자는 장이 나오고 2초 안에 다 멈춘다(녹화해 보니 1.3초씩 굴리면 다음 장으로 넘길 때까지 굴러가고 있었다)
       if (!roll(el, s(at), lively ? 900 : 800, lively, anims, restores))
@@ -946,7 +937,7 @@ export function motionEngine(): MotionEngine {
       }
       case 'position': {
         const t = head()
-        // 축이 왼쪽 아래에서 펼쳐지고, 점이 하나씩 위에서 제자리로 내려앉는다(살짝 튀며). 강조할 점은 맨 나중에, 내려앉은 뒤 고리
+        // 축이 왼쪽 아래에서 펼쳐지고, 점이 하나씩 위에서 제자리로 내려앉는다. 강조할 점은 맨 나중에, 내려앉은 뒤 고리
         const plot = one('.pm-plot')
         if (plot) run(anims, plot, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(-40px -40px -40px -40px)' }], s(t), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(700) })
         fade(one('.pm-y'), t + 200, 500)
@@ -1589,7 +1580,7 @@ export function motionEngine(): MotionEngine {
           draw(sum, line, 480, 'left center', '::before')
           rise(sum.querySelector('.bk-mg-head'), line + 120, L.y * 0.4)
           fade(sum.querySelector('.bk-mg-total'), line + 160, 260)
-          // 조각이 하나씩 내려간다: 위의 조각부터. 생동감은 막대에 닿으며 살짝 지나쳤다가 맞춰진다
+          // 조각이 하나씩 내려간다: 위의 조각부터
           const first = line + 420
           const gap = lively ? 170 : 150
           const travel = 560
@@ -1607,7 +1598,7 @@ export function motionEngine(): MotionEngine {
                   { transform: 'none', transformOrigin: '0 0', opacity: 1, offset: 1 },
                 ],
                 s(at),
-                { easing: lively ? 'cubic-bezier(0.5, 0, 0.3, 1.25)' : CARRY, duration: d(travel) },
+                { easing: CARRY, duration: d(travel) },
               )
             } else fade(seg, at, 240)
             upto += values[j]
@@ -1649,7 +1640,7 @@ export function motionEngine(): MotionEngine {
           const spread = size * (lively ? 6 : 3.5)
           const turn = lively ? 120 : 60
           const wave = Math.min(lively ? 38 : 32, 480 / cols)
-          const fly = lively ? SPRINGS.bounce : SPRINGS.glide
+          const fly = lively ? SPRINGS.settle : SPRINGS.glide
           sqs.forEach((sq, i) => {
             const at = 140 + Math.floor(i / rows) * wave + (i % rows) * 8
             run(
