@@ -130,7 +130,7 @@
   left: 0;
   width: calc(var(--w) * 1%);
   border-radius: 0 var(--r-mark) var(--r-mark) 0;
-  background: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  background: color-mix(in srgb, var(--accent) var(--soft-mix, 38%), var(--bg));
 }
 
 .fn-row:first-child .fn-zone::before,

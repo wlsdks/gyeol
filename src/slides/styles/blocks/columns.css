@@ -7,7 +7,7 @@
   /* 막대 너비: 칸의 반 남짓, 가장 넓어도 160px. 120px까지였을 때는 한 줄을 다 쓰는 막대 넷이 칸의 3분의 1도 안 돼
      막대 사이가 막대의 두 배 넘게 비었다(쌓은 막대는 칸 안 숫자 자리도 좁았다). 목표 줄(.bk-tg-goal)도 이 너비를 따른다 */
   --cc-w: min(56%, 160px);
-  --cc-bar: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  --cc-bar: color-mix(in srgb, var(--accent) var(--soft-mix, 38%), var(--bg));
   /* 기준이 되는 선(목표 줄, 목표 기준선, 80% 줄, 누적 선)의 색: 글자색 검정이 아니라 옅은 무채색.
      검정 4px 목표 줄과 2px 기준선은 막대보다 먼저 보였다(docs/VISUAL-RULES.md 2: 기준선은 옅게) */
   --cc-ref: color-mix(in srgb, var(--ink-3) 70%, var(--bg));

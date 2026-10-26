@@ -23,7 +23,7 @@
     )
   );
   --dv-x: max(var(--dv-b) * var(--nf) + var(--dv-vn), var(--dv-lp));
-  --dv-bar: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  --dv-bar: color-mix(in srgb, var(--accent) var(--soft-mix, 38%), var(--bg));
   display: flex;
   flex-direction: column;
   justify-content: safe center;

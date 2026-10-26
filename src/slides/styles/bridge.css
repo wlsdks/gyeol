@@ -6,7 +6,7 @@
 
 .wf {
   --wf-gap: 16px;
-  --wf-total: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  --wf-total: color-mix(in srgb, var(--accent) var(--soft-mix, 38%), var(--bg));
   --wf-link: color-mix(in srgb, var(--ink-3) 45%, var(--bg));
 
   display: grid;

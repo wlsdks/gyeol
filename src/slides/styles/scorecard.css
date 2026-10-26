@@ -64,7 +64,7 @@
   width: calc(var(--a, 0) * 1%);
   border-radius: var(--r-mark);
   /* 다른 차트의 '강조하지 않은 막대'와 같은 농담 */
-  background: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  background: color-mix(in srgb, var(--accent) var(--soft-mix, 38%), var(--bg));
 }
 
 /* 목표와 실적 사이: 넘었으면 목표 줄부터 실적까지 같은 막대가 이어지고(목표 줄이 넘은 자리를 짚는다), 모자라면 실적부터
