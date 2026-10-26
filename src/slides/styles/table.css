@@ -25,7 +25,7 @@
 .tb-headrow {
   padding-top: 0;
   padding-bottom: 18px;
-  border-bottom: 3px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 /* 크기는 글자 칸 목록(--fs)으로: 따로 잡으면 부품 칸의 맞추기(--bk-fit, --bk-w)를 받지 않아, 크게(1.2배)에서
@@ -62,13 +62,9 @@
   font-weight: 700;
 }
 
-.tb-row.is-hl {
-  background: var(--accent-soft);
-}
-
 /* 합계 줄: 위에 굵은 줄, 글은 모두 진하고 굵게 */
 .tb-row.is-total {
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   border-bottom: 0;
 }
 

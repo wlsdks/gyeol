@@ -40,8 +40,9 @@
   /* 옆 여백은 좁게: 6칸 너비에서 32px이면 '공통 직원 정보'가 세 줄로 꺾였다 */
   padding: 40px 24px;
   border-radius: var(--r-mark);
-  background: var(--bold-bg);
-  color: var(--bold-ink);
+  /* 가운데 상자는 칠하지 않고 강조색 테두리와 강조색 글자로. 짙은 남색 상자는 장에서 상자 하나만 튀었다(사용자: '칠한 상자 없음') */
+  box-shadow: inset 0 0 0 2px var(--accent);
+  color: var(--accent);
   text-align: center;
 }
 
@@ -80,7 +81,7 @@
   min-width: 0;
   padding: 24px 32px;
   border-radius: var(--r-mark);
-  background: var(--surface);
+  box-shadow: inset 0 0 0 var(--rule) var(--line);
 }
 
 .bk-nw-node.is-l {

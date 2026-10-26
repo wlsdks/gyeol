@@ -56,8 +56,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(min-content, 1fr));
   min-height: 0;
-  border-bottom: 3px solid var(--ink);
-  border-left: 3px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
+  border-left: var(--rule) solid var(--line);
 }
 
 .mx-cell {
@@ -75,10 +75,6 @@
 
 .mx-cell:nth-child(-n + 2) {
   border-bottom: var(--rule) solid var(--line);
-}
-
-.mx-cell.is-hl {
-  background: var(--accent-soft);
 }
 
 .mx-title {

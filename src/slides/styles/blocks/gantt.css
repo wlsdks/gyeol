@@ -4,7 +4,7 @@
 .bk-gt {
   --lw: clamp(240px, 30%, 440px);
   /* 지금 칸이 없으면 막대는 모두 같은 옅은 글자색. 강조색은 지금 하는 일(is-now)에만 */
-  --gt-c: color-mix(in srgb, var(--ink) 30%, var(--bg));
+  --gt-c: color-mix(in srgb, var(--accent) 45%, var(--bg));
 }
 
 .bk-gt > .bk-h {
@@ -89,7 +89,8 @@
   left: calc(var(--lw) + 28px + (100% - var(--lw) - 28px) * var(--now) / var(--n));
   width: calc((100% - var(--lw) - 28px) / var(--n));
   border-radius: var(--r-mark);
-  background: var(--accent-soft);
+  /* 지금은 칠하지 않고 그 달의 앞 끝에 강조색 선 하나 */
+  box-shadow: inset var(--rule) 0 0 var(--accent);
 }
 
 .bk-gt-row {
@@ -98,9 +99,6 @@
   border-top: var(--rule) solid var(--line);
 }
 
-.bk-gt-row:first-child {
-  border-top-color: var(--ink);
-}
 
 .bk-gt-row:last-child {
   border-bottom: var(--rule) solid var(--line);
