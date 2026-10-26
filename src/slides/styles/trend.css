@@ -26,9 +26,10 @@
   container-type: size;
 }
 
+/* 단위와 목표 표시는 왼쪽부터 이어서: 양 끝에 두면 한 줄을 다 쓰는 추이에서 둘 사이가 통째로 비어 찢어져 보였다(VISUAL-RULES 6) */
 .tn-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 48px;
 }
 

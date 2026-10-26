@@ -34,6 +34,15 @@
   line-height: 1;
 }
 
+/* 넓은 칸: 이름과 달성률을 양 끝에 두면 한 줄을 다 쓰는 칸에서 둘 사이가 1000px 넘게 비어 따로 노는 글로 찢어져 보였다
+   (VISUAL-RULES 6 '가로도 같다'). 달성률을 이름 바로 옆에 붙이고, 막대가 그 아래로 칸 너비를 다 쓴다 */
+@container bk (min-width: 900px) {
+  .bk-gl-top {
+    justify-content: flex-start;
+    gap: 32px;
+  }
+}
+
 /* 막대는 줄지 않는다: 세로로 쌓은 칸이 낮으면 막대가 먼저 높이 0까지 줄어 숫자만 남았다 */
 .bk-gl-bar {
   position: relative;

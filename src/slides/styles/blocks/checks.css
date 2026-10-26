@@ -12,6 +12,15 @@
   justify-content: flex-end;
 }
 
+/* 넓은 칸: 소제목과 '몇 개 중 몇 개 완료'를 양 끝에 두면 한 줄을 다 쓰는 칸에서 둘 사이가 1000px 넘게 비어 찢어져 보였다
+   (VISUAL-RULES 6 '가로도 같다'). 요약을 소제목 바로 옆에 붙인다 */
+@container bk (min-width: 900px) {
+  .bk-ck-top {
+    justify-content: flex-start;
+    gap: 32px;
+  }
+}
+
 .bk-ck-sum {
   --fs: var(--t-small);
   flex: none;

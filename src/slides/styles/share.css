@@ -11,10 +11,11 @@
   min-height: 0;
 }
 
+/* 합계와 단위는 왼쪽부터 이어서: 양 끝에 두면 넓은 칸에서 둘 사이가 1000px 넘게 비었다(VISUAL-RULES 6 '가로도 같다') */
 .sh-top {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 48px;
   margin-bottom: 20px;
 }
