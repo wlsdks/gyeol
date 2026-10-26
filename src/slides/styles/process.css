@@ -246,8 +246,10 @@
   flex-direction: column;
   min-height: 440px;
   padding: 44px 40px;
-  border-radius: var(--r-panel);
-  background: var(--surface);
+  /* 칸마다 위 머리 괘선과 아래 줄 선(요점의 타일, 핵심 숫자의 카드와 같은 꼴). 강조 단계만 짙은 면 */
+  box-shadow:
+    inset 0 var(--rule-head) 0 var(--ink),
+    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
 }
 
 .va-cards .pc:is([data-n='5'], [data-n='6']) .pc-step {
@@ -256,6 +258,7 @@
 
 .va-cards .pc-step.is-hl {
   background: var(--bold-bg);
+  box-shadow: none;
   color: var(--bold-ink);
 }
 

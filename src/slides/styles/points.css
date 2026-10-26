@@ -160,8 +160,11 @@
   gap: 32px;
   padding: 52px 56px 56px;
   border: 0;
-  border-radius: var(--r-panel);
-  background: var(--surface);
+  /* 면을 칠하지 않고 위 머리 괘선과 아래 줄 선 사이에 묶는다(컴포넌트의 '위아래 선'과 같은 꼴). 옅은 회색 둥근 타일이 나란한
+     꼴은 흔한 서식처럼 보였다. 안쪽 여백은 면일 때 그대로 */
+  box-shadow:
+    inset 0 var(--rule-head) 0 var(--ink),
+    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
 }
 
 .va-tiles .pt-title {
