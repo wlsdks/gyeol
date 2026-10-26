@@ -5,7 +5,7 @@
 ## 1. 원칙
 
 1. **AI(또는 규칙)는 모양만, 사람은 내용만.** 발표 형태를 받아 골격(장 구성, 레이아웃, 칸마다 작성 안내)을 만들고, 내용은 사람이 채운다.
-2. **내용은 이 PC 밖으로 나가지 않는다.** 서버 저장 없음, 외부 전송 없음. 덱은 브라우저(IndexedDB), 사용자가 고른 보관 폴더, 사용자가 내보낸 파일에만 있다. AI(MCP)에도 내용은 주지 않는다(11장).
+2. **내용은 이 PC 밖으로 나가지 않는다.** 서버 저장 없음, 외부 전송 없음. 덱은 브라우저(IndexedDB), 사용자가 고른 보관 폴더, 사용자가 내보낸 파일에만 있다. AI(MCP)에도 내용은 주지 않는다(11장). 바깥 연결은 둘뿐이다: 사람이 띄우는 ‘AI에게 부탁’(Claude Code)과, GitHub의 이 저장소 릴리스에 새 버전을 묻고 받는 것(9장 ‘새 버전’). 어느 쪽에도 발표 내용은 실리지 않는다.
 5. **결론부터.** 듣는 사람은 바쁘다. 표지에 결정 요청(결정받을 것이 없는 발표는 부제), 둘째 장에 결론(한 장 요약, 오늘의 한 줄), 마지막 장에 받을 결정이나 부탁. 처음 두 장만 봐도 무엇에 관한 발표이고 무엇을 해 주면 되는지 알게 한다.
 3. **자유도를 줄여서 디자인을 지킨다.** 글상자를 마음대로 옮기는 기능은 없다. 사용자는 레이아웃을 고르고 빈칸을 채운다. 배치, 서체, 여백은 시스템이 정한다.
 4. **처음 보는 사람도 설명 없이 쓴다.** 익숙한 구조(왼쪽 슬라이드 목록, 가운데 슬라이드, 아래 발표자 노트), 모든 선택지에 기본값, 모든 빈칸에 안내 문구.
@@ -267,7 +267,8 @@ Item  { id, title, body, value, meta, image }
 
 - Vite + React + TypeScript 정적 웹앱.
 - **로컬 서버** (`server/serve.ts`, Node 내장만. 빌드하면 `dist-node/serve.mjs`): `127.0.0.1:41580`에만 묶는다. 포트를 고정하는 이유는 IndexedDB와 폴더 권한이 주소(포트 포함)마다 따로라서다. `localhost`로 오면 `127.0.0.1`로 보내고, 다른 Host 헤더는 거절한다(DNS 리바인딩 방어). GET/HEAD만, `dist` 밖 파일은 내주지 않는다. 모든 응답에 CSP(`connect-src 'self'` 등)를 붙이고, 빌드한 `index.html`에도 같은 CSP를 meta로 넣는다.
-- **나눠 주기:** `npm run pack`이 `dist`, 서버, 더블클릭 실행 파일(맥 `.command`, 윈도우 `.bat`), 사용법을 묶는다. 받는 사람은 Node.js만 있으면 된다. 빌드 결과에 바깥 주소가 있으면 멈춘다.
+- **나눠 주기:** `npm run pack`이 `dist`, 서버, 더블클릭 실행 파일(맥 `.command`, 윈도우 `.bat`), 사용법을 묶는다. 받는 사람은 Node.js만 있으면 된다. 빌드 결과에 허락하지 않은 바깥 주소가 있으면 멈춘다(`scripts/offline.mjs`, 검수 CI도 빌드 뒤에 같은 검사를 돌린다).
+- **새 버전:** 바깥으로 연결하는 곳은 `server/update.ts` 한 파일이다(`scripts/offline.test.ts`가 소스를 훑어 지킨다). 홈을 열면 화면이 로컬 서버에 묻고(`/__html-maker/update/`, AI 창구처럼 앱 머리글과 같은 Origin만), 서버가 `https://api.github.com/repos/wlsdks/gyeol/releases/latest`에 Accept와 User-Agent(`Framo/버전`)만 붙여 묻는다. 켠 동안 24시간에 한 번까지, ‘다시 확인’은 바로. 답에서는 태그(`vX.Y.Z`), 릴리스 주소, 이 OS의 zip(윈도우 `gyeol-windows.zip`, 맥 `gyeol-mac.zip`)의 주소, 크기(300MB까지), 지문(`sha256:…`)만 고르고, 주소는 태그로 만든 주소와 글자까지 같아야 한다. 지문이 없으면 받지 않고 릴리스 페이지만 알린다. ‘받기’를 누르면 넘겨주기(redirect)를 다섯 번까지 한 단계씩 확인하며 따라간다: https, 기본 포트, 정해 둔 곳(`github.com`, GitHub이 2026년 지금 넘겨주는 `release-assets.githubusercontent.com`, 예전의 `objects.githubusercontent.com`)만. 받는 동안 크기를 넘으면 끊고, 다 받으면 크기와 SHA-256을 맞춘 뒤에만 앱 폴더의 `새 버전/` 안에 고정 이름으로 둔다(네트워크에서 온 이름은 경로에 쓰지 않는다). 그다음 탐색기나 Finder로 그 파일을 보여 줄 뿐, 풀거나 실행하거나 앱 파일을 바꾸지 않는다. 사람은 Framo를 닫고 zip을 풀어 새 ‘Framo 시작’을 켠다. 같은 주소(127.0.0.1:41580)라 이 브라우저의 발표와 보관 폴더 연결이 그대로 이어진다. 실패하면 정해진 말(‘확인하지 못했어요’)만 보이고 오류 글, 주소, 경로는 내보내지 않는다. 개발 서버는 확인만 하고 받지 않는다. 알림은 버전 표시를 눌러 끌 수 있고(이 브라우저의 설정), 끄면 GitHub에 묻지 않는다. 브라우저는 계속 `connect-src 'self'`라 GitHub에 직접 가지 않는다(‘바뀐 점 보기’는 링크로 연다).
 - 상태: zustand, 저장: IndexedDB(idb-keyval) + File System Access API, 정렬: dnd-kit.
 - 폰트: pretendard(dynamic subset), @sun-typeface/suit(굵기마다 나뉜 파일), @fontsource-variable/hahmlet, @fontsource-variable/noto-serif-kr(둘 다 unicode-range 조각). 앱은 쓴 글자가 든 조각만 받고, 내보낸 HTML에도 그 조각만 넣는다(`export/fonts.ts`).
 
