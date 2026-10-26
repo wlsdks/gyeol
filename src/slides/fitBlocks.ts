@@ -49,8 +49,11 @@ export function blockFitter() {
   let inks: Record<string, [number, number]> = {}
   // 움직임이 끝나기를 기다리는 본문 상자와 판 (같은 것을 여러 번 기다리지 않게)
   const waiting = new WeakSet<Element>()
-  // 편집 화면에서 글을 쓰는 동안 붙잡아 둔 자리 (본문 상자마다, typing의 설명): 판의 짜임, 눈높이로 내린 값, 칸마다 옆으로 옮긴 값
-  const held = new WeakMap<HTMLElement, { board: string; eye: number; xs: Map<string, number> }>()
+  // 편집 화면에서 글을 쓰는 동안 붙잡아 둔 자리 (본문 상자마다, typing의 설명): 판의 짜임, 눈높이로 내린 값, 칸마다 옆으로 옮긴 값,
+  // 키운 단계(--bk-fit의 가장 큰 값)
+  const held = new WeakMap<HTMLElement, { board: string; eye: number; xs: Map<string, number>; up: number }>()
+  // 편집 화면의 컴포넌트 칸마다 지난번에 맞춘 뒤의 자리 (본문 상자 위에서부터, 캔버스 px). 쓰는 칸이 든 칸을 이 자리에 붙잡는다 (anchor)
+  const tops = new WeakMap<Element, number>()
 
   /**
    * 편집 화면에서 이 본문 상자의 글 칸에 쓰는 중인지. 쓰는 동안에는 장 전체를 옮기는 맞추기(눈높이 가운데, 단의 남는 너비)를 쓰기 전에
@@ -935,6 +938,43 @@ export function blockFitter() {
     return false
   }
 
+  /** 칸이 본문 상자 위에서부터 얼마나 내려와 있는지 (캔버스 px) */
+  function topIn(el: Element, area: HTMLElement): number {
+    const a = area.getBoundingClientRect()
+    return (el.getBoundingClientRect().top - a.top) / (a.height / area.offsetHeight)
+  }
+
+  /**
+   * 쓰는 칸이 든 컴포넌트 칸을 지난번에 보이던 자리에 붙잡는다 (글을 쓰는 동안 fit의 끝). 글자가 들어가며 짜임이 바뀌면(안내 숫자가
+   * 지워져 목표 대비의 막대가 바뀌는 것 같은) 쌓기가 칸을 다시 놓아서, 첫 글자에 컴포넌트가 48px 미끄러지거나 숫자를 칠 때마다 오르내렸다.
+   * 칸 안의 글 칸 자리는 붙잡지 않는다: 값을 따라 옮겨 가는 칸(막대 위의 값, 위치 비교의 점 이름)이나 제 줄 수만큼 커지는 칸을 붙잡으면
+   * 그만큼 컴포넌트 전체가 오르내렸다(두 값 비교에서 값을 치는 동안 차트 전체가 221px 올라갔다).
+   * 모든 칸과 선을 같이 옮겨 칸 사이는 그대로이고, 그려진 것이 본문 상자 밖으로 나가게는 옮기지 않는다. 다 쓰고 나가면 다시 맞춘다
+   */
+  function anchor(cells: HTMLElement[], area: HTMLElement): void {
+    const cell = document.activeElement?.closest<HTMLElement>('.bk')
+    const was = cell ? tops.get(cell) : undefined
+    const a = area.getBoundingClientRect()
+    const k = a.height / area.offsetHeight
+    if (!cell || was === undefined || !cells.includes(cell) || !k) return
+    let t = Infinity
+    let b = -Infinity
+    for (const c of cells) {
+      const d = drawn(c)
+      if (!d) return
+      t = Math.min(t, d.t)
+      b = Math.max(b, d.b)
+    }
+    const lo = Math.ceil((a.top - t) / k)
+    const hi = Math.floor((a.bottom - b) / k)
+    const move = Math.max(Math.min(lo, 0), Math.min(Math.max(hi, 0), Math.round(was - topIn(cell, area))))
+    if (!move) return
+    for (const x of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > :is(.bk-link, .bk-line)'))]) {
+      const v = parseFloat(x.style.getPropertyValue('--bk-shift')) || 0
+      x.style.setProperty('--bk-shift', v + move + 'px')
+    }
+  }
+
   /**
    * 위아래 균형 (docs/VISUAL-RULES.md 6): 채움(키우기, 줄 사이)을 마치고도 남는 높이는 내용 위와 아래에 1 : 1.2로 둔다(눈높이 가운데).
    * 맨 아래에만 모으면 덜 찬 장은 위에 붙고 아래만 길게 비었다. 균형은 본문 윗선부터 장 틀의 아랫선까지로 잡는다: 하단 표시(출처,
@@ -1345,7 +1385,9 @@ export function blockFitter() {
       for (const c of cells) shrink(c, 0)
       // 줄 사이를 넓혀 칸 바닥까지 채우던 것(--bk-air)은 하지 않는다: 줄 높이는 내용에 정해진 사이를 더한 만큼이고(docs/VISUAL-RULES.md 6),
       // 남는 높이로 줄을 늘리면 장마다 줄 사이가 달라 보였다. 남는 높이는 쌓기(pack)가 맨 아래에 모은다
-      const shapes = cells.every((c) => !c.style.getPropertyValue('--bk-fit')) ? enlarge(cells) : null
+      // 쓰는 동안은 쓰기 전보다 키우지 않는다: 안내 숫자보다 짧은 숫자를 치면 첫 글자에 글자가 1.2배 커지며 컴포넌트가 96px 올라갔다
+      // (넘치면 줄이는 것은 그대로)
+      const shapes = cells.every((c) => !c.style.getPropertyValue('--bk-fit')) && !(hold && hold.up < ups[0]) ? enlarge(cells) : null
       lift(cells)
       tone(cells)
       pack(cells, area)
@@ -1381,8 +1423,9 @@ export function blockFitter() {
           reset()
           setFit(more)
           // 칸마다 넘치지 않는 가장 작은 더 준 높이 (캔버스 px, 반씩 나눠 찾는다). 넉넉히 다 주면 줄이 1fr인 부품은 그만큼 줄 사이가 늘었다
-          let ok = true
+          let ok = !hold || hold.up >= more
           for (const c of cells) {
+            if (!ok) break
             const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
             if (!inner || !crowded(inner, shapes.get(inner))) continue
             const room = (v: number) => {
@@ -1459,8 +1502,16 @@ export function blockFitter() {
       }
       linesAcross(cells, area)
       const eye = eyeLevel(cells, area, hold?.eye)
-      if (!hold) held.set(area, { board, eye, xs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0])) })
+      if (hold) anchor(cells, area)
+      else
+        held.set(area, {
+          board,
+          eye,
+          xs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0])),
+          up: Math.max(1, ...cells.map((c) => Number(c.style.getPropertyValue('--bk-fit') || 1))),
+        })
       linkAxes(cells, area)
+      if (area.classList.contains('is-live')) for (const c of cells) tops.set(c, topIn(c, area))
       area.classList.remove('is-fitting')
       for (const f of flips) f.a.currentTime = f.t
     }
