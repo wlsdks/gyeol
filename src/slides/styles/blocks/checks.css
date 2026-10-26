@@ -32,12 +32,12 @@
   align-items: center;
   gap: 24px;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule-hair) solid var(--line);
 }
 
-
-.bk-ck-row:last-child {
-  border-bottom: var(--rule-hair) solid var(--line);
+/* 줄 선은 항목 사이에만: 첫 줄 위(머리 바로 아래)와 끝줄 아래에도 긋던 때는 머리 아래, 아래 부품 위에서 선 밑에 선이 섰다
+   (VISUAL-RULES 2). 끝은 여백이 닫는다 */
+.bk-ck-row + .bk-ck-row {
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .bk-ck-list[data-n='5'] .bk-ck-row,
@@ -113,7 +113,7 @@
 }
 
 /* 넓은 칸에서 넷 이상이면 두 단으로 흘린다(개요와 같이): 한 단이면 이름과 상태 사이가 칸 너비만큼 비고,
-   넷만 쌓아도 장 높이의 4분의 3을 써서 한 장에 다른 부품을 둘 수 없다. 두 단의 첫 줄 선은 둘 다 진하게, 단마다 끝줄 아래에 선 */
+   넷만 쌓아도 장 높이의 4분의 3을 써서 한 장에 다른 부품을 둘 수 없다. 두 단의 첫 줄(둘째 항목)에는 위 선을 긋지 않는다 */
 @container bk (min-width: 1300px) {
   .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
     display: grid;
@@ -122,7 +122,7 @@
   }
 
 
-  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-last-child(2) {
-    border-bottom: var(--rule-hair) solid var(--line);
+  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-child(2) {
+    border-top: 0;
   }
 }

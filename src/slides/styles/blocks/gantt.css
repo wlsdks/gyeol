@@ -96,12 +96,12 @@
 .bk-gt-row {
   align-items: center;
   padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule-hair) solid var(--line);
 }
 
-
-.bk-gt-row:last-child {
-  border-bottom: var(--rule-hair) solid var(--line);
+/* 줄 선은 할 일 사이에만: 칸 이름 줄 바로 아래와 끝줄 아래에도 긋던 때는 머리 아래, 아래 부품 위에서 선 밑에 선이 섰다
+   (VISUAL-RULES 2). 할 일과 기간 칸은 세로 줄과 막대가 잇는다 */
+.bk-gt-row + .bk-gt-row {
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .bk-gt-list[data-n='5'] .bk-gt-row,
@@ -143,12 +143,13 @@
   font-weight: 600;
 }
 
-/* 기간 칸의 세로 줄 위에 막대. 막대는 칸 안쪽으로 조금 들여 칸과 칸 사이가 보이게 */
+/* 기간 칸의 세로 줄 위에 막대. 막대는 칸 안쪽으로 조금 들여 칸과 칸 사이가 보이게. 세로 줄은 시간 축의 눈금이라
+   줄 선과 같은 굵기(1px)의 옅은 선 */
 .bk-gt-track {
   position: relative;
   align-self: stretch;
   min-height: 34px;
-  background: linear-gradient(to right, color-mix(in srgb, var(--line) 80%, transparent) 2px, transparent 2px) 0 0 / calc(100% / var(--n)) 100%;
+  background: linear-gradient(to right, var(--line) var(--rule-hair), transparent var(--rule-hair)) 0 0 / calc(100% / var(--n)) 100%;
 }
 
 .bk-gt-bar {
