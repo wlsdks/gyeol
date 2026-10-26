@@ -47,10 +47,9 @@ export function Editor({ id }: { id: string }) {
 
   if (notFound) {
     return (
-      <div className="center-msg">
-        <p>
-          이 발표를 찾을 수 없어요. 다른 브라우저에서 만들었거나 지운 발표일 수 있어요. 작업 파일(.deck)이 있으면 내 발표에서 ‘파일 열기’로 불러오세요.
-        </p>
+      <div className="center-msg newer-deck">
+        <h1 className="newer-h">이 발표를 찾을 수 없어요</h1>
+        <p>다른 브라우저에서 만들었거나 지운 발표일 수 있어요. 작업 파일(.deck)이 있으면 내 발표에서 ‘파일 열기’로 불러오세요.</p>
         <button type="button" className="btn btn-primary" onClick={() => go({ name: 'home' })}>
           내 발표로 가기
         </button>
