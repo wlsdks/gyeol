@@ -15,17 +15,23 @@
   padding: calc(24px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
-/* 줄 사이 선. 발표할 때 왼쪽에서부터 그어진다 */
+/* 줄 사이 선: 옅은 1px, 줄 사이에만(VISUAL-RULES 2). 발표할 때 왼쪽에서부터 그어진다.
+   첫 줄 위의 글자색 선(목록 머리 괘선)은 묶음 표시라 긋지 않는다: 그 위 소제목의 아래와 겹쳐 선 밑에 선처럼 보였다 */
 .bk-fc-row::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 2px;
+  height: var(--rule-hair);
   background: var(--line);
 }
 
 .bk-fc-row:first-child::before {
-  background: var(--ink);
+  content: none;
+}
+
+/* 첫 줄은 위에 선이 없으니 위 사이도 없이 맨 위에 붙는다. 항목 수마다의 줄 사이(아래 [data-n]) 규칙보다 앞서게 구체성을 맞춘다 */
+.bk-fc-list:is([data-n]) > .bk-fc-row:first-child {
+  padding-top: 0;
 }
 
 .bk-fc-list[data-n='5'] .bk-fc-row,
@@ -63,7 +69,7 @@
   }
 }
 
-/* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄 선은 둘 다 진하게.
+/* 넓은 칸에서 줄이 많으면 두 단으로. 두 단의 첫 줄은 둘 다 선 없이 맨 위에.
    나란한 두 줄의 선은 단 사이를 건너 하나로 잇는다: 끊어 두면 소제목이 왼쪽 단에만 붙은 표 둘로 보이고
    오른쪽 단의 진한 선 위가 비어 보였다. 이으면 '항목 내용 항목 내용'이 한 줄로 읽히는 표 하나다.
    짝이 없는 마지막 줄(다섯 줄의 다섯째)은 잇지 않는다 */
@@ -75,10 +81,14 @@
   }
 
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(2)::before {
-    background: var(--ink);
+    content: none;
   }
 
-  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(odd):not(:last-child)::before {
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(2) {
+    padding-top: 0;
+  }
+
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(odd):not(:first-child, :last-child)::before {
     right: calc(-1 * var(--fc-gap));
   }
 }
