@@ -1,3 +1,4 @@
+// @ts-nocheck -- playwright-core는 이 검수 단계에서만 받아서, 타입 검사(npm run typecheck) 때는 없다
 // 검수(CI)에서만 쓴다: 켜 둔 배포본을 엣지와 크롬으로 열어 화면이 그려지는지, 브라우저가 이 PC 밖으로 요청하지 않는지 본다.
 // playwright-core는 이 단계에서만 따로 받고(package.json에 넣지 않는다) 설치된 엣지, 크롬을 그대로 쓴다.
 // 쓰는 법: node scripts/ci-smoke.mjs <스크린샷 폴더>
