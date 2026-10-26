@@ -119,11 +119,8 @@
   }
 
   .bk-num-l {
-    --fs: var(--t-body);
     grid-row: 1;
     align-self: end;
-    color: var(--ink);
-    font-weight: 700;
   }
 
   .bk-num-n {
@@ -133,17 +130,12 @@
   }
 }
 
-/* 그중 높은 칸: 이름은 소제목 크기, 숫자는 한 단계 더 크게(큰 칸 키우기와 함께 185px) */
+/* 그중 높은 칸: 숫자는 한 단계 더 크게(큰 칸 키우기와 함께 185px). 이름은 어느 칸에서나 이름표 그대로(작게 자간 넓게, blocks/base.css):
+   예전에는 넓은 칸에서 이름을 굵게, 높은 칸에서 소제목 크기로 키워서 키운 장(--bk-fit)에서 52~62px 굵은 글이 되어 장 제목과 다퉜다.
+   숫자가 크게 서면 작은 이름표가 오히려 숫자를 돋보이게 한다 */
 @container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {
   .bk-num-v {
     --fs: 154px;
-  }
-
-  .bk-num-l {
-    --fs: var(--t-h);
-    font-family: var(--font-head);
-    font-weight: var(--head-weight);
-    letter-spacing: var(--head-tracking);
   }
 
   .bk-num-n {

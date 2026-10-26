@@ -151,18 +151,10 @@
   opacity: 0.45;
 }
 
-/* 혼자 한 줄을 다 쓰는 넓고 높은 칸: 전과 후가 칸의 왼쪽 절반에 작게 몰리지 않게 숫자와 글을 키우고 사이를 넓힌다.
+/* 혼자 한 줄을 다 쓰는 넓고 높은 칸: 전과 후가 칸의 왼쪽 절반에 작게 몰리지 않게 숫자를 키우고 사이를 넓힌다(이름은 이름표 그대로).
    키운 글은 바뀐 만큼이 후 아래 줄에 서서 카드와 명조 제목까지 650px는 있어야 들어가서, 그보다 낮으면 보통 크기로 둔다
    (그 사이 높이에서 키우면 넘친다) */
 @container bk (min-width: 1200px) and (min-height: 660px) {
-  .bk-dl-l {
-    --fs: var(--t-h);
-    color: var(--ink);
-    font-family: var(--font-head);
-    font-weight: var(--head-weight);
-    letter-spacing: var(--head-tracking);
-  }
-
   .bk-dl {
     /* 이 칸에서는 큰 칸 키우기(--bk-up 1.2)와 글자 맞추기의 키우기(1.2)가 함께 걸려 184px(핵심 숫자의 강조 숫자와 같은
        단계)가 된다. 184에서 시작하면 265px가 되어 같은 장의 다른 큰 숫자(155px)보다 훨씬 크고 화살표가 숫자에 묻혔다 */
@@ -258,11 +250,8 @@
   }
 
   .bk-dl-l {
-    --fs: var(--t-body);
     grid-row: 1;
     align-self: end;
-    color: var(--ink);
-    font-weight: 700;
   }
 
   .bk-dl-n {
@@ -272,14 +261,8 @@
   }
 }
 
+/* 이름은 어느 칸에서나 이름표 그대로(blocks/base.css): 키우면 키운 장에서 장 제목과 다퉜다(큰 숫자와 같다) */
 @container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {
-  .bk-dl-l {
-    --fs: var(--t-h);
-    font-family: var(--font-head);
-    font-weight: var(--head-weight);
-    letter-spacing: var(--head-tracking);
-  }
-
   .bk-dl-n {
     --fs: var(--t-body);
   }
