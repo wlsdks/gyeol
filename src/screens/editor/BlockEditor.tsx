@@ -139,7 +139,11 @@ function measureArea(el: HTMLElement | null) {
 function guessArea(frame: DOMRect) {
   const head = document.querySelector<HTMLElement>('.ed-canvas .slide .s-head')
   const k = frame.width / CANVAS.w
-  const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + FRAME.gap : 0)
+  // 빈 부제는 컴포넌트 장에서 제목 아래 여백 위에 떠 있어 본문을 밀지 않는다(edit.css의 .l-compose .s-lead.is-empty). 레이아웃 장에서는
+  // 부제 줄(81px)을 차지하니 그만큼 빼야 바꾼 뒤와 같다. 빼지 않아서 부제를 비운 핵심 포인트 장에서 카드 25개를 잠갔는데, 바꾸면 16개가 더 들어갔다
+  const lead = head?.querySelector<HTMLElement>(':scope > .s-lead.is-empty')
+  const leadH = lead ? lead.offsetHeight + (parseFloat(getComputedStyle(lead).marginTop) || 0) : 0
+  const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight - leadH + FRAME.gap : 0)
   const size = { w: CANVAS.w - FRAME.x * 2, h: CANVAS.h - top - FRAME.bottom }
   return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
 }
