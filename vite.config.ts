@@ -45,8 +45,10 @@ export default defineConfig({
   base: './',
   // 에이전트가 따로 쓰는 작업 폴더(.claude/worktrees)는 지켜보지 않는다. 그 안의 index.html, tsconfig.json이 생기거나 바뀌면
   // 이 개발 서버가 열린 화면을 모두 새로 고쳐서, 갤러리에서 부품 높이를 재던 것이 중간에 끊겼다.
-  // 브라우저 자동화가 내려받은 파일을 두는 .playwright-mcp도 같다: 내보낸 HTML이 생기면 편집 중인 화면이 새로 고쳐졌다
-  server: { watch: { ignored: ['**/.claude/**', '**/.playwright-mcp/**'] } },
+  // 브라우저 자동화가 내려받은 파일을 두는 .playwright-mcp도 같다: 내보낸 HTML이 생기면 편집 중인 화면이 새로 고쳐졌다.
+  // 지켜보지 않을 .claude는 이 저장소 바로 아래 것만이다. 예전처럼 '**/.claude/**'로 두면, 작업 폴더 안에서 띄운 개발 서버는
+  // 자기 경로가 .claude/worktrees/… 라서 제 소스까지 지켜보지 않아 고쳐도 화면이 그대로였다
+  server: { watch: { ignored: [`${join(import.meta.dirname, '.claude')}/**`, '**/.playwright-mcp/**'] } },
   // 그 폴더의 시험 사본도 돌리지 않는다
   test: { exclude: ['**/node_modules/**', '**/.git/**', '.claude/**'] },
 })
