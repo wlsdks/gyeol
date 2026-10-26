@@ -635,6 +635,9 @@
   /* 가운데 맞춤은 translate로 두고, 나타날 때는 transform만 움직인다 */
   translate: -50% 0;
   animation: toast-in 0.24s var(--ease-out);
+  /* 편집기에서는 알림이 발표자 노트 입력칸 바로 위에 뜬다. 글자 쪽은 누름을 그 아래로 흘려보내 노트를 누를 수 있게 한다
+     (컴포넌트를 뺀 뒤 4초 동안 노트를 누르면 알림에 막혀 노트가 열리지 않았고, 이어서 친 글이 사라졌다). 단추만 눌린다 */
+  pointer-events: none;
 }
 
 @keyframes toast-in {
@@ -652,12 +655,16 @@
 }
 
 .toast-action {
+  /* 알림 글이 길면 글이 줄을 바꾸고 단추 이름은 한 줄로 (1280 화면에서 '새 장에 / 넣기'로 꺾였다) */
+  flex: none;
   padding: 0;
   border: 0;
   background: none;
   color: #9db8ff;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .center-msg {
