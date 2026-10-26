@@ -721,6 +721,34 @@ function paintedBoxes(area: HTMLElement, k: number): string[] {
   return [...new Set(out)]
 }
 
+/**
+ * 한 축 정렬(docs/VISUAL-RULES.md 5): 같은 줄(같은 묶음, 같은 판의 줄)에 나란한 칸 가운데 글로 시작하는 칸끼리 첫 글줄의 윗선이
+ * 4px 넘게 어긋난 것. 32px 넘게 다르면 짜임이 다른 것(그림 옆의 글)이라 쌓기도 맞추지 않아 보지 않는다
+ */
+function rowTops(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  const rows = new Map<string, HTMLElement[]>()
+  for (const c of area.querySelectorAll<HTMLElement>(':scope > .bk.is-shared:not(.lk-row)')) {
+    const key = `${c.dataset.band}|${c.style.getPropertyValue('--y')}`
+    rows.set(key, (rows.get(key) ?? []).concat(c))
+  }
+  rows.forEach((row) => {
+    if (row.length < 2) return
+    const tops = row.flatMap((c) => {
+      const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+      const ink = inkSpan(c)
+      const ls = inner ? blockTextLines(inner).filter((q) => !q.n.parentElement?.closest(EDIT_UI)) : []
+      if (!ls.length || !ink) return []
+      const t = Math.min(...ls.map((q) => q.t))
+      return t - ink.t < 8 * k || c.classList.contains('bk-look-card') ? [{ c, t }] : []
+    })
+    if (tops.length < 2) return
+    const d = (Math.max(...tops.map((x) => x.t)) - Math.min(...tops.map((x) => x.t))) / k
+    if (d > 4 && d <= 32) out.push(`한 줄의 첫 글줄 윗선이 ${Math.round(d)}px 어긋나요(${tops.map((x) => x.c.dataset.type).join(', ')})`)
+  })
+  return out
+}
+
 /** 본문을 이만큼도 채우지 못하면 빈 장으로 본다 (docs/VISUAL-RULES.md 6: 60~85%가 기본) */
 const FILL_MIN = 0.6
 
@@ -807,7 +835,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k), ...textOverlap(area, k), ...rowRhythm(area, k), ...sides(area, k), ...fill(slide, area), ...clipped(slide)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k), ...textOverlap(area, k), ...rowRhythm(area, k), ...sides(area, k), ...rowTops(area, k), ...fill(slide, area), ...clipped(slide)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }

@@ -750,6 +750,36 @@ export function blockFitter() {
     }
     const order = Array.from(rows.values()).sort((p, q) => Math.min(...p.map((x) => x.r.top)) - Math.min(...q.map((x) => x.r.top)))
     // 줄마다 앞 줄 내용 아래 --bk-gap(소제목 아래는 headGap)에 쌓는다. 사이는 늘 같은 값이라 장마다, 묶음마다 같다
+    // 같은 줄의 첫 글줄 윗선 (docs/VISUAL-RULES.md 5): 부품마다 첫 글 위의 빈 키(이름표, 소제목, 들여 쓰기의 위 여백)가 달라 한 줄의 윗선이
+    // 4~20px 어긋났다. 같은 판의 줄(같은 묶음, 같은 --y)에서 글로 시작하는 칸끼리 쌓은 자리의 가장 낮은 윗선에 맞춰 내린다(칸마다 더 내리는 몫).
+    // 한 번 쌓아 자리를 보고 그 몫을 넣어 다시 쌓는다(아래 줄이 내린 만큼 따라 내려간다). 48px 넘게 다르면 짜임이 다른 것(그림 옆의 글)이라 그대로
+    const firstTop = new Map<HTMLElement, number>()
+    for (const x of items) {
+      const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
+      const ls = inner ? lines(inner) : []
+      if (!ls.length || !x.c.classList.contains('is-shared') || x.c.classList.contains('lk-row')) continue
+      const t = Math.min(...ls.map((q) => q.t))
+      if (t - x.ink!.t < 8 * k || x.c.classList.contains('bk-look-card')) firstTop.set(x.c, t)
+    }
+    const lineUp = new Map<HTMLElement, number>()
+    const alignTops = (dy: Map<HTMLElement, number>) => {
+      lineUp.clear()
+      const groups = new Map<string, typeof items>()
+      for (const x of items) {
+        if (!firstTop.has(x.c)) continue
+        const key = (x.c.dataset.band ?? '') + '|' + x.c.style.getPropertyValue('--y')
+        groups.set(key, (groups.get(key) || []).concat(x))
+      }
+      groups.forEach((g) => {
+        if (g.length < 2) return
+        const tops = g.map((x) => firstTop.get(x.c)! + dy.get(x.c)!)
+        const goal = Math.max(...tops)
+        if (goal - Math.min(...tops) > 48 * k) return
+        g.forEach((x, i) => {
+          if (goal - tops[i] >= 1) lineUp.set(x.c, goal - tops[i])
+        })
+      })
+    }
     const stack = () => {
       const dy = new Map<HTMLElement, number>()
       for (const row of order) {
@@ -767,7 +797,7 @@ export function blockFitter() {
         // 앞 줄 내용 바로 아래로: 대개는 올리지만, 앞 줄 내용이 제 칸보다 길게 그려졌으면(소제목의 덧붙임이 칸 아래로 넘친 것 같은)
         // 그만큼 내린다. 올리기만 하면 넘친 글 위에 아래 줄이 그대로 남아 겹쳤다
         const d = at - t
-        for (const x of row) dy.set(x.c, d)
+        for (const x of row) dy.set(x.c, d + (lineUp.get(x.c) ?? 0))
       }
       return dy
     }
@@ -779,11 +809,15 @@ export function blockFitter() {
       let dy = new Map<HTMLElement, number>()
       for (const f of [1.5, 1.25, 1]) {
         gap = gap0 * f
+        lineUp.clear()
+        alignTops(stack())
         dy = stack()
         const end = Math.max(...items.map((x) => (x.c.classList.contains('bk-look-plain') ? x.ink!.b : x.r.bottom) + dy.get(x.c)!))
-        if (end <= a.bottom + 2 * k) break
+        if (end <= a.bottom + 2 * k) return dy
       }
-      return dy
+      // 판의 사이로도 본문 아래로 나가면 윗선 맞추기로 내린 것을 거둔다
+      lineUp.clear()
+      return stack()
     }
     // 쌓은 자리로 면의 아래 끝을 옆 칸에 맞추고(tail), 줄인 면으로 다시 쌓는다: 면 아래의 묶음이 줄인 만큼 올라온다
     const base = new Map<HTMLElement, { r: DOMRect; trim: number }>()
