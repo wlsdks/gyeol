@@ -1,5 +1,6 @@
 import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, BOARD_ROWS, boardFit, boardFromRows, composeAreaH, needRows } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
+import { BLUEPRINTS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { createDeck, makeSlide } from '../deck/generate'
 import { LAYOUTS } from '../deck/layouts'
@@ -180,17 +181,11 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
 
 function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck {
   if (set === 'blank') {
-    const deck = createDeck({
-      type: (params.get('type') as DeckType | null) ?? 'business',
-      audience: 'mixed',
-      minutes: 30,
-      method: 'live',
-      title: '',
-      org: '',
-      presenter: '',
-      theme,
-    })
-    return deck
+    const type = (params.get('type') as DeckType | null) ?? 'business'
+    const input = { type, audience: 'mixed', minutes: 30, method: 'live', title: '', org: '', presenter: '', theme } as const
+    // &all=1: 듣는 사람과 시간으로 고르지 않은 구성의 모든 장. 홍보 페이지 구성 보기의 그림(site/images/decks/<종류>-<차례>.webp)이
+    // 이 장들을 mode=preview로 찍은 것이라, 차례가 BLUEPRINTS[type].recipes의 차례와 같다
+    return params.get('all') === '1' ? createDeck(input, (BLUEPRINTS[type] ?? BLUEPRINTS.blank).recipes) : createDeck(input)
   }
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }

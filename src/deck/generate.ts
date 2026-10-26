@@ -100,9 +100,9 @@ export function formatDate(date = new Date()): string {
   return new Intl.DateTimeFormat('ko-KR').format(date)
 }
 
-export function createDeck(input: DeckInput): Deck {
+/** recipes를 주면 듣는 사람과 시간으로 고르지 않고 그 장들로 만든다(갤러리가 구성의 모든 장을 그릴 때) */
+export function createDeck(input: DeckInput, recipes = planRecipes(input.type, input.audience, input.minutes)): Deck {
   const blueprint = BLUEPRINTS[input.type] ?? BLUEPRINTS.blank
-  const recipes = planRecipes(input.type, input.audience, input.minutes)
   const sectionTitles = blueprint.recipes.filter((r) => r.layout === 'section').map((r) => r.section ?? '')
   const title = input.title.trim() || blueprint.defaultTitle
 
