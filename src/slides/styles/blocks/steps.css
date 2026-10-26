@@ -14,7 +14,8 @@
   --stp-fh: calc(var(--hl) / (var(--n) - 1));
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  /* 칸에 남는 높이는 아래로: 가운데에 두면 혼자 있는 작은 컴포넌트가 칸 가운데에 작게 떴다(docs/VISUAL-RULES.md 6) */
+  justify-content: flex-start;
   height: 100%;
 }
 
@@ -242,7 +243,7 @@
     display: grid;
     grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
     align-items: center;
-    align-content: center;
+    align-content: start;
     column-gap: var(--bk-col-gap);
   }
 
