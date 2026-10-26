@@ -1,4 +1,4 @@
-import { createStore, del, entries, get, set } from 'idb-keyval'
+import { createStore, del, entries, get, promisifyRequest } from 'idb-keyval'
 import type { Deck } from '../deck/types'
 
 // 덱은 이 브라우저의 IndexedDB에만 저장한다. 서버로 보내지 않는다.
@@ -23,7 +23,13 @@ export async function loadDeck(id: string): Promise<Deck | undefined> {
 
 export async function saveDeck(deck: Deck): Promise<boolean> {
   try {
-    await set(deck.id, deck, store)
+    // 넣고 바로 맺는다(commit). 맺기를 브라우저에 맡기면 넣은 결과가 돌아온 뒤에야 맺어서, 창을 닫거나 새로 고치는 순간(pagehide)에
+    // 부른 저장은 그 사이 페이지가 사라져 버려졌다: 쓰고 0.4초 안에 닫으면 쓴 글이 없어졌다
+    await store('readwrite', (s) => {
+      s.put(deck, deck.id)
+      s.transaction.commit?.()
+      return promisifyRequest(s.transaction)
+    })
     return true
   } catch {
     return false
