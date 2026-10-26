@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ASKS, askOf, askSentence, type AskError, type AskId, type AskScope, type AskStep } from '../../ai/asks'
+import { ASKS, askFits, askOf, askSentence, type AskError, type AskId, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
 import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
 import { mcpCommand } from '../../ai/client'
@@ -194,7 +194,7 @@ function AskList({
       )}
       <ul className="ask-list">
         {/* 묻는 동안은 고른 부탁 하나만 남긴다: 무엇을 맡기려는지 그 자리에서 보이고, 슬라이드 아래 창이 1280×600에서도 넘치지 않게 */}
-        {ASKS.filter((a) => a.scope === scope && (!asking || a.id === asking)).map((a) => (
+        {ASKS.filter((a) => a.scope === scope && askFits(a, slide?.layout ?? null) && (!asking || a.id === asking)).map((a) => (
           <li key={a.id}>
             <button
               type="button"

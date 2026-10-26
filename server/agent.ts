@@ -18,7 +18,7 @@ import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
-import { askPrompt, REASON_MAX, type AskError, type AskId, type AskRun, type AskState } from '../src/ai/asks'
+import { askFits, askOf, askPrompt, REASON_MAX, type AskError, type AskId, type AskRun, type AskState } from '../src/ai/asks'
 import { MCP_SERVER_NAME, MCP_TOOLS } from '../src/ai/protocol'
 
 /** 띄울 프로그램. args는 결이 붙이는 인자 앞에 온다 (시험에서 node 스크립트를 띄울 때) */
@@ -33,6 +33,8 @@ export interface AgentOptions {
   nodePath: string
   /** 이 발표의 모양 파일이 있고, 장 부탁이면 그 장이 있는지 */
   hasTarget(deck: string, slide: string | null): boolean
+  /** 모양 파일에 있는 그 장의 레이아웃 (레이아웃이 정해진 부탁이 맞는 장인지 볼 때) */
+  layoutOf?(deck: string, slide: string): string | null
   /** 이 발표에 와 있는 제안 id들 */
   requestIds(deck: string): string[]
   find?: () => AgentCommand | null
@@ -181,6 +183,8 @@ export function createAgent(opts: AgentOptions) {
       prune()
       if ([...runs.values()].some((r) => r.state === 'running')) return 'busy'
       if (!opts.hasTarget(deck, slide)) return 'not_shared'
+      // 컴포넌트 장에만 맞는 부탁을 다른 장에 맡기면 AI는 할 일이 없다
+      if (slide && !askFits(askOf(ask)!, opts.layoutOf?.(deck, slide) ?? null)) return 'bad_ask'
       const cmd = existsSync(opts.mcpPath) ? find() : null
       if (!cmd) return 'no_agent'
 

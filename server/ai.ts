@@ -225,6 +225,10 @@ export function createAiHandler(shareRoot: string, setup: AiSetup) {
       const shape = readJson(join(dirs.decks, `${deck}.json`))
       return checkShape(shape) && shape.deck === deck && (slide === null || shape.slides.some((s) => s.id === slide))
     },
+    layoutOf(deck, slide) {
+      const shape = readJson(join(dirs.decks, `${deck}.json`))
+      return checkShape(shape) && shape.deck === deck ? (shape.slides.find((s) => s.id === slide)?.layout ?? null) : null
+    },
     // Claude Code가 끝날 때(요청 밖에서) 부르므로 여기서 던지면 서버가 꺼진다. 읽지 못하면 없는 것으로 친다
     requestIds(deck) {
       try {

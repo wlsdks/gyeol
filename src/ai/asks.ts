@@ -33,6 +33,8 @@ export interface Ask {
   description: string
   /** AI에게 보내는 부탁. 고칠 수 있는 것(ops)으로 할 수 있는 일만 적는다 */
   prompt: string
+  /** 장 부탁 가운데 이 레이아웃의 장에만 맞는 것 (없으면 모든 장). 화면은 맞는 장에서만 보이고, 로컬 서버도 다시 확인한다 */
+  layouts?: readonly string[]
 }
 
 export const ASKS = [
@@ -67,6 +69,18 @@ export const ASKS = [
     description: '앞뒤로 빠진 장을 넣어요',
     prompt:
       '이 장 앞뒤로 보고 흐름에 꼭 필요한데 빠진 장이 있으면 넣어 주세요(add_slide). 많아야 두 장이고, 이미 비슷한 역할의 장이 있으면 넣지 마세요.',
+  },
+  {
+    // 컴포넌트 장은 자리, 크기, 면, 이음표, 나오는 차례를 사람이 하나씩 맞춰야 해서 손이 가장 많이 간다. 글을 건드리지 않고 고칠 수 있는 것이 가장 많은 장이기도 하다
+    id: 'slide_compose',
+    scope: 'slide',
+    name: '컴포넌트 짜임 다듬기',
+    description: '자리, 크기, 면, 이음표를 맞춰요',
+    layouts: ['compose'],
+    prompt:
+      '이 부품 장(layout compose)의 짜임을 다듬어 주세요. 뜻이 이어지는 부품끼리 나란히 두고(move_block의 beside, swap), 가장 중요한 부품이 더 넓게 보이게 하세요(set_size). ' +
+      '면(look)은 한 장에 한 가지로 맞추고, 이어지거나 함께이거나 견주는 두 부품 사이에만 이음표(set_link)를 끼우세요. 발표할 때 나오는 차례(set_order)는 듣는 사람이 읽을 차례에 맞추세요. ' +
+      '비어 있는 부품은 빼도 되지만(remove_block) 새 부품은 꼭 필요할 때 하나까지만 넣으세요. 부품 안의 글은 바꿀 수 없어요. 자리가 모자라면(no_room) 크기를 덜 바꾸세요.',
   },
   {
     id: 'deck_flow',
@@ -114,6 +128,11 @@ export const ASK_IDS: readonly AskId[] = ASKS.map((a) => a.id)
 
 export function askOf(id: unknown): (typeof ASKS)[number] | undefined {
   return ASKS.find((a) => a.id === id)
+}
+
+/** 이 장에 고를 수 있는 부탁인지 (레이아웃이 정해진 부탁) */
+export function askFits(ask: Ask, layout: string | null): boolean {
+  return !ask.layouts || (layout !== null && ask.layouts.includes(layout))
 }
 
 /** 부탁과 대상이 맞는지. 장 부탁에는 장 id가, 발표 전체 부탁에는 null이 와야 한다 */
