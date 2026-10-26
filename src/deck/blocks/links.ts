@@ -6,10 +6,10 @@ import { BOARD_COLS, BOARD_ROWS, type Fit, LOOSE, removeFromBoard } from './boar
 import { BLOCKS } from './catalog'
 
 export const BLOCK_LINKS: { id: BlockLink; name: string; description: string }[] = [
-  { id: 'arrow', name: '화살표', description: '앞의 것이 뒤의 것으로 이어지거나 바뀌어요' },
-  { id: 'plus', name: '더하기', description: '두 가지를 함께 해요' },
-  { id: 'equals', name: '결과', description: '앞의 것이 모여 뒤의 것이 돼요' },
-  { id: 'versus', name: '견주기', description: '두 가지를 맞대어 견줘요' },
+  { id: 'arrow', name: '화살표', description: '앞의 것이 뒤의 것으로 이어지거나 바뀌어요. 같은 컴포넌트끼리, 단계와 단계, 차트와 차트, 숫자와 숫자를 잇거나 숫자나 결론 한마디로 맺어요' },
+  { id: 'plus', name: '더하기', description: '같은 컴포넌트 두 개를 함께 해요' },
+  { id: 'equals', name: '결과', description: '앞의 것이 모여 뒤의 숫자나 결론 한마디가 돼요' },
+  { id: 'versus', name: '견주기', description: '같은 컴포넌트 두 개를 맞대어 견줘요' },
 ]
 export const BLOCK_LINK_IDS = BLOCK_LINKS.map((l) => l.id)
 
@@ -104,23 +104,53 @@ const KINDS: Record<Kind, BlockType[]> = {
 }
 export const kindOf = (type: BlockType): Kind | null => (Object.keys(KINDS) as Kind[]).find((k) => KINDS[k].includes(type)) ?? null
 
-/** 이 이음표로 이 두 부품(앞 → 뒤)을 이을 수 있는지. 숫자와 한마디는 결과(=)와 화살표로 무엇이든 받는다 */
+/**
+ * 이음표를 달지 않는 부품: 소제목은 아래 부품들의 이름이고 주석은 위 부품에 붙는 작은 글이라, 이음표로 이으면 무엇과 무엇의 관계인지
+ * 읽히지 않는다(목표 대비 = 주석 기준 글, 소제목 '지금 방식' + 점 목록)
+ */
+const UNLINKED = new Set<BlockType>(['heading', 'note'])
+/**
+ * 결과(=)와 화살표가 맺는 곳: 답이 되는 숫자와 결론 한마디. 강조 상자는 결정 요청이나 꼭 알아야 할 것이라 앞의 것이 모인 답이
+ * 아니다(단계 표시 = 결정 요청)
+ */
+const RESULTS = new Set<BlockType>(['number', 'delta', 'goal', 'ring', 'ratio', 'stat', 'kpi', 'message'])
+/**
+ * 모여서 답이 되는 것: 숫자, 차트, 흐름, 표, 요점을 적은 목록과 설명 글. 로고, 화면 캡처, 사람, 날짜, 상태, 결론과 결정 요청, 인용은
+ * 모여 숫자가 되지 않는다(로고 모음 = 전기료 3.6억 원, 결정 요청 › 전과 후)
+ */
+const SOURCES = new Set<BlockType>([...KINDS.number, ...KINDS.chart, ...KINDS.flow, ...KINDS.table, 'bullets', 'points', 'facts', 'checks', 'risks', 'text', 'summary'])
+/** 화살표로 다른 부품끼리 이을 수 있는 갈래: 흐름(단계에서 단계로), 차트(추이에서 막대로), 숫자, 그림 */
+const CHAINS = new Set(['flow', 'chart', 'number', 'image'])
+
+/**
+ * 이 이음표로 이 두 부품(앞 → 뒤)을 이을 수 있는지. 갈래만 같으면 받던 때는 개요와 날짜를 견주고(둘 다 목록 갈래),
+ * 이름이 다른 두 숫자 사이에 'vs'가 서서 무엇을 견주는지 알 수 없었다.
+ * - 더하기, 견주기: 같은 부품끼리 (숫자와 숫자, 목록과 목록, 같은 차트끼리). 같은 꼴이어야 함께 하거나 맞대는 것이 읽힌다
+ * - 결과(=): 앞의 것(숫자, 차트, 흐름, 표, 요점 목록, 설명 글)이 모여 숫자나 결론 한마디가 된다
+ * - 화살표: 같은 부품끼리, 흐름, 차트, 숫자, 그림은 같은 갈래끼리(전 → 후, 단계 → 단계), 그리고 결과처럼 숫자나 결론 한마디로 맺을 때
+ * 소제목과 주석에는 어떤 이음표도 달지 않는다
+ */
 export function linkFits(link: BlockLink, from: BlockType, to: BlockType): boolean {
+  if (UNLINKED.has(from) || UNLINKED.has(to)) return false
+  const same = from === to
+  if (link === 'plus' || link === 'versus') return same
+  const result = RESULTS.has(to) && SOURCES.has(from)
+  if (link === 'equals') return result && !same
   const a = kindOf(from)
-  const b = kindOf(to)
-  const result = b === 'number' || b === 'words'
-  if (link === 'equals') return result
-  if (link === 'arrow') return a === b || result
-  return a === b
+  return same || result || (a !== null && a === kindOf(to) && CHAINS.has(a))
 }
 
 /** 그 자리에 이 이음표를 놓을 수 없는 까닭: 선 건너편의 어떤 부품과도 뜻이 서지 않으면 그 둘. 놓을 수 있으면 null */
 export function linkIssue(blocks: readonly Block[], t: LinkTarget, link: BlockLink): { from: BlockType; to: BlockType } | null {
   const b = blocks.find((x) => x.id === t.id)
   if (!b || !BLOCKS[b.type]) return null
-  const next = across(blocks, b, t.dir)
-  if (!next.length || next.some((o) => linkFits(link, b.type, o.type))) return null
-  return { from: b.type, to: next[0].type }
+  const all = across(blocks, b, t.dir)
+  if (!all.length) return null
+  // 건너편이 여럿이면(위아래로 쌓인 칸) 모두와 뜻이 서야 한다. 그 가운데 소제목과 주석은 옆 부품에 딸린 글이라 빼고 본다:
+  // 하나만 맞으면 받던 때는 숫자와 주석이 쌓인 칸에 견주기가 서서 주석과도 견주는 것처럼 읽혔다
+  const next = all.filter((o) => !UNLINKED.has(o.type))
+  const bad = UNLINKED.has(b.type) ? all[0] : (next.length ? next : all).find((o) => !linkFits(link, b.type, o.type))
+  return bad ? { from: b.type, to: bad.type } : null
 }
 
 /** 사람이 아무것도 적지 않은 부품: 칸의 글, 항목의 글, 그림이 모두 비었다 */

@@ -352,11 +352,11 @@ describe('부품 장', () => {
       { op: 'add_slide', after: sid(0), layout: 'compose', as: 'n1' },
       { op: 'add_block', slide: 'n1', type: 'number', as: 'p1' },
       { op: 'add_block', slide: 'n1', type: 'number', beside: 'p1', side: 'after', as: 'p2' },
-      { op: 'add_block', slide: 'n1', type: 'text', edge: 'bottom', as: 'p3' },
+      { op: 'add_block', slide: 'n1', type: 'message', edge: 'bottom', as: 'p3' },
       { op: 'set_link', slide: 'n1', block: 'p1', side: 'right', link: 'plus' },
       { op: 'set_link', slide: 'n1', block: 'p1', side: 'right', link: 'plus' },
       { op: 'set_link', slide: 'n1', block: 'p1', side: 'below', link: 'arrow' },
-      // 숫자와 설명 글은 견줄 수 없다
+      // 숫자와 결론 한마디는 견줄 수 없다 (견주기는 같은 컴포넌트끼리)
       { op: 'set_link', slide: 'n1', block: 'p2', side: 'below', link: 'versus' },
       // 판의 오른쪽 끝, 맨 아래에는 설 데가 없다
       { op: 'set_link', slide: 'n1', block: 'p2', side: 'right', link: 'plus' },

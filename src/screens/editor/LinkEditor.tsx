@@ -57,14 +57,21 @@ function measureSpots(area: HTMLElement, blocks: Block[]): Spot[] {
 }
 
 /**
- * 뜻이 서지 않는 짝을 잇지 않는 까닭. 화살표와 더하기, 견주기는 같은 갈래끼리(숫자와 숫자, 목록과 목록, 차트와 차트),
- * 결과(=)와 화살표는 무엇이든 숫자나 한마디로 이어요 (links.ts의 linkFits)
+ * 뜻이 서지 않는 짝을 잇지 않는 까닭. 더하기와 견주기는 같은 컴포넌트끼리, 화살표는 같은 컴포넌트나 단계, 차트, 숫자끼리,
+ * 결과(=)와 화살표는 숫자나 결론 한마디로 맺을 때. 소제목과 주석에는 달지 않아요 (links.ts의 linkFits)
  */
 function pairText(from: Block['type'], to: Block['type'], link: BlockLink): string {
   const name = BLOCK_LINKS.find((l) => l.id === link)!.name
   const a = BLOCKS[from].name
   const b = BLOCKS[to].name
-  const rule = link === 'equals' ? '결과는 숫자나 한마디로 맺을 때 써요.' : link === 'arrow' ? '화살표는 같은 갈래끼리 잇거나, 숫자나 한마디로 맺을 때 써요.' : '숫자는 숫자끼리, 차트는 차트끼리처럼 같은 갈래를 이어요.'
+  const rule =
+    from === 'heading' || from === 'note' || to === 'heading' || to === 'note'
+      ? '소제목과 주석은 옆 컴포넌트에 딸린 글이라 이음표로 잇지 않아요.'
+      : link === 'equals'
+        ? '결과는 앞의 것이 모여 숫자나 결론 한마디가 될 때 써요.'
+        : link === 'arrow'
+          ? '화살표는 같은 컴포넌트, 단계, 차트, 숫자끼리 잇거나 숫자나 결론 한마디로 맺을 때 써요.'
+          : '같은 컴포넌트 두 개를 이을 때 써요.'
   return `${josa(a, '과', '와')} ${josa(b, '은', '는')} ${josa(name, '으로', '로')} 이으면 뜻이 서지 않아요. ${rule}`
 }
 

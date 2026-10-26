@@ -586,8 +586,16 @@ describe('이음표', () => {
     expect(withLink(linked, { id: 'a', dir: 'h' }, null).find((b) => b.id === 'a')).not.toHaveProperty('link')
   })
 
-  it('뜻이 서는 짝만 잇는다: 더하기와 견주기는 같은 갈래끼리, 결과는 숫자나 한마디로', () => {
-    expect(linkFits('plus', 'number', 'delta')).toBe(true)
+  it('뜻이 서는 짝만 잇는다: 더하기와 견주기는 같은 컴포넌트끼리, 결과는 숫자나 한마디로', () => {
+    expect(linkFits('plus', 'number', 'number')).toBe(true)
+    expect(linkFits('plus', 'number', 'delta')).toBe(false)
+    // 갈래만 같은 짝(개요와 날짜, 이름이 다른 두 숫자)과 딸린 글(주석, 소제목), 맺은 말에서 시작하는 것은 잇지 않는다
+    expect(linkFits('versus', 'facts', 'date')).toBe(false)
+    expect(linkFits('versus', 'number', 'stat')).toBe(false)
+    expect(linkFits('equals', 'goal', 'note')).toBe(false)
+    expect(linkFits('plus', 'heading', 'bullets')).toBe(false)
+    expect(linkFits('arrow', 'callout', 'delta')).toBe(false)
+    expect(linkFits('arrow', 'trend', 'bars')).toBe(true)
     expect(linkFits('versus', 'goal', 'market')).toBe(false)
     expect(linkFits('arrow', 'bullets', 'message')).toBe(true)
     expect(linkFits('equals', 'bullets', 'number')).toBe(true)
