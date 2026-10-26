@@ -663,11 +663,13 @@ function rowRhythm(area: HTMLElement, k: number): string[] {
           t = Math.min(t, q.t)
           b = Math.max(b, q.b)
         }
-        for (const el of it.querySelectorAll<HTMLElement>('svg, img, *')) {
+        for (const el of [it, ...it.querySelectorAll<HTMLElement>('svg, img, *')]) {
           if (el.parentElement?.closest('svg') || el.closest(EDIT_UI)) continue
           const tag = el.tagName.toLowerCase()
           const cs = getComputedStyle(el)
-          const paint = tag === 'svg' || tag === 'img' || (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent')
+          // 둘레를 긋는 상자(흐름의 단계 상자처럼 그림자로 1px 테를 두른 것)도 그려진 것이다: 글만 보면 상자 사이의 이음표 자리까지 줄 사이로 알고
+          // 줄이 내용의 두 배 넘게 늘었다고 했다(단계 상자 80px 사이 44px에 화살표). 한쪽에만 긋는 줄 선(border, ::before)은 줄 사이의 선이라 넣지 않는다
+          const paint = tag === 'svg' || tag === 'img' || (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') || cs.boxShadow !== 'none'
           if (!paint) continue
           const r = el.getBoundingClientRect()
           if (!r.width || !r.height) continue
