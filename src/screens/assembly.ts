@@ -10,7 +10,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   숫자와 단위는 답이라 제목과 다투지 않는다
  * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 한곳(맨 아래)에 모여야 한다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
- *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것도 본다
+ *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -118,6 +118,22 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
     })
     if (hit) out.push(`이음표(${lk.dataset.link})가 그려진 것에 걸쳐요`)
   }
+  // 소제목은 아래 부품들의 이름이라 그 아래(같은 단)에 묶을 부품이 있어야 한다
+  const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  // 판의 자리로 본다: 발표 화면에서 올려 붙인 만큼(--bk-shift)은 되돌린다
+  const placeOf = (c: HTMLElement) => {
+    const r = c.getBoundingClientRect()
+    return new DOMRect(r.left, r.top - (parseFloat(c.style.getPropertyValue('--bk-shift')) || 0) * k, r.width, r.height)
+  }
+  if (cells.length > 1)
+    for (const h of cells.filter((c) => c.dataset.type === 'heading')) {
+      const r = placeOf(h)
+      const under = cells.some((c) => {
+        const o = placeOf(c)
+        return c !== h && o.top >= r.bottom - 1 && o.left < r.right - 1 && r.left < o.right - 1
+      })
+      if (!under) out.push('소제목 아래에 묶을 부품이 없어요')
+    }
   return out
 }
 

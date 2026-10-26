@@ -61,6 +61,6 @@ export function reviewSlides(size?: string): Slide[] {
     // 강조 상자와 근거
     scene('callout', { title: '교육 담당 2명을 지원해 주세요' }, [{ type: 'callout', look: 'bold' }, { type: 'bullets', n: 4 }], size),
     // 소제목과 목록 둘
-    scene('heading', { title: '잘된 것과 남은 것' }, [{ type: 'heading' }, { type: 'bullets' }, { type: 'heading' }, { type: 'checks' }], size),
+    scene('heading', { title: '잘된 것과 남은 것' }, [{ type: 'heading' }, { type: 'bullets', n: 2 }, { type: 'heading' }, { type: 'checks', n: 2 }], size),
   ]
 }

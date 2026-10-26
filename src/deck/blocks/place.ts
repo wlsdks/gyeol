@@ -207,7 +207,30 @@ export function autoPlace(blocks: Block[], block: Block, areaH?: number): Block[
     const t = imagePlace(blocks, block, areaH)
     return t?.kind === 'spot' ? insertAt(blocks, t.spot, block, areaH) : null
   }
-  const next = autoInsert(blocks, block, fitFor([...blocks, block], areaH))
+  const fit = fitFor([...blocks, block], areaH)
+  // 소제목 바로 다음에 넣는 부품은 그 소제목 아래에: 소제목은 아래 부품들의 이름이다. 판이 알아서 고르면(autoInsert) 마지막 줄의
+  // 옆이나 판 오른쪽에 들어가, 소제목이 묶을 것 없이 맨 아래에 혼자 남았다(소제목, 목록, 소제목, 할 일 차례로 넣은 장)
+  // 마지막에 넣은 부품 (blocks는 넣은 차례다. 읽는 차례로는 나란한 묶음에서 왼쪽 단의 아래 부품이 마지막이 된다)
+  const last = blocks.at(-1)
+  if (last?.type === 'heading' && block.type !== 'heading') {
+    const under = insertBlock(blocks, block, { at: last.id, side: 'below' }, fit)
+    if (under) return settled(under, [block], areaH)
+  }
+  // 소제목 묶음(소제목과 그 아래 부품들) 다음에 넣는 소제목은 그 묶음 옆에 나란히: 두 묶음이 같은 꼴로 서서 견주어 읽힌다.
+  // 판이 알아서 고르면 맨 아래 새 줄에 들어가 다음 부품이 그 아래에 들어갈 높이가 없어, 소제목만 아래에 혼자 남았다
+  if (block.type === 'heading' && last && last.type !== 'heading') {
+    const head = [...blocks].reverse().find((b) => b.type === 'heading')
+    const from = head ? blocks.indexOf(head) : -1
+    const group = new Set(blocks.slice(from).map((b) => b.id))
+    if (head)
+      for (const spot of [{ at: head.id, side: 'right', up: 1 }, { at: null, side: 'right' }] as Spot[]) {
+        const covers = spotBlocks(blocks, spot)
+        if (!covers.length || !covers.every((b) => group.has(b.id))) continue
+        const beside = insertBlock(blocks, block, spot, fit)
+        if (beside) return settled(beside, [block], areaH)
+      }
+  }
+  const next = autoInsert(blocks, block, fit)
   return next && settled(next, [block], areaH)
 }
 

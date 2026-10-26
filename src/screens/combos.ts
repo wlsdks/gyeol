@@ -14,6 +14,7 @@ import {
   lookOf,
   needRows,
   placeIssue,
+  removeBlock,
   settle,
   validTargets,
   whyNot,
@@ -135,7 +136,11 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       if (rand() < 0.65) next = autoPlace(blocks, b, areaH)
       else {
         const valid = validTargets(blocks, b, areaH)
-        const t = valid.length ? pick(rand, valid) : null
+        // 소제목 다음에 끌어다 놓는 부품은 사람이라면 그 소제목 아래에 놓는다(소제목은 아래 부품들의 이름). 아무 자리에나 놓으면
+        // 소제목만 맨 아래에 혼자 남은, 아무도 만들지 않을 장이 섞였다
+        const head = blocks.at(-1)?.type === 'heading' && b.type !== 'heading' ? blocks.at(-1)!.id : null
+        const under = head ? valid.find((v) => v.kind === 'spot' && v.spot.at === head && v.spot.side === 'below' && !v.spot.up) : undefined
+        const t = under ?? (valid.length ? pick(rand, valid) : null)
         // validTargets와 whyNot이 같은 것을 말하는지
         if (t && whyNot(blocks, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
         next = t && t.kind === 'spot' ? insertAt(blocks, t.spot, b, areaH) : null
@@ -150,6 +155,14 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
       const placed = blocks.find((x) => x.id === b.id)!
       if (!lookChangeIssue(blocks, b.id, lookOf(placed), areaH)) blocks = withLook(blocks, b.id, lookOf(placed))
     })
+    // 소제목 아래(같은 단)에 묶을 부품이 없으면 사람이라면 그 소제목을 지운다: 뒤의 부품이 장에 들어가지 않았거나 다른 자리에 놓인 장
+    // 하나를 지우면 판이 다시 나뉘어 다른 소제목의 아래가 바뀔 수 있어 남은 것이 없을 때까지
+    const orphan = () =>
+      blocks.find((h) => {
+        const a = h.at!
+        return h.type === 'heading' && blocks.length > 1 && !blocks.some((o) => o !== h && o.at && o.at.y >= a.y + a.h && o.at.x < a.x + a.w && a.x < o.at.x + o.at.w)
+      })
+    for (let h = orphan(); h; h = orphan()) blocks = removeBlock(blocks, h.id, areaH)
     // 이음표: 선마다 셋에 하나꼴로, 뜻이 서는 것만(편집기와 같은 규칙), 높이가 들어갈 때만
     for (const t of linkTargets(blocks)) {
       if (rand() > 0.35) continue
