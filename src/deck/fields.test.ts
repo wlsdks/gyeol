@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { presentable, unshownCount } from './fields'
+import { presentable, shownOnly, unshownCount } from './fields'
 import { emptyItem, makeSlide } from './generate'
 import { BLOCKS, withLayout } from './blocks'
-import { labelFor, labelIn, LAYOUTS } from './layouts'
+import { labelFor, labelIn, LAYOUT_ORDER, LAYOUTS } from './layouts'
 import type { Item } from './types'
 
 const item = (title: string): Item => ({ ...emptyItem(), title })
@@ -85,6 +85,34 @@ describe('레이아웃에 없어 가려진 칸 (unshownCount)', () => {
   it('표지의 소속, 발표자처럼 발표 전체의 값은 세지 않는다', () => {
     const cover = { ...makeSlide('cover'), fields: { title: '분기 보고', $org: '품질팀' } }
     expect(unshownCount(cover)).toBe(0)
+  })
+})
+
+describe('그리는 칸만 남긴 장 (shownOnly)', () => {
+  // 레이아웃이 그리는 칸만 모두 채운 장
+  const filled = (id: (typeof LAYOUT_ORDER)[number]) => {
+    const spec = LAYOUTS[id]
+    const fields = Object.fromEntries(spec.fields.filter((f) => !f.key.startsWith('$')).map((f) => [f.key, `${f.label} 글`]))
+    const items = spec.items ? Array.from({ length: spec.items.max }, (_, i) => ({ ...emptyItem(), ...Object.fromEntries(spec.items!.fields.map((f) => [f.key, `${f.label} ${i + 1}`])) })) : []
+    return { ...makeSlide(id), fields, items }
+  }
+
+  it('그리는 칸만 채운 장은 그대로 둔다', () => {
+    for (const id of LAYOUT_ORDER) {
+      const slide = filled(id)
+      expect(shownOnly(slide), id).toEqual(slide)
+    }
+  })
+
+  it('가려진 칸은 빼고 보이는 칸은 남긴다', () => {
+    const bars = shownOnly(withLayout(filled('points'), 'bars'))
+    expect(bars.items.map((it) => it.title)).toEqual(['이름 1', '이름 2', '이름 3', '이름 4'])
+    expect(bars.items.every((it) => !it.body)).toBe(true)
+    // 컴포넌트 장이었던 장에 남겨 둔 컴포넌트는 뺀다
+    const statement = shownOnly(withLayout(withLayout(filled('points'), 'compose'), 'statement'))
+    expect(statement.blocks).toBeUndefined()
+    expect(statement.fields.title).toBe('제목 글')
+    for (const id of LAYOUT_ORDER) for (const to of LAYOUT_ORDER) expect(unshownCount(shownOnly(withLayout(filled(id), to))), `${id}→${to}`).toBe(0)
   })
 })
 

@@ -98,7 +98,7 @@ function Unshown({ slide }: { slide: Slide }) {
       가려진 칸 {n}곳
       <Info label="가려진 칸 설명" align="start">
         채워 둔 칸 가운데 이 레이아웃에는 없는 칸이라 장에 보이지 않아요. 지우지 않고 남겨 두었으니, 그 칸이 있는 레이아웃으로 바꾸면 다시
-        보여요.
+        보여요. 발표 파일(HTML), PDF, PPT에는 들어가지 않고 작업 파일에만 남아요.
       </Info>
     </p>
   )

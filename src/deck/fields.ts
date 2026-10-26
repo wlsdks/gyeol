@@ -111,8 +111,11 @@ function within<T extends Cells>(x: T, spec: CellSpec): T {
   return { ...x, fields, items }
 }
 
-/** 장에 그려지는 칸만 남긴 장. 부품 장이면 부품마다 그 부품이 그리는 칸만, 부품 장이 아니면 남겨 둔 부품은 뺀다 */
-function shownOnly(slide: Slide): Slide {
+/**
+ * 장에 그려지는 칸만 남긴 장. 부품 장이면 부품마다 그 부품이 그리는 칸만, 부품 장이 아니면 남겨 둔 부품은 뺀다.
+ * 다른 사람에게 보내는 HTML 파일에 넣을 장(exportHtml.tsx의 deckData)
+ */
+export function shownOnly(slide: Slide): Slide {
   return { ...within(slide, LAYOUTS[slide.layout]), blocks: slide.layout === 'compose' ? slide.blocks?.map((b) => within(b, BLOCKS[b.type])) : undefined }
 }
 

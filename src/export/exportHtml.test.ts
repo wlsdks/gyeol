@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
+import { withLayout } from '../deck/blocks'
+import { emptyItem, makeSlide } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
-import { exportCsp, fontText, parseDeckData } from './exportHtml'
+import { deckData, exportCsp, fontText, parseDeckData } from './exportHtml'
 import { VIEWER_JS } from './viewer'
 
 // 시험에서는 CSS를 읽지 않아(빈 글) 장 CSS 대신 content로 글자를 그리는 규칙 하나를 둔다
@@ -22,6 +24,27 @@ describe('내보낸 HTML의 CSP', () => {
     for (const r of ['img-src', 'font-src', 'media-src']) expect(rules.get(r)!.every((s) => s === 'data:' || s === 'blob:'), r).toBe(true)
     expect(csp).not.toMatch(/https?:|\*|'unsafe-eval'|'self'/)
     expect(rules.get('script-src')).not.toContain("'unsafe-inline'")
+  })
+})
+
+describe('HTML 파일에 넣는 덱', () => {
+  it('듣는 분께 보이지 않는 글(발표자 노트, 숨긴 장, 레이아웃을 바꿔 가려진 칸)은 넣지 않는다', () => {
+    const deck = createSampleDeck()
+    const item = (title: string, body: string) => ({ ...emptyItem(), title, body })
+    const points = { ...makeSlide('points'), fields: { title: '보이는 제목' }, items: [item('보이는 항목', '가려진설명비밀'), item('둘째 항목', '')] }
+    const leftover = { ...makeSlide('points'), fields: { title: '단락 제목' }, items: [item('남은부품비밀', ''), item('남은부품둘째', '')] }
+    deck.slides = [
+      { ...deck.slides[0], notes: '노트비밀' },
+      withLayout(points, 'bars'),
+      withLayout(withLayout(leftover, 'compose'), 'statement'),
+      { ...makeSlide('statement'), hidden: true, fields: { title: '숨긴장비밀' } },
+    ]
+    const data = deckData(deck)
+    for (const secret of ['노트비밀', '가려진설명비밀', '남은부품비밀', '남은부품둘째', '숨긴장비밀']) expect(data, secret).not.toContain(secret)
+    // 보이는 글은 그대로 두어 다시 열면 이어서 고칠 수 있다
+    const back = parseDeckData(data)!
+    expect(back.slides.map((s) => s.fields.title)).toEqual([deck.slides[0].fields.title, '보이는 제목', '단락 제목'])
+    expect(back.slides[1].items.map((it) => it.title)).toEqual(['보이는 항목', '둘째 항목'])
   })
 })
 

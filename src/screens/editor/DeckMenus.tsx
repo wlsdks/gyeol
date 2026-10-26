@@ -207,7 +207,7 @@ export function ExportMenu({
               name="발표 파일 (HTML)"
               label="발표 파일"
               desc="인터넷 없이 브라우저로 열려요"
-              info="미리 보내기 좋아요. 발표자 노트는 들어가지 않아요."
+              info="미리 보내기 좋아요. 발표자 노트와 숨긴 장, 레이아웃을 바꿔 가려진 칸의 글은 들어가지 않아요."
               onPick={pick(onHtml)}
             />
             <ExportItem
