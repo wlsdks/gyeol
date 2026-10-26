@@ -35,7 +35,7 @@ describe('컴포넌트를 놓을 판', () => {
 })
 
 describe('눌러 넣기', () => {
-  it('부품 장: 알아서 고른 자리에. 자리가 없으면 다음 장에 넣고 까닭을 남긴다', () => {
+  it('부품 장: 알아서 고른 자리에. 자리가 없으면 넣지 않고 까닭을 남긴다 (새 장은 쓰는 사람이 고를 때만)', () => {
     const s = compose(block('kpi', 'k'))
     const b = block('trend', 't')
     const p = planDrop(s, fresh(s, b), { by: 'auto', h: SIZE.h })
@@ -64,7 +64,7 @@ describe('눌러 넣기', () => {
     expect(m.y + m.h).toBe(12)
   })
 
-  it('표지: 다음 장에 새로 만든다', () => {
+  it('표지: 넣지 않는다', () => {
     const cover = makeSlide('cover')
     const b = block('kpi', 'k')
     expect(planDrop(cover, fresh(cover, b), { by: 'auto', h: undefined })).toEqual({ plan: 'next', target: null, result: null, blocked: null, composed: null, base: [], room: undefined })
@@ -123,7 +123,7 @@ describe('끌어 놓기', () => {
     expect(planDrop(s, d, { by: 'pointer', over: true, at: null }).plan).toBeNull()
   })
 
-  it('바꿀 수 있는 장 위: 바꾼 모습에 놓고, 표지 위는 다음 장에', () => {
+  it('바꿀 수 있는 장 위: 바꾼 모습에 놓고, 표지 위에는 넣지 않는다', () => {
     const points = makeSlide('points', { items: 1 })
     const plan = planDrop(points, fresh(points, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 700 }, size: SIZE } })
     expect(plan.plan).toBe('convert')
@@ -309,7 +309,7 @@ describe('끌어 놓기', () => {
     expect(plan.target).toEqual(swap)
   })
 
-  it('장에 자리가 없으면 새 컴포넌트는 다음 장에, 그 까닭을 남긴다', () => {
+  it('장에 자리가 없으면 새 컴포넌트는 넣지 않고, 그 까닭을 남긴다', () => {
     const f = full()
     const plan = planDrop(f, fresh(f, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 300 }, size: SIZE } })
     expect(plan.plan).toBe('next')
