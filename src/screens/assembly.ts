@@ -122,9 +122,11 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
     all.slice(i + 1).forEach((b, j) => {
       const p = inks[i]
       const q = inks[i + 1 + j]
-      const ra = a.getBoundingClientRect()
-      const rb = b.getBoundingClientRect()
-      if (p && q && Math.min(p.b, q.b) - Math.max(p.t, q.t) > 1 && Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 1)
+      // 옆으로도 그려진 것으로: 판 너비를 다 쓰는 칸의 짧은 날짜는 쌓기가 왼쪽 단 아래로 올려 붙여, 칸 상자로는 오른쪽 단과 겹치지만
+      // 그려진 글은 겹치지 않는다
+      const ra = inkX(a)
+      const rb = inkX(b)
+      if (p && q && ra && rb && Math.min(p.b, q.b) - Math.max(p.t, q.t) > 1 && Math.min(ra.r, rb.r) - Math.max(ra.l, rb.l) > 1)
         out.push(`${a.dataset.type}와 ${b.dataset.type}의 그려진 것이 겹쳐요`)
     }),
   )

@@ -780,12 +780,20 @@ export function blockFitter() {
         })
       })
     }
+    const inkX = new Map(items.map((x) => [x.c, drawnX(x.c)] as const))
     const stack = () => {
       const dy = new Map<HTMLElement, number>()
       for (const row of order) {
         let at = a.top
         for (const x of items) {
           if (!row[0].above.includes(x.c) || !dy.has(x.c)) continue
+          // 위 칸의 그려진 것이 이 줄의 그려진 것과 옆으로 멀리 떨어져 있으면(캔버스 24px 넘게) 그 아래에 붙을 까닭이 없다: 판 너비를 다 쓰는
+          // 줄의 짧은 날짜 하나가 오른쪽의 긴 준비 상황 아래로 내려가, 왼쪽 진행 막대 아래가 통째로 비고 날짜만 장 아래 구석에 떨어졌다
+          const xs = inkX.get(x.c)
+          if (xs && row.every((y) => {
+            const ys = inkX.get(y.c)
+            return !!ys && Math.min(ys.r, xs.r) - Math.max(ys.l, xs.l) < -24 * k
+          })) continue
           const below = links.some((l) => l.classList.contains('lk-v') && l.dataset.after === x.id)
           // 아래 이음표가 서면 이음표가 설 자리(양쪽 --lk-pad)만큼 넓게, 소제목 아래는 그 아래 부품과 한 덩어리라 좁게
           const head = x.c.dataset.type === 'heading'
@@ -881,14 +889,14 @@ export function blockFitter() {
    * 위아래 균형 (docs/VISUAL-RULES.md 6): 채움(키우기, 줄 사이)을 마치고도 남는 높이는 내용 위와 아래에 1 : 1.2로 둔다(눈높이 가운데).
    * 맨 아래에만 모으면 덜 찬 장은 위에 붙고 아래만 길게 비었다. 균형은 본문 윗선부터 장 틀의 아랫선까지로 잡는다: 하단 표시(출처,
    * '예시: …')는 오른쪽 아래 구석의 메타라 공백 설계에 넣지 않는다(그 몫까지 비우면 아래가 두 겹으로 빈다). 내용은 본문 상자 안에 둔다.
-   * 아래를 이끄는 소제목이 있는 장은 위에 붙인 그대로. 장 제목이 없는 장은 쌓기가 가운데에 둔다.
+   * 아래를 이끄는 소제목이 있는 장은 위에 붙인 그대로.
    * 옮긴 장은 data-eye를 붙인다(60%를 못 채운 완결된 장은 'full': 검사가 머리 아래 빈 곳과 채움을 봐준다)
    */
   function eyeLevel(cells: HTMLElement[], area: HTMLElement): void {
     if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot') || c.dataset.type === 'heading')) return
+    // 장 제목이 없는 장도 같다(쌓기는 부품 하나뿐인 한 문장 장만 가운데에 둔다): 둘 이상이면 위에 붙고 아래 절반이 비었다
     const slide = area.parentElement
-    const head = slide?.querySelector<HTMLElement>(':scope > .s-head')
-    if (!slide || !head || !head.getClientRects().length) return
+    if (!slide) return
     const a = area.getBoundingClientRect()
     const k = a.height / area.offsetHeight
     if (!k) return
