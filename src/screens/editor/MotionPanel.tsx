@@ -14,11 +14,19 @@ import type { BlockEditing } from './BlockEditor'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { Opt } from './Inspector'
 
-/** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '기본' 하나로 묶는다 */
+/**
+ * 이 장만 바꾸지 않고 발표 전체 설정을 따르는 값의 이름. 예전에는 '기본'이라서, 기본이 무엇인지(차분하게? 없음?)
+ * 테마 메뉴를 열어 봐야 알았다. 무엇을 따르는지는 머리말 아래에 지금 값으로 같이 보인다
+ */
+const INHERIT = '전체대로'
+
+/** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '전체대로' 하나로 묶는다 */
 export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
-  { id: undefined, name: '기본', description: '테마 메뉴에서 정한 장 넘기기를 따라요.' },
+  { id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 장 넘기기를 따라요.' },
   ...TRANSITIONS.filter((t) => t.id !== 'auto'),
 ]
+
+const nameOf = <T,>(list: { id: T; name: string }[], id: T) => list.find((o) => o.id === id)?.name ?? ''
 
 /** 들어오는 쪽은 짧게 (네 단추가 한 줄에 들어가게) */
 export const FROM_SHORT: Record<BlockFrom, string> = { below: '아래', above: '위', left: '왼쪽', right: '오른쪽' }
@@ -54,17 +62,21 @@ export function MotionPanel({
       </button>
       <section className="ins-sec">
         <div className="mp-head">
-          <h2 className="ins-h">이 장</h2>
-          <button type="button" className="btn btn-sm mp-preview" disabled={!moving} onClick={() => window.dispatchEvent(new Event(PREVIEW_MOTION))}>
+          <h2 className="ins-h">이 장만</h2>
+          <button type="button" className="btn btn-ghost btn-sm mp-preview" disabled={!moving} onClick={() => window.dispatchEvent(new Event(PREVIEW_MOTION))}>
             <PlayIcon />
             미리 보기
           </button>
         </div>
+        {/* '전체대로'가 지금 무엇인지. 테마 메뉴의 값이 바뀌면 같이 바뀐다 */}
+        <p className="mp-inherit">
+          발표 전체는 움직임 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 장 넘기기 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+        </p>
         <Opt label="움직임 정도" wide>
           <Segmented<Motion | undefined>
             className="seg-fill"
             label="이 장의 움직임 정도"
-            options={[{ id: undefined, name: '기본', description: '테마 메뉴에서 정한 발표 전체의 움직임을 따라요.' }, ...MOTIONS]}
+            options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
             value={slide.options.motion ?? undefined}
             onPick={(m) => setOptions(slide.id, { motion: m })}
           />
@@ -87,7 +99,7 @@ export function MotionPanel({
       ) : (
         <section className="ins-sec mp-empty">
           <p>컴포넌트 장에서는 컴포넌트마다 나오는 차례와 때를 정할 수 있어요.</p>
-          <button type="button" className="btn btn-sm" onClick={blocks.convert}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={blocks.convert}>
             컴포넌트 장으로 바꾸기
           </button>
         </section>
