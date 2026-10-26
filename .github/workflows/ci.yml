@@ -85,12 +85,15 @@ jobs:
           & (Join-Path $env:APP 'node\node.exe') --version
 
       - name: 시작 .bat로 켜기
+        timeout-minutes: 3
         run: |
           # 브라우저는 열지 않고(GYEOL_NO_OPEN) 서버만 켠다. .bat 이름의 한글은 cmd 인자로 넘길 때 깨질 수 있어 영문 이름으로 복사해 부른다.
           # 실패하면 .bat이 pause로 기다리므로 입력을 비워 둔다
           $env:GYEOL_NO_OPEN = '1'
           Copy-Item -LiteralPath (Join-Path $env:APP 'Framo 시작.bat') -Destination (Join-Path $env:APP 'ci-start.bat')
-          $p = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'ci-start.bat < nul' -WorkingDirectory $env:APP -PassThru -Wait -NoNewWindow
+          # -Wait는 .bat이 띄운 서버(자식)까지 기다려 끝나지 않는다. .bat 하나만, 1분까지 기다린다
+          $p = Start-Process -FilePath cmd.exe -ArgumentList '/c', 'ci-start.bat < nul' -WorkingDirectory $env:APP -PassThru -NoNewWindow
+          if (-not $p.WaitForExit(60000)) { throw '.bat이 1분 안에 끝나지 않았어요' }
           if ($p.ExitCode -ne 0) { throw ".bat이 서버를 켜지 못했어요 (끝 코드 $($p.ExitCode))" }
           $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:41580/__html-maker
           if ($r.Content -ne 'html-maker') { throw '서버가 다른 답을 했어요' }
@@ -98,6 +101,7 @@ jobs:
           try { Invoke-WebRequest -UseBasicParsing -Headers @{ Host = 'evil.example' } http://127.0.0.1:41580/ | Out-Null; throw 'Host 검사가 꺼져 있어요' } catch { if ($_.Exception.Message -eq 'Host 검사가 꺼져 있어요') { throw } }
 
       - name: 엣지와 크롬이 화면을 그리는지
+        timeout-minutes: 5
         run: |
           $browsers = @{
             '엣지' = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
