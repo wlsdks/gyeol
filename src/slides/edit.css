@@ -340,6 +340,12 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   background-size: calc(100% - var(--it-out-r, 0px)) 100%;
 }
 
+/* 옅은 면을 깐 항목 안에서는 손 아래 글 칸에 면을 또 깔지 않는다: 두 면이 겹쳐 항목 안에 더 진한 상자가 하나 더 서서(두 겹)
+   어느 것이 무엇인지 어지러웠다. 누를 칸은 글 쓰는 손 모양이 알려 준다 */
+.slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover .ed:hover:not(:focus-within) > .ed-halo {
+  background: none;
+}
+
 /* 끌고 있는 항목: 손에 들린 듯 위로 뜨고, 이웃은 그 아래로 미끄러진다 */
 .slide.m-edit .it.is-lifted {
   z-index: 20;
