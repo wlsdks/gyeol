@@ -309,9 +309,10 @@ function Editable({
           paint(e.currentTarget, v, numeral)
         }}
         onKeyDown={(e) => {
-          // 한글을 조합하는 중의 Enter는 조합을 끝내는 키다: 브라우저가 조합을 마친 뒤 Enter를 한 번 더 보낸다. 그때 받는다
-          // (조합 중에 다른 칸으로 옮기면 마지막 글자가 옮긴 칸에 한 번 더 들어가기도 한다)
-          if (e.key === 'Enter' && (e.nativeEvent.isComposing || e.keyCode === 229)) return
+          // 한글을 조합하는 중의 Enter와 Esc는 조합을 끝내는 키다: 브라우저가 조합을 마친 뒤 같은 키를 한 번 더 보낸다. 그때 받는다
+          // (조합 중에 다른 칸으로 옮기면 마지막 글자가 옮긴 칸에 한 번 더 들어가기도 한다. 조합 중의 Esc로 칸을 떠나면 마지막 글자가
+          // 한 번 더 붙었고(괜찮아요요), 이어 온 Esc가 컴포넌트 고르기까지 끝냈다)
+          if ((e.key === 'Enter' || e.key === 'Escape') && (e.nativeEvent.isComposing || e.keyCode === 229)) return
           if (e.key === 'Enter' && (!multiline || (enterNext && !e.shiftKey)) && focusNextItem(e.currentTarget)) {
             e.preventDefault()
             return
