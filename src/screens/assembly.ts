@@ -578,7 +578,8 @@ function sides(area: HTMLElement, k: number): string[] {
   }
   for (const cell of cells) {
     const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
-    if (!inner) continue
+    // 차트(svg로 그린 것)의 이름표는 축과 범례 자리에 따로 서는 것이라 글과 덧붙임이 아니다
+    if (!inner || inner.querySelector('svg:not([aria-hidden="true"] svg)')) continue
     const ls = blockTextLines(inner).filter((q) => !q.n.parentElement?.closest(EDIT_UI))
     // 그려진 것(막대, 그림, 칠한 상자, 선): 글 사이에 이것이 있으면 찢어진 것이 아니라 그림의 양쪽 이름표다
     const drawnBoxes = [...inner.querySelectorAll<HTMLElement>('*')]
@@ -601,10 +602,10 @@ function sides(area: HTMLElement, k: number): string[] {
         const qi = q.n.parentElement?.closest('.it') ?? null
         if (pi !== qi) continue
         // 줄 선이 있는 항목(목차, 표의 줄)은 선이 두 끝을 잇는 한 줄이라 찢어진 것이 아니다
-        if (pi) {
-          const cs = getComputedStyle(pi)
-          if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0) continue
-        }
+        if (pi && [pi, ...pi.querySelectorAll('*')].some((el) => {
+          const cs = getComputedStyle(el)
+          return parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
+        })) continue
         // 사이에 다른 글이나 그려진 것이 있으면 찢어진 것이 아니다 (막대 옆 숫자, 표의 칸)
         if (ls.some((o) => o !== p && o !== q && o.l >= p.r - 1 && o.r <= q.l + 1 && Math.min(o.b, p.b) - Math.max(o.t, p.t) > 0)) continue
         if (drawnBoxes.some((o) => o.left < q.l && o.right > p.r && Math.min(o.bottom, p.b + 24 * k) - Math.max(o.top, p.t - 24 * k) > 0)) continue
@@ -761,7 +762,7 @@ function fill(slide: HTMLElement, area: HTMLElement): string[] {
   const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
-  if ((!hasHead && cells.length === 1) || area.dataset.eye) return []
+  if ((!hasHead && cells.length === 1) || area.dataset.eye === 'full') return []
   const a = area.getBoundingClientRect()
   const spans = cells.map(inkSpan).filter((x): x is Span => !!x)
   if (!spans.length || !a.height) return []

@@ -1,4 +1,5 @@
 import {
+  across,
   autoPlace,
   BLOCK_LINK_IDS,
   BLOCK_TYPES,
@@ -77,8 +78,8 @@ const SCENES: BlockType[][][] = [
   [['heat', 'diverge', 'matrix', 'position'], ['summary', 'text', 'quote']],
   // 지표 묶음과 예상 질문
   [['scorecard', 'kpi', 'sparks'], ['faq', 'bullets']],
-  // 소제목과 묶음 둘
-  [['heading'], ['bullets', 'points'], ['heading'], ['bullets', 'checks']],
+  // 소제목과 묶음 둘: 두 묶음은 다른 부품으로. 같은 요점 셋을 두 번 놓은 장은 말이 되지 않았다
+  [['heading'], ['points'], ['heading'], ['bullets', 'checks']],
   // 강점과 약점, 결론
   [['swot'], ['message', 'callout']],
   // 함께하는 곳과 숫자: 한 장의 숫자 둘은 같은 말투로(같은 부품). 숫자 카드와 큰 숫자를 섞으면 이름표 자리와 크기가 달라 어색했다
@@ -158,7 +159,9 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
     const refused: Combo['refused'] = []
     const seen = new Map<BlockType, number>()
     scene.forEach((slot, j) => {
-      const type = pick(rand, slot)
+      // 둘째 글(SECOND)이 없는 부품은 한 장에 두 번 고르지 않는다: 같은 예시가 두 번 나온 장은 실제 발표에서 만들지 않는다
+      const fresh = slot.filter((t) => !seen.has(t) || SECOND[t])
+      const type = pick(rand, fresh.length ? fresh : slot)
       const b = sceneBlock(rand, type, `c${k}-b${j}`, seen.get(type) ?? 0)
       seen.set(type, (seen.get(type) ?? 0) + 1)
       // 대개는 편집기의 '넣기'처럼 알아서, 가끔은 사람이 끌어다 놓듯 넣을 수 있는 자리 가운데 하나에
@@ -196,6 +199,9 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
     // 이음표: 선마다 셋에 하나꼴로, 뜻이 서는 것만(편집기와 같은 규칙), 높이가 들어갈 때만
     for (const t of linkTargets(blocks)) {
       if (rand() > 0.35) continue
+      // 예시 글은 부품마다 따로 지어낸 것이라 다른 부품끼리는 뜻이 이어지지 않는다(깔때기 → 문의 처리 시간). 같은 부품끼리만 잇는다
+      const from = blocks.find((b) => b.id === t.id)
+      if (!from || across(blocks, from, t.dir).some((o) => o.type !== from.type)) continue
       const fits = BLOCK_LINK_IDS.filter((l) => !linkIssue(blocks, t, l))
       if (!fits.length) continue
       const next = withLink(blocks, t, pick(rand, fits))
