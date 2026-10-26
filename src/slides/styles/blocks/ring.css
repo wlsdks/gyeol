@@ -65,7 +65,8 @@
 .bk-rg-track,
 .bk-rg-arc {
   fill: none;
-  stroke-width: 8;
+  /* 고리는 지름의 5%: 8%이면 큰 칸에서 고리가 24px 넘는 굵은 파란 띠가 되어 가운데 숫자보다 먼저 보였다(VISUAL-RULES 4) */
+  stroke-width: 5;
 }
 
 .bk-rg-track {
@@ -75,7 +76,8 @@
 .bk-rg-arc {
   stroke: var(--accent);
   stroke-dasharray: var(--p) 100;
-  stroke-linecap: round;
+  /* 끝은 각지게: 차트의 막대와 띠처럼(--r-mark 0) */
+  stroke-linecap: butt;
 }
 
 .bk-rg-c {
@@ -126,8 +128,8 @@
 }
 
 .is-gauge :is(.bk-rg-track, .bk-rg-arc) {
-  stroke-width: 9;
-  stroke-linecap: round;
+  stroke-width: 6;
+  stroke-linecap: butt;
 }
 
 .bk-rg-knob {
