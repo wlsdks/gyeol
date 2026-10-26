@@ -34,7 +34,7 @@ export const isSolo = (type: BlockType) => BLOCKS[type].minSpan >= 12
  * 주석도: 본문보다 물러나 있어야 하는 글이라, 면을 깔면 위의 표나 그림보다 먼저 눈에 띈다
  */
 const FLAT: BlockType[] = ['logos', 'compare', 'pricing', 'matrix', 'agenda', 'image', 'flow', 'network', 'heading', 'note']
-/** 진한 면을 깔 수 있는 부품: 한 장의 결론이 되는 숫자와 말. 목록이나 그림을 검게 칠하면 장이 무겁고 어디가 결론인지 흐려진다 */
+/** 강조 선(bold)을 고를 수 있는 부품: 한 장의 결론이 되는 숫자와 말. 목록이나 그림까지 강조하면 어디가 결론인지 흐려진다 */
 const BOLD_OK: BlockType[] = ['callout', 'number', 'delta', 'goal', 'ring', 'ratio', 'spark', 'quote', 'text', 'message']
 
 /** 이 부품에 고를 수 있는 면. 한 줄을 혼자 쓰는 부품(표, 일정 같은)과 안에 칸이 있는 부품은 면 없이만 */
@@ -57,8 +57,8 @@ export const shownLook = (b: Pick<Block, 'type' | 'look'>, alone: boolean): Bloc
   looksEmptyAlone(b, alone) || !looksFor(b.type).includes(lookOf(b)) ? 'plain' : lookOf(b)
 
 /**
- * 이 부품의 면을 이것으로 바꿀 수 없는 까닭. 한 장에는 면 한 가지만 쓴다: 옅은 면끼리, 또는 진한 면 하나와 바탕 없는 부품들.
- * 진한 면과 옅은 면이 섞이면 상자 두 종류가 눈길을 나눠 갖고, 진한 면이 둘이면 어느 쪽이 결론인지 흐려진다
+ * 이 부품의 바탕을 이것으로 바꿀 수 없는 까닭. 한 장에는 바탕 한 가지만 쓴다: 옆 선끼리, 또는 강조 선 하나와 바탕 없는 부품들.
+ * 강조 선과 옆 선이 섞이면 묶는 방식 두 가지가 눈길을 나눠 갖고, 강조 선이 둘이면 어느 쪽이 결론인지 흐려진다
  */
 export function lookIssue(blocks: readonly Block[], blockId: string, look: BlockLook): NoRoom | null {
   if (look === 'plain') return null

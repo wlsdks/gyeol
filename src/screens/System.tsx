@@ -33,8 +33,8 @@ const TOKENS: { v: string; name: string; use: string }[] = [
   { v: '--line', name: '줄', use: '표와 목록의 나눔선' },
   { v: '--surface', name: '면', use: '카드, 막대의 바탕' },
   { v: '--accent', name: '강조', use: '답에만: 숫자, 추천안, 강조한 막대' },
-  { v: '--bold-bg', name: '진한 면', use: '섹션 장, 표지 옆면, 진한 면 컴포넌트. 강조색과 짝인 깊은 색' },
-  { v: '--bold-accent', name: '진한 면 위 강조', use: '진한 면 안의 숫자와 점. 강조색을 밝힌 색' },
+  { v: '--bold-bg', name: '짙은 면', use: '섹션 장, 표지 옆면. 강조색과 짝인 깊은 색' },
+  { v: '--bold-accent', name: '짙은 면 위 강조', use: '짙은 면 안의 숫자와 점. 강조색을 밝힌 색' },
   { v: '--good', name: '좋음', use: '목표 달성, 늘어남 (▲과 함께)' },
   { v: '--bad', name: '나쁨', use: '못 미침, 줄어듦 (▼과 함께)' },
 ]
