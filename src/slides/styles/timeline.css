@@ -1,15 +1,19 @@
 /* ---------- 일정 ----------
    시기 아래 가는 선 위에 작은 꽉 찬 점. 굵은 테두리의 큰 동그라미에 둘레까지 두른 점은 흔한 서식처럼 보였다.
    지금 단계가 있으면 지나온 점과 선은 강조색, 지금 점은 바탕 틈을 둔 가는 고리, 남은 점은 옅게.
-   아래 기본 규칙은 부품 칸도 쓴다. 선과 줄의 높이(시기 56 + 점 위 틈 + 점 + 아래 틈 = 170)는 잰 높이 표와 맞춰 둔다 */
+   아래 기본 규칙은 부품 칸이 쓴다(장 한 장은 그 아래 .l-timeline 규칙). 부품 칸에서는 다른 컴포넌트와 같이 놓이므로 장 한 장보다
+   한 단계씩 작게 두고, 시기, 축, 이름의 리듬을 하나로: 시기 줄(40) 아래 28에 축, 축 아래 36에 이름. 예전에는 시기 아래 틈(28)과
+   축 아래 틈(70)이 달라 축이 위로 붙고 이름이 떠 있었고, 이름과 설명이 장 한 장의 크기라 아래 걱정과 대책 같은 컴포넌트와
+   같이 놓이면 답답했다(사용자). 높이가 바뀌면 잰 높이 표(blockHeights.ts)를 다시 잰다 */
 
 .tl {
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   gap: 56px;
-  align-content: center;
-  padding-bottom: 56px;
+  /* 띠는 본문 첫 줄에서 시작하고 남는 높이는 아래에 둔다(VISUAL-RULES 6) */
+  align-content: start;
+  padding-bottom: 40px;
 }
 
 .tl-item {
@@ -19,10 +23,11 @@
 
 .tl-item::before {
   position: absolute;
-  top: calc(92px - 1.5px);
+  top: calc(68px - 1px);
   right: -56px;
   left: 0;
-  height: 3px;
+  /* 시간 축은 데이터의 선이라 남기되 2px까지(VISUAL-RULES 2): 3px일 때는 점과 글보다 축이 먼저 보였다 */
+  height: calc(var(--rule-hair) * 2);
   background: var(--line);
   content: '';
 }
@@ -32,23 +37,23 @@
 }
 
 .tl-meta {
-  --fs: 30px;
-  height: 56px;
+  --fs: 26px;
+  height: 40px;
   color: var(--ink);
   font-weight: 700;
-  line-height: 56px;
+  line-height: 40px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .tl-dot {
-  --tl-dot: 16px;
+  --tl-dot: 14px;
   position: relative;
   display: block;
   width: var(--tl-dot);
   height: var(--tl-dot);
-  /* 점의 가운데가 선(92px)에 오게, 아래 틈은 이름이 170px에서 시작하게 */
-  margin: calc(36px - var(--tl-dot) / 2) 0 calc(78px - var(--tl-dot) / 2);
+  /* 점의 가운데가 축(68px)에 오게, 이름은 축 아래 36px에서 시작하게 */
+  margin: calc(28px - var(--tl-dot) / 2) 0 calc(36px - var(--tl-dot) / 2);
   border-radius: 50%;
   background: var(--ink);
   box-shadow: 0 0 0 8px var(--bg);
@@ -83,13 +88,13 @@
 }
 
 .tl-title {
-  --fs: 44px;
+  --fs: 36px;
   line-height: 1.25;
 }
 
 .tl-body {
-  --fs: 30px;
-  margin-top: 20px;
+  --fs: 26px;
+  margin-top: 12px;
   color: var(--ink-2);
   line-height: 1.52;
   text-wrap: pretty;
@@ -100,11 +105,11 @@
 }
 
 .tl:is([data-n='5'], [data-n='6']) .tl-title {
-  --fs: 36px;
+  --fs: 30px;
 }
 
 .tl:is([data-n='5'], [data-n='6']) .tl-body {
-  --fs: 26px;
+  --fs: 22px;
 }
 
 /* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 시기, 이름, 설명을 한 단계씩 키워 띠가 본문 높이의 반을 넘게 한다.
@@ -128,7 +133,7 @@
 
 /* 선은 점의 가운데를 지난다: 시기 줄 높이 + 점 위 틈 + 점 반지름 */
 .l-timeline.va-base .tl-item::before {
-  top: calc(var(--tl-meta-h) + var(--tl-dot-top) + 10px - 1.5px);
+  top: calc(var(--tl-meta-h) + var(--tl-dot-top) + 10px - 1px);
   right: calc(var(--tl-gap) * -1);
 }
 
@@ -156,6 +161,31 @@
 .l-timeline.va-base .tl-body {
   --fs: 36px;
   margin-top: 24px;
+}
+
+/* 넷까지는 띠를 한 단계 크게: 띠가 본문 위에서 시작하므로 그대로면 본문의 위 45%만 쓰고 아래 절반이 비었다(사용자,
+   VISUAL-RULES 6의 60~85%). 시기는 일정의 답이라 장 제목보다 한 단계 크게, 점과 그 위아래 틈도 같은 비율로.
+   이름과 설명은 그대로: 이름을 장 제목만큼 키우면 장 제목과 겨뤘다 */
+.l-timeline.va-base .tl:not([data-n='5'], [data-n='6']) {
+  --tl-meta-h: 104px;
+  --tl-dot-top: 36px;
+}
+
+.l-timeline.va-base .tl:not([data-n='5'], [data-n='6']) .tl-meta {
+  --fs: 74px;
+}
+
+.l-timeline.va-base .tl:not([data-n='5'], [data-n='6']) .tl-dot {
+  --tl-dot: 24px;
+  margin-bottom: 72px;
+}
+
+.l-timeline.va-base .tl:not([data-n='5'], [data-n='6']) .tl-item::before {
+  top: calc(var(--tl-meta-h) + var(--tl-dot-top) + 12px - 1px);
+}
+
+.l-timeline.va-base .tl:not([data-n='5'], [data-n='6']) .tl-body {
+  margin-top: 28px;
 }
 
 .l-timeline.va-base .tl:is([data-n='5'], [data-n='6']) {
@@ -197,7 +227,7 @@
   grid-auto-flow: row;
   grid-auto-rows: auto;
   gap: 0 48px;
-  align-content: center;
+  align-content: start;
   padding-bottom: 0;
 }
 
@@ -226,7 +256,7 @@
   grid-column: 2;
   align-self: stretch;
   justify-self: center;
-  width: 3px;
+  width: calc(var(--rule-hair) * 2);
   height: auto;
   margin: calc(var(--tl-pad) * -1) 0;
 }
