@@ -6,6 +6,7 @@ import { sceneOf } from '../deck/scenes'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { Compose } from './blocks'
+import { fitBlocks } from './fitBlocks'
 import { T } from './fields'
 import { SlideContext, type SlideActions, type SlideMode } from './context'
 import { useHalos } from './halos'
@@ -78,6 +79,20 @@ export const SlideCanvas = memo(function SlideCanvas({
   const mark = !bold && page > 0 && footer !== 'none'
   const ref = useRef<HTMLDivElement>(null)
   useHalos(ref, mode === 'edit')
+  // 레이아웃 장의 채움(fitBlocks.ts의 fitLayout): 내용이 본문의 60%에 못 미치면 글자를 단계로 키우고 줄 사이를 넓힌다.
+  // 부품 장은 판(BlockArea)이 맞춘다. 글꼴이 늦게 오면 그 전에 잰 값은 대신 쓴 글꼴의 것이라 한 번 더
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || given.layout === 'compose' || solo) return
+    fitBlocks(el)
+    let live = true
+    document.fonts?.ready.then(() => {
+      if (live && ref.current) fitBlocks(ref.current)
+    })
+    return () => {
+      live = false
+    }
+  })
   // 두 판으로 나뉜 장: 옆 판의 자리(왼쪽, 오른쪽)와 너비. 레이아웃 CSS가 --side-w를 쓴다
   // (편집할 때 너비가 부드럽게 바뀌도록 등록한 값이라 CSS의 기본값이 먹지 않는다. 판이 있는 장은 늘 적는다)
   const panes = panesOf(slide)

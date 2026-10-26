@@ -8,7 +8,9 @@
  *    카드와 강조색 면은 안쪽 여백까지 내려간 글도 넘친 것으로 본다.
  * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
  *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
- * 3-2. 줄 사이를 넓혀 칸 바닥까지 채우지 않는다(예전의 --bk-air). 줄 높이는 내용에 정해진 사이를 더한 만큼이다(docs/VISUAL-RULES.md 6).
+ * 3-2. 쌓은 뒤에도 내용이 본문 높이의 60%에 못 미치면(docs/VISUAL-RULES.md 6) 글자와 그림을 한 단계 더(1.44) 키우고, 그래도 비면
+ *    줄 사이를 장 안의 모든 칸에 같은 값으로 넓힌다(--bk-air, 24px까지). 칸마다 바닥까지 따로 채우지는 않는다: 줄 사이가 칸마다 달라 보였다.
+ *    레이아웃 장도 같다(fitLayout: 본문 .s-body의 --bk-fit, --fill-air).
  *
  * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그린다(소제목 윗선을 맞춘다, blocks.css). 이음표가 선 줄도 같다. 칸 높이를 다 쓰는
  *    부품(차트, 표) 옆의 숫자 부품만 한두 단계 키운다. 짧은 부품을 가운데로 내리지 않는다: 남는 높이는 3-4가 맨 아래에 모은다.
@@ -34,6 +36,8 @@ export function blockFitter() {
   const ups = [1.2]
   // 쌓은 뒤에도 본문이 60% 넘게 빈 장만 한 단계 더 (fit의 끝)
   const more = 1.44
+  // 그래도 빈 장은 줄 사이를 넓힌다: 줄의 위아래에 더하는 캔버스 px. 넘게 벌리면 줄끼리 따로 떨어져 보여서 이만큼까지만
+  const airMax = 24
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
@@ -693,7 +697,10 @@ export function blockFitter() {
     const k = a.height / area.offsetHeight
     if (!a.height || !k) return
     const style = getComputedStyle(area)
-    const gap = (parseFloat(style.getPropertyValue('--bk-gap')) || 48) * k
+    // 묶음 사이는 --bk-gap의 1.5배(docs/VISUAL-RULES.md 5): 묶음 안의 사이(글 사이, 줄 사이)와 같은 폭이면 위아래 컴포넌트가 한 덩어리로 붙어 보였다.
+    // 그만큼 벌려 본문 아래로 나가면 판의 사이(--bk-gap)까지 좁힌다(settle)
+    const gap0 = (parseFloat(style.getPropertyValue('--bk-gap')) || 48) * k
+    let gap = gap0 * 1.5
     const pad = (parseFloat(style.getPropertyValue('--lk-pad')) || 24) * k
     const links = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))
     const groups = new Map<string, HTMLElement[]>()
@@ -752,7 +759,8 @@ export function blockFitter() {
           const below = links.some((l) => l.classList.contains('lk-v') && l.dataset.after === x.id)
           // 아래 이음표가 서면 이음표가 설 자리(양쪽 --lk-pad)만큼 넓게, 소제목 아래는 그 아래 부품과 한 덩어리라 좁게
           const head = x.c.dataset.type === 'heading'
-          const room = below ? gap + 2 * pad : head ? headGap * k : gap
+          // 이음표가 선 사이는 이음표가 묶음 사이를 나타내서 판의 사이(gap0)에 이음표 자리만 더한다(1.5배까지 더하면 120px 넘게 벌어졌다)
+          const room = below ? gap0 + 2 * pad : head ? headGap * k : gap
           at = Math.max(at, x.ink!.b + dy.get(x.c)! + room)
         }
         const t = Math.min(...row.map((x) => x.ink!.t))
@@ -766,7 +774,17 @@ export function blockFitter() {
     // 남는 높이는 맨 아래 한곳에 모은다(docs/VISUAL-RULES.md 6). 예전에는 내용이 적은 장이 위에 몰려 보인다고 남는 높이를 묶음 사이와
     // 장 머리 아래(2 : 3)에 나눴는데, 그러면 장마다 제목과 본문 사이, 묶음 사이가 달라 대충 놓은 것처럼 보였고 혼자 있는 소제목,
     // 상태가 장 세로 가운데에 떴다. 내용이 적은 장은 글자 단계를 올려(3-1) 채운다
-    const settle = stack
+    // 그려진 것이 본문 아래로 나가지 않는 가장 넓은 묶음 사이로 (1.5배, 1.25배, 1배)
+    const settle = () => {
+      let dy = new Map<HTMLElement, number>()
+      for (const f of [1.5, 1.25, 1]) {
+        gap = gap0 * f
+        dy = stack()
+        const end = Math.max(...items.map((x) => (x.c.classList.contains('bk-look-plain') ? x.ink!.b : x.r.bottom) + dy.get(x.c)!))
+        if (end <= a.bottom + 2 * k) break
+      }
+      return dy
+    }
     // 쌓은 자리로 면의 아래 끝을 옆 칸에 맞추고(tail), 줄인 면으로 다시 쌓는다: 면 아래의 묶음이 줄인 만큼 올라온다
     const base = new Map<HTMLElement, { r: DOMRect; trim: number }>()
     tail(items, settle(), k, base)
@@ -805,6 +823,54 @@ export function blockFitter() {
       if (move) l.style.setProperty('--bk-shift', move + 'px')
     }
     if (edit) gutters(items, dy, area, k)
+  }
+
+  /**
+   * 장 제목과 다투는 글이 있는지: 같은 굵기(600 이상)에 제목 ÷ 1.2 이상인 한글 글. 내용이 적은 장의 문장을 키우다 제목만큼 커지면
+   * 제목이 여럿으로 읽힌다. 숫자는 답이라 커도 된다. slide는 장(또는 장 머리를 품은 상자)
+   */
+  function rivals(slide: Element | null, scopes: HTMLElement[]): boolean {
+    const title = slide?.querySelector<HTMLElement>(':scope > .s-head .s-title')
+    if (!title || !(title.textContent || '').trim()) return false
+    const tf = parseFloat(getComputedStyle(title).fontSize)
+    for (const scope of scopes)
+      for (const q of lines(scope)) {
+        const el = q.n.parentElement
+        if (!el || !/[가-힣]{2}/.test(q.n.textContent || '')) continue
+        const cs = getComputedStyle(el)
+        if (parseFloat(cs.fontSize) >= tf / 1.2 - 0.5 && Number(cs.fontWeight) >= 600) return true
+      }
+    return false
+  }
+
+  /**
+   * 눈높이 가운데 (docs/VISUAL-RULES.md 6): 키우고 줄 사이를 넓혀도 내용이 본문 높이의 60%에 못 미치는 완결된 장(막대 하나와 상태,
+   * 날짜 한 줄)은 맨 위에 두면 아래 공백만 길다. 내용 묶음째 본문의 눈높이 가운데(위아래 빈 곳 2 : 3)로 내린다. 소제목이 있는 장처럼
+   * 뒤를 기다리는 장, 장 제목이 없는 장(쌓기가 이미 가운데에 둔다)은 그대로. 옮긴 장은 data-eye를 붙여 검사가 머리 아래 빈 곳을 봐준다
+   */
+  function eyeLevel(cells: HTMLElement[], area: HTMLElement): void {
+    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot') || c.dataset.type === 'heading')) return
+    const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
+    if (!head || !head.getClientRects().length) return
+    const a = area.getBoundingClientRect()
+    const k = a.height / area.offsetHeight
+    if (!k || fillOf(cells, area) >= 0.6) return
+    let t = Infinity
+    let b = -Infinity
+    for (const c of cells) {
+      const d = drawn(c)
+      if (!d) return
+      t = Math.min(t, d.t)
+      b = Math.max(b, d.b)
+    }
+    const spare = a.height - (b - t)
+    const move = Math.round((a.top + spare * 0.4 - t) / k)
+    if (move < 8) return
+    for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))]) {
+      const was = parseFloat(el.style.getPropertyValue('--bk-shift')) || 0
+      el.style.setProperty('--bk-shift', was + move + 'px')
+    }
+    area.dataset.eye = '1'
   }
 
   /** 본문 높이 가운데 그려진 내용이 쓰는 몫 (쌓은 뒤 맨 위 내용에서 맨 아래 내용까지, 본문 위 끝부터 잰다) */
@@ -943,6 +1009,7 @@ export function blockFitter() {
         c.style.removeProperty('--bk-shift-x')
         c.style.removeProperty('--bk-trim')
       }
+      delete area.dataset.eye
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
       // 편집 화면에서 자리를 옮기는 중인 칸(blocks.tsx의 useFlip이 translate로 미끄러뜨린다)은 끝자리로 잰다. 움직이는 중의 자리로 재면
@@ -1042,18 +1109,7 @@ export function blockFitter() {
           }
           // 장 제목과 다투는 글이 생기면(같은 굵기에 제목 ÷ 1.2 이상) 그대로: 내용이 적은 장의 문장이 제목만큼 커지면 제목이 여럿으로 읽힌다.
           // 숫자는 답이라 커도 된다
-          const title = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head .s-title')
-          if (ok && title && title.textContent?.trim()) {
-            const tf = parseFloat(getComputedStyle(title).fontSize)
-            for (const inner of inners)
-              for (const q of lines(inner)) {
-                const el = q.n.parentElement
-                const text = q.n.textContent || ''
-                if (!el || !/[가-힣]{2}/.test(text)) continue
-                const cs = getComputedStyle(el)
-                if (parseFloat(cs.fontSize) >= tf / 1.2 - 0.5 && Number(cs.fontWeight) >= 600) ok = false
-              }
-          }
+          if (ok && rivals(area.parentElement, inners)) ok = false
           if (ok) {
             settle()
             const bottom = Math.max(...cells.map((c) => drawn(c)?.b ?? -Infinity))
@@ -1064,13 +1120,124 @@ export function blockFitter() {
             setFit(ups[0])
             settle()
           }
+          // 글자를 키워도 60%에 못 미치면 줄 사이를 넓힌다(--bk-air, 캔버스 px). 장 안의 모든 칸에 같은 값이라 줄마다, 칸마다 사이가 같다.
+          // 줄 사이가 내용 높이의 반을 넘게 벌어지면(줄 높이가 내용의 1.5배를 넘으면) 줄끼리 따로 떨어져 보여 airMax까지만
+          if (fillOf(cells, area) < 0.6) {
+            const fits = (v: number) => {
+              for (const c of cells) {
+                if (v > 0) c.style.setProperty('--bk-air', v + 'px')
+                else c.style.removeProperty('--bk-air')
+              }
+              return !inners.some((inner) => crowded(inner, shapes.get(inner)))
+            }
+            let lo = 0
+            let hi = airMax
+            if (!fits(hi)) {
+              while (hi - lo > 1) {
+                const mid = (lo + hi) >> 1
+                if (fits(mid)) lo = mid
+                else hi = mid
+              }
+              hi = lo
+            }
+            fits(hi)
+            if (hi > 0) {
+              const trims = cells.map((c) => c.style.getPropertyValue('--bk-trim'))
+              const again = () => {
+                reset()
+                cells.forEach((c, i) => {
+                  if (trims[i] && parseFloat(trims[i]) < 0) c.style.setProperty('--bk-trim', trims[i])
+                })
+                settle()
+              }
+              again()
+              // 넓힌 줄 사이로 쌓아 본문 아래로 나가면 넓히지 않는다
+              if (Math.max(...cells.map((c) => drawn(c)?.b ?? -Infinity)) > a.bottom + 2 * k) {
+                fits(0)
+                again()
+              }
+            }
+          }
         }
       }
+      eyeLevel(cells, area)
       area.classList.remove('is-fitting')
       for (const f of flips) f.a.currentTime = f.t
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교, 추이)도
     for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot, .tn-canvas'))) if (!plot.closest('.bk-area')) labels(plot)
+    // 레이아웃 장의 채움 (fitLayout)
+    const slides = root instanceof HTMLElement && root.classList.contains('slide') ? [root] : Array.from(root.querySelectorAll<HTMLElement>('.slide'))
+    for (const sl of slides) fitLayout(sl)
+  }
+
+  /**
+   * 레이아웃 장(요약, 요점, 비교, 가격안, 표 같은)의 채움 (docs/VISUAL-RULES.md 6). 본문(.s-body)의 그려진 내용이 본문 높이의 60%에
+   * 못 미치면 (가) 본문의 글자와 그림을 한 단계씩(1.2, 1.44) 키우고 (나) 그래도 비면 줄 사이를 줄마다 같은 값으로 넓힌다(--fill-air,
+   * 캔버스 px, airMax까지. 레이아웃 CSS가 줄 사이에 더한다). 넘치거나 겹치거나 그림이 찌그러지거나 장 제목과 다투면 한 단계 앞으로.
+   * 표지, 단락 장, 마지막 장, 부품 장, 제목 없는 장은 하지 않는다. 움직이는 중이면 끝난 뒤에
+   */
+  function fitLayout(slide: HTMLElement): void {
+    const body = slide.querySelector<HTMLElement>(':scope > .s-body')
+    if (!body || slide.classList.contains('l-compose') || !slide.querySelector(':scope > .s-head')) return
+    const mover = moving(slide)
+    if (mover) {
+      later(slide, mover, () => fitLayout(slide))
+      return
+    }
+    body.style.removeProperty('--bk-fit')
+    body.style.removeProperty('--fill-air')
+    const b = body.getBoundingClientRect()
+    if (!b.height) return
+    const fill = () => {
+      let bottom = -Infinity
+      for (const q of lines(body)) bottom = Math.max(bottom, q.b)
+      for (const f of figures(body)) bottom = Math.max(bottom, f.getBoundingClientRect().bottom)
+      for (const it of Array.from(body.querySelectorAll<HTMLElement>('.it'))) {
+        // 칠한 항목(막대, 카드)은 상자째 그려진 것
+        const cs = getComputedStyle(it)
+        if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') bottom = Math.max(bottom, it.getBoundingClientRect().bottom)
+      }
+      return bottom === -Infinity ? 1 : (bottom - b.top) / b.height
+    }
+    if (fill() >= 0.6) return
+    const shapes = shapesOf(body)
+    const bad = () => {
+      if (crowded(body, shapes) || rivals(slide, [body])) return true
+      // 본문 아래(출처와 하단 표시 자리)로 나간 글
+      for (const q of lines(body)) if (q.b > b.bottom + 2) return true
+      return false
+    }
+    for (const f of [ups[0], more]) {
+      body.style.setProperty('--bk-fit', String(f))
+      if (bad()) {
+        if (f === ups[0]) body.style.removeProperty('--bk-fit')
+        else body.style.setProperty('--bk-fit', String(ups[0]))
+        break
+      }
+      if (fill() >= 0.6) return
+    }
+    // 줄 사이: 바꿔도 그려진 것이 그대로면(이 레이아웃은 --fill-air를 쓰지 않는다) 그만둔다
+    const before = fill()
+    body.style.setProperty('--fill-air', airMax + 'px')
+    if (fill() <= before + 0.001) {
+      body.style.removeProperty('--fill-air')
+      return
+    }
+    // 넘치지 않고 85%를 넘지 않는 가장 넓은 값 (반씩 나눠 찾는다)
+    const ok = (v: number) => {
+      body.style.setProperty('--fill-air', v + 'px')
+      return !bad() && fill() <= 0.85
+    }
+    let lo = 0
+    let hi = airMax + 1
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1
+      if (ok(mid)) lo = mid
+      else hi = mid
+    }
+    if (lo > 0) body.style.setProperty('--fill-air', lo + 'px')
+    else body.style.removeProperty('--fill-air')
   }
 
   /** 이름표 자리 고르기의 바깥 입구: 움직이는 중인 판(점이 내려앉는 중이다)은 끝난 뒤에. 추이의 점 숫자도 같다 */
