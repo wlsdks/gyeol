@@ -423,6 +423,8 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
               onPointerDown={(e) => {
                 if (e.button !== 0) return
                 e.preventDefault()
+                // 누르기를 막으면 초점이 쓰던 칸에 남아서, 끌어 옮긴 뒤 누른 Ctrl+Z가 옮긴 것이 아니라 칸의 글로 갔다
+                e.currentTarget.focus({ preventScroll: true })
                 setDragging(true)
                 const session = startSession()
                 session.on(
@@ -459,6 +461,8 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       const box = target.el.parentElement
       if (e.button !== 0 || !placeSpec || !box || !current) return
       e.preventDefault()
+      // 쓰던 칸에 초점을 두지 않는다: 자리를 옮긴 뒤 누른 Ctrl+Z가 칸의 글로 갔다 (항목 이름표와 같다)
+      e.currentTarget.focus({ preventScroll: true })
       const from = current
       const key = `place:${slide.id}:${Math.round(performance.now())}`
       let at = from
@@ -594,6 +598,8 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
             onPointerDown={(e) => {
               if (e.button !== 0) return
               e.preventDefault()
+              // 쓰던 칸에 초점을 두지 않는다: 판을 옮긴 뒤 누른 Ctrl+Z가 칸의 글로 갔다 (항목 이름표와 같다)
+              e.currentTarget.focus({ preventScroll: true })
               // 판 옮기기는 판의 이름표(panes.tsx)가 한다. 손이 막대에서 시작해도 이름표를 잡은 것처럼 넘긴다
               const handle = target.el.closest('.slide')?.querySelector<HTMLElement>('.pn-handle')
               handle?.dispatchEvent(

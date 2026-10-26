@@ -124,6 +124,15 @@ function caretAt(ed: HTMLElement, x: number, y: number) {
   }
 }
 
+/**
+ * 글 칸에 쓰던 중이면 그 칸을 놓는다. 누르기를 막는 곳(컴포넌트의 이름표, 판의 선)에서 부른다: 막으면 초점이 쓰던 칸에 남아서,
+ * 다른 컴포넌트를 고르고 빼려고 누른 Delete·Backspace가 쓰던 칸의 글자를 지웠고 Ctrl+Z도 그 칸의 글로 갔다
+ */
+function leaveTyping() {
+  const a = document.activeElement
+  if (a instanceof HTMLElement && a.closest('input, textarea, [contenteditable]')) a.blur()
+}
+
 /** 본문 상자(.bk-area)의 화면 자리와 캔버스 크기 */
 function measureArea(el: HTMLElement | null) {
   if (!el) return null
@@ -683,6 +692,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
+      leaveTyping()
       // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
       let told = false
       let g = gutter
@@ -891,6 +901,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       // 예전에는 글 칸에서 끌기를 아예 받지 않아서, 글이 거의 다인 핵심 한 줄이나 인용은 잡을 곳이 위에 뜬 이름표뿐이라 옮길 수 없는 것처럼 보였다
       const ed = t.closest<HTMLElement>('.ed')
       if (ed?.contains(document.activeElement)) return
+      leaveTyping()
       e.preventDefault()
       const sx = e.clientX
       const sy = e.clientY

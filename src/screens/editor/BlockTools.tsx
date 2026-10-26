@@ -116,6 +116,8 @@ export function BlockTools({
         aria-label={`${spec.name} 옮기기`}
         onPointerDown={(e) => {
           e.preventDefault()
+          // 누르기를 막으면 초점이 쓰던 칸에 남아서, 누른 뒤 화살표 키(제목의 설명대로)가 옮기지 않았다
+          e.currentTarget.focus({ preventScroll: true })
           onGrip(e)
         }}
         onKeyDown={(e) => {

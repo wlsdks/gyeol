@@ -561,6 +561,8 @@ export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
             if (e.button !== 0) return
             e.preventDefault()
             e.stopPropagation()
+            // 누르기를 막으면 초점이 그대로 남아서, 누른 뒤 화살표 키(손잡이의 설명대로)가 듣지 않고 쓰던 칸에 글이 들어갔다
+            e.currentTarget.focus({ preventScroll: true })
             startItemDrag(e.nativeEvent, e.currentTarget, i, move)
           }}
           onKeyDown={(e) => {
