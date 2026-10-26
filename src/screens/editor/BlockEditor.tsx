@@ -288,6 +288,14 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     setSelected(null)
     setOpened(new Set())
   }, [slide.id])
+  // 뺀 부품이 되돌리기로 다시 나타나면 고른다: 무엇이 돌아왔는지 보이고 바로 옮기거나 고칠 수 있게 (예전에는 아무것도 고르지 않아 어디에 돌아왔는지 찾아야 했다)
+  const removed = useRef<{ slide: string; id: string } | null>(null)
+  useEffect(() => {
+    const r = removed.current
+    if (!r || r.slide !== slide.id || !slide.blocks?.some((b) => b.id === r.id)) return
+    removed.current = null
+    setSelected(r.id)
+  }, [slide])
 
   const compose = slide.layout === 'compose'
 
@@ -752,6 +760,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const s = slideRef.current
     store.setBlocks(s.id, removeBlock(s.blocks ?? [], b.id, measureArea(areaEl.current)?.size.h))
     setSelected(null)
+    removed.current = { slide: s.id, id: b.id }
     toast.show(`${BLOCKS[b.type].name} 컴포넌트를 뺐어요`, undoAction(toast))
   }
   const duplicate = (b: Block) => {
