@@ -698,10 +698,20 @@ function sides(area: HTMLElement, k: number): string[] {
         const qi = q.n.parentElement?.closest('.it') ?? null
         if (pi !== qi) continue
         // 줄 선이 있는 항목(목차, 표의 줄)은 선이 두 끝을 잇는 한 줄이라 찢어진 것이 아니다
-        if (pi && [pi, ...pi.querySelectorAll('*')].some((el) => {
+        const ruled = (el: Element) => {
           const cs = getComputedStyle(el)
           return parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
-        })) continue
+        }
+        if (pi && [pi, ...pi.querySelectorAll('*')].some(ruled)) continue
+        // 항목 밖의 두 글도 줄 선이 있는 한 줄(표의 머리 줄: 진행 현황의 '과제'와 상태별 개수)에 함께 서면 찢어진 것이 아니다.
+        // 두 글을 함께 담은 가장 가까운 상자부터 칸 안쪽까지 올라가며 그 상자 자신의 선만 본다(아래 줄들의 선까지 보면 다 빠진다)
+        if (!pi) {
+          let box = p.n.parentElement
+          while (box && box !== inner && !box.contains(q.n)) box = box.parentElement
+          let row = false
+          for (let el: HTMLElement | null = box; el && el !== inner; el = el.parentElement) if (ruled(el)) row = true
+          if (row) continue
+        }
         // 사이에 다른 글이나 그려진 것이 있으면 찢어진 것이 아니다 (막대 옆 숫자, 표의 칸)
         if (ls.some((o) => o !== p && o !== q && o.l >= p.r - 1 && o.r <= q.l + 1 && Math.min(o.b, p.b) - Math.max(o.t, p.t) > 0)) continue
         if (drawnBoxes.some((o) => o.left < q.l && o.right > p.r && Math.min(o.bottom, p.b + 24 * k) - Math.max(o.top, p.t - 24 * k) > 0)) continue
