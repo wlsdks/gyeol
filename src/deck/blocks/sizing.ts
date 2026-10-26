@@ -1,9 +1,10 @@
 // 부품의 크기: 부품마다 잰 높이(blockHeights.ts), 판에서 차지할 칸 수(boardFit), 판의 칸을 캔버스 px로, 본문 상자 높이 어림
 
 import { BLOCK_HEIGHTS } from '../blockHeights'
-import { FRAME, HEAD, TEXT_SCALE, TITLE_TRIM } from '../frame'
+import { FRAME, HEAD, TEXT_SCALE } from '../frame'
 import { hintFor, logoColumns } from '../layouts'
 import { laneRows } from '../status'
+import { type Glyphs, headLook } from '../themes'
 import type { Block, BlockAt, BlockLook, BlockType, Deck, Slide } from '../types'
 import { BOARD_COLS, BOARD_ROWS, type Fit, needRows, settle } from './board'
 import { BLOCK_GROUPS, BLOCKS } from './catalog'
@@ -300,11 +301,40 @@ export function fitsWith(blocks: Block[], blockId: string, fn: (b: Block) => Blo
   return !changeIssue(blocks, blockId, fn, areaH)
 }
 
-/** 글자 하나의 평균 너비(글자 크기의 몫). 한글과 띄어쓰기를 섞은 제목을 재어 정한 값이다 */
-const EM_PER_CHAR = 0.67
+/** 글의 폭 (글자 크기의 몫) */
+function widthOf(text: string, g: Glyphs): number {
+  let w = 0
+  for (const ch of text) {
+    if (/[ㄱ-ㆎ가-힣一-鿿]/.test(ch)) w += g.hangul
+    else if (/\s/.test(ch)) w += g.space
+    else if (/[0-9]/.test(ch)) w += g.digit
+    else if (/[A-Z]/.test(ch)) w += g.upper
+    else if (/[a-z]/.test(ch)) w += g.lower
+    else if (/[.,:;'!|]/.test(ch)) w += g.narrow
+    else if (ch === '%') w += g.wide
+    else w += g.other
+  }
+  return w
+}
 
-/** 이 크기의 글이 이 너비에서 몇 줄인지 */
-const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.ceil(([...text].length * EM_PER_CHAR * fs) / width))
+/**
+ * 이 크기의 글이 이 너비에서 몇 줄인지. 장 머리는 띄어쓰기에서만 줄을 바꾸고(word-break: keep-all) 한 줄보다 긴 낱말은 그 안에서
+ * 꺾인다(overflow-wrap). 글자 수에 평균 폭을 곱하던 때는 끝 낱말이 다음 줄로 넘어가는 것을 놓쳤다
+ */
+function lineCount(text: string, fs: number, width: number, g: Glyphs): number {
+  let lines = 1
+  let x = 0
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const w = widthOf(word, g) * fs
+    const at = x ? x + g.space * fs : 0
+    if (x && at + w > width) {
+      lines++
+      x = w
+    } else x = at + w
+    for (; x > width; x -= width) lines++
+  }
+  return lines
+}
 
 /**
  * 부품 장 본문 상자의 높이 어림 (발표 화면 기준: 비운 제목과 부제는 자리를 차지하지 않는다. edit면 편집 화면 기준).
@@ -312,7 +342,7 @@ const lineCount = (text: string, fs: number, width: number) => Math.max(1, Math.
  * 머리 너비(HEAD.titleW)를 넘으면 줄이 바뀐다. 부제 너비, 제목과 부제 사이, 머리 아래 FRAME.gap도 틀(frame.ts)의 값이다. 발표 설정(글자 크기, 보내는 자료)도 본다.
  * 장의 틀(frame.ts)에서 제목은 글자 윗선을 맞추느라 조금 올라간다
  */
-export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'>, look?: { meta?: { method?: string }; theme?: { size?: string } }, edit?: boolean): number {
+export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'>, look?: { meta?: { method?: string }; theme?: { id?: string; font?: string; size?: string } }, edit?: boolean): number {
   // 편집 화면은 비운 제목에도 안내를 보여서 그만큼 본문이 낮다. 비운 부제의 안내는 제목 아래 여백 위에 겹쳐 두어
   // 자리를 밀지 않는다(edit.css)
   const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
@@ -322,9 +352,10 @@ export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'>, look?: { me
   const n = [...title].length
   const tfs = type.title * scale * (n > 40 ? 0.7 : n > 24 ? 0.84 : 1)
   const lfs = type.lead * scale
-  const titleH = title ? lineCount(title, tfs, HEAD.titleW) * tfs * HEAD.titleLine : 0
-  const leadH = lead ? lineCount(lead, lfs, HEAD.leadW) * lfs * HEAD.leadLine : 0
-  const head = titleH - (title ? tfs * TITLE_TRIM : 0) + leadH + (title && lead ? HEAD.between : 0)
+  const g = headLook(look?.theme)
+  const titleH = title ? lineCount(title, tfs, HEAD.titleW, g.title) * tfs * HEAD.titleLine : 0
+  const leadH = lead ? lineCount(lead, lfs, HEAD.leadW, g.lead) * lfs * HEAD.leadLine : 0
+  const head = titleH - (title ? tfs * g.trim : 0) + leadH + (title && lead ? HEAD.between : 0)
   return Math.floor(1080 - FRAME.y - FRAME.bottom - (head ? head + FRAME.gap : 0))
 }
 

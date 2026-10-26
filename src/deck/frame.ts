@@ -7,12 +7,6 @@
 export const FRAME = { x: 120, y: 72, bottom: 166, gap: 72 } as const
 
 /**
- * 장 맨 위 제목을 글자 윗선으로 틀에 맞추며 올리는 만큼(글자 크기 배율). 글꼴마다 조금 다른데(고딕 0.155, 명조 0.19)
- * 어림은 넉넉하게(본문 상자를 낮게) 잡으려고 작은 쪽
- */
-export const TITLE_TRIM = 0.155
-
-/**
  * 장의 머리(제목, 부제). slides.css의 --t-title, --t-lead(보내는 자료 .d-read는 한 단계 작다), .s-head와 .s-lead의 너비,
  * 줄 높이, 제목과 부제 사이와 같은 값이다(frame.test.ts가 본다). 부품 장의 본문 높이를 어림할 때 쓴다(composeAreaH)
  */

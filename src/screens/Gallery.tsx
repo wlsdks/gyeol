@@ -191,9 +191,11 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
   if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl'), params.get('lane') === '1') }
   if (set === 'stress') return { ...deck, theme: { id: theme }, slides: stressSlides(params.get('type'), params.get('bv'), params.get('bl')) }
-  if (set === 'review') return { ...deck, theme: { id: theme }, slides: reviewSlides(params.get('size') ?? undefined) }
-  if (set === 'dirs') return { ...deck, theme: { id: theme }, slides: dirSlides(params.get('size') ?? undefined) }
-  if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }, params.get('mode') === 'edit').map((c) => c.slide) }
+  // 판은 그 테마(글꼴)와 글자 크기의 본문 높이로 짠다: 명조 제목은 고딕보다 머리가 높다
+  const look = { theme: { id: theme, size: params.get('size') ?? undefined } }
+  if (set === 'review') return { ...deck, theme: { id: theme }, slides: reviewSlides(look) }
+  if (set === 'dirs') return { ...deck, theme: { id: theme }, slides: dirSlides(look) }
+  if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, look, params.get('mode') === 'edit').map((c) => c.slide) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
 }
 

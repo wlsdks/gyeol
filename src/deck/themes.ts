@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { HEAD } from './frame'
 import type { Deck, DeckTheme, FontId, FooterMode, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from './types'
 
 export interface Theme {
@@ -236,19 +237,36 @@ export function accentOf(deckTheme: Deck['theme']): string {
  *   글자 윗선으로 틀에 맞출 때 쓴다(slides.css의 --pad-y)
  * 본문 글꼴의 높이는 slides.css가 프리텐다드 값(1.19, 0.155)으로 셈한다. SUIT는 글꼴 높이(1.25)와 윗빈칸(0.18)이 함께 커서
  * 줄 안에서 한글이 그려지는 자리는 프리텐다드와 같다(0.01em 안). 명조 제목 둘은 본문이 프리텐다드다
+ * title, lead: 장 제목과 부제 글씨의 글자 폭(Glyphs). 부제는 본문 글꼴이다
  */
-const FONT_LOOK: Record<FontId, { font: string; body: string; weight: number; num: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
-  sans: { font: SANS, body: SANS, weight: 700, num: 400, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
-  serif: { font: SERIF, body: SANS, weight: 600, num: 500, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
-  suit: { font: SUIT, body: SUIT, weight: 700, num: 400, tracking: '-0.022em', glyph: 1.06, tall: 1.03, box: 1.25, gap: 0.175 },
-  myeongjo: { font: MYEONGJO, body: SANS, weight: 700, num: 600, tracking: '-0.03em', glyph: 1.08, tall: 1.18, box: 1.44, gap: 0.29 },
+const FONT_LOOK: Record<FontId, { font: string; body: string; weight: number; num: number; tracking: string; glyph: number; tall: number; box: number; gap: number; title: Glyphs; lead: Glyphs }> = {
+  sans: { font: SANS, body: SANS, weight: 700, num: 400, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15, title: { hangul: 0.85, space: 0.21, digit: 0.6, upper: 0.66, lower: 0.52, narrow: 0.27, wide: 0.94, other: 0.4 }, lead: { hangul: 0.86, space: 0.25, digit: 0.58, upper: 0.64, lower: 0.5, narrow: 0.25, wide: 0.86, other: 0.37 } },
+  serif: { font: SERIF, body: SANS, weight: 600, num: 500, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33, title: { hangul: 0.93, space: 0.25, digit: 0.61, upper: 0.79, lower: 0.56, narrow: 0.37, wide: 1.11, other: 0.45 }, lead: { hangul: 0.86, space: 0.25, digit: 0.58, upper: 0.64, lower: 0.5, narrow: 0.25, wide: 0.86, other: 0.37 } },
+  suit: { font: SUIT, body: SUIT, weight: 700, num: 400, tracking: '-0.022em', glyph: 1.06, tall: 1.03, box: 1.25, gap: 0.175, title: { hangul: 0.86, space: 0.21, digit: 0.58, upper: 0.69, lower: 0.51, narrow: 0.3, wide: 1.05, other: 0.47 }, lead: { hangul: 0.87, space: 0.22, digit: 0.56, upper: 0.67, lower: 0.48, narrow: 0.28, wide: 1.05, other: 0.45 } },
+  myeongjo: { font: MYEONGJO, body: SANS, weight: 700, num: 600, tracking: '-0.03em', glyph: 1.08, tall: 1.18, box: 1.44, gap: 0.29, title: { hangul: 0.95, space: 0.28, digit: 0.56, upper: 0.7, lower: 0.56, narrow: 0.31, wide: 0.94, other: 0.39 }, lead: { hangul: 0.86, space: 0.25, digit: 0.58, upper: 0.64, lower: 0.5, narrow: 0.25, wide: 0.86, other: 0.37 } },
 }
 
+/**
+ * 글자 갈래마다 한 글자의 폭(글자 크기의 몫, 자간까지). 장 제목과 부제를 그 글꼴과 굵기로 그려 잰 값이다(한글은 흔한 글자와
+ * 획이 많은 글자 가운데 넓은 쪽). wide는 %, narrow는 .,:;'!|, other는 괄호, 붙임표 같은 그 밖의 기호
+ */
+export type Glyphs = { hangul: number; space: number; digit: number; upper: number; lower: number; narrow: number; wide: number; other: number }
+
 /** 테마가 원래 쓰는 글꼴 */
-export function fontOf(deckTheme: DeckTheme): FontId {
+export function fontOf(deckTheme: { id?: string; font?: string }): FontId {
   // 새 버전에서 더한 글꼴처럼 모르는 값이면 테마의 글꼴로 그린다. 값은 그대로 두어 저장해도 잃지 않는다 (compat.ts)
-  if (deckTheme.font && Object.hasOwn(FONT_LOOK, deckTheme.font)) return deckTheme.font
+  if (deckTheme.font && Object.hasOwn(FONT_LOOK, deckTheme.font)) return deckTheme.font as FontId
   return deckTheme.id === 'serif' ? 'serif' : 'sans'
+}
+
+/**
+ * 장 머리(제목, 부제)의 높이를 어림하는 값 (sizing.ts의 composeAreaH): 제목과 부제 글씨의 글자 폭, 그리고 장 맨 위 제목을 글자
+ * 윗선으로 틀에 맞추며 올리는 만큼(글자 크기의 몫, frame.css의 .s-title margin-top과 같은 꼴). 고딕 값 하나로 어림하던 때는
+ * 글자가 넓은 명조 제목이 실제로는 두 줄인데 한 줄로 쳐서, 본문을 71px 넉넉하게 잡아 칸이 잘려도 '자리가 모자라요'가 뜨지 않았다
+ */
+export function headLook(theme?: { id?: string; font?: string }): { title: Glyphs; lead: Glyphs; trim: number } {
+  const f = FONT_LOOK[fontOf(theme ?? {})]
+  return { title: f.title, lead: f.lead, trim: (HEAD.titleLine - f.box) / 2 + f.gap }
 }
 
 /** 글꼴 고르는 단추의 이름을 그 글꼴(제목 글꼴)로 써서 고르기 전에 모양을 보이게 */

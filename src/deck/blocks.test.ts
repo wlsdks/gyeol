@@ -376,6 +376,17 @@ describe('자리 정하기', () => {
     expect(composeAreaH({ fields: {} } as unknown as Slide)).toBe(1080 - FRAME.y - FRAME.bottom)
   })
 
+  it('본문 높이 어림은 제목 글꼴의 글자 폭으로 줄을 센다: 같은 제목이 명조에서는 두 줄', () => {
+    const slide = { fields: { title: '시범 운영 결과를 바탕으로 다음 분기 확대 범위와 예산을 정해요' } } as unknown as Slide
+    const large = (font?: string) => composeAreaH(slide, { theme: { font, size: 'large' } })
+    // 장에서 잰 본문 높이(크게): 고딕과 SUIT는 한 줄이라 705, 704. 명조 제목과 본명조는 두 줄이라 633, 631.
+    // 고딕 글자 폭 하나로 어림하던 때는 넷 다 한 줄로 쳐서 명조의 본문을 71px 넉넉하게 잡았다
+    expect([large(), large('suit'), large('serif'), large('myeongjo')].map((h, i) => Math.abs(h - [705, 704, 633, 631][i]) <= 1)).toEqual([true, true, true, true])
+    // 장 맨 위 제목을 글자 윗선으로 올리는 만큼도 글꼴마다(명조 제목은 고딕보다 크다): 한 줄짜리 보통 크기 709와 705
+    const short = { fields: { title: '내년 예산 제안' } } as unknown as Slide
+    expect(composeAreaH(short, { theme: { font: 'serif' } }) - composeAreaH(short)).toBeGreaterThanOrEqual(3)
+  })
+
   it('아무 데나 놓아도 놓을 수 있는 자리 가운데 하나로 들어간다', () => {
     const size = { w: 1680, h: H }
     const bs = board(block('number', 'n'), block('bullets', 'b'))
