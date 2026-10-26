@@ -210,6 +210,14 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   useEffect(() => {
     if (!libraryOpen) setToBottom(false)
   }, [libraryOpen])
+  // 빈 컴포넌트 장으로 오면(새로 만들었거나, 다 뺀 장으로 넘어오면) 컴포넌트 고르기를 바로 연다. 이 장에서 할 일이 컴포넌트를 고르는 것뿐인데
+  // '이 장 설정'이 열린 채로 남아서 장 가운데의 '컴포넌트 고르기'를 한 번 더 눌러야 했다
+  const emptyCompose = slide.layout === 'compose' && !(slide.blocks ?? []).length
+  useEffect(() => {
+    if (emptyCompose) setLibraryOpen(true)
+    // 장이 바뀔 때만 본다: 같은 장에서 컴포넌트를 다 빼고 고르기를 닫았으면 다시 열지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slide.id])
   const dragRef = useRef<Drag | null>(null)
   dragRef.current = drag
   const areaEl = useRef<HTMLDivElement | null>(null)
@@ -829,11 +837,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
-        <p className="bk-empty-s">끌어다 놓으면 알맞은 자리에 들어가요. 크기는 옆 컴포넌트와 맞춰 알아서 정해져요.</p>
-        <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
-          <BlocksIcon />
-          컴포넌트 고르기
-        </button>
+        {/* 목록이 열려 있으면 고르기 단추 대신 어디서 고르는지를: 열린 목록 옆에서 같은 일을 하는 단추가 또 보였다 */}
+        <p className="bk-empty-s">
+          {libraryOpen ? '오른쪽 목록에서 누르거나 이 장으로 끌어다 놓아요.' : '끌어다 놓으면 알맞은 자리에 들어가요.'} 크기는 옆 컴포넌트와 맞춰 알아서 정해져요.
+        </p>
+        {!libraryOpen && (
+          <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
+            <BlocksIcon />
+            컴포넌트 고르기
+          </button>
+        )}
       </div>
     ),
     areaRef: (el) => {
