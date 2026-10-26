@@ -19,9 +19,6 @@ import { clashes, failingHeights, heightsSource, measureAll, measureAllFonts, me
 import { reviewSlides } from './reviewSlides'
 import { checkStress, stressSlides } from './stress'
 import { dirSlides } from './dirSlides'
-// 컴포넌트 디자인 방향 시안(&dir=a|b). 클래스가 갤러리 뿌리에만 붙어서 앱의 기본 모습은 그대로다
-import '../slides/styles/blocks/dir-a.css'
-import '../slides/styles/blocks/dir-b.css'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
@@ -35,7 +32,7 @@ import '../slides/styles/blocks/dir-b.css'
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=review 는 부품 장의 대표 조합 몇 장 (reviewSlides.ts, 고치기 전과 후를 견줄 때). &w=1920 이면 장을 줄이지 않고 그린다.
 // set=stress&type=bullets 는 부품 하나를 항목 수, 칸 너비, 칸 높이마다 (stress.ts의 checkStress). type=many 는 부품 하나부터 여섯까지.
-// set=dirs 는 디자인 방향 시안을 견줄 장(dirSlides.ts). &dir=a|b 는 컴포넌트 디자인 방향 시안(dir-a.css, dir-b.css)을 갤러리에만 입힌다(어느 set에서든).
+// set=dirs 는 컴포넌트의 모양을 고칠 때 전과 후를 견줄 장(dirSlides.ts: 빽빽한 장, 듬성한 장, 지표 줄, 단계, 비교, 인용, 이음표).
 // set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
 
 /** set=edge: 차트 장이 무너지기 쉬운 값들 (음수, 빈 값, 많은 항목, 모두 같은 값, 긴 이름) */
@@ -284,9 +281,8 @@ export function Gallery() {
     })),
   }
   const info = pageInfo(picked)
-  const dir = ['a', 'b'].includes(params.get('dir') ?? '') ? params.get('dir') : null
   return (
-    <div className={`gallery${dir ? ` dir-${dir}` : ''}`} style={params.get('w') ? { gridTemplateColumns: `${params.get('w')}px` } : undefined}>
+    <div className="gallery" style={params.get('w') ? { gridTemplateColumns: `${params.get('w')}px` } : undefined}>
       {deck.slides.map((slide) => (
         <ScaledSlide key={slide.id} width={Number(params.get('w')) || 960} className="gallery-slide">
           <SlideCanvas
