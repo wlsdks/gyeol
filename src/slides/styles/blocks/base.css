@@ -60,7 +60,7 @@
    선이 어느 내용의 머리인지 흐렸다. 남는 높이는 아래에 모인다(발표 화면은 fitBlocks의 쌓기가 그려진 자리로 올린다).
    차트 옆의 짧은 부품을 가운데로 내리는 것(--bk-lift)도 선이 있는 칸은 하지 않는다: 한 줄의 선이 칸마다 다른 높이에 서면
    판의 가로 선이 깨진다. 선이 줄의 윗선이다. 레이아웃 부품(차트, 표 같은)은 그림이 칸 높이를 다 써서 그대로 둔다 */
-.bk-area > .bk.bk-look-plain:not(.bk-layout, .is-slot, .lk-row, .bk-message, .bk-heading, .bk-image, .bk-note, .bk-swot) > .bk-in > * {
+.bk-area > .bk.bk-look-plain:not(.bk-layout, .is-slot, .lk-row, .bk-heading, .bk-image, .bk-note, .bk-swot) > .bk-in > * {
   justify-content: flex-start;
   align-content: start;
   padding-top: 0;

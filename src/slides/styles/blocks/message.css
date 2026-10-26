@@ -19,21 +19,21 @@
 .bk-msg-s {
   --fs: var(--t-lead);
   margin-top: 28px;
-  color: var(--ink-2);
+  color: var(--ink-3);
   line-height: 1.45;
   text-wrap: pretty;
 }
 
-/* 장 제목이 있으면 핵심 한 줄은 제목 아래의 답이다: 한 단계 작게(44), 강조색으로. 제목(62, 길면 52)과 같은 굵은 검정에
-   한 단계 차이(52)면 제목이 둘로 읽혀 어느 쪽이 결론인지 흐렸다(예시 발표의 '사업 기회'에 핵심 한 줄을 더한 장).
-   강조색은 답에만 쓰는데, 제목이 말한 것을 숫자나 결론 한 줄로 받는 이 글이 그 답이다. 진한 면에서는 --accent가
-   --bold-accent로 바뀐다(looks.css). 장에 자리가 남아 모든 칸을 키울 때(fitBlocks의 --bk-fit 1.2)는 같이 키우되 장 제목의
-   한 단계 아래(--msg-cap)까지만: 키우지 않으면 좁은 칸에서 줄인 핵심 한 줄(37)이 같이 키운 옆 부품의 소제목(43)보다 작아졌고,
-   끝없이 키우면 다시 제목과 한 단계 안쪽이 된다. 제목이 길어 52(fit-1), 44(fit-2)로 줄면 그 한 단계 아래까지 */
+/* 장 제목이 있으면 핵심 한 줄은 제목 아래의 답이다: 한 단계 작게(44), 굵기는 제목보다 한 단계 가볍게(--head-weight - 100).
+   제목(62, 길면 52)과 같은 굵은 검정에 한 단계 차이(52)면 제목이 둘로 읽혀 어느 쪽이 결론인지 흐렸다(예시 발표의 '사업 기회'에
+   핵심 한 줄을 더한 장). 예전에는 강조색으로 갈랐는데, 강조색 글이 장마다 서면 강조색이 흔해져 답이 흐렸다. 지금은 글자색에
+   머리의 짧은 강조색 선(.bk-message::before)이 이 줄이 답임을 보인다. 장에 자리가 남아 모든 칸을 키울 때(fitBlocks의 --bk-fit 1.2)는
+   같이 키우되 장 제목의 한 단계 아래(--msg-cap)까지만: 키우지 않으면 좁은 칸에서 줄인 핵심 한 줄(37)이 같이 키운 옆 부품의
+   소제목(43)보다 작아졌고, 끝없이 키우면 다시 제목과 한 단계 안쪽이 된다. 제목이 길어 52(fit-1), 44(fit-2)로 줄면 그 한 단계 아래까지 */
 .l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-msg-t {
   --fs: 44px;
   --msg-cap: calc(52px * var(--scale, 1));
-  color: var(--accent);
+  font-weight: calc(var(--head-weight) - 100);
   font-size: min(var(--msg-cap), max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-fit, 1))));
 }
 
@@ -44,4 +44,16 @@
 .l-compose:has(.s-title.fit-2:not(.is-hint, .is-empty)) .bk-msg-t {
   --fs: 36px;
   --msg-cap: calc(36px * var(--scale, 1));
+}
+
+/* 머리의 짧은 강조색 선: 다른 컴포넌트의 머리 괘선과 같은 자리(칸 밖 위)에 짧게(64px). 이 줄이 장의 답이라는 표시로,
+   강조색을 글 전체에 칠하지 않고 선 하나에만 쓴다. 제목 없는 장의 맨 윗줄은 다른 머리 괘선처럼 긋지 않는다(blocks/base.css) */
+.bk.bk-message.bk-look-plain:not(.lk-row) {
+  --head-rule: 1;
+}
+
+.bk.bk-message::before {
+  right: auto;
+  width: 64px;
+  background: var(--accent);
 }
