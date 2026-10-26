@@ -320,17 +320,18 @@ export function AskStatus({ deck, job, onCancel }: { deck: Deck; job: AskJob; on
   )
 }
 
-// ---------- 위쪽 AI 버튼 ----------
+// ---------- 위쪽 'AI 다듬기' 단추 ----------
 
 export function AiMenu({ deck, ai, ask }: { deck: Deck; ai: AiShare; ask: AiAsk }) {
   return (
     <Popover
       className="pop-ai"
       button={({ toggle, open }) => (
-        // 이름은 사용법, README, MCP 안내가 모두 'AI 버튼'으로 부르므로 그대로 두고, 하는 일은 말풍선으로 알린다
-        <button type="button" className="btn btn-ghost ai-btn" title="AI에게 장 구성과 모양을 제안받아요" aria-expanded={open} onClick={toggle}>
+        // 'AI' 한 낱말은 누르면 무엇이 되는지 말하지 않았다. 장 아래의 'AI로 다듬기'와 같은 말로, 이쪽은 발표 전체를 다듬는다.
+        // 사용법, README, MCP 안내도 이 이름으로 부른다
+        <button type="button" className="btn btn-ghost ai-btn" title="AI에게 발표 전체의 구성과 모양을 제안받아요" aria-expanded={open} onClick={toggle}>
           <AskIcon />
-          AI
+          AI 다듬기
           {deck.aiShare && ai.status && <span className="ai-dot" aria-label="AI에게 공유 중" />}
         </button>
       )}
