@@ -20,7 +20,7 @@ import { SceneAll, SceneOverride, ScenePicker } from './ScenePicker'
  * 이 장만 바꾸지 않고 발표 전체 설정을 따르는 값의 이름. 예전에는 '기본'이라서, 기본이 무엇인지(차분하게? 없음?)
  * 테마 메뉴를 열어 봐야 알았다. 무엇을 따르는지는 머리말 아래에 지금 값으로 같이 보인다
  */
-const INHERIT = '전체대로'
+export const INHERIT = '전체대로'
 
 /** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '전체대로' 하나로 묶는다 */
 export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
@@ -28,7 +28,7 @@ export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; desc
   ...TRANSITIONS.filter((t) => t.id !== 'auto'),
 ]
 
-const nameOf = <T,>(list: { id: T; name: string }[], id: T) => list.find((o) => o.id === id)?.name ?? ''
+export const nameOf = <T,>(list: { id: T; name: string }[], id: T) => list.find((o) => o.id === id)?.name ?? ''
 
 /** 들어오는 쪽은 짧게 (네 단추가 한 줄에 들어가게) */
 export const FROM_SHORT: Record<BlockFrom, string> = { below: '아래', above: '위', left: '왼쪽', right: '오른쪽' }

@@ -19,7 +19,7 @@ import {
 } from '../../../deck/blocks'
 import { pageInfo } from '../../../deck/fields'
 import { sceneOf } from '../../../deck/scenes'
-import { MOTIONS, motionOf } from '../../../deck/themes'
+import { MOTIONS, motionOf, TRANSITIONS } from '../../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide } from '../../../deck/types'
 import { cx } from '../../../lib/cx'
 import { FitSlide, pageProps, SlideCanvas, useStableSections } from '../../../slides/SlideCanvas'
@@ -27,7 +27,7 @@ import { useDeck } from '../../../store/deckStore'
 import { BackIcon, ChevronIcon, PlayIcon, Segmented, useDialog } from '../../ui'
 import { Opt } from '../Inspector'
 import { useLook, type Look } from '../look'
-import { FROM_SHORT, SLIDE_TRANSITIONS } from '../MotionPanel'
+import { FROM_SHORT, INHERIT, nameOf, SLIDE_TRANSITIONS } from '../MotionPanel'
 import { SceneOverride, ScenePicker } from '../ScenePicker'
 import { usePlayer, useReducedMotion } from './player'
 import { Timeline } from './Timeline'
@@ -433,11 +433,15 @@ function SlideMotion({ deck, slide, prevId, onPresent }: { deck: Deck; slide: Sl
   return (
     <section className="ms-sec">
       <h2 className="ms-h">이 장</h2>
-      <Opt label="움직임 정도" wide tip={`비워 두면 테마 메뉴에서 정한 발표 전체의 움직임(${MOTIONS.find((m) => m.id === deck.motion)?.name ?? '차분하게'})을 따라요.`}>
+      {/* 움직임 탭과 같은 말: 예전에는 여기만 '기본'이라 같은 값이 두 이름으로 보였고, 기본이 무엇인지도 알 수 없었다 */}
+      <p className="mp-inherit">
+        발표 전체는 움직임 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 장 넘기기 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+      </p>
+      <Opt label="움직임 정도" wide>
         <Segmented<Motion | undefined>
           className="seg-fill"
           label="이 장의 움직임 정도"
-          options={[{ id: undefined, name: '기본', description: '테마 메뉴에서 정한 발표 전체의 움직임을 따라요.' }, ...MOTIONS]}
+          options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
           value={slide.options.motion ?? undefined}
           onPick={onPick}
         />
