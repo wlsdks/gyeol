@@ -939,6 +939,19 @@ export function blockFitter() {
       }
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
       area.classList.add('is-fitting')
+      // 편집 화면에서 자리를 옮기는 중인 칸(blocks.tsx의 useFlip이 translate로 미끄러뜨린다)은 끝자리로 잰다. 움직이는 중의 자리로 재면
+      // 쌓기(pack)가 칸을 엉뚱하게 옮겼다: 컴포넌트 장을 새로 만들며 점 목록을 넣으면 칸이 본문 위로 571px 올라가 화면에서 사라졌고,
+      // 움직임이 끝난 뒤에는 다시 맞출 까닭이 없어 그대로 남았다. 움직임을 끝 시각으로 잠깐 옮겨 재고 되돌린다(보이는 움직임은 그대로)
+      const flips: { a: Animation; t: CSSNumberish | null }[] = []
+      for (const c of cells) {
+        const list = typeof c.getAnimations === 'function' ? c.getAnimations() : []
+        for (const a of list) {
+          const end = a.effect?.getComputedTiming().endTime
+          if (a.playState !== 'running' || typeof end !== 'number') continue
+          flips.push({ a, t: a.currentTime })
+          a.currentTime = end
+        }
+      }
       // 크게(1.2배)의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
       const large = !!area.closest('.sz-large')
       const ladder = large ? [1 / 1.2, steps[1]] : steps
@@ -966,6 +979,7 @@ export function blockFitter() {
       lift(cells)
       pack(cells, area)
       area.classList.remove('is-fitting')
+      for (const f of flips) f.a.currentTime = f.t
     }
     // 부품 장 밖(한 장을 다 쓰는 위치 비교, 추이)도
     for (const plot of Array.from(root.querySelectorAll<HTMLElement>('.pm-plot, .tn-canvas'))) if (!plot.closest('.bk-area')) labels(plot)
