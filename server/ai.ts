@@ -16,9 +16,10 @@ import { dirname, join } from 'node:path'
 import { validAsk, type AskError } from '../src/ai/asks'
 import { isObj, onlyKeys } from '../src/ai/guards'
 import { isOpCode, MAX_OPS, parseRequest, type ChangeRequest, type OpCode } from '../src/ai/ops'
-import { AI_HEADER, AI_PREFIX, DECK_ID, deckOfFile, REQUEST_ID, RESULT_FORMAT, SHARE_SUBDIRS, type ResultStatus, type ShareSubdir } from '../src/ai/protocol'
+import { AI_PREFIX, DECK_ID, deckOfFile, REQUEST_ID, RESULT_FORMAT, SHARE_SUBDIRS, type ResultStatus, type ShareSubdir } from '../src/ai/protocol'
 import { checkShape } from '../src/ai/share'
 import { ASK_RUN_ID, createAgent, type AgentCommand } from './agent'
+import { fromApp } from './guard'
 
 const MAX_BODY = 512 * 1024
 const KEEP_RESULTS_MS = 7 * 24 * 60 * 60 * 1000
@@ -174,12 +175,6 @@ function json(res: ServerResponse, status: number, body: unknown) {
 function empty(res: ServerResponse, status: number) {
   res.writeHead(status, { 'Cache-Control': 'no-store' })
   res.end()
-}
-
-/** 앱이 보낸 요청인지: 앱만 붙이는 머리글이 있고, Origin이 있으면 이 서버 주소와 같다 */
-function fromApp(req: IncomingMessage): boolean {
-  const origin = req.headers.origin
-  return req.headers[AI_HEADER.toLowerCase()] === '1' && (origin === undefined || origin === `http://${req.headers.host}`)
 }
 
 /** 주소의 한 마디: 정해진 말이거나, 꼴이 맞아야 하는 id */
