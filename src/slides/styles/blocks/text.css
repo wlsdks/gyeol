@@ -184,11 +184,26 @@
   .bk-bl > .bk-list {
     display: flex;
     flex-direction: column;
+    gap: calc(13px + var(--bk-air, 0px) / 2);
   }
 
-  .bk-bl > .bk-list > .bk-li {
+  .bk-bl > .bk-list:is([data-n='5'], [data-n='6']) {
+    gap: calc(9px + var(--bk-air, 0px) / 2);
+  }
+
+  /* 한 단이면 다시 항목 사이마다 옅은 줄 선(위의 나란히 세우기, 두 단 흘리기의 선 규칙을 되돌린다) */
+  .bk-bl > .bk-list > .bk-li:first-child {
     padding-top: 0;
     border-top: 0;
+  }
+
+  .bk-bl > .bk-list > .bk-li + .bk-li {
+    padding-top: calc(13px + var(--bk-air, 0px) / 2);
+    border-top: var(--rule) solid var(--line);
+  }
+
+  .bk-bl > .bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
+    padding-top: calc(9px + var(--bk-air, 0px) / 2);
   }
 
   .bk-bl:has(> .bk-h) {
@@ -212,7 +227,12 @@
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-template-rows: repeat(2, auto);
     grid-auto-flow: column;
-    column-gap: calc(var(--bk-col-gap) * 2);
+    gap: calc(26px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+  }
+
+  .bk-list[data-n='4'] > .bk-li {
+    padding-top: 0;
+    border-top: 0;
   }
 }
 
@@ -222,7 +242,13 @@
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-template-rows: repeat(3, auto);
     grid-auto-flow: column;
-    column-gap: calc(var(--bk-col-gap) * 2);
+    gap: calc(18px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+  }
+
+  /* 두 단으로 흘리면 줄 선은 긋지 않는다(넓은 칸의 두 단과 같다) */
+  .bk-list:is([data-n='5'], [data-n='6']) > .bk-li {
+    padding-top: 0;
+    border-top: 0;
   }
 }
 
