@@ -108,6 +108,8 @@
 
 .mp-list {
   display: grid;
+  /* 끄는 동안 붙든 높이(min-height)는 아래에 비워 둔다. 줄마다 나눠 늘이면 접은 줄이 손 아래에서 밀려났다 */
+  align-content: start;
   gap: 4px;
   margin: 0;
   padding: 0;
@@ -136,6 +138,11 @@
 
 .mp-row.is-dragging .mp-card {
   box-shadow: var(--shadow-pop);
+}
+
+/* 끄는 줄의 묶음 머리(n번 누르면)는 감춘다: 끄는 동안 다른 묶음 머리 위로 지나가며 겹쳤다. 놓으면 새 차례로 다시 단다 */
+.mp-row.is-dragging .mp-step {
+  visibility: hidden;
 }
 
 /* 함께 나오는 컴포넌트는 앞 컴포넌트 밑으로 들여 한 묶음으로 보인다 */

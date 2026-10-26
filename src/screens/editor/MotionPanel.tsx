@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS as DndCss } from '@dnd-kit/utilities'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_SPEEDS, BLOCK_WHENS, blockNames, effectOf, fromOf, playOrder, speedOf, whenOf } from '../../deck/blocks'
 import { sceneOf } from '../../deck/scenes'
 import { MOTIONS, motionOf, TRANSITIONS } from '../../deck/themes'
@@ -126,6 +126,12 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
   const names = useMemo(() => blockNames(slide.blocks ?? []), [slide.blocks])
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [said, setSaid] = useState('')
+  // 끄는 동안 잡은 컴포넌트의 펼친 칸은 접는다. 펼친 채로 끌면 칸 전체가 목록을 가리고, 큰 카드의 가운데로 자리를 재서
+  // 맨 위까지 올려도 둘째 자리에 놓였다. 잡는 곳(머리)은 칸 위에 있어 접어도 손 밑에서 어긋나지 않는다. 놓으면 다시 펼친다.
+  // 접는 동안 목록의 높이는 그대로 둔다(height): 오른쪽 칸이 아래 끝까지 스크롤되어 있으면 접어 줄어든 만큼 브라우저가 스크롤을
+  // 끌어올려, 접은 줄이 손에서 수백 px 아래로 떨어진 채 끌렸다
+  const [held, setHeld] = useState<{ id: string; height: number } | null>(null)
+  const listRef = useRef<HTMLOListElement>(null)
   const drag = useListDrag()
   const ids = order.map((b) => b.id)
   const move = (from: number, to: number) => {
@@ -135,6 +141,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
   }
   const onDragEnd = (e: DragEndEvent) => {
     drag.end()
+    setHeld(null)
     if (!e.over || e.active.id === e.over.id) return
     move(ids.indexOf(String(e.active.id)), ids.indexOf(String(e.over.id)))
   }
@@ -168,12 +175,23 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
         collisionDetection={closestCenter}
         modifiers={drag.modifiers}
         autoScroll={drag.autoScroll}
-        onDragStart={drag.start}
+        onDragStart={(e) => {
+          drag.start()
+          setHeld({ id: String(e.active.id), height: listRef.current?.offsetHeight ?? 0 })
+        }}
         onDragEnd={onDragEnd}
-        onDragCancel={drag.end}
+        onDragCancel={() => {
+          drag.end()
+          setHeld(null)
+        }}
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <ol className="mp-list" aria-label={`나오는 차례. 끌거나 ${keys('alt+↑')}, ${keys('alt+↓')}로 옮겨요`}>
+          <ol
+            ref={listRef}
+            className="mp-list"
+            style={held ? { minHeight: held.height } : undefined}
+            aria-label={`나오는 차례. 끌거나 ${keys('alt+↑')}, ${keys('alt+↓')}로 옮겨요`}
+          >
             {order.map((b, i) => (
               <Row
                 key={b.id}
@@ -182,7 +200,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
                 block={b}
                 name={names.get(b.id) ?? ''}
                 step={whenOf(b) === 'click' ? steps[i] : 0}
-                open={blocks.selected === b.id}
+                open={blocks.selected === b.id && held?.id !== b.id}
                 onOpen={() => blocks.select(blocks.selected === b.id ? null : b.id)}
                 onMove={(d) => move(i, i + d)}
               />
