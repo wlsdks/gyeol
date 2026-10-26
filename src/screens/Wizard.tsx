@@ -9,7 +9,7 @@ import { cx } from '../lib/cx'
 import { go } from '../lib/router'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
-import { Brand, Info, SAVE_HELP, Segmented, useToast } from './ui'
+import { BackIcon, Brand, CheckIcon, ChevronIcon, Info, SAVE_HELP, Segmented, useToast } from './ui'
 
 // 발표 상황: 누구에게, 얼마나, 어떻게 발표하는지. 표지: 제목, 결정 요청(또는 부제), 발표자와 테마
 const STEPS = ['발표 종류', '발표 상황', '표지']
@@ -55,7 +55,13 @@ function filmOf(type: DeckType): { deck: Deck; slides: Slide[] } {
 }
 
 export function Wizard() {
-  const [step, setStep] = useState(0)
+  const [step, setStepNow] = useState(0)
+  // 앞으로 가면 오른쪽에서, 뒤로 가면 왼쪽에서 들어온다. 어느 쪽으로 움직였는지 몸으로 알게
+  const [dir, setDir] = useState<1 | -1>(1)
+  const setStep = (next: number) => {
+    setDir(next < step ? -1 : 1)
+    setStepNow(next)
+  }
   const [type, setType] = useState<DeckType>('business')
   const [audience, setAudience] = useState<Audience>('mixed')
   const [minutes, setMinutes] = useState(20)
@@ -109,6 +115,12 @@ export function Wizard() {
       setStep(0)
     } else setStep(step - 1)
   }
+  // 지나온 단계는 단계 표시에서 눌러 바로 돌아간다. 빈 발표는 앞 두 단계를 건너뛰었으니 '이전'과 같이 처음으로
+  const backTo = (i: number) => {
+    if (i >= step) return
+    if (type === 'blank') back()
+    else setStep(i)
+  }
 
   const create = async () => {
     setBusy(true)
@@ -144,8 +156,19 @@ export function Wizard() {
         <ol className="wz-steps" aria-label="진행 단계">
           {STEPS.map((name, i) => (
             <li key={name} className={cx(i === step && 'is-current', i < step && 'is-done')} aria-current={i === step ? 'step' : undefined}>
-              <span className="wz-step-n">{i + 1}</span>
-              {name}
+              {i < step ? (
+                <button type="button" className="wz-step" onClick={() => backTo(i)} aria-label={`${name} 단계로 돌아가기`}>
+                  <span className="wz-step-n">
+                    <CheckIcon />
+                  </span>
+                  {name}
+                </button>
+              ) : (
+                <span className="wz-step">
+                  <span className="wz-step-n">{i + 1}</span>
+                  {name}
+                </span>
+              )}
             </li>
           ))}
         </ol>
@@ -154,7 +177,7 @@ export function Wizard() {
         </button>
       </header>
 
-      <main className="wz-main">
+      <main className="wz-main" style={{ '--wz-dir': dir }}>
         {step === 0 && (
           <section className="wz-sec wz-split wz-split-types">
             <div className="wz-head">
@@ -335,7 +358,8 @@ export function Wizard() {
       <footer className="wz-bottom">
         {/* 빈 발표는 고르는 목록 밖의 다른 길이라 아래 줄 왼쪽에 */}
         {step > 0 ? (
-          <button type="button" className="btn btn-ghost" onClick={back}>
+          <button type="button" className="btn btn-ghost btn-lg wz-back" onClick={back}>
+            <BackIcon />
             이전
           </button>
         ) : (
@@ -344,8 +368,9 @@ export function Wizard() {
           </button>
         )}
         {step < 2 && (
-          <button type="button" className="btn btn-primary btn-lg" onClick={() => setStep(step + 1)}>
+          <button type="button" className="btn btn-primary btn-lg wz-next" onClick={() => setStep(step + 1)}>
             다음
+            <ChevronIcon />
           </button>
         )}
         {/* 낮은 화면에서도 가리지 않게, 만들기 단추 바로 옆에 */}
