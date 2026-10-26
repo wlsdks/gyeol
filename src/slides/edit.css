@@ -739,8 +739,8 @@ body.is-pane-sizing * {
 }
 
 /* 판을 나누는 선의 손잡이: 칸 사이를 선이 그어진 범위만큼 덮고, 끌면 판의 칸에 붙는다 (blocks.tsx의 Lines).
-   자리 계산은 .bk와 같다: 칸 하나는 (본문 + 칸 사이) ÷ 12. 편집 화면도 칸을 위로 쌓아서(fitBlocks.ts의 pack)
-   선도 옮긴 칸 사이로 옮기고(--bk-shift) 옆 칸 사이의 선은 그려진 범위만큼 줄인다(--bk-trim) */
+   자리 계산은 .bk와 같다: 칸 하나는 (본문 + 칸 사이) ÷ 12. 편집 화면도 칸을 위로 쌓고(fitBlocks.ts의 pack) 눈높이로 내리고
+   단을 옆으로 옮겨서, 선도 옮긴 칸 사이로 옮기고(--bk-shift, --bk-shift-x) 옆 칸 사이의 선은 그려진 범위만큼 줄인다(--bk-trim) */
 .bk-line {
   position: absolute;
   z-index: 5;
@@ -749,7 +749,7 @@ body.is-pane-sizing * {
 
 .bk-line.is-h {
   top: calc((100% + var(--bk-gap)) * var(--from) / 12 + var(--bk-shift, 0px));
-  left: calc((100% + var(--bk-col-gap)) * var(--at) / 12 - var(--bk-col-gap));
+  left: calc((100% + var(--bk-col-gap)) * var(--at) / 12 - var(--bk-col-gap) + var(--bk-shift-x, 0px));
   width: var(--bk-col-gap);
   height: calc((100% + var(--bk-gap)) * (var(--to) - var(--from)) / 12 - var(--bk-gap) - var(--bk-trim, 0px));
   cursor: col-resize;

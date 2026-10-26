@@ -941,7 +941,8 @@ export function blockFitter() {
     if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return 0
     const move = hold ?? eyeMove(cells, area)
     if (!move) return 0
-    for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))]) {
+    // 이음표와 편집 화면의 크기 손잡이(.bk-line)도 칸과 같이: 두고 내리면 손잡이가 위 빈 곳에 뜨거나 아래 줄의 글을 가로질렀다
+    for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > :is(.bk-link, .bk-line)'))]) {
       const was = parseFloat(el.style.getPropertyValue('--bk-shift')) || 0
       el.style.setProperty('--bk-shift', was + move + 'px')
     }
@@ -1249,6 +1250,24 @@ export function blockFitter() {
     }
   }
 
+  /**
+   * 옆 칸 사이의 크기 손잡이(.bk-line.is-h)를 남는 너비로 옮긴 단(balance의 --bk-shift-x) 사이로. 판의 칸 선에 그대로 두면 오른쪽으로
+   * 옮긴 단에서 멀리 떨어진 빈 곳에 서거나, 셋째 단 앞의 선이 옮긴 가운데 단의 글을 가로질렀다. 양옆 칸이 옮긴 값의 가운데만큼 옮긴다
+   */
+  function linesAcross(cells: HTMLElement[], area: HTMLElement): void {
+    const num = (el: HTMLElement, v: string) => Number(el.style.getPropertyValue(v)) || 0
+    const shift = (c: HTMLElement) => parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0
+    for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-line.is-h'))) {
+      const at = num(l, '--at')
+      const rows = (c: HTMLElement) => num(c, '--y') < num(l, '--to') && num(l, '--from') < num(c, '--y') + num(c, '--h')
+      const left = cells.filter((c) => rows(c) && num(c, '--x') + num(c, '--w') === at)
+      const right = cells.filter((c) => rows(c) && num(c, '--x') === at)
+      if (!left.length || !right.length) continue
+      const px = Math.round((Math.max(...left.map(shift)) + Math.min(...right.map(shift))) / 2)
+      if (px) l.style.setProperty('--bk-shift-x', px + 'px')
+    }
+  }
+
   function fit(root: ParentNode): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
@@ -1435,6 +1454,7 @@ export function blockFitter() {
           }
         }
       }
+      linesAcross(cells, area)
       const eye = eyeLevel(cells, area, hold?.eye)
       if (!hold) held.set(area, { board, eye, xs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0])) })
       linkAxes(cells, area)
