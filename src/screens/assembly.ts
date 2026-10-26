@@ -7,7 +7,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  * 그려진 장마다(발표 화면 모습, mode=final) 셋을 본다. 길이는 모두 캔버스 px(1920×1080 기준).
  * - 위계: 장 제목이 있으면, 부품 장만의 부품의 글이 제목만 하거나(같은 크기 이상) 제목과 같은 색, 굵기로 한 단계 안쪽이면(제목 ÷ 1.2 이상)
  *   제목과 다투는 것으로 본다. 강조색이나 버금 글자색의 글은 답이나 딸린 글이라,
- *   숫자와 단위는 답이라 제목과 다투지 않는다
+ *   숫자와 단위는 답이라 제목과 다투지 않는다. 핵심 한 줄이 있으면 다른 부품의 문장이 그보다 크지 않아야 한다(결론이 넘어간다)
  * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 한곳(맨 아래)에 모여야 한다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
@@ -23,6 +23,9 @@ const MEASURE_EM = 25.5
 const ORPHAN = 0.22
 /** 글 폭과 끝 줄을 보는 부품: 문장을 쓰는 글 부품 */
 const TEXT_TYPES = new Set(['message', 'text', 'quote', 'callout', 'bullets', 'note', 'faq', 'heading'])
+
+/** 글이 문장이 아니라 그림의 이름표인 부품 (흐름, 연결도, 나누기, 모으기, 칸 조립) */
+const FIGURE_TYPES = new Set(['flow', 'network', 'merge', 'split', 'tiles'])
 
 type Span = { t: number; b: number }
 
@@ -49,10 +52,32 @@ const numeric = (s: string) => {
   return words.length <= 2 || (/\d/.test(s) && words.length <= 3)
 }
 
+/** 위계: 핵심 한 줄보다 큰 다른 부품의 글. 핵심 한 줄은 그 장의 결론이라(장 제목이 없으면 곧 제목) 다른 부품의 문장이 더 크면 결론이 넘어간다 */
+function overMessage(area: HTMLElement): string[] {
+  const msg = area.querySelector<HTMLElement>(':scope > .bk-message .bk-msg-t')
+  if (!msg) return []
+  const mfs = parseFloat(getComputedStyle(msg).fontSize)
+  const out = new Set<string>()
+  for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk:not(.bk-layout):not(.bk-message)')) {
+    // 그림 안의 이름표(연결도의 가운데 상자 같은)는 문장이 아니라 그림의 일부라 견주지 않는다
+    if (FIGURE_TYPES.has(cell.dataset.type ?? '')) continue
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) continue
+    for (const q of blockTextLines(inner)) {
+      const el = q.n.parentElement
+      const text = (q.n.textContent ?? '').trim()
+      if (!el || !hangul(text) || numeric(text)) continue
+      const fs = parseFloat(getComputedStyle(el).fontSize)
+      if (fs > mfs + 0.5) out.add(`${cell.dataset.type}: 글이 핵심 한 줄보다 커요(${Math.round(fs)} > ${Math.round(mfs)}) 「${text.slice(0, 12)}」`)
+    }
+  }
+  return [...out]
+}
+
 /** 위계: 장 제목과 다투는 부품의 글 */
 function rivals(slide: HTMLElement, area: HTMLElement): string[] {
   const title = slide.querySelector<HTMLElement>('.s-title')
-  if (!title || title.matches('.is-hint, .is-empty') || !title.textContent?.trim()) return []
+  if (!title || title.matches('.is-hint, .is-empty') || !title.textContent?.trim()) return overMessage(area)
   const ts = getComputedStyle(title)
   const tfs = parseFloat(ts.fontSize)
   const out = new Set<string>()
@@ -73,7 +98,7 @@ function rivals(slide: HTMLElement, area: HTMLElement): string[] {
       else if (same && fs * 1.2 >= tfs - 0.5) out.add(`${cell.dataset.type}: 장 제목과 같은 색, 굵기에 크기가 한 단계 안쪽이라 제목과 다퉈요(${Math.round(fs)}, 제목 ${Math.round(tfs)}) 「${text.slice(0, 12)}」`)
     }
   }
-  return [...out]
+  return [...out, ...overMessage(area)]
 }
 
 /** 빈 띠: 장 머리 아래와 내용 사이 */

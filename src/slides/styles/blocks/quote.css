@@ -46,12 +46,13 @@
   content: '— ';
 }
 
-/* 장 제목이 있으면 인용은 제목과 핵심 한 줄(44) 아래의 딸린 목소리라 한 단계 작게(36). 같은 44면 두세 줄인 인용이
-   한 줄짜리 핵심 한 줄보다 무거워 보여 결론이 인용 쪽으로 넘어갔다 */
-.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-q-t {
+/* 장 제목이나 핵심 한 줄이 있으면 인용은 그 아래의 딸린 목소리라 한 단계 작게(36). 같은 44면 두세 줄인 인용이
+   한 줄짜리 핵심 한 줄보다 무거워 보여 결론이 인용 쪽으로 넘어갔다(제목 없는 장에서는 키운 인용이 핵심 한 줄보다 컸다).
+   인용 하나가 곧 장의 말인 장(현장의 한마디)만 44 */
+.l-compose:is(:has(.s-title:not(.is-hint, .is-empty)), :has(.bk-msg-t)) .bk-q-t {
   --fs: 36px;
 }
 
-.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-q-mark {
+.l-compose:is(:has(.s-title:not(.is-hint, .is-empty)), :has(.bk-msg-t)) .bk-q-mark {
   --qm: calc(30px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
 }
