@@ -41,7 +41,8 @@
   font-weight: 500;
 }
 
-.bk-q-by::before {
+/* 편집 칸(.ed)에는 붙이지 않는다: 편집 칸은 안쪽 구조가 달라 '—'가 글 아래 줄로 떨어졌다 */
+.bk-q-by:not(.ed)::before {
   content: '— ';
 }
 
