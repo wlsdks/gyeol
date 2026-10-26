@@ -20,7 +20,8 @@
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 48px;
   align-items: baseline;
-  padding-block: var(--sm-pad);
+  /* 장이 덜 차면 장 채움(fitLayout)이 주는 --fill-air를 줄마다 같은 값으로 더한다(줄을 1fr로 늘리지 않는다) */
+  padding-block: calc(var(--sm-pad) + var(--fill-air, 0px));
   border-bottom: var(--rule-hair) solid var(--line);
 }
 

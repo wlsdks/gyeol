@@ -220,7 +220,8 @@
    (--tl-line: 할 일 한 줄의 높이, 글자 칸 목록의 font-size와 같은 식), 시기, 할 일, 설명은 한 바닥선에 놓인다.
    지금 단계가 있으면 지나온 점은 강조색, 지금 점은 강조색에 옅은 강조색 테, 남은 점은 속이 빈 고리 */
 .va-steps .tl {
-  --tl-pad: 30px;
+  /* 장이 덜 차면 장 채움(fitLayout)이 주는 --fill-air를 줄마다 같은 값으로 더한다 */
+  --tl-pad: calc(30px + var(--fill-air, 0px));
   --tl-fs: 52px;
   --tl-dot: 18px;
   grid-template-columns: max-content var(--tl-dot) minmax(0, 5fr) minmax(0, 7fr);
@@ -232,11 +233,11 @@
 }
 
 .va-steps .tl:is([data-n='2'], [data-n='3']) {
-  --tl-pad: 48px;
+  --tl-pad: calc(48px + var(--fill-air, 0px));
 }
 
 .va-steps .tl:is([data-n='5'], [data-n='6']) {
-  --tl-pad: 22px;
+  --tl-pad: calc(22px + var(--fill-air, 0px));
   --tl-fs: 44px;
 }
 

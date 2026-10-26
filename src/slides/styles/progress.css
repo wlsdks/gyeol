@@ -83,12 +83,13 @@
   font-weight: 600;
 }
 
+/* 장이 덜 차면 장 채움(fitLayout)이 주는 --fill-air를 줄마다 같은 값으로 더한다(줄을 늘려 채우지 않는다) */
 .ps-row:not(.ps-headrow) {
-  padding-block: 20px;
+  padding-block: calc(20px + var(--fill-air, 0px));
 }
 
 .ps:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4']) .ps-row:not(.ps-headrow) {
-  padding-block: 30px;
+  padding-block: calc(30px + var(--fill-air, 0px));
 }
 
 .ps:is([data-n='6'], [data-n='7']) .ps-row:not(.ps-headrow) {
