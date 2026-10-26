@@ -46,7 +46,12 @@ function changeText(v: DeckVersion, older?: DeckVersion): string {
   if (v.signature === older.signature) return '앞 버전과 내용이 같아요'
   const c = versionChanges(v, older)
   const parts: string[] = []
-  const list = (names: string[]) => (names.length > 3 ? `${names.slice(0, 3).join(', ')} 외 ${names.length - 3}장` : names.join(', '))
+  // 장 이름은 ‘ ’로 묶는다(장 목록, AI 공유와 같다): 컴포넌트 장의 이름(‘핵심 한 줄, 점 목록 외 1’)에도 쉼표와 '외'가 있어서,
+  // 묶지 않으면 장 하나만 고쳐도 '고친 장: 핵심 한 줄, 점 목록 외 1'처럼 여러 장을 고친 것으로 읽혔다
+  const list = (names: string[]) => {
+    const q = names.map((n) => `‘${n}’`)
+    return q.length > 3 ? `${q.slice(0, 3).join(', ')} 외 ${q.length - 3}장` : q.join(', ')
+  }
   if (c.changed.length) parts.push(`고친 장: ${list(c.changed)}`)
   if (c.added.length) parts.push(`더한 장: ${list(c.added)}`)
   if (c.removed.length) parts.push(`뺀 장: ${list(c.removed)}`)
