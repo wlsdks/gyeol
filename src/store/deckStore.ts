@@ -78,6 +78,39 @@ function mapSlide(deck: Deck, slideId: string, fn: (s: Slide) => Slide): Deck {
   return { ...deck, slides: deck.slides.map((s) => (s.id === slideId ? fn(s) : s)) }
 }
 
+/**
+ * 되돌리거나 다시 한 뒤 고를 장. 보던 장이 바뀌었으면 그대로, 다른 장이 바뀌었거나 되살아났으면 그 장, 보던 장이 없어졌으면 그 앞 장.
+ * 다른 장만 없어졌으면 없어진 자리의 앞 장, 차례만 바뀌었으면 옮겨진 장 (보던 장이 그 곁이거나 함께 옮겨졌으면 그대로).
+ * 예전에는 보던 장을 그대로 두어서 다른 장을 보다가 되돌리면 무엇이 되돌려졌는지 보이지 않았고, 넣은 장을 되돌리면 맨 앞 장으로 튀었다.
+ * 테마처럼 발표 전체에 걸린 것은 보던 장 그대로 (모든 부품 장이 다시 맞춰져서 장마다 바뀐 것으로 보인다)
+ */
+function shownAfter(from: Deck, to: Deck, selectedId: string | null): string | null {
+  if (from.theme === to.theme && from.meta === to.meta) {
+    const was = new Map(from.slides.map((s) => [s.id, s]))
+    const changed = to.slides.filter((s) => was.get(s.id) !== s)
+    if (changed.length && !changed.some((s) => s.id === selectedId)) return changed[0].id
+    const sel = to.slides.findIndex((s) => s.id === selectedId)
+    if (!changed.length && sel >= 0) {
+      const gone = from.slides.findIndex((s) => !to.slides.some((t) => t.id === s.id))
+      if (gone >= 0) return sel < gone - 1 || sel > gone ? (to.slides[Math.max(gone - 1, 0)]?.id ?? selectedId) : selectedId
+      const at = new Map(from.slides.map((s, i) => [s.id, i]))
+      let moved: string | null = null
+      let far = 0
+      for (const [i, s] of to.slides.entries()) {
+        const d = Math.abs(i - (at.get(s.id) ?? i))
+        if (d > far) {
+          moved = s.id
+          far = d
+        }
+      }
+      if (moved && selectedId !== null && at.get(selectedId) === sel) return moved
+    }
+  }
+  if (to.slides.some((s) => s.id === selectedId)) return selectedId
+  const at = from.slides.findIndex((s) => s.id === selectedId)
+  return to.slides[Math.min(Math.max(at - 1, 0), to.slides.length - 1)]?.id ?? null
+}
+
 export const useDeck = create<DeckState>((set, get) => {
   /** 덱을 바꾸고 되돌리기 기록을 남긴다 */
   function commit(fn: (deck: Deck) => Deck, key?: string) {
@@ -126,15 +159,13 @@ export const useDeck = create<DeckState>((set, get) => {
       if (!deck || !past.length) return
       // AI 공유는 되돌리기 기록에 없는 설정이라 지금 값을 그대로 둔다. 끈 공유가 되돌리기로 다시 켜지면 모양이 몰래 다시 올라간다
       const prev = { ...past[past.length - 1], aiShare: deck.aiShare }
-      const selectedId = prev.slides.some((s) => s.id === get().selectedId) ? get().selectedId : prev.slides[0]?.id
-      set({ deck: prev, past: past.slice(0, -1), future: [deck, ...future], lastKey: null, selectedId })
+      set({ deck: prev, past: past.slice(0, -1), future: [deck, ...future], lastKey: null, selectedId: shownAfter(deck, prev, get().selectedId) })
     },
     redo() {
       const { deck, past, future } = get()
       if (!deck || !future.length) return
       const next = { ...future[0], aiShare: deck.aiShare }
-      const selectedId = next.slides.some((s) => s.id === get().selectedId) ? get().selectedId : next.slides[0]?.id
-      set({ deck: next, past: [...past, deck], future: future.slice(1), lastKey: null, selectedId })
+      set({ deck: next, past: [...past, deck], future: future.slice(1), lastKey: null, selectedId: shownAfter(deck, next, get().selectedId) })
     },
 
     setTitle(title) {
