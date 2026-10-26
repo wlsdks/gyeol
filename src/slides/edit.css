@@ -753,8 +753,9 @@ body.is-pane-sizing * {
   user-select: none;
 }
 
-/* 판을 끌거나 너비를 바꾸는 동안에는 항목 손잡이와 빼기 단추를 숨긴다. 판과 함께 떠다니면 어수선하다 */
-:is(body.is-pane-moving, body.is-pane-sizing) .slide.m-edit :is(.it-grip, .it-remove) {
+/* 판이나 컴포넌트를 끌거나 크기를 바꾸는 동안에는 항목 손잡이와 빼기 단추를 숨긴다. 판과 함께 떠다니면 어수선하고, 컴포넌트를 끌 때는
+   손이 지나는 항목마다 단추가 떠서 놓을 자리를 가렸다 */
+:is(body.is-pane-moving, body.is-pane-sizing, body.is-block-dragging, body.is-block-resizing) .slide.m-edit :is(.it-grip, .it-remove) {
   visibility: hidden;
 }
 
