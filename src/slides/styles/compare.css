@@ -94,8 +94,8 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  /* 컴포넌트 사이의 이음표(blocks.css의 .bk-link)와 같은 색과 굵기 */
-  color: color-mix(in srgb, var(--ink) 50%, var(--bg));
+  /* 컴포넌트 사이의 이음표(blocks/links.css의 .bk-link)와 같은 색과 그림(가는 꺾쇠) */
+  color: var(--ink-3);
   transform: translate(-50%, -50%);
 }
 
@@ -110,47 +110,15 @@
   height: 48px;
 }
 
-/* 두 쪽 사이의 화살표 하나는 흐름(flow.css)의 잇는 선과 같은 꼴로 두 쪽에 붙인다: 앞 쪽의 가장자리에 반쯤 걸친 점(::before),
-   선(바탕의 띠), 끝이 뒤 쪽의 가장자리에 닿는 꽉 찬 머리(::after). 예전에는 96px 사이 가운데에 작은 화살표 하나가 떠 있어서
-   글자 화살표를 쳐 넣은 것처럼 보였다. 점과 머리는 두 쪽의 글 사이 빈자리에 선다 */
+/* 두 쪽 사이의 화살표 하나: 사이(--cp-mid) 가운데의 가는 꺾쇠(slides/arrow.tsx). 예전에는 앞 쪽 가장자리의 점에서 선이 나와 뒤 쪽에
+   꽉 찬 세모 머리가 닿는 다이어그램 화살표라, 괘선으로 나눈 두 쪽 사이에서 그림만 떠 보였다(사용자 의견). 꺾쇠 하나면 빈자리가
+   선 노릇을 하고 읽는 쪽만 가리킨다 */
 .cp > .cp-arrow {
-  --cp-port: 12px;
-  --cp-head: 18px;
   width: var(--cp-mid);
-  height: var(--cp-head);
-  background: linear-gradient(currentColor, currentColor) 0 50% / calc(100% - var(--cp-head) + 4px) calc(var(--rule) * 1.5) no-repeat;
-}
-
-.cp > .cp-arrow svg {
-  display: none;
-}
-
-.cp > .cp-arrow::before,
-.cp > .cp-arrow::after {
-  position: absolute;
-  top: 50%;
-  background: currentColor;
-  content: '';
-}
-
-.cp > .cp-arrow::before {
-  left: 0;
-  width: var(--cp-port);
-  height: var(--cp-port);
-  border-radius: 50%;
-  translate: -50% -50%;
-}
-
-.cp > .cp-arrow::after {
-  right: 0;
-  width: var(--cp-head);
-  height: var(--cp-head);
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-  translate: 0 -50%;
 }
 
 /* 모양: 표. 면 없이 줄로만. 두 쪽이 가운데로 모여 줄마다 짝을 짓는다: 왼쪽은 오른쪽 끝에, 오른쪽은 왼쪽 끝에 붙이고
-   그 사이 가운데에 줄마다 작은 화살표. 예전에는 두 쪽 모두 왼쪽에 붙여서, 짧은 글이면 쪽마다 오른쪽 절반이 비고
+   그 사이 가운데에 줄마다 작은 꺾쇠. 예전에는 두 쪽 모두 왼쪽에 붙여서, 짧은 글이면 쪽마다 오른쪽 절반이 비고
    왼쪽 쪽의 글과 오른쪽 쪽의 화살표 사이가 멀어 짝이 읽히지 않았다.
    머리 위의 선은 앞은 옅게, 바뀐 뒤는 글자색으로 (넓은 강조색 막대는 장식이라 쓰지 않는다) */
 /* 표는 면이 없어 줄이 높이를 나눠 갖는다(격자) */
@@ -212,7 +180,7 @@
   color: var(--ink-3);
 }
 
-/* 줄마다의 화살표: 꽉 찬 머리가 32px에서는 점처럼 뭉개져서 40px(걱정과 대책의 줄 화살표와 같은 크기) */
+/* 줄마다의 꺾쇠: 40px(걱정과 대책의 줄 화살표와 같은 크기) */
 .va-table .cp-arrow svg {
   width: 40px;
   height: 40px;

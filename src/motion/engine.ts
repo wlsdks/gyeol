@@ -432,6 +432,10 @@ export function motionEngine(): MotionEngine {
      * 줄마다 글이 채워져서 빈 표처럼 보였다(녹화해 보니 예상 질문의 마지막 줄은 선만 0.4초 보였다)
      */
     const ruled = (el: Element | null, at: number) => fade(el, at, 280)
+    /** 가는 꺾쇠(slides/arrow.tsx): 가리키는 쪽으로 조금 밀려 나온다. 튀어나오게(크기) 하면 가는 획이 굵어 보였다 */
+    const nudge = (el: Element | null, at: number) => {
+      if (el) run(anims, el, [{ opacity: 0, translate: `${-L.y * 0.6}px 0` }], s(at), L.move)
+    }
     const pop = (el: Element | null, at: number, pseudo?: string) => {
       if (el) run(anims, el, [{ opacity: 0, scale: '0.3' }], s(at), L.pop, pseudo)
     }
@@ -614,7 +618,7 @@ export function motionEngine(): MotionEngine {
           const at2 = begin + gap * 0.6
           if (lk.classList.contains('is-arrow')) {
             run(anims, g ?? lk, [{ opacity: 0, translate: lk.classList.contains('lk-v') ? `0 ${-L.y * 0.5}px` : `${-L.y * 0.5}px 0` }], s(at2), L.move)
-          } else pop(g, at2)
+          } else fade(g, at2, 420)
         }
       })
       return begin + gap
@@ -694,21 +698,14 @@ export function motionEngine(): MotionEngine {
       }
       case 'compare': {
         const t = head()
-        const panel = one('.cp')
-        if (panel) {
-          run(anims, panel, [{ opacity: 0, scale: String(L.scale) }], s(t), L.move, '::before')
-          run(anims, panel, [{ opacity: 0, scale: String(L.scale) }], s(t + L.step * 1.5), L.move, '::after')
-        }
         rise(one('.cp-headrow'), t + 80, L.y * 0.5)
         items('.cp-row.it', t + 200, (el, at) => {
           rise(el.querySelector('.cp-l'), at, L.y * 0.6)
-          pop(el.querySelector('.cp-arrow'), at + 160)
+          nudge(el.querySelector('.cp-arrow'), at + 160)
           rise(el.querySelector('.cp-r'), at + 240, L.y * 0.6)
         })
-        // 두 면 사이의 잇는 선은 앞 면에서 뒤 면 쪽으로 그어진다(compare.css). 튀어나오게 하면 점과 머리가 사이 가운데에서 커졌다.
-        // 점이 앞 면 밖으로 반쯤 나와 있어서 가리는 상자를 그만큼 넓힌다
-        const mid = one('.cp > .cp-arrow')
-        if (mid) run(anims, mid, [{ clipPath: 'inset(-12px calc(100% + 12px) -12px -12px)' }, { clipPath: 'inset(-12px -12px -12px -12px)' }], s(t + L.step * 1.5 + 160), { easing: CARRY, duration: d(520) })
+        // 두 쪽 사이의 꺾쇠는 앞 쪽에서 뒤 쪽으로 조금 밀려 나온다(compare.css): 첫 줄의 앞 글 다음, 뒤 글 앞에
+        nudge(one('.cp > .cp-arrow'), t + 200 + 160)
         break
       }
       case 'timeline': {

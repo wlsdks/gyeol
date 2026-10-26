@@ -182,22 +182,15 @@ function linkSides(blocks: Block[], b: Block): string[] {
 /** 비켜 선 쪽 (위·아래 몫의 차): 옆 이음표는 부품이 그려진 높이의 가운데에, 아래 이음표는 그려진 너비의 가운데에 선다 */
 const shift = (sides: string[], a: string, b: string) => (sides.includes(a) ? 1 : 0) - (sides.includes(b) ? 1 : 0)
 
-/** 이음표의 모양. 줄 사이의 화살표는 아래를 본다 */
+/**
+ * 이음표의 모양. 줄 사이의 화살표는 아래를 본다. 화살표는 slides/arrow.tsx의 ArrowMark와 같은 가는 꺾쇠, 더하기와 같음도 같은 굵기의
+ * 가는 획, 견주기는 작은 글자(vs)다: 모두 옅은 글자색의 작은 표시라 두 컴포넌트 사이의 빈자리에 조판 기호처럼 선다
+ */
 export function LinkGlyph({ link }: { link: BlockLink }) {
   if (link === 'versus') return <span className="bk-link-vs">vs</span>
   return (
     <svg viewBox="0 0 48 48">
-      {link === 'arrow' ? (
-        // 화살표는 slides/arrow.tsx의 ArrowMark와 같은 그림(점, 선, 꽉 찬 머리): 선 끝에 꺾쇠를 얹은 아이콘은 글자 화살표처럼 보였다
-        <>
-          <path d="M4 24H30" />
-          <path d="M26 14L46 24L26 34Z" fill="currentColor" stroke="none" />
-        </>
-      ) : link === 'plus' ? (
-        <path d="M24 11v26M11 24h26" />
-      ) : (
-        <path d="M11 18.5h26M11 29.5h26" />
-      )}
+      {link === 'arrow' ? <path d="M19 12L31 24L19 36" /> : link === 'plus' ? <path d="M24 15v18M15 24h18" /> : <path d="M15 20h18M15 28h18" />}
     </svg>
   )
 }
