@@ -545,6 +545,9 @@ export function blockFitter() {
     for (let i = 0; i < els.length; i++) {
       const el = els[i]
       if (el.parentElement?.closest('svg')) continue
+      // 편집 표시(항목을 끄는 손잡이, 빼기 단추 같은)는 장의 내용이 아니다. 맞추는 동안(is-fitting)은 숨지만 검사(checkAssembly)는
+      // 편집 화면 그대로 재서, 소제목 아래 항목의 단추를 그려진 것으로 알고 소제목과 겹친다고 했다
+      if (el.closest('.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle')) continue
       const e = el.getBoundingClientRect()
       if (!e.width || !e.height) continue
       const tag = el.tagName.toLowerCase()
@@ -561,6 +564,19 @@ export function blockFitter() {
       if (!paint) continue
       t = Math.min(t, e.top)
       b = Math.max(b, e.bottom)
+    }
+    // 칸 밖 위에 긋는 머리 괘선(.bk::before, blocks/base.css)도 그려진 것이다. 안쪽 상자만 보면 이 선을 몰라서, 쌓기가 칸의 글을
+    // 앞 줄 소제목 바로 아래(headGap)로 올렸고 칸 위 23px에 선 선이 소제목의 덧붙임 글을 가운데로 그었다(취소선처럼 보였다)
+    for (const w of ['::before', '::after']) {
+      const ps = getComputedStyle(c, w)
+      if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.position !== 'absolute' || ps.visibility === 'hidden') continue
+      const h = parseFloat(ps.height) || 0
+      const y = parseFloat(ps.top)
+      const bg = ps.backgroundColor
+      const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
+      if (h <= 0 || !Number.isFinite(y) || (clear && ps.backgroundImage === 'none')) continue
+      t = Math.min(t, r.top + y * k)
+      b = Math.max(b, r.top + (y + h) * k)
     }
     if (t === Infinity) return null
     const body = Array.from(inner.children).find((el) => (el as HTMLElement).offsetHeight > 0)
