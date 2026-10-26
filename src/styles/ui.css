@@ -625,6 +625,10 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  /* 가운데 맞춘 상자는 왼쪽 50%부터라 창의 절반(1280 화면에서 640px)에서 줄이 바뀌었다. 두 줄이 된 알림은 위 끝이
+     장 아래 단추에 걸쳤다. 한 줄로 읽기 좋은 길이까지는 한 줄로 */
+  width: max-content;
+  max-width: min(720px, calc(100vw - 32px));
   padding: 12px 16px;
   border-radius: var(--r);
   background: var(--ink);
