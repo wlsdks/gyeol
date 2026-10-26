@@ -227,6 +227,8 @@ function EditorBody({ deck }: { deck: Deck }) {
           >
             <HistoryIcon />
           </button>
+          {/* 되돌리기와 버전 기록(고친 것을 다루는 것)과 발표 전체의 메뉴를 가는 선 하나로 나눈다 */}
+          <span className="ed-top-sep" aria-hidden="true" />
           <AiMenu deck={deck} ai={ai} ask={ask} />
           <ThemeMenu deck={deck} />
           <ExportMenu onHtml={exporting.exportHtml} onPdf={exporting.printPdf} onPpt={() => void exporting.exportPpt()} onDeckFile={exporting.saveDeckFile} />

@@ -29,8 +29,20 @@
   justify-content: flex-end;
 }
 
+/* 위 막대의 묶음 사이 가는 선. 단추 높이(36)의 반쯤만 그어 막대를 칸으로 나누지 않고 쉼표처럼 */
+.ed-top-sep {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--line-2);
+}
+
+/* 이름 칸은 적은 글만큼만 넓다(크롬, 엣지의 field-sizing): 저장 상태가 이름 바로 뒤에 붙는다.
+   늘 320px이던 때는 짧은 이름 뒤에 빈 칸이 남아 저장 상태가 떨어져 보였다 */
 .ed-title {
-  width: 100%;
+  field-sizing: content;
+  width: auto;
   min-width: 80px;
   max-width: 320px;
   height: 34px;
