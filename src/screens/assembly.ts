@@ -555,6 +555,19 @@ function inkX(cell: HTMLElement): { l: number; r: number } | null {
     l = Math.min(l, q.left)
     r = Math.max(r, q.right)
   }
+  // 칠한 막대와 띠(모으기, 나누기, 폭포의 막대)도 그려진 것이다. 글과 svg만 보면 본문 끝까지 닿은 막대를 몰라서, 왼쪽 이름표에서
+  // 끝난 것으로 알고 오른쪽이 40% 빈다고 했다
+  for (const el of inner.querySelectorAll<HTMLElement>('*')) {
+    if (el.closest('svg') || el.closest(EDIT_UI)) continue
+    const cs = getComputedStyle(el)
+    if (cs.visibility === 'hidden' || cs.opacity === '0') continue
+    const bg = cs.backgroundColor
+    if ((!bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)) && cs.backgroundImage === 'none') continue
+    const q = el.getBoundingClientRect()
+    if (!q.width || !q.height) continue
+    l = Math.min(l, q.left)
+    r = Math.max(r, q.right)
+  }
   return l < r ? { l, r } : null
 }
 
