@@ -129,6 +129,12 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
     }),
   )
   const merged = merge(spans)
+  // 그려진 것이 본문 상자 아래로 나가면 출처와 하단 표시를 덮는다(칸은 본문 안이어도 쌓기가 칸째 옮길 수 있다)
+  const areaBottom = area.getBoundingClientRect().bottom
+  all.forEach((c, i) => {
+    const p = inks[i]
+    if (p && p.b > areaBottom + 2 * k) out.push(`${c.dataset.type}: 그려진 것이 본문 아래로 ${Math.round((p.b - areaBottom) / k)}px 나가요`)
+  })
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
   // 장 머리 아래의 빈 띠 (머리가 없으면 0)

@@ -554,7 +554,9 @@ export function blockFitter() {
         if (cs.visibility === 'hidden' || cs.opacity === '0') continue
         const bg = cs.backgroundColor
         const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
-        paint = !clear || cs.backgroundImage !== 'none' || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
+        // 그림자로 긋는 선(위아래 선 모양의 타일, 머리 괘선)도 그려진 것이다: 빼면 타일의 아래 선이 그려진 범위 밖이라 쌓기가 칸을 본문 아래로
+        // 밀어 선이 하단 표시 글을 그었다
+        paint = !clear || cs.backgroundImage !== 'none' || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0 || cs.boxShadow !== 'none'
       }
       if (!paint) continue
       t = Math.min(t, e.top)
