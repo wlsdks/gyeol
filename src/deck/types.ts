@@ -71,6 +71,11 @@ export type FooterMode = 'section' | 'all' | 'page' | 'none'
  * morph는 이어 움직이기: 앞 장과 다음 장에 같은 것(같은 제목, 같은 컴포넌트)이 있으면 사라지지 않고 새 자리로 옮겨 간다
  */
 export type Transition = 'auto' | 'none' | 'fade' | 'slide' | 'zoom' | 'morph'
+/**
+ * 장면: 장 전체를 한 번에 짜는 움직임(카메라, 초점, 한 글자씩, 결 선, 숫자, 장막). 목록과 맞는 장은 deck/scenes.ts,
+ * 움직임은 motion/engine.ts의 scene
+ */
+export type SceneId = 'opening' | 'answer' | 'numbers' | 'flow' | 'compare' | 'time' | 'picture' | 'closing'
 /** 장의 바탕. invert는 테마의 반대(밝은 테마면 어둡게), accent는 강조색 면 */
 export type Tone = 'base' | 'invert' | 'accent'
 /** 제목 덩어리의 자리 (표지, 섹션). 값 목록은 themes.ts의 PLACES */
@@ -121,6 +126,8 @@ export interface SlideOptions {
    * 자리와 나오는 차례를 따로 정할 수 있게 (오른쪽 숫자를 먼저 보이고 왼쪽 설명을 뒤에)
    */
   order?: string[]
+  /** 이 장의 장면. 고른 동안 컴포넌트마다의 움직임, 빠르기, 들어오는 쪽 대신 장면이 움직인다(값은 그대로 남는다) */
+  scene?: SceneId
 }
 
 /** 부품 장만의 부품. 목록과 모양은 src/deck/blocks.ts */
