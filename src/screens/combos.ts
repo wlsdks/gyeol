@@ -95,8 +95,29 @@ const ALL_SCENES: BlockType[][][] = [
 
 const pick = <T,>(rand: () => number, list: readonly T[]): T => list[Math.floor(rand() * list.length)]
 
-/** 예시 내용으로 채운 부품 하나: 모양, 바탕, 항목 수를 고른다 */
-function sceneBlock(rand: () => number, type: BlockType, id: string): Block {
+/**
+ * 한 장에 같은 부품이 두 번 들어갈 때 둘째 것의 지어낸 글. 예시 글을 그대로 되풀이하면 같은 숫자, 같은 사람이 두 번 나와
+ * 실제 발표보다 어색해 보여서 짜임을 판단하기 어려웠다. 항목이 있는 부품은 항목의 차례를 돌려 쓴다
+ */
+const SECOND: Partial<Record<BlockType, Record<string, string>>> = {
+  message: { text: '점검 시간을 하루에서 두 시간으로 줄여요', sub: '시범 두 달 기준' },
+  text: { heading: '실패한 것만 다시 봐요', body: '자동 시험이 걸러 낸 항목만 사람이 확인해서 같은 점검을 두 번 하지 않아요.' },
+  quote: { quote: '양식이 하나라서 처음 온 사람도 바로 따라 써요', by: '시범 부서 팀장' },
+  callout: { label: '함께 정할 것', text: '시범 부서를 두 곳에서 다섯 곳으로 늘려요' },
+  number: { value: '1,240건', label: '한 달 문의', note: '지난해보다 18% 늘었어요' },
+  stat: { label: '교육을 마친 신입', value: '42명', change: '목표보다 6명 많아요', note: '10월 말 기준' },
+  delta: { label: '평균 대기 시간', before: '12분', after: '7분', note: '접수 창구를 합친 뒤' },
+  ring: { label: '제때 끝낸 요청', value: '88%', note: '9월에는 79%였어요' },
+  goal: { label: '상반기 신규 고객', value: '36', target: '50', unit: '곳', note: '남은 석 달에 14곳' },
+  meter: { label: '서버 이전 예산 집행', value: '1.2억 원', of: '2억 원', target: '1.5억 원' },
+  heading: { text: '바꾸면', note: '요청에서 받기까지 이틀' },
+  note: { kind: '주의', text: '시범 부서 두 곳의 값만 모았어요.' },
+  date: { date: '12월 2일 (월)', what: '새 양식 전 부서 적용', note: '기획팀 · 남은 기간 5주' },
+  status: { what: '교육 신청 화면 손보기', meta: '12월 첫 주까지 · 개발팀' },
+}
+
+/** 예시 내용으로 채운 부품 하나: 모양, 바탕, 항목 수를 고른다. nth는 그 장에서 같은 부품의 몇째인지 (0부터) */
+function sceneBlock(rand: () => number, type: BlockType, id: string, nth = 0): Block {
   const spec = BLOCKS[type]
   const sample = sampleBlock(type)
   const variants = spec.variants ?? []
@@ -106,8 +127,14 @@ function sceneBlock(rand: () => number, type: BlockType, id: string): Block {
   const look = r < 0.55 ? 'plain' : r < 0.85 ? 'card' : 'bold'
   const it = spec.items
   const n = it ? it.min + Math.floor(rand() * (it.max - it.min + 1)) : 0
-  const items = it && sample.items.length ? Array.from({ length: n }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `${id}-it${i}` })) : sample.items
-  return { ...sample, id, items, look, ...(variant ? { variant } : {}) }
+  // 항목은 예시에 있는 만큼까지만: 되풀이해 채우면 같은 항목이 한 부품에 두 번 나왔다. 많은 항목은 stress 시험이 따로 본다
+  const src = sample.items
+  // 항목 하나짜리 목록(점 하나, 사람 하나)은 실제 발표에서 거의 쓰지 않아 둘부터. 하나는 stress 시험이 본다
+  const count = it && src.length ? Math.max(Math.min(n, src.length), it.min, Math.min(2, src.length, it.max)) : 0
+  const shift = nth * Math.ceil(src.length / 2)
+  const items = count ? Array.from({ length: count }, (_, i) => ({ ...src[(i + shift) % src.length], id: `${id}-it${i}` })) : src
+  const fields = nth > 0 && SECOND[type] ? { ...sample.fields, ...SECOND[type] } : sample.fields
+  return { ...sample, id, fields, items, look, ...(variant ? { variant } : {}) }
 }
 
 export interface Combo {
@@ -129,8 +156,11 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
     const scene = pick(rand, ALL_SCENES)
     let blocks: Block[] = []
     const refused: Combo['refused'] = []
+    const seen = new Map<BlockType, number>()
     scene.forEach((slot, j) => {
-      const b = sceneBlock(rand, pick(rand, slot), `c${k}-b${j}`)
+      const type = pick(rand, slot)
+      const b = sceneBlock(rand, type, `c${k}-b${j}`, seen.get(type) ?? 0)
+      seen.set(type, (seen.get(type) ?? 0) + 1)
       // 대개는 편집기의 '넣기'처럼 알아서, 가끔은 사람이 끌어다 놓듯 넣을 수 있는 자리 가운데 하나에
       let next: Block[] | null = null
       if (rand() < 0.65) next = autoPlace(blocks, b, areaH)
