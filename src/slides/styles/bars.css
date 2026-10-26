@@ -27,6 +27,8 @@
   /* 줄은 위에서부터 쌓고 남는 높이는 맨 아래 한곳에(docs/VISUAL-RULES.md 6). 가운데에 두면 막대가 적을 때 단위 줄과 첫 막대 사이가
      벌어져 제목 아래에 빈 띠가 섰다. 줄이 모자라면 아래로만 넘친다(위로 넘치면 단위 줄을 덮는데 글자 맞추기가 놓친다) */
   align-content: start;
+  /* 장 채움(--fill-air, fitLayout)은 줄 사이에 같은 값으로 */
+  row-gap: var(--fill-air, 0px);
   padding-bottom: 24px;
 }
 

@@ -260,7 +260,8 @@
 
 .va-focus .kp:not([data-n='1']) .kp-item {
   justify-content: flex-start;
-  padding: 40px 0;
+  /* 장 채움(--fill-air, fitLayout)은 줄 위아래에 반씩 */
+  padding: calc(40px + var(--fill-air, 0px) / 2) 0;
   border-top: var(--rule-hair) solid var(--line);
 }
 
