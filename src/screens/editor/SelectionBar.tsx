@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react'
 import { visibleItems } from '../../deck/fields'
-import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layouts'
+import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
 import { PLACES } from '../../deck/themes'
 import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
@@ -8,7 +8,7 @@ import { gestureKey, usePointerSessions } from '../../lib/pointerSession'
 import { josa } from '../../lib/josa'
 import { frameRect } from '../../slides/blockFrame'
 import { startItemDrag } from '../../slides/itemDrag'
-import { placeFor, sideName, zoneOf } from '../../slides/panes'
+import { placeFor, sideName, sideZone, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CopyIcon, GripIcon, Icon, TrashIcon } from '../ui'
 import { moving, useTrackRect } from './useTrackRect'
@@ -615,8 +615,11 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
     const at = panes.sides.indexOf(side ?? panes.base)
     const place = (to: 'start' | 'end' | 'below') => {
       const p = placeFor(slide, to)
-      if (p.variant) store.setVariant(slide.id, p.variant)
-      store.setOptions(slide.id, { flip: p.flip || undefined })
+      // 모양과 좌우는 되돌리기 한 단계로 (판을 끌어 옮길 때와 같이, panes.tsx): 따로 남기면 옆으로 세운 것이 두 단계라
+      // Ctrl+Z 한 번에 아래 띠로 돌아오지 않았다
+      const key = gestureKey('pane.place')
+      if (p.variant !== undefined && p.variant !== variantOf(slide)) store.setVariant(slide.id, p.variant, key)
+      if (p.flip !== !!slide.options.flip) store.setOptions(slide.id, { flip: p.flip || undefined }, key)
     }
     const setSide = (k: number) => {
       const n = panes.sides[k]
@@ -632,7 +635,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
           </button>
         )}
         {spec.panes.below && (
-          <button type="button" className="sel-btn has-t" title={zone === 'below' ? '옆으로 세우기' : '장 아래에 띠로 깔기'} onClick={() => place(zone === 'below' ? (spec.panes!.start ? 'start' : 'end') : 'below')}>
+          <button type="button" className="sel-btn has-t" title={zone === 'below' ? '옆으로 세우기' : '장 아래에 띠로 깔기'} onClick={() => place(zone === 'below' ? sideZone(slide) : 'below')}>
             <BelowIcon />
             <span>{zone === 'below' ? '옆으로' : '아래로'}</span>
           </button>

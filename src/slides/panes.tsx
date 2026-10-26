@@ -49,6 +49,12 @@ export function sideName(n: number, base: number): string {
 export function zoneOf(slide: Slide): Zone {
   const spec = LAYOUTS[slide.layout].panes!
   if (spec.below && variantOf(slide) === spec.below) return 'below'
+  return sideZone(slide)
+}
+
+/** 옆 판이 서는 쪽. 아래 띠로 깔아 둔 동안에도 좌우(options.flip)는 남아서, 옆으로 세우면 깔기 전의 쪽으로 돌아간다 */
+export function sideZone(slide: Slide): 'start' | 'end' {
+  const spec = LAYOUTS[slide.layout].panes!
   const flip = !!slide.options.flip
   return spec.start ? (flip ? 'end' : 'start') : flip ? 'start' : 'end'
 }
