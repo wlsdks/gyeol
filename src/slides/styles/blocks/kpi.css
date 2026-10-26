@@ -87,9 +87,6 @@
     --kp-stack: 1;
   }
 
-  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
-    --kp-tall: 1;
-  }
 }
 
 @container bk (max-width: 1200px) and (min-height: 360px) {
@@ -98,20 +95,73 @@
   }
 }
 
-@container bk (max-width: 1200px) and (min-height: 400px) {
+/* 이름을 숫자 위에 두기(--kp-tall)는 그쪽 숫자가 더 클 때만. 위아래로 두면 줄마다 이름과 설명의 높이(--kp-txt)를 숫자가 내주고,
+   옆에 두면(쌓은 줄) 숫자가 칸 너비의 56%까지만 쓴다. 줄 높이 H/n에서 위아래 쪽 숫자는 (H/n - 24 - 글 높이), 옆 쪽은 0.56 × 칸 너비 / 3에
+   묶여서, 칸이 넓을수록 더 높아야 위아래 쪽이 이긴다. 예전에는 너비와 상관없이 정한 높이에서 바꿔서, 반 칸(804×624)의 숫자 셋이
+   옆에 두면 128px인데 위아래로 두어 62px가 되었다(둘은 154px, 넷은 108px라 셋만 갑자기 작았다).
+   글 높이: 이름만 55px 남짓, 설명까지 117px 남짓 (반 칸의 한 단계 작은 글자, 키운 1.2배) */
+@container bk (max-width: 600px) and (min-height: 340px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (max-width: 600px) and (min-height: 470px) {
   :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
     --kp-tall: 1;
   }
 }
 
-@container bk (max-width: 1200px) and (min-height: 450px) {
+@container bk (max-width: 600px) and (min-height: 510px) {
   :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
     --kp-tall: 1;
   }
 }
 
-@container bk (max-width: 1200px) and (min-height: 600px) {
+@container bk (max-width: 600px) and (min-height: 700px) {
   :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (600px < width <= 900px) and (min-height: 440px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (600px < width <= 900px) and (min-height: 570px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (600px < width <= 900px) and (min-height: 660px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (600px < width <= 900px) and (min-height: 850px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (900px < width <= 1200px) and (min-height: 545px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2']):not(:has(.kp-body)) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (900px < width <= 1200px) and (min-height: 670px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='2'] .kp-body) {
+    --kp-tall: 1;
+  }
+}
+
+@container bk (900px < width <= 1200px) and (min-height: 820px) {
+  :is(.va-base, .va-cards) > .bk-in:has(> .kp[data-n='3']):not(:has(.kp-body)) {
     --kp-tall: 1;
   }
 }
