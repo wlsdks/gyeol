@@ -330,18 +330,97 @@ function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], all: Li
   return out
 }
 
+/**
+ * 칸의 꾸밈 선(::before)이 흐름 안에 선 것(position: static, 칸 맨 위의 선): 자리를 계산된 값으로 낸다. pseudoPaint는 자리를 정해
+ * 그린 것만 보아서, 흐름 안의 선(예전 소제목의 머리 선 같은)은 다른 칸의 글 위로 지나가도 몰랐다
+ */
+function flowPaint(el: HTMLElement): Paint | null {
+  const cs = getComputedStyle(el, '::before')
+  if (cs.content === 'none' || cs.content === 'normal' || cs.display === 'none' || cs.display.startsWith('inline') || cs.position !== 'static') return null
+  const own = getComputedStyle(el)
+  const r = el.getBoundingClientRect()
+  const k = el.offsetWidth ? r.width / el.offsetWidth : 1
+  const px = (v: string) => parseFloat(v) || 0
+  const h = px(cs.height)
+  const w = Number.isFinite(parseFloat(cs.width)) ? parseFloat(cs.width) : el.clientWidth - px(own.paddingLeft) - px(own.paddingRight)
+  if (h <= 0 || w <= 0) return null
+  const x0 = r.left + (px(own.borderLeftWidth) + px(own.paddingLeft) + px(cs.marginLeft)) * k
+  const y0 = r.top + (px(own.borderTopWidth) + px(own.paddingTop) + px(cs.marginTop)) * k
+  return { box: { l: x0, t: y0, r: x0 + w * k, b: y0 + h * k }, cs, el, name: nameOf(el, '::before') }
+}
+
+/** 칸이 그린 선: 칸 안쪽의 것과 칸 자신의 가상 요소(칸 밖 위에 긋는 선 같은) */
+function cellRules(cell: HTMLElement, inner: HTMLElement, k: number): Rule[] {
+  const list = paints(inner)
+  for (const w of ['::before', '::after'] as const) {
+    const p = pseudoPaint(cell, w)
+    if (p) list.push(p)
+  }
+  for (const el of [inner, ...inner.querySelectorAll<HTMLElement>('*')]) {
+    if (el instanceof SVGElement || !shown(el)) continue
+    const p = flowPaint(el)
+    if (p) list.push(p)
+  }
+  return rulesOf(list, k)
+}
+
+/**
+ * 칸끼리: 이 칸의 글이 다른 칸의 글과 겹치거나, 다른 칸이 그은 선이 이 칸의 글을 지나가거나 붙는 곳 (docs/VISUAL-RULES.md 5).
+ * 칸 안만 보는 검사는 칸이 쌓기(fitBlocks의 pack)로 올라가거나 내용이 칸 밖으로 넘쳐 다른 칸 위에 그려진 것을 놓쳤다
+ * ('지금 방식' 소제목의 덧붙임을 아래 칸의 선이 긋고, 소제목이 아래 컴포넌트 이름 위에 겹쳐 그려졌다).
+ * 글끼리의 겹침은 두 칸 가운데 앞 칸에서 한 번만 적는다. 편집할 때 그림 위에 일부러 띄우는 입력 칸(.on-chart)은 뺀다
+ */
+function crossHits(cell: HTMLElement, lines: Line[], k: number): string[] {
+  const area = cell.parentElement
+  if (!area?.classList.contains('bk-area')) return []
+  const out: string[] = []
+  const mine = lines.filter((q) => !q.el.closest('.on-chart'))
+  const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  const at = cells.indexOf(cell)
+  cells.forEach((other, j) => {
+    if (other === cell || !other.offsetWidth) return
+    const inner = other.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) return
+    const what = `${other.dataset.type}`
+    if (j > at) {
+      for (const q of mine) {
+        for (const o of linesOf(inner)) {
+          if (o.el.closest('.on-chart')) continue
+          if (overlap(q.l, q.r, o.l, o.r) > 2 * k && overlap(q.t, q.b, o.t, o.b) > 2 * k) out.push(`글이 다른 컴포넌트(${what})의 글과 겹쳐요: ${text(q)} / ${text(o)}`)
+        }
+      }
+    }
+    for (const g of cellRules(other, inner, k)) {
+      for (const q of mine) {
+        if (g.dir === 'h') {
+          if (overlap(q.l, q.r, g.box.l, g.box.r) <= 2 * k) continue
+          const d = Math.max(g.box.t - q.b, q.t - g.box.b) / k
+          if (d < RULE_GAP) out.push(`다른 컴포넌트(${what})의 선이 글에 ${d < 0 ? '걸쳐요' : `붙어요(${Math.round(d)}px)`}: ${text(q)} / ${g.name}`)
+        } else {
+          if (overlap(q.t, q.b, g.box.t, g.box.b) <= 2 * k) continue
+          const d = Math.max(g.box.l - q.r, q.l - g.box.r) / k
+          if (d < RULE_GAP) out.push(`다른 컴포넌트(${what})의 세로 선이 글에 ${d < 0 ? '걸쳐요' : `붙어요(${Math.round(d)}px)`}: ${text(q)} / ${g.name}`)
+        }
+      }
+    }
+  })
+  return out
+}
+
 export interface InnerOptions {
   /** 면 안에서 내용이 위에 붙고 아래가 빈 것도 (칸 높이를 바꿔 가며 잴 때는 뺀다: 칸이 높을수록 늘 더 빈다) */
   fill?: boolean
   /** 글이 가려진 것도 (화면 안으로 옮겨 재야 해서 느리다) */
   covered?: boolean
+  /** 다른 칸의 글, 선과 겹치는 것도 (칸 하나만 재는 높이 재기에서는 볼 것이 없다) */
+  cross?: boolean
 }
 
 /**
  * 칸 하나 안이 깨진 곳. 가림은 화면 안에서만 잴 수 있어서 칸을 화면 안으로 옮겨 잰다.
  * 편집 화면에서도 fitBlocks처럼 편집 표시는 빼고 잰다
  */
-export function innerProblems(cell: HTMLElement, { fill = true, covered: cover = true }: InnerOptions = {}): string[] {
+export function innerProblems(cell: HTMLElement, { fill = true, covered: cover = true, cross = true }: InnerOptions = {}): string[] {
   const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
   if (!inner || !cell.offsetWidth) return []
   const r0 = cell.getBoundingClientRect()
@@ -357,6 +436,7 @@ export function innerProblems(cell: HTMLElement, { fill = true, covered: cover =
     ...itemSpills(inner, lines, k),
     ...(cover ? covered(cell, lines) : []),
     ...panelGaps(cell, inner, list, lines, k, fill),
+    ...(cross ? crossHits(cell, lines, k) : []),
   ]
   if (!was) area?.classList.remove('is-fitting')
   return [...new Set(out)]
