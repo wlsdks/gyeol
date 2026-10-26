@@ -50,6 +50,7 @@ import {
   playOrder,
   removeBlock,
   resizeBlock,
+  shiftBlock,
   shownBlocks,
   shownLook,
   slideName,
@@ -411,6 +412,20 @@ describe('자리 정하기', () => {
     const swapped = moveAt(bs, 'n', t!, H)!
     expect(areaOf(swapped, 'n')).toEqual(d)
     expect(areaOf(swapped, 'd')).toEqual(n)
+  })
+
+  it('화살표로 옮기면 같은 줄의 두 부품은 저마다의 너비로 차례만 바뀌고, 반대로 옮기면 처음과 같다', () => {
+    // 점 목록 9칸, 큰 숫자 3칸: 자리를 통째로 맞바꾸면 점 목록이 3칸 자리에서 가장 좁은 너비(4칸)로 넓어져 되돌려도 8칸과 4칸이 됐다
+    const bs: Block[] = [
+      { ...block('message', 'm'), at: { x: 0, y: 0, w: 12, h: 5 } },
+      { ...block('bullets', 'b'), at: { x: 0, y: 5, w: 9, h: 7 } },
+      { ...block('number', 'n'), at: { x: 9, y: 5, w: 3, h: 7 } },
+    ]
+    const right = shiftBlock(bs, 'b', 1, H)
+    expect(areaOf(right, 'n')).toEqual({ x: 0, y: 5, w: 3, h: 7 })
+    expect(areaOf(right, 'b')).toEqual({ x: 3, y: 5, w: 9, h: 7 })
+    const back = shiftBlock(right, 'b', -1, H)
+    expect(back.map((b) => [b.id, b.at])).toEqual(bs.map((b) => [b.id, b.at]))
   })
 
   it('나누는 선을 더 끌 수 없으면 막는 부품을 알려 준다', () => {

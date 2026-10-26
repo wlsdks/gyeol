@@ -1,7 +1,7 @@
 // 넣기, 빼기, 옮기기, 맞바꾸기, 놓을 자리(이미지는 비율에 맞는 자리)와 놓을 수 없는 까닭, 판의 선 끌기.
 // 자리 계산은 판(board.ts)이 하고, 여기서는 장의 규칙(부품 수, 면, 이음표, 이미지)과 손으로 끄는 곳을 판의 자리로 읽는 일을 한다
 
-import type { Block, BlockType } from '../types'
+import type { Block, BlockAt, BlockType } from '../types'
 import {
   allSpots,
   autoInsert,
@@ -18,10 +18,12 @@ import {
   moveGutter,
   needWith,
   sameSpot,
+  settle,
   type Side,
   type Spot,
   spotBlocks,
   swapBlocks,
+  treeOf,
 } from './board'
 import { ARRANGE_MAX, arrangeBest, arrangeOrder, boardCost, isArranged } from './arrange'
 import { aspectOf, fitImage, fitPlaced, misfit } from './images'
@@ -677,7 +679,33 @@ export function shiftBlock(blocks: Block[], blockId: string, dir: -1 | 1, areaH?
   const i = order.findIndex((b) => b.id === blockId)
   const other = order[i + dir]
   if (i < 0 || !other) return blocks
-  return moveAt(blocks, blockId, { kind: 'swap', with: other.id }, areaH) ?? blocks
+  return reorderPair(blocks, blockId, other.id, areaH) ?? moveAt(blocks, blockId, { kind: 'swap', with: other.id }, areaH) ?? blocks
+}
+
+/**
+ * 같은 줄에 옆으로(또는 같은 단에 위아래로) 붙어 선 두 부품의 차례를 바꾼다. 저마다의 너비(높이)는 그대로, 이음표는 맞바꾸기처럼 자리에 남는다.
+ * 화살표 키로 옮길 때 쓴다: 끌어서 가운데에 놓을 때처럼 자리를 통째로 맞바꾸면 좁은 자리에 간 부품이 가장 좁은 너비까지 넓어져서
+ * (점 목록 9칸과 큰 숫자 3칸이 8칸과 4칸으로) →를 누른 뒤 ←를 눌러도 처음으로 돌아오지 않았다.
+ * 붙어 서지 않았거나 바꾼 판을 나무로 읽을 수 없으면 null
+ */
+function reorderPair(blocks: Block[], a: string, b: string, areaH?: number): Block[] | null {
+  const A = blocks.find((x) => x.id === a)
+  const B = blocks.find((x) => x.id === b)
+  if (!A?.at || !B?.at) return null
+  const row = A.at.y === B.at.y && A.at.h === B.at.h
+  const [p, pa, q, qa] = (row ? A.at.x < B.at.x : A.at.y < B.at.y) ? [A, A.at, B, B.at] : [B, B.at, A, A.at]
+  let to: { p: BlockAt; q: BlockAt }
+  if (row && pa.x + pa.w === qa.x) to = { q: { ...qa, x: pa.x }, p: { ...pa, x: pa.x + qa.w } }
+  else if (!row && pa.x === qa.x && pa.w === qa.w && pa.y + pa.h === qa.y) to = { q: { ...qa, y: pa.y }, p: { ...pa, y: pa.y + qa.h } }
+  else return null
+  const links = (x: Block) => ({ link: x.link, linkBelow: x.linkBelow })
+  const bare = ({ link: _, linkBelow: __, ...x }: Block) => x
+  const next = blocks.map((x) =>
+    x.id === p.id ? { ...bare(x), ...clean(links(q)), at: to.p } : x.id === q.id ? { ...bare(x), ...clean(links(p)), at: to.q } : x,
+  )
+  if (!treeOf(next)) return null
+  const fitted = settle(next, fitFor(next, areaH))
+  return fitted && settled(fitted, [], areaH)
 }
 
 /**
