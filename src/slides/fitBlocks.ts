@@ -744,13 +744,16 @@ export function blockFitter() {
       const px = Math.round(dy.get(x.c)! / k)
       if (px) x.c.style.setProperty('--bk-shift', px + 'px')
     }
-    // 옆 이음표는 앞 칸과 같이, 아래 이음표는 옮긴 위아래 칸의 그려진 것 사이 가운데로
+    // 옆 이음표는 옮긴 앞 칸의 그려진 것 가운데 높이로, 아래 이음표는 옮긴 위아래 칸의 그려진 것 사이 가운데로
     for (const l of links) {
       const from = items.find((x) => x.id === l.dataset.after)
       if (!from) continue
       if (l.classList.contains('lk-h')) {
-        const px = Math.round(dy.get(from.c)! / k)
-        if (px) l.style.setProperty('--bk-shift', px + 'px')
+        // 앞 칸의 그려진 것 가운데 높이에: 칸 가운데에 두면 위에 붙은 소제목 옆 이음표가 그 아래로 올려 붙인 부품에 걸쳤다
+        const r = l.getBoundingClientRect()
+        const mid = (from.ink!.t + from.ink!.b) / 2 + dy.get(from.c)!
+        const move = Math.round((mid - (r.top + r.bottom) / 2) / k)
+        if (move) l.style.setProperty('--bk-shift', move + 'px')
         continue
       }
       const to = items.filter((x) => x.r.top >= from.r.bottom - 1 && side(x.r, from.r)).sort((p, q) => p.r.top - q.r.top)[0]
