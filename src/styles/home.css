@@ -57,13 +57,6 @@
   border-bottom: 1px solid var(--ink);
 }
 
-.home-empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
 .home-h {
   display: flex;
   align-items: baseline;
@@ -222,27 +215,109 @@
   margin: -5px -6px 0 0;
 }
 
-/* 만든 발표가 없을 때: 남은 자리의 가운데에. 위에 붙여 두면 화면 아래 대부분이 빈다 */
+/*
+ * 만든 발표가 없을 때: 남은 자리의 가운데 높이에, 왼쪽은 말과 단추, 오른쪽은 만드는 차례 셋.
+ * 가운데 정렬 큰 글씨 하나만 두면 흔한 시작 화면처럼 보이고, 무엇을 하게 되는지는 알 수 없다
+ */
 .home-empty {
-  display: flex;
+  display: grid;
   flex: 1;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-content: center;
   align-items: center;
-  justify-content: center;
-  padding: 24px 0 64px;
-  text-align: center;
+  gap: 32px 72px;
+  padding: 16px 0 48px;
+}
+
+.home-empty-lead {
+  min-width: 0;
+}
+
+.home-waves {
+  display: block;
+  width: 42px;
+  height: 33px;
+  margin-bottom: 18px;
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-linecap: round;
+  stroke-width: 1.5;
+}
+
+.home-waves path:nth-child(2) {
+  stroke: var(--sel);
+}
+
+.home-waves path:nth-child(3) {
+  opacity: 0.45;
 }
 
 .home-empty-h {
   margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: 'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.045em;
 }
 
 .home-empty-p {
-  margin: 8px 0 28px;
+  margin: 12px 0 28px;
   color: var(--ink-2);
+  font-size: 16px;
+}
+
+.home-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 차례 셋: 상자 없이 가는 선으로 나눈 줄. 번호는 명조 숫자로 작게 */
+.home-steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-steps li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 2px 0;
+  padding: 16px 0 17px;
+  border-top: 1px solid var(--line-2);
+}
+
+.home-steps li:last-child {
+  border-bottom: 1px solid var(--line-2);
+}
+
+.home-step-n {
+  grid-row: span 2;
+  color: var(--ink-3);
+  font-family: 'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-step-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.home-step-desc {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* 좁은 창: 차례는 말 아래로 */
+@media (max-width: 900px) {
+  .home-empty {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .home-links {
@@ -286,5 +361,37 @@
 
   .home-h {
     font-size: 26px;
+  }
+}
+
+/* 큰 화면(1920×1080): 빈 화면의 말과 차례를 키운다. 그대로 두면 넓은 바탕에 작은 글만 떠 보인다.
+   남는 높이의 가운데보다 조금 위에 두어야 눈으로 보기에 가운데다 */
+@media (min-width: 1700px) and (min-height: 900px) {
+  .home-empty {
+    column-gap: 120px;
+    padding-bottom: 120px;
+  }
+
+  .home-empty-h {
+    font-size: 44px;
+  }
+
+  .home-empty-p {
+    margin: 14px 0 32px;
+    font-size: 18px;
+  }
+
+  .home-steps li {
+    grid-template-columns: 52px minmax(0, 1fr);
+    padding: 20px 0 21px;
+  }
+
+  .home-step-n,
+  .home-step-name {
+    font-size: 17px;
+  }
+
+  .home-step-desc {
+    font-size: 15px;
   }
 }
