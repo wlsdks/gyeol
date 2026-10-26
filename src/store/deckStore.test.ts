@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDeck } from '../deck/generate'
+import { LAYOUTS, variantOf } from '../deck/layouts'
 import { gestureKey } from '../lib/pointerSession'
 import { undoLast, useDeck } from './deckStore'
 
@@ -67,7 +68,11 @@ describe('되돌리기 단위', () => {
     useDeck.getState().moveItem(s.id, 0, 0)
     useDeck.getState().setOptions(s.id, { highlight: s.options.highlight })
     useDeck.getState().setTitle(useDeck.getState().deck!.title)
+    // 고른 적 없는 첫째 모양을 다시 고르기
+    const v = slides().find((x) => (LAYOUTS[x.layout].variants?.length ?? 0) > 1 && x.variant === undefined)!
+    useDeck.getState().setVariant(v.id, variantOf(v))
     expect(useDeck.getState().past).toHaveLength(0)
+    expect(slides().find((x) => x.id === v.id)!.variant).toBeUndefined()
   })
 
   it('한 번 끄는 동안 고친 것은 손을 멈췄다가 움직여도 되돌리기 한 단계', () => {

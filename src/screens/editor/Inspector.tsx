@@ -202,7 +202,11 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
               description: i < 0 ? '강조하지 않아요' : `${i + 1}번째 항목을 강조해요`,
             }))}
             value={highlightOf(slide)}
-            onPick={(i) => setOptions(slide.id, { highlight: i })}
+            onPick={(i) => {
+              // 지금 강조를 다시 누르면 그대로 둔다: 고른 적 없는 기본 강조(추이의 마지막 점 같은)를 번호로 적어 넣어서, 보이는 것은
+              // 같은데 되돌리기 단계가 생겼고 항목이 늘어도 마지막을 따라가던 강조가 그 번호에 묶였다
+              if (i !== highlightOf(slide)) setOptions(slide.id, { highlight: i })
+            }}
           />
         </Opt>
       )}

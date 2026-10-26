@@ -4,7 +4,7 @@ import { unknownParts } from '../deck/compat'
 import { withOneMore } from '../deck/edits'
 import { makeSlide, uid } from '../deck/generate'
 import { followIndex, isMetaKey, moveIn } from '../deck/fields'
-import { LAYOUTS } from '../deck/layouts'
+import { LAYOUTS, variantOf } from '../deck/layouts'
 import { migrateDeck } from '../deck/migrate'
 import { GESTURE_KEY } from '../lib/pointerSession'
 import type { Block, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
@@ -306,7 +306,9 @@ export const useDeck = create<DeckState>((set, get) => {
       commit((d) => mapSlide(d, slideId, (s) => withLayout(s, layout)))
     },
     setVariant(slideId, variant, key) {
-      commit((d) => mapSlide(d, slideId, (s) => ({ ...s, variant })), key)
+      // 지금 모양을 다시 고르면 그대로 둔다: 고른 적 없는 첫째 모양에 그 이름을 적어 넣기만 해서, 보이는 것은 같은데 되돌리기
+      // 단계가 생겨 Ctrl+Z를 눌러도 아무 일이 없는 것처럼 보였다
+      commit((d) => mapSlide(d, slideId, (s) => (variantOf({ ...s, variant }) === variantOf(s) ? s : { ...s, variant })), key)
     },
 
     setBlocks(slideId, blocks, key) {
