@@ -1,9 +1,10 @@
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type Modifier } from '@dnd-kit/core'
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS as DndCss } from '@dnd-kit/utilities'
 import { useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { cx } from '../../../lib/cx'
 import { keys } from '../../../lib/keys'
+import { LIST_AUTO_SCROLL, keepInList } from '../../../lib/listDrag'
 import { GripIcon, Icon, Info, PlayIcon } from '../../ui'
 import type { Lane, Player } from './player'
 
@@ -14,9 +15,6 @@ import type { Lane, Player } from './player'
 const tickStep = (span: number) => (span > 6000 ? 1000 : 500)
 
 const sec = (ms: number) => `${(ms / 1000).toFixed(1)}초`
-
-/** 줄은 위아래로만 끈다 */
-const vertical: Modifier = ({ transform }) => ({ ...transform, x: 0 })
 
 export function Timeline({
   player,
@@ -179,7 +177,13 @@ export function Timeline({
           {head.filter((l) => l.id === 'head').map((l) => (
             <Row key={l.id} lane={l} span={span} />
           ))}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[vertical]} onDragEnd={onDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            modifiers={[keepInList]}
+            autoScroll={LIST_AUTO_SCROLL}
+            onDragEnd={onDragEnd}
+          >
             <SortableContext items={order} strategy={verticalListSortingStrategy}>
               {lanes.map((l, i) => (
                 <SortRow

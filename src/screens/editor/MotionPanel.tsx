@@ -8,6 +8,7 @@ import { MOTIONS, motionOf, TRANSITIONS } from '../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide, Transition } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
+import { LIST_AUTO_SCROLL, keepInList } from '../../lib/listDrag'
 import { motionEngine } from '../../motion/engine'
 import { useDeck } from '../../store/deckStore'
 import { ChevronIcon, GripIcon, Icon, PlayIcon, Segmented, type Toast } from '../ui'
@@ -160,7 +161,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
       </p>
       <SceneOverride slide={slide} />
       {steps[0] === 0 && <p className="mp-step">장이 나올 때</p>}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[keepInList]} autoScroll={LIST_AUTO_SCROLL} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <ol className="mp-list" aria-label={`나오는 차례. 끌거나 ${keys('alt+↑')}, ${keys('alt+↓')}로 옮겨요`}>
             {order.map((b, i) => (

@@ -8,6 +8,7 @@ import { missingFields, pageInfo } from '../../deck/fields'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
+import { LIST_AUTO_SCROLL, keepInList } from '../../lib/listDrag'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
@@ -81,7 +82,14 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
         {said}
       </p>
       <div className="sl-scroll" onKeyDown={onKeyDown}>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd} accessibility={accessibility}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[keepInList]}
+          autoScroll={LIST_AUTO_SCROLL}
+          onDragEnd={onDragEnd}
+          accessibility={accessibility}
+        >
           <SortableContext items={deck.slides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             {deck.slides.map((slide) => (
               <Thumb
