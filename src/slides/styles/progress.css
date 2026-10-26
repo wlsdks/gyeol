@@ -8,7 +8,8 @@
      줄마다 비율로 나누면(1.5fr 2fr 150px 220px) 짧은 이름 뒤로 막대까지 300px 넘게 비고, 상태 칸이 가장 긴 상태보다 넓어
      짧은 상태 뒤가 줄마다 들쭉날쭉 비었다. 머리줄의 상태별 과제 수는 오른쪽 끝에 붙어서 더 어긋나 보였다 */
   grid-template-columns: fit-content(40%) minmax(0, 1fr) auto auto;
-  align-content: center;
+  /* 표는 본문 첫 줄에서 시작하고 남는 높이는 아래에 둔다(VISUAL-RULES 6) */
+  align-content: start;
   min-height: 0;
 }
 
@@ -71,6 +72,11 @@
   border-bottom: var(--rule-hair) solid var(--line);
 }
 
+/* 줄 선은 과제 사이에만: 끝줄 아래는 여백이 닫는다(VISUAL-RULES 2) */
+.ps-row:last-child {
+  border-bottom: 0;
+}
+
 .ps-h {
   color: var(--ink-3);
   font-size: var(--t-small);
@@ -124,6 +130,16 @@
   margin-top: 4px;
   color: var(--ink-3);
   line-height: 1.3;
+}
+
+/* 장 한 장의 줄 모양에서 다섯까지는 이름과 담당을 한 단계 크게: 위에서부터 쌓으면 본문의 반 가까이 비었다(VISUAL-RULES 6,
+   본문의 60~85%를 채운다). 큰 글자는 이미 크므로 그대로 */
+.l-progress:not(.sz-large) .ps:not(.ps-board):not([data-n='6'], [data-n='7']) .ps-title {
+  --fs: 36px;
+}
+
+.l-progress:not(.sz-large) .ps:not(.ps-board):not([data-n='6'], [data-n='7']) .ps-meta {
+  --fs: 26px;
 }
 
 .ps-track {
@@ -215,10 +231,12 @@
 
 /* 모양: 상태별. 과제를 상태마다 한 단에 모은다(있는 상태만). 단 머리에 상태와 과제 수, 그 아래로 과제마다 이름, 담당과 기한,
    진행률 막대와 숫자. 단이 상태를 말하므로 상태 표시는 지연된 과제의 사정(예: 2주 지연)만 글로 남긴다. 편집할 때는 상태를 고쳐
-   다른 단으로 옮길 수 있게 모든 과제에 상태 칸을 보인다. 면(카드)을 깔지 않고, 단 머리의 윗줄만 상태 색이다 */
+   다른 단으로 옮길 수 있게 모든 과제에 상태 칸을 보인다. 면(카드)도 단 머리의 선도 깔지 않는다: 단마다 위에 2px 상태 색 선과
+   머리 아래 선을 긋던 때는 머리 위아래로 선 밑에 선이 섰다(VISUAL-RULES 2). 단은 사이 여백으로, 상태는 머리의 글자와 과제 수의
+   색(진행 중은 강조색, 지연은 나쁨 색)으로 읽는다 */
 .ps-board {
   grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
-  align-content: safe center;
+  align-content: start;
   align-items: start;
   column-gap: 56px;
 }
@@ -236,9 +254,7 @@
 
 .ps-lane-h {
   margin: 0;
-  padding: 22px 0 20px;
-  border-top: 2px solid var(--ps-c);
-  border-bottom: var(--rule-hair) solid var(--line);
+  padding: 0 0 8px;
 }
 
 .ps-lane-h .ps-count {
@@ -248,7 +264,7 @@
   font-weight: 700;
 }
 
-/* 단 머리의 점은 윗줄이 색을 대신한다 */
+/* 단 머리에는 점을 두지 않는다: 단 머리 자체가 상태의 이름이라 점까지 두면 같은 표시가 겹친다 */
 .ps-lane-h .ps-count::before {
   content: none;
 }
@@ -289,7 +305,8 @@
 }
 
 .ps-board .ps-pct {
-  --fs: 30px;
+  /* 진행률은 막대의 꼬리표라 이름보다 작게: 이름과 같은 크기로 막대 끝에 붙으면 좁은 단이 비좁아 보였다(사용자) */
+  --fs: 26px;
   grid-area: pct;
   align-self: center;
 }
@@ -336,7 +353,30 @@
 }
 
 .ps-board:is([data-rows='1'], [data-rows='2']) .ps-pct {
-  --fs: 36px;
+  --fs: 30px;
+}
+
+/* 장 한 장에 네 단이고 단마다 과제가 둘까지면 두 단씩 두 줄로: 네 단을 한 줄에 두면 단이 380px 남짓이라 과제 이름이 두 줄로
+   꺾이고 진행률이 막대 끝에 붙어 비좁았고, 아래 절반이 비었다(사용자). 두 줄이면 이름이 한 줄에 들고 본문을 알맞게 채운다 */
+.l-progress .ps-board:has(> .ps-lane:nth-child(4)):is([data-rows='1'], [data-rows='2']) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 48px;
+  column-gap: 96px;
+}
+
+/* 두 줄로 놓을 때는 진행률을 이름 줄 끝으로 올려 과제마다 한 줄을 줄인다(넷부터의 짜임과 같다): 그대로면 두 줄이 본문을 넘었다 */
+.l-progress .ps-board:has(> .ps-lane:nth-child(4)):is([data-rows='1'], [data-rows='2']) .ps-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'name state pct' 'track track track';
+  padding-block: 20px;
+}
+
+.l-progress .ps-board:has(> .ps-lane:nth-child(4)):is([data-rows='1'], [data-rows='2']) .ps-name {
+  margin-bottom: 16px;
+}
+
+.l-progress .ps-board:has(> .ps-lane:nth-child(4)):is([data-rows='1'], [data-rows='2']) .ps-pct {
+  align-self: baseline;
 }
 
 /* 넷부터는 진행률을 이름 줄 끝으로 올려 과제마다 한 줄을 줄이고 줄 사이를 좁힌다 */
