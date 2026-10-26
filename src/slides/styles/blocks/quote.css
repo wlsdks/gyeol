@@ -1,7 +1,9 @@
 /* ---------- 인용 ----------
-   남의 말을 옮긴 글이라 장의 제목이나 결론처럼 굵은 검정으로 쓰지 않는다: 보통 굵기(500)에 버금 글자색(--ink-2).
+   남의 말을 옮긴 글이라 장의 제목이나 결론처럼 굵게 쓰지 않는다: 보통 굵기(400)의 글자색, 제목 글꼴.
    예전에는 제목 글꼴의 굵은 검정 44px라, 장 제목과 핵심 한 줄 아래에 놓이면 셋 다 제목처럼 읽혔고 인용으로 보이지 않았다.
-   따옴표는 글 바로 위에 붙이고(사이를 글 한 줄 높이의 4분의 1 남짓), 말한 사람은 '—'를 앞에 두어 글에 딸린 한 줄로 읽히게 한다 */
+   인용임은 따옴표로 보인다: 여는 따옴표를 글의 왼쪽 선 밖으로 내단다(걸린 문장부호). 글의 왼쪽 선이 옆 컴포넌트의 글과 같은 선에
+   서고, 따옴표만 여백으로 나간다. 예전의 따옴표 그림(글 위에 따로 선 회색 따옴표)은 장식처럼 떠 보였다.
+   말한 사람은 '—'를 앞에 두어 글에 딸린 한 줄로 읽히게 한다 */
 
 .bk-q {
   display: flex;
@@ -11,27 +13,30 @@
   margin: 0;
 }
 
-.bk-q-mark {
-  /* 따옴표는 장식이라 강조색 대신 옅은 글자색으로. 높이는 글 한 줄(44px)보다 조금 작게: 글보다 크면 따옴표가 글을 누른다.
-     글자 크기 배율을 글과 같이 곱해서 칸이 작아지면 같이 작아진다 */
-  --qm: calc(36px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
-  display: block;
-  flex: none;
-  width: calc(var(--qm) * 1.5);
-  height: var(--qm);
-  margin-bottom: calc(var(--qm) * 0.3);
-  fill: color-mix(in srgb, var(--ink) 24%, var(--bg));
-}
-
 .bk-q-t {
   --fs: 44px;
-  color: var(--ink-2);
+  position: relative;
+  color: var(--ink);
   font-family: var(--font-head);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: var(--head-tracking);
   line-height: 1.4;
   /* 두세 줄짜리 말이라 줄 길이를 고르게: 끝 줄에 낱말 하나만 남지 않는다 */
   text-wrap: balance;
+}
+
+/* 따옴표는 글자로, 옅은 글자색. 편집 칸(.ed)에는 붙이지 않는다: 쓰는 글 앞뒤에 따옴표가 끼어 보였다 */
+.bk-q-t:not(.ed)::before {
+  position: absolute;
+  right: 100%;
+  margin-right: 0.08em;
+  color: var(--ink-3);
+  content: '“';
+}
+
+.bk-q-t:not(.ed)::after {
+  color: var(--ink-3);
+  content: '”';
 }
 
 .bk-q-by {
@@ -51,8 +56,4 @@
    인용 하나가 곧 장의 말인 장(현장의 한마디)만 44 */
 .l-compose:is(:has(.s-title:not(.is-hint, .is-empty)), :has(.bk-msg-t)) .bk-q-t {
   --fs: 36px;
-}
-
-.l-compose:is(:has(.s-title:not(.is-hint, .is-empty)), :has(.bk-msg-t)) .bk-q-mark {
-  --qm: calc(30px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
 }

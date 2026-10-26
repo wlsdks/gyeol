@@ -1198,8 +1198,7 @@ export function motionEngine(): MotionEngine {
           })
           break
         case 'quote':
-          pop(one('.bk-q-mark'), 60)
-          rise(one('.bk-q-t'), 200, L.y * 0.6)
+          rise(one('.bk-q-t'), 120, L.y * 0.6)
           fade(one('.bk-q-by'), 520, 600)
           break
         case 'callout':

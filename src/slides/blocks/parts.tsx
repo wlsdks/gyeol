@@ -25,19 +25,6 @@ export function PersonIcon() {
 }
 
 /** 몫을 보이는 꼴: 10% 밑은 소수 한 자리, 1% 밑은 '1% 미만' */
-/**
- * 여는 따옴표(“)를 그림으로. 글꼴의 따옴표는 고딕에서는 가는 빗금 둘로 작게 보이고, 명조(본문 한글 글꼴)에서는 한 글자 폭의
- * 오른쪽 반에 그려져 글 왼쪽 선보다 안으로 들어가 떠 보였다. 그림이면 글꼴과 상관없이 같은 모양이 글의 왼쪽 선에 맞는다
- */
-export function QuoteMark({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 39 26" aria-hidden="true">
-      <path d="M15.5 1C6.5 2.8 1 9.4 1 18a7 7 0 1 0 7-7c.6-3.7 3.2-6.4 7.9-7.9Z" />
-      <path d="M37.5 1C28.5 2.8 23 9.4 23 18a7 7 0 1 0 7-7c.6-3.7 3.2-6.4 7.9-7.9Z" />
-    </svg>
-  )
-}
-
 export function pctText(p: number): string {
   if (p > 0 && p < 1) return '1% 미만'
   return `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`
