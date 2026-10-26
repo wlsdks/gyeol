@@ -138,7 +138,8 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
   // 본문은 장 제목 아래 --body-gap에서 시작한다(docs/VISUAL-RULES.md 6). 머리 아래가 그 1.5배를 넘으면 본문을 가운데로 띄운 것
-  if (hasHead) {
+  // 내용이 적어 쌓기가 눈높이 가운데로 내린 장(fitBlocks.ts의 eyeLevel, data-eye)은 머리 아래가 넓은 것이 맞다
+  if (hasHead && !area.dataset.eye) {
     // 머리의 아래: 부제가 있으면 부제, 없으면 제목의 글 줄 아래
     const last = [...head!.querySelectorAll<HTMLElement>('.s-title, .s-lead')].filter((el) => el.textContent?.trim()).at(-1)
     const hb = last ? last.getBoundingClientRect().bottom : head!.getBoundingClientRect().bottom
@@ -599,6 +600,11 @@ function sides(area: HTMLElement, k: number): string[] {
         const pi = p.n.parentElement?.closest('.it') ?? null
         const qi = q.n.parentElement?.closest('.it') ?? null
         if (pi !== qi) continue
+        // 줄 선이 있는 항목(목차, 표의 줄)은 선이 두 끝을 잇는 한 줄이라 찢어진 것이 아니다
+        if (pi) {
+          const cs = getComputedStyle(pi)
+          if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0) continue
+        }
         // 사이에 다른 글이나 그려진 것이 있으면 찢어진 것이 아니다 (막대 옆 숫자, 표의 칸)
         if (ls.some((o) => o !== p && o !== q && o.l >= p.r - 1 && o.r <= q.l + 1 && Math.min(o.b, p.b) - Math.max(o.t, p.t) > 0)) continue
         if (drawnBoxes.some((o) => o.left < q.l && o.right > p.r && Math.min(o.bottom, p.b + 24 * k) - Math.max(o.top, p.t - 24 * k) > 0)) continue
@@ -720,13 +726,14 @@ const FILL_MIN = 0.6
 
 /**
  * 채움: 그려진 내용이 본문 높이의 FILL_MIN에 못 미치는 장. 남는 높이는 맨 아래에 모이니, 내용이 적으면 아래가 40% 넘게 빈다.
- * 사이를 벌리지 말고 글자와 그림의 단계를 올려 채운다(fitBlocks.ts의 fit 끝). 제목 없는 한 문장 장(가운데에 선다)은 뺀다
+ * 사이를 벌리지 말고 글자와 그림의 단계를 올려 채운다(fitBlocks.ts의 fit 끝). 제목 없는 한 문장 장(가운데에 선다)과
+ * 키워도 모자라 눈높이 가운데로 내린 완결된 장(data-eye)은 뺀다
  */
 function fill(slide: HTMLElement, area: HTMLElement): string[] {
   const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
-  if (!hasHead && cells.length === 1) return []
+  if ((!hasHead && cells.length === 1) || area.dataset.eye) return []
   const a = area.getBoundingClientRect()
   const spans = cells.map(inkSpan).filter((x): x is Span => !!x)
   if (!spans.length || !a.height) return []
