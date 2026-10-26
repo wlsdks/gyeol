@@ -4,7 +4,8 @@ import { pageInfo } from '../../deck/fields'
 import type { Deck } from '../../deck/types'
 import { downloadHtml } from '../../export/exportHtml'
 import { downloadPptx } from '../../export/exportPptx'
-import { exposePptDebug } from '../../export/rasterize'
+import { exposePptDebug, loadSlideFonts } from '../../export/rasterize'
+import { fitBlocks } from '../../slides/fitBlocks'
 import { pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { downloadDeckFile } from '../../store/deckFile'
 import { useDeck } from '../../store/deckStore'
@@ -79,6 +80,7 @@ function PrintDeck({ deck, onDone }: { deck: Deck; onDone: () => void }) {
   const info = pageInfo(deck.slides)
   const doneRef = useRef(onDone)
   doneRef.current = onDone
+  const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -90,9 +92,15 @@ function PrintDeck({ deck, onDone }: { deck: Deck; onDone: () => void }) {
     }
     window.addEventListener('afterprint', finish)
     const run = async () => {
-      await document.fonts?.ready
-      await Promise.all([...document.querySelectorAll<HTMLImageElement>('.print-root img')].map((img) => img.decode().catch(() => {})))
+      const root = rootRef.current
+      if (!root) return
+      await loadSlideFonts(root, deck)
+      await Promise.all([...root.querySelectorAll('img')].map((img) => img.decode().catch(() => {})))
       if (cancelled) return
+      // 글꼴이 온 뒤의 크기로 맞춘 다음 인쇄한다. 장의 효과도 맞추지만 언제 끝났는지 알 수 없고, 인쇄하는 동안에는 다시 맞추지 않는다
+      // (rasterize.tsx의 shoot와 같다)
+      await new Promise((r) => window.setTimeout(r))
+      fitBlocks(root)
       window.print()
       // 일부 브라우저는 afterprint를 보내지 않는다
       window.setTimeout(finish, 1000)
@@ -105,7 +113,8 @@ function PrintDeck({ deck, onDone }: { deck: Deck; onDone: () => void }) {
   }, [])
 
   return createPortal(
-    <div className="print-root">
+    // 화면 밖에 실제 크기로 그린다(print.css). inert가 화면 읽기 프로그램과 키보드에서 뺀다
+    <div ref={rootRef} className="print-root" inert>
       {deck.slides
         .filter((s) => !s.hidden)
         .map((s) => (

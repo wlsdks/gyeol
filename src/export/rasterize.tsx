@@ -61,6 +61,11 @@ async function loadFonts(text: string, families: RegExp): Promise<void> {
   await document.fonts.ready
 }
 
+/** 이 안의 장들에 쓰인 글자(CSS가 그리는 글자까지)가 든 글꼴 조각을 받는다. PDF로 내보내기(인쇄)도 인쇄 전에 쓴다 */
+export function loadSlideFonts(root: Element, deck: Deck): Promise<void> {
+  return loadFonts((root.textContent ?? '') + CSS_TEXT, fontFamiliesOf(deck.theme))
+}
+
 /** 장 안의 그림 가운데 data: 주소가 아닌 것(blob: 같은)은 SVG 안에서 읽히지 않아서 data: 주소로 바꾼다 */
 async function inlineImages(root: Element): Promise<void> {
   const imgs = Array.from(root.querySelectorAll('img'))

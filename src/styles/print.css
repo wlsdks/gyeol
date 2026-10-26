@@ -1,7 +1,19 @@
 /* ---------- 인쇄 (PDF) ---------- */
 
+/* 화면에서는 화면 밖에 실제 크기(1920×1080)로 그려 둔다. display:none이면 컴포넌트 맞추기와 채움(fitBlocks)이 자리를 재지 못해,
+   인쇄한 장에만 줄 사이 채움과 넘침 줄이기가 빠져 앱과 다르게 나왔다 */
 .print-root {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  width: 1920px;
+  pointer-events: none;
+}
+
+.print-page {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
 }
 
 @media print {
@@ -21,14 +33,12 @@
     display: none !important;
   }
 
+  /* 고정 위치는 쪽마다 되풀이되므로 인쇄할 때는 제자리로 */
   .print-root {
-    display: block;
+    position: static;
   }
 
   .print-page {
-    width: 1920px;
-    height: 1080px;
-    overflow: hidden;
     break-after: page;
   }
 
