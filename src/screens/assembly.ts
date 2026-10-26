@@ -77,7 +77,7 @@ const numeric = (s: string) => {
 /** 위계: 장 제목과 다투는 부품의 글 */
 function rivals(slide: HTMLElement, area: HTMLElement): string[] {
   const title = slide.querySelector<HTMLElement>('.s-title')
-  if (!title || title.classList.contains('is-hint') || !title.textContent?.trim()) return []
+  if (!title || title.matches('.is-hint, .is-empty') || !title.textContent?.trim()) return []
   const ts = getComputedStyle(title)
   const tfs = parseFloat(ts.fontSize)
   const out = new Set<string>()

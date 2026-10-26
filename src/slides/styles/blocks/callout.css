@@ -47,3 +47,9 @@
     padding-inline: 88px;
   }
 }
+
+/* 장 제목이 있으면 바탕 없는 강조 상자의 글은 44까지만: 넓고 높은 칸의 52(키우면 62)는 장 제목과 같은 굵은 검정에 같은 크기라
+   제목이 둘로 읽혔다. 면이 있으면 면이 이미 다른 자리라 그대로 둔다 */
+.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-look-plain .bk-call-t {
+  font-size: min(calc(44px * var(--scale, 1)), max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1))));
+}

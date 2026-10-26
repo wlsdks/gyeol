@@ -58,7 +58,8 @@ export const NATIVE: Record<NativeBlockType, Omit<BlockSpec, 'type'>> = {
     motion: '따옴표가 먼저, 글이 뒤따라요',
     fields: [
       { key: 'quote', label: '인용할 말', hint: '그대로 옮길 한마디', multiline: true },
-      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)', optional: true },
+      // 말한 사람은 접어 두지 않는다: 누구의 말인지 없으면 굵은 글 한 덩이로만 보여 인용으로 읽히지 않았다
+      { key: 'by', label: '말한 사람', hint: '누가 말했는지 (예: 시범 부서 팀장)' },
     ],
     minSpan: 4,
     prefSpan: 6,

@@ -116,7 +116,6 @@ const FOLD_USES: Partial<Record<BlockType, Record<string, string>>> = {
   message: { sub: '핵심 문장 아래 작은 글 한 줄' },
   text: { label: '소제목 위의 작은 이름표 (예: 대상)', heading: '글 위에 굵게 적는 요점 한 줄' },
   bullets: { 'items.body': '줄마다 요점 아래 덧붙이는 설명' },
-  quote: { by: '인용 아래에 누가 한 말인지' },
   callout: { label: '강조할 내용 위의 이름표 (예: 주의할 점)' },
   delta: { note: '전과 후를 잰 기준이나 기간' },
   goal: { unit: '지금과 목표 뒤에 붙는 단위', note: '막대 아래 짧은 설명' },

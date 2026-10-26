@@ -1,4 +1,7 @@
-/* ---------- 인용 ---------- */
+/* ---------- 인용 ----------
+   남의 말을 옮긴 글이라 장의 제목이나 결론처럼 굵은 검정으로 쓰지 않는다: 보통 굵기(500)에 버금 글자색(--ink-2).
+   예전에는 제목 글꼴의 굵은 검정 44px라, 장 제목과 핵심 한 줄 아래에 놓이면 셋 다 제목처럼 읽혔고 인용으로 보이지 않았다.
+   따옴표는 글 바로 위에 붙이고(사이를 글 한 줄 높이의 4분의 1 남짓), 말한 사람은 '—'를 앞에 두어 글에 딸린 한 줄로 읽히게 한다 */
 
 .bk-q {
   display: flex;
@@ -16,22 +19,38 @@
   flex: none;
   width: calc(var(--qm) * 1.5);
   height: var(--qm);
-  margin-bottom: calc(var(--qm) * 0.75);
+  margin-bottom: calc(var(--qm) * 0.3);
   fill: color-mix(in srgb, var(--ink) 24%, var(--bg));
 }
 
 .bk-q-t {
   --fs: 44px;
+  color: var(--ink-2);
   font-family: var(--font-head);
-  font-weight: var(--head-weight);
+  font-weight: 500;
   letter-spacing: var(--head-tracking);
   line-height: 1.4;
-  text-wrap: pretty;
+  /* 두세 줄짜리 말이라 줄 길이를 고르게: 끝 줄에 낱말 하나만 남지 않는다 */
+  text-wrap: balance;
 }
 
 .bk-q-by {
   --fs: var(--t-small);
-  margin-top: 28px;
+  margin-top: 24px;
   color: var(--ink-3);
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.bk-q-by::before {
+  content: '— ';
+}
+
+/* 장 제목이 있으면 인용은 제목과 핵심 한 줄(44) 아래의 딸린 목소리라 한 단계 작게(36). 같은 44면 두세 줄인 인용이
+   한 줄짜리 핵심 한 줄보다 무거워 보여 결론이 인용 쪽으로 넘어갔다 */
+.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-q-t {
+  --fs: 36px;
+}
+
+.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-q-mark {
+  --qm: calc(30px * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1));
 }

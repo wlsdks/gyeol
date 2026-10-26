@@ -25,3 +25,18 @@
   line-height: 1.45;
   text-wrap: pretty;
 }
+
+/* 장 제목이 있으면 핵심 한 줄은 제목 아래의 답이다: 한 단계 작게(44), 강조색으로. 제목(62, 길면 52)과 같은 굵은 검정에
+   한 단계 차이(52)면 제목이 둘로 읽혀 어느 쪽이 결론인지 흐렸다(예시 발표의 '사업 기회'에 핵심 한 줄을 더한 장).
+   강조색은 답에만 쓰는데, 제목이 말한 것을 숫자나 결론 한 줄로 받는 이 글이 그 답이다. 진한 면에서는 --accent가
+   --bold-accent로 바뀐다(looks.css). 장에 자리가 남아 모든 칸을 키울 때(fitBlocks의 --bk-fit 1.2)도 키우지 않는다:
+   키우면 44가 53이 되어 다시 제목과 한 단계 안쪽이 된다. 제목이 아주 길어 44로 줄면(fit-2) 한 단계 더 작게(36) */
+.l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-msg-t {
+  --fs: 44px;
+  color: var(--accent);
+  font-size: max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * min(var(--bk-fit, 1), 1)));
+}
+
+.l-compose:has(.s-title.fit-2:not(.is-hint, .is-empty)) .bk-msg-t {
+  --fs: 36px;
+}
