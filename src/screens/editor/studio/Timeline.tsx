@@ -4,7 +4,7 @@ import { CSS as DndCss } from '@dnd-kit/utilities'
 import { useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { cx } from '../../../lib/cx'
 import { keys } from '../../../lib/keys'
-import { LIST_AUTO_SCROLL, keepInList } from '../../../lib/listDrag'
+import { useListDrag } from '../../../lib/listDrag'
 import { GripIcon, Icon, Info, PlayIcon } from '../../ui'
 import type { Lane, Player } from './player'
 
@@ -83,7 +83,9 @@ export function Timeline({
   const now = () => Number(scrubRef.current?.getAttribute('aria-valuenow') ?? 0)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  const drag = useListDrag()
   const onDragEnd = (e: DragEndEvent) => {
+    drag.end()
     if (!e.over || e.active.id === e.over.id) return
     onMove(order.indexOf(String(e.active.id)), order.indexOf(String(e.over.id)))
   }
@@ -180,9 +182,11 @@ export function Timeline({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            modifiers={[keepInList]}
-            autoScroll={LIST_AUTO_SCROLL}
+            modifiers={drag.modifiers}
+            autoScroll={drag.autoScroll}
+            onDragStart={drag.start}
             onDragEnd={onDragEnd}
+            onDragCancel={drag.end}
           >
             <SortableContext items={order} strategy={verticalListSortingStrategy}>
               {lanes.map((l, i) => (

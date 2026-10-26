@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
+import { LIST_DRAGGING } from '../lib/listDrag'
 import { undoLast, useDeck } from '../store/deckStore'
 
 /**
@@ -310,6 +311,8 @@ export function useDialog(ref: RefObject<HTMLElement | null>, onClose: () => voi
     const onKey = (e: KeyboardEvent) => {
       if (e.isComposing || !isTop()) return
       if (e.key === 'Escape') {
+        // 창 안의 목록을 끄는 중이면 그 Esc는 끌기만 그만둔다 (움직임 편집의 시간표: 창이 먼저 받아 창이 닫혔다)
+        if (document.body.classList.contains(LIST_DRAGGING)) return
         e.preventDefault()
         close.current()
         return

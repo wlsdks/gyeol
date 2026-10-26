@@ -8,7 +8,7 @@ import { MOTIONS, motionOf, TRANSITIONS } from '../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide, Transition } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
-import { LIST_AUTO_SCROLL, keepInList } from '../../lib/listDrag'
+import { useListDrag } from '../../lib/listDrag'
 import { motionEngine } from '../../motion/engine'
 import { useDeck } from '../../store/deckStore'
 import { ChevronIcon, GripIcon, Icon, PlayIcon, Segmented, type Toast } from '../ui'
@@ -126,6 +126,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
   const names = useMemo(() => blockNames(slide.blocks ?? []), [slide.blocks])
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [said, setSaid] = useState('')
+  const drag = useListDrag()
   const ids = order.map((b) => b.id)
   const move = (from: number, to: number) => {
     if (from === to || to < 0 || to >= ids.length) return
@@ -133,6 +134,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
     setSaid(`${names.get(ids[from]) ?? '컴포넌트'}를 ${to + 1}번째로 옮겼어요.`)
   }
   const onDragEnd = (e: DragEndEvent) => {
+    drag.end()
     if (!e.over || e.active.id === e.over.id) return
     move(ids.indexOf(String(e.active.id)), ids.indexOf(String(e.over.id)))
   }
@@ -161,7 +163,15 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
       </p>
       <SceneOverride slide={slide} />
       {steps[0] === 0 && <p className="mp-step">장이 나올 때</p>}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[keepInList]} autoScroll={LIST_AUTO_SCROLL} onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={drag.modifiers}
+        autoScroll={drag.autoScroll}
+        onDragStart={drag.start}
+        onDragEnd={onDragEnd}
+        onDragCancel={drag.end}
+      >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <ol className="mp-list" aria-label={`나오는 차례. 끌거나 ${keys('alt+↑')}, ${keys('alt+↓')}로 옮겨요`}>
             {order.map((b, i) => (

@@ -8,7 +8,7 @@ import { missingFields, pageInfo } from '../../deck/fields'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
-import { LIST_AUTO_SCROLL, keepInList } from '../../lib/listDrag'
+import { useListDrag } from '../../lib/listDrag'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { EyeOffIcon, PlusIcon, Popover } from '../ui'
@@ -25,6 +25,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   // 끌기는 마우스로만. dnd-kit의 키보드 끌기는 Space와 Enter로 시작해서, 장을 고르려고 Enter를 누르면 끌기가 시작됐다.
   // 키보드로는 Alt+위아래 화살표로 한 칸씩 옮긴다 (아래 onKeyDown)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const drag = useListDrag()
   // 화면 읽기 프로그램에 들려줄 말. dnd-kit의 기본 안내는 영어라 한국어로 바꾼다
   const [said, setSaid] = useState('')
   // 고른 장이 목록 밖에 있으면 보이는 곳으로 (장을 더하거나 장 위에서 넘겼을 때. 목록 안에서 고르면 이미 보인다)
@@ -50,6 +51,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   }
 
   const onDragEnd = (e: DragEndEvent) => {
+    drag.end()
     if (!e.over || e.active.id === e.over.id) return
     const from = deck.slides.findIndex((s) => s.id === e.active.id)
     const to = deck.slides.findIndex((s) => s.id === e.over!.id)
@@ -85,9 +87,11 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          modifiers={[keepInList]}
-          autoScroll={LIST_AUTO_SCROLL}
+          modifiers={drag.modifiers}
+          autoScroll={drag.autoScroll}
+          onDragStart={drag.start}
           onDragEnd={onDragEnd}
+          onDragCancel={drag.end}
           accessibility={accessibility}
         >
           <SortableContext items={deck.slides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
