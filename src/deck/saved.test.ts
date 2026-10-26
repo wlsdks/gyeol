@@ -57,9 +57,10 @@ describe('내 컴포넌트로 저장', () => {
     expect(partFrom(sample(), 'block', 'none')).toBeNull()
   })
 
+  // 읽는 차례로: 강조 상자는 알아서 넣으면 근거 위로 간다(결론부터)
   it('처음 이름은 컴포넌트 이름들로, 셋이 넘으면 앞의 둘과 외 n', () => {
     const bs = [block('kpi', 'a'), block('callout', 'b'), block('bullets', 'c'), block('quote', 'd')].reduce<Block[]>((out, b) => autoPlace(out, b) ?? out, [])
-    expect(partFrom(composed(bs), 'slide', null)!.name).toBe('핵심 숫자 + 강조 상자 외 2')
+    expect(partFrom(composed(bs), 'slide', null)!.name).toBe('강조 상자 + 핵심 숫자 외 2')
   })
 })
 

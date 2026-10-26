@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   autoPlace,
   bandOf,
+  byReading,
   BLOCK_GROUPS,
   BLOCK_TYPES,
   BLOCKS,
@@ -188,8 +189,24 @@ describe('자리 정하기', () => {
       }
   })
 
+  it('결론 부품(핵심 한 줄, 강조 상자)은 알아서 넣으면 근거 위에, 이미 결론이 있으면 판에 맡긴다', () => {
+    const top = (bs: Block[]) => byReading(bs)[0].id
+    for (const lead of ['message', 'callout'] as const) {
+      const bs = board(block('kpi', 'k'), block('bullets', 'l'), block(lead, 'm'))
+      expect(top(bs), lead).toBe('m')
+      expect(sound(bs), lead).toBe(true)
+    }
+    // 이미 결론이 위에 있으면 두 번째 결론은 맨 위로 끼어들지 않는다
+    const two = board(block('kpi', 'k'), block('message', 'm'), block('callout', 'c'))
+    expect(top(two)).toBe('m')
+    // 끌어 놓은 자리(insertAt)는 그대로
+    const dropped = insertAt(board(block('kpi', 'k')), { at: null, side: 'below' }, block('message', 'm'), H)!
+    expect(top(dropped)).toBe('k')
+  })
+
   it('넣고 빼면 원래대로', () => {
-    const bs = board(block('number', 'n'), block('callout', 'c'))
+    // 강조 상자는 알아서 넣으면 위로 가서(결론부터) 아래 자리에 끌어 놓은 것처럼
+    const bs = insertAt(board(block('number', 'n')), { at: null, side: 'below' }, block('callout', 'c'), H)!
     const added = autoPlace(bs, block('bullets', 'b'), H)!
     expect(added).toHaveLength(3)
     const back = removeBlock(added, 'b', H)

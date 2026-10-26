@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { makeSlide } from '../generate'
 import type { Block, Slide } from '../types'
-import { autoPlace, currentPreset, makeBlock, MOTION_PRESETS, playOrder, presetFits, whenOf, withPreset } from '../blocks'
+import { autoPlace, currentPreset, insertAt, makeBlock, MOTION_PRESETS, playOrder, presetFits, whenOf, withPreset } from '../blocks'
 
 // 연출: 컴포넌트마다의 '언제'와 장의 나오는 차례를 한 번에. 움직임(effect)과 빠르기는 그대로 둔다
 
 const block = (type: Block['type'], id: string): Block => ({ ...makeBlock(type), id })
 
-/** 위에 전과 후와 추이, 아래에 강조 상자 (놓인 차례: d, t, c) */
+/** 위에 전과 후와 추이, 아래에 강조 상자 (놓인 차례: d, t, c). 강조 상자는 알아서 넣으면 위로 가서(결론부터) 맨 아래 자리에 끌어 놓은 것처럼 */
 function slide(): Slide {
-  const bs = [block('delta', 'd'), block('trend', 't'), block('callout', 'c')].reduce<Block[]>((out, b) => autoPlace(out, b) ?? out, [])
+  const top = [block('delta', 'd'), block('trend', 't')].reduce<Block[]>((out, b) => autoPlace(out, b) ?? out, [])
+  const bs = insertAt(top, { at: null, side: 'below' }, block('callout', 'c'))!
   return { ...makeSlide('compose'), id: 's', blocks: bs }
 }
 

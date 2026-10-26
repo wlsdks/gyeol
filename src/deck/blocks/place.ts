@@ -230,9 +230,23 @@ export function autoPlace(blocks: Block[], block: Block, areaH?: number): Block[
         if (beside) return settled(beside, [block], areaH)
       }
   }
+  // 결론을 말하는 부품(핵심 한 줄, 강조 상자)은 근거 위에: 보고는 결론부터라, 숫자나 목록을 넣은 뒤에 결론을 눌러 넣으면
+  // 판이 알아서 고른 맨 아래에 들어가 결론이 근거 밑에 깔려 차례가 뒤집혀 보였다. 이미 결론 부품이 있으면 그 장은 사람이 짠
+  // 차례가 있는 것이라 판에 맡긴다. 알아서 고를 때(눌러 넣기, AI가 자리 없이 넣기)만이고, 끌어 놓은 자리는 그대로 둔다
+  // 맨 위 새 줄에 들어갈 높이가 없으면 맨 처음 읽는 부품의 왼쪽에(그래도 가장 먼저 읽힌다)
+  if (LEADS.has(block.type) && blocks.length && !blocks.some((b) => LEADS.has(b.type))) {
+    const first = byReading(blocks)[0]
+    for (const spot of [{ at: null, side: 'above' }, { at: first.id, side: 'left' }] as Spot[]) {
+      const top = insertBlock(blocks, block, spot, fit)
+      if (top) return settled(top, [block], areaH)
+    }
+  }
   const next = autoInsert(blocks, block, fit)
   return next && settled(next, [block], areaH)
 }
+
+/** 결론을 말하는 부품: 알아서 넣으면 근거보다 위에 (autoPlace) */
+const LEADS = new Set<BlockType>(['message', 'callout'])
 
 /**
  * 부품을 옮긴 판. 자리(spot)면 빼고 그 자리에 다시 넣고, 맞바꾸기(swap)면 두 부품의 자리를 바꾼다.
