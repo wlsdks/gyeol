@@ -281,8 +281,10 @@ function BlockCell({ block: b, blocks, live, seq, band, linked }: { block: Block
       data-speed={speed === 'normal' ? undefined : speed}
       data-from={from ?? undefined}
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
+      // 놓일 자리에 흐리게 미리 그린 것은 누르거나 쓸 수 없다
+      inert={slot || undefined}
     >
-      {slot ? <div className="bk-slot" aria-hidden="true" /> : <BlockBody block={b} span={b.at?.w ?? 12} />}
+      <BlockBody block={b} span={b.at?.w ?? 12} />
       {/* 끌어서 옮기는 손잡이: 칸 왼쪽 위에 붙는 이름표. 글 칸이 부품을 거의 덮어도 잡을 데가 있게 */}
       {live && !slot && (
         <span className="bk-handle" title="끌어서 옮기기" aria-hidden="true">

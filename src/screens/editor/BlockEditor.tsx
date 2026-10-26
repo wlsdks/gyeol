@@ -43,7 +43,7 @@ import type { BlockEdit } from '../../slides/blockEdit'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { addSaved } from '../../store/saved'
-import { BlocksIcon, dialogOpen, isTyping, undoAction, type Toast } from '../ui'
+import { BlocksIcon, dialogOpen, GripIcon, isTyping, undoAction, type Toast } from '../ui'
 import { BlockTools } from './BlockTools'
 import { CANVAS, COL_W } from './canvas'
 import { useLinkEditing } from './LinkEditor'
@@ -874,8 +874,17 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     ? createPortal(
         <div
           ref={ghostEl}
-          className={cx('bk-ghost', drag && 'is-held', drag?.plan === 'next' && 'is-next', drag?.blocked && drag.target && 'is-elsewhere')}
-          style={{ width: shown.ghost.w, height: shown.ghost.h, scale: shown.over ? String(GHOST_OVER) : undefined }}
+          className={cx('bk-ghost', drag && 'is-held', shown.over && 'is-over', drag?.plan === 'next' && 'is-next', drag?.blocked && drag.target && 'is-elsewhere')}
+          style={
+            {
+              width: shown.ghost.w,
+              height: shown.ghost.h,
+              scale: shown.over ? String(GHOST_OVER) : undefined,
+              '--gx': shown.grab.x,
+              '--gy': shown.grab.y,
+              '--gk': GHOST_OVER,
+            } as React.CSSProperties
+          }
           aria-hidden="true"
         >
           <div className="bk-ghost-clip">
@@ -883,6 +892,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
               <SlideCanvas deck={look} slide={soloSlide(shown.block)} mode="preview" solo={shown.canvas} />
             </div>
           </div>
+          {/* 장 위에서는 놓일 자리에 컴포넌트가 제 크기로 미리 서니, 손에는 무엇을 드는지 이름표만 (작게 줄인 그림은 글자가 읽히지 않았다) */}
+          <span className="bk-ghost-tag">
+            <GripIcon />
+            {BLOCKS[shown.block.type].name}
+          </span>
         </div>,
         document.body,
       )

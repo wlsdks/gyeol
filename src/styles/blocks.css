@@ -97,6 +97,58 @@
   transform-origin: 0 0;
 }
 
+/* 장 위에서 손에 든 것: 그림 대신 손 끝의 이름표 하나. 그림은 놓일 자리(.bk.is-slot)에 제 크기로 흐리게 선다.
+   상자째 줄여 둔 몫(--gk)은 되돌려 화면에서 같은 크기로 */
+.bk-ghost-tag {
+  position: absolute;
+  top: calc(var(--gy) * 100%);
+  left: calc(var(--gx) * 100%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 11px 0 6px;
+  border-radius: 8px;
+  background: var(--sel);
+  box-shadow: 0 6px 18px rgb(16 20 31 / 0.22);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform-origin: 0 0;
+  translate: 14px 14px;
+  scale: calc(1 / var(--gk));
+  transition: opacity 0.14s;
+}
+
+.bk-ghost-tag .icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+.bk-ghost.is-over {
+  box-shadow: none;
+}
+
+.bk-ghost.is-over .bk-ghost-clip {
+  opacity: 0;
+}
+
+.bk-ghost.is-over .bk-ghost-tag {
+  opacity: 1;
+}
+
+/* 이 장에 넣을 수 없을 때: 이름표를 회색으로 (까닭은 무대 위쪽의 안내에) */
+.bk-ghost.is-next .bk-ghost-tag {
+  background: var(--ink-2);
+}
+
+.bk-ghost-clip {
+  transition: opacity 0.14s;
+}
+
 /* 끌고 있는 이음표: 손 아래의 작은 동그라미. 놓일 자리가 잡히면 장 위에 흐리게 미리 서고, 손의 것은 옅어진다 */
 .lk-ghost {
   position: fixed;
