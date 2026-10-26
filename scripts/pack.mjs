@@ -141,8 +141,7 @@ async function putExe(nodeExe, out) {
   const blobNode = process.version === NODE_VERSION ? null : await officialNode(host)
   const work = mkdtempSync(join(tmpdir(), 'gyeol-exe-'))
   try {
-    const { icon } = await buildExe({ nodeExe, blobNode: blobNode?.bin ?? process.execPath, out, work, version })
-    if (!icon) console.warn('맥, 리눅스에서는 Framo.exe에 아이콘과 파일 정보를 넣지 못해요(rcedit는 윈도우 프로그램). 나눠 줄 판은 윈도우에서 묶어 주세요.')
+    await buildExe({ nodeExe, blobNode: blobNode?.bin ?? process.execPath, out, work, version })
   } catch (err) {
     console.error(`Framo.exe를 만들지 못했어요: ${err.message}`)
     process.exit(1)

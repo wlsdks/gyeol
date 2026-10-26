@@ -36,7 +36,7 @@
 | vitest 5 | MIT | 테스트 |
 | lightningcss 1.33 | MPL-2.0 | Vite가 CSS를 줄일 때 씀. lightningcss 파일 자체를 고쳐서 배포할 때만 그 파일을 공개할 의무가 생김. 고치지도, 배포하지도 않음 |
 | postject 1.0.0-alpha.6 | MIT | `npm run pack`이 `Framo.exe`를 만들 때 SEA 덩어리를 `node.exe`에 넣음(Node.js 문서가 안내하는 도구). 배포본에는 들어가지 않음 |
-| rcedit 5 | MIT | `npm run pack`이 윈도우에서 `Framo.exe`의 아이콘과 파일 정보를 바꿈(Electron이 관리하는 도구, 패키지 안의 `rcedit-x64.exe`). 배포본에는 들어가지 않음 |
+| resedit 3 (pe-library 2) | MIT | `npm run pack`이 `Framo.exe`의 아이콘과 파일 정보를 바꿈. 순수 JavaScript라 맥에서 묶어도 들어감. 배포본에는 들어가지 않음 |
 | @types/node 외 나머지 | MIT, ISC, BSD-3-Clause, Apache-2.0 | |
 
 ## 실행 환경과 연결하는 도구

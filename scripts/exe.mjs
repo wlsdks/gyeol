@@ -4,11 +4,11 @@
 //    윈도우 node.exe에 들어간다.
 // 2. node.exe를 복사하고 Node.js의 서명을 걷어 낸다. 고친 파일에 남은 서명은 맞지 않는 서명이라, 서명이 없는 것보다
 //    백신이 더 의심한다.
-// 3. 윈도우에서는 rcedit로 아이콘(launch/framo.ico)과 파일 정보(Framo, 버전)를 바꾼다. rcedit는 윈도우 프로그램이라
-//    맥에서는 건너뛴다(아이콘 없는 exe가 된다). 릴리스와 검수는 윈도우에서 묶는다.
-// 4. postject로 덩어리를 넣는다. rcedit가 리소스를 다시 쓰므로 반드시 rcedit 다음에 넣는다.
+// 3. resedit로 아이콘(launch/framo.ico)과 파일 정보(Framo, 버전)를 바꾼다. 순수 JavaScript라 맥에서 묶어도 들어간다.
+//    (예전에는 rcedit를 썼는데 윈도우 프로그램이라 맥에서는 아이콘 없는 exe가 됐고, npm에서 지원이 끝났다)
+// 4. postject로 덩어리를 넣고, 그다음에 3을 한다(아래 buildExe의 차례).
 //
-// rcedit, postject는 만들 때만 쓰는 도구다(devDependencies, MIT). 받는 사람 PC에는 들어가지 않는다.
+// resedit, postject는 만들 때만 쓰는 도구다(devDependencies, MIT). 받는 사람 PC에는 들어가지 않는다.
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -48,18 +48,46 @@ export function stripSignature(buf) {
 /** 탐색기의 '자세히' 탭과 작업 관리자에 보이는 정보 */
 export function exeInfo(version) {
   return {
-    'version-string': {
+    strings: {
       FileDescription: 'Framo',
       ProductName: 'Framo',
       CompanyName: 'Framo',
-      InternalFilename: 'Framo',
+      InternalName: 'Framo',
       OriginalFilename: 'Framo.exe',
       // 고친 Node.js라서 Node.js의 저작권 표시도 남긴다 (라이선스 전문은 node\LICENSE.txt)
       LegalCopyright: 'Framo contributors. Built on Node.js (Copyright Node.js contributors). MIT license.',
+      FileVersion: version,
+      ProductVersion: version,
     },
-    'file-version': version,
-    'product-version': version,
+    version,
   }
+}
+
+/**
+ * exe의 아이콘과 파일 정보를 바꾼 새 Buffer. Node.js의 아이콘 묶음(첫 아이콘 그룹)을 Framo 아이콘으로 바꾸고,
+ * 파일 정보는 Node.js가 넣어 둔 언어 그대로 글을 바꾼다(없으면 미국 영어, 유니코드)
+ * @param {Buffer} buf
+ * @param {Buffer} ico
+ * @param {string} version
+ */
+export async function setIconAndInfo(buf, ico, version) {
+  const { NtExecutable, NtExecutableResource, Data, Resource } = await import('resedit')
+  const exe = NtExecutable.from(buf, { ignoreCert: true })
+  const res = NtExecutableResource.from(exe)
+  const groups = Resource.IconGroupEntry.fromEntries(res.entries)
+  const group = groups[0] ?? { id: 1, lang: 1033 }
+  const icons = Data.IconFile.from(ico).icons.map((i) => i.data)
+  Resource.IconGroupEntry.replaceIconsForResource(res.entries, group.id, group.lang, icons)
+  const info = exeInfo(version)
+  const vi = Resource.VersionInfo.fromEntries(res.entries)[0] ?? Resource.VersionInfo.createEmpty()
+  const langs = vi.getAllLanguagesForStringValues()
+  for (const lang of langs.length ? langs : [{ lang: 1033, codepage: 1200 }]) vi.setStringValues(lang, info.strings)
+  const [a, b, c] = version.split('.').map(Number)
+  vi.setFileVersion(a, b, c, 0, 1033)
+  vi.setProductVersion(a, b, c, 0, 1033)
+  vi.outputToResourceEntries(res.entries)
+  res.outputResource(exe)
+  return Buffer.from(exe.generate())
 }
 
 /**
@@ -80,17 +108,15 @@ export async function buildExe({ nodeExe, blobNode, out, work, version }) {
   )
   execFileSync(blobNode, ['--experimental-sea-config', config], { cwd: work, stdio: 'inherit' })
 
-  writeFileSync(out, stripSignature(readFileSync(nodeExe)))
-
-  const icon = process.platform === 'win32'
   const ico = join(root, 'launch', 'framo.ico')
-  if (icon) {
-    const { rcedit } = await import('rcedit')
-    await rcedit(out, { ...exeInfo(version), icon: ico })
-  }
+  writeFileSync(out, stripSignature(readFileSync(nodeExe)))
+  const icon = true
 
   const { inject } = (await import('postject')).default
   await inject(out, 'NODE_SEA_BLOB', readFileSync(blob), { sentinelFuse: SEA_FUSE })
+  // 아이콘과 파일 정보는 덩어리를 넣은 뒤에: resedit가 쓴 파일을 postject(LIEF)가 다시 읽으면 재배치 표가 깨졌다고
+  // 알렸다. resedit는 리소스를 모두 읽어 다시 쓰므로 넣어 둔 덩어리(NODE_SEA_BLOB)도 그대로 남는다
+  writeFileSync(out, await setIconAndInfo(readFileSync(out), readFileSync(ico), version))
 
   // 덩어리를 넣으며 리소스를 다시 쓰므로, 다 만든 파일에 덩어리와 아이콘이 남았는지 본다
   const exe = readFileSync(out)

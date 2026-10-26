@@ -24,7 +24,7 @@ PPT로 만들던 발표 자료를 HTML로 쉽게 만드는 도구입니다. 어�
 
 Framo는 서명을 받지 않은 오픈소스라서 처음 한 번은 운영체제가 막습니다. 윈도우가 "Windows의 PC 보호" 창을 띄우면 **추가 정보 → 실행**을 누릅니다. 맥은 "확인되지 않은 개발자" 안내가 뜨면 **완료**를 누른 뒤 **시스템 설정 → 개인정보 보호 및 보안**의 **그래도 열기**를 누르고 다시 엽니다. 127.0.0.1에만 묶기 때문에 방화벽 허용 창은 뜨지 않습니다.
 
-나눠 줄 압축 파일은 `npm run pack`으로 만듭니다(`release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 이때 개발 PC에서 nodejs.org의 공식 Node.js(윈도우 x64, 맥 arm64와 x64)를 한 번 받아 체크섬을 확인하고 넣습니다. `Framo.exe`는 Node.js의 단일 실행 파일(SEA) 기능으로 공식 `node.exe`에 작은 시작 코드(`launch/framo-exe.cjs`)를 넣은 것입니다(`scripts/exe.mjs`, postject). 아이콘(`launch/framo.ico`)과 파일 정보는 rcedit가 넣는데 윈도우 프로그램이라, 나눠 줄 윈도우용은 윈도우에서 묶습니다(릴리스 CI가 그렇게 합니다). 맥에서 묶으면 아이콘 없는 `Framo.exe`가 됩니다. 한글 파일 이름이 윈도우에서 깨지지 않게 zip을 직접 만들고, 윈도우용의 `.bat`은 CRLF, 안내 문서는 BOM을 붙인 UTF-8로 씁니다. zip 이름에 버전을 넣지 않아서 `releases/latest/download/gyeol-mac.zip` 같은 주소가 늘 최신 버전을 받습니다.
+나눠 줄 압축 파일은 `npm run pack`으로 만듭니다(`release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 이때 개발 PC에서 nodejs.org의 공식 Node.js(윈도우 x64, 맥 arm64와 x64)를 한 번 받아 체크섬을 확인하고 넣습니다. `Framo.exe`는 Node.js의 단일 실행 파일(SEA) 기능으로 공식 `node.exe`에 작은 시작 코드(`launch/framo-exe.cjs`)를 넣은 것입니다(`scripts/exe.mjs`, postject). 아이콘(`launch/framo.ico`)과 파일 정보는 resedit(순수 JavaScript)가 넣어서 맥에서 묶어도 들어갑니다. 한글 파일 이름이 윈도우에서 깨지지 않게 zip을 직접 만들고, 윈도우용의 `.bat`은 CRLF, 안내 문서는 BOM을 붙인 UTF-8로 씁니다. zip 이름에 버전을 넣지 않아서 `releases/latest/download/gyeol-mac.zip` 같은 주소가 늘 최신 버전을 받습니다.
 
 ## 이렇게 씁니다
 

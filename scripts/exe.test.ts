@@ -43,10 +43,10 @@ describe('Framo.exe 만들기', () => {
 
   it('파일 정보는 Framo와 이 판 번호', () => {
     const info = exeInfo('1.2.3')
-    expect(info['version-string'].FileDescription).toBe('Framo')
-    expect(info['version-string'].OriginalFilename).toBe('Framo.exe')
-    expect(info['product-version']).toBe('1.2.3')
-    expect(info['file-version']).toBe('1.2.3')
+    expect(info.strings.FileDescription).toBe('Framo')
+    expect(info.strings.OriginalFilename).toBe('Framo.exe')
+    expect(info.strings.ProductVersion).toBe('1.2.3')
+    expect(info.strings.FileVersion).toBe('1.2.3')
   })
 
   it('아이콘(.ico)은 크기마다 PNG를 담고, 저장소의 아이콘에 작은 것부터 256까지 있다', () => {
