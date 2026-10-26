@@ -111,7 +111,7 @@ function EditorBody({ deck }: { deck: Deck }) {
   const canRedo = useDeck((s) => s.future.length > 0)
   const { markVersion, saveNow } = useAutosave(deck)
   const [versionsOpen, setVersionsOpen] = useState(false)
-  // 모션 스튜디오: 편집기 위에 덮어 연다. 발표하고 돌아오면 다시 그 자리
+  // 움직임 편집: 편집기 위에 덮어 연다. 발표하고 돌아오면 다시 그 자리
   const [studio, setStudio] = useState<{ from: string | null } | null>(null)
   // '레이아웃 바꾸기'에서 그림에 올린 레이아웃. 슬라이드 자리에 그 모습으로 미리 보인다
   const [layoutPeek, setLayoutPeek] = useState<LayoutId | null>(null)

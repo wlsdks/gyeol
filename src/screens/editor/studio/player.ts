@@ -3,7 +3,7 @@ import { blockNames, playOrder, whenOf } from '../../../deck/blocks'
 import type { Slide } from '../../../deck/types'
 import { motionEngine, type MotionLevel, type MotionPlay } from '../../../motion/engine'
 
-// 모션 스튜디오의 재생기. 발표 화면과 같은 엔진으로 장을 한 번 움직이고, 엔진이 건 움직임(Web Animations)을 읽어
+// 움직임 편집의 재생기. 발표 화면과 같은 엔진으로 장을 한 번 움직이고, 엔진이 건 움직임(Web Animations)을 읽어
 // 시간표를 만든다. 시간표를 따로 계산하지 않고 실제 움직임에서 읽으므로 발표할 때와 어긋나지 않는다.
 // 멈추기와 끌어 보기는 모든 움직임의 currentTime을 한꺼번에 맞춘다(모두 같은 때에 시작해서 지연으로 차례를 둔다)
 

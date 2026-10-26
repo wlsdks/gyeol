@@ -65,7 +65,7 @@ export function MotionPanel({
       <button type="button" className="mp-studio" onClick={onOpenStudio}>
         <StudioIcon />
         <span>
-          <b>모션 스튜디오</b>
+          <b>움직임 편집</b>
           <span className="mp-studio-d">크게 보면서 차례와 움직임을 고쳐요</span>
         </span>
         <ChevronIcon />
@@ -309,5 +309,5 @@ function Row({
   )
 }
 
-/** 모션 스튜디오: 차례로 나오는 막대 셋 (시간표의 모습) */
+/** 움직임 편집: 차례로 나오는 막대 셋 (시간표의 모습) */
 const StudioIcon = () => <Icon className="mp-studio-i" d="M4 7h8M8 12h8M12 17h8" />

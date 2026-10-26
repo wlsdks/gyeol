@@ -32,7 +32,7 @@ import { SceneOverride, ScenePicker } from '../ScenePicker'
 import { usePlayer } from './player'
 import { Timeline } from './Timeline'
 
-// 모션 스튜디오: 한 장의 움직임을 크게 보며 고치는 화면. 편집기 위에 덮어 연다.
+// 움직임 편집: 한 장의 움직임을 크게 보며 고치는 화면. 편집기 위에 덮어 연다.
 // 가운데에 발표 화면과 똑같이 움직이는 장, 아래에 컴포넌트마다 움직이는 동안을 그린 시간표, 오른쪽에 고르는 값.
 // 시간을 손으로 그리지 않는다(고르는 방식): 연출 하나로 장 전체의 차례와 때를 정하고, 컴포넌트마다 움직임, 언제, 쪽, 빠르기를 고른다.
 // 값은 편집기의 움직임 탭과 같은 곳(부품의 effect·when·from·speed, 장의 options.order·motion·transition)에 적는다
@@ -121,13 +121,13 @@ export function MotionStudio({
   const pickPreset = (id: MotionPreset) => store.replaceSlide(slide.id, withPreset(slide, id))
 
   return (
-    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="모션 스튜디오" tabIndex={-1}>
+    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="움직임 편집" tabIndex={-1}>
       <header className="ms-top">
         <button type="button" className="btn btn-ghost btn-sm ms-back" onClick={onClose} title="편집으로 돌아가기 (Esc)">
           <BackIcon />
           편집으로
         </button>
-        <h1 className="ms-title">모션 스튜디오</h1>
+        <h1 className="ms-title">움직임 편집</h1>
         <nav className="ms-nav" aria-label="장 옮기기">
           <button type="button" className="icon-btn ms-prev" aria-label="앞 장" disabled={at <= 0} onClick={() => go(-1)}>
             <ChevronIcon />
