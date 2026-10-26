@@ -11,7 +11,8 @@
   --mg-r: var(--r-mark);
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  /* 칸이 내용보다 높으면 위에 붙이고 남는 높이는 아래로: 가운데에 띄우면 옆 칸과 첫 줄이 어긋났다(VISUAL-RULES 5, 6) */
+  justify-content: flex-start;
   height: 100%;
 }
 
@@ -214,5 +215,52 @@
   .bk-mg-bar {
     --mg-bar: 44px;
     margin-top: 16px;
+  }
+}
+
+/* ---------- 높은 칸: 한 단계 크게 ----------
+   값이 셋까지인 모으기가 높은 칸(판의 반 넘게)에 놓이면 글과 막대가 칸 위 3분의 1에만 작게 있고 아래가 텅 비었다(사용자: '무조건
+   작게가 아니라 크기도 맞춰야'). 사이를 벌리지 않고 글자와 막대를 한 단계 올린다(VISUAL-RULES 6). 낮은 칸은 그대로라 잰 높이 표는
+   바뀌지 않는다. 문턱은 키운 내용이 카드 바탕의 안쪽 여백까지 넣고도 들어가는 높이(값 둘 560, 셋 680) */
+@container bk (min-height: 560px) {
+  .bk-mg[data-n='2'] {
+    --mg-up: 1;
+  }
+}
+
+@container bk (min-height: 680px) {
+  .bk-mg[data-n='3'] {
+    --mg-up: 1;
+  }
+}
+
+/* 스타일 쿼리는 부모의 값을 본다: --mg-up을 둔 .bk-mg 자신이 아니라 그 안에 쓴다 */
+@container style(--mg-up: 1) {
+  .bk-mg-grid {
+    row-gap: 32px;
+  }
+
+  :is(.bk-mg-name, .bk-mg-label) {
+    --fs: var(--t-h);
+  }
+
+  .bk-mg-v {
+    --fs: 44px;
+  }
+
+  .bk-mg-vu {
+    --fs: 30px;
+  }
+
+  .bk-mg-total {
+    --fs: 90px;
+  }
+
+  .bk-mg-track {
+    --mg-pc: 20px;
+  }
+
+  .bk-mg-bar {
+    --mg-bar: 64px;
   }
 }

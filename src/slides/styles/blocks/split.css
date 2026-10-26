@@ -11,7 +11,8 @@
   --sg-r: var(--r-mark);
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  /* 칸이 내용보다 높으면 위에 붙이고 남는 높이는 아래로: 가운데에 띄우면 옆 칸과 첫 줄이 어긋났다(VISUAL-RULES 5, 6) */
+  justify-content: flex-start;
   height: 100%;
 }
 
