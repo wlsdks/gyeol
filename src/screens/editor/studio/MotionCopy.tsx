@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { currentPreset, MOTION_PRESETS } from '../../../deck/blocks'
+import { currentPreset, MOTION_PRESETS, type MotionPreset } from '../../../deck/blocks'
 import { LAYOUTS } from '../../../deck/layouts'
 import { planMotionCopy, withMotionCopy } from '../../../deck/motionCopy'
 import { sceneOf, sceneSpec } from '../../../deck/scenes'
@@ -13,7 +13,8 @@ import { INHERIT, nameOf, SLIDE_TRANSITIONS } from '../MotionPanel'
 // 누르면 무엇을 옮기는지와 옮길 장(모양이 같은 장을 미리 골라 둔다)을 먼저 보이고, '적용하기'로 한 번에 옮긴다
 // (되돌리기 한 번에 돌아온다). 옮기는 것은 고르는 값뿐이고 글은 그대로다(deck/motionCopy.ts)
 
-export function MotionCopy({ deck, slide, toast }: { deck: Deck; slide: Slide; toast?: Toast }) {
+/** prefer: 이 장에서 방금 고른 연출 (같은 결과인 연출이 둘일 때 어느 것을 옮길지, currentPreset) */
+export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: Slide; prefer: MotionPreset | null; toast?: Toast }) {
   const replaceDeck = useDeck((s) => s.replaceDeck)
   const rows = useMemo(() => planMotionCopy(deck, slide.id), [deck, slide.id])
   const [open, setOpen] = useState(false)
@@ -48,7 +49,7 @@ export function MotionCopy({ deck, slide, toast }: { deck: Deck; slide: Slide; t
   }
 
   const scene = sceneOf(slide)
-  const preset = slide.layout === 'compose' ? currentPreset(slide) : null
+  const preset = slide.layout === 'compose' ? currentPreset(slide, prefer) : null
   const what = [
     `장면 ${scene ? sceneSpec(scene).name : '없음'}`,
     `장 넘기기 ${nameOf(SLIDE_TRANSITIONS, slide.options.transition ?? undefined)}`,
@@ -64,7 +65,7 @@ export function MotionCopy({ deck, slide, toast }: { deck: Deck; slide: Slide; t
     })
   const chosen = rows.filter((r) => picked.has(r.slideId))
   const apply = () => {
-    const next = withMotionCopy(deck, slide.id, [...picked])
+    const next = withMotionCopy(deck, slide.id, [...picked], prefer)
     setOpen(false)
     if (next === deck) {
       toast?.show('고른 장이 이미 이 장과 같은 움직임이에요.')

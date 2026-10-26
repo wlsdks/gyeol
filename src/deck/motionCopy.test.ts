@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sampleBlock } from './blockSamples'
-import { currentPreset, withPreset } from './blocks'
+import { currentPreset, playOrder, withPreset } from './blocks'
 import { makeSlide } from './generate'
 import { copyMotion, planMotionCopy, withMotionCopy } from './motionCopy'
 import type { BlockType, Deck, Slide } from './types'
@@ -64,6 +64,19 @@ describe('이 장의 움직임을 다른 장에도', () => {
     ])
     // 글은 그대로
     expect(next.blocks!.map((b) => b.fields)).toEqual(to.blocks!.map((b) => b.fields))
+  })
+
+  it('이 장에서 같은 결과인 연출이 둘이면 방금 고른 것을 옮긴다', () => {
+    // 이 장은 결론이 맨 앞이라 차례로와 결론 먼저가 같다. 그 장은 결론이 뒤에 있다
+    const from = compose('a', 'message', 'text')
+    const to = compose('b', 'text', 'message')
+    expect(currentPreset(from)).toBe('steps')
+    expect(currentPreset(from, 'answer')).toBe('answer')
+    expect(playOrder(copyMotion(from, to)).map((b) => b.type)).toEqual(['text', 'message'])
+    const next = copyMotion(from, to, 'answer')
+    expect(currentPreset(next)).toBe('answer')
+    expect(playOrder(next).map((b) => b.type)).toEqual(['message', 'text'])
+    expect(withMotionCopy({ slides: [from, to] }, 'a', ['b'], 'answer').slides[1]).toEqual(next)
   })
 
   it('결론이 없는 장에는 결론을 옮기는 연출을 넣지 않는다', () => {

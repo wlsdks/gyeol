@@ -3,7 +3,7 @@
 // 이미 있는 자리에 옮겨 적는 것이라 예전 버전, 내보낸 HTML, AI 모양 파일이 그대로 읽는다.
 // 글은 건드리지 않는다: 옮기는 것은 고르는 값(enum)뿐이다
 
-import { currentPreset, presetFits, withPreset } from './blocks'
+import { currentPreset, presetFits, withPreset, type MotionPreset } from './blocks'
 import { sceneFits, sceneOf } from './scenes'
 import type { Block, BlockType, Deck, Slide } from './types'
 
@@ -36,8 +36,11 @@ export function planMotionCopy(deck: Pick<Deck, 'slides'>, fromId: string): Moti
   return rows
 }
 
-/** 한 장에 옮겨 적는다. 바뀐 것이 없으면 같은 장을 돌려준다 */
-export function copyMotion(from: Slide, to: Slide): Slide {
+/**
+ * 한 장에 옮겨 적는다. 바뀐 것이 없으면 같은 장을 돌려준다.
+ * prefer: 이 장에서 방금 고른 연출. 이 장에서는 같은 결과인 연출이 둘일 때(currentPreset) 어느 것을 옮길지
+ */
+export function copyMotion(from: Slide, to: Slide, prefer?: MotionPreset | null): Slide {
   const options = { ...to.options }
   const put = <K extends 'motion' | 'transition' | 'scene'>(key: K, value: Slide['options'][K]) => {
     if (value === undefined) delete options[key]
@@ -50,7 +53,7 @@ export function copyMotion(from: Slide, to: Slide): Slide {
   if (!scene) delete options.scene
   else if (sceneFits(to, scene)) options.scene = scene
   let next: Slide = { ...to, options }
-  if (from.layout === 'compose' && to.layout === 'compose') next = copyBlockMotion(from, next)
+  if (from.layout === 'compose' && to.layout === 'compose') next = copyBlockMotion(from, next, prefer)
   return same(to, next) ? to : next
 }
 
@@ -59,8 +62,8 @@ export function copyMotion(from: Slide, to: Slide): Slide {
  * 컴포넌트 id로 맞추지 않는다: 다른 장의 컴포넌트는 id가 다르고, 같은 종류(숫자, 핵심 한 줄)라야 같은 움직임이 어울린다.
  * 이 장에 없는 종류의 컴포넌트는 그대로 둔다
  */
-function copyBlockMotion(from: Slide, to: Slide): Slide {
-  const preset = currentPreset(from)
+function copyBlockMotion(from: Slide, to: Slide, prefer?: MotionPreset | null): Slide {
+  const preset = currentPreset(from, prefer)
   let next = preset && presetFits(to, preset) ? withPreset(to, preset) : to
   const byType = new Map<BlockType, BlockMotion>()
   for (const b of from.blocks ?? []) if (!byType.has(b.type)) byType.set(b.type, { effect: b.effect, speed: b.speed, from: b.from })
@@ -78,8 +81,8 @@ function copyBlockMotion(from: Slide, to: Slide): Slide {
   return next
 }
 
-/** 고른 장들에 옮겨 적은 발표 */
-export function withMotionCopy<D extends Pick<Deck, 'slides'>>(deck: D, fromId: string, ids: readonly string[]): D {
+/** 고른 장들에 옮겨 적은 발표 (prefer는 copyMotion과 같다) */
+export function withMotionCopy<D extends Pick<Deck, 'slides'>>(deck: D, fromId: string, ids: readonly string[], prefer?: MotionPreset | null): D {
   const from = deck.slides.find((s) => s.id === fromId)
   if (!from) return deck
   const pick = new Set(ids)
@@ -87,7 +90,7 @@ export function withMotionCopy<D extends Pick<Deck, 'slides'>>(deck: D, fromId: 
   let changed = false
   const slides = deck.slides.map((s) => {
     if (!pick.has(s.id) || s.hidden) return s
-    const next = copyMotion(from, s)
+    const next = copyMotion(from, s, prefer)
     if (next !== s) changed = true
     return next
   })

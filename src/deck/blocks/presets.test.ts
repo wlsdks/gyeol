@@ -75,4 +75,22 @@ describe('연출', () => {
     const odd = { ...s, blocks: s.blocks!.map((b, i) => (i === 1 ? { ...b, when: 'click' as const } : b)) }
     expect(currentPreset(odd)).toBeNull()
   })
+
+  it('같은 결과인 연출이 둘이면 방금 고른 것을 (맞지 않으면 앞의 것)', () => {
+    // 결론(강조 상자)을 맨 위에 둔 장: 차례로와 결론 먼저가 같다
+    const s = slide()
+    const top = [s.blocks!.find((b) => b.type === 'callout')!, ...s.blocks!.filter((b) => b.type !== 'callout')]
+    const plain: Slide = { ...s, blocks: top.map((b, i) => ({ ...b, at: { x: 0, y: i * 4, w: 12, h: 4 } })) }
+    expect(playOrder(withPreset(plain, 'answer')).map((b) => b.id)).toEqual(playOrder(plain).map((b) => b.id))
+    expect(currentPreset(plain)).toBe('steps')
+    expect(currentPreset(plain, 'answer')).toBe('answer')
+    expect(currentPreset(plain, 'steps')).toBe('steps')
+    // 고른 것과 같지 않으면 고른 것을 따르지 않는다
+    expect(currentPreset(plain, 'clicks')).toBe('steps')
+    expect(currentPreset(withPreset(plain, 'clicks'), 'answer')).toBe('clicks')
+    // 컴포넌트가 하나: 차례로와 한꺼번에가 같다
+    const one = { ...plain, blocks: plain.blocks!.slice(0, 1) }
+    expect(currentPreset(one)).toBe('steps')
+    expect(currentPreset(one, 'together')).toBe('together')
+  })
 })

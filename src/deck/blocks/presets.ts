@@ -59,13 +59,16 @@ export function withPreset(slide: Slide, id: MotionPreset): Slide {
   return { ...slide, blocks, options }
 }
 
-/** 지금 장이 어느 연출과 같은지 (사람이 하나하나 바꿨으면 null) */
-export function currentPreset(slide: Slide): MotionPreset | null {
-  const now = playOrder(slide).map((b) => `${b.id}:${whenOf(b)}`).join('/')
-  for (const p of MOTION_PRESETS) {
-    if (!presetFits(slide, p.id)) continue
-    const next = withPreset(slide, p.id)
-    if (playOrder(next).map((b) => `${b.id}:${whenOf(b)}`).join('/') === now) return p.id
-  }
-  return null
+/**
+ * 지금 장이 어느 연출과 같은지 (사람이 하나하나 바꿨으면 null).
+ * 둘과 같을 수 있다: 결론이 이미 맨 앞이면 차례로와 결론 먼저가, 컴포넌트가 하나면 차례로와 한꺼번에가 같다.
+ * prefer(방금 고른 연출)가 그 가운데 하나면 그것을. 예전에는 결론 먼저를 눌러도 차례로가 눌려 보였고,
+ * 다른 장에 옮길 때도 차례로를 옮겨 그 장의 결론이 앞으로 오지 않았다
+ */
+export function currentPreset(slide: Slide, prefer?: MotionPreset | null): MotionPreset | null {
+  const key = (s: Slide) => playOrder(s).map((b) => `${b.id}:${whenOf(b)}`).join('/')
+  const now = key(slide)
+  const same = (id: MotionPreset) => presetFits(slide, id) && key(withPreset(slide, id)) === now
+  if (prefer && same(prefer)) return prefer
+  return MOTION_PRESETS.find((p) => same(p.id))?.id ?? null
 }

@@ -177,7 +177,14 @@ export function MotionStudio({
     if (from === to || to < 0 || to >= ids.length) return
     store.setOptions(slide.id, { order: arrayMove(ids, from, to) }, 'order')
   }
-  const pickPreset = (id: MotionPreset) => store.replaceSlide(slide.id, withPreset(slide, id))
+  // 이 장에서 방금 고른 연출. 같은 결과인 연출이 둘일 때(결론이 이미 맨 앞이면 차례로와 결론 먼저) 고른 것을 눌린 것으로 보이고
+  // 다른 장에도 그것을 옮긴다. 값으로 저장하지 않아서 창을 다시 열면 앞의 것으로 보인다
+  const [picked, setPicked] = useState<{ slide: string; id: MotionPreset } | null>(null)
+  const prefer = picked?.slide === slide.id ? picked.id : null
+  const pickPreset = (id: MotionPreset) => {
+    setPicked({ slide: slide.id, id })
+    store.replaceSlide(slide.id, withPreset(slide, id))
+  }
 
   return (
     <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="움직임 편집" tabIndex={-1} data-autofocus>
@@ -248,7 +255,7 @@ export function MotionStudio({
             <ScenePicker deck={deck} slide={slide} thumb={120} />
           </section>
           {compose ? (
-            <Presets slide={slide} onPick={pickPreset} />
+            <Presets slide={slide} prefer={prefer} onPick={pickPreset} />
           ) : (
             <section className="ms-sec ms-convert">
               <h2 className="ms-h">컴포넌트마다 고르기</h2>
@@ -270,7 +277,7 @@ export function MotionStudio({
             />
           )}
           <SlideMotion deck={deck} slide={slide} onTransition={enter} />
-          <MotionCopy deck={deck} slide={slide} toast={toast} />
+          <MotionCopy deck={deck} slide={slide} prefer={prefer} toast={toast} />
         </aside>
       </div>
     </div>
@@ -360,8 +367,8 @@ function contentRect(cell: HTMLElement): DOMRect {
 }
 
 /** 연출: 장 전체의 차례와 때를 한 번에. 그림은 세 컴포넌트가 나오는 때(가로가 시간)를 줄인 모습 */
-function Presets({ slide, onPick }: { slide: Slide; onPick(id: MotionPreset): void }) {
-  const now = currentPreset(slide)
+function Presets({ slide, prefer, onPick }: { slide: Slide; prefer: MotionPreset | null; onPick(id: MotionPreset): void }) {
+  const now = currentPreset(slide, prefer)
   return (
     <section className="ms-sec">
       <h2 className="ms-h">연출</h2>
