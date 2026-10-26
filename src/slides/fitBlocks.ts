@@ -682,14 +682,17 @@ export function blockFitter() {
    * 줄(나란한 묶음, data-band)마다 그려진 내용을 앞 줄의 내용 바로 아래(줄 사이 --bk-gap, 소제목 아래는 좁게)로 올려 붙이고
    * 남는 높이는 맨 아래 한곳에 모은다. 장 제목이 없는 장(결론 한 장)은 모은 묶음째 위아래 가운데에 둔다.
    * 줄째 같은 만큼 옮겨서 나란한 칸끼리의 윗선은 그대로다. 칸을 옮기므로(--bk-shift, 칸의 top) 면이 있는 칸도 면째 간다.
-   * 발표 화면(편집이 아닌 장)에서만: 편집 화면은 판의 칸과 나누는 선을 그대로 보여야 해서, 칸 안의 글만 위에서부터 그린다
-   * (blocks/base.css). 판이 남는 높이를 맨 아래 줄에 주어(board.ts의 share) 편집 화면에서도 빈 곳은 아래에 모인다.
+   * 편집 화면도 같이 쌓는다: 예전에는 판의 칸을 그대로 보이려고 편집 화면에서는 쌓지 않아서, 편집할 때는 부품 사이가 듬성하고
+   * 발표하면 갑자기 위로 붙어 편집 화면이 끝 모습과 달랐다. 다만 끄는 동안(is-dragging, 놓일 자리 is-slot)은 판의 칸 그대로 둔다:
+   * 놓일 자리는 판의 칸이라 손 아래의 칸과 미리 보인 자리가 맞아야 한다. 편집 화면에서는 판을 나누는 선의 손잡이(.bk-line)도
+   * 옮긴 칸 사이로 같이 옮긴다.
    * 이음표: 옆 이음표는 그 줄과 같이 옮기고, 줄 사이의 아래 이음표는 그 사이를 이음표가 설 자리만큼 넓히고 가운데에 세운다
    */
   const headGap = 32
   function pack(cells: HTMLElement[], area: HTMLElement): void {
-    if (!cells.length || area.closest('.m-edit')) return
+    if (!cells.length || area.classList.contains('is-dragging')) return
     if (cells.some((c) => c.classList.contains('is-slot'))) return
+    const edit = area.classList.contains('is-live')
     const a = area.getBoundingClientRect()
     const k = a.height / area.offsetHeight
     if (!a.height || !k) return
@@ -709,7 +712,22 @@ export function blockFitter() {
     )
     // 칸마다 판의 자리(화면 px)와 그려진 범위, 바로 위에 있는 칸들(판에서 이 칸 위 선보다 위에서 끝나고 옆으로 겹친다)
     const side = (p: DOMRect, q: DOMRect) => Math.min(p.right, q.right) - Math.max(p.left, q.left) > 1
-    const items = cells.map((c) => ({ c, r: c.getBoundingClientRect(), ink: drawn(c), id: c.dataset.block, above: [] as HTMLElement[] }))
+    // 편집 화면의 빈 부품은 안내 글(읽지 않는 글이라 drawn이 세지 않는다)만 보여서 그려진 것이 없다. 그러면 장 전체를 쌓지 않아,
+    // 컴포넌트를 넣자마자 다른 부품이 판의 칸으로 내려갔다가 글을 쓰면 다시 올라붙었다. 그래서 글 칸(.ed)과 꾸밈 그림이 놓인 자리로 본다.
+    // 본문 상자째 보면 높은 칸의 빈 인용 하나가 칸 높이를 다 쓴 것으로 보여 그 아래 줄이 올라붙지 못했다
+    const body = (c: HTMLElement) => {
+      let t = Infinity
+      let b = -Infinity
+      for (const el of Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in :is(.ed, svg, [aria-hidden="true"])'))) {
+        const r = el.getBoundingClientRect()
+        if (!r.width || !r.height) continue
+        t = Math.min(t, r.top)
+        b = Math.max(b, r.bottom)
+      }
+      const r = c.getBoundingClientRect()
+      return t === Infinity ? { t: r.top, b: r.bottom } : { t, b }
+    }
+    const items = cells.map((c) => ({ c, r: c.getBoundingClientRect(), ink: drawn(c) ?? (edit ? body(c) : null), id: c.dataset.block, above: [] as HTMLElement[] }))
     if (items.some((x) => !x.ink)) return
     for (const x of items) x.above = items.filter((y) => y.r.bottom <= x.r.top + 1 && side(x.r, y.r)).map((y) => y.c)
     // 같은 묶음에서 같은 줄 선(--y)에 서고 위에 있는 칸도 같은 칸들은 같이 옮긴다: 나란한 칸의 윗선(과 차트 옆에 가운데로 내린
@@ -783,6 +801,43 @@ export function blockFitter() {
       const move = Math.round((mid - (r.top + r.bottom) / 2) / k)
       if (move) l.style.setProperty('--bk-shift', move + 'px')
     }
+    if (edit) gutters(items, dy, area, k)
+  }
+
+  /**
+   * 편집 화면에서 판을 나누는 선의 손잡이(blocks.tsx의 Lines)를 쌓은 칸 사이로 옮긴다. 선은 판의 자리(--at, --from, --to)에
+   * 그려져서 그대로 두면 올려 붙인 부품 위를 지나거나 빈 아래쪽에 떠 있었다.
+   * 줄 사이의 선(is-v)은 위아래 칸의 그려진 것 사이 가운데로, 옆 칸 사이의 선(is-h)은 양옆 칸의 그려진 것의 위아래 범위로.
+   * 내보낸 파일에는 이 선이 없다
+   */
+  function gutters(items: { c: HTMLElement; ink: { t: number; b: number } | null }[], dy: Map<HTMLElement, number>, area: HTMLElement, k: number): void {
+    const num = (el: HTMLElement, v: string) => Number(el.style.getPropertyValue(v)) || 0
+    for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-line'))) {
+      const at = num(l, '--at')
+      const from = num(l, '--from')
+      const to = num(l, '--to')
+      const r = l.getBoundingClientRect()
+      if (l.classList.contains('is-v')) {
+        // 같은 열 범위에서 이 선 위에서 끝나는 칸과 이 선 아래에서 시작하는 칸
+        const across = (x: { c: HTMLElement }) => num(x.c, '--x') < to && from < num(x.c, '--x') + num(x.c, '--w')
+        const up = items.filter((x) => across(x) && num(x.c, '--y') + num(x.c, '--h') === at)
+        const down = items.filter((x) => across(x) && num(x.c, '--y') === at)
+        if (!up.length || !down.length) continue
+        const top = Math.max(...up.map((x) => x.ink!.b + dy.get(x.c)!))
+        const bottom = Math.min(...down.map((x) => x.ink!.t + dy.get(x.c)!))
+        const move = Math.round(((top + bottom) / 2 - (r.top + r.bottom) / 2) / k)
+        if (move) l.style.setProperty('--bk-shift', move + 'px')
+        continue
+      }
+      const beside = items.filter((x) => (num(x.c, '--x') + num(x.c, '--w') === at || num(x.c, '--x') === at) && num(x.c, '--y') < to && from < num(x.c, '--y') + num(x.c, '--h'))
+      if (!beside.length) continue
+      const top = Math.min(...beside.map((x) => x.ink!.t + dy.get(x.c)!))
+      const bottom = Math.max(...beside.map((x) => x.ink!.b + dy.get(x.c)!))
+      const move = Math.round((top - r.top) / k)
+      const trim = Math.round((r.height - (bottom - top)) / k)
+      if (move) l.style.setProperty('--bk-shift', move + 'px')
+      if (trim > 0) l.style.setProperty('--bk-trim', trim + 'px')
+    }
   }
 
   function fit(root: ParentNode): void {
@@ -800,7 +855,10 @@ export function blockFitter() {
       // 안 보이는 장(자리를 재지 못한다)은 맞춘 값을 지우지 않고 건너뛴다. 내보낸 파일은 발표하는 동안 다른 장을 숨겨 두는데,
       // 그때 글꼴이 와서 다시 맞추면 숨긴 장의 값이 모두 지워져 넘겨 보면 글자가 다른 크기였다
       if (!cells.length || !area.clientHeight) continue
-      for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))) l.style.removeProperty('--bk-shift')
+      for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > :is(.bk-link, .bk-line)'))) {
+        l.style.removeProperty('--bk-shift')
+        l.style.removeProperty('--bk-trim')
+      }
       for (const c of cells) {
         c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')

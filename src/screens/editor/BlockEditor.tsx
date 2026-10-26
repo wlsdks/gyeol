@@ -587,18 +587,20 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
       let told = false
       let g = gutter
+      const startY = e.clientY
       const session = startSession('is-block-resizing')
       session.on('pointermove', (ev) => {
         const cur = slideRef.current
         const area = measureArea(areaEl.current)
         if (!area) return
-        // 손의 자리를 판의 칸 수로: 선은 칸 사이의 가운데에 선다
+        // 손의 자리를 판의 칸 수로: 선은 칸 사이의 가운데에 선다.
+        // 줄 사이의 선은 누른 자리에서 움직인 만큼으로 센다: 편집 화면도 부품을 위로 올려 붙여서(fitBlocks.ts의 pack) 선이 판의 자리보다
+        // 위에 그려져 있다. 손의 자리를 그대로 판의 칸으로 바꾸면 누르고 조금만 움직여도 그 차이만큼 줄 높이가 한꺼번에 바뀌었다
         const x = (ev.clientX - area.rect.left) / area.k
-        const y = (ev.clientY - area.rect.top) / area.k
         const to =
           g.dir === 'h'
             ? Math.round(((x + BLOCK_COL_GAP / 2) * BOARD_COLS) / (area.size.w + BLOCK_COL_GAP))
-            : Math.round(((y + BLOCK_GAP / 2) * BOARD_ROWS) / (area.size.h + BLOCK_GAP))
+            : gutter.at + Math.round(((ev.clientY - startY) / area.k) * BOARD_ROWS / (area.size.h + BLOCK_GAP))
         if (to === g.at) return
         const blocks = cur.blocks ?? []
         const limit = told ? null : gutterLimit(blocks, g, to, area.size.h)
