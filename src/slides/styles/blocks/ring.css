@@ -196,6 +196,13 @@
     align-self: start;
     margin-top: 12px;
   }
+
+  /* 덧붙임이 없으면(비워 접었으면) 이름 하나를 이름 줄과 덧붙임 줄에 걸쳐 원 옆 가운데에. 위 줄 아래 끝에 두면 비어 있는
+     아래 줄이 원 높이를 다 가져가서 이름이 원 위 끝에 붙어 떴다. 줄 이름으로 걸쳐서 위아래로 쌓는 짜임(면 위의 좁은 반원)에서는 그대로다 */
+  .bk-rg:not(:has(> .bk-rg-n)) > .bk-rg-l {
+    grid-row: l-start / n-end;
+    align-self: center;
+  }
 }
 
 @container bk (min-aspect-ratio: 3 / 2) and (min-width: 700px) {
@@ -234,6 +241,11 @@
     --fs: var(--t-body);
     align-self: start;
     margin-top: 14px;
+  }
+
+  .bk-rg:not(:has(> .bk-rg-n)) > .bk-rg-l {
+    grid-row: l-start / n-end;
+    align-self: center;
   }
 }
 
