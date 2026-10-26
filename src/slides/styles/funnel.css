@@ -13,18 +13,19 @@
   grid-template-columns: fit-content(30%) auto minmax(0, 1fr);
   /* 줄은 제목 아래에서부터, 남는 높이는 맨 아래에(VISUAL-RULES 6) */
   align-content: start;
-  gap: 44px 48px;
+  /* 줄 사이에 장 채움(--fill-air, fitLayout)을 더한다: 남는 높이로 줄을 늘리지 않고 장 전체에 같은 값으로 */
+  gap: calc(44px + var(--fill-air, 0px)) 48px;
   min-height: 0;
 }
 
 .fn:is([data-n='2'], [data-n='3']) {
   --fn-h: 80px;
-  row-gap: 56px;
+  row-gap: calc(56px + var(--fill-air, 0px));
 }
 
 .fn:is([data-n='5'], [data-n='6']) {
   --fn-h: 44px;
-  row-gap: 20px;
+  row-gap: calc(20px + var(--fill-air, 0px));
 }
 
 .fn-row {
@@ -68,7 +69,8 @@
   margin-top: 0;
 }
 
-/* 앞 단계에서 넘어온 비율: 막대의 시작 위에, 아래를 가리키는 꺾쇠와 */
+/* 앞 단계에서 넘어온 비율: 막대의 시작 위에, 아래를 가리키는 화살표 글자(↓)와. 옅은 선색 꺾쇠(⌄)로 두던 때는
+   화살표로 읽히지 않고 무엇인지 모를 표시였다(사용자). 화살표는 비율과 같은 글자색(--ink-2), 같은 크기다 */
 .fn-rate {
   --fs: 26px;
   display: inline-flex;
@@ -76,7 +78,7 @@
   grid-column: 3;
   align-items: center;
   justify-self: start;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 12px;
   color: var(--ink-2);
   font-weight: 700;
@@ -86,13 +88,8 @@
 }
 
 .fn-rate::before {
-  width: 9px;
-  height: 9px;
-  margin: -6px 2px 0 6px;
-  border-right: var(--rule-hair) solid var(--line);
-  border-bottom: var(--rule-hair) solid var(--line);
-  rotate: 45deg;
-  content: '';
+  font-weight: 400;
+  content: '↓';
 }
 
 .fn:is([data-n='5'], [data-n='6']) .fn-rate {
@@ -115,9 +112,15 @@
   left: calc(var(--w) * 1% - 12px);
   width: calc(max(0, var(--pw) - var(--w)) * 1% + 12px);
   border-radius: 0 var(--r-mark) var(--r-mark) 0;
-  /* 빠진 만큼은 회색 면이 아니라 강조색의 가장 옅은 농담: 회색 띠는 막대보다 무겁게 읽혀 빈 바닥처럼 보였다(VISUAL-RULES 3) */
-  background: var(--accent-soft);
+  /* 빠진 만큼은 막대보다 옅은 무채색: 회색 면(--surface)은 막대보다 무겁게 읽혔고, 강조색의 옅은 농담은 막대의 농담, 답의 강조색과
+     섞여 세 가지 파랑이 흐릿했다(사용자). 막대는 한 색 농담, 마지막(답)만 강조색이다(VISUAL-RULES 3) */
+  background: color-mix(in srgb, var(--ink) 5%, var(--bg));
   content: '';
+}
+
+/* 검은 바탕에서는 5%가 바탕과 붙어 사라져서 한 걸음 밝게 */
+.is-dark .fn-zone::before {
+  background: color-mix(in srgb, var(--ink) 12%, var(--bg));
 }
 
 .fn-bar {
@@ -214,16 +217,16 @@
    칸이 높으면 부품 장이 줄 사이에 바람을 넣는다(fitBlocks의 --bk-air) */
 /* 큰 글자에서는 이름(두 줄)과 비율 줄이 커진 만큼 줄 사이를 줄인다 */
 .sz-large .fn {
-  row-gap: 24px;
+  row-gap: calc(24px + var(--fill-air, 0px));
 }
 
 .sz-large .fn:is([data-n='2'], [data-n='3']) {
-  row-gap: 40px;
+  row-gap: calc(40px + var(--fill-air, 0px));
 }
 
 .sz-large .fn:is([data-n='5'], [data-n='6']) {
   --fn-h: 36px;
-  row-gap: 8px;
+  row-gap: calc(8px + var(--fill-air, 0px));
 }
 
 .sz-large .fn:is([data-n='5'], [data-n='6']) :is(.fn-rate, .fn-total) {
