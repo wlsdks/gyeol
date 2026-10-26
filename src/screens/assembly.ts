@@ -583,6 +583,35 @@ function inkX(cell: HTMLElement): { l: number; r: number } | null {
   return l < r ? { l, r } : null
 }
 
+/**
+ * 단으로 나눈 컴포넌트의 오른쪽 끝: 한 컴포넌트가 글을 둘 이상의 단(가로로 겹치지 않는 글 묶음)으로 본문 너비에 고르게 나눠 세웠고
+ * (마지막 단이 본문의 40% 넘게에서 시작한다) 오른쪽에 남은 빈 곳이 단 사이의 빈 곳(가장 넓은 것)의 1.5배 안이면, 오른쪽은 몰려서 빈 것이
+ * 아니라 마지막 단의 글 끝이 들쭉날쭉한 것이다. A안과 B안을 반씩 나란히 둔 가격안은 B안의 글이 본문의 75%에서 끝나 오른쪽 25%가 비었지만,
+ * 그 빈 곳은 A안과 B안 사이(218px)와 같은 폭이라 고른 격자로 읽혔다. 단이 하나뿐인 글(결론 한 줄 아래에 쌓은 짧은 개요)은 봐주지 않는다
+ */
+function gridEnd(cells: HTMLElement[], a: DOMRect, empty: number): boolean {
+  for (const cell of cells) {
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) continue
+    // 가로로 겹치는 글 줄은 한 단으로 모은다 (왼쪽 끝 차례로 훑으며 겹치면 잇는다)
+    const spans: { l: number; r: number }[] = []
+    const ls = blockTextLines(inner)
+      .filter((q) => !q.n.parentElement?.closest(EDIT_UI))
+      .sort((p, q) => p.l - q.l)
+    for (const q of ls) {
+      const last = spans.at(-1)
+      if (last && q.l <= last.r) last.r = Math.max(last.r, q.r)
+      else spans.push({ l: q.l, r: q.r })
+    }
+    if (spans.length < 2) continue
+    const last = spans[spans.length - 1]
+    if ((last.l - a.left) / a.width < 0.4) continue
+    const gutter = Math.max(...spans.slice(1).map((s, i) => s.l - spans[i].r))
+    if (empty <= gutter * 1.5) return true
+  }
+  return false
+}
+
 /** 한쪽이 이만큼 넘게 비면 판이 너비를 고르게 나누지 못한 것 */
 const SIDE_EMPTY = 0.25
 
@@ -601,7 +630,7 @@ function sides(area: HTMLElement, k: number): string[] {
     if (xs.length) {
       const left = (Math.min(...xs.map((x) => x.l)) - a.left) / a.width
       const right = (a.right - Math.max(...xs.map((x) => x.r))) / a.width
-      if (right > SIDE_EMPTY) out.push(`컴포넌트가 ${cells.length}개인데 본문 오른쪽이 ${Math.round(right * 100)}% 비어요`)
+      if (right > SIDE_EMPTY && !gridEnd(cells, a, right * a.width)) out.push(`컴포넌트가 ${cells.length}개인데 본문 오른쪽이 ${Math.round(right * 100)}% 비어요`)
       if (left > SIDE_EMPTY) out.push(`컴포넌트가 ${cells.length}개인데 본문 왼쪽이 ${Math.round(left * 100)}% 비어요`)
     }
   }
