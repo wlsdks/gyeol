@@ -412,11 +412,13 @@ export function motionEngine(): MotionEngine {
       restores.push(split.restore)
       split.words.forEach((w, i) => {
         const frames: Keyframe[] = blur
-          ? [{ opacity: 0, translate: '0 40%', filter: 'blur(18px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }]
+          ? // 흐림은 먹이 가라앉는 만큼만(6px). 18px이던 때는 녹화해 보니 한 문장 장의 제목이 1초 넘게 뿌연 덩어리로 떠 있어서
+            // 흔한 AI 데모처럼 보였다
+            [{ opacity: 0, translate: '0 0.2em', filter: 'blur(6px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0px)' }]
           : L.ink
             ? [{ translate: '0 105%', filter: `blur(${L.ink}px)` }, { translate: '0 0', filter: 'blur(0px)' }]
             : [{ translate: '0 105%' }, { translate: '0 0' }]
-        run(anims, w, frames, s(at + i * gap), blur ? { easing: OUT, duration: 1100 } : L.move)
+        run(anims, w, frames, s(at + i * gap), blur ? { easing: OUT, duration: 900 } : L.move)
       })
       // 다음 차례는 마지막 낱말이 반쯤 올라왔을 때
       return at + split.words.length * gap + 160
