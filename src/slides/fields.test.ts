@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cssSource } from './cssSource'
-import { minusSigns, numberUnits, splitNumber, textUnits, UNIT_K } from './fields'
+import { gluedParts, minusSigns, numberUnits, splitNumber, textUnits, UNIT_K } from './fields'
 
 // 숫자의 꼴은 그릴 때만 바꾼다 (docs/DESIGN.md '숫자의 꼴'). 저장한 글은 이 함수들을 거치지 않는다
 describe('숫자의 꼴', () => {
@@ -57,5 +57,19 @@ describe('숫자의 꼴', () => {
     const rule = /\.slide \.u \{[^}]*font-size: calc\(1em \/ ([\d.]+)\);/.exec(css)
     expect(rule).not.toBeNull()
     expect(1 / Number(rule![1])).toBeCloseTo(UNIT_K, 6)
+  })
+})
+
+describe('줄을 꺾지 않는 낱말', () => {
+  it('숫자 뒤 기호에 붙은 조사는 한 낱말로 묶고, 글자는 그대로 둔다', () => {
+    const parts = gluedParts('본부 평균 18%보다 높아요')
+    expect(parts).toEqual(['본부 평균 ', { nb: '18%보다' }, ' 높아요'])
+    expect(parts!.map((p) => (typeof p === 'string' ? p : p.nb)).join('')).toBe('본부 평균 18%보다 높아요')
+    expect(gluedParts('기온 3℃나 올랐고 습도 40%도')).toEqual(['기온 ', { nb: '3℃나' }, ' 올랐고 습도 ', { nb: '40%도' }])
+  })
+
+  it('묶을 것이 없으면 그대로', () => {
+    expect(gluedParts('본부 평균 18% 높아요')).toBeNull()
+    expect(gluedParts('첫해 구축비, 3개 라인 기준')).toBeNull()
   })
 })

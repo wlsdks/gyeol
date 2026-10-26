@@ -80,6 +80,12 @@
   text-rendering: optimizeLegibility;
 }
 
+/* 숫자 뒤의 기호와 거기 붙은 조사('18%보다')는 한 낱말로: keep-all이어도 '%' 다음은 줄을 꺾을 수 있는 자리라
+   좁은 칸에서 '18% / 보다'로 갈렸다 (fields.tsx의 gluedParts가 떼어 낸다) */
+.slide .nb {
+  white-space: nowrap;
+}
+
 /* 어두운 바탕의 짙은 면은 바탕보다 한 단계 떠 있는 면이라 선을 조금 덜 밝게.
    강조한 칸의 옅은 면은 강조색을 섞으면 검정 위에서 탁해져서, 짙은 면 쪽으로 한 단계 띄운다 */
 .slide.is-dark {

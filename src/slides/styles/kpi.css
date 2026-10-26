@@ -57,12 +57,14 @@
   --fs: 108px;
 }
 
+/* 덧붙임은 두세 줄짜리라 줄 길이를 고르게(balance): 끝 줄만 고르면(pretty) 좁은 칸에서 '첫해 구축비, 3개 / 라인 기준'처럼
+   숫자와 그 단위가 줄 끝과 다음 줄로 갈려 읽혔다 */
 .kp-body {
   --fs: 30px;
   margin-top: 36px;
   color: var(--ink-2);
   line-height: 1.5;
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 /* 장 한 장을 다 쓸 때(부품 칸 안이 아닐 때): 칸이 본문 상자 높이를 다 차지해 나누는 줄이 본문 위에서 아래까지 서고,

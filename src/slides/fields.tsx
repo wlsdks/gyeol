@@ -95,11 +95,40 @@ function oneLineProps(text: string, oneLine?: boolean, units?: number, numeral?:
   return { cls: 'one-line', style: { '--units': (units ?? (numeral ? numberUnits(text) : textUnits(text))).toFixed(2) } }
 }
 
+/**
+ * 숫자 뒤의 기호(%, ℃ 같은)와 거기 붙은 조사가 줄 끝에서 갈리지 않게 묶을 낱말: '18%보다', '3℃나'.
+ * 브라우저는 줄을 낱말 단위로 꺾어도(keep-all) '%' 같은 뒤붙이 기호 다음은 꺾을 수 있는 자리로 보아서,
+ * 좁은 칸이나 크게, 명조에서 '본부 평균 18% / 보다 높아요'처럼 숫자와 조사가 두 줄로 갈렸다
+ */
+const GLUED = /[^\s]*[%‰℃℉°][가-힣]+/g
+
+/** 글을 그대로 둔 채 묶을 낱말만 떼어 낸 조각들. 묶을 것이 없으면 null */
+export function gluedParts(text: string): (string | { nb: string })[] | null {
+  const found = [...text.matchAll(GLUED)]
+  if (!found.length) return null
+  const out: (string | { nb: string })[] = []
+  let at = 0
+  for (const m of found) {
+    if (m.index! > at) out.push(text.slice(at, m.index))
+    out.push({ nb: m[0] })
+    at = m.index! + m[0].length
+  }
+  if (at < text.length) out.push(text.slice(at))
+  return out
+}
+
+/** 묶을 낱말은 줄을 꺾지 않는 조각(.nb)에. 글자는 하나도 바꾸지 않는다 */
+function Glued({ text }: { text: string }) {
+  const parts = gluedParts(text)
+  if (!parts) return <>{text}</>
+  return <>{parts.map((p, i) => (typeof p === 'string' ? p : <span key={i} className="nb">{p.nb}</span>))}</>
+}
+
 /** 발표 화면의 글: 빼기 기호를 바로 쓰고, 큰 숫자면 단위를 작은 글자로 떼어 낸다 */
 function Shown({ text, numeral }: { text: string; numeral?: boolean }) {
   const t = minusSigns(text)
   const parts = numeral ? splitNumber(t) : null
-  if (!parts) return <>{t}</>
+  if (!parts) return <Glued text={t} />
   return (
     <>
       {parts.pre && <span className="u u-pre">{parts.pre}</span>}
@@ -126,6 +155,19 @@ function numberNodes(parts: { pre?: string; num: string; unit: string }): (Node 
  */
 function paint(el: HTMLElement, value: string, numeral?: boolean) {
   const parts = numeral ? splitNumber(value) : null
+  // 숫자와 조사를 묶을 낱말이 있으면 발표 화면처럼 줄을 꺾지 않는 조각(.nb)에 (Glued)
+  const glued = parts ? null : gluedParts(value)
+  if (glued) {
+    const next = glued.map((p) => {
+      if (typeof p === 'string') return p
+      const nb = document.createElement('span')
+      nb.className = 'nb'
+      nb.textContent = p.nb
+      return nb
+    })
+    if (!sameNodes(el, next)) el.replaceChildren(...next)
+    return
+  }
   if (!parts) {
     // 처음 그리는 칸(아직 빈 칸)은 innerText를 읽지 않고 바로 넣는다. innerText는 읽을 때마다 화면을 다시 재야 해서(강제 레이아웃),
     // 장을 고를 때 칸마다 읽고 쓰기를 번갈아 하면 칸 수만큼 레이아웃이 돌았다. 빈 칸의 innerText는 ''이라 결과는 같다
@@ -133,18 +175,23 @@ function paint(el: HTMLElement, value: string, numeral?: boolean) {
       if (value) el.innerText = value
       return
     }
-    if (el.innerText !== value || el.querySelector(':scope > .u')) el.innerText = value
+    if (el.innerText !== value || el.querySelector(':scope > :is(.u, .nb)')) el.innerText = value
     return
   }
   const next = numberNodes(parts)
-  const same =
+  if (sameNodes(el, next)) return
+  el.replaceChildren(...next)
+}
+
+/** 칸의 조각이 이미 이 조각들과 같은지 (같으면 다시 넣지 않는다: 커서와 고른 글이 그대로) */
+function sameNodes(el: HTMLElement, next: (Node | string)[]): boolean {
+  return (
     el.childNodes.length === next.length &&
     next.every((n, i) => {
       const c = el.childNodes[i]
       return typeof n === 'string' ? c.nodeType === Node.TEXT_NODE && c.nodeValue === n : c instanceof HTMLElement && c.className === (n as HTMLElement).className && c.textContent === n.textContent
     })
-  if (same) return
-  el.replaceChildren(...next)
+  )
 }
 
 interface FieldProps extends TextProps {
