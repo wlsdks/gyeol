@@ -1,7 +1,7 @@
 // 장면: 장 하나를 영화의 한 컷처럼 처음부터 끝까지 한 번에 짜 둔 움직임.
 // 사람은 장면 하나를 고르기만 한다(딸깍). 무엇이 언제 움직이는지는 엔진(motion/engine.ts의 scene)이 레이아웃마다 정한다.
 // 값은 장의 options.scene에 id 하나로 남고, 슬라이드의 data-scene으로 내보낸 HTML의 뷰어도 같이 읽는다.
-// 여기의 목록이 고르는 값의 한 곳이다: 편집기, 발표 전체에 입히기, 예전 버전 검사(compat.ts)가 같이 쓰고,
+// 여기의 목록이 고르는 값의 한 곳이다: 편집기, 장면 알아서 고르기, 예전 버전 검사(compat.ts)가 같이 쓰고,
 // AI 카탈로그와 모양 파일, 제안(op)도 나중에 여기서 가져간다
 
 import type { Block, BlockType, Deck, LayoutId, SceneId, Slide } from './types'
@@ -16,7 +16,7 @@ export interface SceneSpec {
   blocks: readonly BlockType[]
 }
 
-/** 고를 수 있는 장면. 차례가 곧 '발표 전체에 입히기'에서 컴포넌트 장에 먼저 고르는 차례다 */
+/** 고를 수 있는 장면. 차례가 곧 '장면 알아서 고르기'에서 한 장에 맞는 장면이 여럿일 때 먼저 고르는 차례다 */
 export const SCENES: readonly SceneSpec[] = [
   {
     id: 'opening',
@@ -114,9 +114,11 @@ export function sceneOf(slide: Pick<Slide, 'layout' | 'blocks' | 'options'>): Sc
   return isScene(id) && sceneFits(slide, id) ? id : null
 }
 
-/** 발표 전체에 입힐 때 이 장에 고르는 장면. 같은 장이면 늘 같은 것(맞는 것 가운데 목록의 첫째) */
-export function autoScene(slide: Pick<Slide, 'layout' | 'blocks'>): SceneId | null {
-  return scenesFor(slide)[0] ?? null
+/**
+ * 장면을 알아서 고를 때 이 장에 고를 수 있는 장면 (맞는 것 가운데 목록의 첫째). used에 든 장면은 빼고 고른다
+ */
+export function autoScene(slide: Pick<Slide, 'layout' | 'blocks'>, used: ReadonlySet<SceneId> = new Set()): SceneId | null {
+  return scenesFor(slide).find((id) => !used.has(id)) ?? null
 }
 
 export interface ScenePlanRow {
@@ -130,28 +132,50 @@ export interface ScenePlanRow {
 }
 
 /**
- * 발표 전체에 장면 입히기의 계획. 맞는 장면이 있는 장마다 한 줄. 이미 장면을 골라 둔 장은 kept에 따로 둔다
- * (덮어쓰려면 사람이 따로 고른다). 숨긴 장은 건너뛴다
+ * 힘줄 장만 고르기: 장면마다 한 번, 그 장면이 맞는 첫 장에만. 여는 장, 결론, 숫자, 흐름, 비교, 시간, 이미지, 마지막 장이
+ * 저마다 한 번씩 힘을 받고 나머지 장은 차분하게 둔다. 맞는 장마다 다 입히면 15장 발표의 거의 모든 장이 움직여서,
+ * 어디가 중요한지 오히려 흐려지고 같은 장면이 이어져 단조로웠다(영화도 모든 컷이 크지 않다). 가운데 장면(숫자, 흐름 같은)은
+ * 바로 앞 장이 움직였으면 한 장 쉬고 다음 맞는 장에 넣는다. 숨긴 장은 건너뛴다.
+ * keep: 이미 골라 둔 장은 그대로 두고, 그 장면은 다시 쓰지 않는다
  */
-export function planScenes(deck: Pick<Deck, 'slides'>): { add: ScenePlanRow[]; kept: ScenePlanRow[] } {
-  const add: ScenePlanRow[] = []
-  const kept: ScenePlanRow[] = []
+function pick(deck: Pick<Deck, 'slides'>, keep: boolean): ScenePlanRow[] {
+  const now = (s: Slide) => (isScene(s.options.scene) ? s.options.scene : null)
+  const used = new Set<SceneId>(keep ? deck.slides.flatMap((s) => (!s.hidden && sceneOf(s) ? [sceneOf(s)!] : [])) : [])
+  const rows: ScenePlanRow[] = []
+  // 바로 앞 장(숨긴 장 빼고)이 움직였는지: 가운데 장면은 한 장 쉬고 온다. 여는 장, 결론, 마무리는 자리가 정해진 장이라 쉬지 않는다
+  let moved = false
   deck.slides.forEach((s, i) => {
     if (s.hidden) return
-    const next = autoScene(s)
+    if (keep && now(s)) {
+      moved = !!sceneOf(s)
+      return
+    }
+    const rest = new Set<SceneId>(moved ? [...used, ...SCENE_IDS.filter((id) => !FRAMING.includes(id))] : used)
+    const next = autoScene(s, rest)
+    moved = !!next
     if (!next) return
-    const now = isScene(s.options.scene) ? s.options.scene : null
-    const row = { slideId: s.id, page: i + 1, now, next }
-    if (now === null) add.push(row)
-    else if (now !== next) kept.push(row)
+    used.add(next)
+    rows.push({ slideId: s.id, page: i + 1, now: now(s), next })
   })
-  return { add, kept }
+  return rows
 }
 
-/** 계획대로 장면을 입힌 발표. overwrite면 이미 골라 둔 장(kept)도 바꾼다 */
+/** 이야기의 틀을 잡는 장면: 바로 앞 장이 움직였어도 넣는다 (표지 다음의 한 장 요약처럼 붙어 있는 게 자연스럽다) */
+const FRAMING: readonly SceneId[] = ['opening', 'answer', 'closing']
+
+/**
+ * 장면 알아서 고르기의 계획. add: 장면이 없는 장에 새로 넣을 것(골라 둔 장과 그 장면은 그대로).
+ * kept: 처음부터 다시 고르면 다른 장면이 될, 이미 골라 둔 장 (바꾸려면 사람이 따로 고른다). all: 처음부터 다시 고를 때 바뀌는 장
+ */
+export function planScenes(deck: Pick<Deck, 'slides'>): { add: ScenePlanRow[]; kept: ScenePlanRow[]; all: ScenePlanRow[] } {
+  const all = pick(deck, false).filter((r) => r.now !== r.next)
+  return { add: pick(deck, true), kept: all.filter((r) => r.now !== null), all }
+}
+
+/** 계획대로 장면을 넣은 발표. overwrite면 이미 골라 둔 장까지 처음부터 다시 고른다 */
 export function withScenes<D extends Pick<Deck, 'slides'>>(deck: D, overwrite: boolean): D {
-  const { add, kept } = planScenes(deck)
-  const to = new Map([...add, ...(overwrite ? kept : [])].map((r) => [r.slideId, r.next]))
+  const plan = planScenes(deck)
+  const to = new Map((overwrite ? plan.all : plan.add).map((r) => [r.slideId, r.next]))
   if (!to.size) return deck
   return { ...deck, slides: deck.slides.map((s) => (to.has(s.id) ? { ...s, options: { ...s.options, scene: to.get(s.id) } } : s)) }
 }

@@ -313,7 +313,7 @@
   margin-top: 12px;
 }
 
-/* 발표 전체에 입히기: 어느 장에 무엇을 입히는지 먼저 보이고 적용한다 */
+/* 장면 알아서 고르기: 어느 장에 무엇을 넣는지 먼저 보이고 적용한다 */
 .sp-plan {
   margin-top: 12px;
   padding: 12px;
@@ -323,9 +323,16 @@
 }
 
 .sp-plan-h {
-  margin: 0 0 8px;
+  margin: 0 0 2px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.sp-plan-p {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .sp-rows {

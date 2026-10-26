@@ -35,7 +35,7 @@ describe('장면', () => {
     expect(sceneFits(two, 'compare')).toBe(true)
   })
 
-  it('발표 전체에 입히기: 골라 둔 장은 그대로 두고, 숨긴 장과 맞는 장면이 없는 장은 건너뛴다', () => {
+  it('알아서 고르기: 골라 둔 장은 그대로 두고, 숨긴 장과 맞는 장면이 없는 장은 건너뛴다', () => {
     const deck: Deck = {
       ...createSampleDeck(),
       slides: [
@@ -55,6 +55,22 @@ describe('장면', () => {
     expect(withScenes(deck, true).slides[4].options.scene).toBe('closing')
     // 다시 입혀도 같다
     expect(withScenes(kept, false)).toEqual(kept)
+  })
+
+  it('알아서 고르기는 장면마다 한 번, 맞는 첫 장에만 넣어 나머지 장은 차분하게 둔다', () => {
+    const deck: Deck = {
+      ...createSampleDeck(),
+      slides: ['cover', 'summary', 'kpi', 'kpi', 'section', 'process', 'bars', 'statement', 'closing'].map((l) => makeSlide(l as Slide['layout'])),
+    }
+    const plan = planScenes(deck)
+    // 첫 숫자 장(3)은 바로 앞 장이 움직여서 한 장 쉬고 다음 숫자 장(4)에. 여는 장과 결론은 붙어 있어도 된다
+    expect(plan.add.map((r) => [r.page, r.next])).toEqual([[1, 'opening'], [2, 'answer'], [4, 'numbers'], [6, 'flow'], [9, 'closing']])
+    // 골라 둔 장면은 다시 쓰지 않는다: 첫 숫자 장에 이미 있으면 둘째 숫자 장에 또 넣지 않는다
+    const own = { ...deck, slides: deck.slides.map((s, i) => (i === 3 ? { ...s, options: { scene: 'numbers' as SceneId } } : s)) }
+    expect(planScenes(own).add.map((r) => r.next)).not.toContain('numbers')
+    // 예시 발표에서도 장의 절반 넘게 움직이지 않는다
+    const sample = createSampleDeck()
+    expect(planScenes(sample).add.length).toBeLessThanOrEqual(Math.ceil(sample.slides.filter((s) => !s.hidden).length / 2))
   })
 
   it('모든 레이아웃에서 고른 장면은 그대로 열고, 모르는 장면은 센다', () => {

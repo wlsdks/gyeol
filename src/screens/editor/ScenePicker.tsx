@@ -98,19 +98,21 @@ const SceneCard = memo(function SceneCard({
 })
 
 /**
- * 발표 전체에 장면 입히기. 누르면 어느 장에 무엇을 입히는지 먼저 보이고, '적용하기'로 한 번에 입힌다(되돌리기 한 번에 돌아온다).
- * 이미 장면을 골라 둔 장은 그대로 두고, 바꿀지 따로 묻는다
+ * 장면 알아서 고르기. 힘줄 장(처음, 결론, 숫자, 마지막 같은)에만 장면마다 한 번씩 넣는다(planScenes).
+ * 누르면 어느 장에 무엇을 넣는지 먼저 보이고, '적용하기'로 한 번에 넣는다(되돌리기 한 번에 돌아온다).
+ * 예전 이름 '발표 전체에 장면 입히기'는 모든 장에 넣는 것처럼 들려서 무엇을 하는지 알기 어려웠다.
+ * 이미 장면을 골라 둔 장은 그대로 두고, 처음부터 다시 고를지 따로 묻는다
  */
 export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
   const replaceDeck = useDeck((s) => s.replaceDeck)
   const [open, setOpen] = useState(false)
   const [overwrite, setOverwrite] = useState(false)
   const plan = useMemo(() => planScenes(deck), [deck])
-  const rows = [...plan.add, ...(overwrite ? plan.kept : [])].sort((a, b) => a.page - b.page)
+  const rows = overwrite ? plan.all : plan.add
   if (!open) {
     return (
       <button type="button" className="btn btn-ghost btn-sm sp-all" onClick={() => setOpen(true)}>
-        발표 전체에 장면 입히기
+        장면 알아서 고르기
       </button>
     )
   }
@@ -118,11 +120,12 @@ export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
     replaceDeck(withScenes(deck, overwrite))
     setOpen(false)
     setOverwrite(false)
-    toast?.show(`${rows.length}장에 장면을 입혔어요.`, undoAction(toast))
+    toast?.show(`${rows.length}장에 장면을 넣었어요.`, undoAction(toast))
   }
   return (
-    <div className="sp-plan" role="group" aria-label="발표 전체에 장면 입히기">
-      <p className="sp-plan-h">{rows.length ? `${rows.length}장에 장면을 입혀요` : '새로 입힐 장이 없어요'}</p>
+    <div className="sp-plan" role="group" aria-label="장면 알아서 고르기">
+      <p className="sp-plan-h">{rows.length ? `힘줄 ${rows.length}장에 장면을 넣어요` : '새로 넣을 장이 없어요'}</p>
+      <p className="sp-plan-p">처음, 결론, 숫자, 마지막처럼 힘줄 장에만 넣고 나머지는 차분하게 둬요.</p>
       {rows.length > 0 && (
         <ol className="sp-rows">
           {rows.map((r) => (
@@ -139,7 +142,7 @@ export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
       {plan.kept.length > 0 && (
         <label className="sp-keep">
           <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
-          이미 고른 {plan.kept.length}장도 바꾸기
+          이미 고른 장까지 처음부터 다시 고르기
         </label>
       )}
       <div className="sp-plan-btns">
