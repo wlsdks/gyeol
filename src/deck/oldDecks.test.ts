@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest'
+import { unknownParts } from './compat'
+import v040 from './fixtures/deck-v0.4.0.json'
+import v042 from './fixtures/deck-v0.4.2.json'
+import { migrateDeck } from './migrate'
+import type { Deck } from './types'
+
+// 예전에 내놓은 버전이 실제로 저장한 발표(그 버전의 코드로 만든 것: 예시 발표, 장 모음의 모든 장과 그 장을 바꾼 컴포넌트 장,
+// 컴포넌트마다 한 장, 발표 종류마다 마법사가 만든 발표)를 지금 버전이 그대로 연다. 글은 모두 지어낸 것이고 이미지는 1px로 바꿔 두었다.
+// v0.4.0은 컴포넌트 장이 줄(rows)이던 판 전, v0.4.2는 판(at)이다. 새 버전을 내놓을 때 그 버전의 파일도 더한다
+const RELEASES: [string, { rich: Deck; made: Deck[] }][] = [
+  ['v0.4.0', v040 as unknown as { rich: Deck; made: Deck[] }],
+  ['v0.4.2', v042 as unknown as { rich: Deck; made: Deck[] }],
+]
+
+/** 사람이 적은 글: 칸, 항목, 컴포넌트(줄 안의 컴포넌트도) 안의 글. id와 이미지는 뺀다 */
+function written(deck: Deck): string[] {
+  const out: string[] = []
+  const walk = (v: unknown) => {
+    if (typeof v === 'string') {
+      if (v.trim() && !v.startsWith('data:')) out.push(v)
+    } else if (Array.isArray(v)) v.forEach(walk)
+    else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x)
+  }
+  for (const s of deck.slides) {
+    walk(s.fields)
+    walk(s.items)
+    walk(s.notes)
+    const blocks = [...(s.blocks ?? []), ...((s as { rows?: { blocks: unknown[] }[] }).rows ?? []).flatMap((r) => r.blocks)] as { fields?: unknown; items?: unknown }[]
+    for (const b of blocks) {
+      walk(b.fields)
+      walk(b.items)
+    }
+  }
+  return out.sort()
+}
+
+describe('예전 버전의 발표', () => {
+  for (const [version, { rich, made }] of RELEASES) {
+    it(`${version}에서 만든 발표를 막지 않고 열어, 장과 글을 하나도 잃지 않는다`, () => {
+      for (const deck of [rich, ...made]) {
+        expect(unknownParts(deck), `${version} ${deck.title}`).toBe(0)
+        const now = migrateDeck(structuredClone(deck))
+        expect(now.slides.map((s) => s.id)).toEqual(deck.slides.map((s) => s.id))
+        expect(written(now)).toEqual(written(deck))
+        // 연 뒤에는 지금 꼴: 컴포넌트 장은 모두 판 위에
+        expect(now.slides.every((s) => !('rows' in s) && (s.layout !== 'compose' || s.blocks!.every((b) => b.at)))).toBe(true)
+        expect(unknownParts(now)).toBe(0)
+      }
+    })
+  }
+})
