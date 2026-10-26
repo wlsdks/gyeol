@@ -87,6 +87,18 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
   if (slide) ys.push(Math.max(top, slide.top - bh - 8), Math.min(bottom - bh, slide.bottom + 8))
   const xs = slide ? [clampX(r.left), clampX(r.right - bw), clampX(r.left + (r.width - bw) / 2)] : [clampX(r.left)]
   const spots = ys.filter((y) => y >= top && y + bh <= bottom).flatMap((y) => xs.map((x) => ({ x, y })))
+  // 장 아래 여백은 장 아래 도구 줄과 겹친다. 왼쪽 묶음(AI로 다듬기, 넘침 알림)과 오른쪽 묶음(미리 보기, 발표) 사이가 막대보다
+  // 넓으면 그 사이에도 놓아 본다 (1440×900에서 맨 아래 컴포넌트를 고르면 막대가 'AI로 다듬기'를, 1920×1080에서는 '미리 보기'를
+  // 반쯤 덮어 단추 두 줄이 겹쳐 보였다. 견주는 자리가 고른 것에 맞춘 셋뿐이라 그 사이의 빈 곳을 몰랐다).
+  // 도구를 하나도 덮지 않고 양옆 도구와 8px씩 떨어지는 자리만 더한다: 도구는 가볍게 쳐서, 덮는 자리를 더하면 아무것도 덮지 않던
+  // 장 위 여백보다 앞설 수 있고, 틈에 꼭 끼우면 막대가 도구 줄의 단추처럼 보인다
+  const tools = others.filter((t) => t.tool).map((t) => t.r)
+  for (const y of [...new Set(spots.map((s) => s.y))]) {
+    const row = tools.filter((o) => o.top < y + bh && o.bottom > y)
+    for (const o of row) {
+      for (const x of [clampX(o.right + 8), clampX(o.left - bw - 8)]) if (row.every((p) => x + bw + 8 <= p.left || x >= p.right + 8)) spots.push({ x, y })
+    }
+  }
   if (slide) spots.push({ x: clampX(r.right - bw - 8), y: Math.max(top, r.top + 8) })
   if (!spots.length) return { x: clampX(r.left), y: r.top + 8, room: area ? area.width - 16 : innerWidth }
   // 가리는 글(others)의 넓이에, 고른 것에서 떨어진 만큼을 조금 더한다. 그래서 빈칸 안내를 조금 가리는 바로 아래가
@@ -102,8 +114,8 @@ const AWAY_COST = 6
 /** 고른 것 안의 글을 가릴 때 곱하는 값 */
 const OWN_WEIGHT = 4
 
-/** 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다 */
-type TextRect = { r: DOMRect; w: number }
+/** 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다. tool은 장 아래 도구 줄의 것 */
+type TextRect = { r: DOMRect; w: number; tool?: boolean }
 const HINT_WEIGHT = 0.2
 /** 차트와 원 같은 그림: 그림의 네모에는 빈 곳도 있어서 글보다 덜 친다 */
 const ART_WEIGHT = 0.5
@@ -139,9 +151,10 @@ function contentRects(slide: Element | null, canvas: Element | null): TextRect[]
     const r = g.getBoundingClientRect()
     if (r.width && r.height && !g.closest('button')) out.push({ r, w: ART_WEIGHT })
   }
-  for (const b of canvas?.querySelectorAll('.stage-tools button') ?? []) {
+  // 넘침 알림(.stage-warn)도 도구 줄의 것으로 친다: 도구 사이의 빈 곳을 찾을 때 알림 위를 빈 곳으로 보지 않게
+  for (const b of canvas?.querySelectorAll('.stage-tools button, .stage-tools .stage-warn') ?? []) {
     const r = b.getBoundingClientRect()
-    if (r.width && r.height) out.push({ r, w: TOOL_WEIGHT })
+    if (r.width && r.height) out.push({ r, w: TOOL_WEIGHT, tool: true })
   }
   return out
 }
