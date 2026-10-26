@@ -839,8 +839,9 @@ export function blockFitter() {
       const spare = a.bottom - end
       if (spare > 0) for (const x of items) dy.set(x.c, dy.get(x.c)! + spare / 2)
     }
-    // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게)
-    if (Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) return
+    // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게). 다만 한 줄의 첫 글줄 윗선을 맞춘 것(lineUp)은 몇 px라도
+    // 옮긴다: 결론 한 줄(44px)과 목차(52px)의 윗선이 15px 어긋났는데, 맞추려 한쪽을 7px 내리고 다른 쪽을 8px 올린 것이 둘 다 8px 밑이라 버려졌다
+    if (!lineUp.size && Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) return
     for (const x of items) {
       const px = Math.round(dy.get(x.c)! / k)
       if (px) x.c.style.setProperty('--bk-shift', px + 'px')
