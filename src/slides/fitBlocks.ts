@@ -9,7 +9,7 @@
  * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
  *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
  * 3-2. 쌓은 뒤에도 내용이 본문 높이의 60%에 못 미치면(docs/VISUAL-RULES.md 6) 글자와 그림을 한 단계 더(1.44) 키우고, 그래도 비면
- *    줄 사이를 장 안의 모든 칸에 같은 값으로 넓힌다(--bk-air, 24px까지). 칸마다 바닥까지 따로 채우지는 않는다: 줄 사이가 칸마다 달라 보였다.
+ *    줄 사이를 장 안의 모든 칸에 같은 값으로 넓힌다(--bk-air, 12px까지). 칸마다 바닥까지 따로 채우지는 않는다: 줄 사이가 칸마다 달라 보였다.
  *    레이아웃 장도 같다(fitLayout: 본문 .s-body의 --bk-fit, --fill-air).
  *
  * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그린다(소제목 윗선을 맞춘다, blocks.css). 이음표가 선 줄도 같다. 칸 높이를 다 쓰는
@@ -37,7 +37,7 @@ export function blockFitter() {
   // 쌓은 뒤에도 본문이 60% 넘게 빈 장만 한 단계 더 (fit의 끝)
   const more = 1.44
   // 그래도 빈 장은 줄 사이를 넓힌다: 줄의 위아래에 더하는 캔버스 px. 넘게 벌리면 줄끼리 따로 떨어져 보여서 이만큼까지만
-  const airMax = 24
+  const airMax = 12
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
@@ -878,17 +878,20 @@ export function blockFitter() {
   }
 
   /**
-   * 눈높이 가운데 (docs/VISUAL-RULES.md 6): 키우고 줄 사이를 넓혀도 내용이 본문 높이의 60%에 못 미치는 완결된 장(막대 하나와 상태,
-   * 날짜 한 줄)은 맨 위에 두면 아래 공백만 길다. 내용 묶음째 본문의 눈높이 가운데(위아래 빈 곳 2 : 3)로 내린다. 소제목이 있는 장처럼
-   * 뒤를 기다리는 장, 장 제목이 없는 장(쌓기가 이미 가운데에 둔다)은 그대로. 옮긴 장은 data-eye를 붙여 검사가 머리 아래 빈 곳을 봐준다
+   * 위아래 균형 (docs/VISUAL-RULES.md 6): 채움(키우기, 줄 사이)을 마치고도 남는 높이는 내용 위와 아래에 1 : 1.2로 둔다(눈높이 가운데).
+   * 맨 아래에만 모으면 덜 찬 장은 위에 붙고 아래만 길게 비었다. 균형은 본문 윗선부터 장 틀의 아랫선까지로 잡는다: 하단 표시(출처,
+   * '예시: …')는 오른쪽 아래 구석의 메타라 공백 설계에 넣지 않는다(그 몫까지 비우면 아래가 두 겹으로 빈다). 내용은 본문 상자 안에 둔다.
+   * 아래를 이끄는 소제목이 있는 장은 위에 붙인 그대로. 장 제목이 없는 장은 쌓기가 가운데에 둔다.
+   * 옮긴 장은 data-eye를 붙인다(60%를 못 채운 완결된 장은 'full': 검사가 머리 아래 빈 곳과 채움을 봐준다)
    */
   function eyeLevel(cells: HTMLElement[], area: HTMLElement): void {
     if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot') || c.dataset.type === 'heading')) return
-    const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
-    if (!head || !head.getClientRects().length) return
+    const slide = area.parentElement
+    const head = slide?.querySelector<HTMLElement>(':scope > .s-head')
+    if (!slide || !head || !head.getClientRects().length) return
     const a = area.getBoundingClientRect()
     const k = a.height / area.offsetHeight
-    if (!k || fillOf(cells, area) >= 0.6) return
+    if (!k) return
     let t = Infinity
     let b = -Infinity
     for (const c of cells) {
@@ -897,14 +900,18 @@ export function blockFitter() {
       t = Math.min(t, d.t)
       b = Math.max(b, d.b)
     }
-    const spare = a.height - (b - t)
-    const move = Math.round((a.top + spare * 0.4 - t) / k)
+    // 장 틀의 아랫선: 본문 상자 아래에 비워 둔 하단 표시 몫(아래 여백에서 틀 여백 --pad-y를 뺀 것)을 더한다
+    const cs = getComputedStyle(slide)
+    const foot = Math.max(0, (parseFloat(cs.paddingBottom) || 0) - (parseFloat(cs.getPropertyValue('--pad-y')) || 0)) * k
+    const spare = a.bottom + foot - a.top - (b - t)
+    // 내용은 본문 상자 밖으로는 내리지 않는다
+    const move = Math.round(Math.min(a.top + spare / 2.2 - t, a.bottom - b) / k)
     if (move < 8) return
     for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))]) {
       const was = parseFloat(el.style.getPropertyValue('--bk-shift')) || 0
       el.style.setProperty('--bk-shift', was + move + 'px')
     }
-    area.dataset.eye = '1'
+    area.dataset.eye = fillOf(cells, area) < 0.6 ? 'full' : '1'
   }
 
   /** 본문 높이 가운데 그려진 내용이 쓰는 몫 (쌓은 뒤 맨 위 내용에서 맨 아래 내용까지, 본문 위 끝부터 잰다) */
