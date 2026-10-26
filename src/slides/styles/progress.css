@@ -129,7 +129,7 @@
 .ps-track {
   height: 16px;
   overflow: hidden;
-  border-radius: 99px;
+  border-radius: var(--r-mark);
   background: var(--surface);
 }
 

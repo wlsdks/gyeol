@@ -41,7 +41,7 @@
   height: 20px;
   margin-top: 28px;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--r-mark);
   background: color-mix(in srgb, var(--ink) 9%, transparent);
 }
 

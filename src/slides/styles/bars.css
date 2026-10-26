@@ -57,14 +57,14 @@
 .br-track {
   height: 64px;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--r-mark);
   background: var(--surface);
 }
 
 .br-fill {
   width: calc(var(--p, 0) * 1%);
   height: 100%;
-  border-radius: 14px;
+  border-radius: var(--r-mark);
   background: color-mix(in srgb, var(--ink) 22%, var(--bg));
 }
 
@@ -151,7 +151,7 @@
   height: calc((100% - 84px) * var(--p, 0) / 100);
   min-height: 6px;
   margin: 0 22%;
-  border-radius: 12px 12px 0 0;
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
   background: none;
 }
 

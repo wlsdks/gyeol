@@ -54,12 +54,12 @@
   bottom: calc(var(--area) * var(--lo) / 100);
   left: 22%;
   height: max(6px, calc(var(--area) * (var(--hi) - var(--lo)) / 100));
-  border-radius: 10px;
+  border-radius: var(--r-mark);
   background: var(--accent);
 }
 
 .wf-total .wf-bar {
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
   background: var(--wf-total);
 }
 
@@ -265,7 +265,7 @@
 }
 
 .va-across .wf-total .wf-bar {
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
 }
 
 /* 잇는 선: 이 막대가 끝난 자리(--link)에서 아래 줄 막대의 윗변까지 */

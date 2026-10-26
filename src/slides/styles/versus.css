@@ -121,7 +121,7 @@
 .vs-fill {
   width: 100%;
   height: calc((100% - 84px) * var(--p, 0) / 100);
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
   background: var(--vs-a);
 }
 
@@ -411,7 +411,7 @@
   left: calc(var(--lo) * 1%);
   width: calc((var(--hi) - var(--lo)) * 1%);
   height: calc(var(--r) * 0.6);
-  border-radius: 999px;
+  border-radius: var(--r-mark);
   background: var(--vs-span);
   translate: 0 -50%;
 }

@@ -12,7 +12,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: var(--r-mark);
 }
 
 .bk-img-c {
@@ -39,7 +39,7 @@
   width: min(100cqw, 100cqh * var(--ar));
   height: auto;
   aspect-ratio: var(--ar);
-  border-radius: 18px;
+  border-radius: var(--r-mark);
   outline: var(--rule) solid var(--line);
   outline-offset: calc(-1 * var(--rule));
 }

@@ -8,7 +8,7 @@
 .bk-sg {
   --sg-h: clamp(64px, calc(64px + (100cqh - 420px) * 0.4), 120px);
   --sg-gap: 8px;
-  --sg-r: 10px;
+  --sg-r: var(--r-mark);
   display: flex;
   flex-direction: column;
   justify-content: safe center;

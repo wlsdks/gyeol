@@ -191,7 +191,7 @@
   width: auto;
   max-width: 380px;
   padding: 16px 24px;
-  border-radius: 16px;
+  border-radius: var(--r-mark);
   /* 어두운 면 위의 밝은 판: 박힌 색 대신 지금 면의 글자색(밝은 색)에 바탕을 조금 섞어 눈부시지 않게 */
   background: color-mix(in srgb, var(--ink) 92%, var(--bg));
 }

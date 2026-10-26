@@ -37,7 +37,7 @@
 .sh-seg {
   flex-basis: 0;
   min-width: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-mark);
 }
 
 .sh-legend {

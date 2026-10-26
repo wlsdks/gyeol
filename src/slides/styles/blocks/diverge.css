@@ -100,7 +100,7 @@
   left: var(--dv-x);
   width: calc(var(--dv-b) * var(--p));
   height: calc(44px * var(--bk-fit, 1));
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
   background: var(--dv-bar);
   translate: 0 -50%;
 }
@@ -108,7 +108,7 @@
 .bk-dv-row.is-neg .bk-dv-bar {
   right: calc(100% - var(--dv-x));
   left: auto;
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--r-mark) 0 0 var(--r-mark);
 }
 
 .bk-dv-row.is-hl .bk-dv-bar {

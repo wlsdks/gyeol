@@ -55,7 +55,7 @@
 .sk-bar {
   position: relative;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--r-mark);
   background: var(--surface);
 }
 
@@ -65,7 +65,7 @@
   bottom: 0;
   left: 0;
   width: calc(var(--a, 0) * 1%);
-  border-radius: 6px;
+  border-radius: var(--r-mark);
   background: color-mix(in srgb, var(--ink) 30%, var(--bg));
 }
 
@@ -80,7 +80,7 @@
 }
 
 .is-met > .sk-bar .sk-diff {
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
   background: color-mix(in srgb, var(--ink) 72%, var(--bg));
 }
 

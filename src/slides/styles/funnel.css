@@ -113,7 +113,7 @@
   bottom: 0;
   left: calc(var(--w) * 1% - 12px);
   width: calc(max(0, var(--pw) - var(--w)) * 1% + 12px);
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
   background: var(--surface);
   content: '';
 }
@@ -124,7 +124,7 @@
   bottom: 0;
   left: 0;
   width: calc(var(--w) * 1%);
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
   background: color-mix(in srgb, var(--ink) 22%, var(--bg));
 }
 

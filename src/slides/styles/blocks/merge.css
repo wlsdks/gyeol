@@ -8,7 +8,7 @@
   --mg-gap: 6px;
   --mg-pc: 20px;
   --mg-bar: 56px;
-  --mg-r: 6px;
+  --mg-r: var(--r-mark);
   display: flex;
   flex-direction: column;
   justify-content: safe center;

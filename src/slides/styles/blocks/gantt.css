@@ -88,7 +88,7 @@
   bottom: 0;
   left: calc(var(--lw) + 28px + (100% - var(--lw) - 28px) * var(--now) / var(--n));
   width: calc((100% - var(--lw) - 28px) / var(--n));
-  border-radius: 8px;
+  border-radius: var(--r-mark);
   background: var(--accent-soft);
 }
 
@@ -159,7 +159,7 @@
   left: calc(100% * var(--s) / var(--n) + 8px);
   width: calc(100% * (var(--e) - var(--s)) / var(--n) - 16px);
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--r-mark);
   background: var(--gt-c);
   translate: 0 -50%;
 }

@@ -177,7 +177,7 @@
   flex: none;
   width: var(--cc-w);
   height: calc((100% - var(--cc-top)) * var(--p, 0) / 100);
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
   background: var(--cc-bar);
 }
 
@@ -425,7 +425,7 @@
 .bk-pr-before {
   left: 0;
   width: calc(var(--a) * 1%);
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--r-mark) 0 0 var(--r-mark);
   background: color-mix(in srgb, var(--ink) 9%, var(--bg));
 }
 
@@ -433,7 +433,7 @@
   left: calc(var(--a) * 1%);
   width: max(6px, calc(var(--p) * 1%));
   border-left: 2px solid var(--bg);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--r-mark) var(--r-mark) 0;
   background: var(--cc-bar);
 }
 
@@ -448,7 +448,7 @@
 /* 첫 원인은 앞이 없어서 왼쪽 끝도 둥글게 (틈도 없다) */
 .bk-pr-row.is-first .bk-pr-fill {
   border-left: 0;
-  border-radius: 6px;
+  border-radius: var(--r-mark);
 }
 
 .bk-pr-row.is-hl .bk-pr-fill {
@@ -610,7 +610,7 @@
   left: 50%;
   width: var(--cc-w);
   height: max(4px, calc(var(--p) * 1%));
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
   background: var(--accent);
   translate: -50% 0;
 }
@@ -618,7 +618,7 @@
 .bk-ag-col.is-down .bk-ag-fill {
   top: calc((100 - var(--b)) * 1%);
   bottom: auto;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 var(--r-mark) var(--r-mark);
   background: var(--cc-bar);
 }
 

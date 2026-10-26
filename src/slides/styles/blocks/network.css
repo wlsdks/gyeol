@@ -39,7 +39,7 @@
   min-width: 0;
   /* 옆 여백은 좁게: 6칸 너비에서 32px이면 '공통 직원 정보'가 세 줄로 꺾였다 */
   padding: 40px 24px;
-  border-radius: 24px;
+  border-radius: var(--r-mark);
   background: var(--bold-bg);
   color: var(--bold-ink);
   text-align: center;
@@ -79,7 +79,7 @@
   justify-content: center;
   min-width: 0;
   padding: 24px 32px;
-  border-radius: 20px;
+  border-radius: var(--r-mark);
   background: var(--surface);
 }
 

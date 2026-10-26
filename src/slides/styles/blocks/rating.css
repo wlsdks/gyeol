@@ -142,7 +142,7 @@
   bottom: 0;
   left: calc(var(--lw) + 28px + (100% - var(--lw) - 28px) * var(--pick) / var(--n));
   width: calc((100% - var(--lw) - 28px) / var(--n));
-  border-radius: 8px;
+  border-radius: var(--r-mark);
   background: var(--accent-soft);
 }
 

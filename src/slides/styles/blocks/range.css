@@ -77,7 +77,7 @@
   left: calc(var(--lo) * 1%);
   width: max(12px, calc((var(--hi) - var(--lo)) * 1%));
   height: 12px;
-  border-radius: 4px;
+  border-radius: var(--r-mark);
   background: var(--accent);
 }
 
