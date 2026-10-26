@@ -242,8 +242,17 @@ const TOOLS = [
     name: 'get_catalog',
     description:
       '쓸 수 있는 레이아웃(칸과 항목 수 범위 포함), 발표 종류별 장 역할(role)과 순서, 듣는 사람, 시간, 방식, 테마, 부품 장에 쓰이는 부품(blocks). ' +
-      '제안을 만들기 전에 한 번 읽는다. add_slide의 role에 여기 나온 역할 이름을 쓰면 그 장의 안내와 이름표까지 같이 들어간다.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      '제안을 만들기 전에 한 번 읽는다. add_slide의 role에 여기 나온 역할 이름을 쓰면 그 장의 안내와 이름표까지 같이 들어간다. ' +
+      '거짓(false)과 없음(null)인 값은 빠진다: 예를 들어 highlight가 없는 레이아웃은 강조할 항목을 고를 수 없다. ' +
+      '크니까 deck을 주어 그 발표 종류의 역할만 받고, 부품 장(layout compose)을 만들거나 고치지 않을 때는 blocks를 false로 해서 부품 목록을 뺀다.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        deck: { type: 'string', description: '이 발표(list_decks의 deck)의 종류에 맞는 역할만 받기' },
+        blocks: { type: 'boolean', description: 'false면 부품 장의 부품과 그 고르는 값(blocks, blockRules, blockLooks, blockEffects, blockWhens, blockSpeeds, blockFroms, blockLinks)을 뺀다. 기본 true' },
+      },
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, openWorldHint: false },
   },
   {
@@ -324,6 +333,16 @@ const TOOLS = [
   },
 ]
 
+/**
+ * 거짓과 없음인 값을 뺀다. 카탈로그가 Claude Code가 한 번에 받는 도구 응답(약 2만 5천 토큰)에 가까워져서,
+ * 되풀이되는 "optional":false, "image":false, "highlight":null 같은 값부터 덜었다
+ */
+function slim(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(slim)
+  if (!isObj(v)) return v
+  return Object.fromEntries(Object.entries(v).flatMap(([k, x]) => (x === false || x === null ? [] : [[k, slim(x)]])))
+}
+
 function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unknown {
   switch (name) {
     case 'list_decks':
@@ -339,8 +358,17 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
           updatedAt: s.updatedAt,
         })),
       }
-    case 'get_catalog':
-      return catalog()
+    case 'get_catalog': {
+      const all = catalog()
+      let out: Record<string, unknown> = all
+      if (args.deck !== undefined) {
+        const shape = typeof args.deck === 'string' ? readShape(dirs, args.deck) : null
+        if (!shape) throw new ToolError(MESSAGES.noDeck)
+        out = { ...out, deckTypes: all.deckTypes.filter((t) => t.id === shape.type) }
+      }
+      if (args.blocks === false) out = Object.fromEntries(Object.entries(out).filter(([k]) => !k.startsWith('block')))
+      return slim(out)
+    }
     case 'get_shape': {
       const shape = typeof args.deck === 'string' ? readShape(dirs, args.deck) : null
       if (!shape) throw new ToolError(MESSAGES.noDeck)
@@ -439,7 +467,7 @@ type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unk
 const INSTRUCTIONS =
   'Framo(gyeol)는 보고, 제안, 공유 같은 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
   '사람이 적은 글은 보안 때문에 이 서버에 없고, 사용자에게 붙여 달라고 하지도 않는다. ' +
-  '순서: list_decks → get_catalog → get_shape → check_changes(미리 돌려 보고 고치기) → propose_changes → (사용자가 앱에서 적용) → get_result.'
+  '순서: list_decks → get_shape → get_catalog(deck을 주고, 부품 장이 없으면 blocks: false) → check_changes(미리 돌려 보고 고치기) → propose_changes → (사용자가 앱에서 적용) → get_result.'
 
 function toolText(value: unknown, isError = false) {
   return { content: [{ type: 'text', text: JSON.stringify(value) }], isError }

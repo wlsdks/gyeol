@@ -257,6 +257,25 @@ describe('MCP 서버', () => {
     expect((await tool('check_changes', { deck: shape.deck, ops: [] })).isError).toBe(true)
   })
 
+  it('카탈로그는 거짓과 없음을 빼고, 발표 종류와 부품 목록을 골라 받을 수 있다', async () => {
+    const size = (v: unknown) => JSON.stringify(v).length
+    const { value: all } = await tool('get_catalog')
+    expect(JSON.stringify(all)).not.toMatch(/:(false|null)[,}]/)
+    expect(all.deckTypes.length).toBeGreaterThan(3)
+    expect(all.blocks.length).toBeGreaterThan(10)
+    // 강조할 항목이 없는 레이아웃은 그 키가 없다
+    expect(all.layouts.find((l: { id: string }) => l.id === 'summary').highlight).toBeUndefined()
+    expect(all.layouts.find((l: { id: string }) => l.id === 'pricing').highlight).toEqual(expect.any(String))
+
+    const { value: list } = await tool('list_decks')
+    const { value: one } = await tool('get_catalog', { deck: list.decks[0].deck, blocks: false })
+    expect(one.deckTypes.map((t: { id: string }) => t.id)).toEqual([list.decks[0].type])
+    expect(Object.keys(one).filter((k) => k.startsWith('block'))).toEqual([])
+    expect(one.layouts).toEqual(all.layouts)
+    expect(size(one)).toBeLessThan(size(all) / 2)
+    expect((await tool('get_catalog', { deck: 'd00000000' })).isError).toBe(true)
+  })
+
   it('앱의 부탁을 프롬프트로 고를 수 있고, 받은 값은 꼴이 맞을 때만 문장에 들어간다', async () => {
     const list = await rpc('prompts/list')
     const prompts = list.result!.prompts as { name: string; title: string; arguments: { name: string; required: boolean }[] }[]
