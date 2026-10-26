@@ -330,7 +330,7 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
 type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unknown }
 
 const INSTRUCTIONS =
-  '결(gyeol)은 회사에서 하는 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
+  '결(gyeol)은 보고, 제안, 공유 같은 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
   '사람이 적은 글은 보안 때문에 이 서버에 없고, 사용자에게 붙여 달라고 하지도 않는다. ' +
   '순서: list_decks → get_catalog → get_shape → propose_changes → (사용자가 앱에서 적용) → get_result.'
 
