@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import pkg from '../package.json'
+import { ASK_IDS, mcpPrompt } from '../src/ai/asks'
 import { OP_CODES, OP_KEYS } from '../src/ai/ops'
 import { MCP_TOOLS, RESULT_FORMAT } from '../src/ai/protocol'
 import { SECRET, secretDeck } from '../src/ai/secretDeck'
@@ -254,6 +255,38 @@ describe('MCP 서버', () => {
     // 공유되지 않은 발표, 빈 ops는 정해진 말로만 답한다
     expect((await tool('check_changes', { deck: 'd00000000', ops: [{ op: 'set_theme', motion: 'calm' }] })).isError).toBe(true)
     expect((await tool('check_changes', { deck: shape.deck, ops: [] })).isError).toBe(true)
+  })
+
+  it('앱의 부탁을 프롬프트로 고를 수 있고, 받은 값은 꼴이 맞을 때만 문장에 들어간다', async () => {
+    const list = await rpc('prompts/list')
+    const prompts = list.result!.prompts as { name: string; title: string; arguments: { name: string; required: boolean }[] }[]
+    expect(prompts.map((p) => p.name)).toEqual([...ASK_IDS])
+    // 장 부탁은 장 번호를 꼭 받는다. 사람이 장의 해시 id를 알 수는 없다
+    for (const p of prompts) expect(p.arguments.find((a) => a.name === 'page')?.required ?? false, p.name).toBe(p.name.startsWith('slide_'))
+
+    const { value: decks } = await tool('list_decks')
+    const deck = decks.decks[0].deck
+    const text = async (name: string, args: Record<string, unknown> = {}) => {
+      const res = await rpc('prompts/get', { name, arguments: args })
+      return res.error ? null : ((res.result!.messages as { content: { text: string } }[])[0].content.text)
+    }
+    expect(await text('deck_flow')).toBe(mcpPrompt('deck_flow', null, null))
+    expect(await text('deck_scenes', { deck })).toBe(mcpPrompt('deck_scenes', deck, null))
+    expect(await text('slide_layout', { page: '3', deck })).toBe(mcpPrompt('slide_layout', deck, 3))
+    expect(await text('deck_flow')).toContain('check_changes')
+    // 꼴이 틀린 값은 문장에 넣지 않고 정해진 오류로만 답한다
+    for (const [name, args] of [
+      ['deck_flow', { deck: SECRET }],
+      ['deck_flow', { deck: `${deck} ${SECRET}` }],
+      ['deck_flow', { page: '2' }],
+      ['slide_layout', {}],
+      ['slide_layout', { page: '0' }],
+      ['slide_layout', { page: `3${SECRET}` }],
+      ['slide_layout', { page: '301' }],
+      [SECRET, {}],
+    ] as const)
+      expect(await text(name, args), `${name} ${JSON.stringify(args)}`).toBeNull()
+    expect(raw.join('\n')).not.toContain(SECRET)
   })
 
   it('객체가 아닌 요청에는 틀린 요청이라고 답하고 꺼지지 않는다', async () => {

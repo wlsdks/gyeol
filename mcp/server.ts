@@ -17,6 +17,7 @@ import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { version } from '../package.json'
 import { isObj } from '../src/ai/guards'
+import { askOf, ASKS, mcpPrompt, PAGE_MAX } from '../src/ai/asks'
 import { checkOps } from '../src/ai/check'
 import { cleanNote, MAX_OPS, NOTE_MAX, OP_CODES, OP_KEYS, OP_NAMES, parseRequest, ROLE_MAX, requestId, type ChangeRequest, type OpCode } from '../src/ai/ops'
 import {
@@ -396,6 +397,41 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
   }
 }
 
+// ---------- 프롬프트: 앱의 'AI에게 부탁'과 같은 부탁을 Claude Desktop, Claude Code에서 골라 쓰게 ----------
+
+const deckArg = { name: 'deck', description: '발표 id(d로 시작하는 9글자). 비우면 가장 최근에 고친 공유 발표', required: false }
+const pageArg = { name: 'page', description: '다듬을 장 번호(1부터, 숨긴 장도 센다)', required: true }
+
+const PROMPTS = ASKS.map((a) => ({
+  name: a.id,
+  title: a.name,
+  description: a.description,
+  arguments: a.scope === 'slide' ? [pageArg, deckArg] : [deckArg],
+}))
+
+/**
+ * 고른 프롬프트의 문장. 받은 값은 발표 id와 장 번호뿐이고, 꼴이 맞을 때만 정해진 말 사이에 넣는다.
+ * 틀리면 받은 값을 되풀이하지 않고 정해진 오류만 돌려준다(null)
+ */
+function getPrompt(params: Record<string, unknown>): object | null {
+  const a = askOf(params.name)
+  const args = isObj(params.arguments) ? params.arguments : {}
+  if (!a) return null
+  // 클라이언트는 인자를 글자로 보낸다. 빈 글자는 고르지 않은 것
+  const deck = args.deck === undefined || args.deck === '' ? null : args.deck
+  if (deck !== null && !(typeof deck === 'string' && DECK_ID.test(deck))) return null
+  let page: number | null = null
+  if (a.scope === 'slide') {
+    const raw = typeof args.page === 'number' ? String(args.page) : args.page
+    if (typeof raw !== 'string' || !/^[1-9][0-9]{0,2}$/.test(raw.trim()) || Number(raw) > PAGE_MAX) return null
+    page = Number(raw)
+  } else if (args.page !== undefined && args.page !== '') return null
+  return {
+    description: a.description,
+    messages: [{ role: 'user', content: { type: 'text', text: mcpPrompt(a.id, deck, page) } }],
+  }
+}
+
 // ---------- JSON-RPC (MCP stdio) ----------
 
 type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unknown }
@@ -429,7 +465,7 @@ export function handleMessage(dirs: Dirs, value: unknown): object | null {
       const asked = typeof params.protocolVersion === 'string' ? params.protocolVersion : ''
       return reply({
         protocolVersion: PROTOCOLS.includes(asked) ? asked : PROTOCOLS[0],
-        capabilities: { tools: { listChanged: false } },
+        capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
         serverInfo: { name: MCP_SERVER_NAME, version: VERSION },
         instructions: INSTRUCTIONS,
       })
@@ -438,6 +474,12 @@ export function handleMessage(dirs: Dirs, value: unknown): object | null {
       return reply({})
     case 'tools/list':
       return reply({ tools: TOOLS })
+    case 'prompts/list':
+      return reply({ prompts: PROMPTS })
+    case 'prompts/get': {
+      const prompt = getPrompt(params)
+      return prompt ? reply(prompt) : fail(-32602, 'Invalid params')
+    }
     case 'tools/call': {
       const name = typeof params.name === 'string' ? params.name : ''
       const args = (params.arguments && typeof params.arguments === 'object' ? params.arguments : {}) as Record<string, unknown>

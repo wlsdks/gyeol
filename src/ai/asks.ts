@@ -145,3 +145,30 @@ export function askPrompt(ask: AskId, deck: string, slide: string | null): strin
     '- 제안을 보낸 뒤에는 결과를 기다리지 말고 바로 끝내세요. 사람이 앱에서 보고 정해요.',
   ].join('\n')
 }
+
+/** MCP 프롬프트(prompts/get)로 고른 장. 해시 id 대신 장 번호(1부터, 숨긴 장도 센다)를 받는다: 사람이 Claude Desktop에서 고를 때 장 id는 모른다 */
+export const PAGE_MAX = 300
+
+/**
+ * MCP 프롬프트로 고른 부탁의 문장. Claude Desktop이나 Claude Code에서 사람이 고르면 이 문장이 대화에 들어간다.
+ * 'AI에게 부탁'과 달리 그 AI에는 다른 도구가 있을 수 있어서, 발표 내용을 사람에게 묻지 말라고 따로 적는다.
+ * 정해진 말과 해시 id, 장 번호만으로 만든다. deck이 null이면 가장 최근에 고친 발표(list_decks의 맨 앞)
+ */
+export function mcpPrompt(ask: AskId, deck: string | null, page: number | null): string {
+  const a = askOf(ask)!
+  const which = deck ? `발표 ${deck}` : '가장 최근에 고친 발표(list_decks의 맨 앞)'
+  const target = page ? `${which}의 ${page}번째 장(get_shape의 slides에서 ${page}번째)` : which
+  return [
+    `Framo(gyeol)에 공유한 ${target}을 다듬어 주세요.`,
+    '',
+    `부탁: ${a.prompt}`,
+    '',
+    '지킬 것',
+    '- gyeol 도구로 하세요. get_catalog로 레이아웃과 고를 수 있는 값을, get_shape로 이 발표의 모양을 먼저 보세요. list_decks가 비었으면 Framo 편집 화면 위쪽 ‘AI 다듬기’에서 공유를 켜 달라고만 말하고 끝내세요.',
+    '- 사람이 적은 글은 보안 때문에 보이지 않고 바꿀 수도 없어요. 내용을 붙여 달라고 하지 말고 모양만으로 판단하세요.',
+    '- 바꿀 것을 모아 먼저 check_changes로 미리 돌려 보고, ok가 false인 op는 help의 풀이대로 고치거나 빼세요. 그다음 propose_changes를 한 번만 부르세요. note에는 왜 이렇게 바꾸는지 듣는 사람 입장에서 한두 문장으로 쓰세요.',
+    '- 지금 모양이 이미 잘 맞으면 제안을 보내지 말고 왜 그런지 두 문장 안으로 말하세요.',
+    '- 제안을 보냈으면 Framo 편집 화면에 뜬 제안을 미리 보고 적용하거나 거절하면 된다고 알려 주세요.',
+  ].join('\n')
+}
+
