@@ -5,12 +5,13 @@
    모양이 같다). 남는 자리(6줄 8칸에 47칸)는 마지막 단의 위가 빈다 */
 
 .bk-tl {
-  --tl-g: 0.16;
-  --tl-max: 56px;
+  --tl-g: 0.3;
+  --tl-max: 44px;
   --tl-off: color-mix(in srgb, var(--ink) 10%, transparent);
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  /* 칸이 내용보다 높으면 위에 붙이고 남는 높이는 아래로: 가운데에 띄우면 옆 칸과 첫 줄이 어긋났다(VISUAL-RULES 5, 6) */
+  justify-content: flex-start;
   gap: 36px;
   height: 100%;
 }
@@ -85,7 +86,7 @@
   container-type: size;
   /* 칸이 낮아도 판은 눕힌 배치에서 칸 한 변이 20px은 되게(그보다 작으면 뒤에서 판으로 읽히지 않는다). 모자라면 칸이 넘쳐
      글자 맞추기가 알아채고, 높이 표(blockHeights.ts)도 그만큼 높게 잡힌다 */
-  min-height: max(40px, calc(var(--rf) * 20px + (var(--rf) - 1) * 3.2px));
+  min-height: max(40px, calc(var(--rf) * 20px + (var(--rf) - 1) * 6px));
 }
 
 .bk-tl-grid {
@@ -114,7 +115,7 @@
 @container (min-aspect-ratio: 5 / 1) { .bk-tl-grid[data-flat='5'] { --rr: var(--rf); --cc: var(--cf); } }
 
 .bk-tl-sq {
-  border-radius: calc(var(--d) * 0.14);
+  border-radius: calc(var(--d) * 0.2);
   background: var(--tl-off);
 }
 
@@ -130,7 +131,7 @@
    숫자 옆에 두면 판이 칸 높이에 걸려 네모 하나(640px 남짓)로 오른쪽 끝에 서고, 숫자와 판 사이가 칸의 3분의 1 넘게 비었다 */
 @container bk (min-width: 1300px) and (min-height: 540px) {
   .bk-tl {
-    --tl-max: 72px;
+    --tl-max: 56px;
   }
 }
 

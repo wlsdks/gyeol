@@ -8,7 +8,7 @@ import { amountPair } from '../numbers'
 import { pctText, useDemo } from './parts'
 
 /** 칸 사이: 칸 한 변에 대한 비율(tiles.css의 --tl-g와 같은 값) */
-const GAP = 0.16
+const GAP = 0.3
 
 /**
  * 칸을 몇 줄 몇 칸으로 놓을지: 줄 수(r)를 √n 부근에서 고르되, 빈자리(r×c − n)가 가장 적은 것, 같으면 더 네모난 것.
