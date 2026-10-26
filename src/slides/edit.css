@@ -339,9 +339,17 @@
   background-image: none;
 }
 
+/* 그 항목의 칸에 글을 쓰는 동안은 항목의 손잡이와 빼기를 숨긴다: 누른 손이 항목 위에 머물러 도구가 손을 올릴 때 잰 자리에 떠 있었고,
+   길게 쓴 글이 그 밑으로 들어가 글 끝을 눌러 고치려 하면 빼기가 눌렸다. 쓰기를 끝내면 자리를 다시 잰다(fields.tsx의 ItemTools) */
+.slide.m-edit .bk .it:has(.ed-input:focus) > :is(.it-grip, .it-remove) {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* 맞추는 동안(is-fitting)은 칠하지 않는다: 그려진 것으로 세면 항목 위에 손만 올려도 장 전체가 몇 px씩 오르내렸다 (fitBlocks.ts의 drawn).
-   컴포넌트를 끄는 동안(목록에서 끌어 오는 중 포함)과 크기를 바꾸는 동안도 칠하지 않는다: 선을 끄는 손이 지나는 항목마다 면이 깜박였다 */
-body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover {
+   컴포넌트를 끄는 동안(목록에서 끌어 오는 중 포함)과 크기를 바꾸는 동안도 칠하지 않는다: 선을 끄는 손이 지나는 항목마다 면이 깜박였다.
+   그 항목에 글을 쓰는 동안도: 쓰는 칸의 실선 뒤에 항목의 면이 깔려 두 겹으로 보였다 */
+body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):not(:has(.ed-input:focus)):hover {
   background-image: linear-gradient(color-mix(in srgb, var(--sel) 7%, transparent) 0 0);
   /* 옮긴 단의 항목은 상자가 테두리 밖(장 밖)까지 걸친다: 칠은 테두리 안까지만 (--it-out-r, fields.tsx의 toolsSpot) */
   background-repeat: no-repeat;
@@ -912,6 +920,11 @@ body.is-pane-sizing * {
 .bk-line.is-active .bk-line-grip,
 .bk-area.is-live .bk-line.is-near:is(:hover, .is-active) .bk-line-grip {
   opacity: 1;
+}
+
+/* 글을 쓰는 동안은 고른 테처럼 옅은 손잡이도 걷는다: 쓰는 칸 옆에 파란 막대가 떠 있었다. 손을 올리면 그대로 보인다 */
+.bk-area.is-live:has(.ed-input:focus) .bk-line.is-near:not(:hover, .is-active) .bk-line-grip {
+  opacity: 0;
 }
 
 /* 판의 칸: 끌거나 크기를 바꾸는 동안 칸 사이마다 점을 찍어 부품이 붙는 자리를 보여 준다.

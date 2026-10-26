@@ -771,10 +771,18 @@ export function ItemTools({ i, sort = true, keepBlank = false }: { i: number; so
       }
     }
     const tools = [el, removeRef.current].filter((t): t is HTMLButtonElement => !!t)
+    // 항목의 칸에 쓰기를 끝내면 다시 잰다: 쓰는 동안은 도구를 숨기는데(edit.css), 손을 올릴 때 잰 자리 그대로 다시 띄우면
+    // 방금 쓴 긴 글 위에 서서 글을 고치려고 누르면 빼기가 눌렸다. 본문 상자가 붙잡아 둔 자리를 놓고 다시 맞춘 뒤(blocks.tsx의
+    // BlockArea가 다음 프레임에 다시 그린다) 잰다
+    const done = (e: FocusEvent) => {
+      if ((e.target as HTMLElement).classList?.contains('ed-input')) requestAnimationFrame(() => requestAnimationFrame(() => look()))
+    }
     item.addEventListener('pointerenter', look)
+    item.addEventListener('focusout', done)
     tools.forEach((t) => t.addEventListener('focus', look))
     return () => {
       item.removeEventListener('pointerenter', look)
+      item.removeEventListener('focusout', done)
       tools.forEach((t) => t.removeEventListener('focus', look))
     }
   }, [grip, canRemoveItem])
