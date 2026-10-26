@@ -1,5 +1,5 @@
 /* ---------- 이음표 ----------
-   부품 사이에 서는 화살표, 더하기, 결과, 견주기. 모양은 지면의 조판 기호처럼 작고 가늘게: 화살표는 선 없는 가는 꺾쇠(›),
+   부품 사이에 서는 화살표, 더하기, 결과, 견주기. 모양은 지면의 조판 기호처럼 작고 가늘게: 화살표는 짧은 줄기와 머리(아래 is-arrow),
    더하기와 같음은 같은 굵기의 가는 획, 견주기는 작은 글자. 예전의 점, 선, 꽉 찬 세모 머리는 흔한 다이어그램 화살표처럼 보였다. 양쪽 부품이 --lk-pad만큼 비켜서 칸 사이가 넓어지고,
    이음표는 그 가운데에 혼자 선다. 부품의 면이나 가장자리에 걸치면 한쪽 부품에 가려 깨져 보인다.
    옆 이음표는 앞 부품의 오른쪽 선(--lx)에서 칸 사이 가운데, 그 부품 높이의 가운데(--ly)에.
@@ -41,12 +41,12 @@
 
 .bk-link.lk-h {
   top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2 + var(--bk-shift, 0px));
-  left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2);
+  left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2 + var(--bk-shift-x, 0px));
 }
 
 .bk-link.lk-v {
   top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2 + var(--bk-shift, 0px));
-  left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2);
+  left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2 + var(--bk-shift-x, 0px));
 }
 
 .bk-link-g {
@@ -68,6 +68,23 @@
 
 .bk-link.lk-v.is-arrow svg {
   rotate: 90deg;
+}
+
+/* 화살표는 한눈에 화살표로 읽혀야 한다(docs/VISUAL-RULES.md 5): 옅은 꺾쇠(›, ⌄)는 무엇인지 구분되지 않았다. 짧은 줄기와 머리를
+   버금 글자색(--ink-2)으로 */
+.bk-link.is-arrow {
+  color: var(--ink-2);
+}
+
+/* 잇는 두 컴포넌트의 축이 어긋나면(그려진 범위가 거의 겹치지 않는다, fitBlocks.ts의 linkAxes) 그리지 않는다. 편집할 때는 빼거나 바꿀 수
+   있게 옅게 남긴다 */
+.bk-link.is-apart {
+  display: none;
+}
+
+.slide.m-edit .bk-link.is-apart {
+  display: grid;
+  opacity: 0.35;
 }
 
 /* 견주기는 작은 글자(이름표와 같은 크기, 자간): 굵은 큰 'VS'는 경기 포스터처럼 보였다 */

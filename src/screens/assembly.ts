@@ -162,10 +162,12 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   // 이음표는 그려진 것 사이의 빈자리에 혼자 서야 한다
   for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
     const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
+    // 그려진 것으로 견준다: 바탕 없는 칸은 칸 상자가 아니라 글과 그림의 가로 범위(이음표는 그려진 것 사이 가운데에 선다)
+    if (getComputedStyle(lk).display === 'none') continue
     const hit = all.some((c, i) => {
       const p = inks[i]
-      const r = c.getBoundingClientRect()
-      return !!p && Math.min(p.b, g.bottom) - Math.max(p.t, g.top) > 1 && Math.min(r.right, g.right) - Math.max(r.left, g.left) > 1
+      const r = inkX(c)
+      return !!p && !!r && Math.min(p.b, g.bottom) - Math.max(p.t, g.top) > 1 && Math.min(r.r, g.right) - Math.max(r.l, g.left) > 1
     })
     if (hit) out.push(`이음표(${lk.dataset.link})가 그려진 것에 걸쳐요`)
   }

@@ -183,14 +183,14 @@ function linkSides(blocks: Block[], b: Block): string[] {
 const shift = (sides: string[], a: string, b: string) => (sides.includes(a) ? 1 : 0) - (sides.includes(b) ? 1 : 0)
 
 /**
- * 이음표의 모양. 줄 사이의 화살표는 아래를 본다. 화살표는 slides/arrow.tsx의 ArrowMark와 같은 가는 꺾쇠, 더하기와 같음도 같은 굵기의
+ * 이음표의 모양. 줄 사이의 화살표는 아래를 본다. 화살표는 짧은 줄기와 머리(옅은 꺾쇠만 두던 때는 화살표로 읽히지 않았다), 더하기와 같음도 같은 굵기의
  * 가는 획, 견주기는 작은 글자(vs)다: 모두 옅은 글자색의 작은 표시라 두 컴포넌트 사이의 빈자리에 조판 기호처럼 선다
  */
 export function LinkGlyph({ link }: { link: BlockLink }) {
   if (link === 'versus') return <span className="bk-link-vs">vs</span>
   return (
     <svg viewBox="0 0 48 48">
-      {link === 'arrow' ? <path d="M19 12L31 24L19 36" /> : link === 'plus' ? <path d="M24 15v18M15 24h18" /> : <path d="M15 20h18M15 28h18" />}
+      {link === 'arrow' ? <path d="M9 24H37M27 14L37 24L27 34" /> : link === 'plus' ? <path d="M24 15v18M15 24h18" /> : <path d="M15 20h18M15 28h18" />}
     </svg>
   )
 }

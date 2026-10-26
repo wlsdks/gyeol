@@ -241,7 +241,8 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
     // 장을 스크롤하면 그 뒤에 잰 이음표만 자리가 달라져 걸치지 않은 이음표를 걸쳤다고 했다
     for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
       const r0 = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
-      const g = new DOMRect(r0.left, r0.top - (parseFloat(lk.style.getPropertyValue('--bk-shift')) || 0) * k, r0.width, r0.height)
+      // 그려진 것 사이로 옮긴 만큼(--bk-shift, --bk-shift-x, fitBlocks.ts의 linkAxes)은 되돌려 판의 자리로 견준다. 그려진 것에 걸치는지는 checkAssembly가 본다
+      const g = new DOMRect(r0.left - (parseFloat(lk.style.getPropertyValue('--bk-shift-x')) || 0) * k, r0.top - (parseFloat(lk.style.getPropertyValue('--bk-shift')) || 0) * k, r0.width, r0.height)
       const hit = rects.some((r) => g.left < r.right - 0.5 && g.right > r.left + 0.5 && g.top < r.bottom - 0.5 && g.bottom > r.top + 0.5)
       if (hit) problems.push(`${i + 1}번 장: 이음표(${lk.dataset.link})가 칸에 걸쳐요`)
     }

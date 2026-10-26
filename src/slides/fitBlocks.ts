@@ -914,6 +914,74 @@ export function blockFitter() {
     area.dataset.eye = fillOf(cells, area) < 0.6 ? 'full' : '1'
   }
 
+  /** 칸에서 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 칸째, 없으면 글 줄과 그림 */
+  function drawnX(c: HTMLElement): { l: number; r: number } | null {
+    const box = c.getBoundingClientRect()
+    if (!c.classList.contains('bk-look-plain')) return { l: box.left, r: box.right }
+    const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) return null
+    let l = Infinity
+    let r = -Infinity
+    for (const q of lines(inner)) {
+      l = Math.min(l, q.l)
+      r = Math.max(r, q.r)
+    }
+    for (const f of figures(inner).concat(Array.from(inner.querySelectorAll('img')))) {
+      const q = f.getBoundingClientRect()
+      l = Math.min(l, q.left)
+      r = Math.max(r, q.right)
+    }
+    return l < r ? { l, r } : null
+  }
+
+  /**
+   * 이음표의 자리 (docs/VISUAL-RULES.md 5): 잇는 두 컴포넌트의 그려진 것 사이 간격 한가운데, 둘이 함께 선 축 위. 아래 이음표면 아래
+   * 컴포넌트가 화살표 바로 아래에 와야 해서, 두 컴포넌트의 그려진 가로 범위가 겹치는 곳의 가운데에 선다. 겹침이 좁은 쪽의 30%도
+   * 안 되면(축이 어긋났다) 그리지 않는다(is-apart). 옆 이음표도 같다(세로 범위). 쌓기와 옆 맞추기, 눈높이로 옮긴 뒤 그려진 자리로 잰다
+   */
+  function linkAxes(cells: HTMLElement[], area: HTMLElement): void {
+    const k = area.getBoundingClientRect().width / area.offsetWidth
+    if (!k) return
+    const num = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
+    for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))) {
+      const from = cells.find((c) => c.dataset.block === l.dataset.after)
+      if (!from) continue
+      const h = l.classList.contains('lk-h')
+      const fx = num(from, '--x')
+      const fy = num(from, '--y')
+      const fw = num(from, '--w')
+      const fh = num(from, '--h')
+      const to = cells.filter((c) =>
+        h
+          ? num(c, '--x') === fx + fw && num(c, '--y') < fy + fh && fy < num(c, '--y') + num(c, '--h')
+          : num(c, '--y') === fy + fh && num(c, '--x') < fx + fw && fx < num(c, '--x') + num(c, '--w'),
+      )
+      const a = drawn(from)
+      const ax = drawnX(from)
+      const bs = to.map((c) => ({ y: drawn(c), x: drawnX(c) })).filter((b) => b.y && b.x) as { y: { t: number; b: number }; x: { l: number; r: number } }[]
+      if (!a || !ax || !bs.length) continue
+      const by = { t: Math.min(...bs.map((b) => b.y.t)), b: Math.max(...bs.map((b) => b.y.b)) }
+      const bx = { l: Math.min(...bs.map((b) => b.x.l)), r: Math.max(...bs.map((b) => b.x.r)) }
+      // 겹치는 축: 옆 이음표는 세로 범위, 아래 이음표는 가로 범위
+      const lo = h ? Math.max(a.t, by.t) : Math.max(ax.l, bx.l)
+      const hi = h ? Math.min(a.b, by.b) : Math.min(ax.r, bx.r)
+      const narrow = h ? Math.min(a.b - a.t, by.b - by.t) : Math.min(ax.r - ax.l, bx.r - bx.l)
+      if (hi - lo < 0.3 * narrow) {
+        l.classList.add('is-apart')
+        continue
+      }
+      const r = l.getBoundingClientRect()
+      const cx = h ? (ax.r + bx.l) / 2 : (lo + hi) / 2
+      const cy = h ? (lo + hi) / 2 : (a.b + by.t) / 2
+      const sx = (parseFloat(l.style.getPropertyValue('--bk-shift-x')) || 0) + Math.round((cx - (r.left + r.right) / 2) / k)
+      const sy = (parseFloat(l.style.getPropertyValue('--bk-shift')) || 0) + Math.round((cy - (r.top + r.bottom) / 2) / k)
+      if (sx) l.style.setProperty('--bk-shift-x', sx + 'px')
+      else l.style.removeProperty('--bk-shift-x')
+      if (sy) l.style.setProperty('--bk-shift', sy + 'px')
+      else l.style.removeProperty('--bk-shift')
+    }
+  }
+
   /** 본문 높이 가운데 그려진 내용이 쓰는 몫 (쌓은 뒤 맨 위 내용에서 맨 아래 내용까지, 본문 위 끝부터 잰다) */
   function fillOf(cells: HTMLElement[], area: HTMLElement): number {
     const a = area.getBoundingClientRect()
@@ -1040,7 +1108,9 @@ export function blockFitter() {
       if (!cells.length || !area.clientHeight) continue
       for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > :is(.bk-link, .bk-line)'))) {
         l.style.removeProperty('--bk-shift')
+        l.style.removeProperty('--bk-shift-x')
         l.style.removeProperty('--bk-trim')
+        l.classList.remove('is-apart')
       }
       for (const c of cells) {
         c.style.removeProperty('--bk-fit')
@@ -1202,6 +1272,7 @@ export function blockFitter() {
         }
       }
       eyeLevel(cells, area)
+      linkAxes(cells, area)
       area.classList.remove('is-fitting')
       for (const f of flips) f.a.currentTime = f.t
     }
