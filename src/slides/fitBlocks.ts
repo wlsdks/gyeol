@@ -801,7 +801,9 @@ export function blockFitter() {
           const room = below ? gap0 + 2 * pad : head ? headGap * k : gap
           at = Math.max(at, x.ink!.b + dy.get(x.c)! + room)
         }
-        const t = Math.min(...row.map((x) => x.ink!.t))
+        // 줄의 윗선은 첫 글줄 맞추기로 내린 뒤의 자리로 잰다: 맞추기 전 자리로 재면 숫자 카드(위 여백이 있다) 옆의 글이 줄의 윗선이 되어 줄을
+        // 앞 줄 바로 아래에 붙이고, 그 글을 카드의 첫 글줄까지 다시 내려 두 칸이 앞 줄과 118px 떨어졌다(묶음 사이 72px)
+        const t = Math.min(...row.map((x) => x.ink!.t + (lineUp.get(x.c) ?? 0)))
         // 앞 줄 내용 바로 아래로: 대개는 올리지만, 앞 줄 내용이 제 칸보다 길게 그려졌으면(소제목의 덧붙임이 칸 아래로 넘친 것 같은)
         // 그만큼 내린다. 올리기만 하면 넘친 글 위에 아래 줄이 그대로 남아 겹쳤다
         const d = at - t
