@@ -33,7 +33,10 @@ describe('미리 돌려 보기', () => {
   it('대역에는 사람이 적은 글이 한 글자도 없다', () => {
     const text = JSON.stringify(standInDeck(toShape(secretDeck())))
     expect(text).not.toContain(SECRET)
-    expect(text).not.toContain('7731')
+    // 숫자 비밀은 해시 id(s, d, b + 16진 8자리)와 시각 숫자에 우연히 들어 있을 수 있어서 그것만 지우고 본다
+    // (맥에서 한 번 'db3f5008c' 같은 해시와 겹쳐 실패했다)
+    const plain = text.replace(/[sdbx][0-9a-f]{8}/g, '').replace(/"(updatedAt|createdAt)":\d+/g, '')
+    expect(plain).not.toContain('7731')
   })
 
   it('op마다 앱에서 적용할 때와 같은 결과 코드가 나온다', () => {

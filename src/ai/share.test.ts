@@ -15,7 +15,9 @@ describe('모양만 고르기', () => {
   it('적은 글, 제목, 이름, 노트, 이미지, 원래 id가 하나도 들어가지 않는다', () => {
     const text = JSON.stringify(toShape(secretDeck()))
     expect(text).not.toContain(SECRET)
-    expect(text).not.toContain('7731')
+    // 숫자 비밀은 해시 id와 시각 숫자에 우연히 들어 있을 수 있어서 그것만 지우고 본다
+    const plain = text.replace(/[sdbx][0-9a-f]{8}/g, '').replace(/"(updatedAt|createdAt)":\d+/g, '')
+    expect(plain).not.toContain('7731')
   })
 
   it('카탈로그에 없는 역할과 단락 이름은 null로 둔다', () => {
