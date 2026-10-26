@@ -1,37 +1,14 @@
 /* ---------- 숫자 한 줄 ----------
    큰 숫자를 작게 줄인 것이 아니라 목록의 한 줄이다: 이름(이름표 크기, --ink-2), 숫자(강조색, 큰 숫자보다 세 단계 작게),
-   변화(--ink-2), 덧붙임(--ink-3). 아래에 옅은 선(--line)을 그어서, 좁은 칸에 셋을 쌓으면 선으로 나뉜 한 목록으로 읽힌다
-   (위의 소제목이 글자색 선이라 소제목 아래의 목록과 같은 꼴). 선은 내용에 붙는다: 칸에 남는 높이가 있어도 선이 칸 아래로
-   떨어지지 않는다. 옅은 면을 깔면 면이 칸을 나누므로 선은 긋지 않는다 */
+   변화(--ink-2), 덧붙임(--ink-3). 선은 긋지 않는다: 숫자 한 줄마다 아래에 옅은 선을 긋던 때는 마지막 줄 아래에도 선이 남고
+   아래 컴포넌트의 선과 겹선이 되었다(docs/VISUAL-RULES.md 2). 쌓은 숫자 한 줄끼리는 칸 사이의 여백이 나눈다 */
 
 .bk-sl {
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  /* 칸에 남는 높이는 아래로(docs/VISUAL-RULES.md 6) */
+  justify-content: flex-start;
   height: 100%;
-}
-
-.bk-sl-box {
-  position: relative;
-  padding-bottom: 22px;
-}
-
-.bk-sl-box::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: var(--rule-hair);
-  background: var(--line);
-  content: '';
-}
-
-.bk-look-card .bk-sl-box {
-  padding-bottom: 0;
-}
-
-.bk-look-card .bk-sl-box::after {
-  display: none;
 }
 
 .bk-sl-l {
@@ -77,14 +54,15 @@
   text-wrap: pretty;
 }
 
-/* 넓은 칸: 쌓지 않고 눕힌다. 이름은 왼쪽, 숫자와 변화는 오른쪽 끝에, 이름과 숫자가 한 글자선 위에. 덧붙임은 이름 아래.
-   좁을 때처럼 쌓아 두면 칸 왼쪽에 글이 몰리고 오른쪽이 통째로 빈다. 눕혔으니 이름은 이름표 대신 본문 크기로 */
+/* 넓은 칸: 이름은 격자의 왼쪽 4칸에(막대 하나, 범위, 단계 표시와 같은 이름 칸이라 위아래로 쌓으면 한 표처럼 읽힌다),
+   숫자와 변화는 바로 그 옆에서 시작하고, 덧붙임은 이름 아래. 숫자를 칸의 오른쪽 끝에 두던 때는 이름과 숫자 사이가 장의 절반 넘게 비어
+   한 줄이 양 끝으로 찢어져 보였다(docs/VISUAL-RULES.md 6, 가로 리듬). 눕혔으니 이름은 이름표 대신 본문 크기로 */
 @container bk (min-width: 1000px) {
   .bk-sl-box {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
     align-items: baseline;
-    column-gap: 48px;
+    column-gap: var(--bk-col-gap);
   }
 
   .bk-sl-l {
@@ -96,7 +74,6 @@
   .bk-sl-fig {
     grid-row: 1;
     grid-column: 2;
-    justify-content: flex-end;
     margin-top: 0;
   }
 
