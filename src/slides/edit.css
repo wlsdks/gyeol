@@ -319,6 +319,18 @@
   left: calc(50% - var(--d) / 2);
 }
 
+/* 부품 장의 항목 도구와 옅은 면은 고른 컴포넌트에서만 뜬다. 고르지 않은 컴포넌트의 빈 곳을 눌러 고르려 하면 손 아래 항목에 도구가 떠서
+   그 자리의 빼기(✕)가 눌려 항목이 지워졌다(나누기의 빈 곳을 누르자 '리더십 과정'이 빠졌다). 도구는 글을 피해 항목의 빈 곳에 서므로
+   고르려고 누르는 자리와 겹친다 */
+.slide.m-edit .bk-area.is-live .bk:not(.is-selected) .it:hover > :is(.it-grip, .it-remove):not(:focus-visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slide.m-edit .bk-area.is-live .bk:not(.is-selected) .it:has(> :is(.it-grip, .it-remove)):hover {
+  background-image: none;
+}
+
 /* 맞추는 동안(is-fitting)은 칠하지 않는다: 그려진 것으로 세면 항목 위에 손만 올려도 장 전체가 몇 px씩 오르내렸다 (fitBlocks.ts의 drawn).
    컴포넌트를 끄는 동안(목록에서 끌어 오는 중 포함)과 크기를 바꾸는 동안도 칠하지 않는다: 선을 끄는 손이 지나는 항목마다 면이 깜박였다 */
 body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover {
