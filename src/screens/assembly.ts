@@ -613,6 +613,35 @@ function gridEnd(cells: HTMLElement[], a: DOMRect, empty: number): boolean {
   return false
 }
 
+/**
+ * 그려진 가로 범위에 ::before, ::after로 긋는 줄 선(자리를 잡은 것)까지 더한 것. 틀 밖으로 나갔는지 볼 때만 쓴다: 빈 곳을 볼 때 넣으면
+ * 줄 선만 끝까지 그어진 짧은 개요를 꽉 찬 것으로 본다
+ */
+function withRules(cell: HTMLElement, x: { l: number; r: number } | null): { l: number; r: number } | null {
+  const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+  if (!inner || !cell.classList.contains('bk-look-plain')) return x
+  let l = x?.l ?? Infinity
+  let r = x?.r ?? -Infinity
+  for (const el of inner.querySelectorAll<HTMLElement>('*')) {
+    if (el.closest('svg') || el.closest(EDIT_UI)) continue
+    for (const w of ['::before', '::after']) {
+      const ps = getComputedStyle(el, w)
+      if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.position !== 'absolute' || ps.visibility === 'hidden') continue
+      const bg = ps.backgroundColor
+      const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)
+      if (clear && ps.backgroundImage === 'none' && !(parseFloat(ps.borderTopWidth) > 0) && !(parseFloat(ps.borderLeftWidth) > 0)) continue
+      const px = parseFloat(ps.left)
+      const pw = parseFloat(ps.width)
+      if (!Number.isFinite(px) || !(pw > 0)) continue
+      const q = el.getBoundingClientRect()
+      const k = el.offsetWidth ? q.width / el.offsetWidth : 1
+      l = Math.min(l, q.left + px * k)
+      r = Math.max(r, q.left + (px + pw) * k)
+    }
+  }
+  return l < r ? { l, r } : null
+}
+
 /** 한쪽이 이만큼 넘게 비면 판이 너비를 고르게 나누지 못한 것 */
 const SIDE_EMPTY = 0.25
 
@@ -627,7 +656,7 @@ function sides(area: HTMLElement, k: number): string[] {
   const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
   // 그려진 것이 본문 옆 틀 밖으로 나간 것: 옆으로 옮긴 칸(--bk-shift-x)이 장 틀 밖으로 나가도 장 안이라 잘림 검사는 몰랐다
   for (const cell of cells) {
-    const x = inkX(cell)
+    const x = withRules(cell, inkX(cell))
     if (x && (x.r > a.right + 2 * k || x.l < a.left - 2 * k)) out.push(`${cell.dataset.type}: 그려진 것이 본문 옆으로 ${Math.round(Math.max(x.r - a.right, a.left - x.l) / k)}px 나가요`)
   }
   const lone = cells.length === 1 && TEXT_TYPES.has(cells[0].dataset.type ?? '') && cells[0].dataset.type !== 'heading'

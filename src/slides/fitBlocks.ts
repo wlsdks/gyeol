@@ -1014,6 +1014,26 @@ export function blockFitter() {
       l = Math.min(l, q.left)
       r = Math.max(r, q.right)
     }
+    // ::before, ::after로 긋는 줄 선(개요의 줄 사이 선처럼 줄 너비를 다 쓰는 선)도 그려진 것이다: 모르면 옆 맞추기가 개요를 글 끝까지만
+    // 그려진 것으로 알고 오른쪽으로 113px 옮겨 줄 선이 장 틀 밖으로 나갔다. 자리를 잡은(absolute) 것만 그 자리로 본다
+    for (let i = 0; i < els.length; i++) {
+      const el = els[i]
+      if (el.parentElement?.closest('svg') || el.closest('.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle')) continue
+      for (const w of ['::before', '::after']) {
+        const ps = getComputedStyle(el, w)
+        if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.position !== 'absolute' || ps.visibility === 'hidden') continue
+        const bg = ps.backgroundColor
+        const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
+        if (clear && ps.backgroundImage === 'none' && !(parseFloat(ps.borderTopWidth) > 0) && !(parseFloat(ps.borderLeftWidth) > 0)) continue
+        const x = parseFloat(ps.left)
+        const pw = parseFloat(ps.width)
+        if (!Number.isFinite(x) || !(pw > 0)) continue
+        const q = el.getBoundingClientRect()
+        const k = el.offsetWidth ? q.width / el.offsetWidth : 1
+        l = Math.min(l, q.left + x * k)
+        r = Math.max(r, q.left + (x + pw) * k)
+      }
+    }
     return l < r ? { l, r } : null
   }
 
