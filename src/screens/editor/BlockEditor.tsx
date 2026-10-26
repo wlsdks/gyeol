@@ -100,6 +100,24 @@ export function soloSlide(block: Block): Slide {
   return { id: `solo-${block.id}`, layout: 'compose', purpose: '', section: '', fields: {}, items: [], hints: {}, guide: '', notes: '', options: {}, blocks: [{ ...block, at: WHOLE }] }
 }
 
+/** 글 칸(.ed)에 쓰기 시작한다: 누른 자리(x, y)에 글자 커서를 둔다. 글 밖(빈칸의 안내 위 같은)이면 칸 끝에 */
+function caretAt(ed: HTMLElement, x: number, y: number) {
+  const input = ed.querySelector<HTMLElement>('.ed-input')
+  if (!input) return
+  input.focus({ preventScroll: true })
+  const sel = getSelection()
+  const at = document.caretRangeFromPoint?.(x, y)
+  if (!sel) return
+  sel.removeAllRanges()
+  if (at && input.contains(at.startContainer)) sel.addRange(at)
+  else {
+    const end = document.createRange()
+    end.selectNodeContents(input)
+    end.collapse(false)
+    sel.addRange(end)
+  }
+}
+
 /** 본문 상자(.bk-area)의 화면 자리와 캔버스 크기 */
 function measureArea(el: HTMLElement | null) {
   if (!el) return null
@@ -788,10 +806,16 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       const t = e.target as HTMLElement
       setSelected(b.id)
       links.selectLink(null)
-      // 글을 쓰는 칸, 단추, 그림 칸에서는 끌지 않는다 (글자를 고르거나 누를 수 있게)
-      if (t.closest('.ed-input, button, input, textarea, .img-ed, .bk-bar, .it-remove')) return
+      // 단추, 그림 칸에서는 끌지 않는다 (누를 수 있게)
+      if (t.closest('button, input, textarea, .img-ed, .bk-bar, .it-remove, .it-grip')) return
+      // 글 칸: 쓰고 있는 칸이면 글자를 고르게 그대로 둔다. 아니면 눌러서 움직이면 컴포넌트를 옮기고, 그냥 떼면 누른 자리에 글자 커서를 둔다.
+      // 예전에는 글 칸에서 끌기를 아예 받지 않아서, 글이 거의 다인 핵심 한 줄이나 인용은 잡을 곳이 위에 뜬 이름표뿐이라 옮길 수 없는 것처럼 보였다
+      const ed = t.closest<HTMLElement>('.ed')
+      if (ed?.contains(document.activeElement)) return
       e.preventDefault()
-      press(e, (x, y) => startMove(b, x, y))
+      const sx = e.clientX
+      const sy = e.clientY
+      press(e, (x, y) => startMove(b, x, y), ed ? () => caretAt(ed, sx, sy) : undefined)
     },
     onGutterPointerDown,
     empty: () => (
