@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ASKS, askOf, askSentence, type AskError, type AskId, type AskScope, type AskStep } from '../../ai/asks'
 import { applyOps, type Applied, type ChangeRequest, type Op, type OpCode } from '../../ai/ops'
 import { shapeBlockId, shapeDeckId, shapeSlideId, toShape } from '../../ai/share'
@@ -8,11 +8,13 @@ import type { AiShare } from '../../ai/useAiShare'
 import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_LINKS, BLOCK_LOOKS, BLOCK_SPEEDS, BLOCK_WHENS, BLOCKS, slideName } from '../../deck/blocks'
 import { pageInfo } from '../../deck/fields'
 import { LAYOUTS } from '../../deck/layouts'
-import { MOTIONS, THEMES, TONES, TRANSITIONS } from '../../deck/themes'
+import { sceneOf, sceneSpec } from '../../deck/scenes'
+import { motionOf, MOTIONS, THEMES, TONES, TRANSITIONS } from '../../deck/themes'
 import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
 import { isMac, keys } from '../../lib/keys'
+import { motionEngine } from '../../motion/engine'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { sideName } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
@@ -642,6 +644,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.motion !== undefined) parts.push(op.motion === null ? '움직임: 발표 전체 설정대로' : `움직임: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
       if (op.transition !== undefined)
         parts.push(op.transition === null || op.transition === 'auto' ? '장 넘기기: 발표 전체 설정대로' : `장 넘기기: ${TRANSITIONS.find((t) => t.id === op.transition)?.name}`)
+      // 장면은 줄의 제목으로: 장면 연출 부탁은 장마다 이 한 줄이라, 무엇을 고쳤는지보다 어느 장에 어떤 장면인지가 먼저 읽혀야 한다
+      if (op.scene !== undefined) return { text: `${name(op.slide)} ${op.scene ? `장면: ${sceneSpec(op.scene).name}` : '장면 끄기'}`, detail: parts.join(', ') || undefined }
       return { text: `${name(op.slide)} 모양 설정`, detail: parts.join(', ') }
     }
     case 'set_theme': {
@@ -693,6 +697,37 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: `${name(op.slide)} 안내 문구: ${op.item !== undefined ? `${op.item + 1}번째 ` : ''}${label}`, detail: op.text }
     }
   }
+}
+
+/** 적용하면 이 장에서 새로 움직일 장면 (지금과 같거나 없으면 null) */
+function newScene(deck: Deck, s: Slide) {
+  const now = sceneOf(s)
+  const was = deck.slides.find((x) => x.id === s.id)
+  return now && (!was || sceneOf(was) !== now) ? now : null
+}
+
+/**
+ * 장면이 바뀌는 장의 그림: 마우스를 올리거나 초점이 오면 제안한 장면으로 한 번 움직인다.
+ * 장면은 이름만으로는 어떤 움직임인지 알기 어려워서, 적용하기 전에 그 자리에서 보게 한다 (장면 카드와 같은 방법)
+ */
+function ScenePlay({ deck, slide, on, className, children }: { deck: Deck; slide: Slide; on: boolean; className: string; children: ReactNode }) {
+  const ref = useRef<HTMLElement>(null)
+  const last = useRef(-1e9)
+  const engine = useMemo(() => motionEngine(), [])
+  const level = motionOf(deck, slide)
+  const play = () => {
+    const el = ref.current?.querySelector('.slide')
+    const t = performance.now()
+    // 움직이는 중에 다시 올려도 처음부터 다시 하지 않는다
+    if (!on || level === 'none' || !el || t - last.current < 3000) return
+    last.current = t
+    engine.play(el, level, { clicks: 'auto' })
+  }
+  return (
+    <figure ref={ref} className={cx(className, on && 'is-scene')} title={on ? '마우스를 올리면 이 장면으로 움직여요' : undefined} tabIndex={on ? 0 : undefined} onPointerEnter={play} onFocus={play}>
+      {children}
+    </figure>
+  )
 }
 
 export function AiReview({
@@ -812,24 +847,26 @@ export function AiReview({
                 <span className="air-arrow" aria-hidden="true">
                   <ChevronIcon />
                 </span>
-                <figure className="vpp-item is-diff">
+                <ScenePlay deck={applied.deck} slide={s} on={!!newScene(deck, s)} className="vpp-item is-diff">
                   <ScaledSlide width={400} className="vpp-slide">
                     <SlideCanvas deck={applied.deck} slide={s} mode="preview" {...pageProps(info, s.id)} />
                   </ScaledSlide>
                   <figcaption className="vpp-cap">
                     <span>{n}</span>
                     {slideName(s)}
-                    <em>적용하면</em>
+                    {/* 장면만 바뀌면 두 그림이 같아 보여서, 무엇이 바뀌는지 이름으로 */}
+                    <em>{newScene(deck, s) ? `적용하면 ‘${sceneSpec(newScene(deck, s)!).name}’ 장면` : '적용하면'}</em>
                   </figcaption>
-                </figure>
+                </ScenePlay>
               </section>
             )
           })}
           {pairs.length > 0 && <p className="air-all">발표 전체</p>}
           {applied.deck.slides.map((s, i) => {
-            const note = !before.has(s.id) ? '새 장' : s.hidden ? '발표에서 빠짐' : applied.touched.has(s.id) ? '바뀌는 장' : null
+            const scene = newScene(deck, s)
+            const note = !before.has(s.id) ? '새 장' : s.hidden ? '발표에서 빠짐' : scene ? `‘${sceneSpec(scene).name}’ 장면` : applied.touched.has(s.id) ? '바뀌는 장' : null
             return (
-              <figure key={s.id} className={cx('vpp-item', note && 'is-diff', s.hidden && 'is-hidden')}>
+              <ScenePlay key={s.id} deck={applied.deck} slide={s} on={!!scene} className={cx('vpp-item', note && 'is-diff', s.hidden && 'is-hidden')}>
                 <ScaledSlide width={480} className="vpp-slide">
                   <SlideCanvas deck={applied.deck} slide={s} mode="preview" {...pageProps(info, s.id)} />
                 </ScaledSlide>
@@ -838,7 +875,7 @@ export function AiReview({
                   {slideName(s)}
                   {note && <em>{note}</em>}
                 </figcaption>
-              </figure>
+              </ScenePlay>
             )
           })}
         </div>
