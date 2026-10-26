@@ -1,0 +1,251 @@
+// 짜임 틀 고르기: 컴포넌트가 적은 장(넷까지)을 알아서 짤 때, 판이 칸을 기계적으로 자르지 않고 짜임 틀 몇 가지를 견줘 가장 보기 좋은 것을 고른다.
+//
+// 예전에는 눌러 넣을 때마다 마지막 줄 옆이나 맨 아래 새 줄에 끼웠다(board.ts의 autoInsert). 그래서 로고 모음 아래에 숫자 둘이 작은 띠로
+// 붙거나(로고가 남는 높이를 다 받는다), 숫자 둘이 서로 다른 줄로 갈라지거나, 한쪽만 길게 비는 짜임이 그대로 남았다.
+// 디자이너는 같은 부품들로 둘이면 '나란히 내용 비율대로' 또는 '위 하나 + 아래 하나', 셋이면 '한 줄 셋', '큰 하나 + 옆에 둘 쌓기',
+// '위 하나 + 아래 둘' 같은 틀을 견줘 고른다. 여기서도 같은 부품, 같은 읽는 차례로 만들 수 있는 판(끝에서 끝까지 자른 꼴, board.ts)을
+// 모두 만들어 보고, 그려질 모습을 어림한 점수(채움, 한쪽 빔, 너비, 같은 말투)로 고른다. 점수의 기준은 개발용 검사(screens/assembly.ts)와 같다.
+//
+// 사람이 직접 놓은 자리는 바꾸지 않는다. 저장 형식(Block.at)에는 '알아서 놓은 것'이라는 표시가 없어서, 지금 판이 이 규칙이 그 부품들로
+// 고를 판과 같을 때만(사람이 옮기거나 선을 끌지 않았을 때만) 새 부품을 넣으며 다시 고른다. 다르면 예전처럼 끼운다(place.ts의 autoPlace).
+
+import type { Block, BlockType } from '../types'
+import { BOARD_COLS, byReading, type Fit, layTree, leaf, sameArea, split, type Tree, treeOf } from './board'
+import { isSolo } from './rules'
+import { AREA_W, atRect, blockMinH, isStretchy } from './sizing'
+
+/** 틀을 견주는 가장 많은 부품 수. 더 많으면 사람이 짠 차례가 짜임의 뜻이라 판에 맡긴다 */
+export const ARRANGE_MAX = 4
+
+/** 그리는 쪽(slides/fitBlocks.ts)의 묶음 사이(--bk-gap의 1.5배)와 소제목 아래 사이 */
+const BAND_GAP = 72
+const HEAD_GAP = 32
+/** 잰 높이에 더한 여유(sizing.ts의 HEIGHT_SLACK). 내용의 높이를 어림할 때 뺀다 */
+const SLACK = 10
+
+/** 같은 말투로 맞출 숫자 부품: 한 장에 둘 이상이면 나란히 한 줄에 서야 크기와 이름표 자리를 맞출 수 있다 */
+export const NUMBER_TYPES = new Set<BlockType>(['number', 'stat', 'delta', 'goal', 'ring', 'ratio'])
+
+/**
+ * 틀을 견줄 읽는 차례: 넣은 차례(장의 부품 차례) 그대로. 판을 읽은 차례로 하면 소제목 묶음 둘이 나란한 판(소제목 둘이 같은 줄)은
+ * 소제목, 소제목, 목록, 목록으로 읽혀 소제목 둘이 위아래로 붙은 틀이 나왔다. 다만 맨 위에 선 결론(핵심 한 줄, 강조 상자: place.ts의
+ * autoPlace가 근거 위로 올린다)은 맨 앞에, 로고 모음 다음에 넣은 숫자는 로고 앞에(answersFirst)
+ */
+export function arrangeOrder(blocks: Block[]): Block[] {
+  const first = byReading(blocks)[0]
+  const lead = first && LEADS.has(first.type) ? [first] : []
+  return answersFirst([...lead, ...blocks.filter((b) => !lead.includes(b))])
+}
+
+/** 결론을 말하는 부품 (place.ts의 LEADS) */
+const LEADS = new Set<BlockType>(['message', 'callout'])
+
+/**
+ * 로고 모음 다음에 넣은 숫자는 로고 위로(숫자가 장의 답이고 로고는 그 근거). 넣은 차례대로 두면 로고 모음이
+ * 위 절반을 차지하고 숫자 둘이 그 아래 작은 띠로 붙어, 상관없는 숫자가 로고 밑에 깔린 것처럼 보였다(docs/VISUAL-RULES.md 6)
+ */
+function answersFirst(order: Block[]): Block[] {
+  const i = order.findIndex((b) => b.type === 'logos')
+  if (i < 0) return order
+  const late = order.slice(i + 1).filter((b) => NUMBER_TYPES.has(b.type))
+  if (!late.length) return order
+  return [...order.slice(0, i), ...late, ...order.slice(i).filter((b) => !late.includes(b))]
+}
+
+/** 이 부품들(읽는 차례)을 끝에서 끝까지 잘라 만들 수 있는 모든 나무. 같은 쪽 가지 안에 같은 쪽 가지는 없다(board.ts의 tidy) */
+function shapes(items: Block[], dir: 'h' | 'v' | null): Tree[] {
+  if (items.length === 1) return [leaf(items[0])]
+  const out: Tree[] = []
+  for (const d of dir ? [dir] : (['v', 'h'] as const)) {
+    // items를 차례대로 둘 이상의 묶음으로 나누는 모든 방법
+    const cuts = (from: number): Block[][][] => {
+      if (from === items.length) return [[]]
+      const res: Block[][][] = []
+      for (let to = from + 1; to <= items.length; to++) for (const rest of cuts(to)) res.push([items.slice(from, to), ...rest])
+      return res
+    }
+    for (const groups of cuts(0)) {
+      if (groups.length < 2) continue
+      const kids = groups.map((g) => shapes(g, d === 'v' ? 'h' : 'v'))
+      // 묶음마다의 나무를 곱해 모든 짝
+      let combos: Tree[][] = [[]]
+      for (const ks of kids) combos = combos.flatMap((c) => ks.map((k) => [...c, k]))
+      for (const c of combos) out.push(split(d, c))
+    }
+  }
+  return out
+}
+
+/** 옆으로 나눈 가지마다 너비를 나눠 보는 몇 가지 (합이 width): 보기 좋은 너비의 비율, 고르게, 둘이면 3:9부터 9:3까지 */
+function widthOptions(prefs: number[], width: number): number[][] {
+  const n = prefs.length
+  const fix = (ws: number[]) => {
+    const r = ws.map((x) => Math.max(1, Math.round(x)))
+    r[r.length - 1] += width - r.reduce((a, x) => a + x, 0)
+    return r.every((x) => x >= 1) ? r : null
+  }
+  const sum = prefs.reduce((a, x) => a + x, 0)
+  const out = [fix(prefs.map((p) => (p * width) / sum)), fix(prefs.map(() => width / n))]
+  if (n === 2) for (let a = 3; a <= width - 3; a++) out.push([a, width - a])
+  if (n === 3) for (let i = 0; i < 3; i++) out.push(fix(prefs.map((_, j) => (j === i ? width / 2 : width / 4))))
+  const seen = new Set<string>()
+  return out.filter((x): x is number[] => !!x && !seen.has(x.join()) && !!seen.add(x.join()))
+}
+
+const prefOf = (t: Tree, fit: Fit): number => (t.kind === 'leaf' ? Math.max(fit.minW(t.block), fit.prefW(t.block)) : t.dir === 'h' ? t.kids.reduce((a, k) => a + prefOf(k, fit), 0) : Math.max(...t.kids.map((k) => prefOf(k, fit))))
+
+/** 나무마다 너비를 나눠 보는 몇 가지: 옆으로 나눈 가지의 자식에 바라는 너비(want)를 단다. 위아래로 쌓은 가지는 판이 가장 낮은 높이부터 나눈다 */
+function sized(t: Tree, width: number, fit: Fit): Tree[] {
+  if (t.kind === 'leaf') return [{ ...t, want: 0 }]
+  if (t.dir === 'v') {
+    let combos: Tree[][] = [[]]
+    for (const k of t.kids) {
+      const ks = sized(k, width, fit)
+      combos = combos.flatMap((c) => ks.map((x) => [...c, { ...x, want: 0 }]))
+    }
+    return combos.map((kids) => ({ ...t, kids }))
+  }
+  const out: Tree[] = []
+  for (const ws of widthOptions(
+    t.kids.map((k) => prefOf(k, fit)),
+    width,
+  )) {
+    let combos: Tree[][] = [[]]
+    t.kids.forEach((k, i) => {
+      const ks = sized(k, ws[i], fit)
+      combos = combos.flatMap((c) => ks.map((x) => [...c, { ...x, want: ws[i] }]))
+    })
+    out.push(...combos.map((kids) => ({ ...t, kids })))
+  }
+  return out
+}
+
+/** 놓은 판을 다시 나무로 읽기 위한 잎의 자리 (부품 id로) */
+type Laid = Map<string, Block>
+
+/**
+ * 부품이 실제로 쓰는 너비(칸 수): 그보다 넓혀도 높이가 줄지 않는 가장 좁은 너비. 글은 글 폭에서 줄을 꺾고, 목록과 숫자는 제 너비만
+ * 쓰므로 칸이 넓어도 오른쪽이 빈다. 넓을수록 단을 나누거나 옆으로 눕히는 부품은 넓힐수록 낮아져 판 너비를 다 쓴다
+ */
+function naturalSpan(b: Block): number {
+  const full = blockMinH(b, BOARD_COLS)
+  for (const w of [3, 4, 6, 8]) if (blockMinH(b, w) <= full * 1.05 + SLACK) return w
+  return BOARD_COLS
+}
+
+/** 짜임 하나의 점수 (작을수록 좋다). 그려질 모습을 어림한다: 글자를 몇 단계까지 키울 수 있는지, 쌓은 뒤 본문을 얼마나 채우는지, 나란한 칸 한쪽이 얼마나 비는지 */
+export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number): number {
+  const size = { w: AREA_W, h: areaH }
+  const rect = (b: Block) => atRect(laid.get(b.id)!.at!, size)
+  const base = (b: Block) => Math.max(0, blockMinH(laid.get(b.id)!, laid.get(b.id)!.at!.w) - SLACK)
+  const leaves = (n: Tree): Block[] => (n.kind === 'leaf' ? [n.block] : n.kids.flatMap(leaves))
+  const all = leaves(t)
+  // 그려진 높이: 차트처럼 칸 높이를 다 쓰는 부품은 칸 높이, 글과 숫자는 잰 높이에 글자 단계를 곱한 것
+  // 차트도 칸 높이를 끝없이 쓰지는 않는다(흐름, 원, 로고는 비율을 지킨다): 잰 높이의 두 배까지만
+  const drawn = (b: Block, s: number) => (isStretchy(b.type) ? Math.min(rect(b).h, base(b) * 2 * s) : base(b) * s)
+  const pack = (n: Tree, s: number): number => {
+    if (n.kind === 'leaf') return drawn(n.block, s)
+    const hs = n.kids.map((k) => pack(k, s))
+    if (n.dir === 'h') return Math.max(...hs)
+    return hs.reduce((a, h, i) => a + h + (i ? (n.kids[i - 1].kind === 'leaf' && (n.kids[i - 1] as { block: Block }).block.type === 'heading' ? HEAD_GAP : BAND_GAP) : 0), 0)
+  }
+  // 글자 단계: 모든 칸이 한 단계(1.2) 키워 들어가면 1.2, 그러고도 본문의 60%를 못 채우고 두 단계(1.44)로 쌓아도 본문에 들면 1.44
+  const fits = (s: number) => all.every((b) => isStretchy(b.type) || base(b) * s <= rect(b).h + 4)
+  let s = fits(1.2) ? 1.2 : 1
+  if (s === 1.2 && pack(t, 1.2) < 0.6 * areaH && pack(t, 1.44) <= areaH && all.every((b) => isStretchy(b.type) || laid.get(b.id)!.look === undefined || laid.get(b.id)!.look === 'plain' || base(b) * 1.44 <= rect(b).h)) s = 1.44
+  const fill = pack(t, s) / areaH
+  let cost = (1.44 - s) * 20
+  if (fill < 0.6) cost += (0.6 - fill) * 100
+  if (fill < 0.8) cost += (0.8 - fill) * 30
+  if (fill > 0.95) cost += (fill - 0.95) * 100
+  // 한쪽 빔: 나란한 칸 가운데 짧은 칸 아래로 비는 넓이 (본문 넓이에 견준 몫)
+  const walk = (n: Tree) => {
+    if (n.kind === 'leaf') return
+    if (n.dir === 'h') {
+      const hs = n.kids.map((k) => pack(k, s))
+      const top = Math.max(...hs)
+      n.kids.forEach((k, i) => {
+        const w = leaves(k).reduce((a, b) => Math.max(a, rect(b).x + rect(b).w), 0) - Math.min(...leaves(k).map((b) => rect(b).x))
+        cost += (((top - hs[i]) * w) / (areaH * AREA_W)) * 150
+      })
+    }
+    n.kids.forEach(walk)
+  }
+  walk(t)
+  for (const b of all) {
+    const at = laid.get(b.id)!.at!
+    // 보기 좋은 너비보다 좁은 칸은 짜임이 눌린다. 숫자는 가장 좁은 너비에서도 한 줄로 서서(숫자 셋이 4·4·4) 덜 친다
+    cost += Math.max(0, fit.prefW(b) - at.w) * (NUMBER_TYPES.has(b.type) ? 1 : 3)
+    // 보기 좋은 너비의 두 배보다 넓으면 내용이 왼쪽에 붙고 오른쪽이 빈다(한 줄을 다 쓰는 숫자 한 줄)
+    if (!isStretchy(b.type)) cost += Math.max(0, at.w - 2 * fit.prefW(b)) * 2
+    // 차트와 그림이 낮은 띠가 되면 읽히지 않는다
+    if (isStretchy(b.type) && rect(b).h < 0.4 * areaH) cost += ((0.4 * areaH - rect(b).h) / areaH) * 60
+    // 판 너비를 혼자 쓰는 부품(표, 일정)은 한 줄을 다 써야 한다
+    if (isSolo(b.type) && at.w < BOARD_COLS) cost += 1000
+  }
+  // 한 장의 숫자 둘 이상은 같은 말투: 한 줄에 나란히 서야 크기와 이름표 자리가 맞는다
+  const nums = all.filter((b) => NUMBER_TYPES.has(b.type))
+  if (nums.length > 1) {
+    const ys = new Set(nums.map((b) => laid.get(b.id)!.at!.y))
+    const hs = new Set(nums.map((b) => laid.get(b.id)!.at!.h))
+    if (ys.size > 1 || hs.size > 1) cost += 25
+  }
+  // 가로로 빈 곳: 그려진 것의 오른쪽 끝(naturalSpan). 본문 오른쪽이 20% 넘게 비면 판이 너비를 고르게 나누지 못한 것(screens/assembly.ts의 sides)
+  const right = Math.max(...all.map((b) => {
+    const r = rect(b)
+    const w = isStretchy(b.type) ? r.w : atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w
+    return r.x + Math.min(r.w, w)
+  }))
+  const empty = 1 - right / AREA_W
+  if (empty > 0.2) cost += (empty - 0.2) * 200
+  // 소제목이 그 아래 부품 위에 서지 않은 판 (사람이 끌어다 놓은 판을 견줄 때)
+  if (!headsOk(t)) cost += 100
+  // 숫자가 로고 모음 아래에 깔리면 답이 근거 밑으로 간다 (answersFirst)
+  for (const lg of all.filter((b) => b.type === 'logos')) if (nums.some((b) => laid.get(b.id)!.at!.y > laid.get(lg.id)!.at!.y)) cost += 20
+  return cost
+}
+
+/** 소제목은 그 아래 부품들의 이름이라 위아래로 쌓은 가지에서 다음 자식(소제목이 아닌) 위에 선다 */
+function headsOk(t: Tree): boolean {
+  const head = (k: Tree | undefined) => !!k && k.kind === 'leaf' && k.block.type === 'heading'
+  if (t.kind === 'leaf') return !head(t)
+  return t.kids.every((k, i) => (head(k) ? t.dir === 'v' && i < t.kids.length - 1 && !head(t.kids[i + 1]) : headsOk(k)))
+}
+
+/**
+ * 이 부품들(읽는 차례)로 고른 가장 보기 좋은 판과 그 점수. 틀을 견줄 수 없는 장(부품이 많거나, 이음표가 있거나, 이미지가 든 이미지 부품)이면 null.
+ * 부품의 차례는 blocks 그대로 돌려준다
+ */
+export function arrangeBest(blocks: Block[], fit: Fit, areaH: number, aspect: (b: Block) => number | null, seen?: { blocks: Block[]; cost: number }[]): { blocks: Block[]; cost: number } | null {
+  if (blocks.length < 2 || blocks.length > ARRANGE_MAX) return null
+  // 소제목이 든 장은 소제목 묶음의 규칙(place.ts의 autoPlace: 소제목 아래에, 다음 소제목은 묶음 옆에)이 짠다. 아래 부품을 아직 넣지 않은
+  // 소제목은 어디에 둘지 틀로는 알 수 없어서, 견주면 맨 아래에 붙어 다음 부품이 그 아래에 들어가지 못했다
+  if (blocks.some((b) => b.link || b.linkBelow || aspect(b) || b.type === 'heading')) return null
+  let best: { blocks: Block[]; cost: number } | null = null
+  for (const shape of shapes(blocks, null)) {
+    for (const t of sized(shape, BOARD_COLS, fit)) {
+      const out = layTree(t, fit)
+      if (!out) continue
+      const laid: Laid = new Map(out.map((b) => [b.id, b]))
+      const cost = arrangeCost(t, laid, fit, areaH)
+      seen?.push({ blocks: blocks.map((b) => laid.get(b.id)!), cost })
+      if (!best || cost < best.cost - 1e-9) best = { blocks: blocks.map((b) => laid.get(b.id)!), cost }
+    }
+  }
+  return best
+}
+
+/** 지금 판이 이 규칙이 고를 판과 같은지 (사람이 옮기거나 선을 끌지 않았는지). 부품이 하나면 늘 참 */
+export function isArranged(blocks: Block[], fit: Fit, areaH: number, aspect: (b: Block) => number | null): boolean {
+  if (blocks.length <= 1) return true
+  const best = arrangeBest(arrangeOrder(blocks), fit, areaH, aspect)
+  if (!best) return false
+  const byId = new Map(best.blocks.map((b) => [b.id, b.at!]))
+  return blocks.every((b) => !!b.at && !!byId.get(b.id) && sameArea(b.at, byId.get(b.id)!))
+}
+
+/** 지금 판의 점수 (나무로 읽을 수 없으면 Infinity) */
+export function boardCost(blocks: Block[], fit: Fit, areaH: number): number {
+  const t = treeOf(blocks)
+  return t ? arrangeCost(t, new Map(blocks.map((b) => [b.id, b])), fit, areaH) : Infinity
+}

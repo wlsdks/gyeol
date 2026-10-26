@@ -292,7 +292,9 @@ describe('자리 정하기', () => {
   })
 
   it('한 장에는 면 한 가지만: 진한 면은 하나, 진한 면과 옅은 면은 섞지 않는다', () => {
-    const withLooks = (...looks: Block['look'][]) => board(...looks.map((look, i) => ({ ...block('text', `k${i}`), look })))
+    // 나란히 선 두 글 (혼자 판 너비를 다 쓰면 면을 깔지 않는다: 아래)
+    const withLooks = (...looks: Block['look'][]) =>
+      insertAt(board({ ...block('text', 'k0'), look: looks[0] }), { at: 'k0', side: 'right' }, { ...block('text', 'k1'), look: looks[1] }, H)!
     expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'one-bold' })
     expect(lookIssue(withLooks('bold', 'plain'), 'k1', 'card')).toEqual({ kind: 'look', why: 'mix' })
     expect(lookIssue(withLooks('card', 'plain'), 'k1', 'bold')).toEqual({ kind: 'look', why: 'mix' })
@@ -371,7 +373,7 @@ describe('자리 정하기', () => {
 
   it('옮길 때 다른 부품의 가운데에 놓으면 두 부품이 자리를 맞바꾼다', () => {
     const size = { w: 1680, h: H }
-    const bs = board(block('number', 'n'), block('delta', 'd'))
+    const bs = insertAt(board(block('number', 'n')), { at: 'n', side: 'right' }, block('delta', 'd'), H)!
     const n = areaOf(bs, 'n')
     const d = areaOf(bs, 'd')
     const base = removeBlock(bs, 'n', H)

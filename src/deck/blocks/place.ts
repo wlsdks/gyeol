@@ -22,6 +22,7 @@ import {
   spotBlocks,
   swapBlocks,
 } from './board'
+import { ARRANGE_MAX, arrangeBest, arrangeOrder, boardCost, isArranged } from './arrange'
 import { aspectOf, fitImage, fitPlaced, misfit } from './images'
 import { dropBlock, tidyLinks } from './links'
 import { BLOCK_COL_GAP, BLOCK_GAP, isSmall, isSolo, largeCount, MAX_BLOCKS, MAX_LARGE, settleLook } from './rules'
@@ -138,6 +139,14 @@ export function groupIssue(blocks: Block[], add: Block[], areaH?: number): NoRoo
 export function removeBlock(blocks: Block[], blockId: string, areaH?: number): Block[] {
   const next = dropBlock(blocks, blockId, fitFor(blocks, areaH))
   if (areaH === undefined) return next
+  // 알아서 짠 판(짜임 틀 고르기)에서 빼면 남은 부품들로 다시 고른다: 넣을 때와 같은 규칙이라 넣고 빼면 원래 판으로 돌아간다
+  if (next.length >= 2 && blocks.length <= ARRANGE_MAX && isArranged(blocks, fitFor(blocks, areaH), areaH, aspectOf)) {
+    const best = arrangeBest(arrangeOrder(next), fitFor(next, areaH), areaH, aspectOf)
+    if (best) {
+      const byId = new Map(best.blocks.map((b) => [b.id, b]))
+      return tidyLinks(next.map((b) => byId.get(b.id) ?? b))
+    }
+  }
   let out = next
   for (const img of next.filter((b) => aspectOf(b))) out = fitImage(out, img.id, aspectOf(img)!, areaH)
   return out
@@ -207,6 +216,30 @@ export function autoPlace(blocks: Block[], block: Block, areaH?: number): Block[
     const t = imagePlace(blocks, block, areaH)
     return t?.kind === 'spot' ? insertAt(blocks, t.spot, block, areaH) : null
   }
+  return remember(AUTO, blocks, block, { at: null, side: 'below' }, areaH, () => {
+    const next = slotIn(blocks, block, areaH)
+    return next && areaH !== undefined ? arranged(blocks, next, areaH) : next
+  })
+}
+
+const AUTO: Memo<Block[] | null> = new WeakMap()
+
+/**
+ * 짜임 틀 고르기(arrange.ts): 컴포넌트가 넷까지인 장에서, 지금 판이 알아서 고른 판 그대로면(사람이 옮기거나 선을 끌지 않았으면)
+ * 끼워 넣은 판(next) 대신 같은 부품들로 짤 수 있는 틀 가운데 가장 보기 좋은 판. 끼운 판이 더 나으면 그대로.
+ * 읽는 차례는 끼운 판의 것을 따른다(결론은 근거 위, 소제목은 그 아래 부품 위)
+ */
+function arranged(blocks: Block[], next: Block[], areaH: number): Block[] {
+  if (next.length > ARRANGE_MAX || !isArranged(blocks, fitFor(blocks, areaH), areaH, aspectOf)) return next
+  const fit = fitFor(next, areaH)
+  const best = arrangeBest(arrangeOrder(next), fit, areaH, aspectOf)
+  if (!best || best.cost >= boardCost(next, fit, areaH) - 0.5) return next
+  const byId = new Map(best.blocks.map((b) => [b.id, b]))
+  return tidyLinks(next.map((b) => byId.get(b.id) ?? b))
+}
+
+/** 판이 알아서 고른 자리에 끼운 판 (autoPlace의 예전 길) */
+function slotIn(blocks: Block[], block: Block, areaH?: number): Block[] | null {
   const fit = fitFor([...blocks, block], areaH)
   // 소제목 바로 다음에 넣는 부품은 그 소제목 아래에: 소제목은 아래 부품들의 이름이다. 판이 알아서 고르면(autoInsert) 마지막 줄의
   // 옆이나 판 오른쪽에 들어가, 소제목이 묶을 것 없이 맨 아래에 혼자 남았다(소제목, 목록, 소제목, 할 일 차례로 넣은 장)
