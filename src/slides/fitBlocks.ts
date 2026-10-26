@@ -126,9 +126,12 @@ export function blockFitter() {
   /**
    * 칸 안쪽(.bk-in)의 글 줄마다 글자가 그려지는 자리(화면 px). 꾸밈 글자(인용 부호처럼 aria-hidden)는 일부러 글 뒤에 깔아서 뺀다.
    * hints면 편집 화면의 빈칸 안내(.ed-hint)도 글로 센다: 자리를 재는 일(drawn, drawnX, 쌓기의 첫 글줄)이 안내를 빼면 빈 부품은
-   * 그려진 것이 없어서 위아래 균형에서 빠졌다가, 첫 글자를 치는 순간 들어와 부품이 수백 px 내려갔다
+   * 그려진 것이 없어서 위아래 균형에서 빠졌다가, 첫 글자를 치는 순간 들어와 부품이 수백 px 내려갔다.
+   * marks면 읽지 않는 표시 글자(강점과 약점의 S, W, O, T, 걱정과 대책의 머리말 같은 aria-hidden 글)도 센다(편집 표시는 빼고):
+   * 그려진 범위(drawn)가 그것을 빼면, 발표 화면에서 칸이 비어 표시 글자만 남은 줄을 쌓기가 없는 것으로 알고 아랫줄 글에 맞춰
+   * 부품을 위로 끌어올려서 S, W가 앞 부품의 글 위에 겹쳤다
    */
-  function lines(inner: HTMLElement, hints = false): { n: Node; t: number; b: number; l: number; r: number }[] {
+  function lines(inner: HTMLElement, hints = false, marks = false): { n: Node; t: number; b: number; l: number; r: number }[] {
     const out: { n: Node; t: number; b: number; l: number; r: number }[] = []
     if (!range) range = document.createRange()
     const walk = document.createTreeWalker(inner, NodeFilter.SHOW_TEXT)
@@ -138,7 +141,7 @@ export function blockFitter() {
       const el = n.parentElement
       if (!text || !el) continue
       const hidden = el.closest('[aria-hidden="true"]')
-      if (hidden && !(hints && hidden.classList.contains('ed-hint'))) continue
+      if (hidden && !(hints && hidden.classList.contains('ed-hint')) && !(marks && !el.closest('svg, .ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle'))) continue
       // 일부러 숨긴 글(쌓은 막대에서 칸보다 큰 칸 안 숫자)은 그려지지 않으니 넘침으로 세지 않는다
       const cs = getComputedStyle(el)
       if (cs.visibility === 'hidden') continue
@@ -534,7 +537,7 @@ export function blockFitter() {
     const k = inner.offsetWidth ? inner.getBoundingClientRect().width / inner.offsetWidth : 1
     let t = Infinity
     let b = -Infinity
-    for (const q of lines(inner, true)) {
+    for (const q of lines(inner, true, true)) {
       t = Math.min(t, q.t)
       b = Math.max(b, q.b)
     }
