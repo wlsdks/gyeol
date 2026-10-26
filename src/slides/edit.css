@@ -446,6 +446,12 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   opacity: 0;
 }
 
+/* 장 목록의 그림(미리 보기 꼴)에서는 빈 부제의 안내를 뺀다. 편집 화면은 위처럼 겹쳐 두고 발표 화면은 빈 부제를 빼는데, 장 목록만
+   부제 줄(81px)만큼 본문이 줄어 컴포넌트가 편집 화면과 다른 자리와 크기로 보였다 */
+.slide.m-preview.l-compose .s-head > .s-lead.is-hint {
+  display: none;
+}
+
 /* 부품의 테두리: 칸이 아니라 부품이 그린 것(글자 줄, 그림, 면) 둘레에 (slides/blockFrame.ts가 --fr-*를 정한다).
    칸에 두르면 차트 옆 짧은 글이나 가운데로 내린 숫자의 테두리만 크게 떠서, 부품과 테두리의 크기가 맞지 않아 보였다 */
 .slide.m-edit .bk-area.is-live .bk::after {
