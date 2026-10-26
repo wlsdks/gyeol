@@ -53,6 +53,8 @@ const allowed = [
   /^https?:\/\/(reactjs\.org|react\.dev)\//,
   // 로컬 서버가 자기 주소(127.0.0.1)를 만드는 곳
   /^http:\/\/(127\.0\.0\.1|\$\{HOST\}|\$\{req\.headers\.host\})/,
+  // 'AI 다듬기' 창이 보여 주는 Claude Code 설치 명령(사람이 복사해 자기 터미널에서 실행하는 글). 앱이 연결하지 않는다(CSP)
+  /^https:\/\/claude\.ai\/install\.(sh|ps1)$/,
 ]
 const external = new Set()
 // find는 윈도우에 없어서 Node로 훑는다
