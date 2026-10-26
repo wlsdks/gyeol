@@ -1223,10 +1223,23 @@
 .ins-layout .slide-frame {
   border-radius: 4px;
   box-shadow: 0 0 0 1px var(--line);
+  transition: box-shadow var(--t) var(--ease-out);
 }
 
-.ins-layout:hover .slide-frame {
-  box-shadow: 0 0 0 1px var(--line-2);
+/* 그림으로 고르는 것(레이아웃, 모양, 테마)은 장 목록과 같이: 올리면 테가 한 단계 짙게, 키보드로 오면 바깥에 초점 테 */
+.ins-layout:hover .slide-frame,
+.theme-opt:hover .slide-frame {
+  box-shadow: 0 0 0 1px var(--ink-3);
+}
+
+.ins-layout:focus-visible,
+.theme-opt:focus-visible {
+  outline: none;
+}
+
+.ins-layout:focus-visible .slide-frame,
+.theme-opt:focus-visible .slide-frame {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sel);
 }
 
 .ins-layout.is-on {
@@ -1271,6 +1284,7 @@
 .theme-opt .slide-frame {
   border-radius: 5px;
   box-shadow: 0 0 0 1px var(--line);
+  transition: box-shadow var(--t) var(--ease-out);
 }
 
 .theme-opt.is-on .slide-frame {
