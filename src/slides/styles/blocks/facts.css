@@ -1,17 +1,22 @@
 /* ---------- 개요 ---------- */
 
+/* 항목 칸은 항목 이름만큼만(가장 긴 이름, 목록 너비의 3분의 1까지). 이름은 '기간', '예산'처럼 짧은데 칸을 비율로 잡으면
+   이름 옆이 비고, 좁은 칸에서는 내용 칸이 좁아져 내용이 줄마다 두 줄로 꺾이며 목록이 높아졌다(글자를 줄여야 들어갔다).
+   넓은 칸에서는 내용이 본문 가운데쯤에서 시작해 이름과 내용이 양쪽으로 떨어져 읽히고 오른쪽이 통째로 비었다.
+   줄마다 따로 재면 내용이 줄마다 다른 자리에서 시작해서, 항목 칸은 목록이 함께 정하고 줄은 그 칸을 나눠 쓴다(subgrid) */
 .bk-fc-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  column-gap: 72px;
+  grid-template-columns: fit-content(34%) minmax(0, 1fr);
+  column-gap: 40px;
 }
 
 .bk-fc-row {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(110px, 0.32fr) minmax(0, 1fr);
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: baseline;
-  gap: 32px;
+  column-gap: 40px;
   /* 줄 사이는 글자와 함께 크되 한 줄 내용의 두 배를 넘지 않게(VISUAL-RULES 6). 24px씩 위아래에 두고 바람(--bk-air)도 위아래에 다 더하던 때는
      글자를 키운 장에서 한 줄짜리 줄 사이가 109px로 내용(36px)의 세 배였다. 바람은 줄 사이 하나에 한 번만 들어가게 반씩 나눈다 */
   padding: calc(12px * var(--bk-fit, 1) + var(--bk-air, 0px) / 2) 0;
@@ -55,18 +60,10 @@
   text-wrap: pretty;
 }
 
-/* 좁은 칸: 항목 칸은 항목 이름만큼만(가장 긴 이름, 목록 너비의 3분의 1까지). 이름은 '기간', '예산'처럼 짧은데 칸을 비율로 잡으면
-   이름 옆이 비고 내용 칸이 좁아져서, 내용이 줄마다 두 줄로 꺾이며 목록이 높아진다(글자를 줄여야 들어갔다).
-   줄마다 따로 재면 내용이 줄마다 다른 자리에서 시작해서, 항목 칸은 목록이 함께 정하고 줄은 그 칸을 나눠 쓴다(subgrid) */
+/* 좁은 칸은 이름과 내용 사이도 조금 좁게 */
 @container bk (max-width: 700px) {
-  .bk-fc-list {
-    grid-template-columns: fit-content(34%) minmax(0, 1fr);
-    column-gap: 28px;
-  }
-
+  .bk-fc-list,
   .bk-fc-row {
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
     column-gap: 28px;
   }
 }
@@ -76,10 +73,15 @@
    오른쪽 단의 진한 선 위가 비어 보였다. 이으면 '항목 내용 항목 내용'이 한 줄로 읽히는 표 하나다.
    짝이 없는 마지막 줄(다섯 줄의 다섯째)은 잇지 않는다 */
 @container bk (min-width: 1300px) {
+  /* 두 단: 단마다 이름 칸과 내용 칸. 줄은 제 단의 두 칸을 나눠 쓴다(단 안의 줄끼리 내용이 한 자리에서 시작한다) */
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
     --fc-gap: 72px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: fit-content(17%) minmax(0, 1fr) fit-content(17%) minmax(0, 1fr);
     column-gap: var(--fc-gap);
+  }
+
+  .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row {
+    grid-column: span 2;
   }
 
   .bk-fc-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-fc-row:nth-child(2)::before {
