@@ -450,6 +450,98 @@ function floating(area: HTMLElement, k: number): string[] {
 }
 
 /** 그려진 부품 장마다 위계, 빈 띠, 글 폭을 본다. 없으면 빈 목록 */
+/*
+ * 선의 경제와 칠한 상자 (사람 눈 기준, docs/DESIGN.md '지면의 말투'). 사용자가 '무슨 선이 이렇게 많아', '박스 전체가 색인 건 안 된다'고
+ * 짚은 것을 숫자로 본다:
+ * - 한 장의 가로선은 12줄까지(같은 높이에 나란한 선은 한 줄로 센다). 넘으면 장이 표 칸처럼 갇혀 보였다.
+ * - 40px 안에 두 선이 겹쳐 서지 않는다(사이에 글이 없으면): 위 컴포넌트의 아래 선과 아래 컴포넌트의 위 선이 붙은 두 겹.
+ * - 선의 굵기는 두 단계까지: 세 단계면 어느 선이 무엇을 나누는지 흐렸다.
+ * - 글이 든 칠한 상자(넓이 120×60 넘게, 한글 네 자 넘게)는 없다. 데이터를 그리는 막대와 칸(숫자뿐인)은 세지 않는다.
+ */
+const LINE_ROWS_MAX = 12
+const DOUBLE_GAP = 40
+
+type Line = { y: number; x1: number; x2: number; w: number }
+
+function linesOf(area: HTMLElement, k: number): Line[] {
+  const out: Line[] = []
+  const add = (y: number, x1: number, x2: number, w: number) => {
+    if (x2 - x1 >= 60 * k && w > 0) out.push({ y, x1, x2, w: Math.round(w * 10) / 10 })
+  }
+  for (const el of area.querySelectorAll<HTMLElement>('*')) {
+    if (el instanceof SVGElement || el.closest(EDIT_UI)) continue
+    const s = getComputedStyle(el)
+    if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) continue
+    const r = el.getBoundingClientRect()
+    if (!r.width || !r.height) continue
+    const seen = (c: string) => !/rgba\(.*,\s*0\)$/.test(c) && c !== 'transparent'
+    const bt = s.borderTopStyle !== 'none' ? parseFloat(s.borderTopWidth) || 0 : 0
+    const bb = s.borderBottomStyle !== 'none' ? parseFloat(s.borderBottomWidth) || 0 : 0
+    if (bt && seen(s.borderTopColor)) add(r.top, r.left, r.right, bt / k)
+    if (bb && seen(s.borderBottomColor)) add(r.bottom, r.left, r.right, bb / k)
+    for (const m of (s.boxShadow || '').matchAll(/inset 0(?:px)? (-?\d+(?:\.\d+)?)px 0(?:px)?/g)) {
+      const v = parseFloat(m[1])
+      if (v > 0) add(r.top, r.left, r.right, v / k)
+      else if (v < 0) add(r.bottom, r.left, r.right, -v / k)
+    }
+  }
+  return out
+}
+
+function lineEconomy(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  const lines = linesOf(area, k).sort((a, b) => a.y - b.y)
+  const rows: number[] = []
+  for (const l of lines) if (!rows.some((y) => Math.abs(y - l.y) <= 3 * k)) rows.push(l.y)
+  if (rows.length > LINE_ROWS_MAX) out.push(`가로선이 ${rows.length}줄이에요(${LINE_ROWS_MAX}줄까지)`)
+  const weights = [...new Set(lines.map((l) => Math.round(l.w)))]
+  if (weights.length >= 3) out.push(`선 굵기가 ${weights.length}단계예요(${weights.sort((a, b) => a - b).join(', ')}px)`)
+  const texts = blockTextLinesOf(area)
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      const a = lines[i]
+      const b = lines[j]
+      const gap = b.y - a.y
+      if (gap <= 3 * k) continue
+      if (gap >= DOUBLE_GAP * k) break
+      const lo = Math.max(a.x1, b.x1)
+      const hi = Math.min(a.x2, b.x2)
+      if (hi - lo < 0.3 * Math.min(a.x2 - a.x1, b.x2 - b.x1)) continue
+      const between = texts.some((t) => t.t >= a.y && t.b <= b.y && t.r > lo && t.l < hi)
+      if (!between) {
+        out.push(`${Math.round(gap / k)}px 사이에 선이 두 겹이에요`)
+        return out
+      }
+    }
+  }
+  return out
+}
+
+function blockTextLinesOf(area: HTMLElement): { t: number; b: number; l: number; r: number }[] {
+  const out: { t: number; b: number; l: number; r: number }[] = []
+  for (const inner of area.querySelectorAll<HTMLElement>('.bk-in')) for (const q of blockTextLines(inner)) out.push(q)
+  return out
+}
+
+function paintedBoxes(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  // 장 바탕과 같은 색으로 지운 것(위치 비교의 이름표가 선을 가리는 바탕 같은)은 칠한 상자가 아니다
+  const slideBg = getComputedStyle(area.closest('.slide') ?? area).backgroundColor
+  for (const el of area.querySelectorAll<HTMLElement>('.bk *')) {
+    if (el instanceof SVGElement || el.closest(EDIT_UI) || el.matches('img')) continue
+    const s = getComputedStyle(el)
+    const bg = s.backgroundColor
+    if (!bg || bg === 'transparent' || bg === slideBg || /rgba\(.*,\s*0(?:\.0\d*)?\)$/.test(bg)) continue
+    const r = el.getBoundingClientRect()
+    if (r.width < 120 * k || r.height < 60 * k) continue
+    const text = (el.textContent || '').replace(/\s/g, '')
+    if ((text.match(/[가-힣]/g) || []).length < 4) continue
+    const cell = el.closest<HTMLElement>('.bk')
+    out.push(`${cell?.dataset.type ?? '컴포넌트'}: 글이 든 상자를 칠했어요(${Math.round(r.width / k)}×${Math.round(r.height / k)})`)
+  }
+  return [...new Set(out)]
+}
+
 export async function checkAssembly(): Promise<{ slides: number; problems: string[] }> {
   await document.fonts.ready
   await new Promise((r) => setTimeout(r, 300))
@@ -459,7 +551,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }
