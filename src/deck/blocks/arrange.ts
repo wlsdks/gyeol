@@ -31,6 +31,12 @@ const SLACK = 10
  */
 const MEASURE_W: Partial<Record<BlockType, number>> = { message: 24 * 44, callout: 24 * 44 }
 
+/**
+ * 그려지는 가장 넓은 너비를 글 폭으로 어림할 수 있는 부품 (캔버스 px. 없으면 Infinity). 개요는 셋까지 한 단이라 이름(이름만큼, 100px 남짓)과
+ * 사이(40), 글 폭에서 꺾이는 내용(24em × 30px)까지다: 한 줄을 다 쓰는 칸에서 한 줄로 들어가 넓게 보였지만 본문의 절반에서 끝났다
+ */
+const measureW = (b: Block): number => MEASURE_W[b.type] ?? (b.type === 'facts' && b.items.length <= 3 ? 140 + 24 * 30 : Infinity)
+
 /** 같은 말투로 맞출 숫자 부품: 한 장에 둘 이상이면 나란히 한 줄에 서야 크기와 이름표 자리를 맞출 수 있다 */
 export const NUMBER_TYPES = new Set<BlockType>(['number', 'stat', 'delta', 'goal', 'ring', 'ratio'])
 
@@ -231,7 +237,7 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
     const img = picture(laid.get(b.id)!, r)
     // 칸보다 좁은 이미지는 칸 가운데에 선다
     if (img) return r.x + (r.w + img.w) / 2
-    const w = isStretchy(b.type) ? r.w : Math.min(atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w, MEASURE_W[b.type] ?? Infinity)
+    const w = isStretchy(b.type) ? r.w : Math.min(atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w, measureW(b))
     return r.x + Math.min(r.w, w)
   }))
   const empty = 1 - right / AREA_W

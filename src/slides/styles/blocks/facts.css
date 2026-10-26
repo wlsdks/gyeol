@@ -55,6 +55,8 @@
 
 .bk-fc-v {
   --fs: var(--t-body);
+  /* 글 폭(--measure)에서 꺾는다: 문장을 쓰는 글 칸과 같다(blocks/base.css) */
+  max-width: var(--measure);
   font-weight: 500;
   line-height: 1.45;
   text-wrap: pretty;
