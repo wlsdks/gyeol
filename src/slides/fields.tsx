@@ -5,6 +5,7 @@ import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
 import { imageToDataUrl, pickImage } from '../lib/imageFile'
 import { keys } from '../lib/keys'
+import { frameRect } from './blockFrame'
 import { useSlide } from './context'
 import { startItemDrag } from './itemDrag'
 
@@ -502,6 +503,131 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
   )
 }
 
+/** 컴포넌트 안 항목의 도구를 항목 끝에서 띄우는 너비 (화면 px, edit.css의 6px / --vs와 같다) */
+const TOOL_PAD = 6
+
+/**
+ * 항목 안 글자가 그려진 네모들 (화면 px). 도구가 덮으면 그 글을 눌러 고칠 수 없다.
+ * 글자 줄의 상자는 글자보다 위아래로 크다(숫자는 위아래 5분의 1이 빈다): 상자 그대로 피하면 큰 숫자 위의 빈 곳에도 도구를 두지 못해
+ * 막대 위로 밀려났다. 위아래를 높이의 12%씩 줄여 한글 글자의 끝에 맞춘다
+ */
+function textLines(root: Element): DOMRect[] {
+  const out: DOMRect[] = []
+  const range = document.createRange()
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    // 숨은 편집 표시(항목 도구, 칸 왼쪽 위의 끌기 이름표)의 글은 그려진 글이 아니다
+    if (!n.nodeValue?.trim() || n.parentElement?.closest('.it-grip, .it-remove, .bk-handle')) continue
+    range.selectNodeContents(n)
+    for (const r of range.getClientRects()) if (r.width && r.height) out.push(new DOMRect(r.left, r.top + r.height * 0.12, r.width, r.height * 0.76))
+  }
+  return out
+}
+
+/** 항목 안에 칠한 그림(막대, 점, 칸)의 네모들 (화면 px). 항목 자신의 옅은 면(손을 올렸을 때)과 도구는 뺀다 */
+function figureRects(item: HTMLElement): DOMRect[] {
+  const out: DOMRect[] = []
+  for (const el of item.querySelectorAll<HTMLElement | SVGElement>('*')) {
+    if (el.closest('.it-grip, .it-remove, .ed-halo') || (el instanceof SVGElement && el.ownerSVGElement)) continue
+    const s = getComputedStyle(el)
+    const painted = el.matches('svg, img, canvas') || (s.backgroundColor !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(s.backgroundColor)) || s.backgroundImage !== 'none'
+    if (!painted) continue
+    const r = el.getBoundingClientRect()
+    if (r.width && r.height) out.push(r)
+  }
+  return out
+}
+
+/** 항목 도구 묶음(손잡이와 빼기)의 너비와 높이 (화면 px). 숨어 있어도(투명) 자리는 잡혀 있다 */
+function toolsSize(item: HTMLElement): { w: number; h: number } | null {
+  const tools = [...item.querySelectorAll<HTMLElement>(':scope > :is(.it-grip, .it-remove)')]
+  if (!tools.length) return null
+  const sizes = tools.map((t) => t.getBoundingClientRect())
+  return { w: sizes.reduce((s, r) => s + r.width, 0) + (tools.length - 1) * 4, h: Math.max(...sizes.map((r) => r.height)) }
+}
+
+/** 고른 컴포넌트 위에 뜬 도구 막대의 자리 (화면 px). 그 밑에 깔린 항목 도구는 보여도 누를 수 없다 */
+const barRect = () => document.querySelector('.float-tools')?.getBoundingClientRect()
+
+/**
+ * 컴포넌트 안 항목의 도구(↕, ✕)를 둘 자리 (캔버스 px): 항목 오른쪽 끝에서 도구 묶음 오른쪽 끝까지(right, 항목 밖이면 음수), 항목 위 끝에서
+ * 도구 위 끝까지(top), 그리고 항목 상자가 컴포넌트 테두리 오른쪽 밖으로 나간 너비(out).
+ * 항목 오른쪽 위에 그대로 두면 막대 비교의 값(96)처럼 줄 끝에 선 글을 덮어 그 글을 눌러 고칠 수 없었고, 남는 너비만큼 옮긴
+ * 단(fitBlocks의 balance)의 항목은 상자가 장 오른쪽 밖까지 걸쳐 도구가 장 밖에 그려져 보이지 않았다(점 목록의 항목을 뺄 수 없었다).
+ * 그래서 항목 상자 안(칸과 장 안)에서, 글과 도구 막대를 덮지 않는 곳 가운데 그린 것의 오른쪽 위 끝에 가장 가까운 곳을 찾는다.
+ * 막대 같은 그림도 되도록 피한다(글처럼 막지는 않는다). 상자 안에 자리가 없으면 항목 바로 옆이나 위아래 밖의 빈 곳에
+ * 붙여 둔다: 손이 항목을 떠나면 도구가 숨으므로 항목과 도구 사이를 띄우지 않는다.
+ * 그런 곳이 없으면 테두리 안 오른쪽 위 (clear가 거짓)
+ */
+function toolsSpot(item: HTMLElement): { right: number; top: number; out: number; clear: boolean } | null {
+  const cell = item.closest<HTMLElement>('.bk')
+  const size = toolsSize(item)
+  if (!cell || !size) return null
+  const { w, h } = size
+  const ir = item.getBoundingClientRect()
+  const k = item.offsetWidth ? ir.width / item.offsetWidth : 1
+  const frame = frameRect(cell)
+  // 도구보다 조금 큰 낮은 항목은 위아래 가운데에: 6px씩 띄우면 도구가 항목 아래로 삐져나와 아랫줄 글에 걸쳤다
+  const pad = Math.min(TOOL_PAD, Math.max(0, (ir.height - h) / 2))
+  // 항목 상자 가운데 칸과 장 안인 곳만: 남는 너비만큼 옮긴 단의 항목은 상자가 장 밖까지 걸쳤다
+  const box = cell.getBoundingClientRect()
+  const page = item.closest('.slide')?.getBoundingClientRect() ?? box
+  const right = Math.min(ir.right, box.right, page.right) - TOOL_PAD
+  const left = Math.max(ir.left, box.left, page.left) + TOOL_PAD
+  // 테두리 안 오른쪽 끝에 가까울수록 싸다. 글이 꽉 찬 한 줄 항목(좁은 점 목록)은 테두리 바로 밖, 항목 상자 안의 빈 곳에 선다
+  // (테두리에 걸치지 않게, 안쪽 자리보다 조금 비싸게)
+  const anchor = Math.min(right, frame.right - TOOL_PAD)
+  const top = ir.top + pad
+  const bottom = Math.max(top, ir.bottom - pad - h)
+  const bar = barRect()
+  const lines = [...textLines(item), ...(bar ? [bar] : [])]
+  const figures = figureRects(item)
+  const hits = (list: DOMRect[], x: number, y: number) => list.some((r) => r.left < x + 2 && r.right > x - w - 2 && r.top < y + h + 2 && r.bottom > y - 2)
+  const spot = (x: number, y: number, clear = true) => ({
+    right: (ir.right - x) / k,
+    top: (y - ir.top) / k,
+    out: Math.max(0, (ir.right - frame.right) / k),
+    clear,
+  })
+  // 오른쪽 위에서 멀어질수록 비싸다. 아래로 내려가는 것을 옆으로 가는 것보다 비싸게 (같은 줄 끝에 있어야 그 항목의 도구로 읽힌다)
+  let best = { x: anchor, y: top, cost: Infinity }
+  for (let y = top; y <= bottom; y += 4)
+    for (let x = right; x - w >= left; x -= 4) {
+      if (x > anchor && x - w < frame.right + TOOL_PAD) continue
+      const cost = (x > anchor ? x - anchor + 30 : anchor - x) + 3 * (y - top) + (hits(figures, x, y) ? 400 : 0)
+      if (cost < best.cost && !hits(lines, x, y)) best = { x, y, cost }
+    }
+  if (Number.isFinite(best.cost)) return spot(best.x, best.y)
+  // 상자 안에 자리가 없으면(좁은 단의 예상 질문처럼 첫 줄이 꽉 찬 항목) 항목 바로 오른쪽, 왼쪽, 그다음 바로 위, 아래(오른쪽 끝에 맞춰).
+  // 장 안이고 장의 다른 글(이웃 컴포넌트의 글도)과 도구 막대를 덮지 않는 곳에. 장만 넘친 것을 자르고 칸은 자르지 않는다
+  const ink = [...textLines(item.closest('.slide') ?? cell), ...(bar ? [bar] : [])]
+  const end = Math.min(ir.right, frame.right) - TOOL_PAD
+  const near = [
+    [ir.right + w, top],
+    [ir.left, top],
+    [end, ir.top - h],
+    [end, ir.bottom],
+  ]
+  for (const [x, y] of near)
+    if (x - w >= page.left && x <= page.right && y >= page.top && y + h <= page.bottom && !hits(ink, x, y)) return spot(x, y)
+  return spot(end, top, false)
+}
+
+/**
+ * 가로로 놓인 낮은 항목의 도구를 항목 바로 위(above)나 아래(below)에 둘 수 있는지: 그 자리에 글과 도구 막대가 없고, 위라면 테두리 안이면.
+ * 아래로 내면 고른 컴포넌트 바로 아래에 뜨는 도구 막대와 겹쳐(단계 표시의 단계 이름, 추이의 기간) 도구를 누를 수 없었다
+ */
+function roomBeside(item: HTMLElement, side: 'above' | 'below'): boolean {
+  const cell = item.closest<HTMLElement>('.bk')
+  const size = toolsSize(item)
+  if (!cell || !size) return false
+  const ir = item.getBoundingClientRect()
+  const spot = new DOMRect(ir.left + (ir.width - size.w) / 2, side === 'above' ? ir.top - size.h : ir.bottom, size.w, size.h)
+  if (side === 'above' && spot.top < frameRect(cell).top) return false
+  const bar = barRect()
+  return ![...textLines(cell), ...(bar ? [bar] : [])].some((r) => r.left < spot.right && r.right > spot.left && r.top < spot.bottom && r.bottom > spot.top)
+}
+
 /** 이 항목이 든 목록이 가로로 놓였는지 (앞의 두 항목이 옆으로 놓였으면) */
 function itemsAcross(item: HTMLElement): boolean {
   const list = [...(item.parentElement?.children ?? [])].filter((c) => c.classList.contains('it'))
@@ -522,30 +648,52 @@ export function ItemTools({ i, sort = true, keepBlank = false }: { i: number; so
   const move = actions?.moveItem
   const grip = mode === 'edit' && sort && !!move && slide.items.length > 1
   const gripRef = useRef<HTMLButtonElement>(null)
+  const removeRef = useRef<HTMLButtonElement>(null)
   // 손잡이 그림은 항목이 놓인 쪽으로: 세로로 쌓인 목록은 위아래, 가로로 놓인 목록은 좌우 화살표.
-  // 좁은 칸에서는 같은 목록이 가로에서 세로로 짜임을 바꾸므로, 그릴 때마다 재지 않고 항목에 올리거나 손잡이로 들어올 때 잰다
+  // 좁은 칸에서는 같은 목록이 가로에서 세로로 짜임을 바꾸므로, 그릴 때마다 재지 않고 항목에 올리거나 도구로 들어올 때 잰다.
+  // 손잡이가 없는 항목(하나만 남은 목록)도 빼기 단추의 자리는 잰다
   useEffect(() => {
     const el = gripRef.current
-    const item = el?.closest<HTMLElement>('.it')
-    if (!el || !item) return
-    const look = () => {
+    const item = (el ?? removeRef.current)?.closest<HTMLElement>('.it')
+    if (!item) return
+    const look = (e?: Event) => {
       const axis = itemsAcross(item) ? 'x' : 'y'
-      if (el.dataset.axis !== axis) el.dataset.axis = axis
-      // 가로로 놓인 낮은 항목(차트 아래의 기간 이름 같은)은 도구를 항목 아래로 내린다: 컴포넌트 안에서는 도구가 항목 안쪽
-      // 오른쪽 위에 서는데, 항목이 도구보다 낮으면 도구가 글을 덮어 이름을 눌러 고칠 수 없었다(화면 px로 잰다, 도구는 22px)
-      const below = axis === 'x' && item.getBoundingClientRect().height < 48
-      if ((item.dataset.tools === 'below') !== below) {
-        if (below) item.dataset.tools = 'below'
+      if (el && el.dataset.axis !== axis) el.dataset.axis = axis
+      // 손으로 누를 때 받는 초점(focus)에서는 자리를 다시 재지 않는다: 손을 올릴 때 잰 뒤에 테두리나 도구 막대가 바뀌어 있으면
+      // 누르는 순간 ✕가 옆으로 옮겨 가서, 손을 뗄 때는 ✕ 밖이라 눌리지 않았다. 키보드로 들어올 때(손이 항목 밖)만 잰다
+      if (e?.type === 'focus' && item.matches(':hover')) return
+      // 컴포넌트 안에서는 글을 덮지 않고 테두리 안에 서는 자리로 (toolsSpot)
+      const spot = item.closest('.bk') ? toolsSpot(item) : null
+      // 가로로 놓인 낮은 항목(차트 아래의 기간 이름 같은)에 그런 자리가 없으면 도구를 항목 밖 가운데로 낸다: 항목이 도구보다
+      // 낮으면 안쪽 오른쪽 위의 도구가 글을 덮어 이름을 눌러 고칠 수 없었다(화면 px로 잰다, 도구는 22px).
+      // 위에 자리가 있으면 위로, 없으면 아래로, 둘 다 막혔으면 안쪽 그대로 (roomBeside)
+      const low = axis === 'x' && item.getBoundingClientRect().height < 48
+      const side = !low || spot?.clear ? '' : roomBeside(item, 'above') ? 'above' : roomBeside(item, 'below') ? 'below' : ''
+      if ((item.dataset.tools ?? '') !== side) {
+        if (side) item.dataset.tools = side
         else delete item.dataset.tools
       }
+      // 값이 그대로면 쓰지 않는다: 항목의 스타일을 바꾸면 장을 다시 맞춘다(blocks.tsx의 BlockArea가 본문 상자 안의 바뀜을 지켜본다)
+      const at = side ? null : spot
+      for (const [name, v] of [
+        ['--it-tools-r', at?.right],
+        ['--it-tools-t', at?.top],
+        ['--it-out-r', at?.out],
+      ] as const) {
+        const value = v === undefined ? '' : `${Math.round(v)}px`
+        if (item.style.getPropertyValue(name) === value) continue
+        if (value) item.style.setProperty(name, value)
+        else item.style.removeProperty(name)
+      }
     }
+    const tools = [el, removeRef.current].filter((t): t is HTMLButtonElement => !!t)
     item.addEventListener('pointerenter', look)
-    el.addEventListener('focus', look)
+    tools.forEach((t) => t.addEventListener('focus', look))
     return () => {
       item.removeEventListener('pointerenter', look)
-      el.removeEventListener('focus', look)
+      tools.forEach((t) => t.removeEventListener('focus', look))
     }
-  }, [grip])
+  }, [grip, canRemoveItem])
   // 발표할 때는 도구 대신, 칸을 하나도 채우지 않은 항목에 표시를 둔다. 그런 항목은 가장 적은 항목 수를 채우려고 남긴 자리라
   // (deck/fields.ts의 presentable) 빈 칸이 다 빠지고 번호, 글머리, 점, 꺾쇠 같은 표시만 덩그러니 남았다.
   // 표시가 든 항목은 자리만 남기고 감춘다(styles/base.css의 .it-empty)
@@ -588,7 +736,7 @@ export function ItemTools({ i, sort = true, keepBlank = false }: { i: number; so
         </button>
       )}
       {canRemoveItem && (
-        <button type="button" className="it-remove" aria-label="이 항목 빼기" title="이 항목 빼기" onClick={() => actions.removeItem(i)}>
+        <button ref={removeRef} type="button" className="it-remove" aria-label="이 항목 빼기" title="이 항목 빼기" onClick={() => actions.removeItem(i)}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
