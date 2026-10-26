@@ -717,15 +717,15 @@ export function blockFitter() {
    * 남는 높이는 맨 아래 한곳에 모은다. 장 제목이 없는 장(결론 한 장)은 모은 묶음째 위아래 가운데에 둔다.
    * 줄째 같은 만큼 옮겨서 나란한 칸끼리의 윗선은 그대로다. 칸을 옮기므로(--bk-shift, 칸의 top) 면이 있는 칸도 면째 간다.
    * 편집 화면도 같이 쌓는다: 예전에는 판의 칸을 그대로 보이려고 편집 화면에서는 쌓지 않아서, 편집할 때는 부품 사이가 듬성하고
-   * 발표하면 갑자기 위로 붙어 편집 화면이 끝 모습과 달랐다. 다만 끄는 동안(is-dragging, 놓일 자리 is-slot)은 판의 칸 그대로 둔다:
-   * 놓일 자리는 판의 칸이라 손 아래의 칸과 미리 보인 자리가 맞아야 한다. 편집 화면에서는 판을 나누는 선의 손잡이(.bk-line)도
+   * 발표하면 갑자기 위로 붙어 편집 화면이 끝 모습과 달랐다. 끄는 동안도 같이 쌓는다: 예전에는 끄는 동안 판의 칸 그대로 두어서
+   * 끌기 시작하자마자 장 전체가 판의 칸 자리로 튀었고, 흐리게 미리 보인 자리도 놓은 뒤의 자리와 달랐다. 손 아래는 화면에 보이는
+   * 판으로 잰다(BlockEditor의 shownOf, place.ts의 shownTargets). 편집 화면에서는 판을 나누는 선의 손잡이(.bk-line)도
    * 옮긴 칸 사이로 같이 옮긴다.
    * 이음표: 옆 이음표는 그 줄과 같이 옮기고, 줄 사이의 아래 이음표는 그 사이를 이음표가 설 자리만큼 넓히고 가운데에 세운다
    */
   const headGap = 32
   function pack(cells: HTMLElement[], area: HTMLElement): void {
-    if (!cells.length || area.classList.contains('is-dragging')) return
-    if (cells.some((c) => c.classList.contains('is-slot'))) return
+    if (!cells.length) return
     const edit = area.classList.contains('is-live')
     const a = area.getBoundingClientRect()
     const k = a.height / area.offsetHeight
@@ -938,7 +938,6 @@ export function blockFitter() {
    * 옮긴 장은 data-eye를 붙인다(60%를 못 채운 완결된 장은 'full': 검사가 머리 아래 빈 곳과 채움을 봐준다)
    */
   function eyeLevel(cells: HTMLElement[], area: HTMLElement, hold?: number): number {
-    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return 0
     const move = hold ?? eyeMove(cells, area)
     if (!move) return 0
     // 이음표와 편집 화면의 크기 손잡이(.bk-line)도 칸과 같이: 두고 내리면 손잡이가 위 빈 곳에 뜨거나 아래 줄의 글을 가로질렀다
@@ -1151,7 +1150,6 @@ export function blockFitter() {
    * (단을 칸째 오른쪽으로 옮긴다, --bk-shift-x). 단 사이를 좁히지는 않는다. 면이 있는 칸(면이 칸 너비다)과 이음표가 선 줄은 그대로
    */
   function balance(cells: HTMLElement[], area: HTMLElement, hold?: Map<string, number>): void {
-    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return
     if (hold) {
       for (const c of cells) {
         const px = hold.get(c.dataset.block ?? '')

@@ -18,6 +18,7 @@ import {
   moveGutter,
   needWith,
   sameSpot,
+  type Side,
   type Spot,
   spotBlocks,
   swapBlocks,
@@ -150,6 +151,14 @@ export function removeBlock(blocks: Block[], blockId: string, areaH?: number): B
   let out = next
   for (const img of next.filter((b) => aspectOf(b))) out = fitImage(out, img.id, aspectOf(img)!, areaH)
   return out
+}
+
+/**
+ * 옮기는 동안 자리를 찾는 판: 옮기는 부품을 뺀 판을 옮기기(moveAt)가 보는 그대로. 빼기(removeBlock)처럼 남은 부품으로 짜임을 다시
+ * 고르지 않는다: 다시 고른 판으로 자리를 찾으면 그 판에서는 들어가는 자리가 옮기기에서는 들어가지 않아, 놓아도 아무 일이 없었다
+ */
+export function movingBase(blocks: Block[], blockId: string, areaH?: number): Block[] {
+  return dropBlock(blocks, blockId, fitFor(blocks, areaH))
 }
 
 /** 판 너비를 혼자 쓰는 부품이 그 자리에서 옆에 서게 되는지: 넣는 부품이 그런 부품이거나, 옆에 서는 묶음에 그런 부품이 있으면 그 부품 */
@@ -286,6 +295,18 @@ const LEADS = new Set<BlockType>(['message', 'callout'])
  * 차례(발표할 때 나오는 차례를 따로 정하지 않았을 때 읽는 차례가 된다)는 그대로. 옮길 수 없으면 null
  */
 export function moveAt(blocks: Block[], blockId: string, target: DropTarget, areaH?: number): Block[] | null {
+  // 끄는 동안 손을 움직일 때마다 같은 판에서 같은 자리를 몇 번씩 옮겨 본다(놓을 자리 고르기, 경계 확인, 가까운 자리 찾기). 판은 고치지 않고
+  // 새로 만들어서(불변) 판이 같으면 결과도 같다 (insertAt의 remember와 같은 까닭)
+  let memo = MOVED.get(blocks)
+  if (!memo) MOVED.set(blocks, (memo = new Map()))
+  const key = `${blockId}|${target.kind === 'swap' ? `=${target.with}` : `${target.spot.at ?? ''}|${target.spot.side}|${target.spot.up ?? 0}`}|${areaH ?? ''}`
+  if (!memo.has(key)) memo.set(key, moveNow(blocks, blockId, target, areaH))
+  return memo.get(key)!
+}
+
+const MOVED = new WeakMap<Block[], Map<string, Block[] | null>>()
+
+function moveNow(blocks: Block[], blockId: string, target: DropTarget, areaH?: number): Block[] | null {
   const fit = fitFor(blocks, areaH)
   const self = blocks.find((b) => b.id === blockId)
   if (!self) return null
@@ -371,6 +392,131 @@ function wantedTargets(blocks: Block[], p: { x: number; y: number }, size: { w: 
   return [...edge, ...lines, ...inside]
 }
 
+/** 끄는 동안 화면에 보이는 컴포넌트 하나 (본문 상자 기준 캔버스 px): 칸 상자와, 그린 것을 두른 테두리(편집 화면의 테두리와 같은 상자) */
+export interface ShownCell {
+  cell: Rect
+  ink: Rect
+}
+
+/**
+ * 끄는 동안 화면에 보이는 판. 판을 맞춘 뒤(줄을 앞 줄 아래로 올려 붙이고 눈높이로 내린 뒤)의 자리라 판의 칸(atRect)과 다르다.
+ * cells는 끄는 컴포넌트를 뺀 컴포넌트마다, slot은 끄는 컴포넌트가 놓일 자리로 흐리게 보이는 칸(없으면 null)
+ */
+export interface Shown {
+  cells: Map<string, ShownCell>
+  slot: ShownCell | null
+}
+
+const inRect = (r: Rect, p: { x: number; y: number }) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h
+const rectDistance = (r: Rect, p: { x: number; y: number }) => Math.hypot(Math.max(r.x - p.x, 0, p.x - (r.x + r.w)), Math.max(r.y - p.y, 0, p.y - (r.y + r.h)))
+
+/**
+ * 손이 놓일 자리(흐린 미리 보기) 위에 있는지: 그 테두리 안, 또는 그 칸 안이면서 가장 가까운 테두리가 그것일 때.
+ * 맞춘 판의 칸은 서로 겹친다(아래 줄을 위 줄의 글 바로 아래로 올려 붙여서): 짧은 글의 칸은 아래 줄의 큰 숫자 사이 빈틈까지 덮어,
+ * 칸 안이기만 하면 놓일 자리 위로 치니 숫자 사이에 놓아도 까닭 없이 제자리였다
+ */
+export function overSlot(shown: Shown, p: { x: number; y: number }): boolean {
+  const s = shown.slot
+  if (!s) return false
+  if (inRect(s.ink, p)) return true
+  if (!inRect(s.cell, p)) return false
+  const d = rectDistance(s.ink, p)
+  return Array.from(shown.cells.values()).every((c) => rectDistance(c.ink, p) > d)
+}
+
+/**
+ * 손 아래에서 바라는 자리들을 화면에 보이는 대로 (먼저 바라는 차례대로). 자리는 base(옮기는 컴포넌트를 뺀 판)의 자리로 낸다.
+ * 예전에는 base의 칸으로 쟀는데, base는 화면에 보이지 않는 판이고(옮기는 컴포넌트가 빠지면 옆 칸이 그 자리까지 커진다) 짧은 글은
+ * 칸보다 훨씬 작게 그려져서, 글 오른쪽 빈 곳에 놓았는데 칸의 위 변이 가까워 그 위로 가거나 엉뚱한 컴포넌트 옆으로 갔다.
+ * - 보이는 내용 전체보다 위나 아래(판 둘레 포함)면 판의 그 쪽 끝, 판의 왼쪽·오른쪽 둘레면 그 쪽 끝
+ * - 그린 것 밖이면서 두 묶음 사이에 보이는 빈 띠 위면 그 선 위 (줄 사이면 그 묶음 너비의 새 줄)
+ * - 아니면 손 아래 컴포넌트(칸이 손을 품은 것 가운데 그린 것이 가장 가까운 것, 없으면 그린 것이 가장 가까운 것) 옆:
+ *   그린 것 밖이면 손이 있는 쪽, 안이면 가까운 변 쪽. 옮기는 중이면 그린 것의 가운데는 맞바꾸기
+ * 잴 수 없는 컴포넌트가 있으면 null (부르는 쪽이 판의 칸으로 잰다)
+ */
+function shownTargets(base: Block[], shown: Shown, p: { x: number; y: number }, size: { w: number; h: number }, moving?: string): DropTarget[] | null {
+  if (!base.length) return [BOTTOM]
+  const cells = base.map((b) => ({ b, c: shown.cells.get(b.id) }))
+  if (cells.some((x) => !x.c)) return null
+  const all = cells as { b: Block; c: ShownCell }[]
+  const edge: DropTarget[] = []
+  const top = Math.min(...all.map((x) => x.c.ink.y))
+  const bottom = Math.max(...all.map((x) => x.c.ink.y + x.c.ink.h))
+  if (p.y < Math.max(BOARD_EDGE, top)) edge.push(spotTarget({ at: null, side: 'above' }))
+  if (p.y > Math.min(size.h - BOARD_EDGE, bottom)) edge.push(spotTarget({ at: null, side: 'below' }))
+  if (p.x < BOARD_EDGE) edge.push(spotTarget({ at: null, side: 'left' }))
+  if (p.x > size.w - BOARD_EDGE) edge.push(spotTarget({ at: null, side: 'right' }))
+  const onInk = all.some((x) => inRect(x.c.ink, p))
+  // 선: 판의 선마다 그 앞뒤에 닿은 컴포넌트들이 보이는 자리로. 줄 사이(v)는 위 줄의 그린 것 아래 끝과 아래 줄의 그린 것 위 끝 사이의 빈 띠,
+  // 단 사이(h)는 두 칸 사이 (그린 것은 칸 왼쪽에 붙어 있어 오른쪽이 늘 비니 그린 것으로 재면 단 하나가 다 빈 띠가 된다)
+  const lines: { t: DropTarget; d: number; depth: number }[] = []
+  if (!onInk)
+    for (const g of guttersOf(base)) {
+      const touch = (b: Block, front: boolean) => {
+        const a = b.at!
+        const [lo, len, c0, cl] = g.dir === 'v' ? [a.y, a.h, a.x, a.w] : [a.x, a.w, a.y, a.h]
+        return c0 >= g.from && c0 + cl <= g.to && (front ? lo + len === g.at : lo === g.at)
+      }
+      const fore = all.filter((x) => touch(x.b, true))
+      const aft = all.filter((x) => touch(x.b, false))
+      if (!fore.length || !aft.length) continue
+      const span = [...fore, ...aft]
+      if (g.dir === 'v') {
+        const x0 = Math.min(...span.map((x) => x.c.cell.x))
+        const x1 = Math.max(...span.map((x) => x.c.cell.x + x.c.cell.w))
+        const y0 = Math.max(...fore.map((x) => x.c.ink.y + x.c.ink.h))
+        const y1 = Math.min(...aft.map((x) => x.c.ink.y))
+        if (p.x < x0 || p.x > x1 || y1 <= y0) continue
+        // 빈 띠의 가운데 둘레만: 띠 전체를 선으로 보면 위 줄 글 바로 아래 오른쪽에 놓아도(그 글 옆에 두려는 것) 줄 사이 새 줄로 읽었다
+        const mid = (y0 + y1) / 2
+        const reach = Math.max(LINE_EDGE, (y1 - y0) / 4)
+        if (Math.abs(p.y - mid) <= reach) lines.push({ t: spotTarget(g.spot), d: Math.abs(p.y - mid), depth: g.depth })
+      } else {
+        const y0 = Math.min(...span.map((x) => x.c.ink.y))
+        const y1 = Math.max(...span.map((x) => x.c.ink.y + x.c.ink.h))
+        const x0 = Math.max(...fore.map((x) => x.c.cell.x + x.c.cell.w))
+        const x1 = Math.min(...aft.map((x) => x.c.cell.x))
+        if (p.y < y0 || p.y > y1) continue
+        const mid = (x0 + x1) / 2
+        if (Math.abs(p.x - mid) <= Math.max(LINE_EDGE, (x1 - x0) / 2)) lines.push({ t: spotTarget(g.spot), d: Math.abs(p.x - mid), depth: g.depth })
+      }
+    }
+  lines.sort((a, b) => a.d - b.d || b.depth - a.depth)
+  // 손 아래의 컴포넌트: 줄을 올려 붙이면 칸 상자끼리 겹치므로(위 칸의 빈 아래쪽에 아래 줄이 올라선다) 칸이 손을 품은 것 가운데 그린 것이 가장 가까운 것
+  const holding = all.filter((x) => inRect(x.c.cell, p))
+  const pool = holding.length ? holding : all
+  let under = pool[0]
+  for (const x of pool) if (rectDistance(x.c.ink, p) < rectDistance(under.c.ink, p)) under = x
+  const r = under.c.ink
+  const inside: DropTarget[] = []
+  const ox = Math.max(r.x - p.x, 0, p.x - (r.x + r.w))
+  const oy = Math.max(r.y - p.y, 0, p.y - (r.y + r.h))
+  const hs: Side = p.x < r.x + r.w / 2 ? 'left' : 'right'
+  const vs: Side = p.y < r.y + r.h / 2 ? 'above' : 'below'
+  let sides: Side[]
+  if (ox || oy) sides = ox > oy ? [hs, vs] : [vs, hs]
+  else {
+    const u = (p.x - r.x) / r.w
+    const v = (p.y - r.y) / r.h
+    const core = (1 - SWAP_CORE) / 2
+    if (moving && under.b.id !== moving && u > core && u < 1 - core && v > core && v < 1 - core) inside.push({ kind: 'swap', with: under.b.id })
+    sides = (
+      [
+        ['left', p.x - r.x],
+        ['right', r.x + r.w - p.x],
+        ['above', p.y - r.y],
+        ['below', r.y + r.h - p.y],
+      ] as const
+    )
+      .slice()
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 2)
+      .map((x) => x[0])
+  }
+  for (const side of sides) for (let up = 0; up < 4; up++) inside.push(spotTarget({ at: under.b.id, side, ...(up ? { up } : {}) }))
+  return [...edge, ...lines.map((x) => x.t), ...inside]
+}
+
 /** 손에서 선까지의 거리 (선이 그어진 범위 밖이면 null) */
 function lineDistance(g: Gutter, p: { x: number; y: number }, size: { w: number; h: number }): number | null {
   const cp = (size.w + BLOCK_COL_GAP) / BOARD_COLS
@@ -392,8 +538,9 @@ export function slotRect(base: Block[], target: DropTarget, block: Block, size: 
 
 /**
  * 끌고 있는 곳에서 놓을 자리. 새 부품이면 지금 판(base)에, 옮기는 부품이면(moving: 옮기기 전의 판) 그 부품을 뺀 판(base)에 넣는다.
- * 손 아래에서 바라는 자리가 안 되면 다음으로 바라는 자리, 그래도 안 되면 넣을 수 있는 자리 가운데 놓일 자리가 가장 가까운 곳.
- * 그래서 대충 놓아도 늘 정해진 자리에 들어간다. 지금 보이는 자리(current) 안에서 손을 움직이면 바꾸지 않는다
+ * 손 아래에서 바라는 자리가 안 되면 다음으로 바라는 자리, 그래도 안 되면 새 부품은 넣을 수 있는 자리 가운데 놓일 자리가 가장
+ * 가까운 곳(그래서 대충 놓아도 늘 정해진 자리에 들어간다), 옮기는 부품은 null(제자리). 지금 보이는 자리(current) 위에서 손을 움직이면
+ * 바꾸지 않는다
  */
 export function dropTarget(
   base: Block[],
@@ -402,16 +549,19 @@ export function dropTarget(
   size: { w: number; h: number },
   current?: DropTarget | null,
   moving?: Block[],
+  shown?: Shown | null,
 ): DropTarget | null {
-  const fits = (t: DropTarget) => (t.kind === 'swap' ? !!moving && !!moveAt(moving, block.id, t, size.h) : !!insertAt(base, t.spot, block, size.h))
+  // 옮기는 중이면 옮기기 그대로 해 본다 (넣을 수 있다고 고른 자리가 놓는 순간 옮기기에서 막히지 않게)
+  const fits = (t: DropTarget) => (moving ? !!moveAt(moving, block.id, t, size.h) : t.kind === 'spot' && !!insertAt(base, t.spot, block, size.h))
   if (current && fits(current)) {
-    const r = slotRect(base, current, block, size, moving)
-    if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return current
+    if (shown?.slot ? overSlot(shown, p) : inRect(slotRect(base, current, block, size, moving) ?? { x: 0, y: 0, w: -1, h: -1 }, p)) return current
   }
-  // 손 아래는 옮기는 부품을 뺀 판(base)으로 본다: 끄는 동안 보이는 판은 놓일 자리마다 바뀌어서, 그것을 재면 자리가 떨린다
-  const wanted = wantedTargets(base, p, size, moving ? block.id : undefined)
+  // 손 아래는 화면에 보이는 판(shown)으로 본다. 잴 수 없으면(아직 부품 장으로 바뀌기 전) 옮기는 부품을 뺀 판(base)의 칸으로
+  const wanted = (shown && shownTargets(base, shown, p, size, moving ? block.id : undefined)) ?? wantedTargets(base, p, size, moving ? block.id : undefined)
   for (const t of wanted) if (fits(t)) return t
-  // 그 둘레에 자리가 없으면 넣을 수 있는 자리 가운데 놓일 자리가 가장 가까운 곳
+  // 옮기는 중이면 여기서 그친다(부르는 쪽이 제자리에 둔다): 손이 고르지 않은 먼 자리로 옮겨 가면 무엇을 한 것인지 알 수 없었다
+  if (moving) return null
+  // 새 컴포넌트는 그 둘레에 자리가 없으면 넣을 수 있는 자리 가운데 놓일 자리가 가장 가까운 곳
   let found: DropTarget | null = null
   let bestD = Infinity
   for (const t of validTargets(base, block, size.h)) {
@@ -427,8 +577,8 @@ export function dropTarget(
 }
 
 /** 손 아래의 자리 (넣을 수 있는지와 상관없이). 끄는 동안 '여기는 왜 안 되는지'를 알려 줄 때 */
-export function pointerTarget(base: Block[], p: { x: number; y: number }, size: { w: number; h: number }): DropTarget {
-  return wantedTargets(base, p, size).find((t) => t.kind === 'spot') ?? BOTTOM
+export function pointerTarget(base: Block[], p: { x: number; y: number }, size: { w: number; h: number }, shown?: Shown | null): DropTarget {
+  return ((shown && shownTargets(base, shown, p, size)) ?? wantedTargets(base, p, size)).find((t) => t.kind === 'spot') ?? BOTTOM
 }
 
 /** 판의 선을 더 끌 수 없는 까닭: 줄어드는 쪽에서 가장 먼저 잘리는 부품(type). minSpan은 그 부품의 가장 좁은 너비(옆으로 끌 때), 위아래로 끌 때는 null */

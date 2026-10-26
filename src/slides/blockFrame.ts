@@ -6,8 +6,8 @@
  * 발표 화면과 내보낸 파일에는 테두리가 없어서 쓰지 않는다 (fitBlocks가 맞춘 뒤에 편집 화면만).
  */
 
-/** 테두리를 내용에서 띄우는 너비 (캔버스 px). 예전 outline-offset(14)과 비슷하게 */
-const PAD = 14
+/** 테두리를 내용에서 띄우는 너비 (캔버스 px). 예전 outline-offset(14)과 비슷하게. 끄는 동안 손 아래를 잴 때도 쓴다(BlockEditor) */
+export const FRAME_PAD = 14
 
 /** 칸 안의 그린 것을 모을 때 건너뛰는 편집 표시 (칸 밖으로 나온 단추, 올렸을 때만 깔리는 빈칸의 면) */
 const SKIP = '.it-remove, .it-grip, .img-tools, .ed-halo, .bk-handle'
@@ -70,7 +70,7 @@ export function frameCells(area: HTMLElement): void {
     const k = cell.offsetWidth ? box.width / cell.offsetWidth : 1
     const ink = cell.matches('.bk-look-card, .bk-look-bold') || !k ? null : inkBox(cell)
     // 면이 있거나 그린 것이 없으면(빈 이미지 칸 같은) 칸 그대로
-    const at = (inside: number) => `${Math.round(inside - PAD)}px`
+    const at = (inside: number) => `${Math.round(inside - FRAME_PAD)}px`
     const t = ink ? Math.max(0, (ink.top - box.top) / k) : 0
     const b = ink ? Math.max(0, (box.bottom - ink.bottom) / k) : 0
     const l = ink ? Math.max(0, (ink.left - box.left) / k) : 0
@@ -86,7 +86,7 @@ export function frameCells(area: HTMLElement): void {
 export function frameRect(cell: HTMLElement): DOMRect {
   const box = cell.getBoundingClientRect()
   const k = cell.offsetWidth ? box.width / cell.offsetWidth : 1
-  const v = (name: string) => (parseFloat(cell.style.getPropertyValue(name)) || -PAD) * k
+  const v = (name: string) => (parseFloat(cell.style.getPropertyValue(name)) || -FRAME_PAD) * k
   const left = box.left + v('--fr-l')
   const top = box.top + v('--fr-t')
   return new DOMRect(left, top, box.right - v('--fr-r') - left, box.bottom - v('--fr-b') - top)

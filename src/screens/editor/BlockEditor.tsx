@@ -20,6 +20,7 @@ import {
   imagePlace,
   lookChangeIssue,
   makeBlock,
+  movingBase,
   partFrom,
   placeIssue,
   removeBlock,
@@ -31,6 +32,8 @@ import {
   type Gutter,
   type NoRoom,
   type SavedKind,
+  type Shown,
+  type ShownCell,
 } from '../../deck/blocks'
 import { FRAME } from '../../deck/frame'
 import { motionOf } from '../../deck/themes'
@@ -40,6 +43,7 @@ import { josa, particle } from '../../lib/josa'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
+import { FRAME_PAD } from '../../slides/blockFrame'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { addSaved } from '../../store/saved'
@@ -61,7 +65,7 @@ import { RoomZone } from './RoomZone'
 interface Drag {
   kind: 'move' | 'new'
   block: Block
-  /** 끄는 부품을 뺀 판. 놓을 자리는 늘 이것을 기준으로 찾는다 (움직이는 화면을 재지 않아서 자리가 떨리지 않는다) */
+  /** 끄는 부품을 뺀 판. 놓을 자리는 이 판의 자리로 낸다 (손 아래는 화면에 보이는 판으로 잰다: planDrop) */
   base: Block[]
   /** 옮기는 중이면 옮기기 전의 판 (맞바꾸기, 그대로 두기) */
   moving: Block[] | null
@@ -83,6 +87,8 @@ interface Drag {
   source: DOMRect | null
   /** 손이 장 위에 있는지. 장 위에서는 손의 그림을 작게 줄인다 (놓일 자리는 장 위에 미리 보인다) */
   over: boolean
+  /** 지금 자리를 고른 곳의 손 (본문 상자 기준 캔버스 px) */
+  anchor?: { x: number; y: number } | null
 }
 
 const GHOST_MAX = { w: 340, h: 230 }
@@ -136,6 +142,44 @@ function guessArea(frame: DOMRect) {
   const top = FRAME.y + (head && head.offsetHeight ? head.offsetHeight + FRAME.gap : 0)
   const size = { w: CANVAS.w - FRAME.x * 2, h: CANVAS.h - top - FRAME.bottom }
   return { rect: new DOMRect(frame.left + FRAME.x * k, frame.top + top * k, size.w * k, size.h * k), k, size }
+}
+
+/**
+ * 끄는 동안 화면에 보이는 판 (본문 상자 기준 캔버스 px): 컴포넌트마다 칸 상자와 테두리 상자(blockFrame.ts의 --fr-*), 놓일 자리.
+ * 칸의 자리는 offset으로 잰다: 자리를 옮기는 움직임(useFlip)의 translate를 세지 않아 움직이는 중에도 끝자리다.
+ * 그려진 판이 보일 판(expect)과 다르면(놓일 자리를 바꾼 뒤 아직 그리지 않았으면) null
+ */
+function shownOf(area: HTMLElement, dragId: string, expect: Block[]): Shown | null {
+  const els = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk'))
+  if (els.length !== expect.length) return null
+  const want = new Map(expect.map((b) => [b.id, b.at]))
+  const cells = new Map<string, ShownCell>()
+  let slot: ShownCell | null = null
+  for (const c of els) {
+    const id = c.dataset.block ?? ''
+    const a = want.get(id)
+    const v = (name: string) => c.style.getPropertyValue(name)
+    if (!a || Number(v('--x')) !== a.x || Number(v('--y')) !== a.y || Number(v('--w')) !== a.w || Number(v('--h')) !== a.h) return null
+    const cell = { x: c.offsetLeft, y: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight }
+    // 테두리는 칸에서 이만큼 안쪽 (값이 없으면 칸 둘레 그대로: edit.css의 기본값)
+    const fr = (name: string) => {
+      const n = parseFloat(v(name))
+      return Number.isFinite(n) ? n : -FRAME_PAD
+    }
+    const ink = { x: cell.x + fr('--fr-l'), y: cell.y + fr('--fr-t'), w: cell.w - fr('--fr-l') - fr('--fr-r'), h: cell.h - fr('--fr-t') - fr('--fr-b') }
+    if (id === dragId) slot = { cell, ink }
+    else cells.set(id, { cell, ink })
+  }
+  return { cells, slot }
+}
+
+/** 두 판의 부품마다 자리가 같은지 */
+function sameBoard(a: Block[], b: Block[]): boolean {
+  const at = new Map(a.map((x) => [x.id, x.at]))
+  return a.length === b.length && b.every((x) => {
+    const p = at.get(x.id)
+    return !!p && !!x.at && p.x === x.at.x && p.y === x.at.y && p.w === x.at.w && p.h === x.at.h
+  })
 }
 
 /** 컴포넌트 고르기에 보이는 것: 기본 컴포넌트, 내 컴포넌트(저장해 둔 것) */
@@ -364,6 +408,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   // ---------- 끌기 ----------
 
   const pointer = useRef({ x: 0, y: 0, vx: 0, tilt: 0 })
+  // 그려진 판이 아직 보일 판이 아니어서 다시 잰 횟수 (몇 번 넘으면 그냥 판의 칸으로 잰다)
+  const stale = useRef(0)
+  // 마지막으로 놓일 자리를 잰 손의 자리 (화면 px)
+  const tracked = useRef<{ x: number; y: number } | null>(null)
 
   /** 끄는 중의 자리 계산. 바뀔 때만 다시 그린다 */
   const track = useCallback((x: number, y: number) => {
@@ -373,9 +421,22 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const fr = frame?.getBoundingClientRect()
     const over = !!fr && x >= fr.left - 24 && x <= fr.right + 24 && y >= fr.top - 24 && y <= fr.bottom + 24
     // 아직 부품 장으로 바뀌기 전이면 바뀐 뒤의 본문 상자를 어림한다
-    const area = over ? (measureArea(areaEl.current) ?? (fr ? guessArea(fr) : null)) : null
-    const at = area && { p: { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }, size: area.size }
-    const { plan, target, result, blocked, composed, base, room } = planDrop(slideRef.current, d, { by: 'pointer', over, at })
+    const el = areaEl.current
+    const area = over ? (measureArea(el) ?? (fr ? guessArea(fr) : null)) : null
+    // 손 아래는 지금 화면에 보이는 판으로 잰다: 미리 보인 판(놓일 자리), 자리를 고르기 전이면 지금 판. 놓일 자리를 바꾼 뒤 아직
+    // 그리지 않았으면 다음 그림에서 다시 잰다 (지난 판으로 재면 손 아래가 어긋나 방금 고른 자리를 다시 바꿨다)
+    const s = slideRef.current
+    const expect = d.result && (d.plan === 'place' || d.plan === 'convert') ? d.result : s.layout === 'compose' ? (s.blocks ?? []) : null
+    const shown = area && el && expect ? shownOf(el, d.block.id, expect) : null
+    if (area && el && expect && !shown && stale.current < 3) {
+      stale.current++
+      requestAnimationFrame(() => track(x, y))
+      return
+    }
+    stale.current = 0
+    tracked.current = { x, y }
+    const at = area && { p: { x: (x - area.rect.left) / area.k, y: (y - area.rect.top) / area.k }, size: area.size, shown }
+    const { plan, target, result, blocked, composed, base, room } = planDrop(s, d, { by: 'pointer', over, at })
     if (
       over !== d.over ||
       plan !== d.plan ||
@@ -384,7 +445,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       room !== d.room ||
       JSON.stringify(blocked) !== JSON.stringify(d.blocked)
     ) {
-      const next = { ...d, plan, target, result, blocked, composed, base, room, over }
+      const anchor = sameEditTarget(target, d.target) ? d.anchor : (at?.p ?? null)
+      const next = { ...d, plan, target, result, blocked, composed, base, room, over, anchor }
       // 놓는 순간에도 바로 읽을 수 있게 그리기를 기다리지 않고 맞춘다
       dragRef.current = next
       setDrag(next)
@@ -408,6 +470,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const begin = useCallback(
     (d: Drag, x: number, y: number, from: DOMRect | null) => {
       pointer.current = { x, y, vx: 0, tilt: 0 }
+      tracked.current = null
       setSelected(null)
       dragRef.current = d
       setDrag(d)
@@ -434,7 +497,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         raf = requestAnimationFrame(() => track(e.clientX, e.clientY))
       })
       session.on('pointerup', (e) => {
-        track(e.clientX, e.clientY)
+        // 마지막으로 잰 자리에서 손이 움직이지 않았으면 다시 재지 않고 보이는 대로 놓는다: 놓일 자리를 미리 보이면 판이 바뀌어,
+        // 놓는 순간 다시 재면 손 아래가 달라져 보이던 것과 다른 자리에 놓였다
+        const last = tracked.current
+        if (!last || Math.hypot(e.clientX - last.x, e.clientY - last.y) > 1) track(e.clientX, e.clientY)
         end(false)
       })
       session.on('pointercancel', () => end(true))
@@ -491,8 +557,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         {
           kind: 'move',
           block,
-          // 옆 부품이 빈자리를 덮은 판. 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
-          base: removeBlock(blocks, block.id, area.size.h),
+          // 옆 부품이 빈자리를 덮은 판 (옮기기가 보는 그대로). 옆 부품과 잇던 이음표는 두고 간다 (새 자리의 옆 부품과는 이어지지 않는다). 제자리에 놓으면 그대로 남는다
+          base: movingBase(blocks, block.id, area.size.h),
           moving: blocks,
           composed: null,
           target: { kind: 'stay' },
@@ -859,15 +925,21 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     ? links.hint
     : !drag
     ? null
-    : drag.blocked && drag.target && drag.target.kind !== 'stay' && (drag.plan === 'place' || drag.plan === 'convert')
-      ? `${noRoomText(drag.blocked, drag.block.type, 'here').why} 가장 가까운 자리에 놓을게요.`
+    : drag.blocked && drag.target && (drag.plan === 'place' || drag.plan === 'convert')
+      ? `${noRoomText(drag.blocked, drag.block.type, drag.kind === 'move' ? 'move' : 'here').why} ${
+          // 옮기다 손 아래에 놓을 수 없으면 제자리에 둔다(그렇다고 알린다). 가장 가까운 자리가 원래 자리여도 그렇다고:
+          // '가까운 자리에 놓을게요' 뒤에 놓았는데 그대로라 옮겨지지 않은 줄 알았다
+          drag.target.kind === 'stay' || (drag.moving && drag.result && sameBoard(drag.moving, drag.result)) ? '놓으면 그대로 둘게요.' : '가장 가까운 자리에 놓을게요.'
+        }`
     : drag.plan === 'convert'
       ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
         ? `${refuseText(drag.blocked, drag.block.type, compose || canCompose(slide.layout))} 놓아도 넣지 않아요.`
         : drag.kind === 'new' && !drag.plan
           ? '슬라이드 위로 끌어 오세요'
-          : null
+          : drag.kind === 'move' && drag.target?.kind === 'stay' && !drag.base.length
+            ? '컴포넌트가 하나뿐이라 자리가 그대로예요. 다른 컴포넌트를 넣으면 그 옆이나 위아래로 옮길 수 있어요.'
+            : null
 
   const shown = drag ?? landing?.ghost ?? null
   const ghost = shown

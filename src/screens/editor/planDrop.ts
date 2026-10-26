@@ -1,4 +1,20 @@
-import { asCompose, atRect, autoPlace, canCompose, dropTarget, insertAt, moveAt, placeIssue, pointerTarget, sameTarget, whyNot, type DropTarget, type NoRoom } from '../../deck/blocks'
+import {
+  asCompose,
+  atRect,
+  autoPlace,
+  canCompose,
+  dropTarget,
+  insertAt,
+  moveAt,
+  overSlot,
+  placeIssue,
+  pointerTarget,
+  sameTarget,
+  whyNot,
+  type DropTarget,
+  type NoRoom,
+  type Shown,
+} from '../../deck/blocks'
 import type { Block, Slide } from '../../deck/types'
 
 // 컴포넌트를 어디에 놓을지 정하는 일: 끌어 놓기, 눌러 넣기, 고르기 카드의 '넣을 수 없음', 장 아래 빈자리.
@@ -48,6 +64,10 @@ export interface DropState {
   target: EditTarget | null
   /** 자리를 고를 때 잰 본문 높이 */
   room?: number
+  /** 지금 자리를 고른 곳의 손 (본문 상자 기준 캔버스 px) */
+  anchor?: { x: number; y: number } | null
+  /** 지금 자리를 고를 때 알린 까닭 (자리를 그대로 두면 그대로 알린다) */
+  blocked?: NoRoom | null
 }
 
 export interface DropPlan {
@@ -71,8 +91,11 @@ export type DropAt =
       by: 'pointer'
       /** 손이 장 위에 있는지 */
       over: boolean
-      /** 본문 상자 안에서 손의 자리와 본문 상자 크기 (캔버스 px). 잴 수 없으면 null */
-      at: { p: { x: number; y: number }; size: { w: number; h: number } } | null
+      /**
+       * 본문 상자 안에서 손의 자리와 본문 상자 크기 (캔버스 px). 잴 수 없으면 null.
+       * shown은 지금 화면에 보이는 판(맞춘 뒤의 자리): 있으면 손 아래를 이것으로 잰다
+       */
+      at: { p: { x: number; y: number }; size: { w: number; h: number }; shown?: Shown | null } | null
     }
   | {
       /** 눌러 넣기: 알아서 고른 자리 */
@@ -91,6 +114,12 @@ export function dropResult(d: Pick<DropState, 'kind' | 'block' | 'moving'>, base
 }
 
 const BOTTOM = { at: null, side: 'below' } as const
+
+/**
+ * 자리를 고른 뒤 손이 이만큼(캔버스 px, 편집 화면에서 10px 남짓) 움직이기 전에는 다른 자리로 바꾸지 않는다.
+ * 놓일 자리를 미리 보이면 판이 다시 맞춰져 손 아래가 달라지는데, 그것을 다시 재면 손을 거의 움직이지 않아도 두 자리를 오갔다
+ */
+const MIN_TRAVEL = 24
 
 /** 이 장(s)에서 컴포넌트(d)를 놓을 자리와 할 일 */
 export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
@@ -125,24 +154,45 @@ export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
       composed = at.composed
       base = at.blocks
       if (where.at) {
-        const { p, size } = where.at
+        const { p, size, shown } = where.at
         room = size.h
         const self = d.moving?.find((b) => b.id === d.block.id)?.at
         const home = self && atRect(self, size)
-        // 옮기는 중에 처음 자리 안에 있으면 그대로 (조금 끌었다고 옆 부품과 자리가 바뀌지 않게)
-        if (home && p.x >= home.x && p.x <= home.x + home.w && p.y >= home.y && p.y <= home.y + home.h) target = { kind: 'stay' }
+        // 손이 놓일 자리(흐린 미리 보기) 위면 지금 자리 그대로. 아직 자리를 고르기 전이면 보이는 자리가 처음 자리라 그대로 두기
+        // (조금 끌었다고 옆 부품과 자리가 바뀌지 않게). 보이는 판을 잴 수 없으면 처음 자리의 칸으로
+        const onSlot = shown ? overSlot(shown, p) : !!home && p.x >= home.x && p.x <= home.x + home.w && p.y >= home.y && p.y <= home.y + home.h
+        if (onSlot && (d.target || d.kind === 'move')) target = shown ? (d.target ?? { kind: 'stay' }) : { kind: 'stay' }
         else {
           const current = d.target && d.target.kind !== 'stay' ? d.target : null
-          const found = dropTarget(base, d.block, p, size, current, d.moving ?? undefined)
-          target = found
-          // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
-          if (found && current && !sameTarget(found, current)) {
-            const near = [-30, 30].flatMap((o) => [dropTarget(base, d.block, { x: p.x + o, y: p.y }, size, null, d.moving ?? undefined), dropTarget(base, d.block, { x: p.x, y: p.y + o }, size, null, d.moving ?? undefined)])
-            if (near.some((t) => sameTarget(t, current))) target = current
+          const found = dropTarget(base, d.block, p, size, current, d.moving ?? undefined, shown)
+          let keep = false
+          if (d.target && !sameEditTarget(found, d.target)) {
+            // 경계에서 떨리지 않게: 조금 옆에서 봐도 지금 자리면 그대로 둔다
+            const near = current
+              ? [-30, 30].flatMap((o) => [
+                  dropTarget(base, d.block, { x: p.x + o, y: p.y }, size, null, d.moving ?? undefined, shown),
+                  dropTarget(base, d.block, { x: p.x, y: p.y + o }, size, null, d.moving ?? undefined, shown),
+                ])
+              : []
+            // 지금 자리를 고른 곳에서 손이 조금밖에 움직이지 않았어도 그대로 (미리 보인 판이 바뀌어 손 아래가 달라진 것뿐이다).
+            // 제자리로 돌아간 것도 같다: 제자리로 돌아간 판을 다시 재면 옆자리가 나와, 손을 멈춘 채로 두 자리를 오갔다
+            keep = near.some((t) => sameTarget(t, current)) || (!!shown && !!d.anchor && Math.hypot(p.x - d.anchor.x, p.y - d.anchor.y) < MIN_TRAVEL)
           }
-          // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
-          const wanted = pointerTarget(base, p, size)
-          blocked = !target ? placeIssue(base, d.block, size.h) : sameTarget(wanted, target) || target.kind === 'swap' ? null : whyNot(base, wanted, d.block, size.h)
+          if (keep) {
+            // 자리를 그대로 두면 그 까닭도 그대로: 새로 재면 달라진 손 아래의 까닭이 붙어, 원하는 곳에 들어갔는데 '여기는 안 돼요'가 떴다
+            target = d.target
+            blocked = d.blocked ?? null
+          } else {
+            // 옮기는 컴포넌트를 손 아래 둘레 어디에도 놓을 수 없으면 제자리에 (까닭을 알린다)
+            target = found ?? (d.kind === 'move' && d.moving ? { kind: 'stay' } : null)
+            // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
+            const wanted = pointerTarget(base, p, size, shown)
+            blocked = !target
+              ? placeIssue(base, d.block, size.h)
+              : target.kind === 'swap' || (target.kind === 'spot' && sameTarget(wanted, target))
+                ? null
+                : whyNot(base, wanted, d.block, size.h)
+          }
         }
         result = target ? dropResult(d, base, target, room) : null
         if (!result) target = null

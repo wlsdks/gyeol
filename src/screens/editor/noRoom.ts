@@ -27,9 +27,10 @@ export interface NoRoomText {
 }
 
 /**
- * where: 'here'는 끌고 있는 그 자리, 'slide'는 이 장 어디에도, 'change'는 고른 부품을 바꿀 때(항목 더하기, 모양, 바탕)
+ * where: 'here'는 끌고 있는 그 자리, 'move'는 장 안의 컴포넌트를 끌어 옮기는 그 자리, 'slide'는 이 장 어디에도,
+ * 'change'는 고른 부품을 바꿀 때(항목 더하기, 모양, 바탕)
  */
-export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' | 'change'): NoRoomText {
+export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 'slide' | 'change'): NoRoomText {
   const name = BLOCKS[type].name
   switch (r.kind) {
     case 'full':
@@ -68,7 +69,9 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
         why:
           where === 'change'
             ? `이렇게 바꾸면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`
-            : `${josa(name, '을', '를')} 넣으면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`,
+            : where === 'move'
+              ? `${josa(name, '을', '를')} 여기로 옮기면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`
+              : `${josa(name, '을', '를')} 넣으면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`,
         fix: where === 'change' ? '다른 컴포넌트를 빼거나 항목을 줄이면 바꿀 수 있어요.' : '다른 컴포넌트를 빼거나 항목을 줄이면 들어가요.',
       }
     }

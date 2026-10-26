@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { asCompose, autoPlace, dropTarget, insertAt, makeBlock, placeIssue, removeBlock } from '../../deck/blocks'
+import { asCompose, autoPlace, dropTarget, insertAt, makeBlock, moveAt, movingBase, placeIssue, removeBlock, type Shown } from '../../deck/blocks'
 import { makeSlide } from '../../deck/generate'
 import type { Block, Slide } from '../../deck/types'
 import { dropBlocks, planDrop, type DropState } from './planDrop'
@@ -134,6 +134,97 @@ describe('끌어 놓기', () => {
     expect(planDrop(cover, fresh(cover, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 700 }, size: SIZE } }).plan).toBe('next')
     // 부품 장이 아닌 장에서는 옮길 수 없다
     expect(planDrop(points, { ...fresh(points, b), kind: 'move' }, { by: 'pointer', over: true, at: { p: { x: 800, y: 700 }, size: SIZE } }).plan).toBeNull()
+  })
+
+  it('옮기기: 보이는 판으로 재고, 손 아래 둘레에 놓을 수 없으면 제자리에 두며 까닭을 알린다', () => {
+    const s = compose(block('message', 'm'), block('number', 'n'), block('bars', 'r'))
+    const moving = s.blocks!.find((x) => x.id === 'r')!
+    const d: DropState = { kind: 'move', block: moving, base: movingBase(s.blocks!, 'r', SIZE.h), moving: s.blocks!, composed: null, target: { kind: 'stay' } }
+    // 보이는 판: 핵심 한 줄이 위, 아래 줄에 큰 숫자와 막대 비교(놓일 자리)
+    const cell = (x: number, y: number, w: number, h: number) => ({ cell: { x, y, w, h }, ink: { x: x - 14, y: y - 14, w: w + 28, h: Math.min(h, 220) + 28 } })
+    const shown: Shown = { cells: new Map([['m', cell(0, 100, 1680, 120)], ['n', cell(0, 270, 366, 435)]]), slot: cell(438, 270, 1242, 435) }
+    let stays = 0
+    for (let x = 0; x <= SIZE.w; x += 40)
+      for (let y = 0; y <= SIZE.h; y += 40) {
+        const plan = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x, y }, size: SIZE, shown } })
+        expect(plan.target).not.toBeNull()
+        if (plan.target?.kind === 'stay') {
+          // 제자리면 판이 그대로이고, 놓일 자리 위가 아니면 까닭이 있다
+          expect(plan.result).toBe(s.blocks)
+          const onSlot = x >= 424 && x <= 1694 && y >= 256 && y <= 504
+          if (!onSlot && plan.blocked === null) expect(plan.result).toBe(s.blocks)
+          if (!onSlot) stays++
+        } else expect(moveAt(s.blocks!, 'r', plan.target!, SIZE.h)).toEqual(plan.result)
+      }
+    expect(stays).toBeGreaterThan(0)
+    // 놓일 자리 위면 그대로, 까닭 없음
+    const home = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 900, y: 380 }, size: SIZE, shown } })
+    expect(home.target).toEqual({ kind: 'stay' })
+    expect(home.blocked).toBeNull()
+  })
+
+  it('옮기기: 겹친 칸이 덮은 빈틈은 가장 가까운 테두리의 것 (짧은 글의 칸 안이라고 제자리로 치지 않는다)', () => {
+    // 핵심 한 줄(위, 짧은 글) 아래에 큰 숫자 셋. 아래 줄을 글 바로 아래로 올려 붙여, 핵심 한 줄의 칸이 숫자 사이 빈틈까지 덮는다
+    const s = compose(block('number', 'a'), block('number', 'b'), block('number', 'c'), block('message', 'm'))
+    const m = s.blocks!.find((x) => x.id === 'm')!
+    expect(m.at).toMatchObject({ y: 0, w: 12 })
+    const d: DropState = { kind: 'move', block: m, base: movingBase(s.blocks!, 'm', SIZE.h), moving: s.blocks!, composed: null, target: { kind: 'stay' } }
+    const cell = (x: number) => ({ cell: { x, y: 335, w: 512, h: 391 }, ink: { x: x - 14, y: 322, w: 311, h: 249 } })
+    const shown: Shown = { cells: new Map([['a', cell(0)], ['b', cell(615)], ['c', cell(1231)]]), slot: { cell: { x: 0, y: 220, w: 1680, h: 266 }, ink: { x: -14, y: 207, w: 359, h: 81 } } }
+    // 첫째와 둘째 숫자 사이: 핵심 한 줄은 장 너비의 절반 이상이 있어야 해서 끼울 수 없다. 그렇다고 알리고, 가까운 자리나 제자리에
+    const between = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 596, y: 447 }, size: SIZE, shown } })
+    expect(between.blocked?.kind).toBe('narrow')
+    if (between.target?.kind === 'stay') expect(between.result).toBe(s.blocks)
+    else expect(between.result).toEqual(moveAt(s.blocks!, 'm', between.target!, SIZE.h))
+    // 글 오른쪽의 빈 곳(제 줄): 판 맨 위 새 줄이라 판이 그대로
+    const right = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 1000, y: 240 }, size: SIZE, shown } })
+    expect(right.result?.map((x) => [x.id, x.at])).toEqual(s.blocks!.map((x) => [x.id, x.at]))
+    expect(right.blocked).toBeNull()
+    // 글 위는 제자리
+    expect(planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 100, y: 250 }, size: SIZE, shown } }).target).toEqual({ kind: 'stay' })
+  })
+
+  it('지금 자리를 그대로 두면 그때 알린 까닭도 그대로 (손 아래가 조금 달라졌다고 다른 까닭이 붙지 않게)', () => {
+    const s = compose(block('message', 'm'), block('number', 'n'), block('bars', 'r'))
+    const moving = s.blocks!.find((x) => x.id === 'n')!
+    const target = { kind: 'spot' as const, spot: { at: 'm', side: 'right' as const } }
+    const shown: Shown = {
+      cells: new Map([
+        ['m', { cell: { x: 0, y: 100, w: 1300, h: 203 }, ink: { x: -14, y: 117, w: 359, h: 81 } }],
+        ['r', { cell: { x: 0, y: 320, w: 1680, h: 385 }, ink: { x: -14, y: 313, w: 1708, h: 349 } }],
+      ]),
+      slot: { cell: { x: 1300, y: 100, w: 380, h: 203 }, ink: { x: 1300, y: 121, w: 224, h: 184 } },
+    }
+    const d: DropState = { kind: 'move', block: moving, base: movingBase(s.blocks!, 'n', SIZE.h), moving: s.blocks!, composed: null, target, anchor: { x: 471, y: 320 }, blocked: null }
+    // 막대 비교의 그린 것 위 끝으로 조금(MIN_TRAVEL 안) 내려와 손 아래 자리가 바뀌어도 자리와 까닭이 그대로
+    const plan = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 471, y: 330 }, size: SIZE, shown } })
+    expect(plan.target).toEqual(target)
+    expect(plan.blocked).toBeNull()
+    // 많이 움직이면 새로 고른다
+    const far = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 900, y: 600 }, size: SIZE, shown } })
+    expect(far.target).not.toEqual(target)
+  })
+
+  it('제자리로 돌아간 뒤에도 손이 조금 움직이는 동안은 제자리 (제자리와 옆자리를 오가지 않게)', () => {
+    const s = compose(block('message', 'm'), block('number', 'n'), block('bars', 'r'))
+    const moving = s.blocks!.find((x) => x.id === 'n')!
+    const shown: Shown = {
+      cells: new Map([
+        ['m', { cell: { x: 0, y: 100, w: 1680, h: 203 }, ink: { x: -14, y: 117, w: 359, h: 81 } }],
+        ['r', { cell: { x: 438, y: 270, w: 1242, h: 435 }, ink: { x: 424, y: 256, w: 1270, h: 280 } }],
+      ]),
+      slot: { cell: { x: 0, y: 270, w: 366, h: 435 }, ink: { x: -14, y: 256, w: 264, h: 221 } },
+    }
+    const base = movingBase(s.blocks!, 'n', SIZE.h)
+    const d: DropState = { kind: 'move', block: moving, base, moving: s.blocks!, composed: null, target: { kind: 'stay' }, anchor: { x: 690, y: 150 }, blocked: { kind: 'height', need: 800, room: 760 } }
+    // 글 오른쪽 빈 곳은 그 글 옆 자리지만, 제자리를 고른 곳에서 10px밖에 움직이지 않았다
+    const near = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 700, y: 150 }, size: SIZE, shown } })
+    expect(near.target).toEqual({ kind: 'stay' })
+    expect(near.blocked).toEqual(d.blocked)
+    const far = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 760, y: 150 }, size: SIZE, shown } })
+    expect(far.target).toEqual({ kind: 'spot', spot: { at: 'm', side: 'right' } })
+    // 끌기를 막 시작했을 때(고른 곳이 없으면)는 바로 옮긴다
+    expect(planDrop(s, { ...d, anchor: null }, { by: 'pointer', over: true, at: { p: { x: 700, y: 150 }, size: SIZE, shown } }).target).toEqual(far.target)
   })
 
   it('장에 자리가 없으면 새 컴포넌트는 다음 장에, 그 까닭을 남긴다', () => {
