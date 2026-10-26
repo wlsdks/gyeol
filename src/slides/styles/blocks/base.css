@@ -183,3 +183,15 @@
 .bk :is(.bk-msg-t, .bk-msg-s, .bk-q-t, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-call-t, .bk-nt-t, .bk-qa-qt, .bk-qa-at) {
   max-width: var(--measure);
 }
+
+/* 이름표(숫자, 전과 후, 강조 상자, 단계 표시 같은 컴포넌트 맨 위의 작은 이름): 출처 글자와 같은 바닥 크기(22)에 자간을 조금 벌리고
+   굵기 600, 버금 글자색. 예전에는 26px에 600~700이라 입력칸 이름처럼 보였고, 소제목과 크기 차이가 적어 위계가 흐렸다.
+   작게 벌려 쓰면 이름표로 읽히고 바로 아래의 큰 숫자나 글이 더 크게 보인다. 글자 크기 단계는 그대로(22는 단계의 바닥) */
+.slide.l-compose {
+  --t-label: 22px;
+}
+
+.bk :is(.bk-num-l, .bk-dl-l, .bk-call-l, .bk-stp-l, .bk-label, .bk-gl-l, .bk-mt-l, .bk-rn-l, .bk-rt-l, .bk-sp-l, .bk-sg-label, .bk-sl-l, .bk-tl-l, .bk-dt-mo, .bk-dl-k) {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
