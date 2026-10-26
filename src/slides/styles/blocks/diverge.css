@@ -89,8 +89,9 @@
   top: 0;
   bottom: 0;
   left: var(--dv-x);
-  width: 2px;
-  background: var(--ink);
+  /* 0 선은 기준선이라 옅은 무채색 1px: 검정 2px이면 막대보다 먼저 보였다(VISUAL-RULES 2) */
+  width: var(--rule-hair);
+  background: color-mix(in srgb, var(--ink-3) 70%, var(--bg));
   translate: -50% 0;
 }
 
