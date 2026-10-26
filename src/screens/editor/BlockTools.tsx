@@ -74,8 +74,10 @@ export function BlockTools({
     const el = menuRef.current
     const at = el?.parentElement?.getBoundingClientRect()
     if (!el || !at) return
+    // 메뉴는 단추에서 8px 떨어져 열리므로 그 8px과 끝의 여백 8px을 뺀다. 위로 열 때 머리 띠(56px) 몫만 빼서
+    // 메뉴 위 끝이 머리 띠 아랫선에 딱 붙어 보였다 (1280×600에서 아래쪽 컴포넌트의 움직임 메뉴)
     const below = innerHeight - at.bottom - 16
-    const above = at.top - 64
+    const above = at.top - 56 - 16
     const up = below < 260 && above > below
     el.classList.toggle('is-up', up)
     el.style.maxHeight = `${Math.max(160, Math.min(520, up ? above : below))}px`
