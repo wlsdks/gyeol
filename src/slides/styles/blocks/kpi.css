@@ -857,6 +857,19 @@
   --sh-top: 60px;
 }
 
+/* 편집할 때만 보이는 단위 칸(단위: 억 원)은 합계 아래 둘째 줄에 두고, 칸을 그 줄만큼 작게 잡는다. 합계 옆에 두면 낮은 줄의
+   좁은 100칸(반 칸, 일곱 줄)에서 합계와 단위가 둘 다 꺾여 합계 줄이 두 줄 높이가 되어, 발표 화면에는 들어가는 칸이 편집 화면에서만
+   넘쳐 글자를 줄이고 '글이 넘쳤어요'가 떴다(복제한 구성비) */
+.slide.m-edit .va-units > .bk-in .sh-top:has(> .sh-unit) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.slide.m-edit .va-units > .bk-in:has(.sh-top > .sh-unit) {
+  --sh-top: 96px;
+}
+
 /* 비중 도넛과 100칸이 한 줄을 다 쓸 때: 고리(칸)는 칸 높이 안에서(540px 그대로면 낮은 줄에 들어가지 않는다).
    낮고 넓으면 비율 목록을 두 단으로 흘린다: 한 단이면 목록 높이가 줄 높이를 정한다 */
 @container bk (min-width: 1301px) {
