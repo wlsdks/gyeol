@@ -1,11 +1,12 @@
 /* ---------- 평가표 ---------- */
 
-/* 왼쪽은 기준, 오른쪽은 안마다 한 칸. 추천 띠는 안의 몇째인지(--pick)로 놓는다 (추진 일정의 지금 칸과 같은 짜임) */
+/* 왼쪽은 기준, 오른쪽은 안마다 한 칸. 추천하는 안은 이름과 표시를 강조색으로만 가린다.
+   표는 칸 맨 위에서 시작하고 남는 높이는 아래에 둔다(VISUAL-RULES 6): 칸 가운데에 띄우면 소제목과 표 사이가 들쭉날쭉했다 */
 .bk-ev {
   --lw: clamp(220px, 36%, 440px);
   display: flex;
   flex-direction: column;
-  justify-content: safe center;
+  justify-content: flex-start;
   height: 100%;
 }
 
@@ -135,16 +136,11 @@
   line-height: 1.4;
 }
 
-/* 추천하는 안: 머리부터 마지막 줄까지 옅은 띠 */
+/* 추천하는 안의 열에는 띠도 양옆 선도 두지 않는다(VISUAL-RULES 3). 연파랑 띠는 표 위에 칠한 상자처럼 떴고, 그 뒤의 양옆 강조색
+   선은 줄 선을 끊어 세로 상자로 읽혔다. 추천은 안 이름(강조색, 굵게)과 '추천' 글자, 강조색 표시가 맡는다.
+   자리(요소)는 남겨 둔다: 편집기와 움직임이 같은 짜임을 쓴다 */
 .bk-ev-band {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--lw) + 28px + (100% - var(--lw) - 28px) * var(--pick) / var(--n));
-  width: calc((100% - var(--lw) - 28px) / var(--n));
-  border-radius: var(--r-mark);
-  /* 고른 안의 열은 칠하지 않고 양옆에 옅은 강조색 선: 연파랑 띠가 표 위에 칠한 상자처럼 떴다 */
-  box-shadow: inset var(--rule-hair) 0 0 var(--accent-line), inset calc(-1 * var(--rule-hair)) 0 0 var(--accent-line);
+  display: none;
 }
 
 .bk-ev-row {
@@ -154,8 +150,9 @@
 }
 
 
-.bk-ev-row:last-child {
-  border-bottom: var(--rule-hair) solid var(--line);
+/* 줄 선은 줄 사이에만: 첫 줄 위 선이 머리와 표를 나누고, 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2) */
+.bk-ev-list:is([data-n]) > .bk-ev-row:last-child {
+  padding-bottom: 0;
 }
 
 .bk-ev-list[data-n='5'] .bk-ev-row,
