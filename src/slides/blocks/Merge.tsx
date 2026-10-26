@@ -8,7 +8,7 @@ import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
 import { formatNumber, seriesIn } from '../numbers'
-import { accentTint, greyTint } from '../tints'
+import { accentTint, TINT_COUNT } from '../tints'
 import { Numeral } from './parts'
 
 /**
@@ -36,7 +36,9 @@ export function Merge() {
   const hl = slide.options.highlight
   const pick = hl !== undefined && hl >= 0 && hl < items.length ? hl : -1
   let grey = 0
-  const colors = items.map((_, i) => (pick < 0 ? accentTint(i) : i === pick ? 'var(--accent)' : greyTint(grey++)))
+  // 강조한 것 밖의 나머지는 구성비(Share.tsx)처럼 옅은 강조색 단계(accentTint 2부터). 회색으로 칠하면 한 그림 안에 색 무리가 둘이 되고
+  // 회색 면이 데이터가 아닌 칠처럼 보였다(docs/VISUAL-RULES.md 3, 4)
+  const colors = items.map((_, i) => (pick < 0 ? accentTint(i) : i === pick ? 'var(--accent)' : accentTint(Math.min(2 + grey++, TINT_COUNT - 1))))
   // 조각의 자리: 앞의 조각들이 차지한 몫(--o)과 그 앞의 틈 수(--k). 막대와 같은 식이라 줄의 조각이 막대의 조각 바로 위에 선다
   const gaps = Math.max(0, shares.filter((p) => p > 0).length - 1)
   let before = 0

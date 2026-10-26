@@ -8,7 +8,7 @@ import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, numberUnits, T, textUnits } from '../fields'
 import { formatNumber, seriesIn } from '../numbers'
-import { accentTint, greyTint } from '../tints'
+import { accentTint, TINT_COUNT } from '../tints'
 import { Numeral, pctText } from './parts'
 
 /** 조각 이름표를 조각 바로 아래에 맞춰 둘 수 있는 가장 좁은 칸 너비의 문턱들(split.css의 @container와 같은 값) */
@@ -57,7 +57,9 @@ export function Split() {
   const pick = hl !== undefined && hl >= 0 && hl < items.length ? hl : -1
   let grey = 0
   // 강조할 조각을 고르지 않았으면 강조색의 농담(앞 조각부터 진하게), 골랐으면 그 조각만 강조색이고 나머지는 회색 농담
-  const colors = items.map((_, i) => (pick < 0 ? accentTint(i) : i === pick ? 'var(--accent)' : greyTint(grey++)))
+  // 강조한 것 밖의 나머지는 구성비(Share.tsx)처럼 옅은 강조색 단계(accentTint 2부터). 회색으로 칠하면 한 그림 안에 색 무리가 둘이 되고
+  // 회색 면이 데이터가 아닌 칠처럼 보였다(docs/VISUAL-RULES.md 3, 4)
+  const colors = items.map((_, i) => (pick < 0 ? accentTint(i) : i === pick ? 'var(--accent)' : accentTint(Math.min(2 + grey++, TINT_COUNT - 1))))
   const need = splitNeed(
     items.map((it, i) => it.title || hintFor(slide.layout, slide.hints, 'title', 'title', i)),
     items.map((it, i) => (it.value || texts[i]) + (unit ? ` ${unit}` : '')),
