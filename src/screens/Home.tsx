@@ -6,7 +6,6 @@ import type { Deck } from '../deck/types'
 import { readDeckFromHtml } from '../export/exportHtml'
 import { particle } from '../lib/josa'
 import { go, timeAgo } from '../lib/router'
-import { APP_VERSION } from '../lib/version'
 import { FitSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { copyDeck } from '../store/copy'
 import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
@@ -14,6 +13,7 @@ import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
 import { Brand, CopyIcon, FolderIcon, Info, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
+import { UpdateNote } from './UpdateNote'
 
 const SAMPLE_ID = 'sample'
 
@@ -109,7 +109,7 @@ export function Home() {
       <header className="home-top">
         <div className="home-brand">
           <Brand />
-          <span className="home-ver">{APP_VERSION} 버전</span>
+          <UpdateNote />
         </div>
         <button type="button" className="btn btn-ghost" onClick={openFile}>
           <UploadIcon />

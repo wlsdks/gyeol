@@ -21,10 +21,73 @@
   gap: 10px;
 }
 
+/* 버전은 누르면 새 버전 알림을 켜고 끄는 창이 열린다. 단추처럼 보이지 않게 글자 그대로 둔다 */
 .home-ver {
+  padding: 2px 4px;
+  margin: 0 -4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
   color: var(--ink-3);
+  font: inherit;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.home-ver:hover,
+.home-ver[aria-expanded='true'] {
+  color: var(--ink-2);
+  background: var(--hover-2);
+}
+
+.update-pop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 260px;
+  padding: 8px 10px 10px;
+}
+
+.update-pop-state {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.update-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 새 버전 알림: 이름 옆에 한 줄로 조용히. 색 면이나 강조색 없이 글자색과 밑줄 단추만 */
+.home-update {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin: 0 0 0 10px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.home-update-t {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.home-update-progress {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-update .btn-link {
+  font-size: 13px;
 }
 
 .home-main {

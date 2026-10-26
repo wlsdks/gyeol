@@ -1,7 +1,8 @@
-import { createStore, del, get, keys, set } from 'idb-keyval'
+import { del, get, keys, set } from 'idb-keyval'
 import type { Deck } from '../deck/types'
 import { DECK_EXT, decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckFile'
 import { PARTS_EXT } from './partsFile'
+import { settings } from './settings'
 
 /*
  * 보관 폴더: 사용자가 고른 PC 폴더(또는 공유 드라이브)에 작업 파일을 자동으로 쓴다.
@@ -9,7 +10,6 @@ import { PARTS_EXT } from './partsFile'
  * 파일 이름은 처음 저장할 때 정하고 그 뒤로는 바꾸지 않는다. 발표 제목을 바꿔도 파일은 그대로다.
  */
 
-const settings = createStore('html-maker-settings', 'settings')
 const FOLDER_KEY = 'folder'
 const VERSIONS_DIR = '버전 기록'
 const TRASH_DIR = '지운 발표'
