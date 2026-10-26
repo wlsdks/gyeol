@@ -1,7 +1,7 @@
 import { execFileSync, spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import pkg from '../package.json'
@@ -341,11 +341,14 @@ describe('MCP 서버를 가두는 권한', () => {
 
   it('공유 폴더 밖을 읽거나 다른 프로그램을 띄울 수 있으면 좁지 않다고 본다', () => {
     const only = (open: string[]) => ({ has: (scope: string, ref?: string) => open.includes(ref ? `${scope}:${ref}` : scope) })
-    expect(sandboxTight(only(['fs.read:/s/AI 공유']), '/s/AI 공유')).toBe(true)
-    expect(sandboxTight(only(['fs.read:/s']), '/s/AI 공유')).toBe(false)
-    expect(sandboxTight(only(['fs.write:/s']), '/s/AI 공유')).toBe(false)
-    expect(sandboxTight(only(['child']), '/s/AI 공유')).toBe(false)
-    expect(sandboxTight(only(['worker']), '/s/AI 공유')).toBe(false)
+    // 운영체제의 경로 꼴로 (윈도우에서는 '/s'가 'D:\s'가 된다)
+    const s = resolve('/s')
+    const inShare = join(s, 'AI 공유')
+    expect(sandboxTight(only([`fs.read:${inShare}`]), inShare)).toBe(true)
+    expect(sandboxTight(only([`fs.read:${s}`]), inShare)).toBe(false)
+    expect(sandboxTight(only([`fs.write:${s}`]), inShare)).toBe(false)
+    expect(sandboxTight(only(['child']), inShare)).toBe(false)
+    expect(sandboxTight(only(['worker']), inShare)).toBe(false)
   })
 
   it('넓은 권한으로 띄우면 시작하지 않고, 경로도 말하지 않는다', () => {
