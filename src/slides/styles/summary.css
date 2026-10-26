@@ -4,15 +4,14 @@
   max-width: 1560px;
 }
 
+/* 줄 높이는 내용에 정해진 사이(위아래 --sm-pad)를 더한 만큼이고, 남는 높이는 맨 아래에 모인다(docs/VISUAL-RULES.md 6).
+   예전에는 줄을 본문 높이로 나눠(1fr) 늘려서 첫 줄이 장 제목 아래 --body-gap보다 한참 아래에서 시작했고, 줄마다 위아래가 크게 비어
+   요점이 떠 보였다. 사이는 요점 글자 크기에 비례하는 한 값이다. 줄 사이 선은 항목 사이에만(lines.css) */
 .sm {
+  --sm-pad: 36px;
   display: grid;
-  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: start;
   max-height: 100%;
-  border-top: var(--rule-hair) solid var(--line);
-}
-
-.sm:is([data-n='2'], [data-n='3']) {
-  grid-auto-rows: minmax(min-content, 220px);
 }
 
 .sm-row {
@@ -20,13 +19,45 @@
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 48px;
-  align-items: center;
+  align-items: baseline;
+  padding-block: var(--sm-pad);
   border-bottom: var(--rule-hair) solid var(--line);
+}
+
+/* 첫 줄은 본문 윗선에서: 위 사이를 두면 본문이 제목 아래 --body-gap보다 그만큼 내려간다 */
+.sm-row:first-child {
+  padding-top: 0;
+}
+
+.sm-row:last-child {
+  padding-bottom: 0;
+}
+
+/* 요점이 둘, 셋이면 본문이 반 넘게 비어 한 단계 크게 쓰고 사이도 그만큼 넓힌다(늘리지 않고 글자 단계를 올리는 짜임) */
+/* 요점이 적으면 본문이 40% 넘게 비어 글자를 한 단계씩 올리고 사이도 같은 비율로 넓힌다(늘리지 않고 글자 단계를 올리는 짜임).
+   넷이면 요점 44, 둘셋이면 52. 장 한 장일 때만: 컴포넌트 장의 칸에 넣은 요약은 칸 크기에 맞춘 글자 단계(잰 높이) 그대로다 */
+.l-summary .sm[data-n='4'] {
+  --sm-pad: 44px;
+}
+
+.l-summary .sm[data-n='4'] .sm-body {
+  --fs: 44px;
+}
+
+.l-summary .sm:is([data-n='2'], [data-n='3']) {
+  --sm-pad: 56px;
+}
+
+.l-summary .sm:is([data-n='2'], [data-n='3']) .sm-body {
+  --fs: 52px;
+}
+
+.l-summary .sm:is([data-n='2'], [data-n='3']) .sm-label {
+  --fs: 36px;
 }
 
 .sm-label {
   --fs: 30px;
-  align-self: center;
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
@@ -44,12 +75,11 @@
   --fs: 30px;
 }
 
-/* 모양: 네 칸. 줄 대신 칸마다 이름과 요점 */
+/* 모양: 네 칸. 줄 대신 칸마다 이름과 요점. 칸 사이는 여백만: 칸 안(이름과 요점 사이)보다 넓은 --body-gap이 칸을 묶는다(근접).
+   칸 높이는 내용만큼이고 남는 높이는 아래로 */
 .va-grid .sm {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: minmax(min-content, 1fr);
-  gap: var(--gap);
-  border-top: 0;
+  gap: var(--body-gap);
 }
 
 .va-grid .sm[data-n='3'] {
@@ -69,15 +99,15 @@
   grid-column: span 3;
 }
 
+/* 안쪽 여백 없이 장의 왼쪽 선에: 면을 칠하던 때의 안쪽 여백(52px)이 남아 요점이 장 제목보다 들어가 떠 보였다 */
 .va-grid .sm-row {
   grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr);
+  /* 칸이 옆 칸 높이로 늘어나도 이름과 요점 사이는 그대로(늘어난 높이는 칸 아래로): 늘이면 한 줄짜리 요점만 내려가 옆 칸과 첫 줄이 어긋났다 */
+  align-content: start;
   align-items: start;
-  gap: 28px;
-  padding: 44px 52px;
+  gap: 20px;
+  padding: 0;
   border: 0;
-  /* 칸마다 위에 옅은 줄 선 하나(요점의 타일과 같은 꼴). 옅은 회색 둥근 면은 흔한 서식처럼 보였다 */
-  box-shadow: inset 0 var(--rule-hair) 0 var(--line);
 }
 
 .va-grid .sm-body {
@@ -86,4 +116,21 @@
 
 .va-grid .sm[data-n='5'] .sm-body {
   --fs: 30px;
+}
+
+/* 큰 글자에서는 올린 단계를 한 단계 되돌린다: 큰 글자 배율이 곱해져 셋(52)과 넷(44)의 요점이 본문 아래 틀을 13~50px 넘었다 */
+.sz-large.l-summary .sm[data-n='4'] {
+  --sm-pad: 36px;
+}
+
+.sz-large.l-summary .sm[data-n='4'] .sm-body {
+  --fs: 36px;
+}
+
+.sz-large.l-summary .sm:is([data-n='2'], [data-n='3']) {
+  --sm-pad: 44px;
+}
+
+.sz-large.l-summary .sm:is([data-n='2'], [data-n='3']) .sm-body {
+  --fs: 44px;
 }
