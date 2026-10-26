@@ -23,6 +23,13 @@ const HEAD_GAP = 32
 /** 잰 높이에 더한 여유(sizing.ts의 HEIGHT_SLACK). 내용의 높이를 어림할 때 뺀다 */
 const SLACK = 10
 
+/**
+ * 한 줄로 서는 결론 글의 가장 긴 줄 (캔버스 px): 글 폭(--measure, 24em) × 장 제목 아래의 글자 크기(44). 잰 높이로는 한 줄을 다 쓰는 칸에서
+ * 한 줄로 들어가 그보다 좁으면 두 줄로 꺾이니 판 너비를 다 쓰는 것으로 보이지만, 글은 글 폭에서 꺾여 본문 너비의 63%에서 끝난다.
+ * 그 아래에 좁은 목록을 쌓으면 오른쪽 37%가 통째로 비었다(결론 한 줄 + 개요)
+ */
+const MEASURE_W: Partial<Record<BlockType, number>> = { message: 24 * 44, callout: 24 * 44 }
+
 /** 같은 말투로 맞출 숫자 부품: 한 장에 둘 이상이면 나란히 한 줄에 서야 크기와 이름표 자리를 맞출 수 있다 */
 export const NUMBER_TYPES = new Set<BlockType>(['number', 'stat', 'delta', 'goal', 'ring', 'ratio'])
 
@@ -193,7 +200,7 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
   // 가로로 빈 곳: 그려진 것의 오른쪽 끝(naturalSpan). 본문 오른쪽이 20% 넘게 비면 판이 너비를 고르게 나누지 못한 것(screens/assembly.ts의 sides)
   const right = Math.max(...all.map((b) => {
     const r = rect(b)
-    const w = isStretchy(b.type) ? r.w : atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w
+    const w = isStretchy(b.type) ? r.w : Math.min(atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w, MEASURE_W[b.type] ?? Infinity)
     return r.x + Math.min(r.w, w)
   }))
   const empty = 1 - right / AREA_W
