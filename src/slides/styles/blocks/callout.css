@@ -52,3 +52,13 @@
 .l-compose:has(.s-title:not(.is-hint, .is-empty)) .bk-look-plain .bk-call-t {
   font-size: min(calc(44px * var(--scale, 1)), max(var(--fs-min, 0px), calc(var(--fs) * var(--fit, 1) * var(--scale, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1))));
 }
+
+/* 바탕 없는 강조 상자: 머리 괘선(blocks/base.css)을 강조색으로, 이름표도 강조색. 면 없이도 '꼭 알아야 할 것'이 장의 다른
+   컴포넌트와 갈린다. 강조색은 이 선과 이름표에만 쓰고 글은 글자색 그대로 */
+.bk.bk-callout.bk-look-plain::before {
+  background: var(--accent);
+}
+
+.bk-callout.bk-look-plain .bk-call-l {
+  color: var(--accent);
+}
