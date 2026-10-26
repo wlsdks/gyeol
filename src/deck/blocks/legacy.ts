@@ -51,20 +51,34 @@ export function boardFromRows(rows: unknown, fit: Fit, lost?: { n: number }): Bl
   const old = readRows(rows, lost)
   if (!old.length) return []
   const allGrow = old.every((r) => r.grow !== undefined)
-  const tree: Tree = split(
-    'v',
-    old.map((r) =>
-      split(
-        'h',
-        r.cells.map((c, i) => {
-          const want = r.spans?.[i] ?? Math.max(fit.minW(c.blocks[0]), fit.prefW(c.blocks[0]))
-          return c.blocks.length === 1 ? leaf(c.blocks[0], want) : split('v', c.blocks.map((b) => leaf(b)), want)
-        }),
-        allGrow ? r.grow : 0,
+  // keep이면 예전 칸 너비(spans)와 줄 높이 비중(grow)을 바라는 크기로, 아니면 부품마다 보기 좋은 너비와 가장 낮은 높이에서 다시 나눈다
+  const treeOf = (keep: boolean): Tree =>
+    split(
+      'v',
+      old.map((r) =>
+        split(
+          'h',
+          r.cells.map((c, i) => {
+            const want = (keep ? r.spans?.[i] : undefined) ?? Math.max(fit.minW(c.blocks[0]), fit.prefW(c.blocks[0]))
+            return c.blocks.length === 1 ? leaf(c.blocks[0], want) : split('v', c.blocks.map((b) => leaf(b)), want)
+          }),
+          keep && allGrow ? r.grow : 0,
+        ),
       ),
-    ),
-  )
-  const laid = layTree(tree, fit) ?? layTree(tree, LOOSE)
+    )
+  // 예전 너비와 높이 비중으로 들어가지 않으면(부품의 잘리지 않는 높이를 다시 재어 커졌다) 그것을 버리고 다시 나눠 본다. 그래도 안 되면
+  // 잘리지 않는 높이를 같은 비율로 줄여 가며 나눈다(그리는 쪽이 글자를 한두 단계 줄여 맞춘다). 바로 크기를 따지지 않는 나눔(LOOSE)으로
+  // 가면 숫자 줄이 판 한 줄(60px)에 눌려 글이 아래 차트 위로 넘쳐 그려졌다. 그래도 안 되면 자리만 나눈다
+  const scaled = (k: number): Fit => ({
+    ...fit,
+    minH: (b, w) => {
+      const h = fit.minH(b, w)
+      return Number.isFinite(h) ? Math.max(1, Math.floor(h * k)) : h
+    },
+  })
+  let laid = layTree(treeOf(true), fit) ?? layTree(treeOf(false), fit)
+  for (const k of [0.9, 0.8, 0.7]) laid ??= layTree(treeOf(false), scaled(k))
+  laid ??= layTree(treeOf(true), LOOSE)
   if (!laid) return []
   // 이음표: 칸 사이의 것은 그 칸 맨 위 부품의 오른쪽 선에, 줄 사이의 것은 그 줄 맨 아래에서 판 가운데를 덮는(없으면 첫) 부품의 아래 선에
   const at = new Map(laid.map((b) => [b.id, b]))
