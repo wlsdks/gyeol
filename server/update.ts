@@ -248,7 +248,13 @@ export function createUpdater({ version, platform = process.platform, get = node
           break
         }
         hash.update(c)
-        if (!out.write(c)) await new Promise<void>((r) => out.once('drain', () => r()).once('close', () => r()))
+        // 쓰기가 밀리면 비워질 때까지(또는 오류로 닫힐 때까지) 기다린다. 남은 쪽 귀는 떼어 조각마다 쌓이지 않게
+        if (!out.write(c)) {
+          await new Promise<void>((r) => {
+            const done = () => (out.off('drain', done), out.off('close', done), r())
+            out.on('drain', done).on('close', done)
+          })
+        }
         if (result !== 'ok') break
         onProgress(received)
       }
