@@ -12,6 +12,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   거꾸로 아래가 3분의 1 넘게 비었는데 묶음 사이를 벌리지 않은 장(위가 무겁다)도 잡는다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
+ * - 짜임 안의 빈 곳: 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -216,6 +217,38 @@ function measure(area: HTMLElement, k: number): string[] {
   return [...out]
 }
 
+/** 여러 단으로 흘린 목록에서 앞 단의 글 끝과 다음 단 사이가 이보다 넓으면 흩어져 보인다 (옆 칸 사이 72의 세 배) */
+const COLUMN_GAP_MAX = 72 * 3
+
+/**
+ * 짜임 안의 빈 곳: 여러 줄을 여러 단으로 흘린 목록에서 단 사이가 지나치게 벌어지거나 단이 고르지 않은 것
+ * (단을 칸 너비로 반씩 나누면 짧은 요점이 흩어져 보였다)
+ */
+function inside(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  for (const list of area.querySelectorAll<HTMLElement>(':scope > .bk .bk-list')) {
+    const items = [...list.children].filter((el) => (el as HTMLElement).offsetHeight > 0) as HTMLElement[]
+    const cols = new Map<number, HTMLElement[]>()
+    for (const it of items) {
+      const x = Math.round(it.getBoundingClientRect().left)
+      const key = [...cols.keys()].find((c) => Math.abs(c - x) < 4) ?? x
+      cols.set(key, (cols.get(key) ?? []).concat(it))
+    }
+    if (cols.size < 2 || items.length <= cols.size) continue
+    const xs = [...cols.keys()].sort((a, b) => a - b)
+    for (let i = 1; i < xs.length; i++) {
+      // 앞 단에서 글이 가장 길게 나간 끝
+      let end = -Infinity
+      for (const it of cols.get(xs[i - 1])!) for (const q of blockTextLines(it)) end = Math.max(end, q.r)
+      const gap = (xs[i] - end) / k
+      if (gap > COLUMN_GAP_MAX) out.push(`${list.closest<HTMLElement>('.bk')?.dataset.type}: 목록의 단 사이가 ${Math.round(gap)}px 벌어져요`)
+    }
+    const counts = [...cols.values()].map((c) => c.length)
+    if (Math.max(...counts) - Math.min(...counts) > 1) out.push(`${list.closest<HTMLElement>('.bk')?.dataset.type}: 목록의 단이 고르지 않아요(${counts.join(', ')})`)
+  }
+  return out
+}
+
 /** 그려진 부품 장마다 위계, 빈 띠, 글 폭을 본다. 없으면 빈 목록 */
 export async function checkAssembly(): Promise<{ slides: number; problems: string[] }> {
   await document.fonts.ready
@@ -226,7 +259,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }

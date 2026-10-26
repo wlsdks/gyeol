@@ -101,11 +101,13 @@
     border-top: var(--rule) solid var(--line);
   }
 
+  /* 두 단은 글 폭만큼만 차지하고 단 사이를 옆 칸 사이의 두 배로: 칸을 반씩 나누면 짧은 요점의 왼쪽 단과 오른쪽 단 사이가 장의 절반만큼
+     벌어져, 다섯 줄(3 + 2)이면 오른쪽 아래까지 비어 요점이 흩어져 보였다. 글 폭으로 모으면 두 단이 한 덩어리로 읽힌다 */
   .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, max-content));
     grid-auto-flow: column;
-    column-gap: var(--bk-col-gap);
+    column-gap: calc(var(--bk-col-gap) * 2);
   }
 
   .bk-list[data-n='4'] {
