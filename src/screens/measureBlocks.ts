@@ -169,7 +169,9 @@ function fine(cell: HTMLElement, el: HTMLElement): boolean {
   const area = cell.closest<HTMLElement>('.bk-area')
   if (area) fitBlocks(area)
   const k = Number(cell.style.getPropertyValue('--bk-fit') || 1)
-  return k >= 1 && !scrollOver(el) && clashList(cell, false).length === 0 && innerProblems(cell, { fill: false, covered: false }).length === 0
+  // 다른 컴포넌트와의 겹침(cross)은 보지 않는다: 재는 칸은 갤러리 판의 자리에서 빼내 너비와 높이를 바꿔 가며 재서, 옆 칸과의 자리는 실제 판과
+  // 상관없다. 보면 한 줄 너비로 넓힌 점 목록의 둘째 요점이 갤러리에서 옆에 놓인 글 칸과 겹쳐, 넓은 칸의 높이를 하나도 재지 못했다
+  return k >= 1 && !scrollOver(el) && clashList(cell, false).length === 0 && innerProblems(cell, { fill: false, covered: false, cross: false }).length === 0
 }
 
 /** 진단용: 이 너비에서 860부터 100까지 10px마다 재어 안 되는 높이를 모두 (위에서 끊기지 않고). 높이 사이에 구멍이 있는지 볼 때 */
