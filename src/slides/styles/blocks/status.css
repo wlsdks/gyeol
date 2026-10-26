@@ -1,19 +1,26 @@
 /* ---------- 상태 ----------
    상태 표시와 이름 한 줄, 그 아래 할 일(본문 크기, 글자색)과 언제·누가(--ink-3). 상태는 색이 아니라 꼴로 가른다:
-   완료는 꽉 찬 글자색 원, 진행 중은 오른쪽 반이 찬 강조색 원(강조색은 지금 움직이는 일에만), 예정은 빈 옅은 고리(--ink-3),
-   지연은 글자색 고리에 시계 바늘. 준비 상황처럼 좋음·나쁨 색(초록, 빨강)으로 가르지 않는다: 작은 칸 여럿이 각자 색을 띠면
+   완료는 꽉 찬 글자색 원, 진행 중은 오른쪽 반이 찬 글자색 원, 예정은 빈 옅은 고리(--ink-3),
+   지연은 강조색 고리에 시계 바늘과 강조색 이름(예외만 색으로). 준비 상황처럼 좋음·나쁨 색(초록, 빨강)으로 가르지 않는다: 작은 칸 여럿이 각자 색을 띠면
    장이 신호등처럼 시끄럽고, 강조색을 바꾸면 진행 중과 완료가 같은 색이 되기도 했다. 상태 이름은 표시 옆에 늘 글로 적는다 */
 
 .bk-ss {
   --ss-c: var(--ink);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  align-content: center;
+  /* 칸에 남는 높이는 아래로: 가운데에 두면 혼자 있는 상태가 칸 가운데에 작게 떴다(docs/VISUAL-RULES.md 6) */
+  align-content: start;
   height: 100%;
 }
 
-.bk-ss.is-doing {
+/* 색은 예외(지연)에만: 진행 중을 강조색으로 두면 장마다 상태 칸이 강조색을 띠어 답(숫자, 결론)과 다퉜다
+   (docs/VISUAL-RULES.md 4). 지연은 표시와 이름을 강조색으로, 나머지는 글자색의 꼴로만 가른다 */
+.bk-ss.is-late {
   --ss-c: var(--accent);
+}
+
+.bk-ss.is-late .bk-ss-st {
+  color: var(--accent);
 }
 
 .bk-ss.is-todo {
@@ -76,11 +83,12 @@
   line-height: 1.45;
 }
 
-/* 넓은 칸: 한 줄로 눕힌다(준비 상황의 한 줄처럼). 상태는 왼쪽에 같은 너비로 두어 위아래로 쌓은 상태끼리 할 일의 왼쪽 끝이 맞고,
-   언제·누가는 오른쪽 끝에. 쌓아 두면 상태 이름만 왼쪽 위에 따로 떠 보인다 */
+/* 넓은 칸: 상태는 왼쪽에 같은 너비로 두고, 할 일과 언제·누가는 그 오른쪽에 위아래로 붙인다. 상태끼리 위아래로 쌓으면
+   할 일의 왼쪽 끝이 맞는다. 언제·누가를 칸의 오른쪽 끝에 두던 때는 할 일과 그 사이가 장의 절반 넘게 비어 한 줄이 양 끝으로
+   찢어져 보였다(docs/VISUAL-RULES.md 6, 가로 리듬) */
 @container bk (min-width: 1000px) {
   .bk-ss {
-    grid-template-columns: minmax(180px, max-content) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(180px, max-content) minmax(0, 1fr);
     align-items: baseline;
     column-gap: 32px;
   }
@@ -97,10 +105,8 @@
   }
 
   .bk-ss-m {
-    grid-column: 3;
-    grid-row: 1;
-    margin-top: 0;
-    text-align: right;
+    grid-column: 2;
+    grid-row: 2;
   }
 }
 

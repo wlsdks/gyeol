@@ -8,8 +8,8 @@ import { STATUS_NAMES, type Status as State } from '../numbers'
 const STATES: readonly State[] = ['doing', 'done', 'todo', 'late']
 
 /**
- * 상태 표시: 색이 아니라 꼴로 가른다(흑백 인쇄, 강조색을 바꿔도 읽히게). 완료는 꽉 찬 글자색 원, 진행 중은 반이 찬 강조색 원
- * (강조색은 지금 움직이는 일에만), 예정은 빈 옅은 고리, 지연은 글자색 고리에 시계 바늘. 빨강 같은 따로 정한 색은 쓰지 않는다
+ * 상태 표시: 색이 아니라 꼴로 가른다(흑백 인쇄, 강조색을 바꿔도 읽히게). 완료는 꽉 찬 글자색 원, 진행 중은 반이 찬 글자색 원,
+ * 예정은 빈 옅은 고리, 지연은 고리에 시계 바늘. 색(강조색)은 예외인 지연에만 쓰고, 빨강 같은 따로 정한 색은 쓰지 않는다
  */
 function StateMark({ state }: { state: State }) {
   return (
