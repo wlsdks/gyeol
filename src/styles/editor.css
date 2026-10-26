@@ -388,7 +388,15 @@
 
 .thumb.is-drag {
   z-index: 5;
-  opacity: 0.85;
+}
+
+/* 끄는 장은 종이를 한 장 집어 든 것처럼 그림자만 깊게 (옅게 비치거나 커지지 않게: 무엇을 옮기는지 그대로 보이게) */
+.thumb.is-drag .slide-frame {
+  box-shadow: 0 0 0 2px var(--sel), var(--shadow-pop);
+}
+
+.thumb.is-drag .thumb-btn {
+  cursor: grabbing;
 }
 
 .thumb-n {
@@ -421,10 +429,20 @@
 .thumb-btn .slide-frame {
   border-radius: 5px;
   box-shadow: 0 0 0 1px var(--line);
+  transition: box-shadow var(--t) var(--ease-out);
 }
 
+/* 올린 장은 테가 한 단계 짙어진다 (--line-2는 --line과 거의 같아 올렸는지 보이지 않았다) */
 .thumb-btn:hover .slide-frame {
-  box-shadow: 0 0 0 1px var(--line-2);
+  box-shadow: 0 0 0 1px var(--ink-3);
+}
+
+.thumb-btn:focus-visible {
+  outline: none;
+}
+
+.thumb-btn:focus-visible .slide-frame {
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sel);
 }
 
 .thumb.is-on .slide-frame {
@@ -433,6 +451,11 @@
 
 .thumb.is-on .thumb-n {
   color: var(--sel);
+}
+
+.thumb.is-on .thumb-label {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .thumb.is-hidden .slide-frame {
@@ -448,6 +471,7 @@
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  transition: color var(--t-fast);
 }
 
 .thumb-dot {
