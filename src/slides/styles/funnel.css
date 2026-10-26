@@ -11,7 +11,8 @@
   --fn-h: 64px;
   display: grid;
   grid-template-columns: fit-content(30%) auto minmax(0, 1fr);
-  align-content: center;
+  /* 줄은 제목 아래에서부터, 남는 높이는 맨 아래에(VISUAL-RULES 6) */
+  align-content: start;
   gap: 44px 48px;
   min-height: 0;
 }
@@ -114,7 +115,8 @@
   left: calc(var(--w) * 1% - 12px);
   width: calc(max(0, var(--pw) - var(--w)) * 1% + 12px);
   border-radius: 0 var(--r-mark) var(--r-mark) 0;
-  background: var(--surface);
+  /* 빠진 만큼은 회색 면이 아니라 강조색의 가장 옅은 농담: 회색 띠는 막대보다 무겁게 읽혀 빈 바닥처럼 보였다(VISUAL-RULES 3) */
+  background: var(--accent-soft);
   content: '';
 }
 
