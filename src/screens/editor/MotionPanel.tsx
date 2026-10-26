@@ -3,16 +3,18 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS as DndCss } from '@dnd-kit/utilities'
 import { useMemo, useState } from 'react'
 import { BLOCK_EFFECTS, BLOCK_FROMS, BLOCK_SPEEDS, BLOCK_WHENS, blockNames, effectOf, fromOf, playOrder, speedOf, whenOf } from '../../deck/blocks'
+import { sceneOf } from '../../deck/scenes'
 import { MOTIONS, motionOf, TRANSITIONS } from '../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide, Transition } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
 import { motionEngine } from '../../motion/engine'
 import { useDeck } from '../../store/deckStore'
-import { ChevronIcon, GripIcon, Icon, PlayIcon, Segmented } from '../ui'
+import { ChevronIcon, GripIcon, Icon, PlayIcon, Segmented, type Toast } from '../ui'
 import type { BlockEditing } from './BlockEditor'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { Opt } from './Inspector'
+import { SceneAll, SceneOverride, ScenePicker } from './ScenePicker'
 
 /**
  * 이 장만 바꾸지 않고 발표 전체 설정을 따르는 값의 이름. 예전에는 '기본'이라서, 기본이 무엇인지(차분하게? 없음?)
@@ -40,17 +42,25 @@ export function MotionPanel({
   deck,
   slide,
   blocks,
+  toast,
   onOpenStudio,
 }: {
   deck: Deck
   slide: Slide
   blocks: Pick<BlockEditing, 'selected' | 'select' | 'convert'>
+  toast?: Toast
   onOpenStudio(): void
 }) {
   const setOptions = useDeck((s) => s.setOptions)
   const moving = motionOf(deck, slide) !== 'none'
   return (
     <div className="ins mp" role="tabpanel" aria-label="움직임">
+      {/* 장면: 장 전체를 한 컷으로. 고르기만 하면 되는 것이라 맨 위에 둔다 */}
+      <section className="ins-sec sp">
+        <h2 className="ins-h">장면</h2>
+        <ScenePicker deck={deck} slide={slide} />
+        <SceneAll deck={deck} toast={toast} />
+      </section>
       {/* 크게 보며 고치는 곳: 장을 발표 화면처럼 움직이고 시간표로 차례와 때를 본다 */}
       <button type="button" className="mp-studio" onClick={onOpenStudio}>
         <StudioIcon />
@@ -148,6 +158,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
+      <SceneOverride slide={slide} />
       {steps[0] === 0 && <p className="mp-step">장이 나올 때</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -198,6 +209,8 @@ function Row({
   const when = whenOf(block)
   const from = fromOf(block)
   const speed = speedOf(block)
+  // 장면을 고른 동안은 장면이 움직임, 들어오는 쪽, 빠르기를 정한다 (고른 값은 남아 장면을 끄면 돌아온다)
+  const scened = !!sceneOf(slide)
   const set = (patch: Partial<Block>) => updateBlock(slide.id, block.id, (b) => ({ ...b, ...patch }), `motion.${block.id}`)
   /** 편집 화면의 그 컴포넌트만 한 번 움직인다 (바꾼 값이 칸에 붙은 다음에) */
   const play = () =>
@@ -206,7 +219,9 @@ function Row({
       const level = motionOf(deck, slide)
       if (cell) motionEngine().play(cell, level === 'none' ? 'calm' : level)
     })
-  const summary = [BLOCK_EFFECTS.find((e) => e.id === effect)?.name, when === 'with' && '함께', speed !== 'normal' && BLOCK_SPEEDS.find((s) => s.id === speed)?.name].filter(Boolean).join(' · ')
+  const summary = scened
+    ? ['장면대로', when === 'with' && '함께', when === 'click' && '누르면'].filter(Boolean).join(' · ')
+    : [BLOCK_EFFECTS.find((e) => e.id === effect)?.name, when === 'with' && '함께', speed !== 'normal' && BLOCK_SPEEDS.find((s) => s.id === speed)?.name].filter(Boolean).join(' · ')
   return (
     <li ref={setNodeRef} className={cx('mp-row', open && 'is-open', isDragging && 'is-dragging', when === 'with' && 'is-with')} style={{ transform: DndCss.Translate.toString(transform), transition }}>
       {step > 0 && <p className="mp-step">{step}번 누르면</p>}
@@ -244,6 +259,7 @@ function Row({
                     type="button"
                     className={cx('mp-pick', effect === x.id && 'is-on')}
                     aria-pressed={effect === x.id}
+                    disabled={scened}
                     title={x.description}
                     onClick={() => {
                       set({ effect: x.id === 'auto' ? undefined : (x.id as BlockEffect) })
@@ -258,7 +274,7 @@ function Row({
             <Opt label="언제" wide>
               <Segmented<BlockWhen> className="seg-fill" label="언제 나오는지" options={BLOCK_WHENS} value={when} onPick={(w) => set({ when: w === 'after' ? undefined : w })} />
             </Opt>
-            {from && (
+            {from && !scened && (
               <Opt label="들어오는 쪽" wide>
                 <Segmented<BlockFrom>
                   className="seg-fill"
@@ -272,18 +288,20 @@ function Row({
                 />
               </Opt>
             )}
-            <Opt label="빠르기" wide>
-              <Segmented<BlockSpeed>
-                className="seg-fill"
-                label="빠르기"
-                options={BLOCK_SPEEDS}
-                value={speed}
-                onPick={(s) => {
-                  set({ speed: s === 'normal' ? undefined : s })
-                  play()
-                }}
-              />
-            </Opt>
+            {!scened && (
+              <Opt label="빠르기" wide>
+                <Segmented<BlockSpeed>
+                  className="seg-fill"
+                  label="빠르기"
+                  options={BLOCK_SPEEDS}
+                  value={speed}
+                  onPick={(s) => {
+                    set({ speed: s === 'normal' ? undefined : s })
+                    play()
+                  }}
+                />
+              </Opt>
+            )}
           </div>
         )}
       </div>

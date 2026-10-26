@@ -42,6 +42,8 @@ function timing(a: Animation) {
 
 /** 움직임마다 어느 줄인지: 컴포넌트 칸이면 그 부품, 이음표는 앞 부품, 머리는 제목 */
 function laneOf(a: Animation): string {
+  // 장면이 얹은 움직임(카메라, 가림막, 결 선, 장막)은 '장면' 줄 하나로. 컴포넌트 줄에 섞으면 그 컴포넌트가 3초 넘게 움직이는 것처럼 보인다
+  if (a.id === 'mo-scene') return 'scene'
   const target = a.effect instanceof KeyframeEffect ? a.effect.target : null
   if (!target) return 'etc'
   const link = target.closest<HTMLElement>('.bk-area > .bk-link')
@@ -77,6 +79,7 @@ function readPlan(slide: Slide, anims: Animation[]): Plan {
       add(`b:${b.id}`, names.get(b.id) ?? '컴포넌트', step, b.id)
     }
   } else if (spans.has('body')) add('body', '본문')
+  if (spans.has('scene')) add('scene', '장면')
   if (spans.has('source')) add('source', '출처')
   const clicks: Plan['clicks'] = []
   for (const lane of lanes) {

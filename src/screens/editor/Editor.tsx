@@ -272,6 +272,7 @@ function EditorBody({ deck }: { deck: Deck }) {
                   deck={deck}
                   slide={slide}
                   blocks={blocks}
+                  toast={toast}
                   onOpenStudio={() => {
                     // 편집기에서 고른 것은 스튜디오가 이어받는다. 편집기 쪽 고르기는 끈다(지우기 키가 그 컴포넌트를 지우지 않게)
                     setStudio({ from: blocks.selected })

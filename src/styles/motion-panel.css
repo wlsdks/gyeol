@@ -236,3 +236,164 @@
   color: var(--ink-3);
   font-size: 12px;
 }
+
+/* ---------- 장면 고르기 (screens/editor/ScenePicker.tsx) ---------- */
+
+/* 카드 두 장씩. 카드에는 이 장이 그 장면으로 움직이는 작은 그림과 이름 */
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+
+.sp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sp-thumb {
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  box-shadow: 0 0 0 1px var(--line-2);
+  transition: box-shadow 0.14s, translate 0.14s;
+}
+
+.sp-card:hover .sp-thumb,
+.sp-card:focus-visible .sp-thumb {
+  box-shadow: 0 0 0 2px var(--sel), 0 8px 18px rgb(16 20 31 / 0.1);
+  translate: 0 -1px;
+}
+
+.sp-card:focus-visible {
+  outline: none;
+}
+
+.sp-card.is-on {
+  color: var(--ink);
+}
+
+.sp-card.is-on .sp-thumb {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.sp-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sp-none,
+.sp-quiet {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 10px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.sp-quiet {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.sp-all {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* 발표 전체에 입히기: 어느 장에 무엇을 입히는지 먼저 보이고 적용한다 */
+.sp-plan {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--app-bg);
+}
+
+.sp-plan-h {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sp-rows {
+  max-height: 168px;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 12px;
+  scrollbar-gutter: stable;
+}
+
+.sp-rows li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 3px 0;
+  color: var(--ink-2);
+}
+
+.sp-page {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.sp-to s {
+  margin-right: 6px;
+  color: var(--ink-3);
+}
+
+.sp-keep {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.sp-plan-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* 장면이 컴포넌트마다의 움직임을 대신하는 동안: 알림 한 줄, 움직임 고르기는 흐리게 */
+.sp-over {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.sp-over .mp-reset {
+  flex: none;
+}
+
+.mp-pick:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 모션 스튜디오의 고른 컴포넌트: 언제 고르기 아래에 알림 한 줄 */
+.ms-block .sp-over {
+  margin: 12px 0 0;
+}

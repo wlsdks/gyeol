@@ -18,6 +18,7 @@ import {
   type MotionPreset,
 } from '../../../deck/blocks'
 import { pageInfo } from '../../../deck/fields'
+import { sceneOf } from '../../../deck/scenes'
 import { MOTIONS, motionOf } from '../../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide } from '../../../deck/types'
 import { cx } from '../../../lib/cx'
@@ -27,6 +28,7 @@ import { BackIcon, ChevronIcon, PlayIcon, Segmented, useDialog } from '../../ui'
 import { Opt } from '../Inspector'
 import { useLook, type Look } from '../look'
 import { FROM_SHORT, SLIDE_TRANSITIONS } from '../MotionPanel'
+import { SceneOverride, ScenePicker } from '../ScenePicker'
 import { usePlayer } from './player'
 import { Timeline } from './Timeline'
 
@@ -176,6 +178,11 @@ export function MotionStudio({
         <Timeline player={player} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
 
         <aside className="ms-side" aria-label="움직임 고르기">
+          {/* 장면: 장 전체를 한 컷으로. 고르면 무대가 새로 그려져 그 장면으로 처음부터 움직인다 */}
+          <section className="ms-sec sp">
+            <h2 className="ms-h">장면</h2>
+            <ScenePicker deck={deck} slide={slide} thumb={120} />
+          </section>
           {compose ? (
             <Presets slide={slide} onPick={pickPreset} />
           ) : (
@@ -189,6 +196,7 @@ export function MotionStudio({
           )}
           {compose && (
             <BlockMotion
+              slide={slide}
               block={block}
               n={block ? ids.indexOf(block.id) + 1 : 0}
               name={block ? (names.get(block.id) ?? '컴포넌트') : ''}
@@ -335,6 +343,7 @@ function PresetGlyph({ id }: { id: MotionPreset }) {
 
 /** 고른 컴포넌트의 움직임 */
 function BlockMotion({
+  slide,
   block,
   n,
   name,
@@ -342,6 +351,7 @@ function BlockMotion({
   onSet,
   onPlay,
 }: {
+  slide: Slide
   block: Block | null
   n: number
   name: string
@@ -360,6 +370,8 @@ function BlockMotion({
   const when = whenOf(block)
   const from = fromOf(block)
   const speed = speedOf(block)
+  // 장면을 고른 동안은 장면이 움직임, 쪽, 빠르기를 정한다. 언제는 그대로 고른다
+  const scened = !!sceneOf(slide)
   return (
     <section className="ms-sec ms-block">
       <div className="ms-block-h">
@@ -373,35 +385,41 @@ function BlockMotion({
       <Opt label="언제" wide>
         <Segmented<BlockWhen> className="seg-fill" label="언제 나오는지" options={BLOCK_WHENS} value={when} onPick={(w) => onSet(block, { when: w === 'after' ? undefined : w }, false)} />
       </Opt>
-      <Opt label="움직임" wide>
-        <div className="ms-fxs" role="group" aria-label="움직임">
-          {BLOCK_EFFECTS.map((x) => (
-            <button
-              key={x.id}
-              type="button"
-              className={cx('ms-fx', effect === x.id && 'is-on')}
-              aria-pressed={effect === x.id}
-              title={x.description}
-              onClick={() => onSet(block, { effect: x.id === 'auto' ? undefined : (x.id as BlockEffect) }, x.id !== 'none')}
-            >
-              <span className={cx('fx-demo', `is-${x.id}`)} aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span className="ms-fx-n">{x.name}</span>
-            </button>
-          ))}
-        </div>
-      </Opt>
-      {from && (
+      {scened ? (
+        <SceneOverride slide={slide} />
+      ) : (
+        <Opt label="움직임" wide>
+          <div className="ms-fxs" role="group" aria-label="움직임">
+            {BLOCK_EFFECTS.map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                className={cx('ms-fx', effect === x.id && 'is-on')}
+                aria-pressed={effect === x.id}
+                title={x.description}
+                onClick={() => onSet(block, { effect: x.id === 'auto' ? undefined : (x.id as BlockEffect) }, x.id !== 'none')}
+              >
+                <span className={cx('fx-demo', `is-${x.id}`)} aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span className="ms-fx-n">{x.name}</span>
+              </button>
+            ))}
+          </div>
+        </Opt>
+      )}
+      {from && !scened && (
         <Opt label="들어오는 쪽" wide>
           <Segmented<BlockFrom> className="seg-fill" label="들어오는 쪽" options={BLOCK_FROMS.map((f) => ({ ...f, name: FROM_SHORT[f.id] }))} value={from} onPick={(f) => onSet(block, { from: f }, true)} />
         </Opt>
       )}
-      <Opt label="빠르기" wide>
-        <Segmented<BlockSpeed> className="seg-fill" label="빠르기" options={BLOCK_SPEEDS} value={speed} onPick={(s) => onSet(block, { speed: s === 'normal' ? undefined : s }, true)} />
-      </Opt>
+      {!scened && (
+        <Opt label="빠르기" wide>
+          <Segmented<BlockSpeed> className="seg-fill" label="빠르기" options={BLOCK_SPEEDS} value={speed} onPick={(s) => onSet(block, { speed: s === 'normal' ? undefined : s }, true)} />
+        </Opt>
+      )}
     </section>
   )
 }
