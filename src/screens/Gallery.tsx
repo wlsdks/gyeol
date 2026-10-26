@@ -11,6 +11,7 @@ import type { SlideActions } from '../slides/context'
 import { pageProps, ScaledSlide, SlideCanvas } from '../slides/SlideCanvas'
 import { fitBlocks } from '../slides/fitBlocks'
 import { motionEngine } from '../motion/engine'
+import { checkAssembly } from './assembly'
 import { checkCombos, comboSlides } from './combos'
 import { checkEdit } from './checkEdit'
 import { checkFrame, inkOf } from './checkFrame'
@@ -221,7 +222,7 @@ export function Gallery() {
   // 부품의 잘리지 않는 높이를 재는 도구 (measureBlocks.ts). 콘솔에서 await measureBlocks()
   if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureAllFonts, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
-  if (params.get('set') === 'combos') Object.assign(window, { checkCombos, comboSlides })
+  if (params.get('set') === 'combos' || params.get('set') === 'review') Object.assign(window, { checkCombos, comboSlides, checkAssembly })
   // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()
   if (params.get('mode') === 'edit') Object.assign(window, { checkEdit })
   // 장의 틀 점검 (checkFrame.ts). 콘솔에서 await checkFrame()
