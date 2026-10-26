@@ -43,7 +43,10 @@ export function useEditorShortcuts(on: {
       on.print()
       return
     }
-    if (typing) return
+    // 장의 글 칸에서는 쓰는 중에도 편집기의 되돌리기로(위쪽 되돌리기 단추와 같게). 브라우저에 맡기면 한글은 한 음절씩 되돌렸고,
+    // 그 칸을 다 비우면 앞서 고친 다른 칸의 글을 한 음절씩 지웠으며, 되돌린 것이 편집기의 기록과 따로 놀았다. 조합 중의 키는 입력기에 맡긴다
+    const field = typing && !e.isComposing && e.keyCode !== 229 && !!(e.target as HTMLElement).closest?.('.slide .ed-input')
+    if (typing && !field) return
     const { undo, redo } = useDeck.getState()
     if (mod && k === 'z') {
       e.preventDefault()

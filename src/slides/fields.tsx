@@ -273,13 +273,29 @@ function Editable({
   enterNext,
 }: FieldProps & { style?: CSSProperties }) {
   const ref = useRef<HTMLSpanElement>(null)
+  // 이 칸이 마지막으로 저장소에 보낸 값. 쓰는 동안 값이 이것과 다르게 바뀌면 바깥에서 바꾼 것이다(쓰다가 누른 되돌리기)
+  const sent = useRef(value)
 
   // 입력 중에는 DOM을 건드리지 않는다. 되돌리기 같은 바깥 변경만 반영한다.
+  // 쓰는 중이어도 바깥에서 값을 바꾸면 그 값으로 다시 그리고 커서를 글 끝에 둔다: 그대로 두면 화면의 글과 저장된 값이 달라서
+  // 이어 친 글자가 되돌린 것을 도로 덮어썼다. 되돌린 글 뒤에 치던 빈칸은 남긴다(저장소에는 앞뒤 빈칸을 빼고 보내서, 빼면 이어 친 낱말이 붙는다)
   useLayoutEffect(() => {
     const el = ref.current
-    if (!el || document.activeElement === el) return
-    paint(el, value, numeral)
-  }, [value, numeral])
+    if (!el) return
+    if (document.activeElement !== el) {
+      sent.current = value
+      paint(el, value, numeral)
+      return
+    }
+    if (value === sent.current) return
+    sent.current = value
+    const was = clean(el.innerText, multiline)
+    const keep = !numeral && value && was.startsWith(value) ? /^[ \n]*/.exec(was.slice(value.length))![0] : ''
+    paint(el, value + keep, numeral)
+    const sel = getSelection()
+    sel?.selectAllChildren(el)
+    sel?.collapseToEnd()
+  }, [value, numeral, multiline])
 
   return (
     <Tag className={cx(className, 'ed', !value && 'is-empty')} style={style}>
@@ -301,11 +317,23 @@ function Editable({
         aria-placeholder={hint}
         aria-multiline={multiline || undefined}
         spellCheck={false}
-        onInput={(e) => onChange!(clean(e.currentTarget.innerText, multiline))}
+        onInput={(e) => {
+          // 앞뒤 빈칸은 빼고 보낸다(칸을 떠날 때도 뺀다). 빈칸째 보내면 쉬었다가 떠날 때 빈칸만 뺀 것이 되돌리기 한 단계로 따로 남아,
+          // 떠난 뒤 누른 Ctrl+Z 한 번이 화면에서 아무것도 바꾸지 않았다. 빈칸만 쳐서 값이 그대로면 보내지 않는다.
+          // 줄바꿈은 그대로 보낸다: 줄이 하나 늘어 장이 넘치는지를 저장된 값으로 다시 재서(SlideStage의 useOverflow), 빼면 Enter로
+          // 늘었다가 떠날 때 지워진 빈 줄의 '글이 넘쳤어요'가 남았다
+          const v = clean(e.currentTarget.innerText, multiline).replace(/^ +| +$/g, '')
+          if (v === sent.current) return
+          sent.current = v
+          onChange!(v)
+        }}
         onBlur={(e) => {
           const el = e.currentTarget
           const v = clean(el.innerText, multiline).trim()
-          if (v !== value) onChange!(v)
+          if (v !== value) {
+            sent.current = v
+            onChange!(v)
+          }
           // 쓰는 동안 단위 칸(span) 안팎으로 들어간 글자를 다시 나눈다
           paint(el, v, numeral)
           // 쓰기를 끝내면 칸 안의 커서와 고른 글을 놓는다. 그대로 두면 쓰지 않는 글 위에 파란 칠이 남고, 이어 친 글자가 초점 없는
