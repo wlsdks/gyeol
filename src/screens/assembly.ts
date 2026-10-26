@@ -40,8 +40,19 @@ type Span = { t: number; b: number }
 
 const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter, .bk-incoming'
 
-/** 칸에서 실제로 그려진 위아래 (화면 px). 발표 화면의 쌓기와 같은 것으로 본다(fitBlocks.ts의 drawn) */
-const inkSpan = (cell: HTMLElement): Span | null => blockDrawn(cell)
+/**
+ * 칸에서 실제로 그려진 위아래 (화면 px). 발표 화면의 쌓기와 같은 것으로 본다(fitBlocks.ts의 drawn). 쌓기처럼 편집 표시를 숨기고 잰다
+ * (edit.css의 is-fitting): 숨기지 않으면 편집 화면에서 이미지 칸 아래 끝에 뜨는 '바꾸기', '지우기' 단추의 글을 그려진 것으로 알고,
+ * 높은 칸에 작게 든 화면 캡처가 본문 아래로 63~99px 나간다고 했다
+ */
+const inkSpan = (cell: HTMLElement): Span | null => {
+  const area = cell.closest<HTMLElement>('.bk-area')
+  const was = area?.classList.contains('is-fitting')
+  area?.classList.add('is-fitting')
+  const span = blockDrawn(cell)
+  if (!was) area?.classList.remove('is-fitting')
+  return span
+}
 
 /** 겹치는 범위를 합친 띠들 (위에서 아래로) */
 function merge(spans: Span[]): Span[] {
