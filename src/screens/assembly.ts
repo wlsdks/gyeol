@@ -574,7 +574,8 @@ function inkX(cell: HTMLElement): { l: number; r: number } | null {
     const cs = getComputedStyle(el)
     if (cs.visibility === 'hidden' || cs.opacity === '0') continue
     const bg = cs.backgroundColor
-    if ((!bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)) && cs.backgroundImage === 'none') continue
+    // 그림자로 테를 두른 상자(흐름의 단계 상자)도 그려진 것이다
+    if ((!bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)) && cs.backgroundImage === 'none' && cs.boxShadow === 'none') continue
     const q = el.getBoundingClientRect()
     if (!q.width || !q.height) continue
     l = Math.min(l, q.left)
@@ -624,6 +625,11 @@ function sides(area: HTMLElement, k: number): string[] {
   const out: string[] = []
   const a = area.getBoundingClientRect()
   const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  // 그려진 것이 본문 옆 틀 밖으로 나간 것: 옆으로 옮긴 칸(--bk-shift-x)이 장 틀 밖으로 나가도 장 안이라 잘림 검사는 몰랐다
+  for (const cell of cells) {
+    const x = inkX(cell)
+    if (x && (x.r > a.right + 2 * k || x.l < a.left - 2 * k)) out.push(`${cell.dataset.type}: 그려진 것이 본문 옆으로 ${Math.round(Math.max(x.r - a.right, a.left - x.l) / k)}px 나가요`)
+  }
   const lone = cells.length === 1 && TEXT_TYPES.has(cells[0].dataset.type ?? '') && cells[0].dataset.type !== 'heading'
   if (cells.length <= 2 && !lone) {
     const xs = cells.map(inkX).filter((x): x is { l: number; r: number } => !!x)
