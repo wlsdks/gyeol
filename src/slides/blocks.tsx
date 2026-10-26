@@ -300,13 +300,20 @@ function BlockCell({ block: b, blocks, live, seq, band, linked }: { block: Block
  * 판을 나누는 선마다의 손잡이. 끌면 선 양쪽이 크기를 주고받고 판의 칸에 붙는다. 선이 그어진 범위만큼 칸 사이를 덮는다
  * (blocks.css의 .bk-line이 판의 칸 수로 자리를 계산한다)
  */
-function Lines({ gutters, live }: { gutters: Gutter[]; live: BlockEdit }) {
+function Lines({ gutters, blocks, live }: { gutters: Gutter[]; blocks: Block[]; live: BlockEdit }) {
+  // 고른 부품의 가장자리에 닿는 선: 그 손잡이만 옅게 보여 크기를 바꿀 수 있는 곳을 알린다 (edit.css)
+  const sel = blocks.find((b) => b.id === live.selected)?.at
+  const near = (g: Gutter) =>
+    !!sel &&
+    (g.dir === 'h'
+      ? (sel.x === g.at || sel.x + sel.w === g.at) && sel.y < g.to && g.from < sel.y + sel.h
+      : (sel.y === g.at || sel.y + sel.h === g.at) && sel.x < g.to && g.from < sel.x + sel.w)
   return (
     <>
       {gutters.map((g) => (
         <div
           key={`${g.dir}${g.at}-${g.from}-${g.key}`}
-          className={cx('bk-line', `is-${g.dir}`)}
+          className={cx('bk-line', `is-${g.dir}`, near(g) && 'is-near')}
           style={{ '--at': g.at, '--from': g.from, '--to': g.to } as React.CSSProperties}
           role="separator"
           aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
@@ -541,7 +548,7 @@ export function BlockArea() {
         <BlockCell key={b.id} block={b} blocks={blocks} live={live} seq={seq.get(b.id)} band={info.get(b.id)} linked={(info.get(b.id)?.size ?? 1) > 1 && linked.has(info.get(b.id)?.band)} />
       ))}
       <Links blocks={blocks} live={live} />
-      {live && !live.dragId && <Lines gutters={guttersOf(blocks)} live={live} />}
+      {live && !live.dragId && <Lines gutters={guttersOf(blocks)} blocks={blocks} live={live} />}
       {live?.incoming && <div className="bk-incoming" aria-hidden="true" />}
     </div>
   )
