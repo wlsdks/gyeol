@@ -162,9 +162,29 @@ export function Popover({
   flip?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  // 닫히는 중: 빠르게 흐려진 뒤에 뺀다. 열 때만 움직이고 닫을 때 툭 사라지면 손에 걸리는 느낌이 났다
+  const [closing, setClosing] = useState(false)
   const [up, setUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const popRef = useRef<HTMLDivElement>(null)
+  const timer = useRef(0)
+  const close = () => {
+    if (!open || closing) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return setOpen(false)
+    setClosing(true)
+    // animationend는 숨은 탭에서 오지 않을 수 있어 시간으로 (--t-fast)
+    timer.current = window.setTimeout(() => {
+      setOpen(false)
+      setClosing(false)
+    }, 120)
+  }
+  const toggle = () => {
+    window.clearTimeout(timer.current)
+    if (closing) return setClosing(false)
+    if (open) close()
+    else setOpen(true)
+  }
+  useEffect(() => () => window.clearTimeout(timer.current), [])
 
   // 그리기 전에 재서 정한다 (아래로 열렸다가 위로 튀지 않게)
   useLayoutEffect(() => {
@@ -179,22 +199,23 @@ export function Popover({
     setUp(at.bottom + h > Math.min(area.bottom, window.innerHeight) && at.top - h >= Math.max(area.top, 0))
   }, [flip, open])
 
+  // close가 그릴 때마다 새로 만들어져서 늘 다시 건다 (열려 있을 때만)
   useEffect(() => {
-    if (!open) return
+    if (!open || closing) return
     const onDown = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
+      if (!ref.current?.contains(e.target as Node)) close()
     }
     document.addEventListener('pointerdown', onDown)
     return () => document.removeEventListener('pointerdown', onDown)
-  }, [open])
-  useEscape(() => setOpen(false), { active: open })
+  })
+  useEscape(close, { active: open && !closing })
 
   return (
     <div className="pop-wrap" ref={ref}>
-      {button({ open, toggle: () => setOpen((o) => !o) })}
+      {button({ open: open && !closing, toggle })}
       {open && (
-        <div ref={popRef} className={cx('pop', `pop-${align}`, flip && up && 'pop-up', className)}>
-          {children(() => setOpen(false))}
+        <div ref={popRef} className={cx('pop', `pop-${align}`, flip && up && 'pop-up', closing && 'is-closing', className)}>
+          {children(close)}
         </div>
       )}
     </div>

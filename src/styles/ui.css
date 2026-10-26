@@ -398,6 +398,18 @@
   }
 }
 
+/* 닫힐 때는 더 짧게 흐려지기만 (Popover의 closing). 그동안 눌리지 않는다 */
+.pop.is-closing {
+  pointer-events: none;
+  animation: pop-out var(--t-fast) ease-in forwards;
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+  }
+}
+
 .menu {
   display: flex;
   flex-direction: column;
