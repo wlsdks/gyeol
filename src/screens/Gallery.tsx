@@ -17,6 +17,7 @@ import { checkEdit } from './checkEdit'
 import { checkFrame, inkOf } from './checkFrame'
 import { clashes, failingHeights, heightsSource, measureAll, measureAllFonts, measureBlocks, mergeHeights, spanWidth } from './measureBlocks'
 import { reviewSlides } from './reviewSlides'
+import { checkStress, stressSlides } from './stress'
 
 // 개발용: 모든 레이아웃을 한 화면에 늘어놓고 디자인을 점검한다. #/gallery?theme=navy&mode=preview&set=blank&type=deal
 // &set=blocks 는 부품마다 넓은 칸과 좁은 칸에 넣어 본 부품 장. &types=ring,ratio 처럼 부품을 고르고, &bv=list 처럼 부품의 모양을 고를 수 있다.
@@ -29,6 +30,7 @@ import { reviewSlides } from './reviewSlides'
 // &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=review 는 부품 장의 대표 조합 몇 장 (reviewSlides.ts, 고치기 전과 후를 견줄 때). &w=1920 이면 장을 줄이지 않고 그린다.
+// set=stress&type=bullets 는 부품 하나를 항목 수, 칸 너비, 칸 높이마다 (stress.ts의 checkStress). type=many 는 부품 하나부터 여섯까지.
 // set=combos&seed=1&n=60 은 규칙이 받아들인 부품 조합을 seed마다 정해진 차례로 만들어 본다 (combos.ts의 checkCombos).
 
 /** set=edge: 차트 장이 무너지기 쉬운 값들 (음수, 빈 값, 많은 항목, 모두 같은 값, 긴 이름) */
@@ -191,6 +193,7 @@ function galleryDeck(set: string, theme: ThemeId, params: URLSearchParams): Deck
   const deck = createSampleDeck()
   if (set === 'edge') return { ...deck, theme: { id: theme }, slides: edgeSlides() }
   if (set === 'blocks') return { ...deck, theme: { id: theme }, slides: blockSlides(params.get('fill'), params.get('types')?.split(','), params.get('bv'), params.get('bl'), params.get('lane') === '1') }
+  if (set === 'stress') return { ...deck, theme: { id: theme }, slides: stressSlides(params.get('type'), params.get('bv'), params.get('bl')) }
   if (set === 'review') return { ...deck, theme: { id: theme }, slides: reviewSlides(params.get('size') ?? undefined) }
   if (set === 'combos') return { ...deck, theme: { id: theme }, slides: comboSlides(Number(params.get('seed')) || 1, Number(params.get('n')) || 40, { theme: { size: params.get('size') ?? undefined } }, params.get('mode') === 'edit').map((c) => c.slide) }
   return { ...deck, theme: { id: theme }, slides: [...deck.slides, ...extraSlides()] }
@@ -225,6 +228,8 @@ export function Gallery() {
   if (params.get('set') === 'blocks') Object.assign(window, { measureAll, measureAllFonts, measureBlocks, mergeHeights, heightsSource, clashes, failingHeights, spanWidth, fitBlocks })
   // 부품 조합 시험 (combos.ts). 콘솔에서 await checkCombos()
   if (params.get('set') === 'combos' || params.get('set') === 'review') Object.assign(window, { checkCombos, comboSlides, checkAssembly })
+  // 부품 하나를 항목 수와 칸 크기마다 재는 시험 (stress.ts). 콘솔에서 await checkStress()
+  if (params.get('set') === 'stress') Object.assign(window, { checkStress, checkAssembly })
   // 편집 칸 점검 (checkEdit.ts). mode=edit에서 콘솔로 await checkEdit()
   if (params.get('mode') === 'edit') Object.assign(window, { checkEdit })
   // 장의 틀 점검 (checkFrame.ts). 콘솔에서 await checkFrame()
