@@ -1,6 +1,6 @@
 import { isLink, linkFits } from '../deck/blocks'
 import type { BlockType } from '../deck/types'
-import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
+import { blockDrawn, blockFigures, blockTextLines } from '../slides/fitBlocks'
 
 /*
  * 개발용: 부품 장이 '사람이 짠 것처럼' 보이는지 보는 검사. checkCombos(combos.ts)는 잘리거나 겹치는 것만 봐서,
@@ -883,6 +883,29 @@ function fill(slide: HTMLElement, area: HTMLElement): string[] {
 }
 
 /**
+ * 레이아웃 장의 위아래 균형 (VISUAL-RULES 6): 장 채움(fitBlocks.ts의 fitLayout)이 글자를 키우고 줄 사이를 넓혀도 본문의 60%를 못 채우면
+ * 눈높이 가운데로 내려야 한다(.s-body의 data-eye). 위에 붙은 채 아래만 길게 빈 장을 찾는다. 본문 높이는 본문 상자가 아니라 장에서
+ * 본문이 쓸 수 있는 자리(본문 윗선부터 하단 표시 몫 위까지)다: 비교 장은 본문 상자가 내용 높이뿐이다
+ */
+function layoutFill(slide: HTMLElement): string[] {
+  const body = slide.querySelector<HTMLElement>(':scope > .s-body')
+  if (!body || slide.classList.contains('l-compose') || !slide.querySelector(':scope > .s-head') || body.dataset.eye) return []
+  const sr = slide.getBoundingClientRect()
+  const k = sr.height / slide.offsetHeight
+  const b = body.getBoundingClientRect()
+  const room = sr.bottom - (parseFloat(getComputedStyle(slide).paddingBottom) || 0) * k - b.top
+  if (!k || room <= 0) return []
+  let bottom = -Infinity
+  for (const q of blockTextLines(body)) if (!q.n.parentElement?.closest(EDIT_UI)) bottom = Math.max(bottom, q.b)
+  for (const f of blockFigures(body)) bottom = Math.max(bottom, f.getBoundingClientRect().bottom)
+  if (bottom === -Infinity) return []
+  const used = (bottom - b.top) / room
+  // 제목이 없거나 머리 줄뿐인 덜 쓴 장은 fitLayout도 내리지 않는다(내리면 머리 글자만 가운데에 뜬다)
+  if (used < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return []
+  return used < FILL_MIN ? [`본문을 ${Math.round(used * 100)}%만 채우고 위에 붙어 있어요(아래 ${Math.round((room - (bottom - b.top)) / k)}px 빔)`] : []
+}
+
+/**
  * 잘림: 글이나 그림이 장 밖으로, 또는 넘침을 숨기는 상자(overflow hidden, clip) 밖으로 나가 보이지 않는 것. 레이아웃 장도 본다
  * (진행 현황의 넷째 열이 장 밖으로 잘렸는데 칸 안만 보는 검사는 몰랐다). 편집 표시는 뺀다
  */
@@ -938,11 +961,11 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
   await new Promise((r) => setTimeout(r, 300))
   const problems: string[] = []
   const areas = [...document.querySelectorAll<HTMLElement>('.bk-area')]
-  // 레이아웃 장(부품 장이 아닌 장)은 잘림만 본다: 장 번호는 갤러리의 장 차례
+  // 레이아웃 장(부품 장이 아닌 장)은 잘림과 위아래 균형만 본다: 장 번호는 갤러리의 장 차례
   const slides = [...document.querySelectorAll<HTMLElement>('.slide')]
   slides.forEach((slide, i) => {
     if (slide.querySelector('.bk-area')) return
-    for (const p of clipped(slide)) problems.push(`${i + 1}번 장(레이아웃): ${p}`)
+    for (const p of [...clipped(slide), ...layoutFill(slide)]) problems.push(`${i + 1}번 장(레이아웃): ${p}`)
   })
   areas.forEach((area, i) => {
     const slide = area.closest<HTMLElement>('.slide')

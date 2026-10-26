@@ -1397,6 +1397,11 @@ export function blockFitter() {
    * 레이아웃 장(요약, 요점, 비교, 가격안, 표 같은)의 채움 (docs/VISUAL-RULES.md 6). 본문(.s-body)의 그려진 내용이 본문 높이의 60%에
    * 못 미치면 (가) 본문의 글자와 그림을 한 단계씩(1.2, 1.44) 키우고 (나) 그래도 비면 줄 사이를 줄마다 같은 값으로 넓힌다(--fill-air,
    * 캔버스 px, airMax까지. 레이아웃 CSS가 줄 사이에 더한다). 넘치거나 겹치거나 그림이 찌그러지거나 장 제목과 다투면 한 단계 앞으로.
+   * (다) 그래도 60%에 못 미치면 위에 붙여 아래만 길게 비우지 않고 눈높이 가운데로 내린다(--eye, 위 : 아래 = 1 : 1.2. 부품 장의 eyeLevel과 같다).
+   * 제목이 없거나 내용이 본문의 4분의 1도 안 되는 덜 쓴 장은 내리지 않는다.
+   * 장 제목과 다투어 키우지 못하는 세 단 요점, 줄 사이가 없는 가로 일정과 단계 흐름, 숫자 하나 장이 위 절반에 몰리고 아래가 통째로 비었다.
+   * 본문 높이는 본문 상자가 아니라 장에서 본문이 쓸 수 있는 자리(본문 윗선부터 하단 표시 몫 위까지)로 잰다: 비교 장은 본문 상자가
+   * 내용 높이뿐이라(화살표를 내용 가운데에 두려고) 늘 다 찬 것으로 재어, 줄 셋이 위 절반에 몰려도 키우지도 넓히지도 않았다.
    * 표지, 단락 장, 마지막 장, 부품 장, 제목 없는 장은 하지 않는다. 움직이는 중이면 끝난 뒤에
    */
   function fitLayout(slide: HTMLElement): void {
@@ -1409,9 +1414,19 @@ export function blockFitter() {
     }
     body.style.removeProperty('--bk-fit')
     body.style.removeProperty('--fill-air')
+    body.style.removeProperty('--eye')
+    delete body.dataset.eye
     const b = body.getBoundingClientRect()
-    if (!b.height) return
-    const fill = () => {
+    const sr = slide.getBoundingClientRect()
+    const k = sr.height / slide.offsetHeight
+    if (!b.height || !k) return
+    // 본문이 쓸 수 있는 아래 끝(장의 아래 여백 위)과 장 틀의 아랫선(--pad-y). 그 사이가 하단 표시 몫이다
+    const cs = getComputedStyle(slide)
+    const end = sr.bottom - (parseFloat(cs.paddingBottom) || 0) * k
+    const frame = sr.bottom - (parseFloat(cs.getPropertyValue('--pad-y')) || 0) * k
+    const room = end - b.top
+    if (room <= 0) return
+    const drawnBottom = () => {
       let bottom = -Infinity
       for (const q of lines(body)) bottom = Math.max(bottom, q.b)
       for (const f of figures(body)) bottom = Math.max(bottom, f.getBoundingClientRect().bottom)
@@ -1420,15 +1435,32 @@ export function blockFitter() {
         const cs = getComputedStyle(it)
         if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') bottom = Math.max(bottom, it.getBoundingClientRect().bottom)
       }
-      return bottom === -Infinity ? 1 : (bottom - b.top) / b.height
+      return bottom
+    }
+    const fill = () => {
+      const bottom = drawnBottom()
+      return bottom === -Infinity ? 1 : (bottom - b.top) / room
     }
     if (fill() >= 0.6) return
     const shapes = shapesOf(body)
     const bad = () => {
       if (crowded(body, shapes) || rivals(slide, [body])) return true
       // 본문 아래(출처와 하단 표시 자리)로 나간 글
-      for (const q of lines(body)) if (q.b > b.bottom + 2) return true
+      for (const q of lines(body)) if (q.b > end + 2) return true
       return false
+    }
+    // (다) 눈높이 가운데로: 위의 빈 곳과 아래(장 틀의 아랫선까지)의 빈 곳이 1 : 1.2. 하단 표시 몫 밖으로는 내리지 않는다.
+    // 아직 덜 쓴 장은 위에 둔다: 제목이 없거나(발표할 때 빈 제목은 그리지 않는다) 머리 줄뿐인 얇은 내용(본문의 4분의 1 밑)을
+    // 내리면 '지금 → 추진 후' 같은 머리 글자만 장 가운데에 떠 보였다
+    const eye = () => {
+      const f = fill()
+      if (f >= 0.6 || f < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return
+      const bottom = drawnBottom()
+      if (bottom === -Infinity) return
+      const move = Math.round(Math.min((frame - b.top - (bottom - b.top)) / 2.2, end - bottom) / k)
+      if (move < 8) return
+      body.style.setProperty('--eye', move + 'px')
+      body.dataset.eye = '1'
     }
     for (const f of [ups[0], more]) {
       body.style.setProperty('--bk-fit', String(f))
@@ -1444,6 +1476,7 @@ export function blockFitter() {
     body.style.setProperty('--fill-air', airMax + 'px')
     if (fill() <= before + 0.001) {
       body.style.removeProperty('--fill-air')
+      eye()
       return
     }
     // 넘치지 않고 85%를 넘지 않는 가장 넓은 값 (반씩 나눠 찾는다)
@@ -1460,6 +1493,7 @@ export function blockFitter() {
     }
     if (lo > 0) body.style.setProperty('--fill-air', lo + 'px')
     else body.style.removeProperty('--fill-air')
+    eye()
   }
 
   /** 이름표 자리 고르기의 바깥 입구: 움직이는 중인 판(점이 내려앉는 중이다)은 끝난 뒤에. 추이의 점 숫자도 같다 */

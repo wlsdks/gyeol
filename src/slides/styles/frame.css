@@ -25,10 +25,11 @@
   text-wrap: pretty;
 }
 
+/* --eye: 키워도 본문의 60%를 못 채우는 장을 눈높이 가운데로 내리는 몫(장 채움 맞추기 fitLayout이 준다, VISUAL-RULES 6) */
 .s-body {
   flex: 1;
   min-height: 0;
-  margin-top: var(--body-gap);
+  margin-top: calc(var(--body-gap) + var(--eye, 0px));
 }
 
 /* 아래 띠: 한 줄. 왼쪽에 숫자 장의 출처·기준, 오른쪽에 단락 지도와 쪽 번호.
