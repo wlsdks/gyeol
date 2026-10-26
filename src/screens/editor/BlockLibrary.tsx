@@ -202,6 +202,9 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.blocks ?? []).length > 0
+  // 이음표마다 눌러 넣을 사이가 있는지(누를 때와 같은 규칙: 비어 있고, 뜻이 서고, 아래 사이면 위아래를 넓힐 높이도). 예전에는 컴포넌트가
+  // 둘 이상이면 이음표 카드를 모두 열어 두어서, 눌러 보면 열에 여덟은 '뜻이 서지 않아요'나 '높이가 모자라요'로 들어가지 않았다
+  const linkOpen = useMemo(() => new Map(BLOCK_LINKS.map((l) => [l.id, linkable && blocks.linkOpen(l.id)])), [slide, areaH, linkable])
   const shownWhy = !why
     ? null
     : closed
@@ -314,20 +317,30 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                 </h3>
                 <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 장에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
                 <div className="lib-grid">
-                  {BLOCK_LINKS.map((l) => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      className={cx('lib-card', !linkable && 'is-blocked')}
-                      title={`${l.name}: ${l.description}`}
-                      onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
-                      onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
-                    >
-                      <LinkThumb deck={look} link={l.id} />
-                      <span className="lib-name">{l.name}</span>
-                      <span className="lib-desc">{l.description}</span>
-                    </button>
-                  ))}
+                  {BLOCK_LINKS.map((l) => {
+                    // 끼울 사이가 없는 이음표도 누르면 까닭을 알린다(LinkEditor의 insert가 알림으로)
+                    const shut = linkable && !linkOpen.get(l.id)
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        className={cx('lib-card', (!linkable || shut) && 'is-blocked')}
+                        title={`${l.name}: ${l.description}${shut ? '\n이 장에 끼울 자리가 없어요. 눌러서 이유를 보세요' : ''}`}
+                        onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
+                        onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
+                      >
+                        <LinkThumb deck={look} link={l.id} />
+                        <span className="lib-name">{l.name}</span>
+                        <span className="lib-desc">{l.description}</span>
+                        {shut && (
+                          <span className="lib-no">
+                            <LockIcon />
+                            이 장에 끼울 자리가 없어요
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </section>
             )}

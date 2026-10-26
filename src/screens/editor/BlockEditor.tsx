@@ -222,6 +222,8 @@ export interface BlockEditing {
   /** 이음표 카드를 누르기 시작할 때. 끌면 컴포넌트 사이에 놓고, 그냥 떼면 알아서 고른 사이에 넣는다 */
   pressLinkCard(e: ReactPointerEvent<HTMLElement>, link: BlockLink): void
   insertLink(link: BlockLink): void
+  /** 이 이음표를 눌러 넣을 사이가 지금 장에 있는지 (부품 고르기 카드의 잠금) */
+  linkOpen(link: BlockLink): boolean
   selected: string | null
   select(id: string | null): void
   convert(): void
@@ -1013,6 +1015,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     areaHeight: () => roomOf(slideRef.current),
     pressLinkCard: links.pressCard,
     insertLink: links.insert,
+    linkOpen: links.canInsert,
     selected,
     select: (id) => {
       setSelected(id)

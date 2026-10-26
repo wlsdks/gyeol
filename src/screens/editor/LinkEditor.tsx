@@ -288,6 +288,12 @@ export function useLinkEditing({
 
   const pressCard = (e: ReactPointerEvent<HTMLElement>, link: BlockLink) => press(e, (x, y) => begin(link, null, x, y), () => insert(link))
 
+  /** 이 이음표를 눌러 넣을 사이가 이 장에 있는지 (부품 고르기 카드의 잠금). 누를 때 사이를 고르는 autoSpot 그대로다 */
+  const canInsert = (link: BlockLink): boolean => {
+    const s = slideRef.current
+    return s.layout === 'compose' && !!autoSpot(s.blocks ?? [], link)
+  }
+
   // ---------- 장에 있는 이음표 ----------
 
   const onLinkPointerDown = (e: ReactPointerEvent<HTMLElement>, t: LinkTarget) => {
@@ -397,6 +403,7 @@ export function useLinkEditing({
     onLinkPointerDown,
     pressCard,
     insert,
+    canInsert,
     toolbar,
     ghost,
     hint,
