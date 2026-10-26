@@ -27,7 +27,8 @@
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
   line-height: 1.36;
-  text-wrap: pretty;
+  /* 한두 줄짜리 요청이라 줄 길이를 고르게: pretty로는 큰 글자에서 끝 줄에 낱말 하나('지원해')만 남았다 */
+  text-wrap: balance;
 }
 
 /* 한 줄을 다 쓰는 높은 칸의 강조 상자: 면이 넓은 만큼 글을 한 단계 크게(큰 칸 키우기와 함께 62px), 면 안쪽 여백도 넓게.
