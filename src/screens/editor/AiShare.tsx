@@ -356,7 +356,7 @@ function AiConn({ ai, ask, compact }: { ai: AiShare; ask: AiAsk; compact?: boole
   // 창을 열 때마다 다시 본다: 설치하고 돌아와 창을 다시 열면 바로 준비됨이 되게
   useEffect(() => recheck(), [recheck])
   if (status === undefined) return <p className="ai-env">연결을 확인하고 있어요</p>
-  if (status === null) return <p className="ai-env is-warn">‘Framo 시작’ 파일로 켰을 때만 쓸 수 있어요.</p>
+  if (status === null) return <p className="ai-env is-warn">Framo.exe나 ‘Framo 시작’ 파일로 켰을 때만 쓸 수 있어요.</p>
   if (status.agent && !ask.needsLogin) {
     return (
       <p className="ai-env is-ready">

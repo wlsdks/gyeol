@@ -3,7 +3,8 @@
 // 둘 다 Node.js(공식 배포본)를 같이 넣어서, 받는 사람은 크롬이나 엣지 말고는 아무것도 설치하지 않아도 된다.
 // 회사 PC는 프로그램 설치가 막혀 있는 경우가 많다. 맥용에는 애플 실리콘(arm64)과 인텔(x64) 두 가지를 넣고,
 // 'Framo 시작.command'가 그 맥에 맞는 쪽을 고른다.
-// - 윈도우용: .bat은 CRLF, 안내 .txt는 메모장이 한글을 바로 알아보게 BOM과 CRLF로 쓴다.
+// - 윈도우용: Framo.exe(Node.js 단일 실행 파일, scripts/exe.mjs)로 켠다. 백신이 서명 없는 exe를 막는 PC를 위해
+//   'Framo 시작.bat'도 한동안 같이 넣는다. .bat은 CRLF, 안내 .txt는 메모장이 한글을 바로 알아보게 BOM과 CRLF로 쓴다.
 // - 맥용: 안내 .txt는 그대로(LF, BOM 없이), 'Framo 시작.command'와 node에는 실행 권한을 남긴다.
 // - zip은 한글 파일 이름이 윈도우에서 깨지지 않게 직접 만든다 (scripts/zip.mjs). zip 이름에 버전을 넣지 않는다:
 //   홍보 페이지의 내려받기 단추가 늘 같은 주소(releases/latest/download/gyeol-mac.zip)로 최신 판을 받는다.
@@ -14,7 +15,7 @@
 //
 //   npm run pack                  둘 다
 //   npm run pack -- --only mac    맥용만 (--only windows 는 윈도우용만)
-//   npm run pack -- --no-node     Node.js 없이 (받는 사람이 Node.js를 설치해야 함)
+//   npm run pack -- --no-node     Node.js 없이 (받는 사람이 Node.js를 설치해야 함. Framo.exe도 만들지 않는다)
 
 import { createHash } from 'node:crypto'
 import { execFileSync, execSync } from 'node:child_process'
@@ -22,6 +23,7 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rm
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { buildExe } from './exe.mjs'
 import { externalUrls } from './offline.mjs'
 import { zipDir } from './zip.mjs'
 
@@ -62,7 +64,7 @@ if (!readFileSync(join(root, 'dist', 'index.html'), 'utf8').includes(cspTag)) {
 
 /**
  * nodejs.org의 공식 배포본 하나(`node-<버전>-<dist>.<ext>`)에서 실행 파일과 LICENSE를 꺼낸다. 받은 파일은 .cache/에 둔다.
- * @param {string} dist win-x64, darwin-arm64, darwin-x64
+ * @param {string} dist win-x64, darwin-arm64, darwin-x64, linux-x64
  */
 async function officialNode(dist) {
   const win = dist.startsWith('win')
@@ -130,14 +132,36 @@ async function putNode(dist, binTo, licenseTo) {
   }
 }
 
+/**
+ * Framo.exe (scripts/exe.mjs). SEA 덩어리는 넣을 node.exe와 같은 판의 node로 만들어야 해서,
+ * 이 스크립트를 돌리는 node가 다른 판이면 이 PC에 맞는 공식 node를 같이 받아 쓴다.
+ */
+async function putExe(nodeExe, out) {
+  const host = process.platform === 'win32' ? 'win-x64' : `${process.platform}-${process.arch}`
+  const blobNode = process.version === NODE_VERSION ? null : await officialNode(host)
+  const work = mkdtempSync(join(tmpdir(), 'gyeol-exe-'))
+  try {
+    const { icon } = await buildExe({ nodeExe, blobNode: blobNode?.bin ?? process.execPath, out, work, version })
+    if (!icon) console.warn('맥, 리눅스에서는 Framo.exe에 아이콘과 파일 정보를 넣지 못해요(rcedit는 윈도우 프로그램). 나눠 줄 판은 윈도우에서 묶어 주세요.')
+  } catch (err) {
+    console.error(`Framo.exe를 만들지 못했어요: ${err.message}`)
+    process.exit(1)
+  } finally {
+    blobNode?.cleanup()
+    rmSync(work, { recursive: true, force: true })
+  }
+}
+
 async function windows() {
   const out = join(root, 'release', 'windows', name)
   common(out)
   cpSync(join(root, 'launch', 'Framo 시작.bat'), join(out, 'Framo 시작.bat'))
   cpSync(join(root, 'launch', '사용법.txt'), join(out, '사용법.txt'))
   if (withNode) {
+    // node.exe는 Framo.exe를 못 쓰는 PC를 위한 'Framo 시작.bat'과, 권한 모델 안에서 도는 AI(MCP) 서버가 쓴다
     await putNode('win-x64', join(out, 'node', 'node.exe'), join(out, 'node', 'LICENSE.txt'))
     windowsText(join(out, 'node', 'LICENSE.txt'), { bom: true })
+    await putExe(join(out, 'node', 'node.exe'), join(out, 'Framo.exe'))
   }
   windowsText(join(out, 'Framo 시작.bat'), { bom: false })
   for (const file of ['사용법.txt', '오픈소스 라이선스.txt']) windowsText(join(out, file), { bom: true })
@@ -165,4 +189,4 @@ async function mac() {
 if (only !== 'mac') await windows()
 if (only !== 'windows') await mac()
 rmSync(work, { recursive: true, force: true })
-console.log(`\n${name}을 묶었어요. 받는 사람은 zip을 풀고 'Framo 시작'을 더블클릭하면 돼요.`)
+console.log(`\n${name}을 묶었어요. 받는 사람은 zip을 풀고 윈도우는 'Framo.exe', 맥은 'Framo 시작'을 더블클릭하면 돼요.`)

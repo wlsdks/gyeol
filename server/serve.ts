@@ -62,11 +62,13 @@ export interface ServerOptions {
   share?: string
   /** 새 버전 창구. 시험에서 네트워크 대신 흉내 낸 것을 넣는다 */
   update?: Partial<UpdateSetup>
+  /** MCP 서버를 띄울 node. 없으면 이 서버를 돌리는 node (Framo.exe로 켰을 때는 옆의 node\node.exe) */
+  nodePath?: string
 }
 
-export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(APP_ROOT, SHARE_DIR_NAME), update = {} }: ServerOptions = {}) {
+export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(APP_ROOT, SHARE_DIR_NAME), update = {}, nodePath }: ServerOptions = {}) {
   root = normalize(root)
-  const ai = createAiHandler(share, { mcpPath: join(HERE, 'gyeol-mcp.mjs') })
+  const ai = createAiHandler(share, { mcpPath: join(HERE, 'gyeol-mcp.mjs'), nodePath })
   // 받은 새 배포본은 앱 폴더 안의 고정된 폴더에 둔다
   const updates = createUpdateHandler({ version, downloadDir: join(APP_ROOT, UPDATE_DIR_NAME), ...update })
 
@@ -164,7 +166,16 @@ function fail(message: string): never {
   process.exit(1)
 }
 
-async function main() {
+export interface MainOptions {
+  /**
+   * MCP 서버를 띄울 node. Framo.exe(launch/framo-exe.cjs)가 이 파일을 불러 켤 때 옆의 node\node.exe를 넘긴다.
+   * Framo.exe는 명령줄 인자를 node 인자로 읽지 않아서, MCP 서버가 스스로를 권한 모델(--permission) 안에서 다시 띄우는 길이
+   * node와 달라진다. 그 길을 새로 만들지 않고 검수해 온 node.exe 길을 그대로 쓴다.
+   */
+  nodePath?: string
+}
+
+export async function main({ nodePath }: MainOptions = {}) {
   if (!existsSync(join(APP_ROOT, 'dist', 'index.html'))) return fail('화면 파일이 없어요. 받은 zip 파일을 통째로 다시 풀어 주세요.')
   if (await alreadyRunning()) {
     console.log(`Framo가 이미 켜져 있어요. 브라우저에서 엽니다: ${ORIGIN}`)
@@ -173,7 +184,7 @@ async function main() {
   }
   let server: ReturnType<typeof createAppServer>
   try {
-    server = createAppServer()
+    server = createAppServer({ nodePath })
   } catch {
     // 'AI 공유' 폴더를 만들지 못했을 때. 읽기만 되는 곳(압축 파일 안, 막힌 폴더)에서 켜면 그렇다
     return fail("'AI 공유' 폴더를 만들지 못했어요. 받은 zip 파일을 바탕 화면이나 문서 폴더에 풀고 그 안에서 다시 실행해 주세요.")
@@ -185,8 +196,9 @@ async function main() {
     fail(err.message)
   })
   server.listen(PORT, HOST, () => {
-    console.log(`Framo가 켜졌어요: ${ORIGIN}`)
-    console.log('이 PC 안에서만 열리고, 발표 내용은 어디로도 보내지 않아요. 끄려면 이 창을 닫거나 Ctrl+C를 누르세요.')
+    console.log(`\n  Framo가 켜져 있어요: ${ORIGIN}`)
+    console.log('  이 창을 닫으면 꺼져요. 발표를 만드는 동안에는 닫지 말고 내려 두세요.')
+    console.log('  이 PC 안에서만 열리고, 발표 내용은 어디로도 보내지 않아요.\n')
     openBrowser(ORIGIN)
   })
 }

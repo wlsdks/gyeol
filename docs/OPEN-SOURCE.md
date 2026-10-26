@@ -27,7 +27,7 @@
 | @fontsource-variable/noto-serif-kr | 5.3.1 | OFL-1.1 | 글꼴 '본명조 제목'의 제목 (고를 때만). Google Fonts의 Noto Serif KR, unicode-range 조각 6.2MB |
 | @types/react, csstype | 19.3.0, 3.2.3 | MIT | 타입 정보만. 실행 파일에는 들어가지 않음 |
 
-## 만들 때만 쓰는 것 (42개)
+## 만들 때만 쓰는 것 (55개)
 
 | 패키지 | 라이선스 | 비고 |
 |---|---|---|
@@ -35,6 +35,8 @@
 | typescript 7 | Apache-2.0 | 타입 검사 |
 | vitest 5 | MIT | 테스트 |
 | lightningcss 1.33 | MPL-2.0 | Vite가 CSS를 줄일 때 씀. lightningcss 파일 자체를 고쳐서 배포할 때만 그 파일을 공개할 의무가 생김. 고치지도, 배포하지도 않음 |
+| postject 1.0.0-alpha.6 | MIT | `npm run pack`이 `Framo.exe`를 만들 때 SEA 덩어리를 `node.exe`에 넣음(Node.js 문서가 안내하는 도구). 배포본에는 들어가지 않음 |
+| rcedit 5 | MIT | `npm run pack`이 윈도우에서 `Framo.exe`의 아이콘과 파일 정보를 바꿈(Electron이 관리하는 도구, 패키지 안의 `rcedit-x64.exe`). 배포본에는 들어가지 않음 |
 | @types/node 외 나머지 | MIT, ISC, BSD-3-Clause, Apache-2.0 | |
 
 ## 실행 환경과 연결하는 도구
@@ -42,6 +44,7 @@
 | 이름 | 라이선스 | 비고 |
 |---|---|---|
 | Node.js 24 (윈도우 `node\node.exe`, 맥 `node/arm64/node`·`node/x64/node`) | MIT | 배포본에 공식 배포 파일을 고치지 않고 넣음. Node.js에 들어 있는 OpenSSL(Apache-2.0), ICU, libuv 등의 라이선스는 함께 넣는 `node/LICENSE.txt`에 모두 있음 |
+| 윈도우 `Framo.exe` | MIT (Node.js) | 공식 `node.exe`를 고친 것: Node.js의 서명을 걷고, 아이콘과 파일 정보를 Framo로 바꾸고, 시작 코드(`launch/framo-exe.cjs`)를 Node.js의 단일 실행 파일(SEA) 기능으로 넣음. MIT는 고쳐서 나눠 주는 것을 허락하고, 저작권 표시와 라이선스 전문은 파일 정보와 `node\LICENSE.txt`에 남김 |
 | 크롬, 엣지 | 각 회사 약관 | 사용자가 이미 쓰는 브라우저. 이 저장소가 나눠 주지 않음 |
 | Codex CLI | Apache-2.0 (오픈소스) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음 |
 | Claude Code | Anthropic 상용 약관 (오픈소스 아님) | MCP로 붙는 AI 도구. 이 저장소에 들어 있지 않음. 회사의 AI 도구 사용 정책을 따름 |
