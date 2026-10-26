@@ -47,6 +47,15 @@ export function Split() {
   const sum = values.reduce((a, b) => a + b, 0)
   const ok = series.ok && sum > 0
   const shares = values.map((v) => (ok ? v / sum : 0))
+  // 편집할 때 값을 아직 적지 않은 조각(빈 조각): 몫이 없다고 이름표까지 숨기면 '+ 조각'을 눌러도 아무것도 보이지 않고 적을 칸도 없었고,
+  // 새 나누기에 값 하나를 적으면 나머지 조각의 이름과 값 칸이 한꺼번에 사라졌다. 적힌 조각의 평균 몫만큼 빈 조각을 칠하지 않은 칸 색으로
+  // 그리고 그 아래에 이름표(옅은 선 색)를 둔다. 합계와 비율은 적힌 값만으로, 발표 화면에는 그리지 않는다
+  const ghost = items.map((_, i) => !demo && mode !== 'final' && shares[i] <= 0)
+  const real = shares.filter((p) => p > 0)
+  const room = real.length ? real.reduce((a, b) => a + b, 0) / real.length : 1 / Math.max(1, items.length)
+  const laid = shares.map((p, i) => (ghost[i] ? room : p))
+  const laidSum = laid.reduce((a, b) => a + b, 0) || 1
+  const spans = laid.map((p) => p / laidSum)
   const typedPct = texts.every((t) => !t || t.includes('%'))
   const sumText = ok && !typedPct ? `${formatNumber(Math.round(sum * 100) / 100)}${series.suffix}` : ''
   const typedTotal = readField(slide, meta, 'total').trim()
@@ -62,10 +71,10 @@ export function Split() {
   const colors = items.map((_, i) => (pick < 0 ? accentTint(i) : i === pick ? 'var(--accent)' : accentTint(Math.min(2 + grey++, TINT_COUNT - 1))))
   const need = splitNeed(
     items.map((it, i) => it.title || hintFor(slide.layout, slide.hints, 'title', 'title', i)),
-    items.map((it, i) => (it.value || texts[i]) + (unit ? ` ${unit}` : '')),
-    shares,
+    items.map((it, i) => (it.value || texts[i] || hintFor(slide.layout, slide.hints, 'value', 'value', i)) + (unit ? ` ${unit}` : '')),
+    spans,
   )
-  const cols = shares.map((p) => `minmax(0, ${Math.max(p, 0.0001).toFixed(4)}fr)`).join(' ')
+  const cols = spans.map((p) => `minmax(0, ${Math.max(p, 0.0001).toFixed(4)}fr)`).join(' ')
   return (
     <div className={cx('bk-sg', demo && 'is-demo', !ok && 'is-blank')} data-n={items.length} data-need={need} style={{ '--sg-cols': cols } as CSSProperties}>
       <div className="bk-sg-head">
@@ -89,12 +98,20 @@ export function Split() {
       </div>
       <div className="bk-sg-bar" aria-hidden="true">
         {items.map((it, i) =>
-          shares[i] > 0 ? <span key={it.id} className="bk-sg-seg" style={{ flexGrow: shares[i], background: colors[i] } as CSSProperties} /> : null,
+          shares[i] > 0 ? (
+            <span key={it.id} className="bk-sg-seg" style={{ flexGrow: spans[i], background: colors[i] } as CSSProperties} />
+          ) : ghost[i] ? (
+            <span key={it.id} className="bk-sg-seg is-ghost" style={{ flexGrow: spans[i] } as CSSProperties} />
+          ) : null,
         )}
       </div>
       <div className="bk-sg-keys">
         {items.map((it, i) => (
-          <div key={it.id} className={cx('it bk-sg-key', i === pick && 'is-hl', shares[i] <= 0 && 'is-none')} style={{ '--c': colors[i] } as CSSProperties}>
+          <div
+            key={it.id}
+            className={cx('it bk-sg-key', i === pick && 'is-hl', shares[i] <= 0 && !ghost[i] && 'is-none')}
+            style={{ '--c': ghost[i] ? 'var(--line)' : colors[i] } as CSSProperties}
+          >
             <IT i={i} k="title" className="bk-sg-name" />
             <p className="bk-sg-line">
               <IT i={i} k="value" as="span" className="bk-sg-v" numeral oneLine />

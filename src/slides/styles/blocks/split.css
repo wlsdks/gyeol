@@ -97,6 +97,11 @@
   display: none;
 }
 
+/* 값을 아직 적지 않은 조각(편집할 때만, Split.tsx): 비운 막대처럼 칠하지 않은 칸 색 */
+.bk-sg-seg.is-ghost {
+  background: var(--surface);
+}
+
 .bk-sg-name {
   --fs: var(--t-small);
   color: var(--ink-2);
