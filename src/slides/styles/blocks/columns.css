@@ -7,7 +7,7 @@
   /* 막대 너비: 칸의 반 남짓, 가장 넓어도 160px. 120px까지였을 때는 한 줄을 다 쓰는 막대 넷이 칸의 3분의 1도 안 돼
      막대 사이가 막대의 두 배 넘게 비었다(쌓은 막대는 칸 안 숫자 자리도 좁았다). 목표 줄(.bk-tg-goal)도 이 너비를 따른다 */
   --cc-w: min(56%, 160px);
-  --cc-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  --cc-bar: color-mix(in srgb, var(--accent) 38%, var(--bg));
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -58,7 +58,7 @@
 }
 
 .is-dark .bk-cc {
-  --cc-bar: color-mix(in srgb, var(--ink) 30%, var(--bg));
+  --cc-bar: color-mix(in srgb, var(--accent) 45%, var(--bg));
 }
 
 .bk-cc > .bk-h,
@@ -152,7 +152,7 @@
   align-items: center;
   justify-content: flex-end;
   min-height: 0;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
   container-type: inline-size;
 }
 

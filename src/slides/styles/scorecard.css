@@ -24,7 +24,7 @@
 
 .sk-headrow {
   padding-bottom: 18px;
-  border-bottom: 3px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .sk-h {
@@ -66,7 +66,7 @@
   left: 0;
   width: calc(var(--a, 0) * 1%);
   border-radius: var(--r-mark);
-  background: color-mix(in srgb, var(--ink) 30%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 45%, var(--bg));
 }
 
 /* 목표와 실적 사이: 넘었으면 목표 줄부터 실적까지 진하게, 모자라면 실적부터 목표 줄까지 빗금으로.

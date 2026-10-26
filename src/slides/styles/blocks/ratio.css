@@ -89,7 +89,8 @@
 .bk-rt-dots {
   --c: var(--cols-t);
   --r: var(--rows-t);
-  --d: min(calc(100cqw / (var(--c) * 1.3 - 0.3)), calc(100cqh / (var(--r) * 1.3 - 0.3)), 72px);
+  /* 점은 44px까지: 72px 점 열 개는 숫자보다 먼저 보이는 커다란 파란 원이라 장식처럼 쨍했다(사용자) */
+  --d: min(calc(100cqw / (var(--c) * 1.3 - 0.3)), calc(100cqh / (var(--r) * 1.3 - 0.3)), 44px);
   display: grid;
   grid-template-columns: repeat(var(--c), var(--d));
   gap: calc(var(--d) * 0.3);

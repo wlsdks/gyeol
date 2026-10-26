@@ -65,7 +65,8 @@
   width: calc(var(--p, 0) * 1%);
   height: 100%;
   border-radius: var(--r-mark);
-  background: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  /* 막대는 강조색의 옅은 농담, 고른 막대만 강조색. 회색 막대는 빈 칸처럼 보여 데이터가 아니라 바탕으로 읽혔다(사용자) */
+  background: color-mix(in srgb, var(--accent) 38%, var(--bg));
 }
 
 .br-row.is-hl .br-fill {
@@ -163,7 +164,7 @@
 .va-columns .br-label {
   grid-row: 2;
   padding-top: 24px;
-  border-top: 2px solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   text-align: center;
 }
 
@@ -213,7 +214,7 @@
   height: 32px;
   translate: -50% -50%;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 38%, var(--bg));
 }
 
 .br-row.is-hl .br-dot {

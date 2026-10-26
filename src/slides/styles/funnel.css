@@ -88,8 +88,8 @@
   width: 9px;
   height: 9px;
   margin: -6px 2px 0 6px;
-  border-right: 2px solid var(--ink-3);
-  border-bottom: 2px solid var(--ink-3);
+  border-right: var(--rule) solid var(--line);
+  border-bottom: var(--rule) solid var(--line);
   rotate: 45deg;
   content: '';
 }
@@ -125,7 +125,7 @@
   left: 0;
   width: calc(var(--w) * 1%);
   border-radius: 0 var(--r-mark) var(--r-mark) 0;
-  background: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 38%, var(--bg));
 }
 
 .fn-row:first-child .fn-zone::before,

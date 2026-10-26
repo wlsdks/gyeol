@@ -23,7 +23,7 @@
     )
   );
   --dv-x: max(var(--dv-b) * var(--nf) + var(--dv-vn), var(--dv-lp));
-  --dv-bar: color-mix(in srgb, var(--ink) 22%, var(--bg));
+  --dv-bar: color-mix(in srgb, var(--accent) 38%, var(--bg));
   display: flex;
   flex-direction: column;
   justify-content: safe center;
@@ -31,7 +31,7 @@
 }
 
 .is-dark .bk-dv {
-  --dv-bar: color-mix(in srgb, var(--ink) 30%, var(--bg));
+  --dv-bar: color-mix(in srgb, var(--accent) 45%, var(--bg));
 }
 
 /* 숫자 자리: 숫자 폭(어림)과 막대와의 틈. 어림이 조금 모자라도 칸 밖으로 나가지 않게 4px 더 */
