@@ -187,79 +187,9 @@
   }
 }
 
-/* 넓고 낮은 칸: 전과 후를 왼쪽에, 이름과 덧붙임 글을 그 오른쪽에 위아래로 (큰 숫자의 넓고 낮은 칸과 같은 짜임).
-   위아래로 쌓으면 낮은 줄에 들어가지 않는다. 예전에는 이름, 전과 후, 덧붙임 글을 한 줄에 셋으로 늘어놓아서
-   작은 이름이 칸 왼쪽 끝에, 덧붙임 글이 숫자에서 멀리 떨어져 떠 보였다. 전과 후의 칸은 두 숫자와 화살표만큼만 넓다 */
-@container bk (min-aspect-ratio: 3 / 1) and (min-width: 1000px) and (max-height: 589px) {
-  .bk-dl {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    align-content: center;
-    column-gap: 64px;
-  }
-
-  .bk-dl-row {
-    grid-row: 1 / span 2;
-    grid-column: 1;
-    width: min(1040px, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
-    margin-top: 0;
-  }
-
-  .bk-dl-l {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: end;
-  }
-
-  .bk-dl-n {
-    grid-row: 2;
-    grid-column: 2;
-    align-self: start;
-    margin-top: 8px;
-  }
-}
-
-/* 한 줄을 다 쓰는 넓은 칸(1200px 넘고 높이의 두 배 넘게 넓은): 이름과 덧붙임 글은 격자의 왼쪽 4칸에, 전과 후는 5번째 칸부터.
-   전과 후 옆에 이름을 붙이거나 위에 쌓으면 묶음이 칸 왼쪽에 몰려 오른쪽 절반 가까이 비었다. '불량률 → 전 → 후' 차례로 읽히고,
-   격자의 칸 선에 맞춰서 위아래 줄의 칸 나눔과도 줄이 맞는다. 옆으로 눕혔으니 낮은 줄이어도 글자를 줄이지 않는다(--bk-h) */
-@container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) {
-  .bk-delta > .bk-in {
-    --bk-h: 1;
-  }
-
-  .bk-dl {
-    display: grid;
-    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    align-content: center;
-    column-gap: var(--bk-col-gap);
-  }
-
-  .bk-dl-row {
-    grid-row: 1 / span 2;
-    grid-column: 2;
-    align-self: center;
-    width: min(100%, max(480px, calc(2 * var(--dl-w) + var(--dl-gaps))));
-    margin-top: 0;
-  }
-
-  .bk-dl-l,
-  .bk-dl-n {
-    grid-column: 1;
-  }
-
-  .bk-dl-l {
-    grid-row: 1;
-    align-self: end;
-  }
-
-  .bk-dl-n {
-    grid-row: 2;
-    align-self: start;
-    margin-top: 12px;
-  }
-}
+/* 넓은 칸도 짜임은 하나: 이름 위, 전과 후, 덧붙임 아래로 왼쪽 끝에 쌓는다(큰 숫자와 같은 짜임). 예전에는 넓고 낮은 칸에서
+   전과 후를 왼쪽에, 이름을 오른쪽에, 한 줄을 다 쓰는 칸에서는 이름을 격자 왼쪽 4칸에, 전과 후를 5번째 칸부터 두어서
+   한 장의 숫자 컴포넌트끼리 이름 자리가 따로 놀았다(docs/VISUAL-RULES.md 5: 같은 종류는 같은 말투) */
 
 /* 이름은 어느 칸에서나 이름표 그대로(blocks/base.css): 키우면 키운 장에서 장 제목과 다퉜다(큰 숫자와 같다) */
 @container bk (min-aspect-ratio: 2 / 1) and (min-width: 1200px) and (min-height: 410px) {

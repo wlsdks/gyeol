@@ -54,34 +54,8 @@
   text-wrap: pretty;
 }
 
-/* 넓은 칸: 이름은 격자의 왼쪽 4칸에(막대 하나, 범위, 단계 표시와 같은 이름 칸이라 위아래로 쌓으면 한 표처럼 읽힌다),
-   숫자와 변화는 바로 그 옆에서 시작하고, 덧붙임은 이름 아래. 숫자를 칸의 오른쪽 끝에 두던 때는 이름과 숫자 사이가 장의 절반 넘게 비어
-   한 줄이 양 끝으로 찢어져 보였다(docs/VISUAL-RULES.md 6, 가로 리듬). 눕혔으니 이름은 이름표 대신 본문 크기로 */
-@container bk (min-width: 1000px) {
-  .bk-sl-box {
-    display: grid;
-    grid-template-columns: calc((100% - 11 * var(--bk-col-gap)) / 12 * 4 + 3 * var(--bk-col-gap)) minmax(0, 1fr);
-    align-items: baseline;
-    column-gap: var(--bk-col-gap);
-  }
-
-  .bk-sl-l {
-    --fs: var(--t-body);
-    grid-row: 1;
-    grid-column: 1;
-  }
-
-  .bk-sl-fig {
-    grid-row: 1;
-    grid-column: 2;
-    margin-top: 0;
-  }
-
-  .bk-sl-n {
-    grid-row: 2;
-    grid-column: 1;
-  }
-}
+/* 넓은 칸도 이름 위, 숫자 아래로 왼쪽 끝에 쌓는다(큰 숫자, 전과 후와 같은 짜임). 넓은 칸에서 이름을 격자 왼쪽 4칸에, 숫자를
+   그 옆에 두던 때는 한 장의 큰 숫자(이름 위)와 숫자 한 줄(이름 왼쪽)이 따로 놀았다(docs/VISUAL-RULES.md 5: 같은 종류는 같은 말투) */
 
 .bk.is-shared > .bk-in > .bk-sl {
   --bk-lifts: 1;
