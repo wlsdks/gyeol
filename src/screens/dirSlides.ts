@@ -43,7 +43,7 @@ export function dirSlides(size?: string): Slide[] {
       { type: 'number', fields: { value: '1.2억 원', label: '인건비', note: '' }, at: { x: 0, y: 0, w: 3, h: 6 }, link: 'arrow' },
       { type: 'number', fields: { value: '0.8억 원', label: '운영비', note: '' }, at: { x: 3, y: 0, w: 3, h: 6 }, link: 'plus' },
       { type: 'number', fields: { value: '0.4억 원', label: '자재비', note: '' }, at: { x: 6, y: 0, w: 3, h: 6 }, link: 'equals' },
-      { type: 'number', fields: { value: '2.4억 원', label: '연간 절감', note: '' }, at: { x: 9, y: 0, w: 3, h: 6 } },
+      { type: 'stat', at: { x: 9, y: 0, w: 3, h: 6 } },
       { type: 'text', at: { x: 0, y: 6, w: 6, h: 6 }, link: 'versus' },
       { type: 'text', fields: { heading: '실패한 것만 다시 봐요' }, at: { x: 6, y: 6, w: 6, h: 6 } },
     ]),
@@ -51,7 +51,7 @@ export function dirSlides(size?: string): Slide[] {
     linked('links-v', { title: '요청이 들어오면 이렇게 처리해요' }, [
       { type: 'text', at: { x: 0, y: 0, w: 6, h: 4 }, linkBelow: 'arrow' },
       { type: 'delta', at: { x: 6, y: 0, w: 6, h: 8 } },
-      { type: 'callout', look: 'plain', at: { x: 0, y: 4, w: 6, h: 4 } },
+      { type: 'text', fields: { heading: '실패한 것만 다시 봐요' }, at: { x: 0, y: 4, w: 6, h: 4 } },
       { type: 'compare', at: { x: 0, y: 8, w: 12, h: 4 } },
     ]),
     // 빽빽한 장: 숫자 둘, 전과 후, 점 목록 여섯, 강조 상자
