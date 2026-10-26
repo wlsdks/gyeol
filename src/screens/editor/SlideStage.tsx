@@ -178,7 +178,9 @@ export function SlideStage({
         <textarea
           className="notes-input"
           value={slide.notes}
-          placeholder="발표자 노트: 발표할 때 말할 내용을 적어요. 발표 화면과 내보낸 파일에는 보이지 않아요."
+          // 노트가 어디에 들어가는지: HTML에서는 빼지만 PPT와 작업 파일에는 들어간다(내보내기 메뉴의 설명과 같게).
+          // 예전에는 '내보낸 파일에는 보이지 않아요'라고 해서, 노트를 적은 PPT를 그대로 보내도 되는 것처럼 읽혔다
+          placeholder="발표자 노트: 발표할 때 말할 내용을 적어요. 듣는 분께는 보이지 않고, PPT로 내보내면 함께 들어가요."
           onChange={(e) => store.setNotes(slide.id, e.target.value)}
         />
       </label>
