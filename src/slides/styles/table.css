@@ -3,23 +3,31 @@
    칸 너비는 글에 맞춘다: 표 전체가 한 격자이고 줄은 그 칸을 같이 쓴다(subgrid). auto 칸은 저마다 가장 긴 글까지 늘고,
    남는 너비는 칸마다 똑같이 나눠 칸 사이가 고르다. 글이 표 너비보다 길면 아직 다 늘지 못한 칸(긴 설명)이 줄을 바꾼다.
    예전에는 칸마다 정한 비율(1.3 : 1 : 0.9 : 1.8)이라 '상태'처럼 짧은 넷째 칸이 가장 넓어 오른쪽이 비고,
-   긴 첫째 칸은 두 줄로 꺾였다 */
+   긴 첫째 칸은 두 줄로 꺾였다.
+   표는 장 제목 아래(--body-gap)에서 시작하고 남는 높이는 맨 아래에 둔다(VISUAL-RULES 6). 본문 가운데에 띄우면 제목 아래가
+   크게 비고 표가 장 가운데에 떠 보였다 */
 
 .tb {
   display: grid;
   grid-template-columns: repeat(var(--cols), auto);
-  align-content: center;
+  align-content: start;
   column-gap: 48px;
 }
 
+/* 줄 사이는 정한 값에 장 채움 맞추기(fitLayout)가 주는 --fill-air만 더한다: 줄마다 같은 값이라 사이가 들쭉날쭉하지 않다 */
 .tb-row {
   position: relative;
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: baseline;
-  padding: 30px 24px;
+  padding: calc(30px + var(--fill-air, 0px)) 24px;
   border-bottom: var(--rule-hair) solid var(--line);
+}
+
+/* 줄 선은 줄 사이에만: 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2). 머리줄 아래의 옅은 선 하나가 머리와 몸을 나눈다 */
+.tb-row:last-child {
+  border-bottom: 0;
 }
 
 .tb-headrow {
@@ -43,7 +51,7 @@
 }
 
 .tb:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4']) .tb-row:not(.tb-headrow) {
-  padding-block: 36px;
+  padding-block: calc(36px + var(--fill-air, 0px));
 }
 
 .tb-first {
@@ -62,7 +70,7 @@
   font-weight: 700;
 }
 
-/* 합계 줄: 위에 굵은 줄, 글은 모두 진하고 굵게 */
+/* 합계 줄: 위에 옅은 줄 하나, 글은 모두 진하고 굵게 */
 .tb-row.is-total {
   border-top: var(--rule-hair) solid var(--line);
   border-bottom: 0;
@@ -73,7 +81,7 @@
   font-weight: 700;
 }
 
-/* 합계 바로 위 줄의 가는 줄은 굵은 줄과 겹치므로 뺀다 */
+/* 합계 바로 위 줄의 선은 합계 줄의 윗선과 겹치므로 뺀다 */
 .tb-row:has(+ .tb-row.is-total) {
   border-bottom: 0;
 }
@@ -83,9 +91,24 @@
 }
 
 .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-row:not(.tb-headrow) {
-  padding-block: 20px;
+  padding-block: calc(20px + var(--fill-air, 0px));
 }
 
 .tb:is([data-n='5'], [data-n='6'], [data-n='7']) .tb-cell {
   --fs: 30px;
+}
+
+/* 장 한 장의 표에 줄이 넷까지면 본문 절반 넘게 비어서, 줄을 늘리지 않고 글자 단계를 하나 올린다(30 → 36, VISUAL-RULES 6).
+   둘까지는 두 단계(44). 52부터는 장 제목(62)과 다툰다. 컴포넌트 칸의 표는 칸 크기가 글자를 정하니 그대로 */
+.l-table .tb:is([data-n='1'], [data-n='2'], [data-n='3'], [data-n='4']) .tb-cell {
+  --fs: 36px;
+}
+
+.l-table .tb:is([data-n='1'], [data-n='2']) .tb-cell {
+  --fs: 44px;
+}
+
+/* 줄 사이도 글자 크기를 따라 (36px 글자에 36px 사이 → 44px 글자에 48px): 글자만 키우고 사이가 그대로면 줄이 빽빽해 보인다 */
+.l-table .tb:is([data-n='1'], [data-n='2']) .tb-row:not(.tb-headrow) {
+  padding-block: calc(48px + var(--fill-air, 0px));
 }
