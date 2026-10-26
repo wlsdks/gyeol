@@ -196,8 +196,12 @@ export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
                 ])
               : []
             // 지금 자리를 고른 곳에서 손이 조금밖에 움직이지 않았어도 그대로 (미리 보인 판이 바뀌어 손 아래가 달라진 것뿐이다).
-            // 제자리로 돌아간 것도 같다: 제자리로 돌아간 판을 다시 재면 옆자리가 나와, 손을 멈춘 채로 두 자리를 오갔다
-            keep = near.some((t) => sameAfter(t, was)) || (!!shown && !!d.anchor && Math.hypot(p.x - d.anchor.x, p.y - d.anchor.y) < MIN_TRAVEL)
+            // 제자리로 돌아간 것도 같다: 제자리로 돌아간 판을 다시 재면 옆자리가 나와, 손을 멈춘 채로 두 자리를 오갔다.
+            // 맞바꾸기는 옆에서 본 자리로 붙들지 않는다: 손을 그 컴포넌트 가운데에 올린 것이다. 주석처럼 낮은 컴포넌트는 가운데가 60px보다
+            // 낮아 위아래로 30px 옆에서 보면 늘 그 위나 아래가 나와서, 가운데에 손을 올려도 맞바꿀 수 없었다
+            keep =
+              (fresh?.kind !== 'swap' && near.some((t) => sameAfter(t, was))) ||
+              (!!shown && !!d.anchor && Math.hypot(p.x - d.anchor.x, p.y - d.anchor.y) < MIN_TRAVEL)
             // 둘 다 제자리면 붙들지 않는다: 판이 그대로라 떨리지 않고, 손 아래에 놓을 수 없는 까닭을 새로 알릴 수 있다. 붙들던 때는
             // 표를 옆에 둘 수 없는 자리로 끌어도 지나온 판 맨 위(표의 원래 자리)를 붙들어 까닭 없이 그대로였다
             if (keep && home(d.target) && home(fresh)) keep = false

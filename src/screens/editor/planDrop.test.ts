@@ -269,6 +269,46 @@ describe('끌어 놓기', () => {
     expect(plan.blocked).toEqual({ kind: 'swap', type: 'table' })
   })
 
+  it('옮기기: 낮은 컴포넌트도 가운데에 손을 올리면 맞바꾼다 (30px 옆의 위나 아래로 붙들지 않는다)', () => {
+    // 위에 핵심 한 줄, 아래 줄 왼쪽에 높은 숫자 한 줄, 가운데 단에 숫자 한 줄(옮긴다)과 그 아래 주석, 오른쪽에 막대 비교
+    const area = { w: 1680, h: 705 }
+    const s1 = { ...block('stat', 's'), at: { x: 3, y: 5, w: 3, h: 4 } }
+    const s: Slide = {
+      ...makeSlide('compose'),
+      blocks: [
+        { ...block('message', 'm'), at: { x: 0, y: 0, w: 12, h: 5 } },
+        { ...block('stat', 'a'), at: { x: 0, y: 5, w: 3, h: 7 } },
+        s1,
+        { ...block('note', 'o'), at: { x: 3, y: 9, w: 3, h: 3 } },
+        { ...block('bars', 'b'), at: { x: 6, y: 5, w: 6, h: 7 } },
+      ],
+    }
+    const shown: Shown = {
+      cells: new Map([
+        ['m', { cell: { x: 0, y: 163, w: 1680, h: 266 }, ink: { x: -14, y: 150, w: 359, h: 81 } }],
+        ['a', { cell: { x: 0, y: 278, w: 366, h: 391 }, ink: { x: -14, y: 265, w: 256, h: 225 } }],
+        ['b', { cell: { x: 876, y: 265, w: 804, h: 391 }, ink: { x: 862, y: 254, w: 832, h: 369 } }],
+        ['o', { cell: { x: 438, y: 519, w: 366, h: 140 }, ink: { x: 424, y: 508, w: 196, h: 66 } }],
+      ]),
+      slot: { cell: { x: 438, y: 278, w: 366, h: 203 }, ink: { x: 424, y: 265, w: 256, h: 225 } },
+    }
+    const swap = { kind: 'swap' as const, with: 'o' }
+    expect(moveAt(s.blocks!, 's', swap, area.h)).not.toBeNull()
+    // 내려오는 길에 주석 위(제자리)를 골랐고, 손이 주석 글의 한가운데에 왔다
+    const d: DropState = {
+      kind: 'move',
+      block: s1,
+      base: movingBase(s.blocks!, 's', area.h),
+      moving: s.blocks!,
+      composed: null,
+      target: { kind: 'spot', spot: { at: 'o', side: 'above' } },
+      anchor: { x: 536, y: 500 },
+      blocked: null,
+    }
+    const plan = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 522, y: 541 }, size: area, shown } })
+    expect(plan.target).toEqual(swap)
+  })
+
   it('장에 자리가 없으면 새 컴포넌트는 다음 장에, 그 까닭을 남긴다', () => {
     const f = full()
     const plan = planDrop(f, fresh(f, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 300 }, size: SIZE } })
