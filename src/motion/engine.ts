@@ -1757,9 +1757,8 @@ export function motionEngine(): MotionEngine {
           break
         }
         case 'heading':
-          // 묶음의 윗선이 왼쪽부터 그어지고, 선이 반쯤 갔을 때 소제목이 그 아래에서 올라온다. 덧붙임은 뒤따라 흐려지듯
-          draw(one('.bk-hd'), 0, levelName === 'lively' ? 900 : 700, 'left center', '::before')
-          rise(one('.bk-hd-t'), 160, L.y * 0.5)
+          // 소제목이 올라오고 덧붙임이 뒤따라 흐려지듯 (윗선은 없앴다: docs/VISUAL-RULES.md 2)
+          rise(one('.bk-hd-t'), 0, L.y * 0.5)
           fade(one('.bk-hd-n'), 360, 500)
           break
         case 'stat':
