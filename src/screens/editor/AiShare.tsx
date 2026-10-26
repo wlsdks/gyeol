@@ -716,7 +716,8 @@ function newScene(deck: Deck, s: Slide) {
 
 /**
  * 장면이 바뀌는 장의 그림: 마우스를 올리거나 초점이 오면 제안한 장면으로 한 번 움직인다.
- * 장면은 이름만으로는 어떤 움직임인지 알기 어려워서, 적용하기 전에 그 자리에서 보게 한다 (장면 카드와 같은 방법)
+ * 장면은 이름만으로는 어떤 움직임인지 알기 어려워서, 적용하기 전에 그 자리에서 보게 한다 (장면 카드와 같은 방법).
+ * 브라우저 툴팁은 두지 않는다: 올리는 순간 움직이니 설명이 필요 없고, 첫 카드에 남아 그림을 가렸다
  */
 function ScenePlay({ deck, slide, on, className, children }: { deck: Deck; slide: Slide; on: boolean; className: string; children: ReactNode }) {
   const ref = useRef<HTMLElement>(null)
@@ -732,7 +733,7 @@ function ScenePlay({ deck, slide, on, className, children }: { deck: Deck; slide
     engine.play(el, level, { clicks: 'auto' })
   }
   return (
-    <figure ref={ref} className={cx(className, on && 'is-scene')} title={on ? '마우스를 올리면 이 장면으로 움직여요' : undefined} tabIndex={on ? 0 : undefined} onPointerEnter={play} onFocus={play}>
+    <figure ref={ref} className={cx(className, on && 'is-scene')} tabIndex={on ? 0 : undefined} onPointerEnter={play} onFocus={play}>
       {children}
     </figure>
   )
