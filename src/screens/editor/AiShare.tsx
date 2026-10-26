@@ -36,6 +36,12 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   scene_unfit: '이 장에 맞지 않는 장면이에요',
 }
 
+/** 장면 줄이 같이 고른 다른 설정 때문에 빠졌으면, 장면이 아니라 그 설정이 이유라고 말한다 */
+const skipReason = (code: OpCode, also?: string) => {
+  const why = SKIP_REASON[code as Exclude<OpCode, 'applied'>]
+  return also && code !== 'scene_unfit' && code !== 'no_slide' ? `같이 고른 ‘${also}’ 때문에 건너뛰어요: ${why}` : why
+}
+
 /**
  * 부탁이 지나가는 차례. 마지막 '미리 보기'는 서버의 단계가 아니라 다음에 일어날 일이다:
  * 맡긴 사람이 무엇을 기다리는지, 끝나면 무엇이 열리는지 한눈에 알게 한 줄에 같이 둔다
@@ -577,7 +583,7 @@ export function AiInbox({ ai, onOpen }: { ai: AiShare; onOpen: (r: ChangeRequest
 
 // ---------- 제안 미리 보기 ----------
 
-function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Applied): { text: string; detail?: string } {
+function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Applied): { text: string; detail?: string; also?: string } {
   const name = (ref: string | null) => {
     if (ref === null) return '맨 앞'
     if (/^n\d+$/.test(ref)) return named.get(ref) ?? '새 장'
@@ -645,7 +651,9 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (op.transition !== undefined)
         parts.push(op.transition === null || op.transition === 'auto' ? '장 넘기기: 발표 전체 설정대로' : `장 넘기기: ${TRANSITIONS.find((t) => t.id === op.transition)?.name}`)
       // 장면은 줄의 제목으로: 장면 연출 부탁은 장마다 이 한 줄이라, 무엇을 고쳤는지보다 어느 장에 어떤 장면인지가 먼저 읽혀야 한다
-      if (op.scene !== undefined) return { text: `${name(op.slide)} ${op.scene ? `장면: ${sceneSpec(op.scene).name}` : '장면 끄기'}`, detail: parts.join(', ') || undefined }
+      // also: 한 op는 하나라도 안 되면 통째로 건너뛰므로, 장면 줄이 다른 설정 때문에 빠졌을 때 그 설정을 이유에 적는다
+      if (op.scene !== undefined)
+        return { text: `${name(op.slide)} ${op.scene ? `장면: ${sceneSpec(op.scene).name}` : '장면 끄기'}`, detail: parts.join(', ') || undefined, also: parts.join(', ') || undefined }
       return { text: `${name(op.slide)} 모양 설정`, detail: parts.join(', ') }
     }
     case 'set_theme': {
@@ -819,7 +827,7 @@ export function AiReview({
                         </span>
                         <span>
                           <span className="air-line">{l.text}</span>
-                          <span className="air-skip">{SKIP_REASON[l.result.code as Exclude<OpCode, 'applied'>]}</span>
+                          <span className="air-skip">{skipReason(l.result.code, l.also)}</span>
                         </span>
                       </li>
                     ),
