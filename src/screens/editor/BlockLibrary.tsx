@@ -273,7 +273,8 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         key={type}
                         type="button"
                         className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
-                        title={marked ? `${spec.name}: 이 장에 함께 넣을 수 없어요. 눌러서 이유를 보세요` : `${spec.name}: ${spec.motion}`}
+                        // 카드의 설명은 두 줄에서 자르므로 다 읽을 곳은 여기. 예전에는 움직임만 적어서 잘린 설명을 어디서도 볼 수 없었다
+                        title={`${spec.name}: ${spec.description}\n${marked ? '이 장에 함께 넣을 수 없어요. 눌러서 이유를 보세요' : `움직임: ${spec.motion}`}`}
                         onPointerDown={(e) => {
                           const card = e.currentTarget
                           blocks.pressCard(e, type, () => tap(card))

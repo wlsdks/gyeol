@@ -1089,6 +1089,7 @@ body.is-block-resizing * {
   font-weight: 700;
 }
 
+/* 카드 높이를 맞추려고 두 줄까지만. 다 읽으려면 카드에 마우스를 올린다(title) */
 .lib-desc {
   display: -webkit-box;
   margin-top: 1px;
