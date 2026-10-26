@@ -88,8 +88,10 @@
   box-shadow: none;
 }
 
-/* 카드마다 위아래 선이 있어 바탕 없는 카드 모양에도 컴포넌트의 머리 괘선은 긋지 않는다(선이 두 겹으로 섰다) */
-.bk-area > .bk.bk-kpi.va-cards.bk-look-plain:has(.kp:not([data-n='1'])) {
+/* 카드마다 위아래 선이 있는 카드 모양과, 이름 위에 제 선이 있는 숫자 하나(kpi.css의 .kp[data-n='1'] .kp-label)에는 컴포넌트의
+   머리 괘선을 긋지 않는다(선이 두 겹으로 섰다) */
+.bk-area > .bk.bk-kpi.va-cards.bk-look-plain:has(.kp:not([data-n='1'])),
+.bk-area > .bk.bk-kpi.bk-look-plain:has(.kp[data-n='1']) {
   --head-rule: 0;
 }
 
