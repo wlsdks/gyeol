@@ -257,8 +257,9 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
       // 칸이 아니라 부품의 테두리(그린 것 둘레) 바로 위에: 칸 위에 두면 짧은 내용 위로 빈 데를 건너 떠 보인다
       const r = el.classList.contains('bk') ? frameRect(el) : el.getBoundingClientRect()
       const slide = el.closest('.slide')
-      // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게)
-      const key = `${r.left},${r.top},${r.width},${r.height}`
+      // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게). 항목 수가 바뀌어도: 위치 비교는
+      // 점수를 적지 않은 점을 판 위쪽에 세워서, 점을 더해도 테두리는 그대로라 예전 자리의 막대가 새 점과 이름을 덮었다
+      const key = `${r.left},${r.top},${r.width},${r.height},${el.querySelectorAll('.it').length}`
       if (texts.current.key !== key) texts.current = { key, rects: contentRects(slide, canvasRef.current) }
       const s = barSpot(r, bar, canvasRef.current, texts.current.rects, slide?.getBoundingClientRect(), true)
       if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
