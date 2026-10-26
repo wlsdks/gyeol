@@ -18,11 +18,11 @@ import { get as httpsGet } from 'node:https'
 import { dirname } from 'node:path'
 import type { DownloadError } from '../src/update/protocol'
 
+// 주소는 글자 그대로 적는다. 빌드 결과의 바깥 주소 검사(scripts/offline.mjs)가 이 꼴 그대로만 허락한다
 export const REPO = 'wlsdks/gyeol'
-export const API_HOST = 'api.github.com'
-const LATEST_PATH = `/repos/${REPO}/releases/latest`
-const RELEASE_PAGE = `https://github.com/${REPO}/releases/tag/`
-const DOWNLOAD_BASE = `https://github.com/${REPO}/releases/download/`
+const LATEST_URL = 'https://api.github.com/repos/wlsdks/gyeol/releases/latest'
+const RELEASE_PAGE = 'https://github.com/wlsdks/gyeol/releases/tag/'
+const DOWNLOAD_BASE = 'https://github.com/wlsdks/gyeol/releases/download/'
 /**
  * 받을 때 따라가도 되는 곳. 첫 주소는 github.com, 그다음은 GitHub의 릴리스 파일 보관소.
  * 확인용 api.github.com은 받기에 쓰지 않는다(넘겨받을 까닭이 없다)
@@ -175,7 +175,7 @@ export function createUpdater({ version, platform = process.platform, get = node
   async function latest(): Promise<Release | null> {
     let hop = null as Hop | null
     const work = (async () => {
-      hop = await get(new URL(`https://${API_HOST}${LATEST_PATH}`), { Accept: 'application/vnd.github+json', 'User-Agent': userAgent }, CHECK_TIMEOUT_MS)
+      hop = await get(new URL(LATEST_URL), { Accept: 'application/vnd.github+json', 'User-Agent': userAgent }, CHECK_TIMEOUT_MS)
       // 넘겨주기도 따라가지 않는다. 저장소 이름이 바뀌었다면 확인하지 못한 것으로 둔다
       if (hop.status !== 200) return hop.close(), null
       const body = await readLimited(hop.body, MAX_JSON_BYTES)

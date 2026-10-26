@@ -39,6 +39,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # 빌드 결과에 허락하지 않은 바깥 주소가 섞이면 멈춘다(pack과 같은 검사)
+      - run: node scripts/offline.mjs
       - run: npm run licenses
 
   windows-package:
