@@ -330,7 +330,13 @@ function Editable({
         }}
         onPaste={(e) => {
           e.preventDefault()
-          const text = e.clipboardData.getData('text/plain')
+          // 서식 없이 글만. 윈도우의 줄 끝(\r\n), 엑셀 칸 사이의 탭, 붙지 않는 빈칸은 보통 글로 바꾸고 앞뒤의 빈 줄은 뺀다:
+          // 탭은 칸에서 넓은 빈칸으로 벌어졌고, 엑셀 칸 하나를 복사하면 끝에 줄바꿈이 붙어 와서 글 가운데에 붙이면 거기서 줄이 갈렸다
+          const text = e.clipboardData
+            .getData('text/plain')
+            .replace(/\r\n?/g, '\n')
+            .replace(/[\t\u00a0]/g, ' ')
+            .replace(/^\n+|\n+$/g, '')
           document.execCommand('insertText', false, multiline ? text : text.replace(/\s*\n\s*/g, ' '))
         }}
       />
