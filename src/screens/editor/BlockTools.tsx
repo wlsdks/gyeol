@@ -15,8 +15,8 @@ const SAVE_NAMES: Record<SavedKind, string> = { block: '이 컴포넌트', row: 
 /** 바탕 메뉴의 설명 */
 const LOOK_NOTES: Record<Block['look'] & string, string> = {
   plain: '장 바탕 위에 바로 놓여요. 가장 가벼워요.',
-  card: '왼쪽 가는 선으로 묶여 한 묶음으로 보여요.',
-  bold: '왼쪽 굵은 강조색 선과 강조색 답으로 가장 눈에 띄어요. 한 장에 하나만 써요.',
+  card: '안쪽으로 들여 놓여 옆 컴포넌트와 갈려 보여요.',
+  bold: '답을 강조색 글자로 써서 가장 눈에 띄어요. 한 장에 하나만 써요.',
 }
 
 export function BlockTools({
@@ -136,7 +136,7 @@ export function BlockTools({
         {menu === 'look' && (
           <ul ref={menuRef} className="bk-menu is-looks" role="menu">
             {BLOCK_LOOKS.map((l) => {
-              // 옆 선과 강조 선은 안쪽 여백만큼 높아져서, 장이 꽉 찼으면 바꿀 수 없다
+              // 들여 쓰기와 강조는 안쪽 여백만큼 높아져서, 장이 꽉 찼으면 바꿀 수 없다
               const r = look === l.id ? null : lookIssue(l.id)
               return (
                 <li key={l.id}>
