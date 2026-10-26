@@ -29,10 +29,10 @@
 .bk-tl-v {
   --fs: 108px;
   margin-top: 8px;
-  color: var(--accent);
+  color: var(--ink);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.03em;
   line-height: 1.05;
 }

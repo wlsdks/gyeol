@@ -28,10 +28,10 @@
   align-items: baseline;
   column-gap: 16px;
   margin: 4px calc((100 - var(--hi)) * 1%) 0 calc(var(--lo) * 1%);
-  color: var(--accent);
+  color: var(--ink);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.02em;
   line-height: 1.1;
   white-space: nowrap;

@@ -32,10 +32,10 @@
   --fs: 74px;
   grid-area: day;
   width: 2ch;
-  color: var(--accent);
+  color: var(--ink);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.03em;
   line-height: 1;
   text-align: center;

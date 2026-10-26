@@ -47,7 +47,7 @@
   margin-top: 10px;
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
@@ -115,7 +115,7 @@
   --fs: var(--t-h);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.01em;
   line-height: 1.1;
 }

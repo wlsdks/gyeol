@@ -43,8 +43,8 @@
 .kp-value {
   --fs: 154px;
   margin-top: 28px;
-  color: var(--accent);
-  font-weight: 700;
+  color: var(--ink);
+  font-weight: var(--num-weight);
   line-height: calc(0.95 * var(--tall, 1));
   letter-spacing: -0.035em;
 }

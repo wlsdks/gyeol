@@ -90,7 +90,7 @@
   --fs: 128px;
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.03em;
   line-height: 1;
 }

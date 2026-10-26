@@ -54,10 +54,10 @@
 .bk-sl-v {
   --fs: var(--t-title);
   min-width: 0;
-  color: var(--accent);
+  color: var(--ink);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }

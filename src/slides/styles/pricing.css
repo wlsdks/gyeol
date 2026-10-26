@@ -78,7 +78,7 @@
 .pr-price {
   --fs: 62px;
   margin-top: 36px;
-  font-weight: 700;
+  font-weight: var(--num-weight);
   line-height: 1.08;
   letter-spacing: -0.045em;
 }

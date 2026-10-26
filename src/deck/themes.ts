@@ -226,7 +226,10 @@ export function accentOf(deckTheme: Deck['theme']): string {
 }
 
 /**
- * font: 제목과 큰 숫자, body: 본문. weight: 제목 굵기(큰 숫자는 한 단계 더). SUIT는 굵기마다 한 단계 굵은 파일을 잇는다(fonts/suit.css)
+ * font: 제목과 큰 숫자, body: 본문. weight: 제목 굵기(단락 장, 표지의 큰 제목은 한 단계 더). SUIT는 굵기마다 한 단계 굵은 파일을 잇는다(fonts/suit.css)
+ * num: 큰 숫자의 굵기. 숫자는 크기로 답이 되므로 굵게 칠하지 않고 보통 굵기 안팎으로 둔다(굵은 파란 숫자가 흔한 보고서 꼴로 보였다).
+ *   너무 가늘면(300) 프로젝터와 뒷자리에서 획이 약해져서, 글꼴마다 눈으로 보고 정했다: 프리텐다드 400, SUIT 400(파일은 Medium),
+ *   함렛(Hahmlet) 500, 본명조(Noto Serif)는 가로획이 더 가늘어 600
  * glyph: 한 줄로 줄이는 글(숫자 등)의 글자 폭이 고딕(textUnits의 기준)보다 얼마나 넓은지. 명조는 숫자와 %가 넓다.
  * tall: 큰 숫자의 줄 높이를 얼마나 늘리는지. 명조는 한글과 숫자의 키가 커서 줄 높이 0.8로는 위아래 글에 올라탄다
  * box, gap: 글꼴 높이(위아래 합)와 그 위에서 한글 윗선까지(글자 크기 배율, 캔버스로 잰 값). 장 맨 위의 제목을
@@ -234,11 +237,11 @@ export function accentOf(deckTheme: Deck['theme']): string {
  * 본문 글꼴의 높이는 slides.css가 프리텐다드 값(1.19, 0.155)으로 셈한다. SUIT는 글꼴 높이(1.25)와 윗빈칸(0.18)이 함께 커서
  * 줄 안에서 한글이 그려지는 자리는 프리텐다드와 같다(0.01em 안). 명조 제목 둘은 본문이 프리텐다드다
  */
-const FONT_LOOK: Record<FontId, { font: string; body: string; weight: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
-  sans: { font: SANS, body: SANS, weight: 700, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
-  serif: { font: SERIF, body: SANS, weight: 600, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
-  suit: { font: SUIT, body: SUIT, weight: 700, tracking: '-0.022em', glyph: 1.06, tall: 1.03, box: 1.25, gap: 0.175 },
-  myeongjo: { font: MYEONGJO, body: SANS, weight: 700, tracking: '-0.03em', glyph: 1.08, tall: 1.18, box: 1.44, gap: 0.29 },
+const FONT_LOOK: Record<FontId, { font: string; body: string; weight: number; num: number; tracking: string; glyph: number; tall: number; box: number; gap: number }> = {
+  sans: { font: SANS, body: SANS, weight: 700, num: 400, tracking: '-0.022em', glyph: 1, tall: 1, box: 1.19, gap: 0.15 },
+  serif: { font: SERIF, body: SANS, weight: 600, num: 500, tracking: '-0.012em', glyph: 1.15, tall: 1.18, box: 1.44, gap: 0.33 },
+  suit: { font: SUIT, body: SUIT, weight: 700, num: 400, tracking: '-0.022em', glyph: 1.06, tall: 1.03, box: 1.25, gap: 0.175 },
+  myeongjo: { font: MYEONGJO, body: SANS, weight: 700, num: 600, tracking: '-0.03em', glyph: 1.08, tall: 1.18, box: 1.44, gap: 0.29 },
 }
 
 /** 테마가 원래 쓰는 글꼴 */
@@ -419,6 +422,7 @@ export function themeStyle(deckTheme: DeckTheme, tone: Tone = 'base'): CSSProper
     '--font-body': f.body,
     '--head-weight': f.weight,
     '--display-weight': f.weight + 100,
+    '--num-weight': f.num,
     '--head-tracking': f.tracking,
     '--glyph-k': f.glyph,
     '--tall': f.tall,

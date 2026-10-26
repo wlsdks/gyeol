@@ -58,7 +58,7 @@
   --fs: 62px;
   display: block;
   font-family: var(--font-head);
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   line-height: 1;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -147,7 +147,7 @@
   --fs: 44px;
   margin-top: 6px;
   font-family: var(--font-head);
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   line-height: 1.1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

@@ -154,7 +154,7 @@
 .fn-num {
   --fs: 52px;
   font-family: var(--font-head);
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;

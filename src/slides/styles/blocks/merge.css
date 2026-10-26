@@ -49,7 +49,7 @@
   --fs: var(--t-h);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
@@ -129,10 +129,10 @@
   position: relative;
   z-index: 1;
   justify-self: end;
-  color: var(--accent);
+  color: var(--ink);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.02em;
   line-height: 1.05;
   white-space: nowrap;

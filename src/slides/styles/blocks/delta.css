@@ -80,7 +80,7 @@
   --fs: var(--dl-v);
   font-family: var(--font-head);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
   letter-spacing: -0.03em;
   line-height: 1.05;
 }
@@ -98,7 +98,7 @@
 }
 
 .bk-dl-to .bk-dl-v {
-  color: var(--accent);
+  color: var(--ink);
 }
 
 /* 화살표는 그려진 숫자 크기를 따라간다(.bk-dl의 --dl-arrow). 고정 크기면 칸이 모자라 글자를 줄여도

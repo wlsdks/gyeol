@@ -633,7 +633,7 @@
   bottom: calc((var(--b) + var(--p)) * 1%);
   left: 0;
   padding: 0 4px 12px;
-  color: var(--accent);
+  color: var(--ink);
   font-weight: 800;
   line-height: 1;
   text-align: center;

@@ -347,7 +347,7 @@
 .vs-pt.is-b.is-hl .vs-num {
   --fs: 52px;
   color: var(--accent);
-  font-weight: var(--display-weight);
+  font-weight: var(--num-weight);
 }
 
 .vs:is([data-n='6'], [data-n='7'], [data-n='8']) :is(.vs-bar.is-b, .vs-pt.is-b:not(.is-hl)) .vs-num {

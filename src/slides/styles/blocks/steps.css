@@ -46,8 +46,8 @@
 
 .bk-stp-k {
   --fs: var(--t-title);
-  color: var(--accent);
-  font-weight: var(--display-weight);
+  color: var(--ink);
+  font-weight: var(--num-weight);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
