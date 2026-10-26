@@ -4,6 +4,7 @@
 // - 포트를 고정한다. 브라우저 저장소는 주소(포트 포함)마다 따로라서, 포트가 바뀌면 저장한 발표가 안 보인다.
 // - 화면 파일(dist)을 내주고, 'AI 공유' 폴더에 발표의 모양(글 없음)만 주고받는다. 발표 내용은 받지 않는다.
 // - CSP로 브라우저가 이 PC 밖으로 연결하지 못하게 막는다.
+// - 새 버전 확인과 받기는 이 서버가 한다(updateRoutes.ts, 바깥 연결은 update.ts 하나). 브라우저는 바깥으로 연결하지 않는다.
 
 import { spawn } from 'node:child_process'
 import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs'
@@ -13,6 +14,8 @@ import { fileURLToPath } from 'node:url'
 import { SHARE_DIR_NAME } from '../src/ai/protocol'
 import { createAiHandler } from './ai'
 import { CSP, CSP_META } from './csp'
+import { createUpdateHandler, UPDATE_DIR_NAME, type UpdateSetup } from './updateRoutes'
+import { version } from '../package.json'
 
 // 묶는 스크립트(scripts/pack.mjs)가 빌드한 index.html의 CSP를 이것과 견준다
 export { CSP, CSP_META }
@@ -56,11 +59,15 @@ export interface ServerOptions {
   root?: string
   /** 'AI 공유' 폴더 */
   share?: string
+  /** 새 버전 창구. 시험에서 네트워크 대신 흉내 낸 것을 넣는다 */
+  update?: Partial<UpdateSetup>
 }
 
-export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(APP_ROOT, SHARE_DIR_NAME) }: ServerOptions = {}) {
+export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(APP_ROOT, SHARE_DIR_NAME), update = {} }: ServerOptions = {}) {
   root = normalize(root)
   const ai = createAiHandler(share, { mcpPath: join(HERE, 'gyeol-mcp.mjs') })
+  // 받은 새 배포본은 앱 폴더 안의 고정된 폴더에 둔다
+  const updates = createUpdateHandler({ version, downloadDir: join(APP_ROOT, UPDATE_DIR_NAME), ...update })
 
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
     // 다른 이름으로 들어온 요청은 받지 않는다 (DNS 리바인딩 방어).
@@ -81,6 +88,7 @@ export function createAppServer({ root = join(APP_ROOT, 'dist'), share = join(AP
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v)
     if (await ai(req, res)) return
+    if (await updates(req, res)) return
 
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'method not allowed', { Allow: 'GET, HEAD' })
     if (url.pathname === HEALTH) return send(res, 200, 'html-maker')

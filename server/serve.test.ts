@@ -218,3 +218,15 @@ describe('AI 공유 폴더가 없어지거나 쓸 수 없을 때', () => {
     rmSync(join(share, 'decks'))
   })
 })
+
+describe('새 버전 창구', () => {
+  it('서버에 달려 있고, 앱 머리글이 없거나 다른 사이트에서 오면 막는다', async () => {
+    expect((await call('/__html-maker/update/status')).status).toBe(403)
+    expect((await call('/__html-maker/update/download', { method: 'POST', headers: { ...AI, Origin: 'https://evil.example' } })).status).toBe(403)
+    // 상태 보기는 GitHub에 묻지 않는다 (시험이 네트워크에 닿지 않는다)
+    const res = await call('/__html-maker/update/status', { headers: AI })
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.body)).toMatchObject({ check: { state: 'unknown' }, download: { state: 'idle' } })
+    expect(res.headers['content-security-policy']).toContain("connect-src 'self'")
+  })
+})

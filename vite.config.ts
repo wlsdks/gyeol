@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -21,7 +22,7 @@ function cspMeta(): Plugin {
 }
 
 /**
- * 개발 서버에서도 'AI 공유' 창구를 연다. 실제 서버(server/serve.ts)와 같은 처리기를 쓴다.
+ * 개발 서버에서도 'AI 공유' 창구와 새 버전 창구를 연다. 실제 서버(server/serve.ts)와 같은 처리기를 쓴다.
  * 처리기는 개발 서버를 띄울 때 개발 서버의 모듈 로더로 가져온다. 예전에는 설정 파일 맨 위에서 가져와서,
  * 빌드와 시험 때도 발표 모델까지 설정과 함께 묶어 읽었고 시험을 돌릴 때마다 설정 읽기 경고가 났다.
  */
@@ -33,8 +34,14 @@ function aiShare(): Plugin {
       const { createAiHandler } = (await server.ssrLoadModule('/server/ai.ts')) as typeof import('./server/ai')
       const root = process.cwd()
       const handle = createAiHandler(join(root, SHARE_DIR_NAME), { mcpPath: join(root, 'dist-node', 'gyeol-mcp.mjs') })
+      // 새 버전 창구도 같은 처리기를 쓰되, 개발 중에는 받지 않는다(저장소 안에 배포본을 내려받지 않게). 확인과 알림만 본다
+      const { createUpdateHandler } = (await server.ssrLoadModule('/server/updateRoutes.ts')) as typeof import('./server/updateRoutes')
+      const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { version: string }
+      const updates = createUpdateHandler({ version, downloadDir: null })
       server.middlewares.use((req, res, next) => {
-        handle(req, res).then((done) => done || next(), next)
+        handle(req, res)
+          .then(async (done) => done || (await updates(req, res)) || next())
+          .catch(next)
       })
     },
   }
