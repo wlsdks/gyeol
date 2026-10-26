@@ -62,6 +62,14 @@
   box-shadow: inset 0 0 0 calc(2px / var(--vs, 0.5)) var(--sel);
 }
 
+/* 줄 높이가 글자 높이보다 낮은 큰 숫자(줄 높이 0.95~1.1)와 위아래 빈 키를 잘라 낸 숫자(text-box)는 글자가 칸 상자 위아래로 나와서,
+   쓰는 중의 실선이 '억', '원' 같은 글자를 가로질렀다. 글자가 나온 칸만 그만큼(--ed-ink-t, -b. halos.ts가 띄울 넓이까지 잰다) 더 둘러
+   글자가 실선 안에 들게 한다 */
+.slide.m-edit .ed:focus-within > .ed-halo {
+  top: calc(max(var(--ed-t, 10px), var(--ed-ink-t, 0px)) * -1);
+  bottom: calc(max(var(--ed-b, 10px), var(--ed-ink-b, 0px)) * -1);
+}
+
 .ed-hint {
   opacity: 0.5;
   pointer-events: none;

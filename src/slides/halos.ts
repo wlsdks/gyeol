@@ -49,6 +49,7 @@ export function placeHalos(slide: HTMLElement): Box[] {
       ]
     }
     boxes.push(box)
+    inkOut(el, q, k)
   }
   const room = (gap: number) => Math.max(0, (gap - KEEP) / 2)
   for (let i = 0; i < boxes.length; i++) {
@@ -83,6 +84,52 @@ export function placeHalos(slide: HTMLElement): Box[] {
     if (st.getPropertyValue('--ed-l') !== l) st.setProperty('--ed-l', l)
   }
   return boxes
+}
+
+/**
+ * 글자가 칸 상자 위아래로 나왔으면 쓰는 중의 실선을 둘러야 할 넓이(나온 만큼과 글자에서 띄울 화면 4px, 캔버스 px)를 --ed-ink-t,
+ * --ed-ink-b로 둔다. 줄 높이가 글자 높이보다 낮은 큰 숫자와 위아래 빈 키를 잘라 낸 숫자(text-box)는 글자가 칸 상자 밖으로 나와서,
+ * 쓰는 중의 실선(edit.css)이 '억', '원' 같은 글자를 가로질렀다. 글자의 줄 상자(위아래 빈 키까지)로 재면 실선이 위 칸의 글까지
+ * 내려가서, 그려지는 글자 모양으로 잰다. 빈 칸은 안내 글로 잰다. 나오지 않은 칸은 두지 않는다: 띄울 4px를 CSS에서 늘 더하면
+ * 이웃 칸과 가까워 줄여 둔 넓이(--ed-t)를 넘어, 글자가 나오지도 않은 칸의 실선이 이웃 칸의 글에 닿았다
+ */
+function inkOut(el: HTMLElement, q: DOMRect, k: number) {
+  const input = el.querySelector(':scope > .ed-input')
+  const text = input?.textContent ? input : el.querySelector(':scope > .ed-hint')
+  let t = 0
+  let b = 0
+  if (text?.textContent) {
+    const r = document.createRange()
+    r.selectNodeContents(text)
+    const lines = [...r.getClientRects()].filter((x) => x.height)
+    const top = Math.min(...lines.map((x) => x.top))
+    const bottom = Math.max(...lines.map((x) => x.bottom))
+    if (lines.length && (top < q.top || bottom > q.bottom)) {
+      const ink = inkOf(text)
+      t = (q.top - top) / k - ink.top
+      b = (bottom - q.bottom) / k - ink.bottom
+    }
+  }
+  for (const [name, v] of [['--ed-ink-t', t], ['--ed-ink-b', b]] as const) {
+    const want = v > 0 ? `${Math.ceil(v + 4 / k)}px` : ''
+    if (el.style.getPropertyValue(name) === want) continue
+    if (want) el.style.setProperty(name, want)
+    else el.style.removeProperty(name)
+  }
+}
+
+let pen: CanvasRenderingContext2D | null | undefined
+/** 줄 상자의 위아래 끝에서 그려지는 글자까지의 빈 키(캔버스 px) */
+function inkOf(el: Element): { top: number; bottom: number } {
+  pen ??= document.createElement('canvas').getContext('2d')
+  if (!pen) return { top: 0, bottom: 0 }
+  const cs = getComputedStyle(el)
+  pen.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+  const m = pen.measureText(el.textContent ?? '')
+  return {
+    top: Math.max(0, m.fontBoundingBoxAscent - m.actualBoundingBoxAscent),
+    bottom: Math.max(0, m.fontBoundingBoxDescent - m.actualBoundingBoxDescent),
+  }
 }
 
 /**
