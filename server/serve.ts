@@ -13,6 +13,7 @@ import { dirname, extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { SHARE_DIR_NAME } from '../src/ai/protocol'
 import { createAiHandler } from './ai'
+import { browserTries, windowsBrowsers } from './browser'
 import { CSP, CSP_META } from './csp'
 import { createUpdateHandler, UPDATE_DIR_NAME, type UpdateSetup } from './updateRoutes'
 import { version } from '../package.json'
@@ -131,32 +132,10 @@ function alreadyRunning(): Promise<boolean> {
   })
 }
 
-/** 윈도우에서 크롬, 엣지가 설치되는 곳. `start chrome`은 없을 때 오류 창을 띄워서 직접 찾는다. */
-function windowsBrowsers(): string[] {
-  const env = process.env
-  const roots = [env.PROGRAMFILES, env['PROGRAMFILES(X86)'], env.LOCALAPPDATA].filter((r): r is string => !!r)
-  const chrome = roots.map((r) => join(r, 'Google', 'Chrome', 'Application', 'chrome.exe'))
-  const edge = roots.map((r) => join(r, 'Microsoft', 'Edge', 'Application', 'msedge.exe'))
-  return [...chrome, ...edge].filter((file) => existsSync(file))
-}
-
-/** 크롬이나 엣지로 연다. 둘 다 없으면 기본 브라우저로. */
+/** 크롬이나 엣지의 앱 창으로 연다. 둘 다 없으면 기본 브라우저로 (server/browser.ts) */
 function openBrowser(url: string) {
   if (process.env.GYEOL_NO_OPEN) return
-  const tries: [string, string[]][] =
-    process.platform === 'darwin'
-      ? [
-          ['open', ['-a', 'Google Chrome', url]],
-          ['open', ['-a', 'Microsoft Edge', url]],
-          ['open', [url]],
-        ]
-      : process.platform === 'win32'
-        ? [...windowsBrowsers().map((exe): [string, string[]] => [exe, [url]]), ['explorer', [url]]]
-        : [
-            ['google-chrome', [url]],
-            ['microsoft-edge', [url]],
-            ['xdg-open', [url]],
-          ]
+  const tries = browserTries(url, process.platform, process.platform === 'win32' ? windowsBrowsers() : [])
   const next = (i: number) => {
     if (i >= tries.length) return
     const [cmd, args] = tries[i]
