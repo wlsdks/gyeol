@@ -88,6 +88,11 @@ interface TextProps {
   units?: number
   /** 큰 숫자: 숫자 뒤의 단위('시간', '억 원', '%')를 두 단계 작게 그린다. 편집할 때도 같은 꼴로 보인다 */
   numeral?: boolean
+  /**
+   * 여러 줄 칸이어도 Enter는 다음 항목으로 (줄바꿈은 Shift+Enter). 점 목록의 요점처럼 항목 하나가 한 줄인 목록에. 한 줄 칸의 항목은 늘 그렇다.
+   * 강점 칸(SWOT)처럼 한 항목 안에 여러 줄을 쓰는 칸은 Enter가 줄바꿈이다
+   */
+  enterNext?: boolean
 }
 
 function oneLineProps(text: string, oneLine?: boolean, units?: number, numeral?: boolean) {
@@ -213,7 +218,7 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText }: FieldProps) {
+function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText, enterNext }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
@@ -248,6 +253,7 @@ function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', classNa
       style={one.style}
       multiline={multiline}
       numeral={numeral}
+      enterNext={enterNext}
     />
   )
 }
@@ -263,6 +269,7 @@ function Editable({
   style,
   multiline,
   numeral,
+  enterNext,
 }: FieldProps & { style?: CSSProperties }) {
   const ref = useRef<HTMLSpanElement>(null)
 
@@ -301,7 +308,14 @@ function Editable({
           paint(e.currentTarget, v, numeral)
         }}
         onKeyDown={(e) => {
-          if ((e.key === 'Enter' && !multiline) || e.key === 'Escape') {
+          // 한글을 조합하는 중의 Enter는 조합을 끝내는 키다: 브라우저가 조합을 마친 뒤 Enter를 한 번 더 보낸다. 그때 받는다
+          // (조합 중에 다른 칸으로 옮기면 마지막 글자가 옮긴 칸에 한 번 더 들어가기도 한다)
+          if (e.key === 'Enter' && (e.nativeEvent.isComposing || e.keyCode === 229)) return
+          if (e.key === 'Enter' && (!multiline || (enterNext && !e.shiftKey)) && focusNextItem(e.currentTarget)) {
+            e.preventDefault()
+            return
+          }
+          if ((e.key === 'Enter' && (!multiline || (enterNext && !e.shiftKey))) || e.key === 'Escape') {
             e.preventDefault()
             e.currentTarget.blur()
           }
@@ -315,6 +329,26 @@ function Editable({
       />
     </Tag>
   )
+}
+
+/**
+ * 항목 칸의 Enter는 다음 항목의 같은 칸으로 (점 목록을 파워포인트처럼 Enter로 이어 쓰게). 예전에는 Enter가 쓰기를 끝내기만 해서
+ * 이어 친 글이 들어갈 데 없이 사라졌다. 글 끝에 두어 채운 칸은 이어 쓴다. 마지막 항목이면 false(쓰기를 끝낸다).
+ * 항목 칸의 id는 '앞머리 + 차례.키'다(IT, 부품 안이면 앞머리가 b.부품id.)
+ */
+function focusNextItem(from: HTMLElement): boolean {
+  const m = /^((?:.*\.)?)(\d+)\.([^.]+)$/.exec(from.dataset.field ?? '')
+  if (!m) return false
+  const id = `${m[1]}${Number(m[2]) + 1}.${m[3]}`
+  const next = from.closest('.slide')?.querySelector<HTMLElement>(`.ed-input[data-field="${CSS.escape(id)}"]`)
+  if (!next || !next.getClientRects().length) return false
+  next.focus()
+  const sel = window.getSelection()
+  if (sel) {
+    sel.selectAllChildren(next)
+    sel.collapseToEnd()
+  }
+  return true
 }
 
 /**

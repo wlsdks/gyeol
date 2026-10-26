@@ -15,7 +15,7 @@ export function Bullets() {
           <li key={it.id} className="it bk-li">
             <span className="bk-dot" aria-hidden="true" />
             <div className="bk-li-text">
-              <IT i={i} k="title" className="bk-li-t" multiline />
+              <IT i={i} k="title" className="bk-li-t" multiline enterNext />
               <IT i={i} k="body" className="bk-li-b" multiline />
             </div>
             <ItemTools i={i} />
