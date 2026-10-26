@@ -382,9 +382,12 @@ export function settleDeck(next: Deck, prev?: Deck): Deck {
   return changed ? { ...next, slides } : next
 }
 
-/** 이 장의 판이 장에 들어가지 않는지 (제목이 길어지거나 글자를 키워 모든 부품이 잘리지 않을 자리가 없을 때) */
-export function boardTight(slide: Pick<Slide, 'layout' | 'blocks' | 'fields' | 'hints'>, look?: Parameters<typeof composeAreaH>[1]): boolean {
+/**
+ * 이 장의 판이 장에 들어가지 않는지 (제목이 길어지거나 글자를 키워 모든 부품이 잘리지 않을 자리가 없을 때).
+ * areaH: 그려진 본문 상자에서 잰 높이. 편집기는 컴포넌트 잠금과 같은 잰 높이로 본다(없으면 어림)
+ */
+export function boardTight(slide: Pick<Slide, 'layout' | 'blocks' | 'fields' | 'hints'>, look?: Parameters<typeof composeAreaH>[1], areaH?: number): boolean {
   if (slide.layout !== 'compose' || !slide.blocks?.length) return false
-  const areaH = boardAreaH(slide, look)
-  return needRows(slide.blocks, boardFit(areaH, slide.blocks)) > BOARD_ROWS
+  const h = areaH ?? boardAreaH(slide, look)
+  return needRows(slide.blocks, boardFit(h, slide.blocks)) > BOARD_ROWS
 }

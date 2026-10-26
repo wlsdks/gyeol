@@ -193,7 +193,10 @@ export function SlideStage({
  */
 function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown, deck: Deck): 'over' | 'tight' | null {
   const [overflow, setOverflow] = useState<'over' | null>(null)
-  const tight = boardTight(slide, deck)
+  // 그려진 본문 상자의 높이. 컴포넌트 잠금(BlockEditor의 roomOf)과 같은 잰 높이로 '자리가 모자라요'를 본다: 어림으로 보던 때는
+  // 둘이 몇 px 어긋나, 잠기지 않은 컴포넌트를 넣자마자 이 알림이 뜨거나 실제로 모자란데도 뜨지 않았다
+  const [areaH, setAreaH] = useState<number | null>(null)
+  const tight = boardTight(slide, deck, areaH ?? undefined)
   useLayoutEffect(() => {
     const root = ref.current?.querySelector<HTMLElement>('.slide')
     if (!root) return
@@ -206,6 +209,7 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
         return
       }
       setOverflow(slideOverflow(root))
+      setAreaH(root.querySelector<HTMLElement>(':scope .bk-area')?.offsetHeight || null)
     }
     check()
     if (document.fonts?.status === 'loading') document.fonts.ready.then(check)
