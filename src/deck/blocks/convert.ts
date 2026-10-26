@@ -1,6 +1,7 @@
 // 장을 부품 장으로, 부품 장을 다시 장으로. 사람이 적은 글은 하나도 버리지 않는다
 
 import { uid } from '../generate'
+import { sceneFits } from '../scenes'
 import type { Block, BlockType, Item, LayoutBlockType, LayoutId, Slide } from '../types'
 import { HEAD_KEYS } from './catalog'
 import { boardFromRows } from './legacy'
@@ -68,9 +69,11 @@ export function composeFrom(slide: Slide): Slide {
       ]
     }
   }
-  const { tone, motion } = slide.options
+  const { tone, motion, scene } = slide.options
   // 줄을 판으로: 바뀐 장의 제목과 부제로 본문 높이를 어림해 부품마다 잘리지 않는 크기로 나눈다
   const blocks = boardFromRows(rows, boardFit(composeAreaH({ fields, hints: headHints }, undefined, true)))
+  // 고른 장면은 바뀐 부품 장에도 맞으면 남긴다 (핵심 숫자를 부품 장으로 바꿔도 숫자 부품이 있으니 '숫자가 말한다'가 그대로 맞는다)
+  const keepScene = scene && sceneFits({ layout: 'compose', blocks }, scene) ? { scene } : {}
   return {
     ...slide,
     layout: 'compose',
@@ -78,7 +81,7 @@ export function composeFrom(slide: Slide): Slide {
     items: [],
     hints: headHints,
     variant: undefined,
-    options: { ...(tone ? { tone } : {}), ...(motion ? { motion } : {}) },
+    options: { ...(tone ? { tone } : {}), ...(motion ? { motion } : {}), ...keepScene },
     blocks,
   }
 }

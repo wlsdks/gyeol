@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sampleBlock } from './blockSamples'
+import { composeFrom } from './blocks'
 import { knownOnly, unknownParts } from './compat'
 import { makeSlide } from './generate'
 import { LAYOUTS } from './layouts'
@@ -62,5 +63,16 @@ describe('장면', () => {
     expect(unknownParts(odd)).toBe(1)
     expect(knownOnly(odd).slides[0].options.scene).toBeUndefined()
     expect(unknownParts(knownOnly(odd))).toBe(0)
+  })
+})
+
+describe('부품 장으로 바꿀 때의 장면', () => {
+  it('바뀐 부품 장에도 맞는 장면은 남기고, 맞지 않으면 뺀다', () => {
+    const kpi = { ...makeSlide('kpi'), options: { scene: 'numbers' as SceneId } }
+    expect(composeFrom(kpi).options.scene).toBe('numbers')
+    // 표지 장면은 부품 장에 맞지 않는다 (표지는 빈 부품 장이 된다)
+    const cover = { ...makeSlide('cover'), options: { scene: 'opening' as SceneId } }
+    const converted = composeFrom(cover)
+    expect(converted.options.scene === undefined || sceneFits(converted, converted.options.scene)).toBe(true)
   })
 })
