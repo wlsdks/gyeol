@@ -182,6 +182,12 @@ export function SlideStage({
           // 예전에는 '내보낸 파일에는 보이지 않아요'라고 해서, 노트를 적은 PPT를 그대로 보내도 되는 것처럼 읽혔다
           placeholder="발표자 노트: 발표할 때 말할 내용을 적어요. 듣는 분께는 보이지 않고, PPT로 내보내면 함께 들어가요."
           onChange={(e) => store.setNotes(slide.id, e.target.value)}
+          // Esc로 쓰기를 끝낸다(장의 글 칸과 같게). 예전에는 Esc를 눌러도 노트에 커서가 남아 Ctrl+Z가 편집기의 되돌리기로 가지 않았다
+          onKeyDown={(e) => {
+            if (e.key !== 'Escape' || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            e.currentTarget.blur()
+          }}
         />
       </label>
     </main>
