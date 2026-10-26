@@ -330,9 +330,9 @@ export function motionEngine(): MotionEngine {
    */
   /**
    * 장을 바꾸는 중이면 다음 장의 움직임을 이만큼 늦게 시작한다. 앞 장이 사라지기 전에 다음 장의 글이 나오면
-   * 두 장의 글이 겹쳐 보인다(motion.css의 전환 시간과 맞춘다). 밀기는 다음 장이 거의 다 들어온 뒤에 글이 나온다
+   * 두 장의 글이 겹쳐 보인다(motion.css의 전환 시간과 맞춘다). 밀기와 다가오기는 앞 장이 220ms 안에 다 비킨다
    */
-  const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 200, slide: 220, morph: 200 }
+  const SWAP_LEAD: Record<string, number> = { fade: 170, zoom: 230, slide: 230, morph: 200 }
 
   function play(root: Element, levelName: MotionLevel, opts?: PlayOptions): MotionPlay {
     // 움직임 없음과 '동작 줄이기'에서도 '누르면' 나오는 부품은 누를 때까지 감춘다(발표하는 사람이 짚어 가며 말하는 차례라서)

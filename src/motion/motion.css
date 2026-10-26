@@ -87,34 +87,37 @@
   }
 }
 
-/* 생동감: 앞 장은 뒤로 물러나고, 다음 장이 옆에서 밀고 들어온다 */
-@keyframes mo-vt-back {
+/* 밀기: 앞 장은 넘기는 쪽으로 조금 비키며 옅어지고, 다음 장이 옆에서 짧게 밀려와 자리 잡는다.
+   예전에는 다음 장이 화면 폭만큼(100%) 밀고 들어왔다. 다음 장의 글은 앞 장이 비킨 뒤에 나와서(SWAP_LEAD) 0.7초 동안
+   빈 흰 판이 앞 장을 덮으며 지나갔고, 앞 장은 작아지며(0.9) 어두워져 회색 판으로 보였다(녹화). 흔한 슬라이드 효과이기도 했다.
+   이제 두 장 모두 화면 폭의 몇 %만 움직인다: 넘기는 쪽은 보이고, 빈 판이 화면을 가로지르지 않는다 */
+@keyframes mo-vt-drift-out {
   to {
     opacity: 0;
-    scale: 0.9;
-    translate: var(--mo-vt-back, -14%) 0;
-    filter: brightness(0.6);
+    translate: var(--mo-vt-out, -2.5%) 0;
   }
 }
 
-@keyframes mo-vt-push {
+@keyframes mo-vt-drift-in {
   from {
-    translate: var(--mo-vt-push, 100%) 0;
+    opacity: 0;
+    translate: var(--mo-vt-in, 5%) 0;
   }
 }
 
-/* 다가오기: 앞 장은 커지며 사라지고, 다음 장이 조금 작은 데서 다가온다. 뒤로 가면 반대로 */
+/* 다가오기: 앞 장은 조금 커지며 사라지고, 다음 장이 조금 작은 데서 다가온다. 뒤로 가면 반대로.
+   크기는 3%만 바꾼다: 6%이던 때는 장 가장자리의 글이 크게 쓸려 나가 화려한 줌으로 보였다 */
 @keyframes mo-vt-zoom-out {
   to {
     opacity: 0;
-    scale: var(--mo-vt-zoom-old, 1.06);
+    scale: var(--mo-vt-zoom-old, 1.03);
   }
 }
 
 @keyframes mo-vt-zoom-in {
   from {
     opacity: 0;
-    scale: var(--mo-vt-zoom-new, 0.94);
+    scale: var(--mo-vt-zoom-new, 0.97);
   }
 }
 
@@ -149,12 +152,15 @@
     animation: mo-vt-fade-in 180ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
+  /* 앞 장은 빨리(200ms) 옅어지며 비키고, 다음 장은 앞 장이 거의 옅어진 뒤(120ms)에 떠나 감속 곡선으로 길게 닿는다. 넘치지 않는다.
+     뒤로 갈 때는 다음 장이 다 그려진 채로 오므로, 앞 장이 처음에 빨리 옅어져야 두 장의 글이 겹쳐 보이지 않는다
+     (앞 장을 처음에 천천히 옅게 하던 때는 녹화해 보니 두 장의 글이 0.1초 넘게 겹쳤다) */
   html[data-mo-swap='slide']::view-transition-old(root) {
-    animation: mo-vt-back 720ms cubic-bezier(0.5, 0, 0.2, 1) both;
+    animation: mo-vt-drift-out 200ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='slide']::view-transition-new(root) {
-    animation: mo-vt-push 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: mo-vt-drift-in 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
   }
 
   /* 이어 움직이기: 짝이 있는 것(engine.ts의 pairUp)은 새 자리와 크기로 미끄러져 가고, 나머지는 흐리게처럼 서로 옅어진다.
@@ -186,11 +192,11 @@
   }
 
   html[data-mo-swap='zoom']::view-transition-old(root) {
-    animation: mo-vt-zoom-out 240ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: mo-vt-zoom-out 220ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   html[data-mo-swap='zoom']::view-transition-new(root) {
-    animation: mo-vt-zoom-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+    animation: mo-vt-zoom-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
   }
 
   /* 아래 띠의 오른쪽(단락 지도와 쪽 번호)은 장을 바꾸는 동안 제자리에 있고, 지금 단락은 글자색만 바뀐다.
@@ -206,9 +212,9 @@
   }
 
   html[data-mo-dir='prev'] {
-    --mo-vt-back: 14%;
-    --mo-vt-push: -100%;
-    --mo-vt-zoom-old: 0.94;
-    --mo-vt-zoom-new: 1.06;
+    --mo-vt-out: 2.5%;
+    --mo-vt-in: -5%;
+    --mo-vt-zoom-old: 0.97;
+    --mo-vt-zoom-new: 1.03;
   }
 }
