@@ -1,6 +1,5 @@
 import { boardFromRows, cleanBlocks, cleanList, LOOSE } from './blocks'
 import { LAYOUTS } from './layouts'
-import { isScene } from './scenes'
 import { THEMES } from './themes'
 import type { Deck } from './types'
 
@@ -19,9 +18,8 @@ export function unknownParts(deck: Deck): number {
   if (!Object.hasOwn(THEMES, deck.theme.id)) lost.n++
   for (const s of deck.slides) {
     if (!Object.hasOwn(LAYOUTS, s.layout)) lost.n++
-    // 새 버전의 장면은 이 버전이 다르게(장면 없이) 움직인다. 고친 장을 새 버전에서 다시 열면 장면이 맞게 남아 있어도,
-    // 그동안 이 버전의 발표 화면은 만든 사람이 짠 컷과 다르게 보인다
-    if (s.options?.scene !== undefined && !isScene(s.options.scene)) lost.n++
+    // 모르는 장면은 세지 않는다: 장면은 글이 없는 id 하나라 잃을 것이 없다. 이 버전은 값을 그대로 둔 채 장면 없이 움직이고
+    // (sceneOf), 고쳐 저장해도 값이 남아 새 버전에서 다시 열면 그 장면으로 돌아온다. 예전에는 이것 하나로 발표 전체를 막았다
     const rows = (s as typeof s & { rows?: unknown }).rows
     if (rows !== undefined) boardFromRows(rows, LOOSE, lost)
     else if (s.layout === 'compose' || s.blocks !== undefined) cleanList(s.blocks, lost)
@@ -34,11 +32,6 @@ export function knownOnly(deck: Deck): Deck {
   const slides = deck.slides
     .filter((s) => Object.hasOwn(LAYOUTS, s.layout))
     .map((s) => (s.layout === 'compose' || s.blocks !== undefined ? { ...s, blocks: cleanBlocks(s.blocks) } : s))
-    .map((s) => {
-      if (s.options?.scene === undefined || isScene(s.options.scene)) return s
-      const { scene: _, ...options } = s.options
-      return { ...s, options }
-    })
   const theme = Object.hasOwn(THEMES, deck.theme.id) ? deck.theme : { ...deck.theme, id: 'white' as const }
   return { ...deck, version: 2, theme, slides }
 }

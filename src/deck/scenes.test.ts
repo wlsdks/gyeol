@@ -4,6 +4,7 @@ import { composeFrom } from './blocks'
 import { knownOnly, unknownParts } from './compat'
 import { makeSlide } from './generate'
 import { LAYOUTS } from './layouts'
+import { migrateDeck } from './migrate'
 import { createSampleDeck } from './sample'
 import { autoScene, planScenes, SCENES, sceneFits, sceneOf, scenesFor, withScenes } from './scenes'
 import type { BlockType, Deck, SceneId, Slide } from './types'
@@ -73,12 +74,15 @@ describe('장면', () => {
     expect(planScenes(sample).add.length).toBeLessThanOrEqual(Math.ceil(sample.slides.filter((s) => !s.hidden).length / 2))
   })
 
-  it('모든 레이아웃에서 고른 장면은 그대로 열고, 모르는 장면은 센다', () => {
+  it('모르는 장면(새 버전의 장면)이 있어도 발표를 막지 않고, 값은 그대로 둔 채 장면 없이 움직인다', () => {
     for (const s of SCENES) for (const l of s.layouts) expect(unknownParts({ ...createSampleDeck(), slides: [{ ...makeSlide(l), options: { scene: s.id } }] })).toBe(0)
     const odd = { ...createSampleDeck(), slides: [{ ...makeSlide('kpi'), options: { scene: 'spiral' as SceneId } }] }
-    expect(unknownParts(odd)).toBe(1)
-    expect(knownOnly(odd).slides[0].options.scene).toBeUndefined()
-    expect(unknownParts(knownOnly(odd))).toBe(0)
+    expect(unknownParts(odd)).toBe(0)
+    // 열고 고쳐도 값이 남아 새 버전에서 다시 열면 그 장면으로 돌아온다
+    const opened = migrateDeck(odd)
+    expect(opened.slides[0].options.scene).toBe('spiral')
+    expect(sceneOf(opened.slides[0])).toBeNull()
+    expect(knownOnly(odd).slides[0].options.scene).toBe('spiral')
   })
 })
 
