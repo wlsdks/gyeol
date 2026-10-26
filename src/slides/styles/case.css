@@ -44,14 +44,14 @@
   text-wrap: pretty;
 }
 
-/* 한마디는 왼쪽 단의 아래 끝에: 결과 판이 위에 대상, 아래 끝에 숫자를 두듯 두 단이 같은 위아래 끝을 쓴다.
-   본문 바로 뒤에 이으면 본문이 짧을 때 왼쪽 아래 절반이 통째로 비었다. 아래에 혼자 서도 읽히게 한 단계 크게 */
+/* 한마디는 본문 바로 아래에(--body-gap만큼 띄워): 왼쪽 단의 아래 끝에 붙이던 때는 본문과 한마디 사이가 장의 절반쯤 비어
+   한 단이 위아래로 찢어져 보였다. 남는 높이는 맨 아래에 모인다(docs/VISUAL-RULES.md 6). 한 단계 크게 써서 본문과 갈린다 */
 .cs-quote {
   --fs: 44px;
   position: relative;
   max-width: 1020px;
-  margin-top: auto;
-  padding: 72px 0 0 76px;
+  margin-top: var(--body-gap);
+  padding: 0 0 0 76px;
   font-family: var(--font-head);
   font-weight: 500;
   line-height: 1.45;
@@ -59,7 +59,7 @@
 
 .cs-quote::before {
   position: absolute;
-  top: 68px;
+  top: -4px;
   left: 0;
   /* 따옴표는 장식이라 옅은 글자색, 테마의 제목 글꼴로 */
   color: color-mix(in srgb, var(--ink) 28%, var(--bg));
@@ -76,8 +76,9 @@
   flex: none;
   flex-direction: column;
   width: var(--side-w, 640px);
+  /* 면을 칠하지 않는다: 결과 판을 옅은 회색 면으로 갈라 두던 때는 장의 3분의 1이 칠한 면이었다(docs/VISUAL-RULES.md 3).
+     두 단은 사이의 여백(왼쪽 단 오른쪽 112 + 이 판의 왼쪽 80)이 나눈다 */
   padding: var(--pad-y) var(--pad-x) var(--pad-y) 80px;
-  background: var(--surface);
 }
 
 .l-case.is-flip {
@@ -103,11 +104,12 @@
   object-position: left center;
 }
 
+/* 결과 숫자는 대상 바로 아래에(--body-gap만큼 띄워): 판의 아래 끝에 붙이던 때는 위의 로고·대상과 숫자 사이가 판 높이의 절반 넘게 비었다 */
 .cs-results {
   display: flex;
   flex-direction: column;
   gap: 60px;
-  margin-top: auto;
+  margin-top: var(--body-gap);
 }
 
 .cs-res {
@@ -126,10 +128,6 @@
   --fs: 30px;
   margin-top: 18px;
   font-weight: 600;
-}
-
-.cs-res:last-child .cs-label {
-  margin-bottom: calc(-1em * ((1.55 - 1.19) / 2 + 0.155));
 }
 
 .l-case .s-foot {
