@@ -65,12 +65,12 @@
 }
 
 .bk-li + .bk-li {
-  padding-top: calc(13px + var(--bk-air, 0px) / 2);
+  padding-top: calc(13px - var(--rule) + var(--bk-air, 0px) / 2);
   border-top: var(--rule) solid var(--line);
 }
 
 .bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
-  padding-top: calc(9px + var(--bk-air, 0px) / 2);
+  padding-top: calc(9px - var(--rule) + var(--bk-air, 0px) / 2);
 }
 
 /* 점 대신 차례 숫자(01, 02 …): 같은 폭 숫자, 옅은 글자색, 이름표 크기. 첫 줄의 글자 밑줄에 맞춘다(baseline).
@@ -125,13 +125,18 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-auto-flow: column;
-    gap: calc(26px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+    gap: calc(13px + var(--bk-air, 0px) / 2) calc(var(--bk-col-gap) * 2);
   }
 
-  /* 두 단으로 흘리면 줄 선은 긋지 않는다: 오른쪽 단의 첫 항목에만 선이 서서 두 단의 윗선이 어긋났다 */
+  /* 두 단으로 흘리면 줄 선은 긋지 않는다: 오른쪽 단의 첫 항목에만 선이 서서 두 단의 윗선이 어긋났다. 항목 사이는 한 단과 같은 꼴
+     (반은 틈, 반은 항목 위 여백)이라 한 단에서 두 단으로 바뀌어도 사이가 튀지 않고, 모든 항목에 위 여백을 주어 두 단의 첫 줄이 같은 높이다 */
   .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) > .bk-li {
-    padding-top: 0;
+    padding-top: calc(13px + var(--bk-air, 0px) / 2);
     border-top: 0;
+  }
+
+  .bk-list:is([data-n='5'], [data-n='6']) > .bk-li {
+    padding-top: calc(9px + var(--bk-air, 0px) / 2);
   }
 
   .bk-list[data-n='4'] {
@@ -140,7 +145,7 @@
 
   .bk-list:is([data-n='5'], [data-n='6']) {
     grid-template-rows: repeat(3, auto);
-    row-gap: calc(18px + var(--bk-air, 0px));
+    row-gap: calc(9px + var(--bk-air, 0px) / 2);
   }
 }
 
@@ -198,12 +203,12 @@
   }
 
   .bk-bl > .bk-list > .bk-li + .bk-li {
-    padding-top: calc(13px + var(--bk-air, 0px) / 2);
+    padding-top: calc(13px - var(--rule) + var(--bk-air, 0px) / 2);
     border-top: var(--rule) solid var(--line);
   }
 
   .bk-bl > .bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
-    padding-top: calc(9px + var(--bk-air, 0px) / 2);
+    padding-top: calc(9px - var(--rule) + var(--bk-air, 0px) / 2);
   }
 
   .bk-bl:has(> .bk-h) {
@@ -227,11 +232,11 @@
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-template-rows: repeat(2, auto);
     grid-auto-flow: column;
-    gap: calc(26px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+    gap: calc(13px + var(--bk-air, 0px) / 2) calc(var(--bk-col-gap) * 2);
   }
 
   .bk-list[data-n='4'] > .bk-li {
-    padding-top: 0;
+    padding-top: calc(13px + var(--bk-air, 0px) / 2);
     border-top: 0;
   }
 }
@@ -242,12 +247,12 @@
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-template-rows: repeat(3, auto);
     grid-auto-flow: column;
-    gap: calc(18px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+    gap: calc(9px + var(--bk-air, 0px) / 2) calc(var(--bk-col-gap) * 2);
   }
 
   /* 두 단으로 흘리면 줄 선은 긋지 않는다(넓은 칸의 두 단과 같다) */
   .bk-list:is([data-n='5'], [data-n='6']) > .bk-li {
-    padding-top: 0;
+    padding-top: calc(9px + var(--bk-air, 0px) / 2);
     border-top: 0;
   }
 }
