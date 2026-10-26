@@ -99,6 +99,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 - 파일 이름은 `safeFileName`으로 만듭니다(금지 문자, CON 같은 예약어, 끝의 점, 긴 경로, NFC).
 - 배포본은 윈도우용과 맥용 두 가지입니다(`npm run pack`, `release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 윈도우용은 `.bat`이 CRLF(.gitattributes), 안내 `.txt`가 BOM이 있는 UTF-8이고 node.exe가 들어갑니다. 맥용에는 애플 실리콘과 인텔 맥의 node가 들어가고 `Framo 시작.command`가 맞는 쪽을 고릅니다. zip은 `scripts/zip.mjs`(UTF-8 이름 표시)로 만들고, 이름에 버전을 넣지 않습니다(홍보 페이지의 내려받기 주소가 늘 최신 판).
 - 서버 오류는 창이 바로 닫히지 않게 `fail()`로 보여 줍니다(윈도우에서는 서버 창이 작게 내려가 있다).
+- GitHub Actions의 검수(`.github/workflows/ci.yml`)가 윈도우, 맥, 리눅스 × Node 22.13과 24에서 타입 검사, 테스트, 빌드, 라이선스를 돌리고, 윈도우에서는 배포본 zip을 한글과 띄어쓰기가 있는 폴더에 풀어 시작 .bat로 켠 뒤 엣지와 크롬이 화면을 그리는지 봅니다. 올린 뒤 검수가 실패하면 그것부터 고칩니다(`gh run list`, `gh run view --log-failed`).
 
 ## 화면 문구
 
