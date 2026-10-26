@@ -704,6 +704,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   }
   const tools = (b: Block) => (
     <BlockTools
+      slide={slide}
       block={b}
       itemIssue={issue(b, withItem)}
       variantIssue={(v) => issue(b, (x) => ({ ...x, variant: v }))}

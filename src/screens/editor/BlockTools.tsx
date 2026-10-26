@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, isAlone, shownLook, variantOfBlock, type NoRoom, type SavedKind } from '../../deck/blocks'
-import type { Block, BlockEffect } from '../../deck/types'
+import { sceneOf } from '../../deck/scenes'
+import type { Block, BlockEffect, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { BookmarkIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
 import { noRoomText } from './noRoom'
+import { SceneOverride } from './ScenePicker'
 
 // 고른 컴포넌트 바로 위에 뜨는 도구 (옮기기, 바탕, 움직임, 모양, 항목과 칸 더하기, 복제, 빼기). 띄우는 자리는 SelectionBar의 FloatTools
 
@@ -18,6 +20,7 @@ const LOOK_NOTES: Record<Block['look'] & string, string> = {
 }
 
 export function BlockTools({
+  slide,
   block,
   itemIssue,
   variantIssue,
@@ -37,6 +40,8 @@ export function BlockTools({
   saves,
   onSave,
 }: {
+  /** 이 부품이 있는 장. 장면을 골랐으면 움직임 메뉴가 장면 알림이 된다 */
+  slide: Slide
   block: Block
   /** 항목을 더하거나 모양, 바탕을 바꾸면 장에 들어가지 않을 때 그 까닭 */
   itemIssue: NoRoom | null
@@ -94,6 +99,8 @@ export function BlockTools({
   // 그려지는 면을 보인다: 혼자 장 너비를 다 쓰는 작은 부품은 고른 면이 있어도 바탕 없이 그려진다
   const look = shownLook(block, isAlone(block))
   const effect = effectOf(block)
+  // 장면을 고른 동안은 장면이 움직임을 정한다 (움직임 탭, 스튜디오와 같게). 고른 값은 남아 장면을 끄면 돌아온다
+  const scened = !!sceneOf(slide)
   const variants = spec.variants ?? []
   const variant = variantOfBlock(block)
   const canAdd = !!spec.items && blockItems(block).length < spec.items.max
@@ -165,9 +172,17 @@ export function BlockTools({
         >
           <MotionIcon />
           {/* 기본이면 무엇을 하는 단추인지를, 고른 것이 있으면 그 이름을 ('기본'만 보이면 무엇의 기본인지 모른다) */}
-          <span>{effect === 'auto' ? '움직임' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
+          <span>{scened ? '장면대로' : effect === 'auto' ? '움직임' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
-        {menu === 'motion' && (
+        {menu === 'motion' && scened && (
+          // 움직임을 고르게 두면 골라도 발표에서 달라지지 않아 고장 난 것처럼 보였다. 까닭과 끄는 단추만 둔다
+          <ul ref={menuRef} className="bk-menu bk-scene">
+            <li>
+              <SceneOverride slide={slide} />
+            </li>
+          </ul>
+        )}
+        {menu === 'motion' && !scened && (
           <ul ref={menuRef} className="bk-menu" role="menu">
             {BLOCK_EFFECTS.map((x) => (
               <li key={x.id}>

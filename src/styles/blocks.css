@@ -423,6 +423,18 @@ body.is-block-resizing * {
   font-size: 13.5px;
 }
 
+/* 장면을 고른 장: 움직임 메뉴 대신 장면 알림 한 줄과 '장면 끄기' (motion-panel.css의 .sp-over) */
+.bk-menu.bk-scene {
+  width: 280px;
+  padding: 12px 14px;
+}
+
+.bk-menu.bk-scene .sp-over {
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+}
+
 /* 칸 더하기 메뉴는 그림 없이 글만: 좁게, 그림 자리를 두지 않는다 */
 .bk-menu.is-fields {
   width: 240px;
