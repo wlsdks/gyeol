@@ -8,7 +8,8 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  * - 위계: 장 제목이 있으면, 부품 장만의 부품의 글이 제목만 하거나(같은 크기 이상) 제목과 같은 색, 굵기로 한 단계 안쪽이면(제목 ÷ 1.2 이상)
  *   제목과 다투는 것으로 본다. 강조색이나 버금 글자색의 글은 답이나 딸린 글이라,
  *   숫자와 단위는 답이라 제목과 다투지 않는다. 핵심 한 줄이 있으면 다른 부품의 문장이 그보다 크지 않아야 한다(결론이 넘어간다)
- * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 한곳(맨 아래)에 모여야 한다.
+ * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 묶음 사이를 조금 벌린 뒤 맨 아래에 모인다.
+ *   거꾸로 아래가 3분의 1 넘게 비었는데 묶음 사이를 벌리지 않은 장(위가 무겁다)도 잡는다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
@@ -17,6 +18,8 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
 
 /** 위아래로 빈 띠의 허용 폭. 장에서 가장 큰 사이(--body-gap, 72)에 칸 한 줄 몫의 끝수(판의 칸이 내용보다 조금 높다)를 더한 것 */
 const GAP_MAX = 72 * 1.5
+/** 남는 높이를 나눌 때 묶음 사이를 벌리는 가장 큰 폭(--bk-gap의 두 배, fitBlocks.ts의 pack)에서 끝수를 뺀 것 */
+const GAP_SPREAD = 48 * 2 - 8
 /** 한 줄의 가장 긴 폭 (글자 크기의 배수). 글 칸은 24em(한글로 34자 남짓)에서 꺾는다(blocks/base.css의 --measure). 글꼴 차이 몫을 더한 값 */
 const MEASURE_EM = 25.5
 /** 끝 줄이 가장 긴 줄의 이만큼도 안 되면 낱말 하나가 홀로 남은 것 */
@@ -129,10 +132,23 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
     const gap = (merged[0].t - hb) / k
     if (gap > GAP_MAX + 24) out.push(`장 머리 아래가 ${Math.round(gap)}px 비어요`)
   }
+  let widest = 0
   for (let i = 1; i < merged.length; i++) {
     const gap = (merged[i].t - merged[i - 1].b) / k
+    widest = Math.max(widest, gap)
     if (gap > GAP_MAX) out.push(`부품 사이가 위아래로 ${Math.round(gap)}px 비어요`)
   }
+  // 아래로 몰린 빈 띠: 본문 아래 3분의 1 넘게 비었는데 묶음 사이는 아직 벌릴 수 있던 장(가장 넓은 사이가 --bk-gap 두 배 밑).
+  // 남는 높이를 맨 아래에만 모으면 내용이 위에 몰려 위가 무거워 보였다(fitBlocks.ts 3-4).
+  // 쌓기가 칸을 올려 붙여 생긴 빈 띠만 본다: 판이 맨 아래 칸에 높이를 주어 칸 안이 빈 것(칸이 본문 바닥까지 닿는다)은 쌓기 몫이 아니다
+  const ab = area.getBoundingClientRect().bottom
+  const bottom = (ab - merged[merged.length - 1].b) / k
+  const filled = all.some((c) => c.getBoundingClientRect().bottom >= ab - 2 * k)
+  // 벌릴 수 있는 사이가 있는지: 소제목 아래는 그 아래 부품과 한 덩어리라 벌리지 않는다
+  const at = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
+  const opens = all.some((p) => p.dataset.type !== 'heading' && all.some((q) => at(q, '--y') >= at(p, '--y') + at(p, '--h') && at(q, '--x') < at(p, '--x') + at(p, '--w') && at(p, '--x') < at(q, '--x') + at(q, '--w')))
+  if (hasHead && opens && !filled && bottom > area.offsetHeight / 3 && widest < GAP_SPREAD)
+    out.push(`내용이 위에 몰려 아래가 ${Math.round(bottom)}px 비어요`)
   // 이음표는 그려진 것 사이의 빈자리에 혼자 서야 한다
   for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
     const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()

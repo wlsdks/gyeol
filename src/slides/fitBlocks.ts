@@ -18,7 +18,9 @@
  *
  * 3-4. 발표 화면에서는 판을 위아래로 나눈 줄마다 그려진 내용을 앞 줄 내용 바로 아래(--bk-gap, 소제목 아래는 좁게)로 올려 붙이고,
  *    남는 높이를 맨 아래 한곳에 모은다(--bk-shift, 캔버스 px, 칸째 옮긴다). 칸마다 가운데에 두거나 틈을 고르게 나누면 남는 높이가
- *    부품 사이마다 흩어져 부제 아래가 200px 넘게, 부품 사이가 130px 넘게 벌어졌다. 장 제목이 없으면 모은 묶음째 위아래 가운데에.
+ *    부품 사이마다 흩어져 부제 아래가 200px 넘게, 부품 사이가 130px 넘게 벌어졌다. 다만 맨 아래에만 모으면 내용이 적은 장은
+ *    아래 3분의 1이 비어 위가 무거워서, 남는 높이를 묶음 사이와 맨 아래에 고르게 나누되 묶음 사이는 --bk-gap만큼까지만 더 벌린다.
+ *    장 제목이 없으면 모은 묶음째 위아래 가운데에.
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
@@ -718,20 +720,38 @@ export function blockFitter() {
       rows.set(key, (rows.get(key) || []).concat(x))
     }
     const order = Array.from(rows.values()).sort((p, q) => Math.min(...p.map((x) => x.r.top)) - Math.min(...q.map((x) => x.r.top)))
-    const dy = new Map<HTMLElement, number>()
-    for (const row of order) {
-      let at = a.top
-      for (const x of items) {
-        if (!row[0].above.includes(x.c) || !dy.has(x.c)) continue
-        const below = links.some((l) => l.classList.contains('lk-v') && l.dataset.after === x.id)
-        // 아래 이음표가 서면 이음표가 설 자리(양쪽 --lk-pad)만큼 넓게, 소제목 아래는 그 아래 부품과 한 덩어리라 좁게
-        const room = below ? gap + 2 * pad : x.c.dataset.type === 'heading' ? headGap * k : gap
-        at = Math.max(at, x.ink!.b + dy.get(x.c)! + room)
+    // 묶음 사이마다 extra(화면 px)를 더 벌려 쌓는다. 소제목 아래는 그 아래 부품과 한 덩어리라 벌리지 않는다.
+    // 벌린 사이(소제목 아래가 아닌 곳)의 수도 돌려준다
+    const stack = (extra: number) => {
+      const dy = new Map<HTMLElement, number>()
+      let opened = 0
+      for (const row of order) {
+        let at = a.top
+        let wide = false
+        for (const x of items) {
+          if (!row[0].above.includes(x.c) || !dy.has(x.c)) continue
+          const below = links.some((l) => l.classList.contains('lk-v') && l.dataset.after === x.id)
+          // 아래 이음표가 서면 이음표가 설 자리(양쪽 --lk-pad)만큼 넓게, 소제목 아래는 그 아래 부품과 한 덩어리라 좁게
+          const head = x.c.dataset.type === 'heading'
+          // 이음표 자리는 벌린 사이 안에서 같이 쓴다(따로 더하면 이음표가 선 사이만 두 배 넘게 벌어졌다)
+          const room = below ? Math.max(gap + 2 * pad, gap + extra) : head ? headGap * k : gap + extra
+          if (!head) wide = true
+          at = Math.max(at, x.ink!.b + dy.get(x.c)! + room)
+        }
+        if (wide) opened++
+        const t = Math.min(...row.map((x) => x.ink!.t))
+        const d = Math.min(0, at - t)
+        for (const x of row) dy.set(x.c, d)
       }
-      const t = Math.min(...row.map((x) => x.ink!.t))
-      const d = Math.min(0, at - t)
-      for (const x of row) dy.set(x.c, d)
+      return { dy, opened }
     }
+    // 남는 높이를 맨 아래에만 모으면 내용이 적은 장은 위에 몰리고 아래 3분의 1이 통째로 비어 위가 무거웠다(핵심 숫자 아래에
+    // 핵심 한 줄과 점 목록: 숫자 묶음과 다음 묶음이 붙어 보였다). 사람이 짠 장처럼 남는 높이를 묶음 사이와 맨 아래에 고르게 나눈다.
+    // 묶음 사이는 --bk-gap만큼까지만 더 벌린다(두 배): 더 벌리면 묶음끼리 따로 떨어져 보이고, 그 너머는 맨 아래에 모은다
+    const plain = stack(0)
+    const end0 = Math.max(...items.map((x) => x.ink!.b + plain.dy.get(x.c)!))
+    const extra = plain.opened ? Math.max(0, Math.min(gap, (a.bottom - end0) / (plain.opened + 1))) : 0
+    const dy = extra >= 8 * k ? stack(extra).dy : plain.dy
     const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
     if (!head || !head.getClientRects().length) {
       const end = Math.max(...items.map((x) => x.ink!.b + dy.get(x.c)!))
