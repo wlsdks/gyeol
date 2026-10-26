@@ -85,8 +85,9 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  /* 컴포넌트 사이의 이음표(blocks/links.css의 .bk-link)와 같은 색과 그림(가는 꺾쇠) */
-  color: var(--ink-3);
+  /* 컴포넌트 사이의 이음표(blocks/links.css의 .bk-link)와 같은 그림. 색은 --ink-2: 옅은 꺾쇠는 화살표로 읽히지 않았다
+     (VISUAL-RULES 6 이음표) */
+  color: var(--ink-2);
   transform: translate(-50%, -50%);
 }
 
@@ -141,7 +142,7 @@
 }
 
 .va-table .cp-arrow {
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
 /* 줄마다의 꺾쇠: 40px(걱정과 대책의 줄 화살표와 같은 크기) */

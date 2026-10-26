@@ -53,10 +53,11 @@
   text-wrap: pretty;
 }
 
+/* 꺾쇠는 --ink-2: 옅으면 걱정과 대책을 잇는 화살표로 읽히지 않았다(VISUAL-RULES 6 이음표) */
 .bk-rk-arrow {
   display: grid;
   place-items: center;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
 /* 그림(slides/arrow.tsx)의 굵기와 모양은 그림이 정한다. 여기서는 크기만 */
