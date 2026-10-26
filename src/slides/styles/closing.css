@@ -54,17 +54,14 @@
   gap: 32px;
 }
 
+/* 줄 높이는 내용에 정해진 사이(위아래 --cl-pad)를 더한 만큼이다(docs/VISUAL-RULES.md 6). 목록은 단 아래에 붙여 마지막 줄을
+   왼쪽 단의 발표자, 연락처 끝에 맞춘다: 큰 제목은 왼쪽 위, 요청은 오른쪽 아래로 대각선에 놓인다.
+   예전에는 셋이면 줄을 단 높이로 나눠(1fr) 늘려서 줄마다 위아래가 100px 넘게 비고 요청 사이가 크게 벌어져 흩어져 보였다 */
 .cl-steps {
+  --cl-pad: 56px;
   display: grid;
-  grid-auto-rows: minmax(min-content, 1fr);
+  align-content: end;
   min-height: 0;
-}
-
-/* 하나, 둘이면 줄이 낮아(260px까지) 목록이 단의 위쪽 절반에서 끝나고 아래가 통째로 비었다. 목록을 단 아래에 붙여
-   마지막 줄을 왼쪽 단의 발표자, 연락처 끝에 맞춘다: 큰 제목은 왼쪽 위, 요청은 오른쪽 아래로 대각선에 놓인다 */
-.cl-steps:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(min-content, 260px);
-  align-self: end;
 }
 
 /* 번호는 요청 제목과 같은 크기, 같은 글자선에 가늘고 옅게. 동그라미에 넣은 번호는 흔한 서식처럼 보였다(목차와 같은 말) */
@@ -75,6 +72,15 @@
   align-content: center;
   align-items: first baseline;
   column-gap: 40px;
+  padding-block: var(--cl-pad);
+}
+
+.cl-step:first-child {
+  padding-top: 0;
+}
+
+.cl-step:last-child {
+  padding-bottom: 0;
 }
 
 /* 요청 사이에만 옅은 1px 선(docs/VISUAL-RULES.md 2). 예전에는 목록 위와 줄마다 아래에 2px 선을 그어 마지막 줄 아래까지 선이
