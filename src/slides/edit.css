@@ -894,13 +894,3 @@ body.is-block-dragging .bk-area.is-live > .bk-link:not(.is-preview) {
   width: 38px;
   height: 38px;
 }
-
-/* 놓으면 다음 장에 새로 만든다는 표시 */
-.bk-incoming {
-  position: absolute;
-  inset: -16px;
-  border: 4px dashed color-mix(in srgb, var(--sel) 40%, transparent);
-  border-radius: calc(var(--r-panel) + 16px);
-  background: color-mix(in srgb, var(--sel) 4%, transparent);
-  pointer-events: none;
-}

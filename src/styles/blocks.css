@@ -901,13 +901,24 @@ body.is-block-resizing * {
   translate: 0 0;
 }
 
-/* 이 장에는 자리가 없는 부품: 그림만 흐리게 하고 이름 밑에 한 줄. 누르면 아래에 까닭이 나온다 */
+/* 이 장에 함께 넣을 수 없는 부품: 잠근 표시. 그림과 이름을 흐리게 하고 이름 밑에 자물쇠 한 줄. 누르면 아래에 까닭이 나온다.
+   올려도 떠오르지 않는다(넣을 수 있는 카드만 손에 반응한다) */
 .lib-card.is-blocked {
   cursor: help;
 }
 
 .lib-card.is-blocked .lib-thumb {
-  opacity: 0.42;
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.lib-card.is-blocked :is(.lib-name, .lib-desc) {
+  opacity: 0.55;
+}
+
+.lib-card.is-blocked:hover .lib-thumb {
+  box-shadow: 0 0 0 1px var(--line-2);
+  translate: 0 0;
 }
 
 .lib-card.is-why .lib-thumb {
@@ -924,13 +935,10 @@ body.is-block-resizing * {
   font-weight: 600;
 }
 
-.lib-no::before {
-  content: '';
+.lib-no .icon {
   flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+  width: 13px;
+  height: 13px;
 }
 
 .lib-why {

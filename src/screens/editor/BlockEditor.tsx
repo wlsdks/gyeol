@@ -36,7 +36,7 @@ import { FRAME } from '../../deck/frame'
 import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { particle } from '../../lib/josa'
+import { josa, particle } from '../../lib/josa'
 import { usePointerSessions } from '../../lib/pointerSession'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
@@ -48,7 +48,7 @@ import { BlockTools } from './BlockTools'
 import { CANVAS, COL_W } from './canvas'
 import { useLinkEditing } from './LinkEditor'
 import { useLook } from './look'
-import { narrowText, noRoomText } from './noRoom'
+import { narrowText, noRoomText, refuseText } from './noRoom'
 import { dropBlocks, dropResult, planDrop, sameEditTarget, type DropPlanKind, type EditTarget } from './planDrop'
 import { RoomZone } from './RoomZone'
 
@@ -72,9 +72,9 @@ interface Drag {
   result: Block[] | null
   /** 자리를 고를 때 잰 본문 높이. 넣을 때도 이 높이로 판을 나눠야 끄는 동안 보인 모습 그대로 놓인다 */
   room?: number
-  /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
+  /** 손 아래 자리에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 넣지 않고 이 까닭을 알린다) */
   blocked: NoRoom | null
-  /** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 다음 장에 새로 만들기 */
+  /** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 넣지 않고 까닭과 '새 장에 넣기'를 알리기(next) */
   plan: DropPlanKind
   /** 끌고 있는 부품 그림의 크기 (캔버스 px)와 화면 크기 */
   canvas: { w: number; h: number }
@@ -174,8 +174,10 @@ export interface BlockEditing {
    */
   pressCard(e: ReactPointerEvent<HTMLElement>, what: BlockType | Block, onTap?: () => void): void
   insert(type: BlockType, from?: HTMLElement | null): void
-  /** 미리 채운 부품 하나를 알아서 고른 자리에 (자리가 없으면 다음 장에) */
+  /** 미리 채운 부품 하나를 알아서 고른 자리에. 이 장에 자리가 없으면 넣지 않고 까닭과 '새 장에 넣기'를 알린다 */
   insertBlock(block: Block, from?: HTMLElement | null): void
+  /** 이 장 다음에 컴포넌트 장을 새로 만들어 넣는다 (쓰는 사람이 '새 장에 넣기'를 골랐을 때만). 미리 채운 부품(내 컴포넌트)도 */
+  insertNew(what: BlockType | Block): void
   /** 미리 채운 부품 하나를 화면의 이 자리에 (끌어다 놓기와 같은 자리 찾기) */
   dropBlock(block: Block, x: number, y: number): void
   /** 이 부품(종류, 또는 미리 채운 부품)을 지금 장 어디에도 넣을 수 없을 때 그 까닭 (부품 고르기 카드에 보인다) */
@@ -236,6 +238,15 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     setSelected(d.block.id)
   }, [])
 
+  /** 이 장 다음에 컴포넌트 장을 새로 만들어 넣는다. 쓰는 사람이 고를 때만: 넣을 자리가 없다고 저절로 새 장을 만들지 않는다 */
+  const addToNew = useCallback(
+    (block: Block) => {
+      store.addComposeSlide(autoPlace([], block) ?? [{ ...block, at: WHOLE }], slideRef.current.id)
+      toast.show(`새 컴포넌트 장을 만들어 ${josa(BLOCKS[block.type].name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
+    },
+    [store, toast],
+  )
+
   const finish = useCallback(
     (d: Drag) => {
       const s = slideRef.current
@@ -259,17 +270,15 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         store.replaceSlide(s.id, { ...d.composed, blocks: d.result })
         toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
-        store.addComposeSlide(autoPlace([], block) ?? [{ ...block, at: WHOLE }], s.id)
-        const why = d.blocked && (canCompose(s.layout) || s.layout === 'compose') ? noRoomText(d.blocked, block.type, 'slide').why : null
-        toast.show(
-          why ? `${why} 그래서 다음 장에 새로 넣었어요` : canCompose(s.layout) || s.layout === 'compose' ? '이 장에는 자리가 없어서 다음 장에 새로 넣었어요' : '이 장 다음에 컴포넌트 장을 새로 만들어 넣었어요',
-          undefined,
-          6000,
-        )
+        // 이 장에 넣을 수 없으면 넣지 않는다: 들고 온 카드로 돌아가고, 까닭과 '새 장에 넣기'를 알린다.
+        // 예전에는 묻지 않고 다음 장을 새로 만들어 넣어서, 컴포넌트를 넣을 때마다 장이 하나씩 늘었다
+        setLanding({ id: null, ghost: d })
+        toast.show(refuseText(d.blocked, block.type, s.layout === 'compose' || canCompose(s.layout)), { label: '새 장에 넣기', run: () => addToNew(block) }, 8000)
+        return
       }
       land(d)
     },
-    [store, toast, land],
+    [store, toast, land, addToNew],
   )
 
   // 놓은 뒤: 칸이 그려지면 끌던 그림을 그 칸에 맞춰 날려 보내고, 도착하면 칸을 보여 준다
@@ -536,7 +545,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     insertBlock(makeBlock(type), from)
   }
 
-  /** 미리 채운 부품(붙여 넣은 이미지 같은)을 눌러서 넣기와 같은 길로: 알아서 고른 자리, 없으면 다음 장에 */
+  /** 미리 채운 부품(붙여 넣은 이미지 같은)을 눌러서 넣기와 같은 길로: 알아서 고른 자리, 없으면 넣지 않고 까닭과 '새 장에 넣기'를 알린다 */
   function insertBlock(block: Block, from?: HTMLElement | null) {
     const s = slideRef.current
     const r = from?.getBoundingClientRect() ?? null
@@ -561,7 +570,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
 
   /**
    * 화면의 이 자리(x, y)에 미리 채운 부품을 놓는다: 끌어다 놓을 때와 같은 자리 찾기(놓을 수 없으면 가장 가까운 자리, 장에 자리가 없으면
-   * 다음 장). 바탕 화면에서 끌어 온 이미지 파일처럼 손에 든 그림 없이 놓이는 것. 놓인 자리로 그 자리에서 날아 들어간다
+   * 넣지 않고 까닭과 '새 장에 넣기'를 알린다). 바탕 화면에서 끌어 온 이미지 파일처럼 손에 든 그림 없이 놓이는 것. 놓인 자리로 그 자리에서 날아 들어간다
    */
   function dropBlock(block: Block, x: number, y: number) {
     const d = newDrag(block, null, x, y)
@@ -797,7 +806,6 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     dragId,
     selected: drag ? null : selected,
     opened,
-    incoming: !!drag && drag.plan === 'next',
     selectedLink: links.selectedLink,
     linkPreview: links.preview,
     onLinkPointerDown: links.onLinkPointerDown,
@@ -843,9 +851,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     : drag.plan === 'convert'
       ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
-        ? compose || canCompose(slide.layout)
-          ? `${drag.blocked ? noRoomText(drag.blocked, drag.block.type, 'slide').why : '이 장에는 자리가 없어요.'} 놓으면 다음 장에 새로 만들어 넣어요.`
-          : '표지와 섹션 장에는 넣을 수 없어요. 놓으면 다음 장에 컴포넌트 장을 새로 만들어요.'
+        ? `${refuseText(drag.blocked, drag.block.type, compose || canCompose(slide.layout))} 놓아도 넣지 않아요.`
         : drag.kind === 'new' && !drag.plan
           ? '슬라이드 위로 끌어 오세요'
           : null
@@ -911,6 +917,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     pressCard,
     insert,
     insertBlock,
+    insertNew: (what) => addToNew(typeof what === 'string' ? makeBlock(what) : what),
     dropBlock,
     issueFor,
     areaHeight: () => roomOf(slideRef.current),

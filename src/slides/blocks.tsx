@@ -565,7 +565,6 @@ export function BlockArea() {
       ))}
       <Links blocks={blocks} live={live} />
       {live && !live.dragId && <Lines gutters={guttersOf(blocks)} blocks={blocks} live={live} />}
-      {live?.incoming && <div className="bk-incoming" aria-hidden="true" />}
     </div>
   )
 }

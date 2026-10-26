@@ -33,11 +33,11 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
   const name = BLOCKS[type].name
   switch (r.kind) {
     case 'full':
-      return { why: `한 장에는 컴포넌트를 ${MAX_BLOCKS}개까지 넣어요.`, fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요.' }
+      return { why: `한 장에는 컴포넌트를 ${MAX_BLOCKS}개까지 넣어요.`, fix: '컴포넌트를 하나 빼거나 새 장에 넣어 주세요.' }
     case 'large':
       return {
         why: `작은 컴포넌트가 아닌 것은 한 장에 ${MAX_LARGE}개까지 넣어요. 더 많으면 어디를 봐야 할지 흐려져요.`,
-        fix: '컴포넌트를 하나 빼거나 다음 장에 넣어 주세요. 소제목, 숫자 한 줄 같은 작은 컴포넌트는 더 넣을 수 있어요.',
+        fix: '컴포넌트를 하나 빼거나 새 장에 넣어 주세요. 소제목, 숫자 한 줄 같은 작은 컴포넌트는 더 넣을 수 있어요.',
       }
     case 'narrow':
       return {
@@ -73,4 +73,14 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'slide' |
       }
     }
   }
+}
+
+/**
+ * 이 장에 넣지 않을 때 알리는 말: 무엇을, 왜. composable이 거짓이면 표지와 섹션처럼 컴포넌트를 넣지 않는 장.
+ * 넣지 못하면 저절로 다음 장을 만들지 않고 이 말과 '새 장에 넣기'를 보인다
+ */
+export function refuseText(r: NoRoom | null, type: BlockType, composable: boolean): string {
+  if (!composable) return '표지와 섹션 장에는 컴포넌트를 넣지 않아요.'
+  const name = josa(BLOCKS[type].name, '은', '는')
+  return r ? `${name} 이 장에 함께 넣을 수 없어요. ${noRoomText(r, type, 'slide').why}` : `${name} 이 장에 함께 넣을 수 없어요. 자리가 모자라요.`
 }

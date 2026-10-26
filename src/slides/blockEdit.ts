@@ -14,8 +14,6 @@ export interface BlockEdit {
   selected: string | null
   /** '칸 더하기'로 연 칸: '부품id 칸키'. 비어 있어도 그린다 */
   opened: ReadonlySet<string>
-  /** 장 밖에서 끌어 온 부품이 장 위에 있을 때: 놓으면 이 장이 부품 장으로 바뀐다는 안내를 띄운다 */
-  incoming: boolean
   onCellPointerDown(e: PointerEvent<HTMLElement>, block: Block): void
   /** 판을 나누는 선을 끌어 양쪽의 너비나 높이를 바꾼다 */
   onGutterPointerDown(e: PointerEvent<HTMLElement>, gutter: Gutter): void

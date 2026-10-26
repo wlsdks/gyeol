@@ -5,7 +5,7 @@ import type { Block, Slide } from '../../deck/types'
 // 화면을 재는 일(본문 상자의 자리와 크기)은 부르는 쪽(useBlockEditing)이 하고 여기서는 잰 값만 받아 정한다.
 // 놓을 자리와 함께 놓은 뒤의 판(result)도 여기서 만든다: 끄는 동안 보이는 모습과 놓은 뒤가 늘 같다
 
-/** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 다음 장에 새로 만들기 */
+/** 놓으면 할 일: 이 장에 넣기, 이 장을 부품 장으로 바꿔 넣기, 넣지 않기(next: 까닭과 '새 장에 넣기'를 알린다. 새 장은 쓰는 사람이 고를 때만) */
 export type DropPlanKind = 'place' | 'convert' | 'next' | null
 
 /** 놓을 자리. 판의 자리와 맞바꾸기에 더해, 옮기는 중에 처음 자리 둘레에 있으면 그대로 두기(stay) */
@@ -55,7 +55,7 @@ export interface DropPlan {
   target: EditTarget | null
   /** 놓은 뒤의 판 (place, convert). 끄는 동안 이 모습을 미리 보여 준다 */
   result: Block[] | null
-  /** 손 아래 자리(또는 이 장)에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 다음 장에 들어간다) */
+  /** 손 아래 자리(또는 이 장)에 놓을 수 없는 까닭 (그래서 다른 자리에 놓이거나, 넣지 않고 이 까닭을 알린다) */
   blocked: NoRoom | null
   composed: Slide | null
   /** 자리를 찾은 판 */

@@ -3,6 +3,7 @@ import {
   BLOCK_COL_GAP,
   BLOCKS,
   blockPrefH,
+  canCompose,
   freshBlocks,
   groupIssue,
   insertParts,
@@ -22,7 +23,7 @@ import { downloadText, safeFileName } from '../../store/deckFile'
 import { useDeck } from '../../store/deckStore'
 import { decodePartsFile, encodePartsFile, PARTS_EXT } from '../../store/partsFile'
 import { addManySaved, removeSaved, renameSaved, restoreSaved, useSaved } from '../../store/saved'
-import { BookmarkIcon, DownloadIcon, MoreIcon, Popover, UploadIcon, undoAction, type Toast } from '../ui'
+import { BookmarkIcon, DownloadIcon, LockIcon, MoreIcon, Popover, UploadIcon, undoAction, type Toast } from '../ui'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { CANVAS, COL_W } from './canvas'
 import { useLook, type Look } from './look'
@@ -31,7 +32,7 @@ import { dropBlocks } from './planDrop'
 
 // 컴포넌트 고르기의 '내 컴포넌트': 저장해 둔 컴포넌트 하나, 한 줄, 장 하나를 다시 넣는다.
 // 컴포넌트 하나는 기본 컴포넌트처럼 끌어다 놓거나 누르면 알맞은 자리에, 한 줄은 이 장 맨 아래에(자리가 없으면 까닭과
-// '다음 장에 새로 넣기'), 장 하나는 이 장 다음에 새 장으로 넣는다. 넣는 것마다 새 id라 같은 것을 여러 번 넣어도 된다.
+// '새 장에 넣기'), 장 하나는 이 장 다음에 새 장으로 넣는다. 넣는 것마다 새 id라 같은 것을 여러 번 넣어도 된다.
 
 /** 카드 그림의 가로세로 비율 범위 (한 줄은 넓적하고, 장은 16:9). 더 넓적하면 그림이 너무 낮아 읽히지 않는다 */
 const MIN_RATIO = 1.2
@@ -91,7 +92,7 @@ const SavedThumb = memo(function SavedThumb({ deck, part }: { deck: Look; part: 
 /** 한 줄이나 장 하나를 이 장에 넣을 수 없는 까닭을 읽는 말로 */
 function rowsNoRoomText(r: NoRoom, part: SavedPart, slide: Slide): NoRoomText {
   const blocks = dropBlocks(slide)?.blocks ?? []
-  const fix = '다음 장에 새로 넣거나, 이 장의 컴포넌트를 줄여 주세요.'
+  const fix = '새 장에 넣거나, 이 장의 컴포넌트를 줄여 주세요.'
   if (r.kind === 'full') return { why: `이 장의 컴포넌트 ${blocks.length}개에 ${part.blocks.length}개를 더하면 한 장에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
   if (r.kind === 'large') return { why: `차트나 표 같은 큰 컴포넌트는 한 장에 ${MAX_LARGE}개까지 넣어요.`, fix }
   return { why: '넣으면 컴포넌트들이 장보다 높아져서 글이 잘려요.', fix }
@@ -112,13 +113,18 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     return b
   }
 
-  /** 이 장에 넣을 수 없는 까닭. 장 하나는 늘 다음 장에 넣으니 없다 */
+  /** 이 장에 넣을 수 없는 까닭. 장 하나는 늘 이 장 다음에 새 장으로 넣으니 없다 */
   const issueOf = (part: SavedPart): NoRoom | null => {
     if (part.kind === 'slide') return null
     if (part.kind === 'block') return blocks.issueFor(freshBlock(part))
     const at = dropBlocks(slide)
     return at && groupIssue(at.blocks, part.blocks, blocks.areaHeight())
   }
+
+  // 표지와 섹션처럼 컴포넌트를 넣지 않는 장(기본 컴포넌트 목록과 같다)에서는 장 하나 말고 모두 잠근다.
+  // 잠그지 않던 때는 한 줄을 누르면 묻지 않고 다음 장을 새로 만들어 넣었다
+  const closed = slide.layout !== 'compose' && !canCompose(slide.layout)
+  const lockedOf = (part: SavedPart) => part.kind !== 'slide' && (closed || !!issueOf(part))
 
   /** 새로 들어온 컴포넌트가 제자리에서 한 번 움직여 들어온다 (끌어다 놓은 컴포넌트가 날아 들어가는 것처럼) */
   const playIn = (ids: string[]) => {
@@ -137,8 +143,10 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     const store = useDeck.getState()
     setWhy(null)
     if (part.kind === 'block') {
-      // 기본 컴포넌트를 눌러 넣을 때와 같은 길 (자리가 없으면 그 길이 다음 장에 넣고 알린다)
-      blocks.insertBlock(freshBlock(part), card)
+      // 기본 컴포넌트와 같은 길: 알아서 고른 자리에, 까닭을 보고 '새 장에 넣기'를 골랐으면 새 컴포넌트 장에.
+      // 넣는 길(insertBlock)로 보내면 자리가 없어 다시 넣지 않고 까닭을 알려서, '새 장에 넣기'를 두 번 눌러야 했다
+      if (next) blocks.insertNew(freshBlock(part))
+      else blocks.insertBlock(freshBlock(part), card)
       return
     }
     if (part.kind === 'slide') {
@@ -160,10 +168,10 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
       return
     }
     store.addComposeSlide(insertParts([], { at: null, side: 'below' }, fresh) ?? fresh, slide.id)
-    toast.show(`‘${part.name}’${particle(part.name, '을', '를')} 다음 장에 새로 넣었어요`, undoAction(toast), 6000)
+    toast.show(`새 컴포넌트 장을 만들어 ‘${part.name}’${particle(part.name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
   }
 
-  const tap = (part: SavedPart, card: HTMLElement) => (issueOf(part) ? setWhy(why?.id === part.id ? null : { id: part.id, card }) : insert(part, card))
+  const tap = (part: SavedPart, card: HTMLElement) => (lockedOf(part) ? setWhy(why?.id === part.id ? null : { id: part.id, card }) : insert(part, card))
 
   const remove = async (part: SavedPart) => {
     const gone = await removeSaved(part.id)
@@ -191,8 +199,9 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
 
   const shownWhy = (() => {
     const part = why && parts.find((p) => p.id === why.id)
-    const r = part && issueOf(part)
-    if (!part || !r) return null
+    if (!part || !lockedOf(part)) return null
+    if (closed) return { part, card: why.card, text: { why: '표지와 섹션 장에는 컴포넌트를 넣지 않아요.', fix: '새 장에 넣으면 이 장 다음에 컴포넌트 장을 만들어 넣어요.' } }
+    const r = issueOf(part)!
     return { part, card: why.card, text: part.kind === 'block' ? noRoomText(r, part.blocks[0].type, 'slide') : rowsNoRoomText(r, part, slide) }
   })()
 
@@ -228,16 +237,16 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
           </div>
           <ul className="mine-grid">
             {parts.map((part) => {
-              const issue = issueOf(part)
+              const locked = lockedOf(part)
               const drag = part.kind === 'block'
               return (
                 <li key={part.id} className="mine-item">
                   <button
                     type="button"
-                    className={cx('lib-card', !drag && 'is-tap', issue && 'is-blocked', why?.id === part.id && 'is-why')}
+                    className={cx('lib-card', !drag && 'is-tap', locked && 'is-blocked', why?.id === part.id && 'is-why')}
                     title={
-                      issue
-                        ? `${part.name}: 이 장에는 자리가 없어요. 눌러서 이유를 보세요`
+                      locked
+                        ? `${part.name}: 이 장에 ${closed ? '넣지 않아요' : '함께 넣을 수 없어요'}. 눌러서 이유를 보세요`
                         : part.kind === 'slide'
                           ? `${part.name}: 눌러서 이 장 다음에 새 장으로 넣어요`
                           : part.kind === 'row'
@@ -280,7 +289,17 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
                         {part.name}
                       </span>
                     )}
-                    <span className="mine-kind">{issue ? '이 장엔 자리가 없어요' : kindText(part)}</span>
+                    {/* 기본 컴포넌트의 잠근 카드와 같은 말과 자물쇠 */}
+                    <span className="mine-kind">
+                      {locked ? (
+                        <>
+                          <LockIcon />
+                          {closed ? '이 장에는 넣지 않아요' : '이 장에 함께 넣을 수 없어요'}
+                        </>
+                      ) : (
+                        kindText(part)
+                      )}
+                    </span>
                     <Popover
                       flip
                       className="mine-menu"
@@ -335,15 +354,15 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
 
       {shownWhy && (
         <div className="lib-why" role="dialog" aria-label={`${josa(shownWhy.part.name, '을', '를')} 넣을 수 없는 이유`}>
-          <p className="lib-why-t">{josa(shownWhy.part.name, '은', '는')} 이 장에 넣을 수 없어요</p>
+          <p className="lib-why-t">{josa(shownWhy.part.name, '은', '는')} 이 장에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
           <div className="lib-why-actions">
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => insert(shownWhy.part, shownWhy.card, true)}>
-              다음 장에 새로 넣기
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWhy(null)}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setWhy(null)}>
               닫기
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => insert(shownWhy.part, shownWhy.card, true)}>
+              새 장에 넣기
             </button>
           </div>
         </div>

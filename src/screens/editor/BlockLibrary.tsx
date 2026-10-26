@@ -9,10 +9,11 @@ import { josa } from '../../lib/josa'
 import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
+import { useDeck } from '../../store/deckStore'
 import { loadSaved, useSaved } from '../../store/saved'
 import { soloSlide, type BlockEditing } from './BlockEditor'
 import { COL_W } from './canvas'
-import { dialogOpen, isTyping, type Toast } from '../ui'
+import { dialogOpen, isTyping, LockIcon, type Toast } from '../ui'
 import { useLook, type Look } from './look'
 import { noRoomText } from './noRoom'
 import { SavedParts } from './SavedParts'
@@ -144,27 +145,26 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   }
 
   const counted = slide.layout === 'compose' && (slide.blocks ?? []).length >= MAX_BLOCKS
-  // 카드마다 이 장 어디에도 넣을 수 없는 까닭. 누를 때도 이것 하나로 정한다: 까닭이 있으면 바로 넣지 않고 까닭과
-  // '다음 장에 새로 넣기'를 보인다. 예전에는 어느 카드도 들어가지 않는 장이면 까닭을 아예 재지 않아서, 누르면 묻지 않고
-  // 다음 장을 만들었고 몇 카드만 막힌 장에서는 물었다 (같은 결과인데 흐름이 둘). 장이 바뀔 때마다 다시 본다
+  // 표지와 섹션처럼 컴포넌트를 넣지 않는 장: 카드를 모두 잠근다. 예전에는 누를 때마다 다음 장을 새로 만들어 넣어서 장이 하나씩 늘었다
+  const closed = slide.layout !== 'compose' && !canCompose(slide.layout)
+  // 카드마다 이 장 어디에도 넣을 수 없는 까닭. 누를 때도 이것 하나로 정한다: 까닭이 있으면 카드를 잠가 두고, 누르면 넣지 않고
+  // 까닭과 '새 장에 넣기'를 보인다(새 장은 쓰는 사람이 고를 때만). 장이 바뀔 때마다 다시 본다
   // 장과 본문 높이가 그대로면 다시 재지 않는다: 끄는 동안 목록이 포인터가 움직일 때마다 다시 그려지는데, 그때마다 카드마다
   // 판의 모든 자리를 다시 재서 한 번에 150ms씩 걸려 끄는 것이 끊겼다
   const areaH = blocks.areaHeight()
   const issues = useMemo(() => new Map(TYPES.map((t) => [t, blocks.issueFor(t)])), [slide, areaH])
-  // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 카드마다 표를 붙이지 않고 위에 한 번만 알린다
+  // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 위에 한 번 더 알린다. 카드마다의 잠금 표시는 그대로 둔다
   const full = counted || (slide.layout === 'compose' && TYPES.every((t) => issues.get(t)))
   // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
-  const note =
-    slide.layout === 'compose'
+  const note = closed
+    ? '표지와 섹션 장에는 컴포넌트를 넣지 않아요'
+    : slide.layout === 'compose'
       ? full
         ? counted
-          ? `${MAX_BLOCKS}개가 다 차서 다음 장에 새로 넣어요`
-          : '자리가 모자라 다음 장에 새로 넣어요'
+          ? `한 장에는 ${MAX_BLOCKS}개까지 넣어요. 하나를 빼면 더 넣을 수 있어요`
+          : '이 장은 자리가 다 찼어요. 하나를 빼면 더 넣을 수 있어요'
         : null
-      : canCompose(slide.layout)
-        ? '넣으면 컴포넌트 장이 돼요'
-        : // 표지와 섹션 장: 놓으면 다음 장에 새로 넣는다. 끄는 동안 놓을 자리에 그렇게 보이니 따로 적지 않는다
-          null
+      : '넣으면 컴포넌트 장이 돼요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   const showLinks = !group || group === LINK_GROUP.name
   const chips: { id: string | null; name: string; title?: string }[] = [
@@ -175,7 +175,13 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.blocks ?? []).length > 0
-  const shownWhy = why && issues.get(why.type) ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') } : null
+  const shownWhy = !why
+    ? null
+    : closed
+      ? { ...why, text: { why: '표지와 섹션 장에는 컴포넌트를 넣지 않아요.', fix: '새 장에 넣으면 이 장 다음에 컴포넌트 장을 만들어 넣어요.' } }
+      : issues.get(why.type)
+        ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') }
+        : null
 
   return (
     <div className="lib" role="tabpanel" aria-label="컴포넌트">
@@ -215,6 +221,11 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
               컴포넌트 장으로 바꾸기
             </button>
           )}
+          {(closed || full) && (
+            <button type="button" className="lib-note-btn" title="이 장 다음에 빈 컴포넌트 장을 만들어요" onClick={() => useDeck.getState().addComposeSlide([], slide.id)}>
+              새 컴포넌트 장
+            </button>
+          )}
         </div>
       )}
 
@@ -234,16 +245,15 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                   {g.types.map((type) => {
                     const spec = BLOCKS[type]
                     const issue = issues.get(type)
-                    // 카드의 표는 몇 카드만 막혔을 때만 (다 막혔으면 위의 알림 한 줄로)
-                    const marked = !!issue && !full
-                    // 이 장에 넣을 수 없는 부품: 눌러도 바로 넣지 않고 까닭을 보여 준다 (끌어서 놓으면 다음 장에 들어간다)
-                    const tap = (card: HTMLElement) => (issue ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
+                    // 이 장에 넣을 수 없는 부품은 잠가 둔다: 눌러도 넣지 않고 까닭을 보여 준다 (끌어다 놓아도 넣지 않는다)
+                    const marked = closed || !!issue
+                    const tap = (card: HTMLElement) => (marked ? setWhy(why?.type === type ? null : { type, card }) : blocks.insert(type, card))
                     return (
                       <button
                         key={type}
                         type="button"
                         className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
-                        title={issue ? `${spec.name}: 이 장에는 자리가 없어요. 눌러서 이유를 보세요` : `${spec.name}: ${spec.motion}`}
+                        title={marked ? `${spec.name}: 이 장에 함께 넣을 수 없어요. 눌러서 이유를 보세요` : `${spec.name}: ${spec.motion}`}
                         onPointerDown={(e) => {
                           const card = e.currentTarget
                           blocks.pressCard(e, type, () => tap(card))
@@ -256,7 +266,12 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         <BlockThumb deck={look} type={type} />
                         <span className="lib-name">{spec.name}</span>
                         <span className="lib-desc">{spec.description}</span>
-                        {marked && <span className="lib-no">이 장엔 자리가 없어요</span>}
+                        {marked && (
+                          <span className="lib-no">
+                            <LockIcon />
+                            {closed ? '이 장에는 넣지 않아요' : '이 장에 함께 넣을 수 없어요'}
+                          </span>
+                        )}
                       </button>
                     )
                   })}
@@ -294,22 +309,22 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
 
       {shownWhy && (
         <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 이유`}>
-          <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 넣을 수 없어요</p>
+          <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
           <div className="lib-why-actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setWhy(null)}>
+              닫기
+            </button>
             <button
               type="button"
-              className="btn btn-primary btn-sm"
+              className="btn btn-ghost btn-sm"
               onClick={() => {
-                blocks.insert(shownWhy.type, shownWhy.card)
+                blocks.insertNew(shownWhy.type)
                 setWhy(null)
               }}
             >
-              다음 장에 새로 넣기
-            </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWhy(null)}>
-              닫기
+              새 장에 넣기
             </button>
           </div>
         </div>

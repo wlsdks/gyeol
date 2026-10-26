@@ -112,6 +112,14 @@
   white-space: nowrap;
 }
 
+/* 함께 넣을 수 없는 것의 자물쇠: 글 앞에 줄 안의 그림으로 (넘치면 글 끝이 말줄임으로 접히게 flex로 두지 않는다) */
+.mine-kind .icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+
 .mine-meta .pop-wrap {
   grid-column: 2;
   grid-row: 1 / span 2;

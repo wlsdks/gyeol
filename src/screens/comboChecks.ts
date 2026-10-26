@@ -26,7 +26,7 @@ const PAD_MIN = 16
 const PANEL_W = 160
 const PANEL_H = 96
 
-const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter, .bk-incoming'
+const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter'
 
 const shown = (el: Element) => el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && !el.closest(EDIT_UI)
 

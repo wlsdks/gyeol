@@ -38,7 +38,7 @@ const FIGURE_TYPES = new Set(['flow', 'network', 'merge', 'split', 'tiles'])
 
 type Span = { t: number; b: number }
 
-const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter, .bk-incoming'
+const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter'
 
 /**
  * 칸에서 실제로 그려진 위아래 (화면 px). 발표 화면의 쌓기와 같은 것으로 본다(fitBlocks.ts의 drawn). 쌓기처럼 편집 표시를 숨기고 잰다
