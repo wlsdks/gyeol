@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
-import { undoLast } from '../store/deckStore'
+import { undoLast, useDeck } from '../store/deckStore'
 
 /**
  * 앱 이름 Framo(frame: 화면의 틀, 영화의 한 컷). 표시는 카메라 뷰파인더의 네 귀퉁이와 그 안의 줄 하나.
@@ -382,7 +382,12 @@ export function takeNotice(): string | null {
   return text
 }
 
-type ToastAction = { label: string; run: () => void }
+type ToastAction = {
+  label: string
+  run: () => void
+  /** 할 일이 이미 쓸모없어졌는지 (발표가 바뀔 때마다 본다). 그러면 알림을 닫는다 */
+  stale?: () => boolean
+}
 
 /** 알림을 띄우는 쪽. 편집기의 도우미(컴포넌트 끌기, 이미지 넣기)는 알림 자리를 몰라도 이것만 받아 알린다 */
 export interface Toast {
@@ -395,11 +400,14 @@ export interface Toast {
  */
 export function undoAction(toast: Toast): ToastAction {
   const undo = undoLast()
+  const at = useDeck.getState().past.length
   return {
     label: '되돌리기',
     run: () => {
       if (!undo()) toast.show(`그 뒤에 고친 것이 있어서 여기서는 되돌리지 않았어요. 위쪽의 되돌리기(${keys('mod+Z')})로 차례로 되돌려 주세요.`, undefined, 6000)
     },
+    // Ctrl+Z나 위쪽 되돌리기로 이미 되돌렸으면 닫는다: 남겨 두면 되돌린 것을 또 되돌릴 수 있는 것처럼 보였다
+    stale: () => useDeck.getState().past.length < at,
   }
 }
 
@@ -416,6 +424,16 @@ export function useToast(): Toast & { node: ReactNode } {
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setToast(null), ms)
   }, [])
+  // 할 일이 쓸모없어지면(되돌리기 단추인데 이미 되돌렸으면) 바로 닫는다
+  useEffect(() => {
+    const stale = toast?.action?.stale
+    if (!stale) return
+    return useDeck.subscribe(() => {
+      if (!stale()) return
+      window.clearTimeout(timer.current)
+      setToast(null)
+    })
+  }, [toast])
   const node = useMemo(
     () =>
       toast ? (
