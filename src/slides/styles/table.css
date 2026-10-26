@@ -68,7 +68,7 @@
 
 /* 합계 줄: 위에 굵은 줄, 글은 모두 진하고 굵게 */
 .tb-row.is-total {
-  border-top: 3px solid var(--ink);
+  border-top: var(--rule-head) solid var(--ink);
   border-bottom: 0;
 }
 

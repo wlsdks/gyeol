@@ -44,7 +44,10 @@
      아래로 같은 꼴에 글자 아랫선부터 글꼴 높이 아래까지(두 글꼴 모두 0.16). 본문 글꼴(프리텐다드)은 높이 1.19, 위 0.155.
      제목 글꼴은 --head-box, --head-gap (themes.ts). 아래 규칙들의 margin calc가 이 꼴이다 */
   --gap: 28px;
-  --r-panel: 24px;
+  /* 면의 모서리는 각지게: 둥근 카드(24px)는 흔한 앱 화면의 카드처럼 보여서, 선과 글자로 짜는 지면의 말투와 어긋났다 */
+  --r-panel: 0px;
+  /* 머리 괘선(컴포넌트, 개요와 요점·표·차례의 첫 줄 선)의 굵기. 줄 사이 선(--rule)보다 한 단계 굵어 묶음의 시작으로 읽힌다 */
+  --rule-head: 3px;
   /* sRGB로 섞는다: oklch로 섞으면 색상이 먼 둘 사이에서 주황으로 틀어진다 */
   --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--bg));
   --accent-line: color-mix(in srgb, var(--accent) 26%, var(--bg));

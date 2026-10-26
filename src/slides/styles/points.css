@@ -4,7 +4,7 @@
   display: grid;
   grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
-  border-top: 3px solid var(--ink);
+  border-top: var(--rule-head) solid var(--ink);
 }
 
 .pt:is([data-n='1'], [data-n='2']) {
@@ -85,7 +85,7 @@
   align-content: start;
   gap: 28px;
   padding-top: 40px;
-  border-top: 3px solid var(--ink);
+  border-top: var(--rule-head) solid var(--ink);
   border-bottom: 0;
 }
 

@@ -184,7 +184,7 @@
   grid-auto-columns: auto;
   grid-auto-rows: minmax(min-content, 1fr);
   gap: 0;
-  border-top: 3px solid var(--ink);
+  border-top: var(--rule-head) solid var(--ink);
 }
 
 .va-rows .pr:is([data-n='1'], [data-n='2']) {
