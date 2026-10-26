@@ -1,4 +1,5 @@
 import { flushSync } from 'react-dom'
+import { gestureKey } from '../lib/pointerSession'
 
 /**
  * 항목(카드, 줄, 단계, 막대)을 손잡이로 끌어 순서를 바꾼다.
@@ -50,8 +51,8 @@ export function startItemDrag(e: PointerEvent, grip: HTMLElement, from: number, 
   if (!item || !slide || siblingsOf(item).length < 2) return
   const sx = e.clientX
   const sy = e.clientY
-  // 한 번 끄는 동안의 순서 바꾸기는 되돌리기 한 단계로
-  const key = `items.move.${Date.now()}`
+  // 한 번 끄는 동안의 순서 바꾸기는 되돌리기 한 단계로 (손을 멈췄다 움직여도). Esc나 제자리로 돌아오면 단계를 남기지 않는다
+  const key = gestureKey('items.move')
   let started = false
   let cur = from
   let k = 1

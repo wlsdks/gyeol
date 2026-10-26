@@ -5,6 +5,20 @@ import { useCallback, useEffect, useRef } from 'react'
 // 다른 화면으로 가면) 뗄 사람이 없었다. body에 남은 is-block-dragging 때문에 다음 편집기의 넘침 확인(useOverflow)이
 // 300ms마다 미루기만 했다. AbortController 하나로 묶어 끝낼 때 한꺼번에 뗀다.
 
+/** 한 번 끄는 동안 고친 것의 되돌리기 이름(gestureKey)의 머리. deckStore의 commit이 이것으로 알아본다 */
+export const GESTURE_KEY = 'gesture:'
+let gestures = 0
+
+/**
+ * 한 번 끄는 동안(선, 항목, 제목 자리) 고친 것을 되돌리기 한 단계로 묶는 이름. 끄기를 시작할 때마다 새로 만든다.
+ * 이 이름으로 고친 것은 손을 멈췄다 움직여도 한 단계이고, 끄기 전 모습으로 돌아오면(제자리, Esc) 단계를 남기지 않는다.
+ * 예전에는 같은 이름을 1.2초 안에 다시 고쳤는지로만 묶어서, 끄다가 쉬면 끄는 중간 모습이 기록에 남고
+ * 곧바로 다시 끈 것은 앞의 끌기와 한 단계로 합쳐졌다
+ */
+export function gestureKey(what: string): string {
+  return `${GESTURE_KEY}${what}:${++gestures}`
+}
+
 export interface PointerSession {
   /** 이 끌기 동안만 창에서 듣는다. capture면 잡는 단계에서 (다른 Esc보다 먼저 받을 때) */
   on<K extends keyof WindowEventMap>(type: K, fn: (e: WindowEventMap[K]) => void, capture?: boolean): void

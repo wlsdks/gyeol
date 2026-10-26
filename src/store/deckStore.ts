@@ -6,6 +6,7 @@ import { makeSlide, uid } from '../deck/generate'
 import { followIndex, isMetaKey, moveIn } from '../deck/fields'
 import { LAYOUTS } from '../deck/layouts'
 import { migrateDeck } from '../deck/migrate'
+import { GESTURE_KEY } from '../lib/pointerSession'
 import type { Block, Deck, DeckTheme, ItemKey, LayoutId, MetaKey, Motion, Slide, SlideOptions, ThemeId } from '../deck/types'
 
 const HISTORY_LIMIT = 100
@@ -79,6 +80,24 @@ function mapSlide(deck: Deck, slideId: string, fn: (s: Slide) => Slide): Deck {
 }
 
 /**
+ * 같은 값인지. 값이 undefined인 칸은 없는 것으로 본다(저장하면 빠진다). trim이면 a의 글이 b의 글의 앞뒤 빈칸만 다듬은 것이어도 같다.
+ * 고치지 않은 장은 같은 것을 그대로 쓰므로 대개 바로 끝난다
+ */
+function same(a: unknown, b: unknown, trim = false): boolean {
+  if (a === b) return true
+  if (trim && typeof a === 'string' && typeof b === 'string') return a === b.trim()
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false
+  const x = a as Record<string, unknown>
+  const y = b as Record<string, unknown>
+  const kx = Object.keys(x).filter((k) => x[k] !== undefined)
+  const ky = Object.keys(y).filter((k) => y[k] !== undefined)
+  return kx.length === ky.length && kx.every((k) => same(x[k], y[k], trim))
+}
+
+/** 고친 때(updatedAt) 말고는 같은 발표인지 */
+const sameDeck = (a: Deck, b: Deck, trim = false) => same({ ...a, updatedAt: 0 }, { ...b, updatedAt: 0 }, trim)
+
+/**
  * 되돌리거나 다시 한 뒤 고를 장. 보던 장이 바뀌었으면 그대로, 다른 장이 바뀌었거나 되살아났으면 그 장, 보던 장이 없어졌으면 그 앞 장.
  * 다른 장만 없어졌으면 없어진 자리의 앞 장, 차례만 바뀌었으면 옮겨진 장 (보던 장이 그 곁이거나 함께 옮겨졌으면 그대로).
  * 예전에는 보던 장을 그대로 두어서 다른 장을 보다가 되돌리면 무엇이 되돌려졌는지 보이지 않았고, 넣은 장을 되돌리면 맨 앞 장으로 튀었다.
@@ -114,12 +133,39 @@ function shownAfter(from: Deck, to: Deck, selectedId: string | null): string | n
 export const useDeck = create<DeckState>((set, get) => {
   /** 덱을 바꾸고 되돌리기 기록을 남긴다 */
   function commit(fn: (deck: Deck) => Deck, key?: string) {
-    const { deck, past, lastKey, lastTime } = get()
+    const { deck, past, future, lastKey, lastTime } = get()
     if (!deck) return
     // 부품 장의 판은 바뀐 부품, 제목, 글자 크기에 맞춰 다시 나눈다 (커진 부품이 옆에서 자리를 받는다)
     const next = { ...settleDeck(fn(deck), deck), updatedAt: Date.now() }
+    // 아무것도 바뀌지 않았으면 기록하지 않는다. 지금 것을 다시 고르면(같은 차례, 같은 강조) 빈 되돌리기 단계가 생겨서
+    // Ctrl+Z를 눌러도 아무 일이 없는 것처럼 보였다
+    if (sameDeck(next, deck)) return
     const now = Date.now()
-    const coalesce = key !== undefined && key === lastKey && now - lastTime < COALESCE_MS
+    // 칸을 나가며 글의 앞뒤 빈칸만 다듬은 것(fields.tsx의 onBlur)은 단계를 따로 남기지 않고 지금 단계에 얹는다.
+    // 쓰고 1.2초 넘게 쉬었다가, 또는 다른 것을 고친 뒤에 칸을 나가면 빈칸 하나만 되돌리는 단계가 생겨서
+    // 첫 Ctrl+Z가 아무 일도 하지 않는 것처럼 보였다. 빈칸을 치는 것은 그대로 기록하고(얹으면 쓰기 전 모습이 기록에서 사라진다),
+    // 기록이 비었을 때도 얹지 않는다(끝까지 되돌리면 처음 연 모습과 같게).
+    // 다듬고 나니 지금 단계가 바꾼 것이 없어졌으면(빈칸만 쳤거나, 칸 안의 Ctrl+Z로 쓴 글을 지운 뒤 빈칸만 남았으면) 그 단계도 지운다:
+    // 남겨 두면 칸 밖에서 누른 첫 Ctrl+Z가 아무 일도 하지 않는 것처럼 보였다. 되돌린 뒤라 다시 할 것이 있으면 그대로 둔다
+    if (past.length && sameDeck(next, deck, true)) {
+      const top = past[past.length - 1]
+      if (!future.length && sameDeck(next, top)) {
+        set({ deck: { ...top, aiShare: deck.aiShare }, past: past.slice(0, -1), lastKey: null, lastTime: now })
+        return
+      }
+      set({ deck: next, lastTime: now })
+      return
+    }
+    // 한 번 끄는 동안(gestureKey)은 손을 멈춰도 한 단계로 묶는다
+    const gesture = !!key?.startsWith(GESTURE_KEY)
+    const coalesce = key !== undefined && key === lastKey && (gesture || now - lastTime < COALESCE_MS)
+    const top = past.at(-1)
+    if (coalesce && top && sameDeck(next, top)) {
+      // 한 단계로 묶이는 고침이 처음 모습으로 돌아왔으면(끌다가 제자리에 놓거나 Esc로 그만두거나, 쓴 글을 곧바로 지우면) 그 단계를 지운다.
+      // 바뀐 것 없는 단계가 남아 Ctrl+Z가 아무 일도 하지 않는 것처럼 보였다
+      set({ deck: { ...top, aiShare: deck.aiShare }, past: past.slice(0, -1), lastKey: null, lastTime: now })
+      return
+    }
     set({
       deck: next,
       past: coalesce ? past : [...past, deck].slice(-HISTORY_LIMIT),

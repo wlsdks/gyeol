@@ -15,16 +15,19 @@ import {
   canCompose,
   copyBlock,
   dragGutter,
+  effectOf,
   foldableFields,
   gutterLimit,
   imagePlace,
   lookChangeIssue,
+  lookOf,
   makeBlock,
   movingBase,
   partFrom,
   placeIssue,
   removeBlock,
   shiftBlock,
+  variantOfBlock,
   WHOLE,
   whyNot,
   withItem,
@@ -40,7 +43,7 @@ import { motionOf } from '../../deck/themes'
 import type { Block, BlockEffect, BlockLink, BlockType, Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa, particle } from '../../lib/josa'
-import { usePointerSessions } from '../../lib/pointerSession'
+import { gestureKey, usePointerSessions } from '../../lib/pointerSession'
 import { motionEngine } from '../../motion/engine'
 import type { BlockEdit } from '../../slides/blockEdit'
 import { FRAME_PAD } from '../../slides/blockFrame'
@@ -697,6 +700,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       let told = false
       let g = gutter
       const startY = e.clientY
+      // 한 번 끄는 동안은 되돌리기 한 단계 (손을 멈췄다 움직여도). 곧바로 다시 끈 것은 따로
+      const key = gestureKey(`${slideRef.current.id}.line`)
       const session = startSession('is-block-resizing')
       session.on('pointermove', (ev) => {
         const cur = slideRef.current
@@ -722,7 +727,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         // 옮긴 뒤의 선 (선 앞쪽 첫 부품은 그대로라 그것으로 다시 찾는다)
         const moved = next.find((b) => b.id === g.key)!.at!
         g = { ...g, at: g.dir === 'h' ? moved.x + moved.w : moved.y + moved.h }
-        store.setBlocks(cur.id, next, `${cur.id}.line.${g.dir}${g.key}`)
+        store.setBlocks(cur.id, next, key)
       })
       session.on('pointerup', () => session.end())
     },
@@ -826,13 +831,18 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       }}
       onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setBlocks(slideRef.current.id, shiftBlock(slideRef.current.blocks ?? [], b.id, dir, measureArea(areaEl.current)?.size.h))}
-      onLook={(lk) => store.setBlocks(slideRef.current.id, withLook(slideRef.current.blocks ?? [], b.id, lk ?? 'plain'))}
+      onLook={(lk) => {
+        // 지금 바탕을 다시 고르면 그대로 둔다 (빈 되돌리기 단계가 생겼다). 함께 바뀌는 옆 컴포넌트의 바탕까지 같은지 본다
+        const cur = slideRef.current.blocks ?? []
+        const next = withLook(cur, b.id, lk ?? 'plain')
+        if (next.some((x, i) => lookOf(x) !== lookOf(cur[i]))) store.setBlocks(slideRef.current.id, next)
+      }}
       onEffect={(fx) => {
-        update(b.id, (x) => ({ ...x, effect: fx }))
+        if (effectOf(b) !== fx) update(b.id, (x) => ({ ...x, effect: fx }))
         requestAnimationFrame(() => preview(b, fx))
       }}
       onPreview={(fx) => preview(b, fx)}
-      onVariant={(v) => update(b.id, (x) => ({ ...x, variant: v }))}
+      onVariant={(v) => variantOfBlock(b) !== v && update(b.id, (x) => ({ ...x, variant: v }))}
       onAddItem={() => update(b.id, withItem)}
       adds={foldableFields(b.type).filter((f) => !opened.has(`${b.id} ${f.key}`) && (f.item ? blockItems(b).some((it) => !it[f.key.slice(6) as keyof typeof it]?.trim()) : !b.fields[f.key]?.trim()))}
       onOpenField={(key) => openField(b, key)}

@@ -4,7 +4,7 @@ import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf } from '../../deck/layou
 import { PLACES } from '../../deck/themes'
 import type { Deck, Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { usePointerSessions } from '../../lib/pointerSession'
+import { gestureKey, usePointerSessions } from '../../lib/pointerSession'
 import { josa } from '../../lib/josa'
 import { frameRect } from '../../slides/blockFrame'
 import { startItemDrag } from '../../slides/itemDrag'
@@ -464,7 +464,7 @@ export function SelectionBar({ deck, slide, canvasRef }: { deck: Deck; slide: Sl
       // 쓰던 칸에 초점을 두지 않는다: 자리를 옮긴 뒤 누른 Ctrl+Z가 칸의 글로 갔다 (항목 이름표와 같다)
       e.currentTarget.focus({ preventScroll: true })
       const from = current
-      const key = `place:${slide.id}:${Math.round(performance.now())}`
+      const key = gestureKey(`place:${slide.id}`)
       let at = from
       const rectOf = () => {
         const r = box.getBoundingClientRect()

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { LAYOUTS, PANE_UNIT, sideOf, variantOf } from '../deck/layouts'
 import type { Slide } from '../deck/types'
 import { cx } from '../lib/cx'
+import { gestureKey } from '../lib/pointerSession'
 import { useSlide } from './context'
 
 /**
@@ -130,7 +131,8 @@ export function PaneTools() {
     const slideEl = ref.current?.closest<HTMLElement>('.slide')
     const pane = slideEl?.querySelector<HTMLElement>(spec.el)
     if (!slideEl || !pane) return
-    const key = `pane.move.${Date.now()}`
+    // 한 번 끄는 동안은 되돌리기 한 단계 (손을 멈췄다 움직여도). 처음 자리로 돌아오면 단계를 남기지 않는다
+    const key = gestureKey('pane.move')
     const first = zoneOf(slideRef.current)
     let cur = first
     const sr = slideEl.getBoundingClientRect()
@@ -234,7 +236,7 @@ export function PaneTools() {
     e.stopPropagation()
     const slideEl = ref.current?.closest<HTMLElement>('.slide')
     if (!slideEl) return
-    const key = `pane.side.${Date.now()}`
+    const key = gestureKey('pane.side')
     const sr = slideEl.getBoundingClientRect()
     const k = slideEl.offsetWidth ? sr.width / slideEl.offsetWidth : 1
     // 판 바깥쪽 끝(장의 가장자리)에서 손까지가 판의 너비. 판이 장 가장자리에서 떨어져 있으면(결정 요청 장) 그만큼 뺀다

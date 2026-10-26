@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDeck } from '../deck/generate'
+import { gestureKey } from '../lib/pointerSession'
 import { undoLast, useDeck } from './deckStore'
 
 const deck = () =>
@@ -52,6 +53,111 @@ describe('되돌리기', () => {
     useDeck.getState().setAiShare(true)
     useDeck.getState().undo()
     expect(useDeck.getState().deck?.aiShare).toBe(true)
+  })
+})
+
+describe('되돌리기 단위', () => {
+  beforeEach(() => useDeck.getState().open(deck()))
+  afterEach(() => vi.restoreAllMocks())
+  const slides = () => useDeck.getState().deck!.slides
+  const ids = (i: number) => slides()[i].items.map((it) => it.id)
+
+  it('아무것도 바뀌지 않는 고침은 되돌리기 단계를 남기지 않는다', () => {
+    const s = slides()[1]
+    useDeck.getState().moveItem(s.id, 0, 0)
+    useDeck.getState().setOptions(s.id, { highlight: s.options.highlight })
+    useDeck.getState().setTitle(useDeck.getState().deck!.title)
+    expect(useDeck.getState().past).toHaveLength(0)
+  })
+
+  it('한 번 끄는 동안 고친 것은 손을 멈췄다가 움직여도 되돌리기 한 단계', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    const s = slides()[1]
+    const before = ids(1)
+    const key = gestureKey('items')
+    useDeck.getState().moveItem(s.id, 0, 1, key)
+    now.mockReturnValue(1_005_000)
+    useDeck.getState().moveItem(s.id, 1, 2, key)
+    expect(useDeck.getState().past).toHaveLength(1)
+    useDeck.getState().undo()
+    expect(ids(1)).toEqual(before)
+  })
+
+  it('끄다가 제자리로 돌아오거나 그만두면 되돌리기 단계를 남기지 않는다', () => {
+    const s = slides()[1]
+    const before = ids(1)
+    const key = gestureKey('items')
+    useDeck.getState().moveItem(s.id, 0, 2, key)
+    useDeck.getState().moveItem(s.id, 2, 0, key)
+    expect(useDeck.getState().past).toHaveLength(0)
+    expect(ids(1)).toEqual(before)
+    // 다시 끌어 옮기면 그때부터 한 단계
+    useDeck.getState().moveItem(s.id, 0, 1, key)
+    expect(useDeck.getState().past).toHaveLength(1)
+  })
+
+  it('따로 두 번 끈 것은 곧바로 이어 끌어도 되돌리기 두 단계', () => {
+    const s = slides()[1]
+    useDeck.getState().moveItem(s.id, 0, 1, gestureKey('items'))
+    useDeck.getState().moveItem(s.id, 0, 1, gestureKey('items'))
+    expect(useDeck.getState().past).toHaveLength(2)
+  })
+
+  it('칸을 나가며 글의 앞뒤 빈칸만 다듬은 것은 되돌리기 단계를 따로 남기지 않는다', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    const s = slides()[1]
+    const was = s.fields.title ?? ''
+    useDeck.getState().setField(s.id, 'title', `${was} 정리 `)
+    // 쓰고 쉬었다가, 다른 것을 고친 뒤에 칸을 나가도
+    now.mockReturnValue(1_005_000)
+    useDeck.getState().moveItem(s.id, 0, 1)
+    useDeck.getState().setField(s.id, 'title', `${was} 정리`.trim())
+    expect(useDeck.getState().past).toHaveLength(2)
+    expect(slides()[1].fields.title).toBe(`${was} 정리`.trim())
+    useDeck.getState().undo()
+    useDeck.getState().undo()
+    expect(slides()[1].fields.title ?? '').toBe(was)
+  })
+
+  it('쓴 글을 곧바로 지우면 되돌리기 단계를 남기지 않는다', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    const s = slides()[1]
+    useDeck.getState().setField(s.id, 'title', '보고 제목')
+    now.mockReturnValue(1_005_000)
+    useDeck.getState().setField(s.id, 'title', '보고 제목 초안')
+    now.mockReturnValue(1_005_400)
+    useDeck.getState().setField(s.id, 'title', '보고 제목')
+    expect(useDeck.getState().past).toHaveLength(1)
+    // 이어 쓰면 새 단계
+    useDeck.getState().setField(s.id, 'title', '보고 제목 정리')
+    expect(useDeck.getState().past).toHaveLength(2)
+  })
+
+  it('칸 안의 Ctrl+Z로 쓴 글을 지운 뒤 칸을 나가면, 빈칸만 남은 단계를 지운다', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    const s = slides()[1]
+    const was = s.fields.title
+    useDeck.getState().setField(s.id, 'title', '보고 제목 하나')
+    now.mockReturnValue(1_003_000)
+    useDeck.getState().setField(s.id, 'title', '보고 제목 하나 둘')
+    // 칸 안의 Ctrl+Z(브라우저)가 '둘'을 지우고 빈칸을 남겼다. 칸을 나가며 다듬는다
+    now.mockReturnValue(1_003_500)
+    useDeck.getState().setField(s.id, 'title', '보고 제목 하나 ')
+    now.mockReturnValue(1_004_000)
+    useDeck.getState().setField(s.id, 'title', '보고 제목 하나')
+    expect(useDeck.getState().past).toHaveLength(1)
+    // 칸 밖의 첫 Ctrl+Z가 보이게 되돌린다
+    useDeck.getState().undo()
+    expect(slides()[1].fields.title).toBe(was)
+  })
+
+  it('빈칸을 치는 것은 기록해서, 끝까지 되돌리면 처음과 같다', () => {
+    const s = slides()[1]
+    const was = s.fields.title
+    useDeck.getState().setField(s.id, 'title', `${was ?? ''} `)
+    expect(useDeck.getState().past).toHaveLength(1)
+    useDeck.getState().undo()
+    expect(slides()[1].fields.title).toBe(was)
   })
 })
 
