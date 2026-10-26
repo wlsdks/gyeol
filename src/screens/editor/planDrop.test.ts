@@ -257,6 +257,18 @@ describe('끌어 놓기', () => {
     expect(held.blocked).toEqual({ kind: 'narrow', span: 12 })
   })
 
+  it('옮기기: 다른 컴포넌트 가운데에 놓았는데 맞바꿀 수 없으면 그 까닭을 알린다', () => {
+    // 위에 표(장 너비를 혼자 쓴다), 아래 줄에 큰 숫자와 주석. 큰 숫자를 표 가운데로 끌면 맞바꾸려는 것인데, 표는 주석 옆인 큰 숫자
+    // 자리에 들어가지 않는다. 말없이 다른 자리나 제자리에 두면 아무 일도 없는 것 같았다
+    const n = { ...block('number', 'n'), at: { x: 0, y: 7, w: 3, h: 5 } }
+    const s: Slide = { ...makeSlide('compose'), blocks: [{ ...block('table', 't'), at: { x: 0, y: 0, w: 12, h: 7 } }, n, { ...block('note', 'o'), at: { x: 3, y: 7, w: 9, h: 5 } }] }
+    expect(moveAt(s.blocks!, 'n', { kind: 'swap', with: 't' }, SIZE.h)).toBeNull()
+    const d: DropState = { kind: 'move', block: n, base: movingBase(s.blocks!, 'n', SIZE.h), moving: s.blocks!, composed: null, target: null }
+    const plan = planDrop(s, d, { by: 'pointer', over: true, at: { p: { x: 840, y: 220 }, size: SIZE } })
+    expect(plan.target?.kind).not.toBe('swap')
+    expect(plan.blocked).toEqual({ kind: 'swap', type: 'table' })
+  })
+
   it('장에 자리가 없으면 새 컴포넌트는 다음 장에, 그 까닭을 남긴다', () => {
     const f = full()
     const plan = planDrop(f, fresh(f, b), { by: 'pointer', over: true, at: { p: { x: 800, y: 300 }, size: SIZE } })

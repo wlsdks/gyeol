@@ -57,6 +57,8 @@ export type NoRoom =
   | { kind: 'look'; why: 'one-bold' | 'mix' | 'alone' | 'flat' | 'no-bold' }
   /** 작은 부품이 아닌 부품이 장에 MAX_LARGE개 찼다 */
   | { kind: 'large' }
+  /** 옮기는 부품을 이 부품(type)과 맞바꾸면 한쪽이 상대 자리에 들어가지 않을 때 */
+  | { kind: 'swap'; type: BlockType }
 
 /** 부품 수가 넘치는지: 모든 부품(MAX_BLOCKS), 작은 부품이 아니면 큰 부품(MAX_LARGE)도 */
 function crowdIssue(blocks: readonly Block[], adding: readonly Block[]): NoRoom | null {
@@ -576,9 +578,12 @@ export function dropTarget(
   return found
 }
 
-/** 손 아래의 자리 (넣을 수 있는지와 상관없이). 끄는 동안 '여기는 왜 안 되는지'를 알려 줄 때 */
-export function pointerTarget(base: Block[], p: { x: number; y: number }, size: { w: number; h: number }, shown?: Shown | null): DropTarget {
-  return ((shown && shownTargets(base, shown, p, size)) ?? wantedTargets(base, p, size)).find((t) => t.kind === 'spot') ?? BOTTOM
+/**
+ * 손 아래의 자리 (넣을 수 있는지와 상관없이). 끄는 동안 '여기는 왜 안 되는지'를 알려 줄 때.
+ * 옮기는 중이면(moving: 옮기는 부품의 id) 다른 부품의 가운데는 맞바꾸기다 (맞바꿀 수 없을 때도 까닭을 알리게)
+ */
+export function pointerTarget(base: Block[], p: { x: number; y: number }, size: { w: number; h: number }, shown?: Shown | null, moving?: string): DropTarget {
+  return ((shown && shownTargets(base, shown, p, size, moving)) ?? wantedTargets(base, p, size, moving)).find((t) => !!moving || t.kind === 'spot') ?? BOTTOM
 }
 
 /** 판의 선을 더 끌 수 없는 까닭: 줄어드는 쪽에서 가장 먼저 잘리는 부품(type). minSpan은 그 부품의 가장 좁은 너비(옆으로 끌 때), 위아래로 끌 때는 null */

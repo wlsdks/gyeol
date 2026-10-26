@@ -208,13 +208,16 @@ export function planDrop(s: Slide, d: DropState, where: DropAt): DropPlan {
             blocked = d.blocked ?? null
           } else {
             target = fresh
-            // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭
-            const wanted = pointerTarget(base, p, size, shown)
+            // 손 아래 자리에 놓을 수 없으면 그 까닭. 어디에도 놓을 수 없으면 이 장의 까닭.
+            // 옮기다 다른 컴포넌트 가운데에 놓으면 맞바꾸려는 것: 맞바꿀 수 없으면 그렇다고 (말없이 제자리라 아무 일도 없는 것 같았다)
+            const wanted = pointerTarget(base, p, size, shown, d.kind === 'move' ? d.block.id : undefined)
             blocked = !target
               ? placeIssue(base, d.block, size.h)
-              : target.kind === 'swap' || (target.kind === 'spot' && sameTarget(wanted, target))
+              : target.kind === 'swap' || sameEditTarget(wanted, target)
                 ? null
-                : whyNot(base, wanted, d.block, size.h)
+                : wanted.kind === 'swap'
+                  ? { kind: 'swap', type: base.find((b) => b.id === wanted.with)?.type ?? d.block.type }
+                  : whyNot(base, wanted, d.block, size.h)
           }
         }
         result = target ? dropResult(d, base, target, room) : null

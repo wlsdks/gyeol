@@ -65,6 +65,12 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
             : r.why === 'no-bold'
               ? { why: '강조는 숫자나 강조할 말 하나에만 써요. 목록이나 그림까지 강조하면 어디가 결론인지 흐려져요.', fix: '들여 쓰기를 골라 보세요.' }
               : { why: '이 컴포넌트는 바탕 없이 써요. 안에 이미 칸과 줄이 있어요.', fix: '강조할 것은 큰 숫자나 강조 상자에 강조를 골라 보세요.' }
+    case 'swap': {
+      // 같은 컴포넌트끼리면 '큰 숫자와 큰 숫자'가 아니라 '두 큰 숫자'
+      const other = BLOCKS[r.type].name
+      const pair = other === name ? `두 ${name}` : `${josa(name, '과', '와')} ${other}`
+      return { why: `${josa(pair, '은', '는')} 크기가 맞지 않아 자리를 맞바꿀 수 없어요.`, fix: '옆이나 위아래에 놓아 보세요.' }
+    }
     case 'height': {
       // 몇 %인지는 쓰는 사람에게 뜻이 없다. 조금 넘치는지만 알려 주면 항목 하나만 빼도 되는지 가늠한다
       const over = r.need / Math.max(1, r.room) <= 1.1 ? '장 높이를 조금 넘어서' : '장 높이를 넘어서'
