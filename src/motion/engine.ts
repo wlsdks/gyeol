@@ -311,12 +311,15 @@ export function motionEngine(): MotionEngine {
     parent.replaceChild(frag, original)
     const covers: HTMLElement[] = []
     const position = parent.style.position
+    // 원래 style 속성이 없었으면 되돌릴 때도 없게 (빈 style=""이 남으면 끝 모습의 DOM이 원래와 달라진다)
+    const styled = parent.hasAttribute('style')
     // 나눈 조각과 덮은 창을 걷고 원래 글 하나로
     const undo = () => {
       covers.forEach((c) => c.remove())
       if (parts[0].parentNode === parent) parent.insertBefore(original, parts[0])
       parts.forEach((p) => p.parentNode === parent && parent.removeChild(p))
       parent.style.position = position
+      if (!styled && !parent.getAttribute('style')) parent.removeAttribute('style')
     }
     const boxes = cells.map((c) => c.getBoundingClientRect())
     if (boxes.some((b) => !b.width || !b.height)) {
