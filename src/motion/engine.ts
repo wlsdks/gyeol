@@ -2085,7 +2085,8 @@ export function motionEngine(): MotionEngine {
       const textSize = text ? parseFloat(getComputedStyle(text).fontSize) || 60 : 60
       const focalAt = deepBox(focal)
       const nowAt = deepBox(now)
-      const guideAt = guide.map(boxOf)
+      // 선은 글이 실제로 그려진 자리에 맞춘다: 컴포넌트 칸은 판에 맞춰 글보다 커서, 칸 위에 그으면 글에서 떨어져 떠 있었다(녹화)
+      const guideAt = guide.map((el) => textBox(el) ?? boxOf(el))
       const origin = textAt ?? focalAt
       const center: [number, number] = origin ? [(origin.l + origin.r) / 2, (origin.t + origin.b) / 2] : [W / 2, H / 2]
 
