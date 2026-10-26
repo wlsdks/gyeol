@@ -95,15 +95,3 @@
 .l-logos .lg[data-rows='1'] .lg-img {
   height: 180px;
 }
-
-/* 컴포넌트 칸의 로고 모음(짜임은 blocks/layout.css): 판이 없으니 정사각형 판 가운데에 로고를 두면 높은 칸에서 로고가 칸 가운데에
-   떠 보였다(옆 칸보다 140px 아래에서 시작). 로고는 가로로 긴 그림이라 판 높이를 너비의 0.6으로 낮추고(로고가 48px 밑으로 작아지지 않게 160px 아래로는 내리지 않는다), 모음은 칸 맨 위에서
-   시작한다(VISUAL-RULES 6). 판 높이는 칸에 줄 수만큼 들어가는 높이를 넘지 않는다.
-   blocks.css가 뒤에 묶여서 같은 규칙보다 앞서게 클래스를 겹쳐 구체성을 높인다 */
-.bk-layout .lg.lg {
-  align-content: flex-start;
-}
-
-.bk-layout .lg-cell.lg-cell {
-  height: min(max(calc(var(--tile) * 0.6), 160px), calc((100% - (var(--rows) - 1) * 20px) / var(--rows)));
-}
