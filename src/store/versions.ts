@@ -59,6 +59,20 @@ export function versionChanges(newer: DeckVersion, older?: DeckVersion): Version
   }
 }
 
+/**
+ * 버전으로 되돌린 뒤 보여 줄 장. 되돌리기(deckStore의 shownAfter)와 같은 뜻을 내용으로 견준다: 버전은 저장소에서 새로 읽어서 장이 모두 새 객체다.
+ * 보던 장이 바뀌었으면 그대로, 보던 장은 같고 다른 장이 바뀌었거나 되살아났으면 그 첫 장, 보던 장이 버전에 없으면 바뀐 첫 장(없으면 그 자리의 장).
+ * 예전에는 늘 첫 장(표지)을 보여 줘서, 보던 장을 되돌려도 무엇이 돌아왔는지 그 장을 다시 찾아 눌러야 보였다
+ */
+export function slideAfterRestore(from: Deck, to: Deck, selectedId: string | null): string | null {
+  const was = new Map(from.slides.map((s) => [s.id, JSON.stringify(s)]))
+  const changed = to.slides.filter((s) => was.get(s.id) !== JSON.stringify(s))
+  if (to.slides.some((s) => s.id === selectedId)) return changed.length && !changed.some((s) => s.id === selectedId) ? changed[0].id : selectedId
+  if (changed.length) return changed[0].id
+  const at = from.slides.findIndex((s) => s.id === selectedId)
+  return to.slides[Math.min(Math.max(at, 0), to.slides.length - 1)]?.id ?? null
+}
+
 export const REASON_LABEL: Record<VersionReason, string> = {
   open: '열었을 때',
   interval: '고치는 중',

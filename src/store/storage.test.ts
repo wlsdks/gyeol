@@ -3,7 +3,7 @@ import { createDeck } from '../deck/generate'
 import type { Deck } from '../deck/types'
 import { decodeDeckFile, encodeDeckFile, fileStamp, safeFileName } from './deckFile'
 import { reconcile } from './reconcile'
-import { deckSignature, slideSignatures, versionChanges, type DeckVersion } from './versions'
+import { deckSignature, slideAfterRestore, slideSignatures, versionChanges, type DeckVersion } from './versions'
 
 const deck = () =>
   createDeck({ type: 'deal', audience: 'mixed', minutes: 20, method: 'live', title: '품질 관리 제안 계획', org: '영업 2팀', presenter: '김민준', theme: 'white' })
@@ -92,6 +92,42 @@ describe('버전 비교', () => {
   it('내용이 같으면 바뀐 것이 없다', () => {
     const d = deck()
     expect(versionChanges(version(d), version(structuredClone(d)))).toEqual({ changed: [], added: [], removed: [] })
+  })
+})
+
+describe('버전으로 되돌린 뒤 보는 장', () => {
+  // 버전은 저장소에서 새로 읽은 것이라 장이 모두 새 객체다 (structuredClone)
+  const pair = () => {
+    const now = deck()
+    return { now, old: structuredClone(now) }
+  }
+
+  it('보던 장이 바뀌었으면 그 장 그대로', () => {
+    const { now, old } = pair()
+    old.slides[2].fields.title = '예전 제목'
+    old.slides[4].fields.title = '예전 제목'
+    expect(slideAfterRestore(now, old, now.slides[4].id)).toBe(now.slides[4].id)
+  })
+
+  it('보던 장은 같고 다른 장이 바뀌었으면 바뀐 첫 장', () => {
+    const { now, old } = pair()
+    old.slides[2].fields.title = '예전 제목'
+    expect(slideAfterRestore(now, old, now.slides[1].id)).toBe(now.slides[2].id)
+  })
+
+  it('발표 전체(테마)만 바뀌었으면 보던 장 그대로', () => {
+    const { now, old } = pair()
+    old.theme = { ...old.theme, id: 'navy' }
+    expect(slideAfterRestore(now, old, now.slides[3].id)).toBe(now.slides[3].id)
+  })
+
+  it('보던 장이 그 버전에 없으면 바뀐 첫 장, 그것도 없으면 그 자리의 장', () => {
+    const { now, old } = pair()
+    const added = { ...structuredClone(now.slides[3]), id: 'added' }
+    now.slides.splice(3, 0, added)
+    expect(slideAfterRestore(now, old, 'added')).toBe(old.slides[3].id)
+    old.slides[1].fields.title = '예전 제목'
+    expect(slideAfterRestore(now, old, 'added')).toBe(old.slides[1].id)
   })
 })
 

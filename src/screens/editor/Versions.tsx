@@ -18,6 +18,7 @@ import {
   REASON_LABEL,
   renameVersion,
   saveVersion,
+  slideAfterRestore,
   versionChanges,
   type DeckVersion,
 } from '../../store/versions'
@@ -112,7 +113,12 @@ export function VersionPanel({ deck, onClose, notify }: { deck: Deck; onClose: (
     await saveVersion(deck, { reason: 'restore' })
     // AI 공유는 버전에 딸린 내용이 아니라 지금 켜 둔 설정이다. 예전 버전이 켜져 있었다고 꺼 둔 공유를 다시 켜지 않는다
     const next: Deck = { ...d, id: deck.id, updatedAt: Date.now(), aiShare: useDeck.getState().deck?.aiShare ?? deck.aiShare }
+    const was = useDeck.getState().selectedId
     useDeck.getState().open(next)
+    // 여는 것은 첫 장을 고른다. 보던 장이나 되돌려서 바뀐 장을 보여 준다
+    const opened = useDeck.getState().deck
+    const show = opened && slideAfterRestore(deck, opened, was)
+    if (show) useDeck.getState().select(show)
     const saved = await persistNow(next)
     notify(
       saved
