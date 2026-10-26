@@ -6,7 +6,7 @@ import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
 import { formatNumber, seriesIn } from '../numbers'
-import { accentTint, greyTint } from '../tints'
+import { accentTint, TINT_COUNT } from '../tints'
 import { Head, useItems, useUnitOpen } from './parts'
 
 /** 100칸을 비중대로 나눈다. 내림한 뒤 남는 칸은 소수점 아래가 큰 항목부터 하나씩 (모두 더하면 100, 비중이 0이면 0칸) */
@@ -45,10 +45,11 @@ export function Share() {
   const pctText = (p: number) => (!series.ok ? '–' : p > 0 && p < 1 ? '1% 미만' : `${formatNumber(p < 10 ? Math.round(p * 10) / 10 : Math.round(p))}%`)
   let grey = 0
   const colors = items.map((_, i) => {
-    // 강조할 조각이 없으면 강조색의 농담, 있으면 그 조각만 강조색이고 나머지는 회색 농담(큰 조각부터 진하게)
+    // 강조할 조각이 없으면 강조색의 농담, 있으면 그 조각만 강조색이고 나머지는 강조색의 옅은 농담(셋째 단계부터, 큰 조각부터 진하게).
+    // 회색 농담은 첫 단계가 중간 회색이라 강조색 옆에서 같은 무게의 회색 덩어리로 읽혔다(VISUAL-RULES 3)
     if (highlight < 0) return accentTint(i)
     if (i === highlight) return 'var(--accent)'
-    return greyTint(grey++)
+    return accentTint(Math.min(2 + grey++, TINT_COUNT - 1))
   })
   let start = 0
   const segs = pcts.map((p) => {

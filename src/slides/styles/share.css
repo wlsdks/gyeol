@@ -1,11 +1,13 @@
 /* ---------- 구성비 ----------
-   조각 색은 --c(강조할 조각만 강조색, 나머지는 회색 단계)로 받는다. 띠는 한 줄 막대를 나누고
-   아래 이름표마다 같은 색 윗줄을, 도넛은 고리를 나누고 오른쪽에 줄마다 같은 색 점을 둔다. */
+   조각 색은 --c(강조할 조각만 강조색, 나머지는 강조색의 옅은 농담)로 받는다. 띠는 한 줄 막대를 나누고
+   아래 이름표마다 같은 색 작은 네모를, 도넛은 고리를 나누고 오른쪽에 줄마다 같은 색 네모를 둔다.
+   이름표 위에 조각 색으로 6px 윗줄을 긋던 것은 띠 바로 아래에 굵은 색 선이 한 줄 더 서서 '선 밑에 선'이었다(VISUAL-RULES 2) */
 
 .sh {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* 제목 아래에서부터, 남는 높이는 맨 아래에(VISUAL-RULES 6) */
+  justify-content: flex-start;
   min-height: 0;
 }
 
@@ -50,8 +52,17 @@
 .sh-item {
   position: relative;
   min-width: 0;
-  padding-top: 28px;
-  border-top: 6px solid var(--c);
+}
+
+/* 조각 색 표시: 비율 위의 작은 네모(도넛, 100칸의 목록과 같은 꼴) */
+.sh-item::before {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+  background: var(--c);
+  content: '';
 }
 
 .sh-pct {
@@ -99,7 +110,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 540px minmax(0, 1fr);
-  align-content: center;
+  align-content: start;
   align-items: center;
   column-gap: 120px;
 }
@@ -179,7 +190,7 @@
   display: grid;
   grid-template-columns: 540px minmax(0, 1fr);
   grid-template-areas: 'units legend' 'top legend';
-  align-content: center;
+  align-content: start;
   align-items: center;
   column-gap: 120px;
 }
@@ -230,7 +241,6 @@
   grid-auto-rows: 1fr;
   gap: 0;
   margin-top: 0;
-  border-top: var(--rule-hair) solid var(--line);
 }
 
 :is(.va-donut, .va-units) .sh-item {
@@ -244,6 +254,11 @@
   padding: 22px 0;
   border-top: 0;
   border-bottom: var(--rule-hair) solid var(--line);
+}
+
+/* 줄 선은 줄 사이에만: 목록 위와 마지막 줄 아래의 선은 목록을 감싸는 상자 선이었다(VISUAL-RULES 2) */
+:is(.va-donut, .va-units) .sh-item:last-child {
+  border-bottom-color: transparent;
 }
 
 :is(.va-donut, .va-units) .sh-item::before {
