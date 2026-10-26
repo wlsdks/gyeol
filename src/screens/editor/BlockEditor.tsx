@@ -194,7 +194,7 @@ export interface BlockEditing {
   edit: BlockEdit
   /** 무대에 그릴 장. 부품을 끌고 부품 장이 아닌 장 위에 오면 바꾼 모습을 미리 보여 준다 */
   stageSlide: Slide
-  /** 놓으면 할 일 안내 (무대 위에 띄운다) */
+  /** 놓으면 할 일 안내 (장 아래 단추줄 자리에 띄운다) */
   hint: string | null
   ghost: ReactNode
   toolbar: ReactNode
@@ -911,7 +911,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     },
   }
 
-  // 끄는 동안의 안내는 무대 위쪽 가운데의 한 줄로만 (손 아래에는 놓일 자리가 생기니 가리지 않게)
+  // 끄는 동안의 안내는 장 아래 가운데의 한 줄로만 (손 아래에는 놓일 자리가 생기니 가리지 않게)
   const hint = links.hint
     ? links.hint
     : !drag

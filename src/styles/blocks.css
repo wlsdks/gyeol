@@ -36,33 +36,41 @@
   margin-left: 2px;
 }
 
-/* 끄는 동안 놓으면 할 일 */
+/* 끄는 동안 놓으면 할 일: 장 아래 단추줄 자리, 단추 높이의 가운데에 (단추줄은 위 여백이 14px) */
 .bk-hint {
   position: absolute;
   z-index: 30;
-  top: 6px;
+  top: calc(50% + 7px);
   left: 50%;
-  /* 가운데 맞춘 상자는 왼쪽 50%부터라 그 너비(무대의 절반)에서 줄이 바뀌었다. 무대 너비만큼은 한 줄로 */
+  /* 가운데 맞춘 상자는 왼쪽 50%부터라 그 너비(장의 절반)에서 줄이 바뀌었다. 장 너비만큼은 한 줄로 */
   width: max-content;
   max-width: calc(100% - 24px);
   margin: 0;
   padding: 7px 14px;
-  border-radius: 999px;
+  /* 한 줄(34px)이면 알약, 좁은 창에서 두 줄로 꺾이면 둥근 네모에 두 줄을 고르게 */
+  border-radius: 17px;
   background: var(--ink);
   box-shadow: var(--shadow-pop);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
+  text-align: center;
+  text-wrap: balance;
   pointer-events: none;
-  translate: -50% 0;
+  translate: -50% -50%;
   animation: bk-hint-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes bk-hint-in {
   from {
     opacity: 0;
-    translate: -50% -6px;
+    translate: -50% calc(-50% + 6px);
   }
+}
+
+/* 안내가 뜬 동안은 단추줄을 숨긴다: 끄는 동안에는 누를 수 없고, 1280 너비에서는 안내가 줄을 거의 다 덮어 양 끝에 단추 조각만 남았다 */
+.bk-hint ~ .stage-tools {
+  visibility: hidden;
 }
 
 /* 손에 든 부품. 자리는 스크립트가 translate로 옮긴다 */
@@ -81,7 +89,7 @@
   transition: opacity 0.16s, box-shadow 0.2s, scale 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 이 장에 둘 데가 없거나(다음 장으로 간다) 손 아래가 아닌 자리에 놓일 때: 살짝 흐리게. 까닭은 무대 위쪽의 안내(.bk-hint)에 */
+/* 이 장에 둘 데가 없거나(다음 장으로 간다) 손 아래가 아닌 자리에 놓일 때: 살짝 흐리게. 까닭은 장 아래의 안내(.bk-hint)에 */
 .bk-ghost:is(.is-next, .is-elsewhere) {
   opacity: 0.88;
 }

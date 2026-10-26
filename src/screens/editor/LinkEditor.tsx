@@ -384,7 +384,7 @@ export function useLinkEditing({
       )
     : null
 
-  // 놓을 수 없는 까닭도 무대 위쪽의 한 줄 안내로 (손 아래에 붙여 두면 놓일 자리와 이웃 컴포넌트를 가렸다)
+  // 놓을 수 없는 까닭도 장 아래의 한 줄 안내로 (손 아래에 붙여 두면 놓일 자리와 이웃 컴포넌트를 가렸다)
   const hint = drag ? (drag.blocked ?? (drag.spots.length ? '컴포넌트 사이에 놓으면 그 둘을 이어요' : NO_PAIR)) : null
 
   return {

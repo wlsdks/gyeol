@@ -514,7 +514,9 @@
   flex-direction: column;
 }
 
+/* 끄는 동안의 안내(.bk-hint)가 이 줄 위에 뜬다 */
 .fit-below {
+  position: relative;
   min-width: 0;
 }
 

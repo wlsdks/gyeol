@@ -121,11 +121,6 @@ export function SlideStage({
         // 부품 밖을 누르면 부품 고르기를 끝낸다
         onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
       >
-        {(blocks.hint || fileOver) && (
-          <p className="bk-hint" role="status">
-            {blocks.hint ?? '놓으면 이 장에 이미지로 들어가요'}
-          </p>
-        )}
         {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판, 부품 장은 고른 컴포넌트나 이음표. 둘 다 그 바로 위에 뜬다 */}
         {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar deck={deck} slide={slide} canvasRef={canvasRef} />}
         {!peek && blocks.toolbar && <FloatTools canvasRef={canvasRef}>{blocks.toolbar}</FloatTools>}
@@ -133,21 +128,30 @@ export function SlideStage({
           padding={4}
           belowHeight={56}
           below={
-            <StageTools
-              deck={deck}
-              slide={slide}
-              ai={ai}
-              ask={ask}
-              blocks={blocks}
-              side={side}
-              peekSlide={peekSlide}
-              peek={peek}
-              overflow={overflow}
-              onTogglePeek={() => (peek ? setPeek(false) : startPeek())}
-              onReplay={() => setPreview((n) => n + 1)}
-              onPresentHere={onPresentHere}
-              onRemove={onRemove}
-            />
+            <>
+              {/* 끄는 동안 놓으면 할 일은 장 아래 단추줄 자리에 (그동안 단추줄은 숨긴다). 장 위쪽에 띄우던 때는 1280×600처럼
+                  장 위가 좁은 창에서 장 제목을 덮었다 */}
+              {(blocks.hint || fileOver) && (
+                <p className="bk-hint" role="status">
+                  {blocks.hint ?? '놓으면 이 장에 이미지로 들어가요'}
+                </p>
+              )}
+              <StageTools
+                deck={deck}
+                slide={slide}
+                ai={ai}
+                ask={ask}
+                blocks={blocks}
+                side={side}
+                peekSlide={peekSlide}
+                peek={peek}
+                overflow={overflow}
+                onTogglePeek={() => (peek ? setPeek(false) : startPeek())}
+                onReplay={() => setPreview((n) => n + 1)}
+                onPresentHere={onPresentHere}
+                onRemove={onRemove}
+              />
+            </>
           }
         >
           <div key={preview} ref={previewRef} className={cx(peek && 'stage-peeking')} onPointerDown={peek ? () => setPeek(false) : undefined}>
