@@ -134,7 +134,7 @@ function naturalSpan(b: Block): number {
 }
 
 /** 짜임 하나의 점수 (작을수록 좋다). 그려질 모습을 어림한다: 글자를 몇 단계까지 키울 수 있는지, 쌓은 뒤 본문을 얼마나 채우는지, 나란한 칸 한쪽이 얼마나 비는지 */
-export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number): number {
+export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?: string): number {
   const size = { w: AREA_W, h: areaH }
   const rect = (b: Block) => atRect(laid.get(b.id)!.at!, size)
   const base = (b: Block) => Math.max(0, blockMinH(laid.get(b.id)!, laid.get(b.id)!.at!.w) - SLACK)
@@ -199,17 +199,24 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number): numbe
   const empty = 1 - right / AREA_W
   if (empty > 0.2) cost += (empty - 0.2) * 200
   // 소제목이 그 아래 부품 위에 서지 않은 판 (사람이 끌어다 놓은 판을 견줄 때)
-  if (!headsOk(t)) cost += 100
+  if (!headsOk(t, last)) cost += 100
   // 숫자가 로고 모음 아래에 깔리면 답이 근거 밑으로 간다 (answersFirst)
   for (const lg of all.filter((b) => b.type === 'logos')) if (nums.some((b) => laid.get(b.id)!.at!.y > laid.get(lg.id)!.at!.y)) cost += 20
   return cost
 }
 
-/** 소제목은 그 아래 부품들의 이름이라 위아래로 쌓은 가지에서 다음 자식(소제목이 아닌) 위에 선다 */
-function headsOk(t: Tree): boolean {
+/**
+ * 소제목은 그 아래 부품들의 이름이라 위아래로 쌓은 가지에서 다음 자식(소제목이 아닌) 위에 선다.
+ * 마지막에 넣은 소제목(last)은 아래 부품을 아직 넣지 않아 혼자 서도 되지만, 다른 소제목 바로 위에는 서지 않는다
+ */
+function headsOk(t: Tree, last?: string): boolean {
   const head = (k: Tree | undefined) => !!k && k.kind === 'leaf' && k.block.type === 'heading'
-  if (t.kind === 'leaf') return !head(t)
-  return t.kids.every((k, i) => (head(k) ? t.dir === 'v' && i < t.kids.length - 1 && !head(t.kids[i + 1]) : headsOk(k)))
+  if (t.kind === 'leaf') return !head(t) || t.block.id === last
+  return t.kids.every((k, i) => {
+    if (!head(k)) return headsOk(k, last)
+    if (head(t.kids[i + 1]) && t.dir === 'v') return false
+    return (k as { block: Block }).block.id === last || (t.dir === 'v' && i < t.kids.length - 1)
+  })
 }
 
 /**
@@ -244,8 +251,8 @@ export function isArranged(blocks: Block[], fit: Fit, areaH: number, aspect: (b:
   return blocks.every((b) => !!b.at && !!byId.get(b.id) && sameArea(b.at, byId.get(b.id)!))
 }
 
-/** 지금 판의 점수 (나무로 읽을 수 없으면 Infinity) */
+/** 지금 판의 점수 (나무로 읽을 수 없으면 Infinity). blocks는 넣은 차례(마지막 부품이 막 넣은 것) */
 export function boardCost(blocks: Block[], fit: Fit, areaH: number): number {
   const t = treeOf(blocks)
-  return t ? arrangeCost(t, new Map(blocks.map((b) => [b.id, b])), fit, areaH) : Infinity
+  return t ? arrangeCost(t, new Map(blocks.map((b) => [b.id, b])), fit, areaH, blocks.at(-1)?.id) : Infinity
 }
