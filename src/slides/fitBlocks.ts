@@ -20,7 +20,7 @@
  *    남는 높이를 맨 아래 한곳에 모은다(--bk-shift, 캔버스 px, 칸째 옮긴다). 칸마다 가운데에 두거나 틈을 고르게 나누면 남는 높이가
  *    부품 사이마다 흩어져 부제 아래가 200px 넘게, 부품 사이가 130px 넘게 벌어졌다. 다만 맨 아래에만 모으면 내용이 적은 장은
  *    아래 3분의 1이 비어 위가 무거워서, 남는 높이를 묶음 사이와 맨 아래에 고르게 나누되 묶음 사이는 --bk-gap만큼까지만 더 벌린다.
- *    장 제목이 없으면 모은 묶음째 위아래 가운데에.
+ *    그러고도 남는 높이는 장 머리 아래와 맨 아래에 2 : 3으로 두어 묶음이 본문의 눈높이 가운데에 선다. 장 제목이 없으면 모은 묶음째 위아래 가운데에.
  *
  * 4. 위치 비교의 이름표는 그려진 크기로 서로, 그리고 다른 점과 겹치지 않는 자리를 다시 고른다(labels).
  *
@@ -775,6 +775,21 @@ export function blockFitter() {
       const end = Math.max(...items.map((x) => x.ink!.b + dy.get(x.c)!))
       const spare = a.bottom - end
       if (spare > 0) for (const x of items) dy.set(x.c, dy.get(x.c)! + spare / 2)
+    } else {
+      // 묶음 사이를 벌리고도 남는 높이는 장 머리 아래와 맨 아래에 2 : 3으로: 내용 묶음이 본문의 눈높이 가운데(가운데보다 조금 위)에
+      // 선다. 다 아래에 두면 내용이 적은 장은 위가 무겁고, 반씩 나누면 장 제목만 위에 떨어져 보였다(캡처로 견줬다).
+      // 머리 아래는 --body-gap만큼까지만 더 벌린다. 판은 남는 높이를 맨 아래 칸에 주어서 그 칸은 본문 바닥까지 닿지만 아래가 비어 있다:
+      // 바탕 없는 칸은 그려진 것만 본문 안에 있으면 칸째 바닥 밖으로 내려가도 보이지 않는다(편집 화면에서도 아래 표시줄이 칸보다 위에 있어
+      // 손을 가로채지 않는다). 면이 있는 칸은 면째 보여서 칸이 본문 바닥을 넘게는 내리지 않는다
+      const end = Math.max(...items.map((x) => x.ink!.b + dy.get(x.c)!))
+      const start = Math.min(...items.map((x) => x.ink!.t + dy.get(x.c)!))
+      const headLines = lines(head)
+      const headEnd = headLines.length ? Math.max(...headLines.map((q) => q.b)) : head.getBoundingClientRect().bottom
+      const bodyGap = (parseFloat(getComputedStyle(area.parentElement!).getPropertyValue('--body-gap')) || 72) * k
+      const room = Math.min(...items.map((x) => a.bottom - ((x.c.classList.contains('bk-look-plain') ? x.ink!.b : x.r.bottom) + dy.get(x.c)!)))
+      const free = a.bottom - end + (start - headEnd)
+      const down = Math.max(0, Math.min(free * 0.5 - (start - headEnd), bodyGap * 2, room))
+      if (down >= 8 * k) for (const x of items) dy.set(x.c, dy.get(x.c)! + down)
     }
     // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게)
     if (Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) return

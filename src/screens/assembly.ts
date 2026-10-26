@@ -130,7 +130,10 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
     const last = [...head!.querySelectorAll<HTMLElement>('.s-title, .s-lead')].filter((el) => el.textContent?.trim()).at(-1)
     const hb = last ? last.getBoundingClientRect().bottom : head!.getBoundingClientRect().bottom
     const gap = (merged[0].t - hb) / k
-    if (gap > GAP_MAX + 24) out.push(`장 머리 아래가 ${Math.round(gap)}px 비어요`)
+    // 내용이 적은 장은 남는 높이를 머리 아래와 맨 아래에 2 : 3으로 둔다(fitBlocks.ts 3-4). 그래서 머리 아래가 넓어도 아래가 그보다 넓으면
+    // 내용이 눈높이 가운데에 선 것이라 괜찮다. 아래보다 넓으면 내용이 가라앉은 것
+    const under = (area.getBoundingClientRect().bottom - merged[merged.length - 1].b) / k
+    if (gap > GAP_MAX + 24 && gap > under) out.push(`장 머리 아래가 ${Math.round(gap)}px 비어요`)
   }
   let widest = 0
   for (let i = 1; i < merged.length; i++) {
@@ -143,7 +146,8 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   // 쌓기가 칸을 올려 붙여 생긴 빈 띠만 본다: 판이 맨 아래 칸에 높이를 주어 칸 안이 빈 것(칸이 본문 바닥까지 닿는다)은 쌓기 몫이 아니다
   const ab = area.getBoundingClientRect().bottom
   const bottom = (ab - merged[merged.length - 1].b) / k
-  const filled = all.some((c) => c.getBoundingClientRect().bottom >= ab - 2 * k)
+  // 칸이 본문 바닥에 닿는지는 캔버스 16px까지 봐준다: 첫 줄을 장 머리에 맞춰 몇 px 올린 칸도 판이 바닥까지 준 칸이다
+  const filled = all.some((c) => c.getBoundingClientRect().bottom >= ab - 16 * k)
   // 벌릴 수 있는 사이가 있는지: 소제목 아래는 그 아래 부품과 한 덩어리라 벌리지 않는다
   const at = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
   const opens = all.some((p) => p.dataset.type !== 'heading' && all.some((q) => at(q, '--y') >= at(p, '--y') + at(p, '--h') && at(q, '--x') < at(p, '--x') + at(p, '--w') && at(p, '--x') < at(q, '--x') + at(q, '--w')))
