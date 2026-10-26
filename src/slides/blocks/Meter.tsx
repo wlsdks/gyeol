@@ -45,7 +45,8 @@ export function Meter() {
   const own = (k: string) => readField(slide, meta, k)
   const m = meterOf(read('value'), own('of'), own('target'))
   const open = (k: string) => !!own(k).trim() || (mode !== 'final' && !folds?.has(k))
-  const ofOpen = open('of')
+  // 발표할 때 숫자를 비웠으면 '/ 전체'도 두지 않는다: 나눌 숫자 없이 '/ 5억 원'만 남았다
+  const ofOpen = open('of') && (mode !== 'final' || !!read('value').trim())
   const targetOpen = open('target')
   const nameOpen = !!own('targetName').trim() || (mode === 'edit' && !folds?.has('targetName'))
   const style = { '--p': ((m?.p ?? 0) * 100).toFixed(2), '--t': ((m?.t ?? 0) * 100).toFixed(2) } as CSSProperties

@@ -28,6 +28,9 @@ export function Ratio() {
   const flat = Math.min(5.5, Math.max(1, Math.round(((cols * 1.3 - 0.3) / (Math.ceil(n / tall) * 1.3 - 0.3)) * 2) / 2))
   // 사람을 센 것이면 점 대신 사람 모양
   const person = /^(명|분|사람|인)$/.test(unit)
+  // 발표할 때 전체나 몇을 비웠으면 그 줄의 단위와 '중'을 두지 않는다: '곳 중', 큰 글자의 '곳'처럼 단위만 남았고, 몇이 없으면
+  // '10곳 중'이 뒤에 올 숫자를 기다렸다
+  const has = (k: string) => mode !== 'final' || !!read(k).trim()
   return (
     <div
       className={cx('bk-rt', demo && 'is-demo')}
@@ -36,18 +39,22 @@ export function Ratio() {
     >
       <div className="bk-rt-text">
         <T k="label" className="bk-rt-l" />
-        <p className="bk-rt-of">
-          <span className="bk-rt-num">
-            <T k="total" as="span" className="bk-rt-t" />
-            {/* 단위는 한 번만 적고 전체와 몇에 같이 붙인다 */}
-            {mode === 'edit' ? <T k="unit" as="span" className="bk-rt-u" /> : unit && <span className="bk-rt-u">{unit}</span>}
-          </span>
-          <span className="bk-rt-sep">중</span>
-        </p>
-        <p className="bk-rt-big">
-          <T k="value" as="span" className="bk-rt-v" />
-          {mode !== 'edit' && unit && <span className="bk-rt-vu">{unit}</span>}
-        </p>
+        {has('total') && (
+          <p className="bk-rt-of">
+            <span className="bk-rt-num">
+              <T k="total" as="span" className="bk-rt-t" />
+              {/* 단위는 한 번만 적고 전체와 몇에 같이 붙인다 */}
+              {mode === 'edit' ? <T k="unit" as="span" className="bk-rt-u" /> : unit && <span className="bk-rt-u">{unit}</span>}
+            </span>
+            {has('value') && <span className="bk-rt-sep">중</span>}
+          </p>
+        )}
+        {has('value') && (
+          <p className="bk-rt-big">
+            <T k="value" as="span" className="bk-rt-v" />
+            {mode !== 'edit' && unit && <span className="bk-rt-vu">{unit}</span>}
+          </p>
+        )}
         <T k="note" className="bk-rt-n" multiline />
       </div>
       {n > 0 && (

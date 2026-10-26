@@ -1,5 +1,6 @@
 // 레이아웃: 진행 현황 (progress). 모양은 styles/progress.css
 
+import { isBlankItem } from '../../deck/fields'
 import { hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { demoOf, useSlide } from '../context'
@@ -30,6 +31,10 @@ export function Progress() {
     return { pct, status, lane: laneOf(stateText, pct) }
   })
   const counts = STATUS_ORDER.map((s) => ({ s, n: rows.filter((r) => r.status === s).length })).filter((c) => c.n > 0)
+  // 발표할 때 칸을 하나도 채우지 않은 과제(가장 적은 수를 채우려 남긴 빈 칸)는 단에 넣지 않는다: 단을 짐작하면 예정으로 들어가
+  // 빈 줄 하나뿐인 '예정 1' 단이 섰다. 과제가 모두 비었으면 머리줄(과제, 상태)도 두지 않는다
+  const blank = items.map((it) => final && isBlankItem(it))
+  const allBlank = blank.length > 0 && blank.every(Boolean)
   const row = (it: (typeof items)[number], i: number) => {
     const r = rows[i]
     const derived = final && !it.body.trim()
@@ -52,7 +57,7 @@ export function Progress() {
   }
   if (slide.variant === 'board') {
     // 단을 정할 때는 상태를 모르는 과제(편집 중 상태 칸이 비었다)도 진행률로 짐작해 넣고, 그것도 없으면 예정에 (laneOf)
-    const lanes = STATUS_ORDER.map((s) => ({ s, at: items.map((_, i) => i).filter((i) => rows[i].lane === s) })).filter((l) => l.at.length > 0)
+    const lanes = STATUS_ORDER.map((s) => ({ s, at: items.map((_, i) => i).filter((i) => !blank[i] && rows[i].lane === s) })).filter((l) => l.at.length > 0)
     // 짜임(줄 사이, 진행률 자리)과 부품 높이는 가장 많이 모인 단의 과제 수로 고른다 (progress.css, blocks/sizing.ts)
     const most = Math.max(1, ...lanes.map((l) => l.at.length))
     return (
@@ -79,21 +84,23 @@ export function Progress() {
       <Head />
       <div className={cx('s-body ps', demo && 'is-demo')} data-n={items.length}>
         {/* 머리줄 오른쪽에 상태별 과제 수. 상태가 한 가지뿐이면 셀 필요가 없어 '상태'라고만 */}
-        <div className="ps-row ps-headrow">
-          <span className="ps-h">과제</span>
-          {counts.length > 1 ? (
-            <p className="ps-sum">
-              {counts.map((c) => (
-                <span key={c.s} className={`ps-count is-${c.s}`}>
-                  {STATUS_NAMES[c.s]}
-                  <b>{c.n}</b>
-                </span>
-              ))}
-            </p>
-          ) : (
-            <span className="ps-h ps-h-state">상태</span>
-          )}
-        </div>
+        {!allBlank && (
+          <div className="ps-row ps-headrow">
+            <span className="ps-h">과제</span>
+            {counts.length > 1 ? (
+              <p className="ps-sum">
+                {counts.map((c) => (
+                  <span key={c.s} className={`ps-count is-${c.s}`}>
+                    {STATUS_NAMES[c.s]}
+                    <b>{c.n}</b>
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <span className="ps-h ps-h-state">상태</span>
+            )}
+          </div>
+        )}
         {items.map(row)}
       </div>
     </>

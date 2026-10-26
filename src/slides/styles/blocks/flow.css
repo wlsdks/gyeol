@@ -144,6 +144,12 @@
   height: var(--fw-head);
 }
 
+/* 발표할 때 칸을 하나도 채우지 않은 단계(감춘 칸, base.css의 .it-empty)로 가거나 거기서 나오는 선도 감춘다: 선만 빈 자리를 가리켰다 */
+.slide.m-final .bk-fw-link:has(+ .bk-fw-node .it-empty),
+.slide.m-final .bk-fw-node:has(.it-empty) + .bk-fw-link {
+  visibility: hidden;
+}
+
 /* ---------- 좁은 칸: 세로로 쌓기 ----------
    단계 상자 하나가 210px 남짓보다 좁아지면 가로로 둔 이름이 두세 글자마다 꺾인다. 그 너비는 단계 수마다 달라서 수마다 문턱을 둔다.
    쌓으면 상자는 한 줄을 다 쓰고, 이름과 설명은 왼쪽에, 양은 오른쪽 끝에 선다. 선은 상자 사이에서 아래를 본다 */

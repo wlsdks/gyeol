@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from 'react'
 import { BLOCKS } from '../../deck/blocks'
+import { isBlankItem } from '../../deck/fields'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
@@ -29,22 +30,27 @@ export function networkSpots(n: number): { side: 'l' | 'r'; row: number; m: numb
  * 발표할 때는 가운데가 먼저 나오고 선이 하나씩 뻗어 나가며 닿는 상자가 나타난 뒤, 데이터 조각이 가운데로 모여든다
  */
 export function Network() {
-  const { slide } = useSlide()
-  const items = slide.items.slice(0, BLOCKS.network.items!.max)
-  const spots = networkSpots(items.length)
+  const { slide, mode } = useSlide()
+  // 발표할 때 칸을 하나도 채우지 않은 것(가장 적은 수를 채우려 남긴 빈 칸, presentable)은 자리째 뺀다: 감추기만 하면 양옆 단의
+  // 자리는 그대로라 남은 상자가 위로 꺾인 선 끝에 매달리고, 빈 쪽으로 가운데의 선이 뻗었다. 항목의 칸은 원래 자리(i)로 가리킨다
+  const shown = slide.items
+    .slice(0, BLOCKS.network.items!.max)
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => mode !== 'final' || !isBlankItem(it))
+  const spots = networkSpots(shown.length)
   return (
-    <div className="bk-nw" data-n={items.length}>
-      <div className="bk-nw-map" style={{ '--nw-t': 2 * Math.ceil(items.length / 2) } as CSSProperties}>
+    <div className="bk-nw" data-n={shown.length}>
+      <div className="bk-nw-map" style={{ '--nw-t': 2 * Math.ceil(shown.length / 2) } as CSSProperties}>
         <div className="bk-nw-hub">
           <T k="center" as="p" className="bk-nw-c" />
         </div>
-        {items.map((it, i) => {
-          const p = spots[i]
+        {shown.map(({ it, i }, k) => {
+          const p = spots[k]
           return (
             <div key={it.id} className={cx('it bk-nw-node', `is-${p.side}`, `is-${p.dir}`)} style={{ '--nw-p': `${p.row} / span 2`, '--nw-m': p.m } as CSSProperties}>
               {/* 이 상자에서 가운데까지의 선. 좁은 칸에서는 왼쪽 줄기의 가지, 줄기는 다음 상자까지 이어진다(bk-nw-run) */}
               <span className="bk-nw-wire" aria-hidden="true" />
-              {i < items.length - 1 && <span className="bk-nw-run" aria-hidden="true" />}
+              {k < shown.length - 1 && <span className="bk-nw-run" aria-hidden="true" />}
               <IT i={i} k="title" className="bk-nw-t" />
               <IT i={i} k="meta" className="bk-nw-m" />
               <ItemTools i={i} />

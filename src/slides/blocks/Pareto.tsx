@@ -1,7 +1,7 @@
 // 부품: 원인 순위 (pareto)
 
 import { BLOCKS } from '../../deck/blocks'
-import { readField } from '../../deck/fields'
+import { isBlankItem, readField } from '../../deck/fields'
 import { hintFor } from '../../deck/layouts'
 import type { ReactNode } from 'react'
 import type { Item } from '../../deck/types'
@@ -32,18 +32,23 @@ export function Pareto() {
   // 단위가 서로 다른 값('3건', '40%')을 더한 몫은 틀린 숫자라 먼저 잡을 원인과 몫을 말하지 않는다
   const vital = total > 0 && series.ok ? cum.filter((_, i) => (cum[i - 1] ?? 0) < 80).length : 0
   const n = items.length
+  // 발표할 때 칸을 하나도 채우지 않은 원인(가장 적은 수를 채우려 남긴 빈 칸, presentable)에는 점을 찍지 않고 선도 그 앞에서
+  // 멈춘다: 더한 몫이 그대로라 빈 칸 위에 100% 점이 줄지어 섰다. 요점과 80%를 넘긴 표시도 채운 원인만 세어 말한다
+  const blank = items.map((it) => mode === 'final' && isBlankItem(it))
+  const filled = blank.filter((b) => !b).length
+  const end = blank.lastIndexOf(false)
   // 점은 그 칸의 가운데(막대와 이름 바로 위): 그 칸까지 더한 몫. 칸의 오른쪽 끝에 찍던 때는 점이 막대와 막대 사이,
   // 이름과 이름 사이에 떠서 어느 원인까지 더한 몫인지 읽히지 않았다. 첫 점은 첫 막대의 머리에 앉는다(첫 몫이 곧 첫 막대)
   const x = (i: number) => ((i + 0.5) / n) * 100
-  const line = cum.map((c, i) => `${x(i).toFixed(2)},${(100 - c).toFixed(2)}`).join(' ')
+  const line = cum.flatMap((c, i) => (i > end || blank[i] ? [] : [`${x(i).toFixed(2)},${(100 - c).toFixed(2)}`])).join(' ')
   // 몇 개가 거의 다인지가 요점. 모두가 80% 안이면 몰린 곳이 없어서 말하지 않는다
   const sum =
-    vital > 0 && vital < n ? (
+    vital > 0 && vital < filled ? (
       <>
         {vital === 1 ? '가장 많은 하나가' : `상위 ${vital}개가`} 전체의 <b>{pctText(cum[vital - 1])}</b>
       </>
     ) : undefined
-  if (slide.variant === 'rows') return <ParetoRows items={items} share={share} cum={cum} vital={vital} sum={sum} demo={demo} />
+  if (slide.variant === 'rows') return <ParetoRows items={items} share={share} cum={cum} vital={vital} filled={filled} sum={sum} demo={demo} />
   return (
     <div className={cx('bk-cc bk-pa', demo && 'is-demo')} style={{ '--n': n }}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
@@ -62,12 +67,14 @@ export function Pareto() {
             <svg className="bk-pa-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
               <polyline points={line} />
             </svg>
-            {cum.map((c, i) => (
-              <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < n && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) }}>
-                {/* 80%를 넘긴 점이 첫 점이면 몫을 적지 않는다: 첫 막대의 숫자 바로 옆이라 겹치고, 같은 몫을 위의 요점이 말한다 */}
-                {i > 0 && i === vital - 1 && vital < n && <span className="bk-pa-cut">{pctText(c)}</span>}
-              </span>
-            ))}
+            {cum.map((c, i) =>
+              blank[i] ? null : (
+                <span key={items[i].id} className={cx('bk-pa-pt', i === vital - 1 && vital < filled && 'is-cut')} style={{ '--x': x(i).toFixed(2), '--y': c.toFixed(2) }}>
+                  {/* 80%를 넘긴 점이 첫 점이면 몫을 적지 않는다: 첫 막대의 숫자 바로 옆이라 겹치고, 같은 몫을 위의 요점이 말한다 */}
+                  {i > 0 && i === vital - 1 && vital < filled && <span className="bk-pa-cut">{pctText(c)}</span>}
+                </span>
+              ),
+            )}
           </div>
         )}
         {items.map((it, i) => (
@@ -82,7 +89,8 @@ export function Pareto() {
             <div className="bk-cc-label">
               <IT i={i} k="title" className="bk-cc-name" />
             </div>
-            <ItemTools i={i} />
+            {/* 빈 칸도 그 자리의 바닥줄은 남긴다: 감추면 축이 채운 칸 아래에서만 끊겼다 */}
+            <ItemTools i={i} keepBlank />
           </div>
         ))}
       </div>
@@ -95,7 +103,7 @@ export function Pareto() {
  * 그래서 위에서 아래로 읽으면 몫이 계단처럼 쌓여 마지막 줄에서 100%가 되고, 어느 줄에서 80%를 넘는지가 80% 줄로 보인다.
  * 원인 이름이 길어도(‘포장재 규격 변경 누락’) 한 줄에 읽힌다. 숫자는 오른쪽에 원인의 수, 그 옆에 더한 몫
  */
-function ParetoRows({ items, share, cum, vital, sum, demo }: { items: Item[]; share: number[]; cum: number[]; vital: number; sum: ReactNode; demo: boolean }) {
+function ParetoRows({ items, share, cum, vital, filled, sum, demo }: { items: Item[]; share: number[]; cum: number[]; vital: number; filled: number; sum: ReactNode; demo: boolean }) {
   const n = items.length
   return (
     <div className={cx('bk-cc bk-pa bk-pr', demo && 'is-demo')} data-n={n} style={{ '--n': n }}>
@@ -111,7 +119,7 @@ function ParetoRows({ items, share, cum, vital, sum, demo }: { items: Item[]; sh
         {items.map((it, i) => (
           <div
             key={it.id}
-            className={cx('it bk-pr-row', i === 0 && 'is-first', i < vital && 'is-hl', i === vital - 1 && vital < n && 'is-cut')}
+            className={cx('it bk-pr-row', i === 0 && 'is-first', i < vital && 'is-hl', i === vital - 1 && vital < filled && 'is-cut')}
             // 줄 자리를 적어 둔다: 80% 줄이 막대 칸을 머리 아래부터 끝까지 차지해서, 적지 않으면 줄들이 그 아래 새 줄로 밀려난다
             style={{ '--a': (cum[i] - share[i]).toFixed(2), '--p': share[i].toFixed(2), gridRow: i + 2 }}
           >

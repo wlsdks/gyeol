@@ -62,6 +62,11 @@
   content: none;
 }
 
+/* 발표할 때 뒤에 칸을 하나도 채우지 않은 항목(감춘 칸, base.css의 .it-empty)이 오면 그 앞이 보이는 끝줄이다 */
+.slide .ag-item:has(+ * .it-empty)::after {
+  content: none;
+}
+
 .ag-t {
   --fs: var(--ag-fs);
   grid-area: t;

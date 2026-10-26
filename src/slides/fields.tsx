@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ElementType } from 'react'
-import { readField } from '../deck/fields'
+import { isBlankItem, readField } from '../deck/fields'
 import { hintFor, labelIn, LAYOUTS } from '../deck/layouts'
 import type { ItemKey } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -514,9 +514,10 @@ function itemsAcross(item: HTMLElement): boolean {
 /**
  * 항목 위에 올리면 보이는 도구: 왼쪽 위의 손잡이(끌어 순서 바꾸기), 오른쪽 위의 빼기.
  * 컴포넌트 안에서는 둘 다 항목 안쪽 오른쪽 위에 모은다 (edit.css).
- * 자리가 값으로 정해지는 항목(위치 비교의 점)은 순서가 보이지 않아 손잡이를 두지 않는다
+ * 자리가 값으로 정해지는 항목(위치 비교의 점)은 순서가 보이지 않아 손잡이를 두지 않는다.
+ * keepBlank면 발표할 때 칸이 빈 항목도 감추지 않는다: 단계 표시의 점, 막대 차트의 빈 칸(축)처럼 빈 항목의 자리도 뜻이 있는 부품
  */
-export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
+export function ItemTools({ i, sort = true, keepBlank = false }: { i: number; sort?: boolean; keepBlank?: boolean }) {
   const { mode, actions, canRemoveItem, slide } = useSlide()
   const move = actions?.moveItem
   const grip = mode === 'edit' && sort && !!move && slide.items.length > 1
@@ -545,6 +546,10 @@ export function ItemTools({ i, sort = true }: { i: number; sort?: boolean }) {
       el.removeEventListener('focus', look)
     }
   }, [grip])
+  // 발표할 때는 도구 대신, 칸을 하나도 채우지 않은 항목에 표시를 둔다. 그런 항목은 가장 적은 항목 수를 채우려고 남긴 자리라
+  // (deck/fields.ts의 presentable) 빈 칸이 다 빠지고 번호, 글머리, 점, 꺾쇠 같은 표시만 덩그러니 남았다.
+  // 표시가 든 항목은 자리만 남기고 감춘다(styles/base.css의 .it-empty)
+  if (mode === 'final') return !keepBlank && slide.items[i] && isBlankItem(slide.items[i]) ? <i className="it-empty" hidden /> : null
   if (mode !== 'edit' || !actions) return null
   if (!grip && !canRemoveItem) return null
   return (

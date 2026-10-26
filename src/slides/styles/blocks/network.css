@@ -78,6 +78,12 @@
   left: 100%;
 }
 
+/* 이어진 것이 하나뿐이거나 없으면(발표할 때 빈 칸을 뺀 경우, Network.tsx) 상자가 없는 쪽으로는 선을 내지 않는다 */
+.bk-nw:is([data-n='0'], [data-n='1']) .bk-nw-hub::after,
+.bk-nw[data-n='0'] .bk-nw-hub::before {
+  display: none;
+}
+
 .bk-nw-node {
   position: relative;
   display: flex;

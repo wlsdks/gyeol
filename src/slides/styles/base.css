@@ -263,3 +263,14 @@
 .slide .u-pre {
   margin-left: 0;
 }
+
+/* 발표할 때 칸을 하나도 채우지 않은 항목(가장 적은 항목 수를 채우려고 남긴 자리, deck/fields.ts의 presentable)은 자리만 남긴다.
+   빈 칸은 그리지 않아서 그런 항목에는 번호 '2', 강점과 약점의 S, 글머리 '01', 점, 꺾쇠, 줄 선 같은 표시만 덩그러니 남았다.
+   표시(.it-empty)는 항목 도구 자리(fields.tsx의 ItemTools)가 둔다. 짜임째 줄이는 편이 맞는 부품은 제 파일에서 따로 정한다 */
+.slide .it-empty {
+  display: none;
+}
+
+.slide.m-final .it:has(.it-empty) {
+  visibility: hidden;
+}

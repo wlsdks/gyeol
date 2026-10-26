@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { presentable, shownOnly, unshownCount } from './fields'
+import { isBlankItem, presentable, shownOnly, unshownCount } from './fields'
 import { emptyItem, makeSlide } from './generate'
 import { BLOCKS, withLayout } from './blocks'
 import { labelFor, labelIn, LAYOUT_ORDER, LAYOUTS } from './layouts'
@@ -30,6 +30,13 @@ describe('발표 화면에 그릴 장 (presentable)', () => {
     const items = [item('가'), ...Array.from({ length: max - 1 }, () => emptyItem()), item('숨긴 항목')]
     const shown = presentable({ ...makeSlide('closing'), items }).items.map((it) => it.title)
     expect(shown).toEqual(['가'])
+  })
+
+  it('가장 적은 수를 채우려 남긴 항목은 빈 항목(isBlankItem)으로 알아볼 수 있다', () => {
+    // 그리는 쪽(fields.tsx의 ItemTools)이 이것으로 빈 사분면, 단계의 표시 글자(S, 번호, 화살표)를 같이 감춘다
+    const slide = { ...makeSlide('matrix'), items: [item('가'), emptyItem(), emptyItem(), emptyItem()] }
+    expect(presentable(slide).items.map(isBlankItem)).toEqual([false, true, true, true])
+    expect(isBlankItem({ ...emptyItem(), image: 'data:image/png;base64,AA' })).toBe(false)
   })
 
   it('강조는 같은 항목을 따라가고, 빈 항목을 강조했으면 강조하지 않는다', () => {

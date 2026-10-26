@@ -16,8 +16,9 @@
   border-top-color: transparent;
 }
 
-/* 마지막 항목 아래 */
-.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-ev-row, .bk-rk-row, .bk-sx-row, .bk-pp-card, .tb-row, .vs-row, .ps-row, .sk-row, .pr-plan, .sm-row, .pt-item):last-child {
+/* 마지막 항목 아래. 발표할 때 뒤에 칸을 하나도 채우지 않은 항목(감춘 칸, base.css의 .it-empty)이 오는 항목도 보이는 마지막 항목이다:
+   감춘 칸 위에 선만 하나 남았다 */
+.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-ev-row, .bk-rk-row, .bk-sx-row, .bk-pp-card, .tb-row, .vs-row, .ps-row, .sk-row, .pr-plan, .sm-row, .pt-item):is(:last-child, :has(+ * .it-empty)) {
   border-bottom-color: transparent;
 }
 

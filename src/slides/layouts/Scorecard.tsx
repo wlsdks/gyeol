@@ -1,6 +1,6 @@
 // 레이아웃: 목표 대비 실적 (scorecard). 모양은 styles/scorecard.css
 
-import { readField } from '../../deck/fields'
+import { isBlankItem, readField } from '../../deck/fields'
 import { highlightOf, hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
@@ -19,6 +19,8 @@ export function Scorecard() {
   // 나란히를 편집할 때 목표와 실적의 이름은 첫 단의 이름 자리에서 고친다(다른 단은 같은 이름을 CSS로 붙인다).
   // 머리 줄을 따로 두면 편집할 때만 64px가 늘어, 발표 화면으로 잰 높이에 맞춘 칸에서 글자를 두 단계 줄였다
   const sideEdit = slide.variant === 'side' && mode !== 'final'
+  // 발표할 때 지표를 모두 비웠으면(빈 줄은 styles/base.css의 .it-empty가 감춘다) 머리줄도 두지 않는다: 지표, 목표 대비, 달성률만 남았다
+  const allBlank = mode === 'final' && items.length > 0 && items.every(isBlankItem)
   // 편집할 때 목표와 실적이 둘 다 비어 있으면 안내 문구의 예시 숫자로 막대를 흐리게 그린다.
   // 한쪽만 적었으면 예시와 섞지 않는다 (엉뚱한 달성률이 보이지 않게).
   const pair = (i: number) => {
@@ -35,13 +37,15 @@ export function Scorecard() {
         data-n={items.length}
         style={slide.variant === 'side' ? { '--sk-kt': JSON.stringify(readField(slide, meta, 'metaTitle').trim() || '목표'), '--sk-kv': JSON.stringify(readField(slide, meta, 'valueTitle').trim() || '실적') } : undefined}
       >
-        <div className="sk-row sk-headrow">
-          <span className="sk-h">지표</span>
-          <span className="sk-h">목표 대비</span>
-          <Label k="metaTitle" fallback="목표" className="sk-h sk-num" />
-          <Label k="valueTitle" fallback="실적" className="sk-h sk-num" />
-          <span className="sk-h sk-num">달성률</span>
-        </div>
+        {!allBlank && (
+          <div className="sk-row sk-headrow">
+            <span className="sk-h">지표</span>
+            <span className="sk-h">목표 대비</span>
+            <Label k="metaTitle" fallback="목표" className="sk-h sk-num" />
+            <Label k="valueTitle" fallback="실적" className="sk-h sk-num" />
+            <span className="sk-h sk-num">달성률</span>
+          </div>
+        )}
         {items.map((it, i) => {
           const { demo, meta, value } = pair(i)
           // 목표와 실적은 단위까지 읽어 같은 기준으로 ('7분 이하'와 '6분 30초', '1.2억 원'과 '9,500만 원').

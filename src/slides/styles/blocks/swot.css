@@ -56,6 +56,11 @@
   text-wrap: pretty;
 }
 
+/* 발표할 때 글이 하나도 없는 칸(Swot.tsx): 자리만 남긴다 */
+.bk-sw-q.is-blank {
+  visibility: hidden;
+}
+
 @container bk (max-width: 980px) {
   .bk-sw-grid {
     column-gap: 48px;

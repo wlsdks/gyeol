@@ -36,6 +36,11 @@
   right: 0;
 }
 
+/* 발표할 때 뒤에 칸을 하나도 채우지 않은 항목(감춘 칸, base.css의 .it-empty)이 오면 그 앞에서 축을 끝낸다: 축이 감춘 칸 쪽으로 사이만큼 더 뻗었다 */
+.slide .tl-item:has(+ * .it-empty)::before {
+  right: 0;
+}
+
 .tl-meta {
   --fs: 26px;
   height: 40px;
@@ -137,7 +142,7 @@
   right: calc(var(--tl-gap) * -1);
 }
 
-.l-timeline.va-base .tl-item:last-child::before {
+.l-timeline.va-base .tl-item:is(:last-child, :has(+ * .it-empty))::before {
   right: 0;
 }
 

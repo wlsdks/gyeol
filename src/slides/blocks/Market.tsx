@@ -1,6 +1,8 @@
 // 부품: 시장 규모 (market). 모양은 styles/blocks/market.css
 
 import { BLOCKS } from '../../deck/blocks'
+import { isBlankItem } from '../../deck/fields'
+import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
 
@@ -9,8 +11,11 @@ import { IT, ItemTools, T } from '../fields'
  * (전체 시장은 목표의 백 배가 넘기 일쑤라 비례하면 목표가 점이 된다). 규모는 옆 목록의 큰 숫자로 읽는다
  */
 export function Market() {
-  const { slide } = useSlide()
+  const { slide, mode } = useSlide()
   const items = slide.items.slice(0, BLOCKS.market.items!.max)
+  // 발표할 때 칸을 하나도 채우지 않은 시장(가장 적은 수를 채우려 남긴 빈 칸)은 원도 감춘다: 목록의 줄만 감추면 이름 없는
+  // 강조색 원(목표)이 홀로 남았다. 자리는 그대로 두어 남은 원의 크기와 색이 목록의 표시와 어긋나지 않게 한다
+  const blank = items.map((it) => mode === 'final' && isBlankItem(it))
   return (
     <div className="bk-mk" data-n={items.length}>
       <T k="heading" as="h3" className="bk-h" fit={[18, 32]} multiline />
@@ -18,7 +23,7 @@ export function Market() {
         <div className="bk-mk-box" aria-hidden="true">
           <div className="bk-mk-fig">
             {items.map((it, i) => (
-              <span key={it.id} className="bk-mk-c" style={{ '--i': i }} />
+              <span key={it.id} className={cx('bk-mk-c', blank[i] && 'is-blank')} style={{ '--i': i }} />
             ))}
           </div>
         </div>

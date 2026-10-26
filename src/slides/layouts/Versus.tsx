@@ -174,7 +174,8 @@ export function Versus() {
                 <IT i={i} k="title" className="vs-name" />
                 {change(i) && <span className="vs-change">{change(i)}</span>}
               </div>
-              <ItemTools i={i} />
+              {/* 빈 칸도 그 자리의 바닥줄은 남긴다: 감추면 축이 채운 칸 아래에서만 끊겼다 */}
+              <ItemTools i={i} keepBlank />
             </div>
           ))}
         </div>

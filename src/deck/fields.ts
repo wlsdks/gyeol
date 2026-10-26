@@ -19,6 +19,11 @@ export function visibleItems(slide: Slide) {
 
 const ITEM_TEXT: ItemKey[] = ['title', 'body', 'value', 'meta', 'image']
 
+/** 칸을 하나도 채우지 않은 항목 (발표 화면에서 빼는 항목, presentable) */
+export function isBlankItem(it: Item): boolean {
+  return !ITEM_TEXT.some((k) => it[k].trim())
+}
+
 /**
  * 발표 화면에 그릴 장: 칸을 하나도 채우지 않은 항목은 뺀다(레이아웃의 가장 적은 수까지만).
  * '빈칸이 남았어요'에서 그대로 발표하면 빈 요청이 번호 '3'과 줄 선만 남거나, 빈 숫자 칸이 장 한쪽을 비웠다.
@@ -29,7 +34,7 @@ const ITEM_TEXT: ItemKey[] = ['title', 'body', 'value', 'meta', 'image']
 export function presentable(slide: Slide, spec = LAYOUTS[slide.layout].items): Slide {
   if (!spec) return slide
   const shown = slide.items.slice(0, spec.max)
-  const keep = shown.map((it) => ITEM_TEXT.some((k) => it[k].trim()))
+  const keep = shown.map((it) => !isBlankItem(it))
   let n = keep.filter(Boolean).length
   // 가장 적은 수보다 줄면 뒤에서부터 빈 항목을 되살린다
   for (let i = shown.length - 1; i >= 0 && n < spec.min; i--) {

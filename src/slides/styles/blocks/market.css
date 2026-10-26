@@ -77,6 +77,11 @@
   width: 46%;
 }
 
+/* 발표할 때 칸을 하나도 채우지 않은 시장의 원 (Market.tsx) */
+.bk-mk-c.is-blank {
+  visibility: hidden;
+}
+
 .bk-mk-list {
   flex: 1;
   min-width: 0;

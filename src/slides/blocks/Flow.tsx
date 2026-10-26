@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react'
 import { BLOCKS } from '../../deck/blocks'
-import { readField } from '../../deck/fields'
+import { isBlankItem, readField } from '../../deck/fields'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
 import { IT, ItemTools, T } from '../fields'
@@ -23,7 +23,10 @@ export function flowHighlight(chosen: number | undefined, n: number): number {
 export function Flow() {
   const { slide, meta, mode, folds } = useSlide()
   const items = slide.items.slice(0, BLOCKS.flow.items!.max)
-  const hl = flowHighlight(slide.options.highlight, items.length)
+  // 발표할 때 뒤쪽의 빈 단계(가장 적은 수를 채우려 남긴 칸)는 감추므로, 고르지 않은 강조(흐름이 닿는 곳)는 채운 단계의 마지막에.
+  // 그대로 두면 강조가 감춘 단계에 가서 흐름에 닿는 곳이 없었다
+  const reach = mode === 'final' ? items.findLastIndex((it) => !isBlankItem(it)) + 1 : items.length
+  const hl = flowHighlight(slide.options.highlight, reach)
   // 오가는 것은 비어 있으면 줄째 뺀다 (편집할 때 '칸 더하기'로 열면 보인다)
   const key = !!readField(slide, meta, 'what').trim() || (mode !== 'final' && !folds?.has('what'))
   return (

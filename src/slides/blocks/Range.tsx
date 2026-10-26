@@ -43,7 +43,8 @@ export function Range() {
       <T k="label" className="bk-rn-l" />
       <p className="bk-rn-ends">
         <T k="low" as="span" className="bk-rn-lo" numeral />
-        {!g && <span className="bk-rn-dash">–</span>}
+        {/* 발표할 때 한쪽 끝을 비웠으면 사이의 '–'도 두지 않는다: '– 24°C'처럼 줄표만 빈 쪽을 가리켰다 */}
+        {!g && (mode !== 'final' || (!!read('low').trim() && !!read('high').trim())) && <span className="bk-rn-dash">–</span>}
         <T k="high" as="span" className="bk-rn-hi" numeral />
       </p>
       {g && (

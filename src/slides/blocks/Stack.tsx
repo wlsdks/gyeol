@@ -93,7 +93,8 @@ export function Stack() {
               <div className="bk-cc-label">
                 <IT i={i} k="title" className="bk-cc-name" />
               </div>
-              <ItemTools i={i} />
+              {/* 빈 칸도 그 자리의 바닥줄은 남긴다: 감추면 축이 채운 칸 아래에서만 끊겼다 */}
+              <ItemTools i={i} keepBlank />
             </div>
           )
         })}

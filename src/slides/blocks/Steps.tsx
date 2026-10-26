@@ -49,7 +49,8 @@ export function Steps() {
           >
             <span className="bk-stp-dot" aria-hidden="true" />
             <IT i={i} k="title" className="bk-stp-t" oneLine />
-            <ItemTools i={i} />
+            {/* 이름을 비운 단계도 점은 남긴다: 점의 수와 자리가 곧 '2 / 3'이라 빼면 몇째 단계인지 읽을 수 없다 */}
+            <ItemTools i={i} keepBlank />
           </li>
         ))}
       </ol>
