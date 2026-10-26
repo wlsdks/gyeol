@@ -585,32 +585,77 @@
 }
 
 .notes {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  position: relative;
+  flex: none;
+  height: 40px;
   margin-top: 12px;
 }
 
+/* 이름은 화면 읽기 프로그램에만: 접힌 한 줄에서는 안내 문구가 이름을 대신한다 */
 .notes-label {
-  color: var(--ink-3);
-  font-size: 12px;
-  font-weight: 600;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .notes-input {
-  height: 76px;
-  padding: 10px 12px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 40px;
+  padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   font-size: 14px;
-  line-height: 1.55;
-  resize: vertical;
+  line-height: 20px;
+  overflow: hidden;
+  resize: none;
+  transition:
+    height 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.22s,
+    border-color 0.12s;
 }
 
+.notes-input:hover:not(:focus) {
+  border-color: var(--line-2);
+}
+
+/* 펼치면 위로 자라 장의 아래쪽을 덮는다(장은 움직이지 않는다) */
 .notes-input:focus {
+  z-index: 30;
+  height: min(168px, 40vh);
   border-color: var(--sel);
   outline: none;
+  box-shadow: var(--shadow-pop);
+  overflow-y: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notes-input {
+    transition: none;
+  }
+}
+
+/* 높이가 넉넉한 화면에서는 장이 너비에 먼저 막히므로 노트를 늘 펼쳐 둔다(적어 둔 노트가 한 줄로 잘려 보이지 않게) */
+@media (min-height: 820px) {
+  .notes {
+    height: 96px;
+  }
+
+  .notes-input {
+    height: 96px;
+    overflow-y: auto;
+  }
+
+  .notes-input:focus {
+    height: 96px;
+    box-shadow: none;
+  }
 }
 
 /* 오른쪽 도움말 */

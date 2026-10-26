@@ -167,12 +167,14 @@ export function SlideStage({
         {!peek && !preview && blocks.room}
       </div>
 
+      {/* 노트는 한 줄 높이로 접어 두고, 누르면 위로 펼쳐 장을 덮는다. 늘 펼쳐 두면 1280×600에서 장이 높이에 막혀
+          590px까지 줄었고, 펼칠 때 자리를 밀어내면 쓰는 동안 장이 작아졌다 커졌다 한다 */}
       <label className="notes">
         <span className="notes-label">발표자 노트</span>
         <textarea
           className="notes-input"
           value={slide.notes}
-          placeholder="발표할 때 말할 내용을 적어 두세요. 발표 화면과 내보낸 파일에는 보이지 않아요."
+          placeholder="발표자 노트: 발표할 때 말할 내용을 적어요. 발표 화면과 내보낸 파일에는 보이지 않아요."
           onChange={(e) => store.setNotes(slide.id, e.target.value)}
         />
       </label>
