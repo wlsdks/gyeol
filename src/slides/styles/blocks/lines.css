@@ -6,8 +6,8 @@
      말 한 줄의 덧붙임 위 선은 묶음 표시라서 쓰지 않는다. 칸 사이는 여백이 나눈다.
    예전에는 칸마다, 목록마다 위아래로 선을 그어 한 장에 가로선이 열 개 넘었고 선 밑에 선이 섰다(사용자: '선을 잘못 쓴 예시 그 자체') */
 
-/* 첫 항목 위 */
-.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-ev-row, .bk-sx-row, .bk-qa-item, .bk-pp-card, .sm-row, .pt-item, .br-row):first-child {
+/* 첫 항목 위. 평가표(.bk-ev-row)는 첫 줄의 위 선이 머리줄 아래 선이라(데이터의 머리) 남긴다 */
+.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-sx-row, .bk-qa-item, .bk-pp-card, .sm-row, .pt-item, .br-row):first-child {
   border-top-color: transparent;
 }
 
