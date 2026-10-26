@@ -12,7 +12,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   거꾸로 아래가 3분의 1 넘게 비었는데 묶음 사이를 벌리지 않은 장(위가 무겁다)도 잡는다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
- * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
+ * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 면이 내용과 나란한 칸보다 훨씬 큰 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -225,6 +225,32 @@ function measure(area: HTMLElement, k: number): string[] {
 const FACE_SLACK = 48
 /** 여러 단으로 흘린 목록에서 앞 단의 글 끝과 다음 단 사이가 이보다 넓으면 흩어져 보인다 (옆 칸 사이 72의 세 배) */
 const COLUMN_GAP_MAX = 72 * 3
+/** 면이 제 내용(안쪽 여백까지)과 나란한 칸의 높이보다 이만큼 넘게 크면 빈 면으로 보인다 (fitBlocks.ts의 hug는 24 밑이면 그대로 둔다. 그 두 배) */
+const FACE_OVER = 48
+
+/**
+ * 면이 있는 칸이 제 내용에 쓰는 높이(안쪽 여백까지, 캔버스 px). 내용은 줄 사이를 넓히기 전(--bk-air 없이)으로 잰다:
+ * 줄 사이를 넓혀 면을 채우면 내용이 면만큼 커 보여 놓쳤다. 잴 수 없으면 null
+ */
+function faceNeed(cell: HTMLElement, k: number): number | null {
+  const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+  const body = inner && [...inner.children].find((el) => (el as HTMLElement).offsetHeight > 0)
+  if (!inner || !body) return null
+  const air = cell.style.getPropertyValue('--bk-air')
+  if (air) cell.style.removeProperty('--bk-air')
+  let t = Infinity
+  let b = -Infinity
+  for (const el of body.children) {
+    const q = el.getBoundingClientRect()
+    if (!q.height || getComputedStyle(el).position === 'absolute' || el.closest(EDIT_UI)) continue
+    t = Math.min(t, q.top)
+    b = Math.max(b, q.bottom)
+  }
+  if (air) cell.style.setProperty('--bk-air', air)
+  if (t === Infinity) return null
+  const cs = getComputedStyle(inner)
+  return (b - t) / k + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+}
 
 /**
  * 짜임 안의 빈 곳: 면(옅은 면, 진한 면) 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것,
@@ -250,6 +276,26 @@ function inside(area: HTMLElement, k: number): string[] {
     const top = (t - ir.top) / k - parseFloat(cs.paddingTop)
     const bottom = (ir.bottom - b) / k - parseFloat(cs.paddingBottom)
     if (bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
+    // 면이 내용보다 훨씬 큰 것: 면은 제 내용과 고른 안쪽 여백만큼, 나란한 칸이 더 길면 그 높이까지만 (fitBlocks.ts의 hug).
+    // 판이 남는 높이를 면에 주면 두 줄짜리 결정 요청의 면이 본문 바닥까지 닿아 글이 면 가운데에 떠 있었다.
+    // 나란한 칸들이 그려진 위아래 범위로 견준다: 옆에 둘을 쌓았으면 둘을 합친 높이까지(옆 단 전체와 높이를 맞춘 면은 사람도 그렇게 둔다).
+    // 옆의 면도 면 높이가 아니라 제 내용으로 본다: 나란한 두 면이 같이 부풀면 서로를 핑계로 놓쳤다
+    const cr = cell.getBoundingClientRect()
+    let nt = Infinity
+    let nb = -Infinity
+    for (const other of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
+      const or = other.getBoundingClientRect()
+      if (other === cell || other.dataset.band !== cell.dataset.band || Math.min(or.bottom, cr.bottom) - Math.max(or.top, cr.top) < 1) continue
+      const fh = other.classList.contains('bk-look-plain') ? null : faceNeed(other, k)
+      const ink = fh === null ? inkSpan(other) : { t: or.top, b: or.top + fh * k }
+      if (!ink) continue
+      nt = Math.min(nt, ink.t)
+      nb = Math.max(nb, ink.b)
+    }
+    // 면은 칸의 윗선에 서므로 칸 윗선부터 옆 칸이 그려진 끝까지 (fitBlocks.ts의 hug와 같은 기준)
+    const need = Math.max(faceNeed(cell, k) ?? Infinity, nt < nb ? (nb - cr.top) / k : 0)
+    const face = cr.height / k
+    if (face - need > FACE_OVER) out.push(`${cell.dataset.type}: 면이 내용보다 ${Math.round(face - need)}px 커요(면 ${Math.round(face)}, 내용 ${Math.round(need)})`)
   }
   for (const list of area.querySelectorAll<HTMLElement>(':scope > .bk .bk-list')) {
     const items = [...list.children].filter((el) => (el as HTMLElement).offsetHeight > 0) as HTMLElement[]

@@ -9,6 +9,7 @@
  * 3-1. 거꾸로 장에 자리가 남으면(넘치는 칸이 하나도 없으면) 모든 칸의 글과 그림을 같은 비율로 단계로 키운다.
  *    내용이 적은 장에서 작은 글이 넓은 칸 한쪽에만 있으면 칸이 비어 보인다. 모든 칸을 같이 키워서 칸끼리 크기는 그대로 맞는다.
  * 3-2. 키운 뒤에도 칸에 높이가 남으면 줄이 쌓이는 부품(목록, 표, 일정 막대)은 줄 사이를 넓혀 칸 바닥까지 채운다(--bk-air, 캔버스 px, 24까지).
+ *    바탕 없는 칸만: 면이 있는 칸은 면을 내용에 맞춰 줄이고(3-4의 hug) 남는 높이는 묶음 사이와 아래로 보낸다.
  *    글자를 더 키우면 장마다 글자 크기가 들쭉날쭉해지고, 가운데에 작게 모아 두면 위아래가 빈다. 줄 사이만 넓히면 칸을 채운다.
  *    칸마다 따로 고른다: 항목 수가 다른 두 목록이 한 줄에 있어도 둘 다 칸 아래까지 닿는다. 이 값을 쓰지 않는 부품은 그대로다
  *
@@ -404,6 +405,10 @@ export function blockFitter() {
     for (const c of cells) {
       const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
       if (!inner) continue
+      // 면이 있는 칸은 줄 사이로 채우지 않는다: 면은 쌓기(hug)가 내용에 맞춰 줄이는데, 먼저 줄 사이를 넓히면 넓힌 내용이 곧 면 높이가 되어
+      // 다섯 줄 목록의 면이 본문 바닥까지 닿고 줄 사이가 글자 크기의 세 배로 벌어졌다. 옆의 짧은 면(결정 요청 두 줄)도 그 높이를 따라
+      // 면 가운데에 글이 떠 있었다. 사람이 짠 장처럼 면은 내용과 고른 안쪽 여백만큼, 남는 높이는 묶음 사이와 아래(pack)로 보낸다
+      if (!c.classList.contains('bk-look-plain')) continue
       const fits = (a: number) => {
         c.style.setProperty('--bk-air', a + 'px')
         return !crowded(inner, shapes.get(inner))
@@ -599,6 +604,69 @@ export function blockFitter() {
     return { t, b }
   }
 
+  /** 면이 있는 칸이 제 내용과 안쪽 여백에 쓰는 높이 (화면 px). 잴 수 없으면 Infinity(줄이지 않는다) */
+  function faceNeed(c: HTMLElement, k: number): number {
+    const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+    const body = inner && Array.from(inner.children).find((el) => (el as HTMLElement).offsetHeight > 0)
+    if (!inner || !body) return Infinity
+    const ir = inner.getBoundingClientRect()
+    const cs = getComputedStyle(inner)
+    const room = ir.height - (parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) * k
+    let t = Infinity
+    let b = -Infinity
+    for (const el of Array.from(body.children)) {
+      const e = el.getBoundingClientRect()
+      const es = getComputedStyle(el)
+      if (!e.height || es.position === 'absolute' || es.position === 'fixed') continue
+      t = Math.min(t, e.top)
+      b = Math.max(b, e.bottom)
+    }
+    if (t === Infinity) return Infinity
+    return c.getBoundingClientRect().height - Math.max(0, room - (b - t))
+  }
+
+  /**
+   * 쌓은 뒤 면의 아래 끝을 옆 칸이 그려진 끝에 맞춘다. hug는 쌓기 전 판의 자리로 재서, 옆에 위아래로 쌓인 바탕 없는 칸(핵심 숫자 아래 추이)이
+   * 쌓기로 올라가면 면만 그 아래로 70px 넘게 내려가 있었다. 옆에 이음표가 선 줄(바탕 없는 칸이 가운데에 서는 줄)도 옆 칸이 쌓여 있으면
+   * 위에서부터 그려져서 같이 맞춘다. 제 내용보다 짧게는 줄이지 않고, 줄인 뒤 넘치면 되돌린다
+   */
+  function tail(items: { c: HTMLElement; r: DOMRect; ink: { t: number; b: number } | null }[], dy: Map<HTMLElement, number>, k: number, base: Map<HTMLElement, { r: DOMRect; trim: number }>): void {
+    for (const x of items) {
+      if (x.c.classList.contains('bk-look-plain') || !x.ink) continue
+      const band = x.c.dataset.band
+      const near = items.filter((y) => y !== x && y.ink && y.c.dataset.band === band && Math.min(y.r.bottom, x.r.bottom) - Math.max(y.r.top, x.r.top) > 1)
+      if (!near.length) continue
+      // 가운데에 서는 바탕 없는 칸(이음표 줄에서 혼자 줄 높이를 다 쓰는)이 있으면 hug와 같이 건너뛴다
+      if (near.some((y) => y.c.classList.contains('bk-look-plain') && y.c.classList.contains('lk-row') && !y.c.classList.contains('is-stacked'))) continue
+      // 처음 자리(hug까지 마친)를 적어 두고 늘 그것에서 잰다: 다시 쌓아 옆 칸이 내려가면 줄였던 만큼 되돌린다
+      let o = base.get(x.c)
+      if (!o) base.set(x.c, (o = { r: x.r, trim: parseFloat(x.c.style.getPropertyValue('--bk-trim')) || 0 }))
+      const top = o.r.top + dy.get(x.c)!
+      let end = top + faceNeed(x.c, k)
+      for (const y of near) end = Math.max(end, y.c.classList.contains('bk-look-plain') ? y.ink!.b + dy.get(y.c)! : y.r.top + dy.get(y.c)! + faceNeed(y.c, k))
+      const cut = Math.max(0, Math.floor((o.r.bottom + dy.get(x.c)! - end) / k))
+      if (!Number.isFinite(cut)) continue
+      const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
+      const set = (v: number) => {
+        if (v > 0) x.c.style.setProperty('--bk-trim', v + 'px')
+        else x.c.style.removeProperty('--bk-trim')
+        if (inner) place(inner)
+      }
+      const was = parseFloat(x.c.style.getPropertyValue('--bk-trim')) || 0
+      // 캔버스 24px 밑이면 줄이지 않는다 (hug와 같이: 글을 적을 때마다 면이 조금씩 움직이지 않게)
+      const want = cut < 24 ? o.trim : o.trim + cut
+      if (want === was) continue
+      set(want)
+      if (inner && over(inner)) {
+        set(was)
+        continue
+      }
+      const d = (want - o.trim) * k
+      x.ink = { t: x.ink.t, b: o.r.bottom - d }
+      x.r = new DOMRect(o.r.left, o.r.top, o.r.width, o.r.height - d)
+    }
+  }
+
   /**
    * 면을 내용에 맞춰 줄이기 (맨 위 설명 3-4). 판은 본문을 늘 다 덮고 면(옅은 면, 진한 면)은 남는 높이를 차트 다음으로 받아서,
    * 한두 줄짜리 강조 상자가 700px 높이의 짙은 면이 되어 면 가운데에 글 한 줄만 떠 있었다. 발표 화면에서는 면을
@@ -621,29 +689,8 @@ export function blockFitter() {
       let need = 0
       for (const c of cs) {
         if (faced.includes(c)) {
-          const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
-          const body = inner && Array.from(inner.children).find((el) => (el as HTMLElement).offsetHeight > 0)
-          if (!inner || !body) {
-            need = Infinity
-            break
-          }
-          const ir = inner.getBoundingClientRect()
-          const cs2 = getComputedStyle(inner)
-          const room = ir.height - (parseFloat(cs2.paddingTop) + parseFloat(cs2.paddingBottom)) * k
-          let t = Infinity
-          let b = -Infinity
-          for (const el of Array.from(body.children)) {
-            const e = el.getBoundingClientRect()
-            const es = getComputedStyle(el)
-            if (!e.height || es.position === 'absolute' || es.position === 'fixed') continue
-            t = Math.min(t, e.top)
-            b = Math.max(b, e.bottom)
-          }
-          if (t === Infinity) {
-            need = Infinity
-            break
-          }
-          need = Math.max(need, c.getBoundingClientRect().height - Math.max(0, room - (b - t)))
+          need = Math.max(need, faceNeed(c, k))
+          if (!Number.isFinite(need)) break
         } else {
           const ink = drawn(c)
           if (!ink) {
@@ -705,9 +752,10 @@ export function blockFitter() {
       const key = c.dataset.band ?? c.dataset.block ?? ''
       groups.set(key, (groups.get(key) || []).concat(c))
     }
-    // 옆 이음표가 선 줄은 이음표가 칸 높이의 가운데에 서서 면을 줄이지 않는다
+    // 옆 이음표가 선 줄은 바탕 없는 칸이 칸 높이의 가운데에 서서(blocks.css) 그 줄의 면을 줄이지 않는다. 줄이 모두 면이면 줄인다:
+    // 이음표는 쌓기 끝에서 앞 칸의 그려진 것(면) 가운데로 옮긴다. 예전에는 면만 셋인 줄도 건너뛰어 숫자 한 줄짜리 면 셋이 본문 바닥까지 닿았다
     hug(
-      Array.from(groups.values()).filter((cs) => !cs.some((c) => c.classList.contains('lk-row'))),
+      Array.from(groups.values()).filter((cs) => !cs.some((c) => c.classList.contains('lk-row')) || cs.every((c) => !c.classList.contains('bk-look-plain'))),
       k,
     )
     // 칸마다 판의 자리(화면 px)와 그려진 범위, 바로 위에 있는 칸들(판에서 이 칸 위 선보다 위에서 끝나고 옆으로 겹친다)
@@ -766,10 +814,18 @@ export function blockFitter() {
     // 남는 높이를 맨 아래에만 모으면 내용이 적은 장은 위에 몰리고 아래 3분의 1이 통째로 비어 위가 무거웠다(핵심 숫자 아래에
     // 핵심 한 줄과 점 목록: 숫자 묶음과 다음 묶음이 붙어 보였다). 사람이 짠 장처럼 남는 높이를 묶음 사이와 맨 아래에 고르게 나눈다.
     // 묶음 사이는 --bk-gap만큼까지만 더 벌린다(두 배): 더 벌리면 묶음끼리 따로 떨어져 보이고, 그 너머는 맨 아래에 모은다
-    const plain = stack(0)
-    const end0 = Math.max(...items.map((x) => x.ink!.b + plain.dy.get(x.c)!))
-    const extra = plain.opened ? Math.max(0, Math.min(gap, (a.bottom - end0) / (plain.opened + 1))) : 0
-    const dy = extra >= 8 * k ? stack(extra).dy : plain.dy
+    const settle = () => {
+      const plain = stack(0)
+      const end0 = Math.max(...items.map((x) => x.ink!.b + plain.dy.get(x.c)!))
+      const extra = plain.opened ? Math.max(0, Math.min(gap, (a.bottom - end0) / (plain.opened + 1))) : 0
+      return extra >= 8 * k ? stack(extra).dy : plain.dy
+    }
+    // 쌓은 자리로 면의 아래 끝을 옆 칸에 맞추고(tail), 줄인 면으로 다시 쌓는다: 면 아래의 묶음이 줄인 만큼 올라온다.
+    // 다시 쌓으면 묶음 사이를 벌리는 몫이 조금 달라져서 한 번 더 맞춘다(옆 칸보다 면이 짧아지지 않게)
+    const base = new Map<HTMLElement, { r: DOMRect; trim: number }>()
+    tail(items, settle(), k, base)
+    tail(items, settle(), k, base)
+    const dy = settle()
     const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
     if (!head || !head.getClientRects().length) {
       const end = Math.max(...items.map((x) => x.ink!.b + dy.get(x.c)!))
