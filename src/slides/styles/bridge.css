@@ -1,21 +1,19 @@
 /* ---------- 증감 요인 (폭포) ----------
-   처음과 끝은 짙은 면 색 막대, 더한 요인은 강조색, 뺀 요인은 속이 빈 막대. 좋고 나쁨이 아니라 방향만 보인다.
+   처음과 끝은 강조색의 옅은 농담, 더한 요인은 강조색, 뺀 요인은 옅은 회색. 좋고 나쁨이 아니라 방향만 보인다.
+   처음과 끝을 짙은 면 색(남색에 가까운 검정)으로 칠하면 장에서 가장 무거운 두 덩어리가 답(무엇이 움직였나)이 아니라
+   기준 막대가 되었고, 빗금도 데이터가 아닌 잉크였다(docs/VISUAL-RULES.md 3, 4). 다른 차트의 '강조하지 않은 막대'와 같은 농담이다.
    막대 위치는 --lo, --hi(0~100), 다음 막대로 잇는 선 높이는 --link 로만 받는다. */
 
 .wf {
   --wf-gap: 16px;
-  --wf-total: var(--bold-bg);
+  --wf-total: color-mix(in srgb, var(--accent) 38%, var(--bg));
+  --wf-link: color-mix(in srgb, var(--ink-3) 45%, var(--bg));
 
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   grid-template-rows: minmax(0, 1fr) auto;
   column-gap: var(--wf-gap);
   margin-top: 24px;
-}
-
-/* 어두운 바탕에서는 짙은 면이 바탕과 가까워서 밝은 글자색 쪽으로 */
-.is-dark .wf {
-  --wf-total: color-mix(in srgb, var(--ink) 82%, var(--bg));
 }
 
 .wf-col {
@@ -63,19 +61,13 @@
   background: var(--wf-total);
 }
 
-/* 뺀 요인: 옅은 회색에 빗금. 칠한 더한 요인과 한눈에 갈리고, 얇아도 빈 칸처럼 보이지 않는다 */
+/* 뺀 요인: 옅은 회색 한 색. 강조색과 그 농담 사이에서 무채색이라 한눈에 갈린다(빗금 없이) */
 .wf-down .wf-bar {
-  --wf-hatch: color-mix(in srgb, var(--ink-3) 30%, var(--bg));
-  background:
-    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
-    color-mix(in srgb, var(--ink-3) 46%, var(--bg));
+  background: color-mix(in srgb, var(--ink-3) 46%, var(--bg));
 }
 
 .is-dark .wf-down .wf-bar {
-  --wf-hatch: color-mix(in srgb, var(--ink-3) 46%, var(--bg));
-  background:
-    repeating-linear-gradient(-45deg, transparent 0 7px, var(--wf-hatch) 7px 10px),
-    color-mix(in srgb, var(--ink-3) 72%, var(--bg));
+  background: color-mix(in srgb, var(--ink-3) 72%, var(--bg));
 }
 
 /* 다음 막대로 잇는 선: 이 막대가 끝난 높이에서 다음 막대가 시작한다 */
@@ -84,7 +76,8 @@
   bottom: calc(var(--area) * var(--link) / 100);
   left: 78%;
   width: calc(44% + var(--wf-gap));
-  border-top: 2px solid color-mix(in srgb, var(--ink-3) 45%, var(--bg));
+  /* 잇는 선은 줄 선 굵기(1px): 2px이면 막대 사이의 계단이 막대만큼 눈에 띄었다 */
+  border-top: var(--rule-hair) solid var(--wf-link);
   content: '';
 }
 
@@ -208,7 +201,8 @@
   grid-template-columns: minmax(0, min(360px, 28%)) minmax(0, 1fr);
   grid-template-rows: none;
   grid-auto-rows: minmax(min-content, 168px);
-  align-content: safe center;
+  /* 줄은 위에서부터, 남는 높이는 맨 아래에(VISUAL-RULES 6) */
+  align-content: start;
   column-gap: 48px;
   row-gap: 0;
   margin-top: 0;
@@ -276,8 +270,7 @@
   width: 0;
   height: calc(100% - var(--wf-bh));
   border-top: 0;
-  border-left: 2px solid color-mix(in srgb, var(--ink-3) 45%, var(--bg));
-  translate: -1px 0;
+  border-left: var(--rule-hair) solid var(--wf-link);
 }
 
 .va-across .wf-val {
