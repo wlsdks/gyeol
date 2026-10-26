@@ -17,6 +17,8 @@ export interface BlockEdit {
   onCellPointerDown(e: PointerEvent<HTMLElement>, block: Block): void
   /** 판을 나누는 선을 끌어 양쪽의 너비나 높이를 바꾼다 */
   onGutterPointerDown(e: PointerEvent<HTMLElement>, gutter: Gutter): void
+  /** 끄고 있는 선 (dir + key). 그 손잡이를 진하게 그린다 */
+  resizing?: string | null
   /** 고른 이음표의 자리 */
   selectedLink: LinkTarget | null
   /** 이음표를 끄는 동안 놓일 자리와 모양. 그 자리에 흐리게 미리 세운다 */

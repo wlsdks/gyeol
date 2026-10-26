@@ -253,6 +253,8 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   // 끄는 동안 창에 건 처리기. 편집기가 사라지면 끝나지 않은 끌기를 거둔다
   const startSession = usePointerSessions()
   const [selected, setSelected] = useState<string | null>(null)
+  // 끄고 있는 판의 선 (dir + 선 앞쪽 첫 부품): 그 손잡이를 진하게 (blocks.tsx의 Lines)
+  const [resizing, setResizing] = useState<string | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   // 놓은 뒤 끌던 그림이 칸으로 날아가는 동안 (id가 없으면 집어 온 카드로 돌아가 사라진다)
   const [landing, setLanding] = useState<{ id: string | null; ghost: Drag } | null>(null)
@@ -703,6 +705,13 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       // 한 번 끄는 동안은 되돌리기 한 단계 (손을 멈췄다 움직여도). 곧바로 다시 끈 것은 따로
       const key = gestureKey(`${slideRef.current.id}.line`)
       const session = startSession('is-block-resizing')
+      setResizing(`${gutter.dir}${gutter.key}`)
+      // 줄 사이 선(높이)을 끄는 동안은 위아래 커서 (styles/blocks.css)
+      document.body.classList.toggle('is-row-resizing', gutter.dir === 'v')
+      session.onEnd(() => {
+        setResizing(null)
+        document.body.classList.remove('is-row-resizing')
+      })
       session.on('pointermove', (ev) => {
         const cur = slideRef.current
         const area = measureArea(areaEl.current)
@@ -918,6 +927,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       press(e, (x, y) => startMove(b, x, y), ed ? () => caretAt(ed, sx, sy) : undefined)
     },
     onGutterPointerDown,
+    resizing,
     empty: () => (
       <div className="bk-empty">
         <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>

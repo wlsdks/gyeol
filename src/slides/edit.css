@@ -829,8 +829,10 @@ body.is-pane-sizing * {
   opacity: 0.3;
 }
 
+/* 고른 컴포넌트 곁의 옅은 손잡이(위 규칙)보다 세게: 올리거나 끄는 동안에도 옅게 남아 잡았는지 알 수 없었다 */
 .bk-line:hover .bk-line-grip,
-.bk-line.is-active .bk-line-grip {
+.bk-line.is-active .bk-line-grip,
+.bk-area.is-live .bk-line.is-near:is(:hover, .is-active) .bk-line-grip {
   opacity: 1;
 }
 

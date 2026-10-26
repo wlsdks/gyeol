@@ -316,7 +316,7 @@ function Lines({ gutters, blocks, live }: { gutters: Gutter[]; blocks: Block[]; 
         lineParts(g, blocks).map(({ from, to }) => (
           <div
             key={`${g.dir}${g.at}-${from}-${to}-${g.key}`}
-            className={cx('bk-line', `is-${g.dir}`, near(g, from, to) && 'is-near')}
+            className={cx('bk-line', `is-${g.dir}`, near(g, from, to) && 'is-near', live.resizing === `${g.dir}${g.key}` && 'is-active')}
             style={{ '--at': g.at, '--from': from, '--to': to } as React.CSSProperties}
             role="separator"
             aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
