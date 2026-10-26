@@ -8,7 +8,7 @@
   display: grid;
   grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
 .sm:is([data-n='2'], [data-n='3']) {
@@ -76,10 +76,8 @@
   gap: 28px;
   padding: 44px 52px;
   border: 0;
-  /* 칸마다 위 머리 괘선과 아래 줄 선(요점의 타일과 같은 꼴). 옅은 회색 둥근 면은 흔한 서식처럼 보였다 */
-  box-shadow:
-    inset 0 var(--rule-head) 0 var(--ink),
-    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
+  /* 칸마다 위에 옅은 줄 선 하나(요점의 타일과 같은 꼴). 옅은 회색 둥근 면은 흔한 서식처럼 보였다 */
+  box-shadow: inset 0 var(--rule) 0 var(--line);
 }
 
 .va-grid .sm-body {

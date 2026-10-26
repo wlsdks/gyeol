@@ -4,7 +4,7 @@
   display: grid;
   grid-auto-rows: minmax(min-content, 1fr);
   max-height: 100%;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
 .pt:is([data-n='1'], [data-n='2']) {
@@ -85,7 +85,7 @@
   align-content: start;
   gap: 28px;
   padding-top: 40px;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   border-bottom: 0;
 }
 
@@ -160,11 +160,9 @@
   gap: 32px;
   padding: 52px 56px 56px;
   border: 0;
-  /* 면을 칠하지 않고 위 머리 괘선과 아래 줄 선 사이에 묶는다(컴포넌트의 '위아래 선'과 같은 꼴). 옅은 회색 둥근 타일이 나란한
-     꼴은 흔한 서식처럼 보였다. 안쪽 여백은 면일 때 그대로 */
-  box-shadow:
-    inset 0 var(--rule-head) 0 var(--ink),
-    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
+  /* 면을 칠하지 않고 타일마다 위에 옅은 줄 선 하나(항목을 나누는 선). 옅은 회색 둥근 타일은 흔한 서식처럼 보였고, 위아래 굵은 선으로
+     묶으면 타일마다 갇혀 표 칸처럼 보였다(핵심 숫자의 카드와 같은 꼴). 안쪽 여백은 면일 때 그대로 */
+  box-shadow: inset 0 var(--rule) 0 var(--line);
 }
 
 .va-tiles .pt-title {

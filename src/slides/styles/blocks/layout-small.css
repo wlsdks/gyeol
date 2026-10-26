@@ -141,14 +141,6 @@
   --pr-top: clamp(28px, 4.5cqh, 44px);
 }
 
-.bk-in .pr-plan.is-hl {
-  --pr-side: clamp(32px, 5cqh, 48px);
-}
-
-/* 장 한 장을 다 쓰는 안 하나의 판(위아래 64px)은 칸에서는 줄 높이를 너무 먹는다 */
-:not(.va-rows) > .bk-in .pr[data-n='1'] > .pr-plan.is-hl {
-  padding: var(--pr-top) calc(var(--pr-side) * 1.5);
-}
 
 /* 표 모양의 줄은 칸 높이를 나눠 쓰되, 가장 낮을 때도 줄 선과 글 사이를 둔다 */
 .va-rows > .bk-in .pr-plan {

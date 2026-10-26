@@ -150,7 +150,7 @@
   grid-column: 2;
   align-self: end;
   padding-top: 40px;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   color: var(--ink);
   font-weight: 700;
 }
@@ -167,9 +167,9 @@
   grid-row: 1 / span 2;
 }
 
-/* 모양: 카드. 숫자마다 따로따로: 면을 칠하지 않고 위 머리 괘선과 아래 줄 선 사이에 묶는다(컴포넌트의 '위아래 선'과 같은 꼴).
-   예전의 옅은 회색 둥근 카드가 나란한 꼴은 흔한 대시보드처럼 보였다. 안쪽 여백은 면일 때 그대로 두어 숫자 크기가 같다.
-   진한 면을 고른 컴포넌트는 카드마다 짙은 면(blocks/looks.css) */
+/* 모양: 카드. 숫자마다 따로따로: 면을 칠하지 않고 카드마다 위에 옅은 줄 선 하나(항목을 나누는 선). 예전의 옅은 회색 둥근 카드는
+   흔한 대시보드처럼 보였고, 위아래 굵은 선으로 묶으면 카드마다 갇혀 표 칸처럼 보였고 장의 가로선이 너무 많았다.
+   안쪽 여백은 면일 때 그대로 두어 숫자 크기가 같다 */
 .va-cards .kp {
   --kp-gap: var(--gap);
   align-content: stretch;
@@ -179,9 +179,7 @@
 
 .va-cards .kp-item {
   padding: 52px 56px 56px;
-  box-shadow:
-    inset 0 var(--rule-head) 0 var(--ink),
-    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
+  box-shadow: inset 0 var(--rule) 0 var(--line);
 }
 
 :is(.va-cards, .va-focus) .kp-item::before {

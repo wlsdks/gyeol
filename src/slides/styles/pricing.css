@@ -7,9 +7,9 @@
   gap: var(--gap);
 }
 
-/* 안마다 위에 선을 긋고 그 아래에 이름, 비용, 내용을 쌓는다. 추천안만 짙은 면(--bold-bg)에 올린다.
-   예전에는 안마다 회색 판을 깔고 추천안에 둥근 '추천' 표를 달아서, 웹 서비스의 요금제 카드처럼 보였다.
-   선 아래 여백과 짙은 면의 위 여백이 같아서(--pr-top) 안끼리 이름과 비용이 한 줄에 맞는다 */
+/* 안마다 위에 선을 긋고 그 아래에 이름, 비용, 내용을 쌓는다. 추천안은 그 선을 강조색으로 굵게, 비용을 강조색으로.
+   예전에는 안마다 회색 판을 깔고 추천안에 둥근 '추천' 표를 달아서 웹 서비스의 요금제 카드처럼 보였고, 그 뒤에는 추천안만 짙은 면으로
+   칠해 상자 하나가 튀었다(사용자: '박스 전체가 색인 건 안 된다'). 안끼리 이름과 비용이 한 줄에 맞는다 */
 .pr-plan {
   --pr-top: 44px;
   position: relative;
@@ -18,32 +18,16 @@
   flex-direction: column;
   min-height: 0;
   padding: var(--pr-top) 0 0;
-  border-top: var(--rule) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
-/* 추천안은 넓은 면이라 쨍한 강조색 대신 색 면(--bold-bg)으로 깊게. 면의 위 끝은 옆 안의 선과 같은 높이(선만큼 투명한 테두리) */
+/* 추천안: 위 선과 비용을 강조색으로. 선의 아래 끝이 옆 안의 선과 같은 높이라 이름과 비용이 한 줄에 선다 */
 .pr-plan.is-hl {
-  --pr-side: 48px;
-  padding: var(--pr-top) var(--pr-side) var(--pr-side);
-  border-top-color: transparent;
-  border-radius: var(--r-panel);
-  background: var(--bold-bg);
-  color: var(--bold-ink);
+  border-top-color: var(--accent);
 }
 
-/* 어두운 테마에서 밝은 강조색 면은 붕 떠 보인다. 깊은 면에 강조색 테두리로 */
-.is-dark .pr-plan.is-hl {
-  background: var(--bold-bg);
-  box-shadow: inset 0 0 0 3px var(--accent);
-  color: var(--ink);
-}
-
-.is-dark .pr-plan.is-hl .pr-price {
+.pr-plan.is-hl .pr-price {
   color: var(--accent);
-}
-
-.is-dark .pr-plan.is-hl .pr-body {
-  border-color: var(--bold-line);
 }
 
 .pr-top {
@@ -67,13 +51,6 @@
   line-height: 1.2;
 }
 
-.pr-plan.is-hl .pr-tag {
-  color: var(--bold-accent);
-}
-
-.is-dark .pr-plan.is-hl .pr-tag {
-  color: var(--accent);
-}
 
 .pr-price {
   --fs: 62px;
@@ -98,21 +75,8 @@
   line-height: 1.85;
 }
 
-.pr-plan.is-hl :is(.pr-meta, .pr-body) {
-  color: inherit;
-}
-
-.pr-plan.is-hl .pr-meta {
-  opacity: var(--o-mute);
-}
-
-.pr-plan.is-hl .pr-body {
-  border-color: var(--bold-line);
-  opacity: var(--o-sub);
-}
-
 /* 장 한 장을 다 쓸 때도 안마다 내용 높이로 서고 묶음째 본문 가운데에(컴포넌트 칸의 안 비교와 같이, blocks/layout.css).
-   본문 높이까지 늘이면 추천안의 짙은 면만 아래가 비었다(위 50px, 아래 230px). 안끼리는 위에서부터 맞춰 이름과 비용이 한 줄에 선다.
+   본문 높이까지 늘이면 추천안만 아래가 비었다(위 50px, 아래 230px). 안끼리는 위에서부터 맞춰 이름과 비용이 한 줄에 선다.
    표 모양은 줄이 높이를 나눠 쓰고, 안이 하나면 아래 규칙이 판 하나의 자리를 정한다 */
 .l-pricing:not(.va-rows) .pr:not([data-n='1']) {
   align-content: safe center;
@@ -130,12 +94,8 @@
   padding: var(--pr-top) 0 0;
 }
 
-:where(.pr[data-n='1']) > .pr-plan.is-hl {
-  padding: 64px 80px;
-}
-
-/* 추천으로 고르지 않은 안 하나는 면이 없어서, 장 높이를 다 쓰면 위의 선과 가운데의 글이 한참 떨어진다. 선과 글을 한 덩어리로 가운데에 */
-:where(.pr[data-n='1']) > .pr-plan:not(.is-hl) {
+/* 안 하나는 장 높이를 다 쓰면 위의 선과 가운데의 글이 한참 떨어진다. 선과 글을 한 덩어리로 가운데에 */
+:where(.pr[data-n='1']) > .pr-plan {
   align-self: center;
 }
 
@@ -173,18 +133,14 @@
   border-left: var(--rule) solid var(--line);
 }
 
-:where(.pr[data-n='1']) .pr-plan.is-hl .pr-body {
-  border-color: var(--bold-line);
-}
-
-/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄만 옅은 강조색 바탕 */
+/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄은 이름과 비용을 강조색으로(줄을 칠하지 않는다) */
 .va-rows .pr,
 .va-rows .pr[data-n='1'] {
   grid-auto-flow: row;
   grid-auto-columns: auto;
   grid-auto-rows: minmax(min-content, 1fr);
   gap: 0;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
 .va-rows .pr:is([data-n='1'], [data-n='2']) {
@@ -200,6 +156,7 @@
   column-gap: 56px;
   align-content: center;
   align-self: stretch;
+  margin-top: 0;
   padding: 0 40px;
   border-top: 0;
   border-bottom: var(--rule) solid var(--line);
@@ -209,10 +166,6 @@
   color: var(--ink);
 }
 
-.va-rows .pr-plan.is-hl,
-.is-dark.va-rows .pr-plan.is-hl {
-  background: var(--accent-soft);
-}
 
 .va-rows .pr-top {
   grid-row: 1 / span 2;
@@ -252,12 +205,6 @@
   opacity: 1;
 }
 
-.va-rows .pr-plan.is-hl .pr-meta {
-  color: var(--ink-3);
-  opacity: 1;
-}
-
-.va-rows .pr-plan.is-hl .pr-tag,
-.is-dark.va-rows .pr-plan.is-hl .pr-tag {
+.va-rows .pr-plan.is-hl .pr-name {
   color: var(--accent);
 }
