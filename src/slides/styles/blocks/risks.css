@@ -1,11 +1,12 @@
 /* ---------- 걱정과 대책 ---------- */
 
+/* 걱정, 꺾쇠, 대책 사이는 넉넉히(48px): 32px이던 때는 다른 컴포넌트와 한 장에 놓이면 세 칸이 붙어 답답했다(사용자 지적) */
 .bk-rk-head,
 .bk-rk-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1.15fr);
   align-items: center;
-  column-gap: 32px;
+  column-gap: 48px;
 }
 
 .bk-rk-head {
@@ -24,13 +25,18 @@
   grid-column: 3;
 }
 
+/* 줄 선은 줄 사이에만: 머리 아래 선이 첫 줄 위를 맡고, 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2) */
 .bk-rk-row {
-  padding: calc(26px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  padding: calc(32px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-bottom: var(--rule-hair) solid var(--line);
 }
 
+.bk-rk-row:last-child {
+  border-bottom: 0;
+}
+
 .bk-rk-list[data-n='4'] .bk-rk-row {
-  padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
+  padding: calc(24px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
 .bk-rk-t {
@@ -67,14 +73,13 @@
 
   .bk-rk-row {
     grid-template-columns: 36px minmax(0, 1fr);
-    row-gap: 8px;
-    column-gap: 16px;
-    border-bottom: 0;
-    border-top: var(--rule-hair) solid var(--line);
+    row-gap: 12px;
+    column-gap: 20px;
   }
 
-  .bk-rk-row:last-child {
-    border-bottom: var(--rule-hair) solid var(--line);
+  /* 머리가 없으니 첫 줄은 맨 위에 붙는다 */
+  .bk-rk-list:is([data-n]) > .bk-rk-row:first-child {
+    padding-top: 0;
   }
 
   .bk-rk-t {
