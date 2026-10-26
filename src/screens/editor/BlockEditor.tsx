@@ -698,8 +698,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       e.preventDefault()
       e.stopPropagation()
       leaveTyping()
-      // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 끄는 동안 한 번만 까닭을 알린다
-      let told = false
+      // 더 끌 수 없는 쪽으로 끌면 손잡이가 꿈쩍하지 않아 고장처럼 보인다. 까닭을 알린다: 같은 까닭은 끄는 동안 한 번만.
+      // 손을 떼지 않고 반대쪽 끝에 닿으면 그쪽 까닭을 (한 번만 알리던 때는 앞서 띄운 다른 컴포넌트의 까닭이 그대로 떠 있었다)
+      let told = ''
       let g = gutter
       const startY = e.clientY
       // 한 번 끄는 동안은 되돌리기 한 단계 (손을 멈췄다 움직여도). 곧바로 다시 끈 것은 따로
@@ -726,10 +727,11 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
             : gutter.at + Math.round(((ev.clientY - startY) / area.k) * BOARD_ROWS / (area.size.h + BLOCK_GAP))
         if (to === g.at) return
         const blocks = cur.blocks ?? []
-        const limit = told ? null : gutterLimit(blocks, g, to, area.size.h)
-        if (limit) {
-          told = true
-          toast.show(narrowText(limit), undefined, 4000)
+        const limit = gutterLimit(blocks, g, to, area.size.h)
+        const why = limit ? narrowText(limit) : ''
+        if (why && why !== told) {
+          told = why
+          toast.show(why, undefined, 4000)
         }
         const next = dragGutter(blocks, g, to, area.size.h)
         if (!next) return
