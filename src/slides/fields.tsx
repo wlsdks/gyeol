@@ -328,6 +328,7 @@ function Editable({
           }
           if (e.key === 'Tab' && !e.nativeEvent.isComposing && focusNextField(e.currentTarget, e.shiftKey ? -1 : 1)) e.preventDefault()
         }}
+        onDoubleClick={(e) => selectWord(e.currentTarget)}
         onPaste={(e) => {
           e.preventDefault()
           // 서식 없이 글만. 윈도우의 줄 끝(\r\n), 엑셀 칸 사이의 탭, 붙지 않는 빈칸은 보통 글로 바꾸고 앞뒤의 빈 줄은 뺀다:
@@ -342,6 +343,49 @@ function Editable({
       />
     </Tag>
   )
+}
+
+/**
+ * 두 번 눌러 고른 낱말을 띄어 쓴 말 하나(어절)로 넓힌다(파워포인트처럼). 크롬은 숫자와 한글 사이도 낱말 경계로 봐서 '20분'을
+ * 두 번 누르면 20만 골라 '30분'을 치면 '30분분'이 됐고, 칸의 마지막 글자 오른쪽 반을 두 번 누르면 아무것도 고르지 않아 친 글이
+ * 뒤에 붙었다. 괄호, 따옴표, 문장 부호에서는 끊는다(숫자 사이의 쉼표, 점, 쌍점, 빗금은 숫자의 일부: 1,200명, 4.8억, 10:30).
+ * 빈칸 위를 두 번 누른 것은 그대로 둔다
+ */
+function selectWord(el: HTMLElement) {
+  const sel = getSelection()
+  if (!sel?.rangeCount || !sel.anchorNode || !el.contains(sel.anchorNode)) return
+  const r = sel.getRangeAt(0)
+  // 빈칸이나 문장 부호만 고른 것(두 번 누른 곳이 그 위)은 그대로 둔다
+  const marks = /[\s()[\]{}<>«»"'“”‘’,.!?;:…·/]/
+  const picked = r.toString()
+  if (picked && [...picked].every((c) => marks.test(c))) return
+  // 칸의 글에서 몇째 글자인지 (숫자 칸은 단위 칸(span)으로 나뉘어 글 마디가 여럿이다)
+  const at = (node: Node, offset: number) => {
+    const pre = document.createRange()
+    pre.setStart(el, 0)
+    pre.setEnd(node, offset)
+    return pre.toString().length
+  }
+  const text = el.textContent ?? ''
+  const cut = (i: number) => marks.test(text[i]) && !(/[,.:/]/.test(text[i]) && /\d/.test(text[i - 1] ?? '') && /\d/.test(text[i + 1] ?? ''))
+  let s = at(r.startContainer, r.startOffset)
+  let e = at(r.endContainer, r.endOffset)
+  // 윈도우의 크롬은 낱말 뒤의 빈칸까지 고른다. 끊는 글자를 먼저 빼고 넓힌다
+  while (s < e && cut(s)) s++
+  while (e > s && cut(e - 1)) e--
+  while (s > 0 && !cut(s - 1)) s--
+  while (e < text.length && !cut(e)) e++
+  if (s >= e) return
+  const point = (n: number): [Node, number] => {
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    for (let t = walk.nextNode(); t; t = walk.nextNode()) {
+      const len = (t as Text).length
+      if (n <= len) return [t, n]
+      n -= len
+    }
+    return [el, el.childNodes.length]
+  }
+  sel.setBaseAndExtent(...point(s), ...point(e))
 }
 
 /**
