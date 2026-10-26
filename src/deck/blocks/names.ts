@@ -2,7 +2,6 @@
 
 import { LAYOUTS } from '../layouts'
 import type { Block, Slide } from '../types'
-import { BOARD_COLS, BOARD_ROWS } from './board'
 import { BLOCKS } from './catalog'
 import { allBlocks } from './cells'
 
@@ -11,14 +10,17 @@ import { allBlocks } from './cells'
  * 빈칸 목록에 '예상 질문 1의 질문'이 두 번 나오면 어느 부품의 칸인지 알 수 없다
  */
 export function blockNames(blocks: Block[]): Map<string, string> {
-  // 판을 셋으로 나눠 부품 가운데가 드는 곳으로 부른다 (위아래로 둘이면 위·아래, 셋이면 가운데 줄까지)
-  const row = (b: Block) => {
-    const c = (b.at!.y + b.at!.h / 2) / BOARD_ROWS
-    return c < 1 / 3 ? '위' : c > 2 / 3 ? '아래' : '가운데 줄'
+  // 같은 부품끼리 견준 자리로 부른다 (위아래로 둘이면 위·아래, 셋이면 가운데 줄까지). 판을 셋으로 나눠 부품 가운데가 드는 곳으로
+  // 부르던 때는, 남는 높이를 맨 아래 부품이 다 받으면(board.ts의 share) 위아래로 둘인데 아래 것이 '가운데 줄'이 되었다
+  const row = (b: Block, others: Block[]) => {
+    const c = b.at!.y + b.at!.h / 2
+    const cs = others.map((o) => o.at!.y + o.at!.h / 2)
+    return cs.every((x) => x > c) ? '위' : cs.every((x) => x < c) ? '아래' : '가운데 줄'
   }
-  const col = (b: Block) => {
-    const c = (b.at!.x + b.at!.w / 2) / BOARD_COLS
-    return c < 1 / 3 ? '왼쪽' : c > 2 / 3 ? '오른쪽' : '가운데'
+  const col = (b: Block, others: Block[]) => {
+    const c = b.at!.x + b.at!.w / 2
+    const cs = others.map((o) => o.at!.x + o.at!.w / 2)
+    return cs.every((x) => x > c) ? '왼쪽' : cs.every((x) => x < c) ? '오른쪽' : '가운데'
   }
   const overlapY = (a: Block, b: Block) => a.at!.y < b.at!.y + b.at!.h && b.at!.y < a.at!.y + a.at!.h
   const out = new Map<string, string>()
@@ -29,7 +31,9 @@ export function blockNames(blocks: Block[]): Map<string, string> {
       out.set(b.id, name)
       continue
     }
-    const where = [same.some((o) => !overlapY(o, b)) && row(b), same.some((o) => overlapY(o, b)) && col(b)].filter(Boolean)
+    const apart = same.filter((o) => !overlapY(o, b))
+    const beside = same.filter((o) => overlapY(o, b))
+    const where = [apart.length > 0 && row(b, apart), beside.length > 0 && col(b, beside)].filter(Boolean)
     out.set(b.id, where.length ? `${where.join(' ')} ${name}` : name)
   }
   return out

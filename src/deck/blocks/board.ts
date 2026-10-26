@@ -203,9 +203,12 @@ class Measure {
  * 아니면 바라는 크기의 비율대로 늘이거나 줄인 뒤, 모자란 자식에게 여유가 큰 자식부터 하나씩 내준다.
  * 남는 길이는 받는 차례(takes, 차트 2 > 면 1 > 글과 숫자 0)가 가장 높은 자식들이 받는다: 글 목록이 남는 높이를 받으면
  * 글 위아래가 비지만, 차트는 커지고 면은 면째 커진다. 모두 0이면 모두가 바라는 크기의 비율대로.
+ * pile이면(위아래로 쌓은 가지) 모두 0일 때 남는 길이를 끝 자식이 다 받는다: 글과 숫자만 쌓은 장에서 비율대로 나누면
+ * 칸마다 내용 아래가 조금씩 비어 부품 사이가 칸마다 들쭉날쭉 벌어졌다(부제 아래 200px, 핵심 한 줄과 인용 사이 130px).
+ * 사람이 짠 장처럼 이어진 내용은 붙여 두고 남는 자리는 맨 아래 한곳에 모은다(그리는 쪽의 위에서부터 쌓기, slides/fitBlocks.ts)
  * 가장 작은 크기의 합이 total보다 크면 null
  */
-export function share(total: number, mins: number[], wants: number[], takes: number[]): number[] | null {
+export function share(total: number, mins: number[], wants: number[], takes: number[], pile = false): number[] | null {
   if (mins.some((m) => m === Infinity) || mins.reduce((a, m) => a + m, 0) > total) return null
   const w = wants.map((x, i) => Math.max(1, Math.round(x) || mins[i]))
   const sum = w.reduce((a, x) => a + x, 0)
@@ -214,7 +217,7 @@ export function share(total: number, mins: number[], wants: number[], takes: num
   else if (sum < total) {
     // 남는 길이: 받는 차례가 가장 높은 자식들이, 모두 0이면 모두가 바라는 크기의 비율대로
     const top = Math.max(0, ...takes)
-    const takers = takes.map((t) => top === 0 || t === top)
+    const takers = takes.map((t, i) => (top === 0 ? !pile || i === takes.length - 1 : t === top))
     s = [...w]
     spread(
       s,
@@ -276,6 +279,7 @@ function lay(t: Tree, r: BlockAt, m: Measure, out: Block[]): boolean {
     t.kids.map((k) => m.least(k, t.dir, cross, total)),
     t.kids.map((k) => k.want),
     t.kids.map((k) => m.takes(k)),
+    t.dir === 'v',
   )
   if (!sizes) return false
   const ok = (i: number, n: number) => (t.dir === 'h' ? m.fits(t.kids[i], n, r.h) : m.fits(t.kids[i], r.w, n))

@@ -177,7 +177,22 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
   areas.forEach((area, i) => {
     const box = area.getBoundingClientRect()
     const list = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
-    const rects = list.map((c) => c.getBoundingClientRect())
+    // 칸은 판의 자리로 본다: 발표 화면에서 줄째 올려 붙인 만큼(--bk-shift, fitBlocks.ts 3-4)은 되돌린다. 올려 붙이는 것은 그려진
+    // 내용끼리 사이를 맞추는 것이라 내용 아래의 빈 칸끼리는 겹칠 수 있다(그려진 것이 겹치는지는 checkAssembly가 본다)
+    const k = area.offsetHeight ? box.height / area.offsetHeight : 1
+    const rects = list.map((c) => {
+      const r = c.getBoundingClientRect()
+      const dy = (parseFloat(c.style.getPropertyValue('--bk-shift')) || 0) * k
+      return new DOMRect(r.left, r.top - dy, r.width, r.height)
+    })
+    // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다. 칸의 자리와 같은 때에 잰다: 아래의 칸 안 검사가
+    // 장을 스크롤하면 그 뒤에 잰 이음표만 자리가 달라져 걸치지 않은 이음표를 걸쳤다고 했다
+    for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
+      const r0 = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
+      const g = new DOMRect(r0.left, r0.top - (parseFloat(lk.style.getPropertyValue('--bk-shift')) || 0) * k, r0.width, r0.height)
+      const hit = rects.some((r) => g.left < r.right - 0.5 && g.right > r.left + 0.5 && g.top < r.bottom - 0.5 && g.bottom > r.top + 0.5)
+      if (hit) problems.push(`${i + 1}번 장: 이음표(${lk.dataset.link})가 칸에 걸쳐요`)
+    }
     // 판은 본문 상자 안에 들어가야 한다: 넘치면 아래 칸이 출처와 하단 표시 자리로 내려간다
     const over = Math.max(0, ...rects.map((r) => r.bottom - box.bottom))
     if (over > 1) problems.push(`${i + 1}번 장: 칸이 본문 상자보다 ${Math.round(over)} 내려가요`)
@@ -197,12 +212,6 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
       if (left.length) problems.push(`${what}: ${left.slice(0, 3).join(', ')}`)
       // 칸 안이 깨진 곳: 글이 줄 선에 닿거나 항목 밖으로 나가는 것, 가려진 글, 면 안의 위아래 여백 (comboChecks.ts)
       for (const p of innerProblems(cell)) problems.push(`${what}: ${p}`)
-    }
-    // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다
-    for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
-      const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
-      const hit = rects.some((r) => g.left < r.right - 0.5 && g.right > r.left + 0.5 && g.top < r.bottom - 0.5 && g.bottom > r.top + 0.5)
-      if (hit) problems.push(`${i + 1}번 장: 이음표(${lk.dataset.link})가 칸에 걸쳐요`)
     }
   })
   return { slides: areas.length, cells, problems }

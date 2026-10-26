@@ -3,7 +3,8 @@
    이음표는 그 가운데에 혼자 선다. 부품의 면이나 가장자리에 걸치면 한쪽 부품에 가려 깨져 보인다.
    옆 이음표는 앞 부품의 오른쪽 선(--lx)에서 칸 사이 가운데, 그 부품 높이의 가운데(--ly)에.
    아래 이음표는 앞 부품의 아래 선(--ly)에서 줄 사이 가운데, 그 부품 너비의 가운데(--lx)에.
-   --ld는 앞 부품이 다른 쪽으로도 비켜 섰을 때 그려진 상자의 가운데로 옮기는 몫 */
+   --ld는 앞 부품이 다른 쪽으로도 비켜 섰을 때 그려진 상자의 가운데로 옮기는 몫. 발표 화면에서 줄을 올려 붙이면(fitBlocks.ts 3-4)
+   그만큼(--bk-shift) 같이 옮긴다 */
 .bk-area {
   --lk-pad: 24px;
 }
@@ -38,12 +39,12 @@
 }
 
 .bk-link.lk-h {
-  top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2);
+  top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2 + var(--bk-shift, 0px));
   left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2);
 }
 
 .bk-link.lk-v {
-  top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2);
+  top: calc((100% + var(--bk-gap)) * var(--ly) / 12 - var(--bk-gap) / 2 + var(--bk-shift, 0px));
   left: calc((100% + var(--bk-col-gap)) * var(--lx) / 12 - var(--bk-col-gap) / 2 + var(--ld, 0) * var(--lk-pad) / 2);
 }
 

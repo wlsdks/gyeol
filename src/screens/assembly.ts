@@ -1,4 +1,4 @@
-import { blockTextLines } from '../slides/fitBlocks'
+import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
 
 /*
  * 개발용: 부품 장이 '사람이 짠 것처럼' 보이는지 보는 검사. checkCombos(combos.ts)는 잘리거나 겹치는 것만 봐서,
@@ -9,7 +9,8 @@ import { blockTextLines } from '../slides/fitBlocks'
  *   제목과 다투는 것으로 본다. 강조색이나 버금 글자색의 글은 답이나 딸린 글이라,
  *   숫자와 단위는 답이라 제목과 다투지 않는다
  * - 빈 띠: 장 머리 아래와 부품 내용 사이에 위아래로 빈 띠가 GAP_MAX보다 넓은 곳. 남는 높이는 한곳(맨 아래)에 모여야 한다.
- *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림이 그려진 범위, 면이 있는 칸은 면 전체
+ *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
+ *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것도 본다
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -27,34 +28,8 @@ type Span = { t: number; b: number }
 
 const EDIT_UI = '.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle, .bk-gutter, .bk-incoming'
 
-function painted(cs: CSSStyleDeclaration): boolean {
-  const bg = cs.backgroundColor
-  const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
-  return !clear || cs.backgroundImage !== 'none' || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
-}
-
-/** 칸에서 실제로 그려진 위아래 (화면 px). 면이 있는 칸은 칸 전체, 없으면 글 줄과 그림, 칠한 상자의 범위 */
-function inkSpan(cell: HTMLElement): Span | null {
-  const r = cell.getBoundingClientRect()
-  if (!cell.classList.contains('bk-look-plain')) return { t: r.top, b: r.bottom }
-  const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
-  if (!inner) return null
-  let t = Infinity
-  let b = -Infinity
-  const add = (x: DOMRect | { top: number; bottom: number }) => {
-    t = Math.min(t, x.top)
-    b = Math.max(b, x.bottom)
-  }
-  for (const q of blockTextLines(inner)) if (!q.n.parentElement?.closest(EDIT_UI)) add({ top: q.t, bottom: q.b })
-  for (const el of inner.querySelectorAll<HTMLElement | SVGElement>('*')) {
-    if (el.closest(EDIT_UI) || el.parentElement?.closest('svg')) continue
-    const e = el.getBoundingClientRect()
-    if (!e.width || !e.height) continue
-    if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue
-    if (el instanceof SVGElement || el.tagName === 'IMG' || painted(getComputedStyle(el))) add(e)
-  }
-  return t === Infinity ? null : { t, b }
-}
+/** 칸에서 실제로 그려진 위아래 (화면 px). 발표 화면의 쌓기와 같은 것으로 본다(fitBlocks.ts의 drawn) */
+const inkSpan = (cell: HTMLElement): Span | null => blockDrawn(cell)
 
 /** 겹치는 범위를 합친 띠들 (위에서 아래로) */
 function merge(spans: Span[]): Span[] {
@@ -104,8 +79,21 @@ function rivals(slide: HTMLElement, area: HTMLElement): string[] {
 /** 빈 띠: 장 머리 아래와 내용 사이 */
 function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   const out: string[] = []
-  const spans = [...area.querySelectorAll<HTMLElement>(':scope > .bk')].map(inkSpan).filter((s): s is Span => !!s)
+  const all = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  const inks = all.map(inkSpan)
+  const spans = inks.filter((s): s is Span => !!s)
   if (!spans.length) return out
+  // 그려진 것끼리 겹치는 곳: 발표 화면은 줄째 올려 붙여서(fitBlocks.ts 3-4) 칸이 아니라 그려진 범위로 본다
+  all.forEach((a, i) =>
+    all.slice(i + 1).forEach((b, j) => {
+      const p = inks[i]
+      const q = inks[i + 1 + j]
+      const ra = a.getBoundingClientRect()
+      const rb = b.getBoundingClientRect()
+      if (p && q && Math.min(p.b, q.b) - Math.max(p.t, q.t) > 1 && Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 1)
+        out.push(`${a.dataset.type}와 ${b.dataset.type}의 그려진 것이 겹쳐요`)
+    }),
+  )
   const merged = merge(spans)
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
@@ -119,6 +107,16 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   for (let i = 1; i < merged.length; i++) {
     const gap = (merged[i].t - merged[i - 1].b) / k
     if (gap > GAP_MAX) out.push(`부품 사이가 위아래로 ${Math.round(gap)}px 비어요`)
+  }
+  // 이음표는 그려진 것 사이의 빈자리에 혼자 서야 한다
+  for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
+    const g = (lk.querySelector('svg, .bk-link-vs') ?? lk).getBoundingClientRect()
+    const hit = all.some((c, i) => {
+      const p = inks[i]
+      const r = c.getBoundingClientRect()
+      return !!p && Math.min(p.b, g.bottom) - Math.max(p.t, g.top) > 1 && Math.min(r.right, g.right) - Math.max(r.left, g.left) > 1
+    })
+    if (hit) out.push(`이음표(${lk.dataset.link})가 그려진 것에 걸쳐요`)
   }
   return out
 }
