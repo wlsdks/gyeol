@@ -40,7 +40,7 @@ export const ASKS = [
     id: 'slide_layout',
     scope: 'slide',
     name: '더 어울리는 모양으로',
-    description: '이 장의 역할과 칸 수에 맞는 레이아웃과 모양을 골라요',
+    description: '이 장에 맞는 레이아웃을 골라요',
     prompt:
       '이 장의 역할, 칸이 비었는지, 항목 수를 보고 더 잘 맞는 레이아웃이나 같은 레이아웃의 다른 모양(variant)이 있으면 바꿔 주세요. 지금 채운 칸이 새 레이아웃에도 있는지 확인하고, 없어지는 칸이 많으면 바꾸지 마세요.',
   },
@@ -48,7 +48,7 @@ export const ASKS = [
     id: 'slide_focus',
     scope: 'slide',
     name: '핵심이 눈에 띄게',
-    description: '강조할 항목, 바탕, 움직임을 골라요',
+    description: '강조, 바탕, 움직임을 골라요',
     prompt:
       '듣는 사람이 이 장에서 가장 먼저 봐야 할 것이 눈에 띄도록 강조할 항목(highlight), 장의 바탕(tone), 발표할 때 움직임(motion)을 골라 주세요. 발표 전체에서 반대 색이나 강조색 바탕이 너무 많아지지 않게 하세요.',
   },
@@ -56,7 +56,7 @@ export const ASKS = [
     id: 'slide_guide',
     scope: 'slide',
     name: '칸 안내 다듬기',
-    description: '칸마다 무엇을 쓰면 되는지 안내를 이 보고에 맞게 고쳐요',
+    description: '칸마다 쓸 것을 알려 주는 안내를 고쳐요',
     prompt:
       '이 발표의 종류와 듣는 사람에 맞게 이 장의 안내(set_guide)와 빈 칸의 안내 문구(set_hint)를 구체적으로 다듬어 주세요. 안내 문구에는 무엇을 쓰면 되는지만 적고, 회사 이름, 사람 이름, 실제처럼 보이는 숫자는 지어내지 마세요.',
   },
@@ -64,7 +64,7 @@ export const ASKS = [
     id: 'slide_around',
     scope: 'slide',
     name: '앞뒤에 필요한 장',
-    description: '이 장 앞뒤로 빠진 장이 있으면 넣어요',
+    description: '앞뒤로 빠진 장을 넣어요',
     prompt:
       '이 장 앞뒤로 보고 흐름에 꼭 필요한데 빠진 장이 있으면 넣어 주세요(add_slide). 많아야 두 장이고, 이미 비슷한 역할의 장이 있으면 넣지 마세요.',
   },
@@ -72,7 +72,7 @@ export const ASKS = [
     id: 'deck_flow',
     scope: 'deck',
     name: '보고 흐름 점검',
-    description: '결론부터 말하도록 장 순서를 다듬고 빠진 장을 넣어요',
+    description: '결론이 먼저 오게 장 순서를 다듬어요',
     prompt:
       '듣는 사람이 결론부터 듣도록 장 순서를 다듬고, 빠진 장은 넣고, 쓰지 않는 빈 장은 빼 주세요. 지울 때는 빈 장만 지울 수 있어요.',
   },
@@ -80,7 +80,7 @@ export const ASKS = [
     id: 'deck_time',
     scope: 'deck',
     name: '시간에 맞추기',
-    description: '발표 시간에 맞게 장 수를 맞춰요',
+    description: '발표 시간에 맞게 장 수를 줄이거나 늘려요',
     prompt:
       '발표 시간(duration)과 발표 방식(method)에 맞게 보이는 장 수를 맞춰 주세요. 줄일 때는 지우지 말고 발표에서 빼기(set_hidden)를 쓰고, 결론과 결정 요청 장은 남겨 두세요.',
   },
@@ -88,7 +88,7 @@ export const ASKS = [
     id: 'deck_look',
     scope: 'deck',
     name: '테마와 움직임',
-    description: '듣는 사람에 맞게 테마, 글꼴, 움직임을 골라요',
+    description: '듣는 사람에 맞게 테마와 움직임을 골라요',
     prompt:
       '듣는 사람(audience)과 발표 방식(method)에 맞게 테마, 글꼴, 장 넘기기, 발표할 때 움직임을 골라 주세요. 장마다 바탕을 바꿀 필요가 있으면 섹션을 여는 장 위주로만 바꾸세요.',
   },

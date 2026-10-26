@@ -15,42 +15,149 @@
 }
 
 .pop-ai {
-  width: 420px;
-  /* 1280×600에서도 아래 설명까지 닿게 */
+  width: 400px;
+  /* 1280×600에서도 아래 줄까지 닿게. 넘치면 창 안에서만 내린다 */
   max-height: calc(100vh - 72px);
   padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
 .ai-pop {
-  padding: 16px 18px;
+  padding: 14px 14px 0;
 }
 
-.ai-pop-toggle {
-  margin: 14px 0 4px;
-  padding: 12px 14px;
-  border-radius: var(--r-sm);
-  background: #f5f6f8;
+/* 머리: 무엇을 고르면 되는지 묻는 한 줄, 그 아래 이 PC의 사정 한 줄 */
+.ai-head {
+  margin: 0 4px 8px;
 }
 
-.ai-pop-note {
-  margin: 12px 0 0;
-  color: var(--ink-2);
-  font-size: 13px;
+.ai-head-h {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.ai-pop-note.is-warn {
-  padding: 10px 12px;
+.ai-env {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 3px 0 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* 있으면 채운 점, 없으면 빈 점. 색을 더하지 않고 모양으로만 가른다 */
+.ai-env-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 50%;
+}
+
+.ai-env.is-ready .ai-env-dot {
+  border-color: var(--sel);
+  background: var(--sel);
+}
+
+.ai-env.is-warn {
+  margin-top: 10px;
+  padding: 8px 10px;
   border-radius: var(--r-sm);
   background: var(--warn-bg);
   color: var(--warn-ink);
+}
+
+.ai-env .info-btn {
+  margin-left: 0;
+}
+
+/* 아래 줄: 공유 중인지(그만 보여 주기), 그리고 한 장 뒤로 넘기는 '보이는 것, 직접 연결' */
+.ai-foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px -14px 0;
+  padding: 10px 12px 10px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.ai-foot-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-2);
+}
+
+.ai-foot-on .ai-dot {
+  margin: 0;
+}
+
+.ai-foot-more {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-2);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+
+.ai-foot-more:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.ai-foot-more .icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* 한 장 뒤(보이는 것, 직접 연결) */
+.ai-more-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 12px -4px;
+}
+
+.ai-more-sec {
+  margin: 16px -14px 0;
+  padding: 14px 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ai-more-sec .ai-pop-k {
+  margin: 0;
+}
+
+.ai-pop-toggle {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--hover);
 }
 
 .ai-pop-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin: 16px 0 4px;
+  margin: 0 4px;
 }
 
 .ai-pop-k {
@@ -81,10 +188,12 @@
 }
 
 .ai-pop-more {
-  margin-top: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
+  margin: 14px 4px 0;
   font-size: 13px;
+}
+
+.ai-pop-more:last-child {
+  margin-bottom: 16px;
 }
 
 .ai-pop-more summary {
@@ -103,7 +212,7 @@
   padding: 10px 12px;
   overflow: auto;
   border-radius: var(--r-sm);
-  background: #f5f6f8;
+  background: var(--hover);
   color: var(--ink-2);
   font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -111,6 +220,7 @@
 .ai-pop-step {
   margin: 10px 0 6px;
   color: var(--ink-2);
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -146,19 +256,11 @@
   user-select: all;
 }
 
-.ask-fail {
-  margin: 0 10px 8px;
-}
-
 .copy-fail {
   margin: 6px 0 0;
   color: var(--warn-ink);
   font-size: 12.5px;
   line-height: 1.5;
-}
-
-.ask-note.copy-fail {
-  margin: 4px 10px 6px;
 }
 
 .icon-btn-sm {
