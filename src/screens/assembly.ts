@@ -451,7 +451,7 @@ function floating(area: HTMLElement, k: number): string[] {
 
 /** 그려진 부품 장마다 위계, 빈 띠, 글 폭을 본다. 없으면 빈 목록 */
 /*
- * 선의 경제와 칠한 상자 (사람 눈 기준, docs/DESIGN.md '지면의 말투'). 사용자가 '무슨 선이 이렇게 많아', '박스 전체가 색인 건 안 된다'고
+ * 선의 경제와 칠한 상자, 글 겹침 (사람 눈 기준, docs/VISUAL-RULES.md). 사용자가 '무슨 선이 이렇게 많아', '박스 전체가 색인 건 안 된다'고
  * 짚은 것을 숫자로 본다:
  * - 한 장의 가로선은 12줄까지(같은 높이에 나란한 선은 한 줄로 센다). 넘으면 장이 표 칸처럼 갇혀 보였다.
  * - 40px 안에 두 선이 겹쳐 서지 않는다(사이에 글이 없으면): 위 컴포넌트의 아래 선과 아래 컴포넌트의 위 선이 붙은 두 겹.
@@ -461,28 +461,37 @@ function floating(area: HTMLElement, k: number): string[] {
 const LINE_ROWS_MAX = 12
 const DOUBLE_GAP = 40
 
-type Line = { y: number; x1: number; x2: number; w: number }
+type Line = { y: number; x1: number; x2: number; w: number; dark: boolean; section: boolean }
 
 function linesOf(area: HTMLElement, k: number): Line[] {
   const out: Line[] = []
+  const ink = getComputedStyle(area).color
+  let dark = false
+  let section = false
   const add = (y: number, x1: number, x2: number, w: number) => {
-    if (x2 - x1 >= 60 * k && w > 0) out.push({ y, x1, x2, w: Math.round(w * 10) / 10 })
+    if (x2 - x1 >= 60 * k && w > 0) out.push({ y, x1, x2, w: Math.round(w * 10) / 10, dark, section })
   }
   for (const el of area.querySelectorAll<HTMLElement>('*')) {
     if (el instanceof SVGElement || el.closest(EDIT_UI)) continue
     const s = getComputedStyle(el)
+    // 구역 선: 컴포넌트 칸이나 그 맨 바깥 짜임의 위아래 끝에 그은 선 (항목 사이 선이 아니라 묶음을 두르는 선)
+    section = el.matches('.bk, .bk > .bk-in, .bk > .bk-in > *')
     if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) continue
     const r = el.getBoundingClientRect()
     if (!r.width || !r.height) continue
+    // 굵기는 계산된 값(장 크기로 줄이기 전)이라 k로 나누지 않는다. 자리(r)만 줄어든 화면 값이다
     const seen = (c: string) => !/rgba\(.*,\s*0\)$/.test(c) && c !== 'transparent'
     const bt = s.borderTopStyle !== 'none' ? parseFloat(s.borderTopWidth) || 0 : 0
     const bb = s.borderBottomStyle !== 'none' ? parseFloat(s.borderBottomWidth) || 0 : 0
-    if (bt && seen(s.borderTopColor)) add(r.top, r.left, r.right, bt / k)
-    if (bb && seen(s.borderBottomColor)) add(r.bottom, r.left, r.right, bb / k)
+    dark = s.borderTopColor === ink
+    if (bt && seen(s.borderTopColor)) add(r.top, r.left, r.right, bt)
+    dark = s.borderBottomColor === ink
+    if (bb && seen(s.borderBottomColor)) add(r.bottom, r.left, r.right, bb)
+    dark = (s.boxShadow || '').includes(ink)
     for (const m of (s.boxShadow || '').matchAll(/inset 0(?:px)? (-?\d+(?:\.\d+)?)px 0(?:px)?/g)) {
       const v = parseFloat(m[1])
-      if (v > 0) add(r.top, r.left, r.right, v / k)
-      else if (v < 0) add(r.bottom, r.left, r.right, -v / k)
+      if (v > 0) add(r.top, r.left, r.right, v)
+      else if (v < 0) add(r.bottom, r.left, r.right, -v)
     }
   }
   return out
@@ -496,7 +505,21 @@ function lineEconomy(area: HTMLElement, k: number): string[] {
   if (rows.length > LINE_ROWS_MAX) out.push(`가로선이 ${rows.length}줄이에요(${LINE_ROWS_MAX}줄까지)`)
   const weights = [...new Set(lines.map((l) => Math.round(l.w)))]
   if (weights.length >= 3) out.push(`선 굵기가 ${weights.length}단계예요(${weights.sort((a, b) => a - b).join(', ')}px)`)
+  // 검정(글자색) 선, 2px 넘는 선은 장식이나 묶음 표시로 쓰지 않는다 (docs/VISUAL-RULES.md 2)
+  const heavy = lines.find((l) => l.dark || l.w > 2)
+  if (heavy) out.push(`${heavy.dark ? '글자색' : `${heavy.w}px`} 선이 있어요(선은 옅은 1px만)`)
+  // 구역 선(묶음을 두르는 선)은 한 장에 하나까지, 대개는 없다
+  const sections = new Set(lines.filter((l) => l.section).map((l) => Math.round(l.y / (4 * k))))
+  if (sections.size > 1) out.push(`구역 선이 ${sections.size}개예요(하나까지)`)
   const texts = blockTextLinesOf(area)
+  // 선이 글을 지나는 것(취소선처럼)
+  for (const l of lines) {
+    const hit = texts.find((t) => l.y > t.t + 3 * k && l.y < t.b - 3 * k && Math.min(t.r, l.x2) - Math.max(t.l, l.x1) > 4 * k)
+    if (hit) {
+      out.push('선이 글을 지나가요')
+      break
+    }
+  }
   for (let i = 0; i < lines.length; i++) {
     for (let j = i + 1; j < lines.length; j++) {
       const a = lines[i]
@@ -515,6 +538,27 @@ function lineEconomy(area: HTMLElement, k: number): string[] {
     }
   }
   return out
+}
+
+/** 글과 글이 겹치는 것(다른 글 줄끼리 2px 넘게). 겹치면 그 짜임은 실패다 (docs/VISUAL-RULES.md 5) */
+function textOverlap(area: HTMLElement, k: number): string[] {
+  const ls: { n: Node; t: number; b: number; l: number; r: number }[] = []
+  // 편집할 때 그림 위에 겹쳐 띄우는 입력 칸(.on-chart, 날짜의 큰 날 위 같은)은 일부러 겹친다
+  for (const inner of area.querySelectorAll<HTMLElement>('.bk-in')) for (const q of blockTextLines(inner)) if (!q.n.parentElement?.closest('.on-chart')) ls.push(q)
+  const gap = 2 * k
+  for (let i = 0; i < ls.length; i++) {
+    for (let j = i + 1; j < ls.length; j++) {
+      const a = ls[i]
+      const b = ls[j]
+      if (a.n === b.n) continue
+      if (Math.min(a.r, b.r) - Math.max(a.l, b.l) > gap && Math.min(a.b, b.b) - Math.max(a.t, b.t) > gap) {
+        const ta = (a.n.textContent ?? '').trim().slice(0, 8)
+        const tb = (b.n.textContent ?? '').trim().slice(0, 8)
+        return [`글이 겹쳐요 「${ta}」 「${tb}」`]
+      }
+    }
+  }
+  return []
 }
 
 function blockTextLinesOf(area: HTMLElement): { t: number; b: number; l: number; r: number }[] {
@@ -551,7 +595,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k), ...lineEconomy(area, k), ...paintedBoxes(area, k), ...textOverlap(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }
