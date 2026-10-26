@@ -103,3 +103,14 @@
   align-content: center;
   padding-top: 0;
 }
+
+/* 글의 폭: 문장을 쓰는 글 칸은 한 줄이 글자 크기의 24배(한글로 34자 남짓)를 넘지 않는다. 칸이 넓어도 줄을 끝까지 늘이지 않는다.
+   한 줄을 다 쓰는 칸에서 인용이 1630px, 그 옆 줄의 글은 1140px로 줄 길이가 들쭉날쭉했고, 긴 줄은 눈이 다음 줄 첫머리를 놓친다.
+   em이라 글자 크기(크게, 줄인 단계)를 따라 같이 줄고 는다. 남는 폭은 오른쪽에 모인다(왼쪽 맞춤의 글줄은 모두 같은 선에서 시작한다) */
+.slide.l-compose {
+  --measure: 24em;
+}
+
+.bk :is(.bk-msg-t, .bk-msg-s, .bk-q-t, .bk-h, .bk-body, .bk-li-t, .bk-li-b, .bk-call-t, .bk-nt-t, .bk-qa-qt, .bk-qa-at) {
+  max-width: var(--measure);
+}

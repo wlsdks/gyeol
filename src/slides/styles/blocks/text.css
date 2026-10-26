@@ -109,3 +109,36 @@
     grid-template-rows: repeat(3, auto);
   }
 }
+
+/* 한 줄을 다 쓰는 넓은 칸(1300px 넘게)의 제목과 글: 소제목을 왼쪽 반, 글을 오른쪽 반에 나란히 둔다
+   (반으로 나누면 글이 판의 가운데 선, 곧 위 줄의 반 칸 부품과 같은 선에서 시작한다).
+   글은 글 폭(--measure, 34자 남짓)에서 꺾이므로 위아래로 쌓으면 오른쪽 절반이 통째로 비고 줄만 늘어 칸이 높아졌다.
+   옆으로 눕히면 같은 높이에 들고 넓은 칸을 고르게 쓴다(큰 숫자, 전과 후를 넓은 칸에서 눕히는 것과 같은 짜임 바꾸기).
+   반씩 나눈 두 단은 반 칸 둘과 같아서 글자도 반 칸의 단계(0.84)로: 위 줄의 반 칸 제목과 글(30, 26)보다 한 단계 큰
+   36, 30으로 그려 줄마다 소제목 크기가 달랐다 */
+@container bk (min-width: 1300px) {
+  .bk-tx:has(> .bk-h) {
+    --bk-w: 0.84;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'label body' 'head body';
+    align-content: start;
+    column-gap: var(--bk-col-gap);
+  }
+
+  .bk-tx:has(> .bk-h) > .bk-label {
+    grid-area: label;
+  }
+
+  .bk-tx:has(> .bk-h) > .bk-h {
+    grid-area: head;
+    align-self: start;
+  }
+
+  .bk-tx:has(> .bk-h) > .bk-body {
+    grid-area: body;
+    align-self: start;
+    margin-top: 0;
+  }
+}

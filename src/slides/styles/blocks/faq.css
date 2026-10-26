@@ -35,7 +35,8 @@
   font-weight: var(--head-weight);
   letter-spacing: var(--head-tracking);
   line-height: 1.36;
-  text-wrap: pretty;
+  /* 한두 줄짜리 질문이라 줄 길이를 고르게 */
+  text-wrap: balance;
 }
 
 .bk-qa-a {
@@ -46,7 +47,8 @@
   --fs: var(--t-small);
   color: var(--ink-2);
   line-height: 1.5;
-  text-wrap: pretty;
+  /* 답도 두세 줄이라 고르게: pretty로는 반 칸에서 끝 줄에 '되찾아요' 한 낱말이 남았다 */
+  text-wrap: balance;
 }
 
 @container bk (min-width: 1300px) {
