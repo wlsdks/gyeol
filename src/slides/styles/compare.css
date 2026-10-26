@@ -77,6 +77,19 @@
   align-content: center;
 }
 
+/* 바뀐 뒤 쪽(오른쪽)은 늘 둘째 열에. 발표할 때 빈 칸은 그리지 않아서(fields.tsx), 앞 쪽을 비운 줄은 뒤 쪽 글이 첫째 열로 당겨져
+   '우리' 글이 '경쟁사' 아래에 섰고, 앞 쪽 머리말을 비우면 '우리'가 앞 쪽 위에 섰다(비교의 뜻이 뒤집힌다) */
+.cp-r,
+.cp-hr {
+  grid-column: 2;
+}
+
+/* 발표할 때 한쪽이 빈 줄의 꺾쇠와, 한쪽이 통째로 빈 비교의 가운데 꺾쇠는 그리지 않는다: 이을 것 없이 꺾쇠만 남았다 */
+.slide.m-final .cp-row:is(:not(:has(> .cp-l)), :not(:has(> .cp-r))) > .cp-arrow,
+.slide.m-final .cp:is(:not(:has(.cp-l)), :not(:has(.cp-r))) > .cp-arrow {
+  visibility: hidden;
+}
+
 .cp-arrow {
   position: absolute;
   top: 50%;

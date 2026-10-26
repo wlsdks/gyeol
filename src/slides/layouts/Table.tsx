@@ -35,22 +35,32 @@ export function Table() {
       <Head />
       <div className="s-body tb" data-n={items.length} style={style}>
         <div className="tb-row tb-headrow">
-          {cols.map((c) => (
-            <T key={c.head} k={c.head} as="span" className={cx('tb-h', numeric(c.key) && 'is-num')} />
-          ))}
+          {cols.map((c) =>
+            // 발표할 때 빈 칸은 그리지 않아서(fields.tsx) 빈 머리말과 빈 칸은 그 자리에 빈 칸을 둔다: 비우면 뒤 칸이 앞 열로 당겨져
+            // 담당이 '과제' 아래에, 기한이 '담당' 아래에 섰다(머리말과 줄이 어긋나 표를 거꾸로 읽는다)
+            mode === 'final' && !readField(slide, meta, c.head).trim() ? (
+              <span key={c.head} className="tb-h" />
+            ) : (
+              <T key={c.head} k={c.head} as="span" className={cx('tb-h', numeric(c.key) && 'is-num')} />
+            ),
+          )}
         </div>
         {items.map((it, i) => (
           // 마지막 줄이 합계면 위에 굵은 줄을 긋고 숫자를 굵게 (보고서 표의 관례)
           <div key={it.id} className={cx('it tb-row', highlight === i && 'is-hl', i === items.length - 1 && i > 0 && isTotalRow(it.title) && 'is-total')}>
-            {cols.map((c) => (
-              <IT
-                key={c.key}
-                i={i}
-                k={c.key}
-                className={cx('tb-cell', c.key === 'title' && 'tb-first', numeric(c.key) && 'is-num')}
-                multiline={c.key === 'body'}
-              />
-            ))}
+            {cols.map((c) =>
+              mode === 'final' && !it[c.key].trim() ? (
+                <span key={c.key} className="tb-cell" />
+              ) : (
+                <IT
+                  key={c.key}
+                  i={i}
+                  k={c.key}
+                  className={cx('tb-cell', c.key === 'title' && 'tb-first', numeric(c.key) && 'is-num')}
+                  multiline={c.key === 'body'}
+                />
+              ),
+            )}
             <ItemTools i={i} />
           </div>
         ))}

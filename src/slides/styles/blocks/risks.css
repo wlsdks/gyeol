@@ -68,6 +68,35 @@
   height: 40px;
 }
 
+/* 꺾쇠와 대책은 늘 제 열에. 발표할 때 빈 칸은 그리지 않아서(fields.tsx), 걱정을 비운 줄은 대책이 꺾쇠 열(56px)로 당겨져
+   한 줄에 한두 글자씩 세로로 섰다 */
+.bk-rk-arrow {
+  grid-column: 2;
+}
+
+.bk-rk-b {
+  grid-column: 3;
+}
+
+/* 발표할 때 걱정이나 대책 한쪽이 빈 줄은 꺾쇠를 빼고, 아무 줄도 쓰지 않은 쪽은 머리말째 빼고 남은 쪽이 줄 전체를 쓴다(빈 칸은
+   그리지 않아서 이을 것 없는 꺾쇠와 빈 열 위의 '대책'만 남고, 글은 줄마다 한쪽 절반에 몰렸다). 줄이 다 비면 머리째 뺀다:
+   머리말 아래 선만 남았다. 줄 전체를 쓰는 글은 글 폭(--measure)에서 꺾는다(blocks/base.css) */
+.slide.m-final .bk-rk-row:is(:not(:has(> .bk-rk-t)), :not(:has(> .bk-rk-b))) > .bk-rk-arrow {
+  display: none;
+}
+
+.slide.m-final .bk-rk:not(:has(.bk-rk-t)) .bk-rk-hk:not(.is-fix),
+.slide.m-final .bk-rk:not(:has(.bk-rk-b)) .bk-rk-hk.is-fix,
+.slide.m-final .bk-rk:not(:has(.bk-rk-t, .bk-rk-b)) .bk-rk-head {
+  display: none;
+}
+
+.slide.m-final .bk-rk:not(:has(.bk-rk-t)) :is(.bk-rk-b, .bk-rk-hk),
+.slide.m-final .bk-rk:not(:has(.bk-rk-b)) :is(.bk-rk-t, .bk-rk-hk) {
+  grid-column: 1 / -1;
+  max-width: var(--measure);
+}
+
 /* 좁은 칸: 걱정 아래에 대책을 들여서 */
 @container bk (max-width: 980px) {
   .bk-rk-head {
@@ -90,8 +119,13 @@
   }
 
   .bk-rk-arrow {
+    grid-column: 1;
     align-self: start;
     place-items: start;
+  }
+
+  .bk-rk-b {
+    grid-column: 2;
   }
 
   .bk-rk-arrow svg {

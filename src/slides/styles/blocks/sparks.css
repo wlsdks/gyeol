@@ -44,6 +44,25 @@
   text-align: right;
 }
 
+/* 머리의 '지금', '처음보다'와 이름을 비운 줄의 흐름 선은 늘 제 열에. 발표할 때 빈 칸은 그리지 않아서(fields.tsx), 기간을 비우면
+   '지금'이 흐름 선 위로, 이름을 비우면 흐름 선이 이름 열로 당겨져 점 하나로 줄었다 */
+.bk-sx-hk.is-now {
+  grid-column: 3;
+}
+
+.bk-sx-hk.is-chg {
+  grid-column: 4;
+}
+
+.bk-sx-row > .bk-sx-plot:first-child {
+  grid-column-start: 2;
+}
+
+/* 발표할 때 지표를 모두 비웠으면(빈 줄은 base.css의 .it-empty가 감춘다) 머리도 두지 않는다: 기간, '지금', '바로 앞보다'만 남았다 */
+.slide.m-final .bk-sx-table:not(:has(.bk-sx-name, .bk-sx-dot)) > .bk-sx-head {
+  display: none;
+}
+
 .bk-sx-row {
   align-items: center;
   padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;

@@ -53,13 +53,20 @@
   line-height: 1.4;
 }
 
+/* 내용은 늘 제 줄의 둘째 열에. 발표할 때 빈 칸은 그리지 않아서(fields.tsx), 이름을 비운 줄은 내용이 좁은 이름 열로 당겨졌다 */
 .bk-fc-v {
   --fs: var(--t-body);
+  grid-column: 2;
   /* 글 폭(--measure)에서 꺾는다: 문장을 쓰는 글 칸과 같다(blocks/base.css) */
   max-width: var(--measure);
   font-weight: 500;
   line-height: 1.45;
   text-wrap: pretty;
+}
+
+/* 발표할 때 이름을 모두 비웠으면 이름 열 없이 줄 처음부터: 빈 이름 열과 그 옆 사이만큼 내용이 들여 써졌다 */
+.slide.m-final .bk-fc-list:not(:has(.bk-fc-k)) .bk-fc-v {
+  grid-column: 1 / -1;
 }
 
 /* 좁은 칸은 이름과 내용 사이도 조금 좁게 */

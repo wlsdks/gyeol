@@ -45,6 +45,12 @@
   align-items: end;
 }
 
+/* 줄 이름을 비운 줄도 값은 둘째 열부터. 발표할 때 빈 칸은 그리지 않아서(fields.tsx), 첫 값이 이름 열로 당겨져 값이 한 칸씩
+   다른 달 아래에 섰다(마지막 달은 비고) */
+.bk-hm-row > .bk-hm-cell:first-child {
+  grid-column-start: 2;
+}
+
 /* 줄은 남는 높이를 똑같이 나눠 가진다. 숫자 한 줄보다 낮아지지는 않는다 (1fr의 바닥은 내용) */
 .bk-hm-list {
   grid-auto-rows: 1fr;
