@@ -12,7 +12,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   거꾸로 아래가 3분의 1 넘게 비었는데 묶음 사이를 벌리지 않은 장(위가 무겁다)도 잡는다.
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
- * - 짜임 안의 빈 곳: 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
+ * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -217,15 +217,36 @@ function measure(area: HTMLElement, k: number): string[] {
   return [...out]
 }
 
+/** 면 안의 빈 띠가 이보다 넓게 아래에 몰리면 (캔버스 px). 면 안의 위아래 여백은 같아 보여야 한다 */
+const FACE_SLACK = 48
 /** 여러 단으로 흘린 목록에서 앞 단의 글 끝과 다음 단 사이가 이보다 넓으면 흩어져 보인다 (옆 칸 사이 72의 세 배) */
 const COLUMN_GAP_MAX = 72 * 3
 
 /**
- * 짜임 안의 빈 곳: 여러 줄을 여러 단으로 흘린 목록에서 단 사이가 지나치게 벌어지거나 단이 고르지 않은 것
- * (단을 칸 너비로 반씩 나누면 짧은 요점이 흩어져 보였다)
+ * 짜임 안의 빈 곳: 면(옅은 면, 진한 면) 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것,
+ * 여러 줄을 여러 단으로 흘린 목록에서 단 사이가 지나치게 벌어진 것(단을 칸 너비로 반씩 나누면 짧은 요점이 흩어져 보였다)
  */
 function inside(area: HTMLElement, k: number): string[] {
   const out: string[] = []
+  for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk:not(.bk-look-plain)')) {
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    const body = inner && [...inner.children].find((el) => (el as HTMLElement).offsetHeight > 0)
+    if (!inner || !body) continue
+    let t = Infinity
+    let b = -Infinity
+    for (const el of body.children) {
+      const q = el.getBoundingClientRect()
+      if (!q.height || getComputedStyle(el).position === 'absolute' || el.closest(EDIT_UI)) continue
+      t = Math.min(t, q.top)
+      b = Math.max(b, q.bottom)
+    }
+    if (t === Infinity) continue
+    const cs = getComputedStyle(inner)
+    const ir = inner.getBoundingClientRect()
+    const top = (t - ir.top) / k - parseFloat(cs.paddingTop)
+    const bottom = (ir.bottom - b) / k - parseFloat(cs.paddingBottom)
+    if (bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
+  }
   for (const list of area.querySelectorAll<HTMLElement>(':scope > .bk .bk-list')) {
     const items = [...list.children].filter((el) => (el as HTMLElement).offsetHeight > 0) as HTMLElement[]
     const cols = new Map<number, HTMLElement[]>()
