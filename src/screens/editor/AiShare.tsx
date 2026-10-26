@@ -16,7 +16,7 @@ import { isMac, keys } from '../../lib/keys'
 import { pageProps, ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
 import { sideName } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
-import { CheckIcon, ChevronIcon, CopyIcon, Popover, SparkIcon, Toggle, useDialog } from '../ui'
+import { AskIcon, CheckIcon, ChevronIcon, CopyIcon, Popover, Toggle, useDialog } from '../ui'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_slide: '그 장이 지금은 없어요',
@@ -123,7 +123,7 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
       className="pop-ask"
       button={({ toggle, open }) => (
         <button type="button" className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')} aria-expanded={open} title="레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요" onClick={toggle}>
-          <SparkIcon />
+          <AskIcon />
           {busy ? 'AI가 보는 중' : 'AI로 다듬기'}
         </button>
       )}
@@ -162,7 +162,7 @@ export function AskStatus({ deck, job, onCancel }: { deck: Deck; job: AskJob; on
   return (
     <div className="ai-inbox" role="status">
       <span className="ai-inbox-icon is-busy" aria-hidden="true">
-        <SparkIcon />
+        <AskIcon />
       </span>
       <div className="ai-inbox-text">
         <p className="ai-inbox-h">AI에게 ‘{askOf(job.ask)?.name}’ 부탁했어요</p>
@@ -184,8 +184,9 @@ export function AiMenu({ deck, ai, ask }: { deck: Deck; ai: AiShare; ask: AiAsk 
     <Popover
       className="pop-ai"
       button={({ toggle, open }) => (
-        <button type="button" className={cx('btn btn-ghost ai-btn', deck.aiShare && ai.status && 'is-on')} aria-expanded={open} onClick={toggle}>
-          <SparkIcon />
+        // 이름은 사용법, README, MCP 안내가 모두 'AI 버튼'으로 부르므로 그대로 두고, 하는 일은 말풍선으로 알린다
+        <button type="button" className="btn btn-ghost ai-btn" title="AI에게 장 구성과 모양을 제안받아요" aria-expanded={open} onClick={toggle}>
+          <AskIcon />
           AI
           {deck.aiShare && ai.status && <span className="ai-dot" aria-label="AI에게 공유 중" />}
         </button>
@@ -304,7 +305,7 @@ export function AiInbox({ ai, onOpen }: { ai: AiShare; onOpen: (r: ChangeRequest
   return (
     <div className="ai-inbox" role="status">
       <span className="ai-inbox-icon" aria-hidden="true">
-        <SparkIcon />
+        <AskIcon />
       </span>
       <div className="ai-inbox-text">
         <p className="ai-inbox-h">{ai.requests.length > 1 ? `AI 제안이 ${ai.requests.length}개 왔어요` : 'AI 제안이 왔어요'}</p>

@@ -4,16 +4,12 @@
   position: relative;
 }
 
-.ai-btn.is-on {
-  border-color: #c9d6fb;
-  background: var(--sel-soft);
-  color: var(--sel);
-}
-
+/* 공유 중이어도 단추는 이웃(테마, 내보내기)과 같은 모양으로 두고 점 하나로만 알린다.
+   예전에는 파랗게 칠해서 위 막대에서 AI 단추만 들떠 보였고, 고른 것만 파란색이라는 화면의 약속과도 어긋났다 */
 .ai-dot {
-  width: 7px;
-  height: 7px;
-  margin-left: 2px;
+  width: 6px;
+  height: 6px;
+  margin-left: 1px;
   border-radius: 50%;
   background: var(--sel);
 }

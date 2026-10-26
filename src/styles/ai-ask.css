@@ -81,20 +81,15 @@
   line-height: 1.5;
 }
 
-.ask-btn .icon {
-  color: var(--sel);
-}
-
-/* 맡겨 둔 동안: 반짝이 그림이 천천히 숨 쉬듯 */
+/* 맡겨 둔 동안: 말풍선이 천천히 숨 쉬듯 옅어졌다 돌아온다(줄었다 커지며 들썩이지 않게) */
 .ask-btn.is-busy .icon,
 .ai-inbox-icon.is-busy svg {
-  animation: ask-breathe 1.6s ease-in-out infinite;
+  animation: ask-breathe 2s ease-in-out infinite;
 }
 
 @keyframes ask-breathe {
   50% {
     opacity: 0.35;
-    transform: scale(0.82);
   }
 }
 
