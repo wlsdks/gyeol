@@ -7,15 +7,18 @@ import { josa } from '../../lib/josa'
 
 /** 12칸 가운데 몇 칸인지를 장 너비의 몫으로 (딱 떨어지지 않으면 가까운 쪽보다 조금 넓게 읽히는 말) */
 function widthText(span: number): string {
-  const named: Record<number, string> = { 3: '4분의 1', 4: '3분의 1', 6: '절반', 8: '3분의 2', 9: '4분의 3', 12: '전체' }
-  return named[span] ?? (span < 6 ? '3분의 1' : span < 8 ? '절반' : span < 12 ? '3분의 2' : '전체')
+  const named: Record<number, string> = { 3: '4분의 1', 4: '3분의 1', 6: '절반', 8: '3분의 2', 9: '4분의 3' }
+  return named[span] ?? (span < 6 ? '3분의 1' : span < 8 ? '절반' : '3분의 2')
 }
+
+/** 그 너비가 있어야 한다는 말. 장 너비를 다 쓰는 것은 따로: '장 너비의 전체 이상이 있어야'는 말이 되지 않았다 */
+const needWidth = (span: number) => (span >= 12 ? '장 너비를 다 써야' : `장 너비의 ${widthText(span)} 이상이 있어야`)
 
 /** 판의 선을 더 끌 수 없을 때 (deck/blocks/place.ts의 gutterLimit) */
 export function narrowText(limit: SpanLimit): string {
   const name = josa(BLOCKS[limit.type].name, '은', '는')
   return limit.minSpan
-    ? `${name} 장 너비의 ${widthText(limit.minSpan)} 이상이 있어야 해서 더 좁힐 수 없어요.`
+    ? `${name} ${needWidth(limit.minSpan)} 해서 더 좁힐 수 없어요.`
     : `${name} 더 낮으면 글이 잘려서 더 줄일 수 없어요.`
 }
 
@@ -42,7 +45,7 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
       }
     case 'narrow':
       return {
-        why: `${josa(name, '은', '는')} 장 너비의 ${widthText(r.span)} 이상이 있어야 해서, 여기에 끼우면 너무 좁아져요.`,
+        why: `${josa(name, '은', '는')} ${needWidth(r.span)} 해서, 여기에 끼우면 너무 좁아져요.`,
         fix: '위나 아래에 새 줄로 놓아 보세요.',
       }
     case 'solo': {
