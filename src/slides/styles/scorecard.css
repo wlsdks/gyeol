@@ -209,6 +209,28 @@
   --fs: 74px;
 }
 
+/* 장 한 장을 다 쓸 때 달성률을 한 단계 크게(둘, 셋은 108, 넷은 90): 위에서부터 두면 본문의 절반 가까이 비었다
+   (VISUAL-RULES 6: 60~85%). 컴포넌트 칸은 칸 크기를 따르는 글자 맞추기가 따로 있어 그대로 */
+.l-scorecard.va-side .sk:is([data-n='2'], [data-n='3']) .sk-rate {
+  --fs: 108px;
+}
+
+.l-scorecard.va-side .sk[data-n='4'] .sk-rate {
+  --fs: 90px;
+}
+
+.l-scorecard.va-side .sk:is([data-n='2'], [data-n='3'], [data-n='4']) .sk-title {
+  --fs: 36px;
+}
+
+.l-scorecard.va-side .sk:is([data-n='2'], [data-n='3'], [data-n='4']) .sk-target {
+  --fs: 30px;
+}
+
+.l-scorecard.va-side .sk:is([data-n='2'], [data-n='3'], [data-n='4']) .sk-value {
+  --fs: 36px;
+}
+
 .va-side .sk-bar {
   grid-area: bar;
   align-self: center;
