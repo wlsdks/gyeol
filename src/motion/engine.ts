@@ -1018,8 +1018,6 @@ export function motionEngine(): MotionEngine {
           rise(el.querySelector('.mx-title'), at, L.y * 0.5)
           rise(el.querySelector('.mx-body'), at + 80, L.y * 0.5)
         })
-        const hl = one('.mx-cell.is-hl')
-        if (hl) run(anims, hl, [{ backgroundColor: 'transparent' }], s(t + 260 + L.step * 4), { easing: OUT, duration: d(700) })
         break
       }
       case 'position': {
