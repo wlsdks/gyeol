@@ -23,13 +23,14 @@
   line-height: 1.4;
 }
 
-/* 전체 보이기: 칸 안에서 이미지 비율(--ar) 그대로 가장 크게, 가운데에. 둥근 모서리는 칸이 아니라 이미지에.
+/* 전체 보이기: 칸 안에서 이미지 비율(--ar) 그대로 가장 크게. 가로로는 가운데, 세로로는 칸 맨 위에(VISUAL-RULES 6): 칸 가운데에
+   두면 옆 칸이 높을 때 그림만 140px 넘게 내려와 칸 가운데에 떠 보였다. 둥근 모서리는 칸이 아니라 이미지에.
    칸을 다 쓰는 회색 판 위에 이미지를 얹으면 화면 캡처 둘레에 판의 띠가 남아 그림 두 장을 겹친 것처럼 보였다.
    설명은 이미지 바로 아래 가운데에: 이미지가 칸보다 좁으면 왼쪽에 둔 설명은 이미지와 떨어져 보인다 */
 .bk-img.is-fit > .bk-img-i:not(.img-empty) {
   container-type: size;
   display: grid;
-  place-items: center;
+  place-items: start center;
   overflow: visible;
   border-radius: 0;
 }
@@ -48,13 +49,13 @@
   text-align: center;
 }
 
-/* 칸이 이미지보다 세로로 길어 이미지가 칸 너비에 맞춰지면 위아래가 남는다. 이미지는 남은 높이의 가운데에 있으니
-   설명을 그 반만큼 올려 이미지 바로 밑에 붙인다(이미지와 설명이 한 덩어리로 가운데에). 그동안 설명은 칸 바닥에 남아
+/* 칸이 이미지보다 세로로 길어 이미지가 칸 너비에 맞춰지면 아래가 남는다. 이미지는 칸 맨 위에 있으니 설명을 남은 높이만큼
+   올려 이미지 바로 밑에 붙인다(이미지와 설명이 한 덩어리로 위에, 남는 높이는 아래에). 그동안 설명은 칸 바닥에 남아
    이미지와 떨어져 보였다. 100%는 설명 자신의 높이(두 줄이어도 맞다). 움직임은 translate를 쓰므로 transform으로 */
 .bk-img.is-fit:has(> .bk-img-i:not(.img-empty)) {
   container-type: size;
 }
 
 .bk-img.is-fit:has(> .bk-img-i:not(.img-empty)) > .bk-img-c {
-  transform: translateY(calc(-1 * max(0px, (100cqh - 16px - 100% - 100cqw / var(--ar)) / 2)));
+  transform: translateY(calc(-1 * max(0px, 100cqh - 16px - 100% - 100cqw / var(--ar))));
 }
