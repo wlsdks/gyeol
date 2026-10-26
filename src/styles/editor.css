@@ -180,16 +180,12 @@
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
 }
 
-/* 오른쪽 칸은 탭(이 장 설정, 컴포넌트)을 바꿔도 폭이 같다: 탭을 바꿀 때 슬라이드 크기가 출렁이지 않게 */
+/* 오른쪽 칸은 탭(이 장 설정, 컴포넌트)을 바꿔도, 버전 기록을 열어도 폭이 같다: 슬라이드 크기가 출렁이지 않게.
+   버전 기록만 340이던 때는 열고 닫을 때마다 장과 아래 단추줄이 4px씩 오갔다 */
 .ed-body {
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr) 336px;
   min-height: 0;
-}
-
-
-.ed-body.has-versions {
-  grid-template-columns: 224px minmax(0, 1fr) 340px;
 }
 
 /* 화면에는 보이지 않고 화면 읽기 프로그램만 읽는 글 (장을 옮겼다는 알림 등) */
