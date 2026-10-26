@@ -36,7 +36,7 @@
   top: 0;
   right: 0;
   left: 0;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   content: '';
 }
 
@@ -121,7 +121,7 @@
 .va-columns .ag-item::after {
   top: 0;
   bottom: auto;
-  border-top: var(--rule-head) solid var(--ink);
+  border-top: var(--rule) solid var(--line);
   border-bottom: 0;
 }
 

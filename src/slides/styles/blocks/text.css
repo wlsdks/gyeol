@@ -55,8 +55,8 @@
   gap: calc(9px + var(--bk-air, 0px) / 2);
 }
 
-/* 항목 사이는 옅은 줄 선 하나: 사이의 반은 선 위, 반은 선 아래라 예전의 항목 사이(26px, 다섯부터 18px)와 같은 높이다.
-   점만 떠 있는 목록은 흔한 서식처럼 보였고, 줄 선이 있으면 항목이 지면의 줄처럼 한 줄씩 읽힌다 */
+/* 항목 사이는 선 없이 여백만: 사이의 반은 틈, 반은 항목 위 여백이라 예전의 항목 사이(26px, 다섯부터 18px)와 같은 높이다.
+   항목마다 줄 선을 긋던 때는 장에 가로선이 너무 많았다(차례 숫자가 이미 항목을 나눈다) */
 .bk-li {
   display: grid;
   grid-template-columns: calc(22px * var(--scale, 1) * 2.6) minmax(0, 1fr);
@@ -65,12 +65,11 @@
 }
 
 .bk-li + .bk-li {
-  padding-top: calc(13px - var(--rule) + var(--bk-air, 0px) / 2);
-  border-top: var(--rule) solid var(--line);
+  padding-top: calc(13px + var(--bk-air, 0px) / 2);
 }
 
 .bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
-  padding-top: calc(9px - var(--rule) + var(--bk-air, 0px) / 2);
+  padding-top: calc(9px + var(--bk-air, 0px) / 2);
 }
 
 /* 점 대신 차례 숫자(01, 02 …): 같은 폭 숫자, 옅은 글자색, 이름표 크기. 첫 줄의 글자 밑줄에 맞춘다(baseline).
@@ -112,11 +111,10 @@
     column-gap: var(--bk-col-gap);
   }
 
-  /* 나란히 세운 요점은 단마다 위에 줄 선을 긋는다: 한 줄짜리 짧은 요점 셋이 넓은 칸에 점 하나씩 떠 있으면 흩어져 약해 보였다.
-     선이 단을 나눠 위 줄의 핵심 숫자 단과 같은 짜임으로 읽힌다 */
+  /* 나란히 세운 요점은 선 없이 단 사이의 틈과 차례 숫자로 나눈다(단마다 위에 줄 선을 긋던 때는 칸마다 끊긴 선이 늘어섰다).
+     위 여백(28)은 소제목과 요점 사이를 한 단일 때(소제목 아래 + 항목 사이)와 비슷하게 둔다 */
   .bk-list:is([data-n='2'], [data-n='3']) > .bk-li {
     padding-top: 28px;
-    border-top: var(--rule) solid var(--line);
   }
 
   /* 두 단은 글 폭만큼만 차지하고 단 사이를 옆 칸 사이의 두 배로: 칸을 반씩 나누면 짧은 요점의 왼쪽 단과 오른쪽 단 사이가 장의 절반만큼
@@ -128,7 +126,7 @@
     gap: calc(13px + var(--bk-air, 0px) / 2) calc(var(--bk-col-gap) * 2);
   }
 
-  /* 두 단으로 흘리면 줄 선은 긋지 않는다: 오른쪽 단의 첫 항목에만 선이 서서 두 단의 윗선이 어긋났다. 항목 사이는 한 단과 같은 꼴
+  /* 두 단으로 흘리면: 항목 사이는 한 단과 같은 꼴
      (반은 틈, 반은 항목 위 여백)이라 한 단에서 두 단으로 바뀌어도 사이가 튀지 않고, 모든 항목에 위 여백을 주어 두 단의 첫 줄이 같은 높이다 */
   .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) > .bk-li {
     padding-top: calc(13px + var(--bk-air, 0px) / 2);
@@ -196,19 +194,18 @@
     gap: calc(9px + var(--bk-air, 0px) / 2);
   }
 
-  /* 한 단이면 다시 항목 사이마다 옅은 줄 선(위의 나란히 세우기, 두 단 흘리기의 선 규칙을 되돌린다) */
+  /* 한 단이면 다시 한 단의 항목 사이(위의 나란히 세우기, 두 단 흘리기의 규칙을 되돌린다) */
   .bk-bl > .bk-list > .bk-li:first-child {
     padding-top: 0;
     border-top: 0;
   }
 
   .bk-bl > .bk-list > .bk-li + .bk-li {
-    padding-top: calc(13px - var(--rule) + var(--bk-air, 0px) / 2);
-    border-top: var(--rule) solid var(--line);
+    padding-top: calc(13px + var(--bk-air, 0px) / 2);
   }
 
   .bk-bl > .bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
-    padding-top: calc(9px - var(--rule) + var(--bk-air, 0px) / 2);
+    padding-top: calc(9px + var(--bk-air, 0px) / 2);
   }
 
   .bk-bl:has(> .bk-h) {
@@ -250,7 +247,7 @@
     gap: calc(9px + var(--bk-air, 0px) / 2) calc(var(--bk-col-gap) * 2);
   }
 
-  /* 두 단으로 흘리면 줄 선은 긋지 않는다(넓은 칸의 두 단과 같다) */
+  /* 두 단으로 흘리면 넓은 칸의 두 단과 같은 꼴 */
   .bk-list:is([data-n='5'], [data-n='6']) > .bk-li {
     padding-top: calc(9px + var(--bk-air, 0px) / 2);
     border-top: 0;

@@ -90,9 +90,6 @@
   border-top: var(--rule) solid var(--line);
 }
 
-.bk-mk-row:first-child {
-  border-top-color: var(--ink);
-}
 
 .bk-mk-row:last-child {
   border-bottom: var(--rule) solid var(--line);

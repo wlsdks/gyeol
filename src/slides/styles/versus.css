@@ -77,7 +77,7 @@
   gap: 12px;
   min-height: 0;
   padding: 0 11%;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
   container: vs-pair / inline-size;
 }
 
@@ -372,9 +372,6 @@
 }
 
 /* 맨 윗줄은 표처럼 글자색 선으로 범례와 나눈다 */
-.vs-row:first-child {
-  border-top-color: var(--ink);
-}
 
 .vs-row:last-child {
   border-bottom: var(--rule) solid var(--line);

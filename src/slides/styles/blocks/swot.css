@@ -16,7 +16,7 @@
   flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(min-content, 1fr);
-  border-top: 2px solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
 .bk-sw-q {

@@ -106,7 +106,7 @@
   left: 50%;
   width: 11px;
   height: calc(var(--wf-cut) - 10px);
-  border-inline: 2px solid var(--ink-3);
+  border-inline: var(--rule) solid var(--line);
   transform: translateX(-50%) skewX(-30deg);
 }
 

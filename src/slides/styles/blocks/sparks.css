@@ -50,9 +50,6 @@
   border-top: var(--rule) solid var(--line);
 }
 
-.bk-sx-row:first-child {
-  border-top-color: var(--ink);
-}
 
 .bk-sx-row:last-child {
   border-bottom: var(--rule) solid var(--line);
@@ -209,9 +206,6 @@
     }
 
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),
-    .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(4) {
-      border-top-color: var(--ink);
-    }
 
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),
     .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(4) {

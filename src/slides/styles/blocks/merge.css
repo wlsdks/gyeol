@@ -102,7 +102,7 @@
   top: 0;
   right: 0;
   left: 0;
-  border-top: var(--rule) solid var(--ink-3);
+  border-top: var(--rule) solid var(--line);
   content: '';
 }
 

@@ -1888,9 +1888,6 @@ export function motionEngine(): MotionEngine {
       else if (effect === 'auto') {
         // 칸 안의 따로 움직이지 않는 줄과 빈 자리도 이 부품의 차례에 (장 머리의 본문 상자와 같은 까닭)
         fade(cell.querySelector(':scope > .bk-in'), 0, 360)
-        // 머리 괘선(blocks/base.css의 .bk::before)은 왼쪽에서 그어 나가고 글이 그 아래로 들어온다. 선이 먼저 서면 지면에 줄을 긋고
-        // 글을 앉히는 차례로 읽힌다. 다른 움직임을 고르면 선은 칸과 함께 움직인다
-        if (getComputedStyle(cell).getPropertyValue('--head-rule').trim() === '1') grow(cell, 0, 'x', '::before')
         if (cell.classList.contains('bk-layout')) choreo(type, (/\bva-([a-zA-Z]+)/.exec(cell.className) || [])[1] || 'base')
         else nativeAuto(cell, type)
       }

@@ -37,12 +37,12 @@
   column-gap: var(--cp-mid);
 }
 
-/* 두 쪽은 면이 아니라 머리 괘선으로 나눈다: 앞은 옅은 글자색 선, 바뀐 뒤(우리 쪽)는 강조색 선. 예전의 회색 면과 옅은 강조색 면은
-   둥근 카드 둘이 나란한 흔한 꼴이었고, 칸 높이를 다 채운 면 안에 글이 떠 보였다. 선 아래 여백은 예전 면의 위 여백 그대로다 */
+/* 두 쪽은 면이나 선이 아니라 머리말(앞은 옅은 글자색, 바뀐 뒤 우리 쪽은 강조색)과 두 쪽 사이의 틈으로 나눈다. 예전의 회색 면과
+   옅은 강조색 면은 둥근 카드 둘이 나란한 흔한 꼴이었고, 머리말 위에 선을 긋던 때는 줄 선과 겹쳐 장에 가로선이 너무 많았다.
+   머리말 위 여백은 예전 면의 위 여백 그대로다 */
 .cp-h {
   --fs: 26px;
   padding: calc(var(--cp-py) + var(--cp-end)) 0 28px;
-  border-top: var(--rule-head) solid var(--ink-3);
   font-weight: 700;
 }
 
@@ -51,7 +51,6 @@
 }
 
 .cp-hr {
-  border-top-color: var(--accent);
   color: var(--accent);
 }
 
@@ -147,12 +146,9 @@
 .va-table .cp-h {
   --fs: 26px;
   padding: 40px 0 24px;
-  border-top: 2px solid var(--line);
+  border-top: var(--rule) solid var(--line);
 }
 
-.va-table .cp-hr {
-  border-color: var(--ink);
-}
 
 .va-table :is(.cp-hl, .cp-l) {
   justify-content: flex-end;
@@ -208,7 +204,7 @@
 
 .va-apart .cp-h {
   padding: 40px 0 24px;
-  border-top: 2px solid var(--ink);
+  border-top: var(--rule) solid var(--line);
 }
 
 .va-apart :is(.cp-hl, .cp-hr) {

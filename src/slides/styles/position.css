@@ -53,8 +53,8 @@
   --pm-in-y: 44px;
   position: relative;
   min-height: 0;
-  border-bottom: 3px solid var(--ink);
-  border-left: 3px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
+  border-left: var(--rule) solid var(--line);
 }
 
 .pm-mid {
