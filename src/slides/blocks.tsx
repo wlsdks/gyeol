@@ -4,7 +4,7 @@
 // 칸 둘 이상의 숫자로 계산하는 곳(비율, 합, 차이)은 단위까지 읽어 같은 기준으로 맞춘다 (numbers.ts의 seriesIn, amountPair)
 // 부품 장만의 부품 하나의 그리기는 blocks/<이름>.tsx, 여러 부품이 같이 쓰는 조각은 blocks/parts.tsx
 
-import { useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, type ReactNode } from 'react'
 import { behind, BLOCK_LINKS, BLOCKS, blockFieldPrefix, boardInfo, byReading, foldableFields, blockItems, blockSlide, effectOf, fromOf, guttersOf, isAlone, knownBlocks, linkAt, playOrder, sameLinkTarget, shownBlocks, shownLook, speedOf, variantOfBlock, whenOf, withLink, type Gutter, type LinkTarget } from '../deck/blocks'
 import { followIndex, moveIn, presentable } from '../deck/fields'
 import type { Block, BlockLink, BlockType, NativeBlockType } from '../deck/types'
@@ -533,6 +533,22 @@ export function BlockArea() {
       ro?.disconnect()
     }
   }, [])
+  // 글을 쓰는 동안 붙잡아 둔 자리(fitBlocks.ts의 typing)는 이 본문 상자의 글 칸을 떠나면 놓는다: 다시 그려 맞추고, 옮길 칸은
+  // 새 자리로 미끄러진다(useFlip). Enter나 Esc로 쓰기를 끝내면 바뀐 것이 없어 다시 그리지 않으니 여기서 부른다
+  const [, release] = useReducer((n: number) => n + 1, 0)
+  const editing = !!live
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !editing) return
+    const out = () =>
+      requestAnimationFrame(() => {
+        if (!ref.current || ref.current.contains(document.activeElement)) return
+        changed.current = true
+        release()
+      })
+    el.addEventListener('focusout', out)
+    return () => el.removeEventListener('focusout', out)
+  }, [editing])
   useFlip(ref, !!live, slide.id)
   const setRef = (el: HTMLDivElement | null) => {
     ref.current = el

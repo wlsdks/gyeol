@@ -49,6 +49,23 @@ export function blockFitter() {
   let inks: Record<string, [number, number]> = {}
   // 움직임이 끝나기를 기다리는 본문 상자와 판 (같은 것을 여러 번 기다리지 않게)
   const waiting = new WeakSet<Element>()
+  // 편집 화면에서 글을 쓰는 동안 붙잡아 둔 자리 (본문 상자마다, typing의 설명): 판의 짜임, 눈높이로 내린 값, 칸마다 옆으로 옮긴 값
+  const held = new WeakMap<HTMLElement, { board: string; eye: number; xs: Map<string, number> }>()
+
+  /**
+   * 편집 화면에서 이 본문 상자의 글 칸에 쓰는 중인지. 쓰는 동안에는 장 전체를 옮기는 맞추기(눈높이 가운데, 단의 남는 너비)를 쓰기 전에
+   * 맞춘 값 그대로 둔다: 글자마다 다시 맞추면 안내 문구가 글로 바뀌는 첫 글자에 칸이 옆으로 700px 미끄러지거나(숫자 한 줄의 긴 안내),
+   * 줄이 늘 때마다 장 전체가 위아래로 출렁여서 쓰는 칸이 손 아래에서 달아났다. 다 쓰고 나가면 다시 맞춘다(BlockArea)
+   */
+  function typing(area: HTMLElement): boolean {
+    const el = document.activeElement
+    return !!el && el.classList.contains('ed-input') && area.classList.contains('is-live') && area.contains(el)
+  }
+
+  /** 판의 짜임 (칸마다 부품과 자리). 붙잡아 둔 자리는 짜임이 그대로일 때만 쓴다 */
+  function boardOf(cells: HTMLElement[]): string {
+    return cells.map((c) => `${c.dataset.block}@${['--x', '--y', '--w', '--h'].map((v) => c.style.getPropertyValue(v)).join(',')}`).join('|')
+  }
 
   /**
    * 안쪽 상자(.bk-in)의 글 없는 그림: 맨 바깥 svg와 읽지 않는 그림 상자(aria-hidden). 크기가 없는 것은 뺀다.
@@ -920,25 +937,37 @@ export function blockFitter() {
    * 아래에 묶을 부품이 아직 없는 소제목이 있는 장은 위에 붙인 그대로.
    * 옮긴 장은 data-eye를 붙인다(60%를 못 채운 완결된 장은 'full': 검사가 머리 아래 빈 곳과 채움을 봐준다)
    */
-  function eyeLevel(cells: HTMLElement[], area: HTMLElement): void {
-    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return
+  function eyeLevel(cells: HTMLElement[], area: HTMLElement, hold?: number): number {
+    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return 0
+    const move = hold ?? eyeMove(cells, area)
+    if (!move) return 0
+    for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))]) {
+      const was = parseFloat(el.style.getPropertyValue('--bk-shift')) || 0
+      el.style.setProperty('--bk-shift', was + move + 'px')
+    }
+    area.dataset.eye = fillOf(cells, area) < 0.6 ? 'full' : '1'
+    return move
+  }
+
+  /** 눈높이 가운데로 내릴 값 (캔버스 px). 내리지 않으면 0 */
+  function eyeMove(cells: HTMLElement[], area: HTMLElement): number {
     // 소제목은 그 아래에 묶을 부품이 있으면 완결된 묶음이라 같이 옮긴다. 아래가 빈 소제목(뒤를 기다리는 것)이 있으면 위에 붙인 그대로.
     // 소제목이 든 장을 모두 위에 붙이던 때는 소제목 묶음 둘이 나란한 장이 위 절반에 몰리고 아래 절반이 통째로 비었다
     const num = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
     const waits = (h: HTMLElement) =>
       !cells.some((o) => o !== h && num(o, '--y') >= num(h, '--y') + num(h, '--h') && num(o, '--x') < num(h, '--x') + num(h, '--w') && num(h, '--x') < num(o, '--x') + num(o, '--w'))
-    if (cells.some((c) => c.dataset.type === 'heading' && waits(c))) return
+    if (cells.some((c) => c.dataset.type === 'heading' && waits(c))) return 0
     // 장 제목이 없는 장도 같다(쌓기는 부품 하나뿐인 한 문장 장만 가운데에 둔다): 둘 이상이면 위에 붙고 아래 절반이 비었다
     const slide = area.parentElement
-    if (!slide) return
+    if (!slide) return 0
     const a = area.getBoundingClientRect()
     const k = a.height / area.offsetHeight
-    if (!k) return
+    if (!k) return 0
     let t = Infinity
     let b = -Infinity
     for (const c of cells) {
       const d = drawn(c)
-      if (!d) return
+      if (!d) return 0
       t = Math.min(t, d.t)
       b = Math.max(b, d.b)
     }
@@ -948,12 +977,7 @@ export function blockFitter() {
     const spare = a.bottom + foot - a.top - (b - t)
     // 내용은 본문 상자 밖으로는 내리지 않는다
     const move = Math.round(Math.min(a.top + spare / 2.2 - t, a.bottom - b) / k)
-    if (move < 8) return
-    for (const el of [...cells, ...Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))]) {
-      const was = parseFloat(el.style.getPropertyValue('--bk-shift')) || 0
-      el.style.setProperty('--bk-shift', was + move + 'px')
-    }
-    area.dataset.eye = fillOf(cells, area) < 0.6 ? 'full' : '1'
+    return move < 8 ? 0 : move
   }
 
   /**
@@ -1125,8 +1149,15 @@ export function blockFitter() {
    * 단(어느 칸도 가로지르지 않는 세로 경계로 나눈 묶음)의 그려진 너비를 재어, 남는 너비를 단 사이와 오른쪽 끝에 2 : 1로 나눈다
    * (단을 칸째 오른쪽으로 옮긴다, --bk-shift-x). 단 사이를 좁히지는 않는다. 면이 있는 칸(면이 칸 너비다)과 이음표가 선 줄은 그대로
    */
-  function balance(cells: HTMLElement[], area: HTMLElement): void {
+  function balance(cells: HTMLElement[], area: HTMLElement, hold?: Map<string, number>): void {
     if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return
+    if (hold) {
+      for (const c of cells) {
+        const px = hold.get(c.dataset.block ?? '')
+        if (px) c.style.setProperty('--bk-shift-x', px + 'px')
+      }
+      return
+    }
     const a = area.getBoundingClientRect()
     const k = a.width / area.offsetWidth
     if (!a.width || !k) return
@@ -1263,6 +1294,10 @@ export function blockFitter() {
           a.currentTime = end
         }
       }
+      // 글을 쓰는 중이면 쓰기 전에 맞춘 자리 그대로 (typing). 판의 짜임이 바뀌었으면(되돌리기 같은) 새로 맞춘다
+      const board = boardOf(cells)
+      const before = typing(area) ? held.get(area) : undefined
+      const hold = before?.board === board ? before : undefined
       // 크게(1.2배)의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
       const large = !!area.closest('.sz-large')
       const ladder = large ? [1 / 1.2, steps[1]] : steps
@@ -1292,7 +1327,7 @@ export function blockFitter() {
       lift(cells)
       tone(cells)
       pack(cells, area)
-      balance(cells, area)
+      balance(cells, area, hold?.xs)
       // 키우고 쌓은 뒤에도 내용이 본문 높이의 60%에 못 미치면(docs/VISUAL-RULES.md 6) 한 단계 더 키운다. 사이를 벌려 채우지 않고
       // 글자와 그림의 단계를 올려 딱 맞게. 판은 남는 높이를 맨 아래 칸(내용이 적은 날짜 한 줄 같은)에 주어서 윗줄 칸은 제 내용만큼만
       // 높아, 칸 높이로만 재면 윗줄은 키울 수 없었다. 그래서 키워 볼 때는 칸마다 남는 높이만큼 더 준 채로 재고(--bk-trim을 음수로),
@@ -1319,7 +1354,7 @@ export function blockFitter() {
             lift(cells)
             tone(cells)
             pack(cells, area)
-            balance(cells, area)
+            balance(cells, area, hold?.xs)
           }
           reset()
           setFit(more)
@@ -1400,7 +1435,8 @@ export function blockFitter() {
           }
         }
       }
-      eyeLevel(cells, area)
+      const eye = eyeLevel(cells, area, hold?.eye)
+      if (!hold) held.set(area, { board, eye, xs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0])) })
       linkAxes(cells, area)
       area.classList.remove('is-fitting')
       for (const f of flips) f.a.currentTime = f.t
