@@ -35,12 +35,15 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast);
 }
 
 .btn:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .btn-primary {
@@ -52,6 +55,11 @@
   background: #2c313b;
 }
 
+/* 누르는 동안은 올렸을 때보다 다시 짙게: 눌렀다는 것이 손끝에 보이게 */
+.btn-primary:active:not(:disabled) {
+  background: var(--ink);
+}
+
 .btn-ghost {
   border-color: var(--line-2);
   background: var(--panel);
@@ -60,6 +68,10 @@
 .btn-ghost:hover:not(:disabled) {
   border-color: #b9bec7;
   background: #f8f9fa;
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: var(--hover-2);
 }
 
 .btn-danger {
@@ -113,6 +125,9 @@
   background: none;
   color: var(--ink-2);
   cursor: pointer;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
 }
 
 .icon-btn:hover:not(:disabled) {
@@ -120,9 +135,14 @@
   color: var(--ink);
 }
 
+.icon-btn:active:not(:disabled) {
+  background: var(--press);
+}
+
+/* 쓸 수 없는 단추는 .btn과 같은 옅기로 (예전에는 0.35와 0.45로 위 막대 안에서 둘이 달랐다) */
 .icon-btn:disabled {
   cursor: default;
-  opacity: 0.35;
+  opacity: 0.4;
 }
 
 .icon-btn.is-on {
@@ -186,6 +206,18 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background var(--t-fast),
+    box-shadow var(--t-fast),
+    color var(--t-fast);
+}
+
+.seg-btn:hover:not(.is-on) {
+  color: var(--ink);
+}
+
+.seg-btn:focus-visible {
+  outline-offset: -2px;
 }
 
 .seg-btn.is-on {
@@ -440,6 +472,12 @@
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+/* 메뉴 창은 넘치면 스크롤되어(overflow) 바깥으로 그린 초점 테가 잘린다. 안쪽으로 */
+.menu-item:focus-visible {
+  outline-offset: -2px;
 }
 
 .menu-item:has(> .icon) {
@@ -450,6 +488,10 @@
 
 .menu-item:hover {
   background: var(--hover);
+}
+
+.menu-item:active {
+  background: var(--hover-2);
 }
 
 .menu-item.is-danger {
