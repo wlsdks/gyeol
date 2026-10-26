@@ -817,6 +817,8 @@ body.is-block-resizing * {
   margin: 0;
   color: var(--ink-2);
   font-size: 13px;
+  /* 1280 너비에서 두세 줄로 꺾일 때 끝 줄에 '있어요' 하나만 남지 않게 */
+  text-wrap: pretty;
 }
 
 .lib-note-btn {

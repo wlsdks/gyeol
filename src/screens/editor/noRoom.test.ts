@@ -9,6 +9,14 @@ describe('넣을 수 없는 까닭의 말', () => {
     expect(narrowText({ kind: 'block', type: 'bars', minSpan: 4 })).toContain('장 너비의 3분의 1 이상이 있어야 해서')
   })
 
+  it('높이: 넣기 전부터 넘친 장이면 넣어서 넘는다고 하지 않는다', () => {
+    expect(noRoomText({ kind: 'height', need: 800, room: 700 }, 'table', 'here').why).toBe('표를 넣으면 이 장의 컴포넌트들이 장 높이를 넘어서 글이 잘려요.')
+    const already = noRoomText({ kind: 'height', need: 900, room: 700, already: true }, 'table', 'here')
+    expect(already.why).toBe('이 장의 컴포넌트들이 이미 장 높이를 넘었어요.')
+    expect(already.fix).toBe('항목을 줄이거나 컴포넌트를 빼면 들어가요.')
+    expect(noRoomText({ kind: 'height', need: 900, room: 700, already: true }, 'bullets', 'change').fix).toBe('항목을 줄이거나 컴포넌트를 빼면 바꿀 수 있어요.')
+  })
+
   it('맞바꾸기: 두 컴포넌트를 이름으로, 같은 컴포넌트끼리면 두', () => {
     expect(noRoomText({ kind: 'swap', type: 'table' }, 'number', 'move').why).toBe('큰 숫자와 표는 크기가 맞지 않아 자리를 맞바꿀 수 없어요.')
     expect(noRoomText({ kind: 'swap', type: 'number' }, 'number', 'move').why).toBe('두 큰 숫자는 크기가 맞지 않아 자리를 맞바꿀 수 없어요.')

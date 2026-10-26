@@ -168,6 +168,11 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   const issues = useMemo(() => new Map(TYPES.map((t) => [t, blocks.issueFor(t)])), [slide, areaH])
   // 어느 부품도 들어가지 않으면(개수가 찼거나 높이가 모자라) 위에 한 번 더 알린다. 카드마다의 잠금 표시는 그대로 둔다
   const full = counted || (slide.layout === 'compose' && TYPES.every((t) => issues.get(t)))
+  // 넣기 전부터 장 높이를 넘은 장: '하나를 빼면 더 넣을 수 있어요'라고 했는데 작은 것을 빼면 그대로 잠겨 있었다
+  const over = TYPES.some((t) => {
+    const why = issues.get(t)
+    return why?.kind === 'height' && why.already
+  })
   // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
   const note = closed
     ? '표지와 섹션 장에는 컴포넌트를 넣지 않아요'
@@ -175,7 +180,9 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
       ? full
         ? counted
           ? `한 장에는 ${MAX_BLOCKS}개까지 넣어요. 하나를 빼면 더 넣을 수 있어요`
-          : '이 장은 자리가 다 찼어요. 하나를 빼면 더 넣을 수 있어요'
+          : over
+            ? '이 장은 이미 넘쳤어요. 항목이나 컴포넌트를 줄이면 더 넣을 수 있어요'
+            : '이 장은 자리가 다 찼어요. 하나를 빼면 더 넣을 수 있어요'
         : null
       : '넣으면 컴포넌트 장이 돼요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS

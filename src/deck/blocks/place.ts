@@ -27,7 +27,7 @@ import { ARRANGE_MAX, arrangeBest, arrangeOrder, boardCost, isArranged } from '.
 import { aspectOf, fitImage, fitPlaced, misfit } from './images'
 import { dropBlock, tidyLinks } from './links'
 import { BLOCK_COL_GAP, BLOCK_GAP, isSmall, isSolo, largeCount, MAX_BLOCKS, MAX_LARGE, settleLook } from './rules'
-import { AREA_W, atRect, boardFit, needRowsPx, type Rect } from './sizing'
+import { AREA_W, atRect, boardFit, heightIssue, overAlready, type Rect } from './sizing'
 
 /** 놓을 자리: 판의 한 자리(spot)에 넣기, 또는 옮기는 부품을 다른 부품(with)과 맞바꾸기 */
 export type DropTarget = { kind: 'spot'; spot: Spot } | { kind: 'swap'; with: string }
@@ -45,12 +45,12 @@ export const BOTTOM: DropTarget = spotTarget({ at: null, side: 'below' })
 /**
  * 그 자리에 넣을 수 없는 까닭. 화면에 보이는 문구는 편집기가 이것으로 만든다 (screens/editor/noRoom.ts).
  * full: 한 장의 부품 수, large: 큰 부품 수, narrow: 그 자리에 끼우면 누군가 너무 좁아진다(span: 넣는 부품의 가장 좁은 너비),
- * height: 넣으면 판이 장보다 높아진다 (need: 잘리지 않는 데 드는 높이, room: 본문 높이)
+ * height: 넣으면 판이 장보다 높아진다 (need: 잘리지 않는 데 드는 높이, room: 본문 높이, already: 넣기 전의 판부터 장보다 높다)
  */
 export type NoRoom =
   | { kind: 'full' }
   | { kind: 'narrow'; span: number }
-  | { kind: 'height'; need: number; room: number }
+  | { kind: 'height'; need: number; room: number; already?: true }
   /** 판 너비를 혼자 쓰는 부품(type)과 나란히 놓으려 할 때 */
   | { kind: 'solo'; type: BlockType }
   /** 면을 바꿀 수 없을 때: 진한 면은 하나만, 진한 면과 옅은 면은 섞지 않고, 혼자 판 너비를 다 쓰는 작은 부품은 면 없이 */
@@ -132,7 +132,7 @@ export function groupIssue(blocks: Block[], add: Block[], areaH?: number): NoRoo
   const crowd = crowdIssue(blocks, add)
   if (crowd) return crowd
   if (insertParts(blocks, { at: null, side: 'below' }, add, areaH)) return null
-  return areaH === undefined ? { kind: 'full' } : { kind: 'height', need: Math.round(needRowsPx([...blocks, ...add], areaH)), room: Math.round(areaH) }
+  return areaH === undefined ? { kind: 'full' } : heightIssue([...blocks, ...add], areaH, blocks)
 }
 
 /**
@@ -186,7 +186,7 @@ function spotIssue(blocks: Block[], spot: Spot, block: Block, areaH?: number): N
   const fit = boardFit(areaH, [...blocks, block])
   const need = needWith(blocks, block, spot, fit)
   if (need === null || !Number.isFinite(need)) return { kind: 'narrow', span: fit.minW(block) }
-  return { kind: 'height', need: Math.round(rowsPx(need, areaH)), room: Math.round(areaH) }
+  return { kind: 'height', need: Math.round(rowsPx(need, areaH)), room: Math.round(areaH), ...(overAlready(blocks, areaH) ? { already: true as const } : {}) }
 }
 
 /** 판의 칸 수를 px 높이로 (칸 사이를 뺀 것) */

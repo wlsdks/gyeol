@@ -30,6 +30,7 @@ import {
   insertAt,
   isLayoutBlock,
   isSolo,
+  groupIssue,
   isStacked,
   linkAt,
   linkFits,
@@ -44,6 +45,7 @@ import {
   minSpanOf,
   moveAt,
   needRows,
+  needRowsPx,
   placeIssue,
   playOrder,
   removeBlock,
@@ -254,6 +256,21 @@ describe('자리 정하기', () => {
           const b = block(type, 'new')
           expect([type, h, autoPlace(bs, b, h) === null]).toEqual([type, h, placeIssue(bs, b, h) !== null])
         }
+  })
+
+  it('넣기 전부터 장보다 높은 판이면 까닭에 그렇다고 적는다 (넣어서 넘는 것과 따로)', () => {
+    // 제목이 두 줄이 되거나 글자를 키워 본문이 낮아지면, 넣기 전부터 장 높이를 넘는다
+    const bs = board(block('people', 'pp'), block('checks', 'ck'), block('risks', 'rk'))
+    const low = H - 400
+    expect(needRowsPx(bs, low)).toBeGreaterThan(low)
+    expect(placeIssue(bs, block('heading', 'x'), low)).toMatchObject({ kind: 'height', already: true })
+    expect(groupIssue(bs, [block('stat', 'x')], low)).toMatchObject({ kind: 'height', already: true })
+    // 지금은 들어가는 판에 너무 큰 것을 넣으면 already 없이
+    const fits = board(block('message', 'm'), block('table', 't'))
+    expect(needRowsPx(fits, H)).toBeLessThanOrEqual(H)
+    const tall = placeIssue(fits, block('gantt', 'g'), H)
+    expect(tall?.kind).toBe('height')
+    expect(tall && 'already' in tall).toBe(false)
   })
 
   it('부품 수의 끝을 넘지 않는다', () => {

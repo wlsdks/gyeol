@@ -72,6 +72,12 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
       return { why: `${josa(pair, '은', '는')} 크기가 맞지 않아 자리를 맞바꿀 수 없어요.`, fix: '옆이나 위아래에 놓아 보세요.' }
     }
     case 'height': {
+      // 넣기 전부터 넘친 장: '넣으면 장 높이를 넘어서'라고 하면 지금은 들어가는 줄 안다
+      if (r.already)
+        return {
+          why: '이 장의 컴포넌트들이 이미 장 높이를 넘었어요.',
+          fix: where === 'change' ? '항목을 줄이거나 컴포넌트를 빼면 바꿀 수 있어요.' : '항목을 줄이거나 컴포넌트를 빼면 들어가요.',
+        }
       // 몇 %인지는 쓰는 사람에게 뜻이 없다. 조금 넘치는지만 알려 주면 항목 하나만 빼도 되는지 가늠한다
       const over = r.need / Math.max(1, r.room) <= 1.1 ? '장 높이를 조금 넘어서' : '장 높이를 넘어서'
       return {

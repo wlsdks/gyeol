@@ -258,14 +258,30 @@ export function needRowsPx(blocks: Block[], areaH: number): number {
   return Number.isFinite(rows) ? rows * rowPitch(areaH) - BLOCK_GAP : areaH * 2
 }
 
-/** 이 판이 장에 들어가지 않을 때의 까닭 (잘리지 않는 데 드는 높이와 본문 높이, px) */
-export function heightIssue(blocks: Block[], areaH: number): NoRoom {
-  return { kind: 'height', need: Math.round(needRowsPx(blocks, areaH)), room: Math.round(areaH) }
+// 부품 고르기는 카드마다 판의 모든 자리를 재서, 같은 판을 수백 번 묻는다
+const OVER = new WeakMap<Block[], Map<number, boolean>>()
+
+/**
+ * 넣거나 바꾸기 전부터 장보다 높은 판인지. 글자 크기를 키우거나 제목이 두 줄이 되어 본문이 낮아지면 그렇게 된다.
+ * 그런 장에 '넣으면 장 높이를 넘어요'라고 하면 지금은 들어가는 줄 알고, 작은 것 하나를 빼도 그대로 잠겨 있었다
+ */
+export function overAlready(blocks: Block[], areaH: number): boolean {
+  let byH = OVER.get(blocks)
+  if (!byH) OVER.set(blocks, (byH = new Map()))
+  let over = byH.get(areaH)
+  if (over === undefined) byH.set(areaH, (over = blocks.length > 0 && needRowsPx(blocks, areaH) > areaH + 0.5))
+  return over
+}
+
+/** 이 판이 장에 들어가지 않을 때의 까닭 (잘리지 않는 데 드는 높이와 본문 높이, px). before: 넣거나 바꾸기 전의 판 */
+export function heightIssue(blocks: Block[], areaH: number, before?: Block[]): NoRoom {
+  const already = before && overAlready(before, areaH) ? { already: true as const } : {}
+  return { kind: 'height', need: Math.round(needRowsPx(blocks, areaH)), room: Math.round(areaH), ...already }
 }
 
 /** 부품 하나를 바꾸면(항목 더하기, 모양이나 바탕 바꾸기) 장에 들어가지 않을 때 그 까닭. 들어가면 null */
 export function changeIssue(blocks: Block[], blockId: string, fn: (b: Block) => Block, areaH: number): NoRoom | null {
-  return changeBlocks(blocks, blockId, fn, areaH) ? null : heightIssue(mapBlock(blocks, blockId, fn), areaH)
+  return changeBlocks(blocks, blockId, fn, areaH) ? null : heightIssue(mapBlock(blocks, blockId, fn), areaH, blocks)
 }
 
 /**
@@ -276,7 +292,7 @@ export function lookChangeIssue(blocks: Block[], blockId: string, look: BlockLoo
   const why = lookIssue(blocks, blockId, look)
   if (why || areaH === undefined) return why
   const next = withLook(blocks, blockId, look)
-  return settle(next, boardFit(areaH, next)) ? null : heightIssue(next, areaH)
+  return settle(next, boardFit(areaH, next)) ? null : heightIssue(next, areaH, blocks)
 }
 
 /** 부품 하나를 바꿔도(항목 더하기, 모양 바꾸기) 장에 들어가는지 */
