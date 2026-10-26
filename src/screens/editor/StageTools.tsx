@@ -7,7 +7,7 @@ import type { AiShare } from '../../ai/useAiShare'
 import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, PlayIcon, PlusIcon, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
+import { BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
 import { SlideAsk } from './AiShare'
 import type { BlockEditing } from './BlockEditor'
 import type { SidePanel } from './sidePanel'
@@ -42,7 +42,7 @@ function useTightTools(ref: RefObject<HTMLDivElement | null>) {
   }, [check, ref])
 }
 
-/** 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 미리 보기, 발표, 복제, 빼기, 지우기 */
+/** 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 미리 보기, 발표, 그리고 '더 보기'(복제, 빼기, 지우기) */
 export function StageTools({
   deck,
   slide,
@@ -165,29 +165,72 @@ export function StageTools({
           <PlayIcon />
           <span className="btn-t">지금 장부터 발표</span>
         </button>
-        <button type="button" className="btn btn-ghost btn-sm" title="복제" onClick={() => store.duplicateSlide(slide.id)}>
-          <CopyIcon />
-          <span className="btn-t">복제</span>
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          title={slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}
-          onClick={() => store.setHidden(slide.id, !slide.hidden)}
+        {/* 복제, 빼기, 지우기는 덜 쓰는 일이라 '더 보기'에 이름과 함께 둔다. 예전에는 그림만 남은 단추 셋이 나란히 있어서
+            빗금 친 눈이 '발표에서 빼기'인지 알기 어려웠다(1280 너비에서는 늘 그림만 보였다) */}
+        <Popover
+          flip
+          button={({ open, toggle }) => (
+            <button
+              type="button"
+              className={cx('btn btn-ghost btn-sm stage-more', open && 'is-on')}
+              aria-label="이 장 더 보기"
+              aria-expanded={open}
+              aria-haspopup="menu"
+              title="복제, 발표에서 빼기, 지우기"
+              onClick={toggle}
+            >
+              <MoreIcon />
+            </button>
+          )}
         >
-          {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
-          <span className="btn-t">{slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}</span>
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          title={deck.slides.length <= 1 ? '장이 하나뿐이라 지울 수 없어요' : '지우기'}
-          disabled={deck.slides.length <= 1}
-          onClick={() => onRemove(slide)}
-        >
-          <TrashIcon />
-          <span className="btn-t">지우기</span>
-        </button>
+          {(close) => (
+            <div className="menu stage-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item"
+                onClick={() => {
+                  close()
+                  store.duplicateSlide(slide.id)
+                }}
+              >
+                <CopyIcon />
+                복제
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item"
+                onClick={() => {
+                  close()
+                  store.setHidden(slide.id, !slide.hidden)
+                }}
+              >
+                {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
+                <span className="menu-item-t">
+                  {slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}
+                  <span className="menu-item-desc">{slide.hidden ? '발표할 때 이 장을 다시 보여요' : '지우지 않고 발표할 때만 건너뛰어요'}</span>
+                </span>
+              </button>
+              <div className="menu-sep" role="separator" />
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item is-danger"
+                // 막아 둔 일은 왜 안 되는지를 말한다
+                title={deck.slides.length <= 1 ? '장이 하나뿐이라 지울 수 없어요' : undefined}
+                disabled={deck.slides.length <= 1}
+                onClick={() => {
+                  close()
+                  onRemove(slide)
+                }}
+              >
+                <TrashIcon />
+                이 장 지우기
+              </button>
+            </div>
+          )}
+        </Popover>
       </div>
     </div>
   )

@@ -560,6 +560,30 @@
   flex: none;
 }
 
+/* '더 보기'는 켜고 끄는 단추가 아니라 메뉴를 여는 단추라서, 열려 있을 때 검게 뒤집지 않고 옅은 면만 */
+.stage-tools .stage-more {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.stage-tools .stage-more.is-on {
+  border-color: var(--line);
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.stage-menu {
+  width: 248px;
+}
+
+/* 이름 아래에 하는 일을 한 줄 더 (발표에서 빼기는 지우는 것과 헷갈리기 쉽다) */
+.menu-item-t {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .notes {
   display: flex;
   flex-direction: column;
