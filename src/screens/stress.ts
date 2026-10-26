@@ -220,6 +220,9 @@ function jumps(rows: StressRow[]): string[] {
   return out
 }
 
+/** 너비를 다 쓰지 않는 것이 맞는 짧은 컴포넌트 */
+const SHORT = new Set(['status', 'date', 'heading', 'note'])
+
 /** 한 칸 안의 사이가 어색한 것 */
 function oddities(x: StressRow): string[] {
   const out: string[] = []
@@ -229,7 +232,9 @@ function oddities(x: StressRow): string[] {
   // 같은 단의 사이가 고르지 않다
   if (x.gapMin >= 0 && x.gapMax - x.gapMin > Math.max(16, x.gapMin)) out.push(`${what}: 항목 사이가 ${x.gapMin}~${x.gapMax}px로 고르지 않아요`)
   // 그려진 것이 칸 너비의 절반도 안 쓰는 넓은 칸 (8칸 넘게): 짜임을 눕히거나 여러 단으로 흘려야 할 자리
-  if (x.span >= 8 && x.inkW > 0 && x.inkW < 0.5) out.push(`${what}: 그려진 것이 칸 너비의 ${Math.round(x.inkW * 100)}%만 써요`)
+  // 짧은 컴포넌트(상태, 날짜, 소제목, 주석)는 넓은 칸에서도 덧붙임을 글 옆이나 아래에 붙여 왼쪽에 모은다(docs/VISUAL-RULES.md 6의 가로:
+  // 양 끝으로 찢지 않는다). 칸 너비를 다 쓰라고 하면 그 규칙과 거꾸로라 뺀다
+  if (x.span >= 8 && x.inkW > 0 && x.inkW < 0.5 && !SHORT.has(x.type)) out.push(`${what}: 그려진 것이 칸 너비의 ${Math.round(x.inkW * 100)}%만 써요`)
   for (const p of x.problems) out.push(`${what}: ${p}`)
   return out
 }
