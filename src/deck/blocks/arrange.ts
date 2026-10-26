@@ -11,7 +11,8 @@
 
 import type { Block, BlockType } from '../types'
 import { BOARD_COLS, byReading, type Fit, layTree, leaf, sameArea, split, type Tree, treeOf } from './board'
-import { isSolo } from './rules'
+import { aspectOf, fitImage } from './images'
+import { isAlone, isSolo, shownLook } from './rules'
 import { AREA_W, atRect, blockMinH, isStretchy } from './sizing'
 
 /** 틀을 견주는 가장 많은 부품 수. 더 많으면 사람이 짠 차례가 짜임의 뜻이라 판에 맡긴다 */
@@ -140,6 +141,22 @@ function naturalSpan(b: Block): number {
   return BOARD_COLS
 }
 
+/**
+ * 이미지가 든 이미지 부품이 이 칸에 그려지는 크기 (캔버스 px, 설명 한 줄 포함). 이미지가 없으면 null.
+ * 이미지는 비율을 지켜 칸 안에 들어가므로(전체 보이기), 넓은 화면 캡처를 낮은 띠에 두면 칸 가운데에 작게 서고 양옆이 빈다(images.ts의 imageBox와 같은 셈)
+ */
+function picture(b: Block, r: { w: number; h: number }): { w: number; h: number } | null {
+  const aspect = aspectOf(b)
+  if (!aspect) return null
+  const card = shownLook(b, isAlone(b)) !== 'plain'
+  const cap = b.fields.caption?.trim() ? 56 : 0
+  const w = r.w - (card ? 104 : 0)
+  const h = r.h - (card ? 88 : 0) - cap
+  if (w <= 0 || h <= 0) return { w: 0, h: 0 }
+  const iw = Math.min(w, h * aspect)
+  return { w: iw + (card ? 104 : 0), h: iw / aspect + cap + (card ? 88 : 0) }
+}
+
 /** 짜임 하나의 점수 (작을수록 좋다). 그려질 모습을 어림한다: 글자를 몇 단계까지 키울 수 있는지, 쌓은 뒤 본문을 얼마나 채우는지, 나란한 칸 한쪽이 얼마나 비는지 */
 export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?: string): number {
   const size = { w: AREA_W, h: areaH }
@@ -149,7 +166,12 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
   const all = leaves(t)
   // 그려진 높이: 차트처럼 칸 높이를 다 쓰는 부품은 칸 높이, 글과 숫자는 잰 높이에 글자 단계를 곱한 것
   // 차트도 칸 높이를 끝없이 쓰지는 않는다(흐름, 원, 로고는 비율을 지킨다): 잰 높이의 두 배까지만
-  const drawn = (b: Block, s: number) => (isStretchy(b.type) ? Math.min(rect(b).h, base(b) * 2 * s) : base(b) * s)
+  // 이미지가 든 이미지 부품은 칸 안에 이미지 비율대로 들어간 크기(가운데에 선다)
+  const drawn = (b: Block, s: number) => {
+    const img = picture(laid.get(b.id)!, rect(b))
+    if (img) return img.h
+    return isStretchy(b.type) ? Math.min(rect(b).h, base(b) * 2 * s) : base(b) * s
+  }
   const pack = (n: Tree, s: number): number => {
     if (n.kind === 'leaf') return drawn(n.block, s)
     const hs = n.kids.map((k) => pack(k, s))
@@ -171,9 +193,12 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
     if (n.dir === 'h') {
       const hs = n.kids.map((k) => pack(k, s))
       const top = Math.max(...hs)
+      // 이미지 옆의 글은 이미지 윗선에 맞춰 서는 것이 사람이 짠 꼴이다(화면 캡처 옆의 설명): 이미지 높이는 비율이 정해서 글 아래가 비는 것을
+      // 차트 옆처럼 세게 치면, 캡처를 4칸에 작게 두고 글을 8칸에 둔 판이 캡처를 크게 둔 판보다 나았다
+      const beside = n.kids.some((k) => k.kind === 'leaf' && aspectOf(laid.get(k.block.id)!)) ? 0.5 : 1
       n.kids.forEach((k, i) => {
         const w = leaves(k).reduce((a, b) => Math.max(a, rect(b).x + rect(b).w), 0) - Math.min(...leaves(k).map((b) => rect(b).x))
-        cost += (((top - hs[i]) * w) / (areaH * AREA_W)) * 150
+        cost += (((top - hs[i]) * w) / (areaH * AREA_W)) * 150 * beside
       })
     }
     n.kids.forEach(walk)
@@ -187,6 +212,9 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
     if (!isStretchy(b.type)) cost += Math.max(0, at.w - 2 * fit.prefW(b)) * 2
     // 차트와 그림이 낮은 띠가 되면 읽히지 않는다
     if (isStretchy(b.type) && rect(b).h < 0.4 * areaH) cost += ((0.4 * areaH - rect(b).h) / areaH) * 60
+    // 이미지가 칸을 다 쓰지 못하고 가운데에 작게 서면 칸의 남는 몫만큼 빈다 (화면 캡처를 넓고 낮은 띠에 둔 판)
+    const img = picture(laid.get(b.id)!, rect(b))
+    if (img) cost += (1 - (img.w * img.h) / (rect(b).w * rect(b).h)) * ((rect(b).w * rect(b).h) / (areaH * AREA_W)) * 100
     // 판 너비를 혼자 쓰는 부품(표, 일정)은 한 줄을 다 써야 한다
     if (isSolo(b.type) && at.w < BOARD_COLS) cost += 1000
   }
@@ -200,6 +228,9 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
   // 가로로 빈 곳: 그려진 것의 오른쪽 끝(naturalSpan). 본문 오른쪽이 20% 넘게 비면 판이 너비를 고르게 나누지 못한 것(screens/assembly.ts의 sides)
   const right = Math.max(...all.map((b) => {
     const r = rect(b)
+    const img = picture(laid.get(b.id)!, r)
+    // 칸보다 좁은 이미지는 칸 가운데에 선다
+    if (img) return r.x + (r.w + img.w) / 2
     const w = isStretchy(b.type) ? r.w : Math.min(atRect({ x: 0, y: 0, w: naturalSpan(laid.get(b.id)!), h: 1 }, size).w, MEASURE_W[b.type] ?? Infinity)
     return r.x + Math.min(r.w, w)
   }))
@@ -227,19 +258,22 @@ function headsOk(t: Tree, last?: string): boolean {
 }
 
 /**
- * 이 부품들(읽는 차례)로 고른 가장 보기 좋은 판과 그 점수. 틀을 견줄 수 없는 장(부품이 많거나, 이음표가 있거나, 이미지가 든 이미지 부품)이면 null.
+ * 이 부품들(읽는 차례)로 고른 가장 보기 좋은 판과 그 점수. 틀을 견줄 수 없는 장(부품이 많거나, 이음표나 소제목이 있는 장)이면 null.
  * 부품의 차례는 blocks 그대로 돌려준다
  */
 export function arrangeBest(blocks: Block[], fit: Fit, areaH: number, aspect: (b: Block) => number | null, seen?: { blocks: Block[]; cost: number }[]): { blocks: Block[]; cost: number } | null {
   if (blocks.length < 2 || blocks.length > ARRANGE_MAX) return null
   // 소제목이 든 장은 소제목 묶음의 규칙(place.ts의 autoPlace: 소제목 아래에, 다음 소제목은 묶음 옆에)이 짠다. 아래 부품을 아직 넣지 않은
   // 소제목은 어디에 둘지 틀로는 알 수 없어서, 견주면 맨 아래에 붙어 다음 부품이 그 아래에 들어가지 못했다
-  if (blocks.some((b) => b.link || b.linkBelow || aspect(b) || b.type === 'heading')) return null
+  // 이미지가 든 이미지 부품은 판을 놓은 뒤 이미지에 닿은 선을 이미지 비율에 맞춰(fitImage) 견준다: 화면 캡처와 요점 둘을 위아래로
+  // 쌓으면 캡처가 넓고 낮은 띠의 가운데에 작게 서고 요점은 그 위에 찢어져, 캡처를 크게 옆에 두는 판보다 나빴는데 견줄 수 없었다
+  if (blocks.some((b) => b.link || b.linkBelow || b.type === 'heading')) return null
   let best: { blocks: Block[]; cost: number } | null = null
   for (const shape of shapes(blocks, null)) {
     for (const t of sized(shape, BOARD_COLS, fit)) {
-      const out = layTree(t, fit)
+      let out = layTree(t, fit)
       if (!out) continue
+      for (const img of out.filter((b) => aspect(b))) out = fitImage(out, img.id, aspect(img)!, areaH)
       const laid: Laid = new Map(out.map((b) => [b.id, b]))
       const cost = arrangeCost(t, laid, fit, areaH)
       seen?.push({ blocks: blocks.map((b) => laid.get(b.id)!), cost })

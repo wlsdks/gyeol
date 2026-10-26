@@ -664,6 +664,13 @@ describe('이미지에 맞춘 칸 크기', () => {
     expect(areaOf(placed, 'img').h).toBe(BOARD_ROWS)
   })
 
+  it('화면 캡처 다음에 넣은 요점 둘은 캡처를 크게 두고 옆에 선다', () => {
+    const shot = { ...img(), fields: { image: png(1600, 1000) } }
+    const bs = autoPlace(autoPlace([], shot, H)!, { ...sampleBlock('bullets'), id: 't', items: sampleBlock('bullets').items.slice(0, 2) }, H)!
+    expect(areaOf(bs, 'img').h).toBe(BOARD_ROWS)
+    expect(areaOf(bs, 'img').w).toBeGreaterThan(6)
+  })
+
   it('이웃을 빼면 남은 판을 이미지에 다시 맞춘다', () => {
     const shot = { ...img(), fields: { image: png(1600, 1000) } }
     const bs = insertAt(insertAt(board(shot), { at: 'img', side: 'right' }, block('bullets', 't'), H)!, { at: 't', side: 'right' }, block('number', 'n'), H)!
