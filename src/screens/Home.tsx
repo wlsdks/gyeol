@@ -102,7 +102,10 @@ export function Home() {
 
       <main className="home-main">
         <div className="home-head">
-          <h1 className="home-h">내 발표</h1>
+          <h1 className="home-h">
+            내 발표
+            {decks && decks.length > 0 && <span className="home-count">{decks.length}</span>}
+          </h1>
           <div className="home-links">
             <button type="button" className="btn-link" onClick={() => go({ name: 'system' })}>
               장 모음 보기
@@ -195,10 +198,12 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
       <div className="card-info">
         <div className="card-text">
           <h2 className="card-title">{deck.title}</h2>
+          {/* 한 줄로: 두 줄이면 카드마다 글이 길어져 그림보다 글이 먼저 읽힌다 */}
           <p className="card-meta">
-            {typeName} {deck.slides.length}장
+            {typeName && <span>{typeName}</span>}
+            <span>{deck.slides.length}장</span>
+            <span>{timeAgo(deck.updatedAt)} 수정</span>
           </p>
-          <p className="card-meta">{timeAgo(deck.updatedAt)} 수정</p>
         </div>
         <Popover
           button={({ toggle, open }) => (

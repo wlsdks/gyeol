@@ -14,9 +14,10 @@
   padding: 0 32px;
 }
 
+/* 이름 옆 버전은 이름 글자의 가운데에 맞춘다. 바탕선으로 맞추면 로고 상자 때문에 버전만 아래로 처진다 */
 .home-brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
 
@@ -42,12 +43,18 @@
   }
 }
 
+/*
+ * 머리말: 잡지의 꼭지처럼 제목 아래에 가는 먹선 하나. 상자로 감싸지 않고 선으로 나눈다.
+ * 제목만 명조(함렛)로 써서 앱 틀과 구별되는 얼굴을 준다. 나머지는 본문 글꼴 그대로
+ */
 .home-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .home-empty-actions {
@@ -58,18 +65,34 @@
 }
 
 .home-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: 'Hahmlet Variable', 'AppleMyungjo', 'Batang', serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+/* 발표 수: 제목 옆에 작게. 몇 개를 만들었는지 한눈에 */
+.home-count {
+  color: var(--ink-3);
+  font-family: 'Pretendard Variable', Pretendard, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 28px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 32px 28px;
 }
 
+/* 새 발표 자리: 카드와 같은 크기의 빈 장. 점선 대신 가는 실선으로, 올리면 먹색으로 짙어진다 */
 .home-new {
   display: flex;
   flex-direction: column;
@@ -77,19 +100,21 @@
   justify-content: center;
   gap: 10px;
   aspect-ratio: 16 / 9;
-  border: 1.5px dashed var(--line-2);
-  border-radius: var(--r);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--ink-2);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
 
 .home-new .icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.6;
+  transition: transform 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .home-new:hover {
@@ -98,20 +123,46 @@
   color: var(--ink);
 }
 
+.home-new:hover .icon {
+  transform: rotate(90deg);
+}
+
+.home-new:active {
+  background: var(--hover);
+}
+
 .card {
   min-width: 0;
 }
 
+/* 장 그림: 모서리를 작게, 테두리는 머리카락 선. 올리면 살짝 떠오르고 그림자는 옅게만 (도구가 아니라 종이처럼) */
 .card-link {
   display: block;
   overflow: hidden;
-  border-radius: var(--r);
+  border-radius: var(--r-sm);
   box-shadow: 0 0 0 1px var(--line);
-  transition: box-shadow 0.15s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .card-link:hover {
-  box-shadow: 0 0 0 1px var(--line-2), 0 8px 24px rgb(16 20 31 / 0.1);
+  box-shadow:
+    0 0 0 1px var(--line-2),
+    0 10px 24px -12px rgb(16 20 31 / 0.22);
+  transform: translateY(-2px);
+}
+
+.card-link:active {
+  transform: translateY(0);
+}
+
+/* 초점 고리가 둥근 그림 밖으로 또렷하게 (overflow로 잘리지 않게 바깥 그림자로) */
+.card-link:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px var(--panel),
+    0 0 0 3px var(--sel);
 }
 
 .card-thumb {
@@ -123,7 +174,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 2px 0;
+  padding: 12px 0 0;
 }
 
 .card-text {
@@ -135,14 +186,40 @@
   overflow: hidden;
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.015em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* 카드를 올리면 제목에도 밑줄: 그림과 제목이 한 덩어리로 눌린다는 것이 보인다 */
+.card:has(.card-link:hover) .card-title {
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 4px;
+}
+
+/* 종류 · 장 수 · 고친 때를 한 줄에. 가운데 점은 글자색보다 옅게 */
 .card-meta {
-  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  margin: 3px 0 0;
   color: var(--ink-3);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-meta > span + span::before {
+  margin: 0 7px;
+  color: var(--line-2);
+  content: '·';
+}
+
+/* ⋯ 단추는 제목 줄 높이에 맞춘다 (제목 22px, 단추 32px) */
+.card-info .icon-btn {
+  width: 32px;
+  height: 32px;
+  margin: -5px -6px 0 0;
 }
 
 /* 만든 발표가 없을 때: 남은 자리의 가운데에. 위에 붙여 두면 화면 아래 대부분이 빈다 */
@@ -171,4 +248,43 @@
 .home-links {
   display: flex;
   gap: 20px;
+}
+
+/*
+ * 보관 폴더 안내: 머리말 먹선 바로 아래에 붙는 한 줄. 노란 띠는 놓치면 안 되는 안내라 남기되,
+ * 두툼한 상자가 카드보다 먼저 눈에 띄지 않게 높이와 모서리를 줄인다 (versions.css의 기본 모양 위에)
+ */
+.home .store-note {
+  margin: -8px 0 24px;
+}
+
+.home .store-note.is-warn {
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--r-sm);
+  line-height: 1.5;
+}
+
+.home .store-note.is-warn > .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* 윈도우 노트북(브라우저 안 600px 남짓): 머리말 위 여백을 줄여 첫 줄 카드가 화면 안에 들어오게 */
+@media (max-height: 760px) {
+  .home-top {
+    height: 56px;
+  }
+
+  .home-main {
+    padding-top: 8px;
+  }
+
+  .home-head {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+
+  .home-h {
+    font-size: 26px;
+  }
 }
