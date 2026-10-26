@@ -187,9 +187,6 @@
 /* 앞 값에서 몇 % 바뀌었는지. 계산한 값이라 칸이 아니라 표시 */
 .vs-change {
   --fs: 22px;
-  padding: 4px 14px;
-  border-radius: 999px;
-  background: var(--surface);
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.3;
@@ -198,17 +195,7 @@
 }
 
 .vs-col.is-hl .vs-change {
-  background: var(--accent-soft);
   color: var(--accent);
-}
-
-/* 좁은 항목 칸에서는 바뀐 비율의 둥근 판을 빼고 글자만: 판까지 두면 이웃 칸의 판과 맞닿아 한 줄의 띠처럼 보였다 */
-@container vs-label (max-width: 120px) {
-  .vs-change,
-  .vs-col.is-hl .vs-change {
-    padding-inline: 0;
-    background: none;
-  }
 }
 
 /* 모양: 두 선. 그림은 이름 줄 위 한 칸을 다 쓰고, 이름 줄만 항목 칸에 둔다.
@@ -469,8 +456,6 @@
 .vs-row .vs-change {
   --fs: 22px;
   min-width: 4.6em;
-  padding: 0;
-  background: none;
   color: var(--ink-2);
   font-weight: 600;
   text-align: right;
@@ -503,7 +488,6 @@
 }
 
 .vs-row.is-hl .vs-change {
-  background: none;
   color: var(--accent);
 }
 

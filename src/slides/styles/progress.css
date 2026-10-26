@@ -159,9 +159,6 @@
   align-items: center;
   gap: 12px;
   max-width: 100%;
-  padding: 10px 22px;
-  border-radius: 99px;
-  background: var(--surface);
   color: var(--ink-2);
   font-weight: 700;
   line-height: 1.2;
@@ -194,7 +191,6 @@
 }
 
 .ps-row:is(.is-done, .is-doing, .is-late) .ps-chip {
-  background: color-mix(in srgb, var(--ps-c) 13%, var(--bg));
   color: var(--ps-c);
 }
 
@@ -308,17 +304,11 @@
 
 .ps-board .ps-row .ps-chip {
   --fs: 22px;
-  padding: 0;
-  background: none;
   white-space: nowrap;
 }
 
 .ps-board .ps-row .ps-chip::before {
   content: none;
-}
-
-.ps-board .ps-row:is(.is-done, .is-doing, .is-late) .ps-chip {
-  background: none;
 }
 
 /* 짜임은 항목 수가 아니라 가장 많이 모인 단의 과제 수(data-rows)로 고른다: 과제 다섯이 한 단에 몰리면 단 하나가 다섯 줄이다.

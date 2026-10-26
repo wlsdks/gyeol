@@ -122,14 +122,13 @@
   height: calc(var(--dl-f) * var(--dl-arrow-svg));
 }
 
+/* 바뀐 만큼: 강조색 글자만(같은 폭 숫자). 예전의 옅은 강조색 알약은 입력칸이나 앱의 꼬리표처럼 보였다. 장에서 강조색이 서는
+   몇 안 되는 자리라 면 없이도 답으로 읽힌다 */
 .bk-dl-chip {
   --fs: var(--t-small);
   grid-row: 3;
   justify-self: start;
   margin-top: 12px;
-  padding: 8px 20px;
-  border-radius: 999px;
-  background: var(--accent-soft);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
