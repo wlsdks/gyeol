@@ -420,8 +420,10 @@ describe('판에서 위아래로 놓기', () => {
     const top = insertAt(board({ ...block('callout', 'c'), look: 'bold' }), { at: 'c', side: 'right' }, block('kpi', 'k'), H)!
     const next = insertAt(top, { at: null, side: 'below' }, block('bullets', 'b'), H)!
     const b = areaOf(next, 'b')
-    // 한 줄을 다 쓰는 점 목록 셋은 한 줄로 늘어서서 낮다: 가장 낮은 높이만 받는다
-    expect(b.h).toBe(boardFit(H, next).minH(next.find((x) => x.id === 'b')!, BOARD_COLS))
+    // 한 줄을 다 쓰는 점 목록 셋은 한 줄로 늘어서서 낮다: 가장 낮은 높이에 글자를 키울 자리(board.ts의 GROW)만 더 받는다
+    const least = boardFit(H, next).minH(next.find((x) => x.id === 'b')!, BOARD_COLS)
+    expect(b.h).toBeGreaterThanOrEqual(least)
+    expect(b.h).toBeLessThanOrEqual(Math.ceil(least * 1.44))
     expect(areaOf(next, 'c').h).toBe(BOARD_ROWS - b.h)
     expect(sound(next)).toBe(true)
   })

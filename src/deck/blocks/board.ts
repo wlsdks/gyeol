@@ -203,7 +203,7 @@ class Measure {
  * 아니면 바라는 크기의 비율대로 늘이거나 줄인 뒤, 모자란 자식에게 여유가 큰 자식부터 하나씩 내준다.
  * 남는 길이는 받는 차례(takes, 차트 2 > 면 1 > 글과 숫자 0)가 가장 높은 자식들이 받는다: 글 목록이 남는 높이를 받으면
  * 글 위아래가 비지만, 차트는 커지고 면은 면째 커진다. 모두 0이면 모두가 바라는 크기의 비율대로.
- * pile이면(위아래로 쌓은 가지) 모두 0일 때 남는 길이를 끝 자식이 다 받는다: 글과 숫자만 쌓은 장에서 비율대로 나누면
+ * pile이면(위아래로 쌓은 가지) 먼저 자식마다 글자를 키울 자리(GROW)를 주고, 그러고도 남는 길이는 모두 0일 때 끝 자식이 다 받는다: 글과 숫자만 쌓은 장에서 비율대로 나누면
  * 칸마다 내용 아래가 조금씩 비어 부품 사이가 칸마다 들쭉날쭉 벌어졌다(부제 아래 200px, 핵심 한 줄과 인용 사이 130px).
  * 사람이 짠 장처럼 이어진 내용은 붙여 두고 남는 자리는 맨 아래 한곳에 모은다(그리는 쪽의 위에서부터 쌓기, slides/fitBlocks.ts)
  * 가장 작은 크기의 합이 total보다 크면 null
@@ -215,13 +215,26 @@ export function share(total: number, mins: number[], wants: number[], takes: num
   let s: number[]
   if (sum === total) s = [...w]
   else if (sum < total) {
+    s = [...w]
+    let left = total - sum
+    // 위아래로 쌓은 가지는 먼저 자식마다 키울 자리(바라는 높이의 GROW 몫)를 바라는 높이의 비율대로 나눈다. 바라는 높이는 보통 글자에서
+    // 잘리지 않는 가장 낮은 높이라, 남는 높이를 차트나 맨 아래 자식이 다 받으면 나머지 칸은 글자를 한 단계도 키울 수 없었다
+    // (그리는 쪽이 모든 칸을 같이 키우므로 칸 하나만 모자라도 장 전체가 작은 글자로 남았다: 로고 모음이 9줄, 그 아래 숫자 둘이 3줄).
+    // 쌓기(slides/fitBlocks.ts의 pack)가 그려진 것끼리 붙이고 남는 높이는 아래에 모으므로 칸이 내용보다 높아도 사이가 벌어지지 않는다
+    if (pile) {
+      const room = w.map((x) => Math.ceil(x * GROW))
+      const give = Math.min(left, room.reduce((a, x) => a + x, 0))
+      const add = new Array<number>(w.length).fill(0)
+      spread(add, give, room)
+      add.forEach((x, i) => (s[i] += x))
+      left -= give
+    }
     // 남는 길이: 받는 차례가 가장 높은 자식들이, 모두 0이면 모두가 바라는 크기의 비율대로
     const top = Math.max(0, ...takes)
     const takers = takes.map((t, i) => (top === 0 ? !pile || i === takes.length - 1 : t === top))
-    s = [...w]
     spread(
       s,
-      total - sum,
+      left,
       w.map((x, i) => (takers[i] ? x : 0)),
     )
   } else {
@@ -244,6 +257,9 @@ export function share(total: number, mins: number[], wants: number[], takes: num
   }
   return s
 }
+
+/** 위아래로 쌓을 때 자식마다 먼저 더 주는 높이의 몫: 그리는 쪽이 글자를 키우는 끝 단계(1.44, fitBlocks.ts)까지 들 자리 */
+const GROW = 0.44
 
 /** n을 무게(weights)의 비율대로 하나씩 나눠 더한다. 나머지는 몫의 끝수가 큰 자식부터, 같으면 앞의 자식부터 */
 function spread(s: number[], n: number, weights: number[]): void {

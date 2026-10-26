@@ -36,11 +36,13 @@ describe('나누기 (share)', () => {
     expect(share(12, [3, 3], [3, 3], [1, 2])).toEqual([3, 9])
     expect(share(12, [3, 3], [3, 3], [0, 0])).toEqual([6, 6])
   })
-  it('위아래로 쌓은 글과 숫자뿐이면 남는 높이는 맨 아래 자식이 다 받는다 (빈 곳은 한곳에)', () => {
-    expect(share(12, [3, 3], [3, 3], [0, 0], true)).toEqual([3, 9])
-    expect(share(12, [2, 3, 2], [2, 3, 2], [0, 0, 0], true)).toEqual([2, 3, 7])
-    // 커지는 자식이 있으면 그대로 그 자식이
-    expect(share(12, [3, 3], [3, 3], [2, 0], true)).toEqual([9, 3])
+  it('위아래로 쌓으면 먼저 자식마다 글자를 키울 자리(0.44배)를, 남는 높이는 글과 숫자뿐이면 맨 아래 자식이 다 받는다 (빈 곳은 한곳에)', () => {
+    expect(share(12, [3, 3], [3, 3], [0, 0], true)).toEqual([5, 7])
+    expect(share(12, [2, 3, 2], [2, 3, 2], [0, 0, 0], true)).toEqual([3, 5, 4])
+    // 키울 자리를 다 주지 못하면 바라는 높이의 비율대로
+    expect(share(8, [3, 3], [3, 3], [0, 0], true)).toEqual([4, 4])
+    // 커지는 자식이 있으면 키울 자리를 준 뒤 그 자식이
+    expect(share(12, [3, 3], [3, 3], [2, 0], true)).toEqual([7, 5])
   })
   it('모자라면 여유가 큰 자식이 내준다', () => {
     expect(share(12, [3, 3], [12, 1], [0, 0])).toEqual([9, 3])
@@ -67,8 +69,8 @@ describe('판', () => {
   it('아래에 넣으면 그 너비에서 가장 낮은 높이를 받는다', () => {
     const one = insertBlock([], mk('a', 'bullets'), { at: null, side: 'below' }, fit)!
     const two = insertBlock(one, mk('t', 'trend'), { at: 'a', side: 'below' }, fit)!
-    // 목록은 12칸 너비에서 4칸 높이면 되고, 남는 높이는 커지는 추이가 받는다
-    expect(areas(two)).toEqual({ a: { x: 0, y: 0, w: 12, h: 4 }, t: { x: 0, y: 4, w: 12, h: 8 } })
+    // 목록은 12칸 너비에서 4칸 높이면 되고, 글자를 키울 자리를 조금 더 받은 뒤 남는 높이는 커지는 추이가 받는다
+    expect(areas(two)).toEqual({ a: { x: 0, y: 0, w: 12, h: 5 }, t: { x: 0, y: 5, w: 12, h: 7 } })
   })
 
   it('넣으면 누군가 잘리는 자리는 null', () => {
