@@ -13,18 +13,8 @@
   align-content: start;
 }
 
-/* 나란히: 사람마다 위에 선(발표할 때 왼쪽에서부터 그어진다), 그 아래 이름, 역할, 맡은 일 */
-.va-row .bk-pp-card {
-  padding-top: calc(28px * var(--bk-fit, 1) + var(--bk-air, 0px));
-}
-
-.va-row .bk-pp-card::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: var(--rule-hair);
-  background: var(--ink);
-  content: '';
-}
+/* 나란히: 사람마다 이름, 역할, 맡은 일을 쌓고 사람 사이는 여백(48px)으로만 나눈다.
+   사람마다 위에 긋던 짧은 글자색 선은 묶음 표시라 걷었다(VISUAL-RULES 2): 짧은 선이 사람 수만큼 끊겨 늘어서 장식으로 보였다 */
 
 .bk-pp-name {
   --fs: 36px;
@@ -57,14 +47,19 @@
   gap: 0;
 }
 
+/* 줄 선은 사람 사이에만: 첫 사람 위, 마지막 사람 아래에는 긋지 않는다(VISUAL-RULES 2) */
 .va-list .bk-pp-card {
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
   border-top: var(--rule-hair) solid var(--line);
 }
 
+.va-list .bk-pp-card:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
 
 .va-list .bk-pp-card:last-child {
-  border-bottom: var(--rule-hair) solid var(--line);
+  padding-bottom: 0;
 }
 
 .va-list .bk-pp-text {
@@ -97,24 +92,29 @@
   }
 
 
-  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(3) {
-    border-top-color: var(--line);
+  /* 단으로 놓으면 같은 줄의 사람 사이에는 선이 없다: 한 줄(둘, 셋)이면 선이 하나도 없고, 넷은 두 줄 사이에만 */
+  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card {
+    padding-top: 0;
+    border-top: 0;
   }
 
-  .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card {
-    border-bottom: var(--rule-hair) solid var(--line);
+  .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(n + 3) {
+    padding-top: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px));
+    border-top: var(--rule-hair) solid var(--line);
   }
 
   .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(-n + 2) {
-    border-bottom: 0;
+    padding-bottom: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px));
   }
 }
 
 /* 체계도: 맨 앞 사람(이끄는 사람)을 위 가운데에, 나머지를 아래에 나란히 두고 선으로 잇는다.
    격자는 세 줄(이끄는 사람, 잇는 선, 맡은 사람들). 가로 선은 목록의 ::before를 가운데 줄에 두고 양 끝 사람의 가운데까지만 긋는다.
    세로 선은 이끄는 사람 아래(::after)와 맡은 사람마다 위(::before)에 반씩, 글에서 조금 띄운다(--pp-air).
-   동그라미는 빼고 글을 가운데로: 동그라미와 글을 옆으로 두면 세로 선이 둘 사이에 떨어져 글에 꽂혀 보였다 */
+   동그라미는 빼고 글을 가운데로: 동그라미와 글을 옆으로 두면 세로 선이 둘 사이에 떨어져 글에 꽂혀 보였다.
+   잇는 선은 누가 누구를 이끄는지 보이는 구조라 옅은 선색보다 한 단계 진하게(--pp-line): --line은 바탕에 묻혀 선이 보이지 않았다(VISUAL-RULES 2-1) */
 .va-tree .bk-pp-list {
+  --pp-line: color-mix(in srgb, var(--ink-3) 45%, var(--line));
   --pp-tg: calc(88px * var(--bk-fit, 1) + 2 * var(--bk-air, 0px));
   --pp-cg: 40px;
   --pp-air: 14px;
@@ -143,7 +143,7 @@
   align-self: center;
   /* 맡은 사람 칸 하나의 너비의 반: 양 끝 사람의 가운데에서 멈춘다 */
   margin: 0 calc((100% - (var(--pp-cols) - 1) * var(--pp-cg)) / var(--pp-cols) / 2);
-  border-top: var(--rule-hair) solid var(--line);
+  border-top: var(--rule-hair) solid var(--pp-line);
   content: '';
 }
 
@@ -165,7 +165,7 @@
   position: absolute;
   left: 50%;
   height: calc(var(--pp-tg) / 2 - var(--pp-air));
-  border-left: var(--rule-hair) solid var(--line);
+  border-left: var(--rule-hair) solid var(--pp-line);
   content: '';
 }
 
@@ -193,5 +193,13 @@
 @container bk (min-width: 1100px) and (min-height: 410px) {
   :is(.bk-number, .bk-delta, .bk-goal, .bk-ratio, .bk-spark, .bk-callout, .bk-quote, .bk-faq, .bk-people:not(.va-list, .va-tree)) > .bk-in {
     --bk-up: 1.2;
+  }
+}
+
+/* 키운 칸(--bk-up)에서 이름은 한 단계 낮춰 키운다: 36에서 키우면 52가 되어 장 제목(62)과 같은 색, 굵기에 크기만 한 단계 안쪽이라
+   제목과 다퉜다(checkAssembly). 30에서 키우면 키우기 전 크기(43) 그대로이고, 역할과 맡은 일만 커진다 */
+@container bk (min-width: 1100px) and (min-height: 410px) {
+  .bk-people:not(.va-list, .va-tree) > .bk-in .bk-pp-name {
+    --fs: 30px;
   }
 }
