@@ -59,9 +59,9 @@
   --bold-ink: var(--deep-ink, var(--bg));
   --bold-accent: var(--deep-accent, var(--bold-ink));
   --bold-line: color-mix(in srgb, var(--bold-ink) 22%, transparent);
-  /* 그림의 축과 이음줄(우선순위의 칸 선, 위치 비교의 축, 체계도의 줄기)처럼 줄 선보다 한 단계 짙어야 하는 선. 글자색(검정) 선은 쓰지 않고
+  /* 그림의 축과 이음줄(차트의 축, 우선순위의 칸 선, 위치 비교의 축, 체계도의 줄기)처럼 줄 선보다 한 단계 짙어야 하는 선. 글자색(검정) 선은 쓰지 않고
      옅은 선에 버금 글자색을 섞는다. 그림마다 같은 값을 따로 적어 두면 장마다 다른 회색이 된다 */
-  --line-strong: color-mix(in srgb, var(--ink-3) 45%, var(--line));
+  --line-strong: color-mix(in srgb, var(--ink-3) 50%, var(--bg));
 
   position: relative;
   box-sizing: border-box;

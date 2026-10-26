@@ -80,7 +80,7 @@
   gap: 12px;
   min-height: 0;
   padding: 0 11%;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
   container: vs-pair / inline-size;
 }
 
@@ -213,7 +213,7 @@
   grid-row: 1;
   grid-column: 1 / -1;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
   container-type: inline-size;
 }
 
@@ -261,7 +261,7 @@
 .vs-zero {
   right: 0;
   left: 0;
-  border-top: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-top: var(--rule-hair) solid var(--line-strong);
 }
 
 .vs-pt {

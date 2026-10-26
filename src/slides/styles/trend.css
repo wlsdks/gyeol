@@ -13,7 +13,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
 }
 
 .tn-canvas {
@@ -244,7 +244,7 @@
 }
 
 .tn-zero {
-  border-top: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-top: var(--rule-hair) solid var(--line-strong);
 }
 
 .tn-legend {

@@ -27,7 +27,7 @@
 /* 바닥줄(축)은 옅은 선색(--line)보다 한 단계 진하게: --line은 흰 바탕에서 프로젝터로 보면 묻혀 막대가 떠 보였다(VISUAL-RULES 2-1) */
 .wf-plot {
   position: relative;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
 }
 
 /* 바닥줄은 칸 사이 틈까지 이어지게 */
@@ -36,7 +36,7 @@
   right: calc(var(--wf-gap) * -1);
   bottom: -2px;
   width: var(--wf-gap);
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
   content: '';
 }
 
@@ -227,7 +227,7 @@
   align-self: stretch;
   min-height: calc(var(--wf-bh) + 40px);
   border-bottom: 0;
-  border-left: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-left: var(--rule-hair) solid var(--line-strong);
 }
 
 .va-across .wf-col > .wf-title,

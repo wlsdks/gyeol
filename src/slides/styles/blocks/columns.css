@@ -156,7 +156,7 @@
   align-items: center;
   justify-content: flex-end;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
+  border-bottom: var(--rule-hair) solid var(--line-strong);
   container-type: inline-size;
 }
 
