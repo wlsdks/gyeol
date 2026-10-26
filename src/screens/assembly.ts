@@ -13,6 +13,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
  * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 면이 내용과 나란한 칸보다 훨씬 큰 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
+ * - 짜임: 높이가 넉넉한데 단을 나눈 목록, 내용이 적은데 본문의 왼쪽 위에 몰린 장(너비의 절반도 안 쓰고 아래 3분의 1 넘게 빈)
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
  * #/gallery?set=combos&seed=1&n=60 (또는 set=review) → 콘솔에서 await checkAssembly()
  */
@@ -305,6 +306,23 @@ function inside(area: HTMLElement, k: number): string[] {
       const key = [...cols.keys()].find((c) => Math.abs(c - x) < 4) ?? x
       cols.set(key, (cols.get(key) ?? []).concat(it))
     }
+    // 높이가 넉넉한데 단을 나눈 목록: 단 나누기와 나란히 세우기는 높이가 모자랄 때의 짜임이다. 한 단으로 쌓아도 칸 안에 들면
+    // 나눈 단이 장의 한쪽 구석에 작게 몰려 보였다(소제목과 점 다섯이 셋과 둘로 갈려 왼쪽 위 4분의 1에)
+    if (cols.size >= 2) {
+      const cell = list.closest<HTMLElement>('.bk')
+      const inner = cell?.querySelector<HTMLElement>(':scope > .bk-in')
+      if (cell && inner) {
+        const ls = getComputedStyle(list)
+        const rowGap = parseFloat(ls.rowGap) || 0
+        const cs = getComputedStyle(inner)
+        const ir = inner.getBoundingClientRect()
+        // 한 단으로 쌓을 때의 높이: 칸 위에서 목록 위까지(소제목) + 항목 높이의 합 + 항목 사이
+        const above = (list.getBoundingClientRect().top - ir.top) / k - parseFloat(cs.paddingTop)
+        const one = above + items.reduce((sum, it) => sum + it.getBoundingClientRect().height / k, 0) + rowGap * (items.length - 1)
+        const room = ir.height / k - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        if (one <= room) out.push(`${cell.dataset.type}: 높이가 넉넉한데 목록을 ${cols.size}단으로 나눴어요(한 단 ${Math.round(one)}px, 칸 ${Math.round(room)}px)`)
+      }
+    }
     if (cols.size < 2 || items.length <= cols.size) continue
     const xs = [...cols.keys()].sort((a, b) => a - b)
     for (let i = 1; i < xs.length; i++) {
@@ -320,6 +338,49 @@ function inside(area: HTMLElement, k: number): string[] {
   return out
 }
 
+/**
+ * 내용이 적은 장이 본문의 한쪽 구석(왼쪽 위)에 몰린 것: 그려진 것이 본문 너비의 절반도 안 쓰고 아래 3분의 1 넘게 비었다.
+ * 항목이 여럿인 부품(목록, 표 같은)이 있는 장만 본다: 항목은 단을 바꾸거나 소제목 옆으로 눕혀 넓게 짤 수 있다.
+ * 글만 있는 장은 글 폭(--measure)이 일부러 줄을 꺾어 오른쪽이 비는 것이라 보지 않는다
+ */
+const CORNER_W = 0.5
+const CORNER_B = 1 / 3
+
+function corner(area: HTMLElement, k: number): string[] {
+  const a = area.getBoundingClientRect()
+  let l = Infinity
+  let r = -Infinity
+  let b = -Infinity
+  for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk')) {
+    const ink = inkSpan(cell)
+    if (!ink) continue
+    b = Math.max(b, ink.b)
+    if (!cell.classList.contains('bk-look-plain')) {
+      const q = cell.getBoundingClientRect()
+      l = Math.min(l, q.left)
+      r = Math.max(r, q.right)
+      continue
+    }
+    const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
+    if (!inner) continue
+    for (const q of blockTextLines(inner)) {
+      l = Math.min(l, q.l)
+      r = Math.max(r, q.r)
+    }
+    for (const f of inner.querySelectorAll('svg, img')) {
+      if (f.parentElement?.closest('svg')) continue
+      const q = f.getBoundingClientRect()
+      if (!q.width) continue
+      l = Math.min(l, q.left)
+      r = Math.max(r, q.right)
+    }
+  }
+  if (!(l < r) || !area.querySelector(':scope > .bk .it ~ .it')) return []
+  const w = (r - l) / a.width
+  const bottom = (a.bottom - b) / a.height
+  return w < CORNER_W && bottom > CORNER_B ? [`내용이 본문의 왼쪽 위에 몰렸어요(너비의 ${Math.round(w * 100)}%, 아래 ${Math.round((a.bottom - b) / k)}px 빔)`] : []
+}
+
 /** 그려진 부품 장마다 위계, 빈 띠, 글 폭을 본다. 없으면 빈 목록 */
 export async function checkAssembly(): Promise<{ slides: number; problems: string[] }> {
   await document.fonts.ready
@@ -330,7 +391,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }
