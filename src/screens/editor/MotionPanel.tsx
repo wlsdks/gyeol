@@ -7,6 +7,7 @@ import { sceneOf } from '../../deck/scenes'
 import { MOTIONS, motionOf, TRANSITIONS } from '../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide, Transition } from '../../deck/types'
 import { cx } from '../../lib/cx'
+import { josa } from '../../lib/josa'
 import { keys } from '../../lib/keys'
 import { useListDrag } from '../../lib/listDrag'
 import { motionEngine } from '../../motion/engine'
@@ -137,7 +138,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
   const move = (from: number, to: number) => {
     if (from === to || to < 0 || to >= ids.length) return
     setOptions(slide.id, { order: arrayMove(ids, from, to) }, 'order')
-    setSaid(`${names.get(ids[from]) ?? '컴포넌트'}를 ${to + 1}번째로 옮겼어요.`)
+    setSaid(`${josa(names.get(ids[from]) ?? '컴포넌트', '을', '를')} ${to + 1}번째로 옮겼어요.`)
   }
   const onDragEnd = (e: DragEndEvent) => {
     drag.end()
