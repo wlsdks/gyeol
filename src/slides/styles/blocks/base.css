@@ -26,11 +26,11 @@
    가로 한 칸은 레이아웃 장의 12칸 격자와 같다. 이음표가 선 쪽은 --lk-pad만큼 비켜 준다(--pl, --pr, --pt, --pb, links.css).
    같은 계산을 deck/blocks/sizing.ts의 atRect가 한다.
    발표 화면과 편집 화면(끄는 동안은 빼고)에서는 줄마다 그려진 내용을 앞 줄 바로 아래로 올려 붙이는 만큼(--bk-shift)을 더하고, 면은 내용에 맞춰 줄인 만큼(--bk-trim)
-   낮춘다(fitBlocks.ts 3-4) */
+   낮춘다(fitBlocks.ts 3-4). 옆으로 나란한 단은 남는 너비를 단 사이와 오른쪽 끝에 나눈 만큼(--bk-shift-x, fitBlocks.ts의 balance) 옮긴다 */
 .bk {
   position: absolute;
   top: calc((100% + var(--bk-gap)) * var(--y) / 12 + var(--pt, 0) * var(--lk-pad) + var(--bk-shift, 0px));
-  left: calc((100% + var(--bk-col-gap)) * var(--x) / 12 + var(--pl, 0) * var(--lk-pad));
+  left: calc((100% + var(--bk-col-gap)) * var(--x) / 12 + var(--pl, 0) * var(--lk-pad) + var(--bk-shift-x, 0px));
   width: calc((100% + var(--bk-col-gap)) * var(--w) / 12 - var(--bk-col-gap) - (var(--pl, 0) + var(--pr, 0)) * var(--lk-pad));
   height: calc((100% + var(--bk-gap)) * var(--h) / 12 - var(--bk-gap) - (var(--pt, 0) + var(--pb, 0)) * var(--lk-pad) - var(--bk-trim, 0px));
   container: bk / size;

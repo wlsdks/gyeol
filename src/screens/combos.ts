@@ -226,7 +226,10 @@ export async function checkCombos(): Promise<{ slides: number; cells: number; pr
     const rects = list.map((c) => {
       const r = c.getBoundingClientRect()
       const dy = (parseFloat(c.style.getPropertyValue('--bk-shift')) || 0) * k
-      return new DOMRect(r.left, r.top - dy, r.width, r.height)
+      // 키워 보느라 더 준 높이(음수 --bk-trim, fitBlocks.ts의 fit 끝)와 옆으로 옮긴 만큼(--bk-shift-x)도 판의 자리로 되돌린다
+      const dh = Math.min(0, parseFloat(c.style.getPropertyValue('--bk-trim')) || 0) * k
+      const dx = (parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0) * k
+      return new DOMRect(r.left - dx, r.top - dy, r.width, r.height + dh)
     })
     // 이음표는 칸 사이의 빈자리에 혼자 서야 한다: 어느 칸에도 걸치지 않는다. 칸의 자리와 같은 때에 잰다: 아래의 칸 안 검사가
     // 장을 스크롤하면 그 뒤에 잰 이음표만 자리가 달라져 걸치지 않은 이음표를 걸쳤다고 했다
