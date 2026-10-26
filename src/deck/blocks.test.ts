@@ -630,6 +630,14 @@ describe('이음표', () => {
     expect(needRows(withLink(bs, { id: 'a', dir: 'v' }, 'arrow'), fit)).toBeGreaterThanOrEqual(needRows(bs, fit))
   })
 
+  it('눌러 넣은 컴포넌트는 이음표의 뜻을 깨지 않는 자리에: 결과(=) 아래 줄의 끝이 아니라 앞 부품 옆에', () => {
+    const linked = autoPlace(withLink(board(block('points', 'p'), block('number', 'n')), { id: 'p', dir: 'v' }, 'equals'), block('stat', 's'), H)!
+    const next = autoPlace(linked, block('range', 'r'), H)!
+    expect(next.map((b) => b.id)).toContain('r')
+    expect(linkAt(next, { id: 'p', dir: 'v' })).toBe('equals')
+    expect(linkIssue(next, { id: 'p', dir: 'v' }, 'equals')).toBeNull()
+  })
+
   it('설 데가 없어진 이음표는 빠진다: 건너편 부품을 빼면', () => {
     const linked = withLink(withLink(bs, { id: 'a', dir: 'h' }, 'arrow'), { id: 'b', dir: 'v' }, 'equals')
     expect(removeBlock(linked, 'b').find((b) => b.id === 'a')).not.toHaveProperty('link')

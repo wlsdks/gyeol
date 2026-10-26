@@ -25,7 +25,7 @@ import {
 } from './board'
 import { ARRANGE_MAX, arrangeBest, arrangeOrder, boardCost, isArranged } from './arrange'
 import { aspectOf, fitImage, fitPlaced, misfit } from './images'
-import { dropBlock, tidyLinks } from './links'
+import { dropBlock, linkAt, linkIssue, linkTargets, tidyLinks } from './links'
 import { BLOCK_COL_GAP, BLOCK_GAP, isSmall, isSolo, largeCount, MAX_BLOCKS, MAX_LARGE, settleLook } from './rules'
 import { AREA_W, atRect, boardFit, heightIssue, overAlready, type Rect } from './sizing'
 
@@ -249,8 +249,38 @@ function arranged(blocks: Block[], next: Block[], areaH: number): Block[] {
   return tidyLinks(next.map((b) => byId.get(b.id) ?? b))
 }
 
-/** 판이 알아서 고른 자리에 끼운 판 (autoPlace의 예전 길) */
+/**
+ * 판이 알아서 고른 자리에 끼운 판 (autoPlace의 예전 길). 그 자리가 이음표의 뜻을 깨면(keepsLinks) 깨지 않는 자리 가운데 판의 점수가
+ * 가장 좋은 자리에. 그런 자리가 없으면 고른 자리 그대로
+ */
 function slotIn(blocks: Block[], block: Block, areaH?: number): Block[] | null {
+  const next = slotFirst(blocks, block, areaH)
+  if (!next || keepsLinks(blocks, next)) return next
+  let best: { blocks: Block[]; cost: number } | null = null
+  for (const spot of allSpots(blocks).reverse()) {
+    const other = insertAt(blocks, spot, block, areaH)
+    if (!other || !keepsLinks(blocks, other)) continue
+    if (areaH === undefined) return other
+    const cost = boardCost(other, fitFor(other, areaH), areaH)
+    if (!best || cost < best.cost) best = { blocks: other, cost }
+  }
+  return best?.blocks ?? next
+}
+
+/**
+ * 넣기 전에 뜻이 서던 이음표가 넣은 뒤에도 그 자리에서 뜻이 서는지 (links.ts의 linkIssue). 판이 고른 자리가 이음표 선의 건너편이면
+ * 새 부품도 그 이음표로 이어진다: '핵심 포인트 = 큰 숫자, 숫자 한 줄'의 아래 줄 끝에 범위가 들어가 결과(=)가 범위로도 맺어
+ * 뜻이 서지 않았다(결과는 숫자나 결론 한마디로 맺는다)
+ */
+function keepsLinks(before: Block[], after: Block[]): boolean {
+  return linkTargets(before).every((t) => {
+    const link = linkAt(before, t)
+    return !link || !!linkIssue(before, t, link) || (linkAt(after, t) === link && !linkIssue(after, t, link))
+  })
+}
+
+/** 판이 알아서 고른 자리 (slotIn의 첫 고르기) */
+function slotFirst(blocks: Block[], block: Block, areaH?: number): Block[] | null {
   const fit = fitFor([...blocks, block], areaH)
   // 소제목 바로 다음에 넣는 부품은 그 소제목 아래에: 소제목은 아래 부품들의 이름이다. 판이 알아서 고르면(autoInsert) 마지막 줄의
   // 옆이나 판 오른쪽에 들어가, 소제목이 묶을 것 없이 맨 아래에 혼자 남았다(소제목, 목록, 소제목, 할 일 차례로 넣은 장)
