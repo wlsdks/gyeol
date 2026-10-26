@@ -347,6 +347,13 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   cursor: pointer;
 }
 
+/* 키보드로 빈 이미지 칸에 오면 칸 안쪽에 테를: 앱의 바깥 테(:focus-visible)는 이미지 상자(.img, overflow: hidden)가 잘라 내서
+   아무 표시가 없었다. 장은 줄여 그리므로 굵기는 화면에서 2px로 (고른 칸의 테와 같다) */
+.img-drop:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 calc(2px / var(--vs, 0.5)) var(--sel);
+}
+
 .img-drop-i {
   width: 56px;
   height: 56px;
