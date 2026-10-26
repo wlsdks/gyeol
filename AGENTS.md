@@ -53,6 +53,8 @@ npm start            # http://127.0.0.1:41580
 npm run mcp          # MCP 서버를 직접 띄우기 (보통은 Claude Code, Codex가 띄움)
 npm run licenses     # 라이선스 확인
 npm run pack         # 나눠 줄 폴더와 zip (release/)
+# 릴리스: package.json의 version을 올려 커밋한 뒤 git tag vX.Y.Z && git push origin vX.Y.Z
+#   → .github/workflows/release.yml이 검수 후 zip 둘과 SHA256SUMS.txt를 GitHub 릴리스에 올린다
 ```
 
 모든 장과 모양, 색과 글자 크기는 장 모음(`#/system`, 쓰는 사람도 봄)에서 봅니다. 새 레이아웃은 `LAYOUT_GROUPS`의 묶음 하나와 `showcase.ts`의 예시 장이 있어야 합니다(테스트가 확인). 무너지기 쉬운 경우까지 늘어놓고 점검할 때는 개발용 갤러리를 씁니다.
