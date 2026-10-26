@@ -155,7 +155,8 @@
   gap: 64px;
   margin-top: 112px;
   padding-top: 36px;
-  border-top: 2px solid var(--bold-line);
+  /* 단락 지도 위의 선 하나만, 옅은 1px (docs/VISUAL-RULES.md 2) */
+  border-top: var(--rule-hair) solid var(--bold-line);
   font-size: 26px;
   line-height: 1.2;
 }

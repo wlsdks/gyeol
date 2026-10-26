@@ -107,7 +107,8 @@
   flex-direction: column;
   gap: 30px;
   padding-top: 40px;
-  border-top: 2px solid var(--bold-line);
+  /* 결정 요청과 발표자 줄을 나누는 선 하나. 옅은 1px만(docs/VISUAL-RULES.md 2): 2px 선은 장식처럼 무거웠다 */
+  border-top: var(--rule-hair) solid var(--bold-line);
 }
 
 .cv-meta:empty {
@@ -153,7 +154,7 @@
   gap: 56px;
   padding: 0 0 0 56px;
   border-top: 0;
-  border-left: 2px solid var(--bold-line);
+  border-left: var(--rule-hair) solid var(--bold-line);
 }
 
 /* 결정 요청이 없는 표지(나누고 알리는 발표): 발표자 줄이 띠의 왼쪽, 제목과 같은 선에서 시작한다.
@@ -183,7 +184,7 @@
 .l-cover.va-full .cv-side {
   margin: 0 var(--pad-x);
   padding: 56px 0 var(--pad-y);
-  border-top: 2px solid var(--bold-line);
+  border-top: var(--rule-hair) solid var(--bold-line);
   background: none;
 }
 
