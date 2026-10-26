@@ -97,6 +97,11 @@ function same(a: unknown, b: unknown, trim = false): boolean {
 /** 고친 때(updatedAt) 말고는 같은 발표인지 */
 const sameDeck = (a: Deck, b: Deck, trim = false) => same({ ...a, updatedAt: 0 }, { ...b, updatedAt: 0 }, trim)
 
+/** 바로 앞의 commit이 아무것도 바꾸지 않았는지 (undoLast가 본다) */
+let unchanged = false
+/** 기록을 바꾼 고침의 수 (undoLast가 본다: 알림을 띄운 뒤에 고친 것이 있는지) */
+let edits = 0
+
 /**
  * 되돌리거나 다시 한 뒤 고를 장. 보던 장이 바뀌었으면 그대로, 다른 장이 바뀌었거나 되살아났으면 그 장, 보던 장이 없어졌으면 그 앞 장.
  * 다른 장만 없어졌으면 없어진 자리의 앞 장, 차례만 바뀌었으면 옮겨진 장 (보던 장이 그 곁이거나 함께 옮겨졌으면 그대로).
@@ -139,7 +144,8 @@ export const useDeck = create<DeckState>((set, get) => {
     const next = { ...settleDeck(fn(deck), deck), updatedAt: Date.now() }
     // 아무것도 바뀌지 않았으면 기록하지 않는다. 지금 것을 다시 고르면(같은 차례, 같은 강조) 빈 되돌리기 단계가 생겨서
     // Ctrl+Z를 눌러도 아무 일이 없는 것처럼 보였다
-    if (sameDeck(next, deck)) return
+    unchanged = sameDeck(next, deck)
+    if (unchanged) return
     const now = Date.now()
     // 칸을 나가며 글의 앞뒤 빈칸만 다듬은 것(fields.tsx의 onBlur)은 단계를 따로 남기지 않고 지금 단계에 얹는다.
     // 쓰고 1.2초 넘게 쉬었다가, 또는 다른 것을 고친 뒤에 칸을 나가면 빈칸 하나만 되돌리는 단계가 생겨서
@@ -151,6 +157,7 @@ export const useDeck = create<DeckState>((set, get) => {
       const top = past[past.length - 1]
       if (!future.length && sameDeck(next, top)) {
         set({ deck: { ...top, aiShare: deck.aiShare }, past: past.slice(0, -1), lastKey: null, lastTime: now })
+        edits++
         return
       }
       set({ deck: next, lastTime: now })
@@ -164,8 +171,10 @@ export const useDeck = create<DeckState>((set, get) => {
       // 한 단계로 묶이는 고침이 처음 모습으로 돌아왔으면(끌다가 제자리에 놓거나 Esc로 그만두거나, 쓴 글을 곧바로 지우면) 그 단계를 지운다.
       // 바뀐 것 없는 단계가 남아 Ctrl+Z가 아무 일도 하지 않는 것처럼 보였다
       set({ deck: { ...top, aiShare: deck.aiShare }, past: past.slice(0, -1), lastKey: null, lastTime: now })
+      edits++
       return
     }
+    edits++
     set({
       deck: next,
       past: coalesce ? past : [...past, deck].slice(-HISTORY_LIMIT),
@@ -398,13 +407,19 @@ export const useDeck = create<DeckState>((set, get) => {
 /**
  * 알림의 '되돌리기'용. 바꾼 바로 뒤에 불러 두면, 돌려준 함수는 그 바꾼 것이 아직 맨 위일 때만 되돌리고 true를 돌려준다.
  * 알림이 떠 있는 사이에 다른 것을 고쳤으면 그것을 되돌리게 되므로 되돌리지 않는다.
- * 되돌리기 기록의 맨 위(바꾸기 전 덱)가 같은지로 본다: AI 공유처럼 기록에 남지 않는 설정이 바뀌어도 그대로 되돌릴 수 있다
+ * 기록을 바꾼 고침의 수와 기록의 길이로 본다: AI 공유처럼 기록에 남지 않는 설정이 바뀌어도, Ctrl+Z 뒤 Ctrl+Y로 그대로 돌아왔어도 되돌린다.
+ * 그 뒤로 고친 것 없이 이미 되돌렸거나(Ctrl+Z, 위쪽 되돌리기) 바꾼 것이 없었으면 아무것도 하지 않고 true: 예전에는 Ctrl+Z 뒤에
+ * 알림의 되돌리기를 누르면 '그 뒤에 고친 것이 있어서'라고 알려서 한 번 더 Ctrl+Z를 누르게 했고, 그러면 그 앞에 고친 것까지 되돌려졌다.
+ * 되돌린 뒤에 새로 고쳤으면 기록의 맨 위가 다시 같아져도 되돌리지 않는다(새로 고친 것이 되돌려졌다)
  */
 export function undoLast(): () => boolean {
-  const before = useDeck.getState().past.at(-1)
+  const at = useDeck.getState().past.length
+  const seen = edits
+  const none = unchanged
   return () => {
     const s = useDeck.getState()
-    if (!before || s.past.at(-1) !== before) return false
+    if (none || (edits === seen && s.past.length < at)) return true
+    if (edits !== seen || s.past.length !== at) return false
     s.undo()
     return true
   }

@@ -161,6 +161,49 @@ describe('되돌리기 단위', () => {
   })
 })
 
+describe('알림의 되돌리기', () => {
+  beforeEach(() => useDeck.getState().open(deck()))
+  const slides = () => useDeck.getState().deck!.slides
+
+  it('Ctrl+Z로 되돌린 뒤 새로 고친 것은 되돌리지 않는다', () => {
+    useDeck.getState().removeSlide(slides()[3].id)
+    const undo = undoLast()
+    useDeck.getState().undo()
+    useDeck.getState().setTitle('되돌린 뒤 바꾼 제목')
+    expect(undo()).toBe(false)
+    expect(useDeck.getState().deck?.title).toBe('되돌린 뒤 바꾼 제목')
+  })
+
+  it('Ctrl+Z, Ctrl+Y로 그대로 돌아온 뒤에는 되돌린다', () => {
+    const id = slides()[3].id
+    useDeck.getState().removeSlide(id)
+    const undo = undoLast()
+    useDeck.getState().undo()
+    useDeck.getState().redo()
+    expect(undo()).toBe(true)
+    expect(slides().some((s) => s.id === id)).toBe(true)
+  })
+
+  it('이미 되돌린 것을 한 번 더 되돌리지 않는다', () => {
+    useDeck.getState().setTitle('먼저 바꾼 제목')
+    useDeck.getState().removeSlide(slides()[3].id)
+    const undo = undoLast()
+    useDeck.getState().undo()
+    expect(undo()).toBe(true)
+    expect(useDeck.getState().deck?.title).toBe('먼저 바꾼 제목')
+    expect(useDeck.getState().past).toHaveLength(1)
+  })
+
+  it('바꾼 것이 없었으면 그 앞에 고친 것을 되돌리지 않는다', () => {
+    useDeck.getState().setTitle('먼저 바꾼 제목')
+    const s = slides()[1]
+    useDeck.getState().setOptions(s.id, { highlight: s.options.highlight })
+    const undo = undoLast()
+    expect(undo()).toBe(true)
+    expect(useDeck.getState().deck?.title).toBe('먼저 바꾼 제목')
+  })
+})
+
 describe('되돌린 뒤 보는 장', () => {
   beforeEach(() => useDeck.getState().open(deck()))
   const slides = () => useDeck.getState().deck!.slides
