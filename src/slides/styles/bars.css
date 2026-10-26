@@ -24,8 +24,9 @@
   flex: 1;
   min-height: 0;
   grid-auto-rows: minmax(min-content, 168px);
-  /* 줄이 모자라면 아래로만 넘친다: 위로 넘치면 단위 줄을 덮는데 넘친 것으로 세지 않아서 글자 맞추기가 놓친다 */
-  align-content: safe center;
+  /* 줄은 위에서부터 쌓고 남는 높이는 맨 아래 한곳에(docs/VISUAL-RULES.md 6). 가운데에 두면 막대가 적을 때 단위 줄과 첫 막대 사이가
+     벌어져 제목 아래에 빈 띠가 섰다. 줄이 모자라면 아래로만 넘친다(위로 넘치면 단위 줄을 덮는데 글자 맞추기가 놓친다) */
+  align-content: start;
   padding-bottom: 24px;
 }
 
@@ -35,11 +36,6 @@
   grid-template-columns: 400px 1fr 280px;
   align-items: center;
   gap: 48px;
-  border-bottom: var(--rule-hair) solid var(--line);
-}
-
-.br-row:first-child {
-  border-top: var(--rule-hair) solid var(--line);
 }
 
 .br-name {
@@ -54,11 +50,12 @@
   color: var(--ink-3);
 }
 
+/* 막대 뒤의 회색 바닥(다 찬 자리)은 깔지 않는다: 가장 긴 막대가 100이라 바닥은 아무 값도 말하지 않는 잉크였고,
+   줄마다 회색 띠가 서서 줄 선과 함께 장이 붐볐다(docs/VISUAL-RULES.md 3). 줄 사이도 선 없이 여백이 나눈다 */
 .br-track {
   height: 64px;
   overflow: hidden;
   border-radius: var(--r-mark);
-  background: var(--surface);
 }
 
 .br-fill {
@@ -218,9 +215,8 @@
 }
 
 .br-row.is-hl .br-dot {
+  /* 강조는 색 하나로: 둘레에 옅은 강조색 고리를 두르면 점이 두 배로 커 보이는 장식이 되었다 */
   background: var(--accent);
-  /* 강조한 점만 바탕색 고리로 선에서 떼어 낸다 */
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 16%, var(--bg));
 }
 
 .br:is([data-n='5'], [data-n='6']):not(.va-columns *) .br-dot {
