@@ -126,11 +126,14 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   const merged = merge(spans)
   const head = slide.querySelector<HTMLElement>('.s-head')
   const hasHead = !!head && head.getClientRects().length > 0 && !!head.textContent?.trim()
+  // 장 머리 아래의 빈 띠 (머리가 없으면 0)
+  let headGap = 0
   if (hasHead) {
     // 머리의 아래: 부제가 있으면 부제, 없으면 제목의 글 줄 아래
     const last = [...head!.querySelectorAll<HTMLElement>('.s-title, .s-lead')].filter((el) => el.textContent?.trim()).at(-1)
     const hb = last ? last.getBoundingClientRect().bottom : head!.getBoundingClientRect().bottom
     const gap = (merged[0].t - hb) / k
+    headGap = gap
     // 내용이 적은 장은 남는 높이를 머리 아래와 맨 아래에 2 : 3으로 둔다(fitBlocks.ts 3-4). 그래서 머리 아래가 넓어도 아래가 그보다 넓으면
     // 내용이 눈높이 가운데에 선 것이라 괜찮다. 아래보다 넓으면 내용이 가라앉은 것
     const under = (area.getBoundingClientRect().bottom - merged[merged.length - 1].b) / k
@@ -152,7 +155,8 @@ function bands(slide: HTMLElement, area: HTMLElement, k: number): string[] {
   // 벌릴 수 있는 사이가 있는지: 소제목 아래는 그 아래 부품과 한 덩어리라 벌리지 않는다
   const at = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
   const opens = all.some((p) => p.dataset.type !== 'heading' && all.some((q) => at(q, '--y') >= at(p, '--y') + at(p, '--h') && at(q, '--x') < at(p, '--x') + at(p, '--w') && at(p, '--x') < at(q, '--x') + at(q, '--w')))
-  if (hasHead && opens && !filled && bottom > area.offsetHeight / 3 && widest < GAP_SPREAD)
+  // 남는 높이를 머리 아래에도 나눈 장(머리 아래가 아래 빈 띠의 반 넘게)은 내용이 눈높이 가운데에 선 것이라 몰린 것이 아니다
+  if (hasHead && opens && !filled && bottom > area.offsetHeight / 3 && widest < GAP_SPREAD && headGap < bottom / 2)
     out.push(`내용이 위에 몰려 아래가 ${Math.round(bottom)}px 비어요`)
   // 이음표는 그려진 것 사이의 빈자리에 혼자 서야 한다
   for (const lk of area.querySelectorAll<HTMLElement>(':scope > .bk-link')) {
