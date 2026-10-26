@@ -1,0 +1,124 @@
+import { useMemo, useState } from 'react'
+import { currentPreset, MOTION_PRESETS } from '../../../deck/blocks'
+import { LAYOUTS } from '../../../deck/layouts'
+import { planMotionCopy, withMotionCopy } from '../../../deck/motionCopy'
+import { sceneOf, sceneSpec } from '../../../deck/scenes'
+import { MOTIONS } from '../../../deck/themes'
+import type { Deck, Slide } from '../../../deck/types'
+import { useDeck } from '../../../store/deckStore'
+import { Info, undoAction, type Toast } from '../../ui'
+import { INHERIT, nameOf, SLIDE_TRANSITIONS } from '../MotionPanel'
+
+// 이 장의 움직임을 다른 장에도: 한 장을 공들여 짠 뒤, 모양이 같은 장마다 같은 것을 하나하나 다시 고르지 않게.
+// 누르면 무엇을 옮기는지와 옮길 장(모양이 같은 장을 미리 골라 둔다)을 먼저 보이고, '적용하기'로 한 번에 옮긴다
+// (되돌리기 한 번에 돌아온다). 옮기는 것은 고르는 값뿐이고 글은 그대로다(deck/motionCopy.ts)
+
+export function MotionCopy({ deck, slide, toast }: { deck: Deck; slide: Slide; toast?: Toast }) {
+  const replaceDeck = useDeck((s) => s.replaceDeck)
+  const rows = useMemo(() => planMotionCopy(deck, slide.id), [deck, slide.id])
+  const [open, setOpen] = useState(false)
+  // 고른 장. 처음에는 모양이 같은 장만 (열 때마다 다시)
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
+  const titles = useMemo(() => new Map(deck.slides.map((s) => [s.id, s.fields.title?.trim() || LAYOUTS[s.layout]?.name || '장'])), [deck.slides])
+  const same = rows.filter((r) => r.same)
+
+  if (!open) {
+    return (
+      <section className="ms-sec">
+        <h2 className="ms-h">
+          다른 장에도
+          <Info label="다른 장에도 옮기는 것" align="start">
+            이 장의 장면, 장 넘기기, 움직임 정도를 다른 장에 그대로 옮겨요. 컴포넌트 장끼리는 연출과 같은 종류 컴포넌트의 움직임도 옮겨요. 글은 바뀌지 않아요.
+          </Info>
+        </h2>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm mc-open"
+          disabled={!rows.length}
+          title={rows.length ? undefined : '옮길 다른 장이 없어요'}
+          onClick={() => {
+            setPicked(new Set(same.map((r) => r.slideId)))
+            setOpen(true)
+          }}
+        >
+          이 장의 움직임을 다른 장에도
+        </button>
+      </section>
+    )
+  }
+
+  const scene = sceneOf(slide)
+  const preset = slide.layout === 'compose' ? currentPreset(slide) : null
+  const what = [
+    `장면 ${scene ? sceneSpec(scene).name : '없음'}`,
+    `장 넘기기 ${nameOf(SLIDE_TRANSITIONS, slide.options.transition ?? undefined)}`,
+    `움직임 정도 ${slide.options.motion ? nameOf(MOTIONS, slide.options.motion) : INHERIT}`,
+    preset && `연출 ${nameOf(MOTION_PRESETS, preset)}`,
+  ].filter(Boolean)
+  const toggle = (id: string) =>
+    setPicked((p) => {
+      const next = new Set(p)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const chosen = rows.filter((r) => picked.has(r.slideId))
+  const apply = () => {
+    const next = withMotionCopy(deck, slide.id, [...picked])
+    setOpen(false)
+    if (next === deck) {
+      toast?.show('고른 장이 이미 이 장과 같은 움직임이에요.')
+      return
+    }
+    replaceDeck(next)
+    toast?.show(`${chosen.length}장에 이 장의 움직임을 옮겼어요.`, undoAction(toast))
+  }
+
+  return (
+    <section className="ms-sec">
+      <h2 className="ms-h">다른 장에도</h2>
+      <div className="sp-plan mc-plan" role="group" aria-label="이 장의 움직임을 다른 장에도">
+        <p className="sp-plan-h">옮기는 것</p>
+        <p className="sp-plan-p">
+          {what.join(' · ')}
+          {slide.layout === 'compose' && ' · 같은 종류 컴포넌트의 움직임'}
+        </p>
+        <div className="mc-quick">
+          <span className="sp-plan-h">옮길 장</span>
+          <button type="button" className="mp-reset" disabled={!same.length} onClick={() => setPicked(new Set(same.map((r) => r.slideId)))}>
+            모양이 같은 장만
+          </button>
+          <button type="button" className="mp-reset" onClick={() => setPicked(new Set(rows.map((r) => r.slideId)))}>
+            모두
+          </button>
+        </div>
+        {!same.length && <p className="sp-plan-p">모양이 같은 장이 없어요. 옮길 장을 직접 골라 주세요.</p>}
+        {/* 모양이 같은 장을 먼저: 장 차례대로 늘어놓으면 골라 둔 장이 목록 아래에 묻혀 무엇을 골랐는지 보이지 않았다 */}
+        <ul className="sp-rows mc-rows">
+          {[...same, ...rows.filter((r) => !r.same)].map((r, i) => (
+            <li key={r.slideId} className={i === same.length && i > 0 ? 'mc-rest' : undefined}>
+              <label className="mc-row">
+                <input type="checkbox" checked={picked.has(r.slideId)} onChange={() => toggle(r.slideId)} />
+                <span className="sp-page">{r.page}</span>
+                <span className="mc-name">{titles.get(r.slideId)}</span>
+                {r.sceneSkipped && picked.has(r.slideId) && (
+                  <span className="mc-note" title="이 장의 장면이 그 장에는 맞지 않아서, 그 장의 장면은 그대로 두고 나머지만 옮겨요.">
+                    장면은 그대로
+                  </span>
+                )}
+              </label>
+            </li>
+          ))}
+        </ul>
+        <div className="sp-plan-btns">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>
+            닫기
+          </button>
+          <button type="button" className="btn btn-primary btn-sm" disabled={!chosen.length} onClick={apply}>
+            {chosen.length ? `${chosen.length}장에 적용하기` : '적용하기'}
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}

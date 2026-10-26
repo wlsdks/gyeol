@@ -859,3 +859,76 @@ html.ms-vt[data-mo-swap]::view-transition-image-pair(root) {
   background: var(--sel-soft);
   color: var(--sel);
 }
+
+/* ---------- 다른 장에도 (studio/MotionCopy.tsx) ---------- */
+/* 장면 알아서 고르기(.sp-plan)와 같은 꼴: 무엇을 옮기는지, 옮길 장, 적용하기 */
+
+.ms-h .info {
+  margin-left: 4px;
+  vertical-align: -3px;
+}
+
+.mc-open {
+  width: 100%;
+}
+
+.mc-plan {
+  margin-top: 0;
+}
+
+.mc-quick {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 4px 0 4px;
+}
+
+.mc-quick .sp-plan-h {
+  flex: 1;
+  margin: 0;
+}
+
+.mc-quick .mp-reset:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.mc-rows {
+  max-height: 196px;
+}
+
+.mc-rows li {
+  display: block;
+  padding: 0;
+}
+
+.mc-rows .mc-rest {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.mc-row {
+  display: grid;
+  grid-template-columns: auto 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.mc-row input {
+  margin: 0;
+}
+
+.mc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-note {
+  color: var(--ink-3);
+  font-size: 11px;
+  white-space: nowrap;
+}

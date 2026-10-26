@@ -294,6 +294,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           onClose={() => setStudio(null)}
           onConvert={blocks.convert}
           onPresent={(id) => void launch.start(id)}
+          toast={toast}
         />
       )}
       <PresentDialogs launch={launch} onFillBlanks={focusFirstMissing} />

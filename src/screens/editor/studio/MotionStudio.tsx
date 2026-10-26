@@ -25,12 +25,13 @@ import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion
 import { cx } from '../../../lib/cx'
 import { FitSlide, pageProps, SlideCanvas, useStableSections } from '../../../slides/SlideCanvas'
 import { useDeck } from '../../../store/deckStore'
-import { BackIcon, ChevronIcon, PlayIcon, Segmented, useDialog } from '../../ui'
+import { BackIcon, ChevronIcon, PlayIcon, Segmented, useDialog, type Toast } from '../../ui'
 import { Opt } from '../Inspector'
 import { useLook, type Look } from '../look'
 import { FROM_SHORT, INHERIT, nameOf, SLIDE_TRANSITIONS } from '../MotionPanel'
 import { SceneOverride, ScenePicker } from '../ScenePicker'
 import { usePlayer, useReducedMotion } from './player'
+import { MotionCopy } from './MotionCopy'
 import { Timeline } from './Timeline'
 
 // 움직임 편집: 한 장의 움직임을 크게 보며 고치는 화면. 편집기 위에 덮어 연다.
@@ -45,6 +46,7 @@ export function MotionStudio({
   onClose,
   onConvert,
   onPresent,
+  toast,
 }: {
   deck: Deck
   slide: Slide
@@ -54,6 +56,8 @@ export function MotionStudio({
   onConvert(): void
   /** 이 장(또는 앞 장)부터 발표 */
   onPresent(slideId: string): void
+  /** '다른 장에도'를 옮긴 뒤 되돌리기를 보일 알림 */
+  toast?: Toast
 }) {
   const store = useDeck.getState()
   const look = useLook(deck)
@@ -256,6 +260,7 @@ export function MotionStudio({
             />
           )}
           <SlideMotion deck={deck} slide={slide} onTransition={enter} />
+          <MotionCopy deck={deck} slide={slide} toast={toast} />
         </aside>
       </div>
     </div>
