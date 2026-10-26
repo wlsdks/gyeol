@@ -6,6 +6,7 @@ import {
   BLOCKS,
   BOARD_ROWS,
   boardAreaH,
+  boardCost,
   boardFit,
   composeAreaH,
   insertAt,
@@ -94,6 +95,9 @@ const ALL_SCENES: BlockType[][][] = [
   ...BLOCK_TYPES.filter((t) => !SCENES.some((s) => s.some((slot) => slot.includes(t)))).map((t) => [[t], ['text', 'bullets', 'message']] as BlockType[][]),
 ]
 
+/** 끌어다 놓는 자리를 고를 때 가장 좋은 자리의 점수에서 이만큼까지 (combos의 사람이 놓는 자리) */
+const SENSIBLE = 12
+
 const pick = <T,>(rand: () => number, list: readonly T[]): T => list[Math.floor(rand() * list.length)]
 
 /**
@@ -173,7 +177,15 @@ export function comboSlides(seed: number, n: number, look?: Parameters<typeof co
         // 소제목만 맨 아래에 혼자 남은, 아무도 만들지 않을 장이 섞였다
         const head = blocks.at(-1)?.type === 'heading' && b.type !== 'heading' ? blocks.at(-1)!.id : null
         const under = head ? valid.find((v) => v.kind === 'spot' && v.spot.at === head && v.spot.side === 'below' && !v.spot.up) : undefined
-        const t = under ?? (valid.length ? pick(rand, valid) : null)
+        // 사람은 말이 되는 자리에 끌어다 놓는다: 넣을 수 있는 자리 가운데 짜임 점수(arrange.ts의 boardCost)가 가장 좋은 것에서 SENSIBLE 안쪽만.
+        // 아무 자리에나 놓으면 로고 모음 옆 좁은 칸에 숫자 하나, 맨 위 띠에 다른 숫자 하나처럼 아무도 만들지 않을 짜임이 섞였다
+        const scored = valid.map((v) => {
+          const next = v.kind === 'spot' ? insertAt(blocks, v.spot, b, areaH) : null
+          return { v, cost: next ? boardCost(next, boardFit(areaH, next), areaH) : Infinity }
+        })
+        const least = Math.min(...scored.map((x) => x.cost))
+        const sensible = scored.filter((x) => x.cost <= least + SENSIBLE).map((x) => x.v)
+        const t = under ?? (sensible.length ? pick(rand, sensible) : null)
         // validTargets와 whyNot이 같은 것을 말하는지
         if (t && whyNot(blocks, t, b, areaH)) throw new Error('validTargets와 whyNot이 서로 다르게 판단했어요')
         next = t && t.kind === 'spot' ? insertAt(blocks, t.spot, b, areaH) : null
