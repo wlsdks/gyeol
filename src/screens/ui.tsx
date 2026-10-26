@@ -194,8 +194,11 @@ export function Popover({
     const wrap = ref.current
     const pop = popRef.current
     if (!flip || !open || !wrap || !pop) return
+    // 스크롤되는 상자만이 아니라 넘친 것을 잘라 내는 상자(overflow: hidden)도 본다. 장 아래 도구는 장을 맞추는 칸(.fit-area) 안에
+    // 있어서, 창 아래에 자리가 남는 큰 화면(1440×900, 1920×1080)에서는 아래로 열렸다가 그 칸에 잘려 '이 장 지우기'가 보이지 않았다.
+    // 화면에 붙은 막대(position: fixed) 안이면 그 바깥 상자는 이 창을 자르지 않는다
     let box = wrap.parentElement
-    while (box && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement
+    while (box && getComputedStyle(box).overflowY === 'visible') box = getComputedStyle(box).position === 'fixed' ? null : box.parentElement
     const area = box ? box.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }
     const at = wrap.getBoundingClientRect()
     const h = pop.offsetHeight + 6
