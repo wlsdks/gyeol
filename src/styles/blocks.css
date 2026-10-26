@@ -542,6 +542,23 @@ body.is-block-resizing * {
   filter: blur(1.2px);
 }
 
+/* 한 글자씩: 줄이 글자 칸만큼씩 끊어 나타난 한 순간 */
+:is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-letters i:nth-child(n + 2) {
+  clip-path: inset(0 55% 0 0);
+}
+
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-letters i {
+  animation: fx-letters 1.6s steps(7, end) infinite both;
+}
+
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-letters i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+:is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo.is-letters i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
 :is(.bk-menu-item, .ms-fx):is(:hover, :focus-visible) .fx-demo:is(.is-rise, .is-fade, .is-wipe, .is-slide, .is-pop, .is-zoom, .is-flip, .is-blur) {
   animation: 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite both;
 }
@@ -676,6 +693,15 @@ body.is-block-resizing * {
   55%, 100% {
     opacity: 1;
     filter: blur(0);
+  }
+}
+
+@keyframes fx-letters {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  40%, 100% {
+    clip-path: inset(0 0 0 0);
   }
 }
 

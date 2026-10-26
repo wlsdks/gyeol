@@ -18,6 +18,16 @@
   display: inline-block;
 }
 
+/* 한 글자씩(engine.ts의 letters): 낱말 상자는 줄바꿈을 원래대로 낱말 사이에서만 지키고, 글자는 그 안에서 옅게 내려앉는다.
+   가리지 않는다: 글자는 0.12em만 움직이고, 생동감의 옅은 흐림이 상자 가장자리에서 잘리면 글자 옆이 칼로 벤 듯 보인다 */
+.mo-w.is-ch {
+  overflow: visible;
+}
+
+.mo-ch {
+  display: inline-block;
+}
+
 /* 자리마다 굴러가는 숫자(engine.ts의 roll): 제자리 숫자는 투명하게 두어 줄과 폭을 그대로 지키고,
    그 위에 같은 크기의 창을 덮어 0부터 굴린다. 다 굴러가면 걷어 낸다 */
 .mo-odc {

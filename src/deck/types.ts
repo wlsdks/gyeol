@@ -196,7 +196,7 @@ export type BlockType = NativeBlockType | LayoutBlockType
 /** 부품의 바탕: 없음, 옅은 면, 진한 면 */
 export type BlockLook = 'plain' | 'card' | 'bold'
 /** 발표할 때 부품이 나타나는 모습. auto는 부품마다 짜 둔 움직임(숫자가 올라가고 막대가 자라는 것) */
-export type BlockEffect = 'auto' | 'rise' | 'fade' | 'wipe' | 'slide' | 'pop' | 'zoom' | 'flip' | 'blur' | 'none'
+export type BlockEffect = 'auto' | 'rise' | 'fade' | 'wipe' | 'slide' | 'pop' | 'zoom' | 'flip' | 'blur' | 'letters' | 'none'
 /** 부품이 언제 나오는지: 앞 부품에 이어서(기본), 앞 부품과 함께, 발표하는 사람이 누르면 */
 export type BlockWhen = 'after' | 'with' | 'click'
 /** 부품이 움직이는 빠르기 */

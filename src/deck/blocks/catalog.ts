@@ -119,6 +119,7 @@ export const BLOCK_EFFECTS: { id: BlockEffect; name: string; description: string
   { id: 'zoom', name: '다가오기', description: '조금 크게 시작해 제자리로 다가와요' },
   { id: 'flip', name: '세우기', description: '누워 있다가 일어서듯 세워져요' },
   { id: 'blur', name: '초점 맞추기', description: '흐릿했다가 또렷해져요' },
+  { id: 'letters', name: '한 글자씩', description: '글이 읽는 차례로 한 글자씩 차분히 내려앉아요. 핵심 한 줄이나 인용에 어울려요' },
   { id: 'none', name: '없음', description: '처음부터 보여요' },
 ]
 

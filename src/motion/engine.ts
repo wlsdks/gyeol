@@ -110,25 +110,38 @@ export function motionEngine(): MotionEngine {
     return a
   }
 
-  /** 제목을 낱말로 나눈다. 낱말마다 아래에서 올라오게. 되돌리는 함수도 함께 돌려준다. */
-  function splitWords(el: Element) {
+  /**
+   * 글을 낱말로 나눈다. 낱말마다 아래에서 올라오게. 되돌리는 함수도 함께 돌려준다.
+   * chars면 낱말 안을 다시 글자(한글은 음절, 결합 문자는 한 덩어리: Intl.Segmenter의 grapheme)로 나눈다(한 글자씩).
+   * 그때 marks에는 글자마다 문장 부호인지 적는다: 문장 부호는 앞 글자와 같은 때에 나와 빈 시간을 만들지 않는다.
+   * 그림(svg) 안의 글은 나누지 않는다(svg 안에 span을 넣으면 그려지지 않는다)
+   */
+  function splitWords(el: Element, chars = false) {
     const words: HTMLElement[] = []
-    const outers: HTMLElement[] = []
+    const marks: boolean[] = []
+    /** 자리를 맞출 상자: 낱말이면 낱말 상자, 글자면 글자 상자. 같은 줄의 이웃 사이를 원래 글과 같게 오른쪽 여백으로 맞춘다 */
+    const boxes: HTMLElement[] = []
     const undo: (() => void)[] = []
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     const texts: Text[] = []
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) texts.push(n as Text)
-    // 나누기 전에 낱말마다 원래 글에서의 자리를 잰다(아래에서 나눈 뒤의 자리와 맞춘다)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) if (!(n.parentElement && n.parentElement.closest('svg'))) texts.push(n as Text)
+    const seg = chars && typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('ko', { granularity: 'grapheme' }) : null
+    const pieces = (word: string) => (!chars ? [word] : seg ? Array.from(seg.segment(word), (g) => g.segment) : Array.from(word))
+    // 나누기 전에 낱말(글자)마다 원래 글에서의 자리를 잰다(아래에서 나눈 뒤의 자리와 맞춘다)
     const range = document.createRange()
     const was: { left: number; top: number }[] = []
     for (const node of texts) {
       let i = 0
       for (const part of (node.nodeValue || '').split(/(\s+)/)) {
         if (part.trim()) {
-          range.setStart(node, i)
-          range.setEnd(node, i + part.length)
-          const r = range.getClientRects()[0]
-          was.push(r ? { left: r.left, top: r.top } : { left: NaN, top: NaN })
+          let j = i
+          for (const piece of pieces(part)) {
+            range.setStart(node, j)
+            range.setEnd(node, j + piece.length)
+            const r = range.getClientRects()[0]
+            was.push(r ? { left: r.left, top: r.top } : { left: NaN, top: NaN })
+            j += piece.length
+          }
         }
         i += part.length
       }
@@ -147,11 +160,27 @@ export function motionEngine(): MotionEngine {
         outer.className = 'mo-w'
         const inner = document.createElement('span')
         inner.className = 'mo-wi'
-        inner.textContent = part
         outer.appendChild(inner)
         made.push(outer)
-        words.push(inner)
-        outers.push(outer)
+        if (!chars) {
+          inner.textContent = part
+          words.push(inner)
+          boxes.push(outer)
+          continue
+        }
+        // 한 글자씩: 낱말 상자는 줄바꿈을 원래대로(낱말 사이에서만) 지키고, 그 안에서 글자마다 움직인다
+        outer.classList.add('is-ch')
+        const list = pieces(part)
+        list.forEach((piece, n) => {
+          const c = document.createElement('span')
+          c.className = 'mo-ch'
+          c.textContent = piece
+          inner.appendChild(c)
+          words.push(c)
+          marks.push(/^[\p{P}\p{S}]+$/u.test(piece))
+          // 낱말의 마지막 글자 뒤(다음 낱말과의 사이)는 낱말 상자의 여백으로 맞춘다
+          boxes.push(n === list.length - 1 ? outer : c)
+        })
       }
       const parent = node.parentNode
       if (!parent) continue
@@ -165,20 +194,34 @@ export function motionEngine(): MotionEngine {
     }
     // 낱말 사이를 원래 글과 같게. 낱말을 상자(inline-block)로 감싸면 상자 밖의 띄어쓰기와 짝을 이룬 자간(쉼표 뒤 같은)이
     // 빠져서 낱말이 조금 넓어진다. 녹화해 보니 '사업, 12월'에서 쉼표 뒤가 3px 벌어져 있다가, 움직임이 끝나 원래 글로
-    // 돌아올 때 그 뒤의 낱말이 모두 왼쪽으로 튀었다. 같은 줄의 이웃 낱말 사이가 원래와 다르면 앞 낱말의 오른쪽 여백으로 맞춘다
+    // 돌아올 때 그 뒤의 낱말이 모두 왼쪽으로 튀었다. 같은 줄의 이웃 낱말 사이가 원래와 다르면 앞 낱말의 오른쪽 여백으로 맞춘다.
+    // 글자로 나눌 때도 같다: 글자 상자 사이에서는 글꼴의 짝 자간(kerning)이 빠진다
     const box = el.getBoundingClientRect()
     const k = (el as HTMLElement).offsetWidth ? box.width / (el as HTMLElement).offsetWidth : 0
-    if (k && was.length === outers.length) {
-      const now = outers.map((o) => o.getBoundingClientRect())
-      for (let i = 0; i + 1 < outers.length; i++) {
+    if (k && was.length === words.length) {
+      const now = words.map((o) => o.getBoundingClientRect())
+      for (let i = 0; i + 1 < words.length; i++) {
         const a = was[i]
         const b = was[i + 1]
         if (!(Math.abs(a.top - b.top) < 1 && Math.abs(now[i].top - now[i + 1].top) < 1)) continue
         const gap = b.left - a.left - (now[i + 1].left - now[i].left)
-        if (Math.abs(gap) > 0.05 * k) outers[i].style.marginRight = gap / k + 'px'
+        if (Math.abs(gap) > 0.05 * k) boxes[i].style.marginRight = gap / k + 'px'
       }
     }
-    return { words, restore: () => undo.forEach((u) => u()) }
+    // 글자로 나눈 동안 화면 읽기 프로그램은 낱낱의 글자를 읽지 않고 원래 글을 한 번 읽는다
+    const label = el.getAttribute('aria-label')
+    if (chars && words.length) {
+      if (label === null) el.setAttribute('aria-label', (el.textContent || '').replace(/\s+/g, ' ').trim())
+      for (const b of boxes) if (b.classList.contains('mo-w')) b.setAttribute('aria-hidden', 'true')
+    }
+    return {
+      words,
+      marks,
+      restore: () => {
+        undo.forEach((u) => u())
+        if (chars && label === null) el.removeAttribute('aria-label')
+      },
+    }
   }
 
   /**
@@ -422,6 +465,39 @@ export function motionEngine(): MotionEngine {
       })
       // 다음 차례는 마지막 낱말이 반쯤 올라왔을 때
       return at + split.words.length * gap + 160
+    }
+    /**
+     * 한 글자씩(글자 결): 글자마다 아주 조금(0.12em) 아래에서 옅게 시작해 제자리에 내려앉는다. 넘치지 않는 감속 곡선.
+     * 글자 사이는 짧게(차분하게 30ms, 생동감 24ms), 다 합쳐 1초를 넘지 않게 좁힌다. 글자가 많아 사이가 12ms보다 좁아지면
+     * 글자마다는 눈에 들지 않으니 낱말마다로 나눈다. 문장 부호는 앞 글자와 함께 나와 빈 시간을 만들지 않는다.
+     * 생동감은 먹이 가라앉듯 아주 조금(1.5px) 흐린 데서 또렷해진다. 다음 차례가 시작할 수 있는 때를 돌려준다
+     */
+    const letters = (el: Element | null, at: number) => {
+      if (!el || still || el.closest('[data-mo-keep]')) return at
+      // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 흐리게만
+      if (el.closest('.m-edit') || el.querySelector('[contenteditable]')) {
+        fade(el, at, 600)
+        return at + 300
+      }
+      const lively = levelName === 'lively'
+      const cap = 1000
+      let split = splitWords(el, true)
+      const beats = split.marks.filter((m) => !m).length
+      let step = Math.min(lively ? 24 : 30, cap / Math.max(1, beats))
+      if (step < 12) {
+        split.restore()
+        split = splitWords(el)
+        step = Math.min(L.word, cap / Math.max(1, split.words.length))
+      }
+      restores.push(split.restore)
+      const from: Keyframe = lively ? { opacity: 0, translate: '0 0.12em', filter: 'blur(1.5px)' } : { opacity: 0, translate: '0 0.12em' }
+      const to: Keyframe = lively ? { opacity: 1, translate: '0 0', filter: 'blur(0px)' } : { opacity: 1, translate: '0 0' }
+      let t = at
+      split.words.forEach((w, i) => {
+        if (i > 0 && !split.marks[i]) t += step
+        run(anims, w, [from, to], s(t), { easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', duration: d(lively ? 620 : 520) })
+      })
+      return t + 120
     }
     const count = (el: Element | null, at: number) => {
       // 편집 중인 칸의 글자는 바꾸지 않는다 (쓰고 있는 글과 엇갈리지 않게). 옮겨 온 숫자는 다시 굴리지 않는다
@@ -1790,7 +1866,11 @@ export function motionEngine(): MotionEngine {
           s(0),
           L.grow,
         )
-      else if (effect === 'blur')
+      else if (effect === 'letters') {
+        // 면과 선(옅은 면, 진한 면, 줄의 선)은 짧게 흐리게 들이고, 글은 읽는 차례로 한 글자씩
+        fade(cell, 0, 320)
+        letters(cell, 60)
+      } else if (effect === 'blur')
         run(anims, cell, [{ opacity: 0, filter: 'blur(20px)', scale: '1.03' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: 1000 })
       else if (effect === 'auto') {
         // 칸 안의 따로 움직이지 않는 줄과 빈 자리도 이 부품의 차례에 (장 머리의 본문 상자와 같은 까닭)
