@@ -71,8 +71,8 @@ const SCENES: BlockType[][][] = [
   [['progress', 'meter', 'goal', 'range'], ['checks', 'status'], ['date', 'note']],
   // 흐름과 결과
   [['flow', 'network', 'merge', 'split'], ['number', 'message']],
-  // 사람과 일정
-  [['people'], ['agenda', 'timeline'], ['date']],
+  // 사람과 일정: 누가 언제 무엇을. 예전에는 사람, 목차, 날짜 하나를 묶어 서로 뜻이 이어지지 않는 장이 나왔다
+  [['people'], ['timeline', 'gantt']],
   // 분석과 해석
   [['heat', 'diverge', 'matrix', 'position'], ['summary', 'text', 'quote']],
   // 지표 묶음과 예상 질문
@@ -81,8 +81,8 @@ const SCENES: BlockType[][][] = [
   [['heading'], ['bullets', 'points'], ['heading'], ['bullets', 'checks']],
   // 강점과 약점, 결론
   [['swot'], ['message', 'callout']],
-  // 함께하는 곳과 숫자
-  [['logos'], ['stat', 'number'], ['stat', 'number']],
+  // 함께하는 곳과 숫자: 한 장의 숫자 둘은 같은 말투로(같은 부품). 숫자 카드와 큰 숫자를 섞으면 이름표 자리와 크기가 달라 어색했다
+  [['logos'], ['stat'], ['stat']],
   // 칸 조립과 설명
   [['tiles', 'ratio'], ['text', 'bullets']],
 ]
