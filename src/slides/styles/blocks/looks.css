@@ -85,6 +85,12 @@
    숫자가 하나면 카드 모양도 면 없이 그리므로 바깥 면을 그대로 둔다 */
 .bk-kpi.va-cards:is(.bk-look-card, .bk-look-bold):has(.kp:not([data-n='1'])) {
   background: none;
+  box-shadow: none;
+}
+
+/* 카드마다 위아래 선이 있어 바탕 없는 카드 모양에도 컴포넌트의 머리 괘선은 긋지 않는다(선이 두 겹으로 섰다) */
+.bk-area > .bk.bk-kpi.va-cards.bk-look-plain:has(.kp:not([data-n='1'])) {
+  --head-rule: 0;
 }
 
 .bk-kpi.va-cards:is(.bk-look-card, .bk-look-bold):has(.kp:not([data-n='1'])) > .bk-in {
@@ -97,4 +103,9 @@
 
 .bk-kpi.va-cards.bk-look-bold > .bk-in:has(> .kp:not([data-n='1'])) {
   --surface: var(--bk-a);
+}
+
+.bk-kpi.va-cards.bk-look-bold > .bk-in > .kp:not([data-n='1']) > .kp-item {
+  background: var(--surface);
+  box-shadow: none;
 }

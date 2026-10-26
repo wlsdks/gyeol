@@ -48,7 +48,7 @@
 }
 
 /* 선을 긋는 컴포넌트에 --head-rule 1. 편집 화면의 테두리(edit.css)도 이 값을 보고 선까지 두른다 */
-.bk.bk-look-plain:not(.is-slot, .lk-row, .bk-message, .bk-heading, .bk-image, .bk-logos, .bk-note, .bk-kpi, .bk-compare, .bk-summary, .bk-points, .bk-table, .bk-agenda, .bk-process, .bk-timeline, .bk-pricing, .bk-swot) {
+.bk.bk-look-plain:not(.is-slot, .lk-row, .bk-message, .bk-heading, .bk-image, .bk-logos, .bk-note, .bk-compare, .bk-summary, .bk-points, .bk-table, .bk-agenda, .bk-process, .bk-timeline, .bk-pricing, .bk-swot) {
   --head-rule: 1;
 }
 

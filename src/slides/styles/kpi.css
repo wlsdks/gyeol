@@ -167,7 +167,9 @@
   grid-row: 1 / span 2;
 }
 
-/* 모양: 카드. 숫자마다 면을 깔아 따로따로 */
+/* 모양: 카드. 숫자마다 따로따로: 면을 칠하지 않고 위 머리 괘선과 아래 줄 선 사이에 묶는다(컴포넌트의 '위아래 선'과 같은 꼴).
+   예전의 옅은 회색 둥근 카드가 나란한 꼴은 흔한 대시보드처럼 보였다. 안쪽 여백은 면일 때 그대로 두어 숫자 크기가 같다.
+   진한 면을 고른 컴포넌트는 카드마다 짙은 면(blocks/looks.css) */
 .va-cards .kp {
   --kp-gap: var(--gap);
   align-content: stretch;
@@ -177,8 +179,9 @@
 
 .va-cards .kp-item {
   padding: 52px 56px 56px;
-  border-radius: var(--r-panel);
-  background: var(--surface);
+  box-shadow:
+    inset 0 var(--rule-head) 0 var(--ink),
+    inset 0 calc(-1 * var(--rule)) 0 var(--ink);
 }
 
 :is(.va-cards, .va-focus) .kp-item::before {
@@ -192,8 +195,7 @@
 
 .va-cards .kp[data-n='1'] .kp-item {
   padding: 0;
-  border-radius: 0;
-  background: none;
+  box-shadow: none;
 }
 
 .va-cards .kp[data-n='1'] .kp-value {
