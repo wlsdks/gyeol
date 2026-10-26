@@ -53,6 +53,9 @@
 .bk-look-bold > .bk-in {
   --bg: var(--bk-s);
   --surface: color-mix(in srgb, var(--ink) 7%, var(--bk-s));
+  /* 옆 여백은 두지 않는다: 면도 선도 없어서 들여 쓴 만큼 큰 숫자의 왼쪽 끝이 옆, 위아래 컴포넌트보다 52px 안으로 들어가 보였다
+     (한 단의 글은 왼쪽 끝 하나에, docs/VISUAL-RULES.md 5). 글 너비가 넓어질 뿐이라 높이 표(card)는 그대로 넉넉하다 */
+  padding-inline: 0;
 }
 
 .bk-look-bold > .bk-in :is(.bk-call-t, .bk-msg-t, .bk-num-v, .bk-dl-to .bk-dl-v, .bk-gl-pct, .bk-rg-v, .bk-rt-big, .bk-sp-v, .bk-q-t) {
