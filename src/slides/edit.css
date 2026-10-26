@@ -294,8 +294,8 @@
 }
 
 /* 맞추는 동안(is-fitting)은 칠하지 않는다: 그려진 것으로 세면 항목 위에 손만 올려도 장 전체가 몇 px씩 오르내렸다 (fitBlocks.ts의 drawn).
-   컴포넌트를 끄는 동안(목록에서 끌어 오는 중 포함)도 칠하지 않는다 */
-body:not(.is-block-dragging) .slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover {
+   컴포넌트를 끄는 동안(목록에서 끌어 오는 중 포함)과 크기를 바꾸는 동안도 칠하지 않는다: 선을 끄는 손이 지나는 항목마다 면이 깜박였다 */
+body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:not(.is-dragging, .is-fitting) .it:has(> :is(.it-grip, .it-remove)):hover {
   background-image: linear-gradient(color-mix(in srgb, var(--sel) 7%, transparent) 0 0);
 }
 
