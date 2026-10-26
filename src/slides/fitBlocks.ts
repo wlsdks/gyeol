@@ -889,11 +889,17 @@ export function blockFitter() {
    * 위아래 균형 (docs/VISUAL-RULES.md 6): 채움(키우기, 줄 사이)을 마치고도 남는 높이는 내용 위와 아래에 1 : 1.2로 둔다(눈높이 가운데).
    * 맨 아래에만 모으면 덜 찬 장은 위에 붙고 아래만 길게 비었다. 균형은 본문 윗선부터 장 틀의 아랫선까지로 잡는다: 하단 표시(출처,
    * '예시: …')는 오른쪽 아래 구석의 메타라 공백 설계에 넣지 않는다(그 몫까지 비우면 아래가 두 겹으로 빈다). 내용은 본문 상자 안에 둔다.
-   * 아래를 이끄는 소제목이 있는 장은 위에 붙인 그대로.
+   * 아래에 묶을 부품이 아직 없는 소제목이 있는 장은 위에 붙인 그대로.
    * 옮긴 장은 data-eye를 붙인다(60%를 못 채운 완결된 장은 'full': 검사가 머리 아래 빈 곳과 채움을 봐준다)
    */
   function eyeLevel(cells: HTMLElement[], area: HTMLElement): void {
-    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot') || c.dataset.type === 'heading')) return
+    if (area.classList.contains('is-dragging') || cells.some((c) => c.classList.contains('is-slot'))) return
+    // 소제목은 그 아래에 묶을 부품이 있으면 완결된 묶음이라 같이 옮긴다. 아래가 빈 소제목(뒤를 기다리는 것)이 있으면 위에 붙인 그대로.
+    // 소제목이 든 장을 모두 위에 붙이던 때는 소제목 묶음 둘이 나란한 장이 위 절반에 몰리고 아래 절반이 통째로 비었다
+    const num = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
+    const waits = (h: HTMLElement) =>
+      !cells.some((o) => o !== h && num(o, '--y') >= num(h, '--y') + num(h, '--h') && num(o, '--x') < num(h, '--x') + num(h, '--w') && num(h, '--x') < num(o, '--x') + num(o, '--w'))
+    if (cells.some((c) => c.dataset.type === 'heading' && waits(c))) return
     // 장 제목이 없는 장도 같다(쌓기는 부품 하나뿐인 한 문장 장만 가운데에 둔다): 둘 이상이면 위에 붙고 아래 절반이 비었다
     const slide = area.parentElement
     if (!slide) return
