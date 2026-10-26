@@ -1,0 +1,44 @@
+/* ---------- 선의 경제 (docs/VISUAL-RULES.md 2) ----------
+   레이아웃 장과 컴포넌트가 같이 쓰는 선 규칙을 한곳에 모은다. 맨 뒤에 묶여(blocks.css의 마지막 @import) 각 파일의 선 규칙을 덮는다.
+   - 줄 선은 항목 사이에만: 첫 항목 위, 마지막 항목 아래에는 긋지 않는다(끝은 여백이 닫는다). 선은 투명하게 두어 높이는 그대로다.
+     표의 머리줄 아래 선(데이터의 머리)은 남긴다.
+   - 칸마다 위에 끊어 긋는 선(요점과 요약의 칸, 핵심 숫자 카드, 단계 칸, 가격안), 목록 위의 머리 선, 숫자 하나의 이름 위 선,
+     말 한 줄의 덧붙임 위 선은 묶음 표시라서 쓰지 않는다. 칸 사이는 여백이 나눈다.
+   예전에는 칸마다, 목록마다 위아래로 선을 그어 한 장에 가로선이 열 개 넘었고 선 밑에 선이 섰다(사용자: '선을 잘못 쓴 예시 그 자체') */
+
+/* 첫 항목 위 */
+.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-ev-row, .bk-sx-row, .bk-qa-item, .bk-pp-card, .sm-row, .pt-item, .br-row):first-child {
+  border-top-color: transparent;
+}
+
+/* 두 안 비교: 머리줄 바로 아래 첫 줄의 위 선 */
+.slide .cp-headrow + .cp-row > :is(.cp-l, .cp-r) {
+  border-top-color: transparent;
+}
+
+/* 마지막 항목 아래 */
+.slide :is(.bk-ck-row, .bk-gt-row, .bk-mk-row, .bk-ev-row, .bk-rk-row, .bk-sx-row, .bk-pp-card, .tb-row, .vs-row, .ps-row, .sk-row, .pr-plan, .sm-row, .pt-item):last-child {
+  border-bottom-color: transparent;
+}
+
+/* 목록·요약·요점·차례의 머리 선과 칸마다 위 선 */
+.slide :is(.pt, .sm, .va-rows .pr) {
+  border-top-color: transparent;
+}
+
+.slide .ag-list::before {
+  content: none;
+}
+
+.slide :is(.va-tiles .pt-item, .va-grid .sm-row, .va-cards .kp-item, .va-cards .pc-step) {
+  box-shadow: none;
+}
+
+.slide :is(.va-columns .pt-item, .pr-plan, .pr-plan.is-hl) {
+  border-top-color: transparent;
+}
+
+/* 숫자 하나의 이름 위 선, 말 한 줄의 덧붙임 위 선, 단계 칸 안의 선, 두 안 비교 머리말 위 선 */
+.slide :is(.kp[data-n='1'] .kp-label, .st-lead, .l-process .pc-foot, .va-table .cp-h, .va-apart .cp-h) {
+  border-top-color: transparent;
+}
