@@ -979,7 +979,11 @@ export function blockFitter() {
     set(low)
   }
 
-  /** 칸에서 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 칸째, 없으면 글 줄과 그림 */
+  /**
+   * 칸에서 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 칸째, 없으면 글 줄과 그림, 칠하거나 테를 두른 상자(drawn과 같은 것).
+   * 글과 그림만 보면 흐름의 단계 상자(그림자로 두른 테)를 몰라서, 옆 맞추기(balance)가 흐름을 글 끝까지만 그려진 것으로 알고 오른쪽으로
+   * 92px 옮겨 마지막 상자가 장 틀 밖으로 46px 나갔다
+   */
   function drawnX(c: HTMLElement): { l: number; r: number } | null {
     const box = c.getBoundingClientRect()
     if (!c.classList.contains('bk-look-plain')) return { l: box.left, r: box.right }
@@ -993,6 +997,20 @@ export function blockFitter() {
     }
     for (const f of figures(inner).concat(Array.from(inner.querySelectorAll('img')))) {
       const q = f.getBoundingClientRect()
+      l = Math.min(l, q.left)
+      r = Math.max(r, q.right)
+    }
+    const els = inner.querySelectorAll<HTMLElement>('*')
+    for (let i = 0; i < els.length; i++) {
+      const el = els[i]
+      if (el.parentElement?.closest('svg') || el.closest('.ed-halo, .it-remove, .it-grip, .pn-tools, .img-tools, .bk-handle')) continue
+      const cs = getComputedStyle(el)
+      if (cs.visibility === 'hidden' || cs.opacity === '0') continue
+      const bg = cs.backgroundColor
+      const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
+      if (clear && cs.backgroundImage === 'none' && cs.boxShadow === 'none' && !(parseFloat(cs.borderTopWidth) > 0) && !(parseFloat(cs.borderBottomWidth) > 0)) continue
+      const q = el.getBoundingClientRect()
+      if (!q.width || !q.height) continue
       l = Math.min(l, q.left)
       r = Math.max(r, q.right)
     }
@@ -1084,17 +1102,10 @@ export function blockFitter() {
         let l = Infinity
         let r = -Infinity
         for (const c of col) {
-          const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
-          if (!inner) continue
-          for (const q of lines(inner)) {
-            l = Math.min(l, q.l)
-            r = Math.max(r, q.r)
-          }
-          for (const f of figures(inner).concat(Array.from(inner.querySelectorAll('img')))) {
-            const q = f.getBoundingClientRect()
-            l = Math.min(l, q.left)
-            r = Math.max(r, q.right)
-          }
+          const x = drawnX(c)
+          if (!x) continue
+          l = Math.min(l, x.l)
+          r = Math.max(r, x.r)
         }
         return { l, r }
       })
