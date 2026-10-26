@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { exeInfo, stripSignature } from './exe.mjs'
+import { exeInfo, icoImages, stripSignature } from './exe.mjs'
 import { icoFromPngs } from './icon.mjs'
 
 /** 머리만 있는 64비트 PE. sig: 끝에 붙일 서명 크기 */
@@ -56,8 +56,7 @@ describe('Framo.exe 만들기', () => {
     expect(ico.readUInt16LE(4)).toBe(2)
     expect(ico[6]).toBe(16)
     expect(ico[6 + 16]).toBe(0) // 256은 0으로 적는다
-    const first = ico.readUInt32LE(6 + 12)
-    expect(ico.subarray(first, first + 5)).toEqual(png(16).data)
+    expect(icoImages(ico)).toEqual([png(16).data, png(256).data])
 
     const real = readFileSync(join(__dirname, '..', 'launch', 'framo.ico'))
     const count = real.readUInt16LE(4)

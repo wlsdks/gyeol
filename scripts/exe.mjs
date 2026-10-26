@@ -83,13 +83,27 @@ export async function buildExe({ nodeExe, blobNode, out, work, version }) {
   writeFileSync(out, stripSignature(readFileSync(nodeExe)))
 
   const icon = process.platform === 'win32'
+  const ico = join(root, 'launch', 'framo.ico')
   if (icon) {
     const { rcedit } = await import('rcedit')
-    await rcedit(out, { ...exeInfo(version), icon: join(root, 'launch', 'framo.ico') })
+    await rcedit(out, { ...exeInfo(version), icon: ico })
   }
 
   const { inject } = (await import('postject')).default
   await inject(out, 'NODE_SEA_BLOB', readFileSync(blob), { sentinelFuse: SEA_FUSE })
-  if (!readFileSync(out).includes(`${SEA_FUSE}:1`)) throw new Error('Framo.exe에 SEA 덩어리가 들어가지 않았어요')
+
+  // 덩어리를 넣으며 리소스를 다시 쓰므로, 다 만든 파일에 덩어리와 아이콘이 남았는지 본다
+  const exe = readFileSync(out)
+  if (!exe.includes(`${SEA_FUSE}:1`)) throw new Error('Framo.exe에 SEA 덩어리가 들어가지 않았어요')
+  if (icon && !icoImages(readFileSync(ico)).every((png) => exe.includes(png))) throw new Error('Framo.exe에 아이콘이 들어가지 않았어요')
   return { icon }
+}
+
+/** .ico 안의 그림들. 윈도우 리소스에는 그림이 그대로 들어가므로 exe에서 찾을 수 있다 */
+export function icoImages(ico) {
+  return Array.from({ length: ico.readUInt16LE(4) }, (_, i) => {
+    const at = 6 + 16 * i
+    const offset = ico.readUInt32LE(at + 12)
+    return ico.subarray(offset, offset + ico.readUInt32LE(at + 8))
+  })
 }
