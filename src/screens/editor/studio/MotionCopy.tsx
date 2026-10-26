@@ -27,7 +27,7 @@ export function MotionCopy({ deck, slide, toast }: { deck: Deck; slide: Slide; t
       <section className="ms-sec">
         <h2 className="ms-h">
           다른 장에도
-          <Info label="다른 장에도 옮기는 것" align="start">
+          <Info label="다른 장에도 옮기는 것">
             이 장의 장면, 장 넘기기, 움직임 정도를 다른 장에 그대로 옮겨요. 컴포넌트 장끼리는 연출과 같은 종류 컴포넌트의 움직임도 옮겨요. 글은 바뀌지 않아요.
           </Info>
         </h2>

@@ -613,6 +613,23 @@ html.ms-vt[data-mo-swap]::view-transition-image-pair(root) {
   border-bottom: 1px solid var(--line);
 }
 
+/* 오른쪽 칸의 (i) 말풍선은 단추가 아니라 그 줄 전체 너비에 붙인다. 단추에서 오른쪽으로 펼치면 낮은 창(1280)에서
+   칸 밖으로 넘쳐 잘렸다(칸은 가로로 넘치지 않게 자른다) */
+.ms-side :is(.ins-opt-l, .ms-h) {
+  position: relative;
+}
+
+.ms-side :is(.ins-opt-l, .ms-h) .info {
+  position: static;
+}
+
+.ms-side :is(.ins-opt-l, .ms-h) .info-tip {
+  right: 0;
+  left: 0;
+  width: auto;
+  max-width: none;
+}
+
 .ms-h {
   margin: 0 0 10px;
   color: var(--ink-3);
