@@ -32,6 +32,10 @@
   letter-spacing: -0.05em;
   font-variant-numeric: lining-nums;
   text-box: trim-both cap alphabetic;
+  /* 잘라 낸 숫자 아래의 빈자리(글자의 내림, 600px에서 145px 남짓)도 장의 스크롤 높이에 들어가서, 단락 지도가 없는 장(단락이
+     하나뿐인 발표)은 아래 여백(72)을 넘어 아무것도 넘치지 않았는데 편집기가 '글이 넘쳤어요'를 띄웠다. 번호 안을 바깥 짜임과 떼어
+     그 빈자리를 넘침으로 세지 않는다 (숫자 모양과 자리는 그대로) */
+  contain: layout;
   pointer-events: none;
   user-select: none;
 }
