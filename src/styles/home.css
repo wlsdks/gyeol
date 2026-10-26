@@ -205,7 +205,8 @@
 .card-meta > span + span::before {
   margin: 0 7px;
   color: var(--line-2);
-  content: '·';
+  /* 읽어 주는 프로그램에는 점을 읽히지 않는다 (대체 글 빈칸) */
+  content: '·' / '';
 }
 
 /* ⋯ 단추는 제목 줄 높이에 맞춘다 (제목 22px, 단추 32px) */

@@ -122,7 +122,7 @@ export function Home() {
         <div className="home-head">
           <h1 className="home-h">
             내 발표
-            {decks && decks.length > 0 && <span className="home-count">{decks.length}</span>}
+            {decks && decks.length > 0 && <span className="home-count">{decks.length}개</span>}
           </h1>
           <div className="home-links">
             <button type="button" className="btn-link" onClick={() => go({ name: 'system' })}>
