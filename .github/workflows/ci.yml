@@ -16,7 +16,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # main에 올린 것은 끝까지 돌려 어느 커밋에서 깨졌는지 남기고, 고쳐 올리는 PR만 앞의 것을 멈춘다
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
