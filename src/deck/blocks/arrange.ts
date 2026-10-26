@@ -231,6 +231,8 @@ export function arrangeCost(t: Tree, laid: Laid, fit: Fit, areaH: number, last?:
     const ys = new Set(nums.map((b) => laid.get(b.id)!.at!.y))
     const hs = new Set(nums.map((b) => laid.get(b.id)!.at!.h))
     if (ys.size > 1 || hs.size > 1) cost += 25
+    // 한 줄에 선 숫자들의 칸 너비도 같아야 한다: 3 · 6 · 3으로 나누면 가운데 숫자 칸만 넓어 숫자 사이가 고르지 않았다(왼쪽 둘은 붙고 셋째만 멀리)
+    else if (new Set(nums.map((b) => laid.get(b.id)!.at!.w)).size > 1) cost += 15
   }
   // 가로로 빈 곳: 그려진 것의 오른쪽 끝(naturalSpan). 본문 오른쪽이 20% 넘게 비면 판이 너비를 고르게 나누지 못한 것(screens/assembly.ts의 sides)
   const right = Math.max(...all.map((b) => {
