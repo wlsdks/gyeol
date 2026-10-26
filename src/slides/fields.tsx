@@ -303,10 +303,15 @@ function Editable({
         spellCheck={false}
         onInput={(e) => onChange!(clean(e.currentTarget.innerText, multiline))}
         onBlur={(e) => {
-          const v = clean(e.currentTarget.innerText, multiline).trim()
+          const el = e.currentTarget
+          const v = clean(el.innerText, multiline).trim()
           if (v !== value) onChange!(v)
           // 쓰는 동안 단위 칸(span) 안팎으로 들어간 글자를 다시 나눈다
-          paint(e.currentTarget, v, numeral)
+          paint(el, v, numeral)
+          // 쓰기를 끝내면 칸 안의 커서와 고른 글을 놓는다. 그대로 두면 쓰지 않는 글 위에 파란 칠이 남고, 이어 친 글자가 초점 없는
+          // 그 칸에 들어갔다(Esc나 Enter로 끝낸 뒤 한글로 친 글이 그 칸 끝에 붙어 저장됐다). 창을 떠날 때(다른 프로그램으로)는 두어야 돌아왔을 때 이어 쓴다
+          const sel = getSelection()
+          if (document.hasFocus() && sel?.anchorNode && el.contains(sel.anchorNode)) sel.removeAllRanges()
         }}
         onKeyDown={(e) => {
           // 한글을 조합하는 중의 Enter와 Esc는 조합을 끝내는 키다: 브라우저가 조합을 마친 뒤 같은 키를 한 번 더 보낸다. 그때 받는다
