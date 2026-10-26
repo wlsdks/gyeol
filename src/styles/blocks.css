@@ -994,3 +994,21 @@ body.is-block-resizing * {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* '내 컴포넌트'는 묶음이 아니라 내가 저장한 것: 이름이 길어 글만큼 넓게, 앞에 가는 금으로 묶음 칩과 나눈다 */
+.lib-tab.is-mine {
+  flex: 0 0 auto;
+  position: relative;
+  margin-left: 8px;
+  padding: 0 10px;
+}
+
+.lib-tab.is-mine::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: -6px;
+  width: 1px;
+  background: var(--line);
+}

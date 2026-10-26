@@ -10,9 +10,9 @@ import { motionEngine } from '../../motion/engine'
 import type { SlideMode } from '../../slides/context'
 import { SlideCanvas } from '../../slides/SlideCanvas'
 import { loadSaved, useSaved } from '../../store/saved'
-import { soloSlide, type BlockEditing, type LibraryView } from './BlockEditor'
+import { soloSlide, type BlockEditing } from './BlockEditor'
 import { COL_W } from './canvas'
-import { dialogOpen, isTyping, Segmented, type Toast } from '../ui'
+import { dialogOpen, isTyping, type Toast } from '../ui'
 import { useLook, type Look } from './look'
 import { noRoomText } from './noRoom'
 import { SavedParts } from './SavedParts'
@@ -98,6 +98,9 @@ export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview' 
 /** 부품 고르기의 모든 카드 (묶음 차례대로) */
 const TYPES = BLOCK_GROUPS.flatMap((g) => g.types)
 
+/** 칩 줄에서 '내 컴포넌트'를 가리키는 id (묶음 이름과 겹치지 않게) */
+const MINE = '$mine'
+
 const LINK_GROUP = { name: '이음표', short: '이음표', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
 
 export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
@@ -168,6 +171,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
     { id: null, name: '전체' },
     ...BLOCK_GROUPS.map((g) => ({ id: g.name, name: g.short, title: `${g.name}: ${g.description}` })),
     { id: LINK_GROUP.name, name: LINK_GROUP.short, title: `${LINK_GROUP.name}: ${LINK_GROUP.description}` },
+    { id: MINE, name: saved ? `내 컴포넌트 ${saved}` : '내 컴포넌트', title: '저장해 둔 컴포넌트, 줄, 장을 어느 발표에서든 다시 넣어요' },
   ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.blocks ?? []).length > 0
@@ -175,20 +179,34 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
 
   return (
     <div className="lib" role="tabpanel" aria-label="컴포넌트">
-      {/* 기본 컴포넌트와 내가 저장해 둔 것. 묶음 칩은 기본 컴포넌트에만 */}
-      <Segmented<LibraryView>
-        className="seg-fill lib-source"
-        label="보일 컴포넌트"
-        options={[
-          { id: 'base', name: '기본 컴포넌트' },
-          { id: 'mine', name: saved ? `내 컴포넌트 ${saved}` : '내 컴포넌트', description: '저장해 둔 컴포넌트, 줄, 장을 어느 발표에서든 다시 넣어요' },
-        ]}
-        value={blocks.libraryView}
-        onPick={(v) => {
-          setWhy(null)
-          blocks.setLibraryView(v)
-        }}
-      />
+      {/* 묶음은 글자 칩. 한 줄에 다 들지 않아 두 줄로 반씩 나누고, 줄마다 칩이 너비를 똑같이 나눠 끝까지 채운다
+          (넘친 칩 하나가 아랫줄에 홀로 남지 않게). 긴 이름과 설명은 목록의 묶음 제목에.
+          내 컴포넌트도 칩 하나로 둔다: 예전에는 그 위에 '기본/내 컴포넌트' 고르기 줄이 따로 있어서, 1280×600에서
+          고르는 줄만 140px를 차지해 카드가 한 줄 반만 보였다 */}
+      <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
+        {chips.map((c, i) => {
+          const on = c.id === MINE ? mine : !mine && group === c.id
+          return (
+            <Fragment key={c.id ?? '전체'}>
+              {i === Math.ceil(chips.length / 2) && <span className="lib-tabs-br" aria-hidden="true" />}
+              <button
+                type="button"
+                className={cx('lib-tab', on && 'is-on', c.id === MINE && 'is-mine')}
+                aria-pressed={on}
+                title={c.title}
+                onClick={() => {
+                  setWhy(null)
+                  if (c.id === MINE) return blocks.setLibraryView('mine')
+                  blocks.setLibraryView('base')
+                  setGroup(c.id)
+                }}
+              >
+                {c.name}
+              </button>
+            </Fragment>
+          )
+        })}
+      </div>
       {note && (
         <div className="lib-note">
           <p className="lib-note-t">{note}</p>
@@ -202,27 +220,8 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
 
       {mine && <SavedParts deck={deck} slide={slide} blocks={blocks} toast={toast} />}
 
-      {/* 묶음은 글자 칩. 한 줄에 다 들지 않아 두 줄로 반씩 나누고, 줄마다 칩이 너비를 똑같이 나눠 끝까지 채운다
-          (넘친 칩 하나가 아랫줄에 홀로 남지 않게). 긴 이름과 설명은 목록의 묶음 제목에 */}
       {!mine && (
         <>
-          <div className="lib-tabs" role="group" aria-label="컴포넌트 묶음">
-            {chips.map((c, i) => (
-              <Fragment key={c.id ?? '전체'}>
-                {i === Math.ceil(chips.length / 2) && <span className="lib-tabs-br" aria-hidden="true" />}
-                <button
-                  type="button"
-                  className={cx('lib-tab', group === c.id && 'is-on')}
-                  aria-pressed={group === c.id}
-                  title={c.title}
-                  onClick={() => setGroup(c.id)}
-                >
-                  {c.name}
-                </button>
-              </Fragment>
-            ))}
-          </div>
-
           <div className="lib-list">
             {groups.map((g) => (
               <section key={g.name} className="lib-sec">

@@ -1,11 +1,5 @@
 /* ---------- 컴포넌트 고르기의 기본 / 내 컴포넌트 (screens/editor/SavedParts.tsx) ---------- */
 
-/* 맨 위의 고르기: 기본 컴포넌트와 내 컴포넌트. 묶음 칩 위에 한 줄 */
-.lib-source {
-  width: auto;
-  margin: 12px 16px 0;
-}
-
 /* 끌지 않고 누르기만 하는 카드 (한 줄, 장 하나) */
 .lib-card.is-tap {
   cursor: pointer;
