@@ -1,5 +1,6 @@
 // 부품: 숫자와 흐름 (spark). 모양은 styles/blocks/spark.css
 
+import { hintFor } from '../../deck/layouts'
 import { cx } from '../../lib/cx'
 import { useSlide } from '../context'
 import { minusSigns, T } from '../fields'
@@ -29,9 +30,12 @@ function pointsOf(text: string): { v: number; t: string }[] {
  * 처음 값이 없으면 선의 높낮이만 보여서, 넓은 칸에서는 선이 무엇에서 무엇으로 왔는지 모르는 장식처럼 보였다
  */
 export function Spark() {
-  const { mode } = useSlide()
+  const { mode, slide } = useSlide()
   const { demo, read } = useDemo(['value', 'series'])
-  const pts = pointsOf(read('series')).slice(-24)
+  // 흐름 칸만 비었으면(지금 숫자를 먼저 적은 때) 편집할 때는 안내 문구의 흐름을 옅게 그린다. 두 칸이 다 빌 때만 그리던 때는
+  // 숫자를 적는 순간 선이 통째로 사라져, 숫자 아래에 빈 자리만 남고 흐름을 어디에 적는지 보이지 않았다
+  const ghost = !demo && mode !== 'final' && !read('series').trim()
+  const pts = pointsOf(ghost ? hintFor(slide.layout, slide.hints, 'series') : read('series')).slice(-24)
   const vs = pts.map((p) => p.v)
   const lo = Math.min(...vs)
   const hi = Math.max(...vs)
@@ -41,7 +45,7 @@ export function Spark() {
   const first = at[0]
   const last = at[at.length - 1]
   return (
-    <div className={cx('bk-sp', demo && 'is-demo')}>
+    <div className={cx('bk-sp', (demo || ghost) && 'is-demo')}>
       <div className="bk-sp-text">
         <T k="label" className="bk-sp-l" />
         <T k="value" className="bk-sp-v" oneLine numeral />
