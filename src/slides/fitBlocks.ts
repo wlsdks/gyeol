@@ -922,6 +922,51 @@ export function blockFitter() {
     area.dataset.eye = fillOf(cells, area) < 0.6 ? 'full' : '1'
   }
 
+  /**
+   * 같은 장의 숫자 말투 (docs/VISUAL-RULES.md 5): 큰 숫자, 숫자 한 줄, 숫자와 흐름의 숫자는 한 장에 둘 이상이면 같은 크기로 맞춘다. 큰 숫자는
+   * 칸 크기로 108~154, 숫자 한 줄은 62에서 시작해서, 한 장에 둘이 같이 서면 하나는 크게, 하나는 작게 따로 놀았다(로고 모음 아래의 숫자 둘,
+   * 추이 옆의 큰 숫자와 숫자 한 줄). 맞추는 크기는 지금 크기들에서 글자 비율(1.2)의 단계로 오르내린 값 가운데, 모든 칸이 넘치지 않는
+   * 가장 큰 것. 모든 칸에 자리가 남으면 가장 큰 숫자보다 두 단계까지 더 키운다(숫자는 장의 답이라 크게: 로고 모음 아래의 숫자 둘이
+   * 62px로 남아 로고보다 작아 보였다). 숫자 글자 칸의 --fs를 그 크기가 되게 고쳐 쓴다(한 줄 맞추기의 너비 한도는 그대로).
+   * 목표 대비의 달성률은 이름과 한 글자선에 서서 넣지 않는다: 키우면 이름이 내려가 옆 칸과 첫 글줄 윗선이 어긋났다
+   */
+  const TONE = '.bk-num-v, .bk-sl-v, .bk-sp-v'
+  // 키울 때의 끝: 큰 칸의 큰 숫자를 한 단계 키운 크기(blocks/number.css). 더 크면 숫자가 장 제목보다 세 배 넘게 커진다
+  const toneCap = 185
+  function tone(cells: HTMLElement[]): void {
+    const vals: { c: HTMLElement; inner: HTMLElement; el: HTMLElement }[] = []
+    for (const c of cells) {
+      const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+      if (!inner) continue
+      for (const el of Array.from(inner.querySelectorAll<HTMLElement>(TONE))) {
+        el.style.removeProperty('--fs')
+        if (el.offsetHeight) vals.push({ c, inner, el })
+      }
+    }
+    if (new Set(vals.map((v) => v.c)).size < 2) return
+    const size = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize)
+    const base = vals.map((v) => ({ fs: parseFloat(getComputedStyle(v.el).getPropertyValue('--fs')), now: size(v.el) }))
+    if (base.some((b) => !(b.fs > 0) || !(b.now > 0))) return
+    const top = Math.max(...base.map((b) => b.now))
+    const low = Math.min(...base.map((b) => b.now))
+    const set = (px: number) => {
+      vals.forEach((v, i) => v.el.style.setProperty('--fs', (base[i].fs * px) / base[i].now + 'px'))
+      for (const v of vals) place(v.inner)
+    }
+    const tries = Array.from(new Set(base.flatMap((b) => [-2, -1, 0, 1, 2, 3].map((n) => Math.round(b.now * Math.pow(1.2, n))))))
+      .filter((px) => px <= Math.max(top, Math.min(top * 1.44, toneCap)) + 0.5 && px >= low - 0.5)
+      .sort((p, q) => q - p)
+    const inners = Array.from(new Set(vals.map((v) => v.inner)))
+    for (const px of tries) {
+      set(px)
+      // 한 줄 맞추기가 너비로 줄인 칸이 있으면 그 크기가 한도다
+      const got = Math.min(...vals.map((v) => size(v.el)))
+      if (got < px - 1) continue
+      if (!inners.some((inner) => crowded(inner))) return
+    }
+    set(low)
+  }
+
   /** 칸에서 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 칸째, 없으면 글 줄과 그림 */
   function drawnX(c: HTMLElement): { l: number; r: number } | null {
     const box = c.getBoundingClientRect()
@@ -1171,6 +1216,7 @@ export function blockFitter() {
       // 남는 높이로 줄을 늘리면 장마다 줄 사이가 달라 보였다. 남는 높이는 쌓기(pack)가 맨 아래에 모은다
       const shapes = cells.every((c) => !c.style.getPropertyValue('--bk-fit')) ? enlarge(cells) : null
       lift(cells)
+      tone(cells)
       pack(cells, area)
       balance(cells, area)
       // 키우고 쌓은 뒤에도 내용이 본문 높이의 60%에 못 미치면(docs/VISUAL-RULES.md 6) 한 단계 더 키운다. 사이를 벌려 채우지 않고
@@ -1197,6 +1243,7 @@ export function blockFitter() {
           }
           const settle = () => {
             lift(cells)
+            tone(cells)
             pack(cells, area)
             balance(cells, area)
           }
