@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { blockNames, playOrder, whenOf } from '../../../deck/blocks'
+import { sceneOf, sceneSpec } from '../../../deck/scenes'
 import type { Slide } from '../../../deck/types'
 import { motionEngine, type MotionLevel, type MotionPlay } from '../../../motion/engine'
 
@@ -79,7 +80,9 @@ function readPlan(slide: Slide, anims: Animation[]): Plan {
       add(`b:${b.id}`, names.get(b.id) ?? '컴포넌트', step, b.id)
     }
   } else if (spans.has('body')) add('body', '본문')
-  if (spans.has('scene')) add('scene', '장면')
+  // 장면 줄에는 그 장면 이름을: '장면'만으로는 카메라, 가림막, 선 가운데 무엇이 움직이는지, 어느 장면인지 알 수 없었다
+  const scene = sceneOf(slide)
+  if (spans.has('scene')) add('scene', scene ? `장면 · ${sceneSpec(scene).name}` : '장면')
   if (spans.has('source')) add('source', '출처')
   const clicks: Plan['clicks'] = []
   for (const lane of lanes) {
