@@ -22,17 +22,21 @@
   height: 100%;
 }
 
+/* 전체 보이기: 이미지 둘레에 회색 판을 깔지 않는다. 장의 절반을 칠한 판은 면 전체를 칠한 강조와 같아(VISUAL-RULES 3)
+   그림보다 판이 먼저 보였다. 판 없이 장의 틀(--pad-x, --pad-y) 안에 그림만 두고, 설명과는 사이 여백(96px)으로 나눈다 */
 .ix-img.is-contain {
   padding: var(--pad-y) 96px var(--pad-y) var(--pad-x);
-  background: var(--surface);
+  background: none;
 }
 
 .ix.is-flip .ix-img.is-contain {
   padding: var(--pad-y) var(--pad-x) var(--pad-y) 96px;
 }
 
+/* 흰 바탕의 화면 캡처는 흰 장에서 가장자리가 사라져서, 그림의 가장자리를 따라 옅은 선 하나만큼 둘레를 둔다(그림자 깊이는 두지 않는다).
+   object-fit: contain이라 상자에 선을 그으면 그림이 아닌 상자 둘레에 그어져서, 그림 모양을 따르는 옅은 drop-shadow(1px 번짐)를 쓴다 */
 .ix-img.is-contain img {
-  filter: drop-shadow(0 24px 48px color-mix(in srgb, var(--ink) 14%, transparent));
+  filter: drop-shadow(0 0 var(--rule-hair) var(--line)) drop-shadow(0 0 var(--rule-hair) var(--line));
 }
 
 .ix-text {
