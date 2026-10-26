@@ -46,33 +46,51 @@
 .bk-list {
   display: flex;
   flex-direction: column;
-  gap: calc(26px + var(--bk-air, 0px));
+  counter-reset: bk-li;
+  gap: calc(13px + var(--bk-air, 0px) / 2);
 }
 
 .bk-list[data-n='5'],
 .bk-list[data-n='6'] {
-  gap: calc(18px + var(--bk-air, 0px));
+  gap: calc(9px + var(--bk-air, 0px) / 2);
 }
 
+/* 항목 사이는 옅은 줄 선 하나: 사이의 반은 선 위, 반은 선 아래라 예전의 항목 사이(26px, 다섯부터 18px)와 같은 높이다.
+   점만 떠 있는 목록은 흔한 서식처럼 보였고, 줄 선이 있으면 항목이 지면의 줄처럼 한 줄씩 읽힌다 */
 .bk-li {
   display: grid;
-  grid-template-columns: 14px minmax(0, 1fr);
-  align-items: start;
-  gap: 28px;
+  grid-template-columns: calc(22px * var(--scale, 1) * 2.6) minmax(0, 1fr);
+  align-items: baseline;
+  counter-increment: bk-li;
 }
 
+.bk-li + .bk-li {
+  padding-top: calc(13px + var(--bk-air, 0px) / 2);
+  border-top: var(--rule) solid var(--line);
+}
+
+.bk-list:is([data-n='5'], [data-n='6']) > .bk-li + .bk-li {
+  padding-top: calc(9px + var(--bk-air, 0px) / 2);
+}
+
+/* 점 대신 차례 숫자(01, 02 …): 같은 폭 숫자, 옅은 글자색, 이름표 크기. 첫 줄의 글자 밑줄에 맞춘다(baseline).
+   강조색 점이 목록마다 서면 강조색이 답이 아닌 곳에 흩어졌다 */
 .bk-dot {
-  width: 14px;
-  height: 14px;
-  /* 첫 줄 가운데: 글자 크기를 바꾸는 배율(--scale, --fit)까지 글자와 같이 곱한다 */
-  margin-top: calc(var(--t-body) * var(--scale, 1) * var(--fit, 1) * min(var(--bk-w, 1), var(--bk-h, 1)) * var(--bk-up, 1) * var(--bk-fit, 1) * 0.55);
-  border-radius: 50%;
-  background: var(--accent);
+  color: var(--ink-3);
+  font-size: calc(22px * var(--scale, 1));
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.bk-dot::before {
+  content: counter(bk-li, decimal-leading-zero);
 }
 
 .bk-li-t {
   --fs: var(--t-body);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.45;
 }
 
@@ -107,7 +125,13 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, max-content));
     grid-auto-flow: column;
-    column-gap: calc(var(--bk-col-gap) * 2);
+    gap: calc(26px + var(--bk-air, 0px)) calc(var(--bk-col-gap) * 2);
+  }
+
+  /* 두 단으로 흘리면 줄 선은 긋지 않는다: 오른쪽 단의 첫 항목에만 선이 서서 두 단의 윗선이 어긋났다 */
+  .bk-list:is([data-n='4'], [data-n='5'], [data-n='6']) > .bk-li {
+    padding-top: 0;
+    border-top: 0;
   }
 
   .bk-list[data-n='4'] {
@@ -116,6 +140,7 @@
 
   .bk-list:is([data-n='5'], [data-n='6']) {
     grid-template-rows: repeat(3, auto);
+    row-gap: calc(18px + var(--bk-air, 0px));
   }
 }
 
