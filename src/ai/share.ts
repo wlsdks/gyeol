@@ -40,8 +40,9 @@ import {
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES, DURATIONS, METHODS } from '../deck/blueprints'
 import { readField, visibleItems } from '../deck/fields'
 import { LAYOUTS, LAYOUT_ORDER, placeOf, variantIds, variantOf } from '../deck/layouts'
+import { isScene, SCENES, sceneFits, sceneOf } from '../deck/scenes'
 import { ACCENT_COMBOS, FONTS, FOOTERS, footerOf, MOTIONS, PLACES, TEXT_SIZES, THEMES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Audience, Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Audience, Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, DeckType, FontId, FooterMode, LayoutId, Method, Motion, Place, SceneId, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { hasKey, HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
 import { HIGHLIGHT_MAX, HIGHLIGHT_MIN, OPAQUE_ID, REQUEST_ID, SHAPE_FORMAT, SHAPE_VERSION } from './protocol'
 
@@ -63,8 +64,11 @@ export interface ShapeSlide {
   hiddenItems: number
   fields: Record<string, FieldState>
   items: Record<string, FieldState>[]
-  /** transition: 이 장으로 넘어올 때(발표 전체 설정을 따르면 빠진다). order: 부품 장의 부품이 나오는 차례(부품 해시 id, 정했을 때만) */
-  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[] }
+  /**
+   * transition: 이 장으로 넘어올 때(발표 전체 설정을 따르면 빠진다). order: 부품 장의 부품이 나오는 차례(부품 해시 id, 정했을 때만).
+   * scene: 골라 둔 장면(카탈로그 scenes). 지금 장에 맞을 때만 나온다: 맞지 않는 장면은 발표할 때 쉬어서 AI가 헷갈린다
+   */
+  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[]; scene?: SceneId }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 부품 장(layout 'compose')만: 판(12×12)에 놓인 부품들, 읽는 차례(위에서 아래, 왼쪽에서 오른쪽)로. 부품의 종류, 자리, 바탕, 움직임과 칸이 찼는지만 */
@@ -225,6 +229,9 @@ export function catalog() {
     blockFroms: BLOCK_FROMS.map((m) => ({ id: m.id, name: m.name })),
     // 부품 사이의 선에 끼우는 표시: 부품의 오른쪽 선(link) 또는 아래 선(linkBelow)
     blockLinks: BLOCK_LINKS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    // 장면: 장 하나를 처음부터 끝까지 한 번에 짠 움직임. 맞는 장에만 고를 수 있다: layouts의 장, 또는 부품 장(compose)에 blocks의 부품이 하나라도 있을 때
+    // (비교 드러내기는 나란히 선 두 부품뿐인 부품 장에도 맞는다)
+    scenes: SCENES.map((m) => ({ id: m.id, name: m.name, description: m.description, layouts: [...m.layouts], blocks: [...m.blocks] })),
   }
 }
 
@@ -328,6 +335,10 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
   if (isOneOf(TONES, o.tone) && o.tone !== 'base') options.tone = o.tone
   const place = placeOf(slide)
   if (place) options.place = place
+  // 부품 장은 모양에 보이는 부품(꼴을 맞춘 것)으로 맞는지 본다. 가져온 파일의 모르는 부품 때문에 맞는다고 보지 않게
+  const blocks = slide.layout === 'compose' ? byReading(cleanBlocks(slide.blocks)) : undefined
+  const scene = sceneOf({ layout: slide.layout, blocks, options: o })
+  if (scene) options.scene = scene
   const out: ShapeSlide = {
     id: shapeSlideId(slide),
     layout: slide.layout,
@@ -340,9 +351,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     options,
     variant: variantOf(slide),
   }
-  if (slide.layout === 'compose') {
+  if (blocks) {
     // 가져온 파일일 수 있어서 꼴부터 맞춘다 (모르는 부품, 넘치는 개수는 빼고, 판을 덮지 않는 자리는 다시 나눈다)
-    const blocks = byReading(cleanBlocks(slide.blocks))
     out.blocks = blocks.map(shapeBlock)
     // 나오는 차례는 장에 있는 부품의 해시 id로만 (지운 부품의 id가 남아 있으면 뺀다)
     const byId = new Map(blocks.map((b) => [b.id, b]))
@@ -406,10 +416,11 @@ function checkBlock(v: unknown): boolean {
 function checkSlide(v: unknown): boolean {
   if (!isObj(v)) return false
   if (!onlyKeys(v, ['id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'variant', 'blocks'])) return false
+  let at: Block[] = []
   if (v.blocks !== undefined) {
     if (v.layout !== 'compose' || !Array.isArray(v.blocks) || v.blocks.length > MAX_BLOCKS || !v.blocks.every((b) => checkBlock(b))) return false
     // 부품들이 판을 빈틈없이, 겹치지 않게 나눠 덮는다 (빈 장은 부품이 없다)
-    const at = (v.blocks as ShapeBlock[]).map((b, i) => ({ id: String(i), type: b.type, fields: {}, items: [], at: { x: b.x, y: b.y, w: b.w, h: b.h } }))
+    at = (v.blocks as ShapeBlock[]).map((b, i) => ({ id: String(i), type: b.type, fields: {}, items: [], at: { x: b.x, y: b.y, w: b.w, h: b.h } }))
     if (at.length && !tiles(at)) return false
   }
   if (typeof v.id !== 'string' || !OPAQUE_ID.test(v.id) || v.id[0] !== 's') return false
@@ -424,7 +435,9 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'order'])) return false
+  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'order', 'scene'])) return false
+  // 장면은 목록의 id이고 이 장에 맞는 것만 (toShape도 맞을 때만 넣는다)
+  if (o.scene !== undefined && !(isScene(o.scene) && sceneFits({ layout: v.layout as LayoutId, blocks: at }, o.scene))) return false
   if (o.transition !== undefined && !(isOneOf(TRANSITIONS, o.transition) && o.transition !== 'auto')) return false
   if (o.order !== undefined) {
     if (v.layout !== 'compose' || !Array.isArray(o.order) || !o.order.length || o.order.length > MAX_BLOCKS) return false

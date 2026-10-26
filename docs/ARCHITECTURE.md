@@ -55,6 +55,7 @@
 | 앱, 로컬 서버, MCP 서버, 부탁 사이의 약속(폴더 이름, 파일 형식, 머리글, id 꼴, 도구 이름, 항목 수 한도) | `src/ai/protocol.ts` |
 | 받은 값의 꼴 확인 도구 | `src/ai/guards.ts` |
 | 사용자가 고르는 값(글꼴, 글자 크기, 아래 표시, 장 넘기기, 바탕, 움직임 …) | `src/deck/themes.ts`. AI 카탈로그, 모양, 제안이 이 목록을 같이 쓴다 |
+| 장면 목록과 맞는 장(`SCENES`, `sceneFits`) | `src/deck/scenes.ts`. 편집기, 예전 버전 검사, AI 카탈로그(`scenes`), 모양(`options.scene`), 제안(`set_options`의 `scene`)이 같이 쓴다 |
 | 항목 수와 레이아웃 바꾸기(편집기와 AI 제안이 같은 규칙으로) | `src/deck/edits.ts` |
 | 예전에 저장한 발표 읽기 | `src/deck/migrate.ts`의 `migrateDeck` |
 | 새 버전에서 만든 발표 알아보기 | `src/deck/compat.ts` |

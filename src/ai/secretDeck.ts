@@ -36,7 +36,8 @@ export function secretDeck(): Deck {
       guide: s('guide'),
       notes: s('notes'),
       hints: { title: s('hint') },
-      options: { ...slide.options, motion: s('motion'), tone: s('tone'), transition: s('transition'), order: [s('order')] } as unknown as Deck['slides'][number]['options'],
+      // 장면: 표지에는 맞는 장면(나가도 되는 값), 한 장 요약에는 목록에 있지만 맞지 않는 장면, 나머지는 비밀
+      options: { ...slide.options, motion: s('motion'), tone: s('tone'), transition: s('transition'), order: [s('order')], scene: i === 0 ? 'opening' : i === 1 ? 'numbers' : s('scene') } as unknown as Deck['slides'][number]['options'],
       fields: Object.fromEntries([...Object.keys(slide.fields), 'title', 'lead', 'body'].map((k) => [k, s(`field-${k}`)])),
       items: slide.items.map((it, j) => ({ ...it, id: s(`item-${j}`), title: s('t'), body: s('b'), value: s('v'), meta: s('m'), image: s('img') })),
     })) as Deck['slides']).concat(composeSecret(s)),
@@ -58,7 +59,7 @@ function composeSecret(s: (k: string) => string): Deck['slides'] {
       notes: s('notes'),
       hints: { title: s('hint') },
       // 나오는 차례: 없는 id(비밀)는 빠지고, 있는 부품의 원래 id는 해시 id로만 나가야 한다
-      options: { transition: s('transition'), order: [s('order'), s('block-3'), s('block-1')] } as unknown as Deck['slides'][number]['options'],
+      options: { transition: s('transition'), order: [s('order'), s('block-3'), s('block-1')], scene: s('scene') } as unknown as Deck['slides'][number]['options'],
       fields: { title: s('ct'), lead: s('cl') },
       items: [],
       // 판의 자리와 이음표 자리에도: 첫 부품은 맞는 자리와 이음표, 나머지는 비밀이 든 자리, 이음표, 모르는 종류.

@@ -174,6 +174,29 @@ describe('MCP 서버', () => {
     expect(bad.isError).toBe(true)
   })
 
+  it('장면은 모양에 맞는 것만 보이고, 고르자는 제안은 목록의 id나 null만 받는다', async () => {
+    const { value: list } = await tool('list_decks')
+    const { value: shape } = await tool('get_shape', { deck: list.decks[0].deck })
+    // 비밀을 심은 덱: 표지의 맞는 장면만 나간다 (마지막 그물을 지난다)
+    expect(shape.slides[0].options.scene).toBe('opening')
+    expect(shape.slides.slice(1).every((x: { options: Record<string, unknown> }) => x.options.scene === undefined)).toBe(true)
+    const { value: cat } = await tool('get_catalog')
+    expect(cat.scenes.map((x: { id: string }) => x.id)).toEqual(['opening', 'answer', 'numbers', 'flow', 'compare', 'time', 'picture', 'closing'])
+    const ok = await tool('propose_changes', {
+      deck: shape.deck,
+      note: '장마다 장면을 골랐어요',
+      ops: [
+        { op: 'set_options', slide: shape.slides[1].id, scene: 'answer' },
+        { op: 'set_options', slide: shape.slides[0].id, scene: null },
+      ],
+    })
+    expect(ok.isError).toBe(false)
+    // 맞지 않는 장면은 받아 두고 앱이 적용할 때 건너뛴다(scene_unfit). 모르는 장면, 글자는 받지 않는다
+    for (const scene of ['film', SECRET, 1])
+      expect((await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_options', slide: shape.slides[1].id, scene }] })).isError, String(scene)).toBe(true)
+    expect(raw.join('\n')).not.toContain(SECRET)
+  })
+
   it('앱이 남긴 결과 코드는 모두 AI에게 알려 준다', async () => {
     // 정해진 말에 없는 코드가 하나라도 있으면 마지막 그물에 걸려 결과 대신 오류가 나간다
     const id = 'r00000000c0de'

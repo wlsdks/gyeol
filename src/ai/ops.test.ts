@@ -97,6 +97,35 @@ describe('제안 적용', () => {
     expect(results.map((r) => r.code)).toEqual(['not_for_layout', 'no_slide'])
   })
 
+  it('장면은 목록의 id로만, 그 장에 맞을 때만 고르고, 글은 그대로다', () => {
+    const kpi = shape.slides.findIndex((s) => s.layout === 'kpi')
+    const { deck: next, results } = run(
+      { op: 'set_options', slide: sid(kpi), scene: 'numbers' },
+      // 핵심 숫자 장에 첫 장면은 맞지 않는다
+      { op: 'set_options', slide: sid(0), scene: 'numbers' },
+      { op: 'set_options', slide: sid(0), scene: 'opening' },
+      // 이미 그 장면이면 바뀌는 것으로 세지 않는다
+      { op: 'set_options', slide: sid(kpi), scene: 'numbers' },
+    )
+    expect(results.map((r) => r.code)).toEqual(['applied', 'scene_unfit', 'applied', 'no_change'])
+    expect([next.slides[kpi].options.scene, next.slides[0].options.scene]).toEqual(['numbers', 'opening'])
+    expect(toShape(next).slides[kpi].options.scene).toBe('numbers')
+    expect(checkShape(toShape(next))).toBe(true)
+    expect(writtenText(next)).toEqual(writtenText(deck))
+    // 맞지 않아 건너뛴 op는 같이 적은 다른 값도 바꾸지 않는다
+    expect(applyOps(deck, [{ op: 'set_options', slide: sid(kpi), scene: 'compare', tone: 'invert' }]).deck.slides[kpi].options.tone).toBeUndefined()
+    // null이면 장면을 끈다
+    const off = applyOps(next, [{ op: 'set_options', slide: sid(kpi), scene: null }])
+    expect(off.results[0].code).toBe('applied')
+    expect(off.deck.slides[kpi].options.scene).toBeUndefined()
+    // 같은 제안에서 레이아웃을 바꾸면 바꾼 장으로 맞는지 본다
+    const relaid = run({ op: 'set_layout', slide: sid(kpi), layout: 'compare' }, { op: 'set_options', slide: sid(kpi), scene: 'compare' })
+    expect(relaid.results.map((r) => r.code)).toEqual(['applied', 'applied'])
+    // 모르는 장면, 글자, 숫자는 꼴부터 틀린 것
+    for (const scene of ['film', '기밀', 3, true, {}]) expect(parseOp({ op: 'set_options', slide: sid(kpi), scene }), String(scene)).toBeNull()
+    expect(parseOp({ op: 'set_options', slide: sid(kpi), scene: null })).not.toBeNull()
+  })
+
   it('제목 자리는 표지와 섹션에서만, 정해진 세 자리로만 옮긴다', () => {
     const body = shape.slides.findIndex((s) => s.layout === 'kpi')
     expect(shape.slides[0].options.place).toBe('bottom')

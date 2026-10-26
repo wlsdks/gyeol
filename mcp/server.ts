@@ -36,6 +36,7 @@ import {
 import { catalog, checkShape, onlyKnownStrings, SHAPE_FORMAT, type ShapeDeck } from '../src/ai/share'
 import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_LINK_IDS, BLOCK_LOOK_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, BOARD_COLS, BOARD_ROWS, MAX_BLOCKS } from '../src/deck/blocks'
 import { LAYOUT_ORDER } from '../src/deck/layouts'
+import { SCENE_IDS } from '../src/deck/scenes'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../src/deck/themes'
 
 // 판 번호는 package.json에서 빌드할 때 넣는다. 예전에는 따로 적어 두어 0.1.0에 멈춰 있었다
@@ -62,11 +63,13 @@ const PROTOCOL_WORDS = [
   SHAPE_FORMAT, 'format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides',
   'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'pane', 'contain', 'place', 'variant', 'variants', 'base',
   'empty', 'filled', 'long',
+  // 장면 (장의 options.scene). id는 카탈로그에도 있지만 모양의 값이라 여기에도 적어 둔다
+  'scene', ...SCENE_IDS,
   // 부품 장
   'blocks', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'linkBelow',
   // 목록과 결과
   'decks', 'slideCount', 'visibleSlides', 'request', 'status', 'results', 'ok', 'code', 'message', 'pending', 'applied', 'rejected', 'invalid', 'unknown',
-  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash', 'link_clash',
+  'no_slide', 'has_content', 'out_of_range', 'not_for_layout', 'last_slide', 'unknown_role', 'no_change', 'not_reviewed', 'no_block', 'no_room', 'look_clash', 'link_clash', 'scene_unfit',
   ...OP_NAMES,
   ...Object.values(MESSAGES),
 ]
@@ -152,6 +155,7 @@ const TOOLS = [
       '발표 하나의 모양: 장 순서, 장마다 레이아웃과 역할, 숨김 여부, 칸마다 비었는지(empty)/채웠는지(filled)/길어서 넘칠 수 있는지(long), 항목 수, 옵션, 테마. ' +
       '부품 장(layout compose)은 가로 12칸, 세로 12칸의 판을 부품들이 빈틈없이 나눠 덮은 장으로, blocks에 부품마다 id(b로 시작), 종류, 자리(x, y는 왼쪽 위 칸, w, h는 너비와 높이의 칸 수), 모양, 바탕, 움직임, 이음표(link는 오른쪽 선, linkBelow는 아래 선), 칸 상태가 읽는 차례로 나온다. ' +
         '부품의 when/speed/from은 기본값이 아닐 때만 나오고, 장의 options.order는 부품이 나오는 차례를 정했을 때만 나온다. ' +
+        '장의 options.scene은 골라 둔 장면(카탈로그 scenes)이고, 그 장에 맞을 때만 나온다. ' +
       '사람이 적은 글은 이 서버에 없다. 글의 내용을 추측하거나 사용자에게 붙여 달라고 하지 말고 모양만으로 판단한다.',
     inputSchema: {
       type: 'object',
@@ -174,7 +178,9 @@ const TOOLS = [
         'layout을 compose로 하면 같은 내용의 부품 장이 되고(표지, 섹션 장은 안 됨), 부품 장은 그 레이아웃의 부품 하나뿐일 때만 다른 레이아웃으로 되돌릴 수 있다.',
       '- set_hidden {slide, hidden} 발표에서 빼거나 다시 넣는다.',
       '- set_item_count {slide, count} 항목 수. 줄일 때는 끝의 빈 항목만 지운다.',
-      '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?: 옆 판을 반대쪽에, pane?: 옆 판 너비(layouts[].panes.sides 중 하나, null은 기본; 둘 다 panes가 있는 레이아웃의 panes.variants 모양에서만), contain?: 이미지와 설명의 이미지를 자르지 않기, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨), place?: 제목 덩어리의 자리(카탈로그 places, null은 기본; layouts[].place가 있는 레이아웃만), transition?: 이 장으로 넘어올 때(카탈로그 transitions, null은 발표 전체 설정대로; morph는 앞 장과 같은 제목이나 부품이 새 자리로 옮겨 간다)}',
+      '- set_options {slide, highlight?: 강조할 항목 번호(0부터, -1은 없음; 카탈로그 layouts[].highlight가 있는 레이아웃만), flip?: 옆 판을 반대쪽에, pane?: 옆 판 너비(layouts[].panes.sides 중 하나, null은 기본; 둘 다 panes가 있는 레이아웃의 panes.variants 모양에서만), contain?: 이미지와 설명의 이미지를 자르지 않기, motion?: 이 장만 다른 움직임(카탈로그 motions, null은 발표 전체 설정대로), tone?: 이 장의 바탕(카탈로그 tones; 표지, 섹션, 결정 요청은 안 됨), place?: 제목 덩어리의 자리(카탈로그 places, null은 기본; layouts[].place가 있는 레이아웃만), transition?: 이 장으로 넘어올 때(카탈로그 transitions, null은 발표 전체 설정대로; morph는 앞 장과 같은 제목이나 부품이 새 자리로 옮겨 간다), scene?: 장면(카탈로그 scenes의 id, null은 장면 끄기; 그 장에 맞는 것만, 아니면 scene_unfit)}',
+      '장면(scene)은 장 하나를 영화의 한 컷처럼 처음부터 끝까지 짠 움직임이다. 맞는 장: scenes[].layouts의 레이아웃, 또는 부품 장에 scenes[].blocks의 부품이 하나라도 있을 때(compare는 나란히 선 두 부품뿐인 부품 장에도). ' +
+        '장면을 고른 장은 부품마다의 effect, speed, from 대신 장면대로 움직이고, when과 나오는 차례(order)는 그대로다. 움직임 정도(motion)가 none이면 장면도 쉰다.',
       '- set_theme {theme?: 테마 id, accent?: "#rrggbb"(카탈로그 accents의 강조색에서 고르기) 또는 null(테마 기본색), motion?: 발표할 때 움직임(카탈로그 motions), font?: 제목 글꼴(카탈로그 fonts, null은 테마 글꼴), size?: 글자 크기(textSizes), footer?: 아래 표시(footers), transition?: 장 넘기기(transitions)}',
       '바탕(tone)은 흐름을 끊고 눈길을 모을 장 한두 곳에만 쓴다. 모든 장을 바꾸면 오히려 아무것도 눈에 띄지 않는다.',
       '- set_guide {slide, text} 이 장을 어떻게 채우면 좋은지 (200자 이내)',
@@ -229,6 +235,7 @@ const TOOLS = [
               size: { type: 'string', enum: TEXT_SIZES.map((m) => m.id) },
               footer: { type: 'string', enum: FOOTERS.map((m) => m.id) },
               transition: { anyOf: [{ type: 'string', enum: TRANSITIONS.map((m) => m.id) }, { type: 'null' }] },
+              scene: { anyOf: [{ type: 'string', enum: SCENE_IDS }, { type: 'null' }] },
               field: { type: 'string' },
               item: { type: 'integer', minimum: 0, maximum: MAX_ITEMS - 1 },
               text: { type: 'string' },

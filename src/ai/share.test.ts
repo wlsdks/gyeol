@@ -3,6 +3,7 @@ import { autoPlace, insertAt, makeBlock, tiles, withLink } from '../deck/blocks'
 import { AUDIENCES, BLUEPRINTS, DECK_TYPES } from '../deck/blueprints'
 import { createDeck, makeSlide } from '../deck/generate'
 import { createSampleDeck } from '../deck/sample'
+import { SCENE_IDS, sceneFits, sceneOf, withScenes } from '../deck/scenes'
 import { LAYOUTS } from '../deck/layouts'
 import type { Block, LayoutId } from '../deck/types'
 import { parseOp } from './ops'
@@ -160,6 +161,32 @@ describe('모양만 고르기', () => {
     for (const s of shape.slides.filter((x) => x.layout !== 'compose')) expect(s.options.order).toBeUndefined()
   })
 
+  it('장면은 목록에 있고 그 장에 맞을 때만 보인다', () => {
+    const shape = toShape(secretDeck())
+    // 비밀을 심은 덱: 표지의 맞는 장면만 남고, 한 장 요약의 맞지 않는 장면(숫자가 말한다)과 비밀은 빠진다
+    expect(shape.slides[0].options.scene).toBe('opening')
+    expect(shape.slides.slice(1).every((s) => s.options.scene === undefined)).toBe(true)
+    expect(checkShape(shape)).toBe(true)
+    // 맞는 장면을 모두 입힌 발표도 꼴이 맞고, 장마다 고른 장면 그대로 보인다
+    const scened = withScenes(createSampleDeck(), true)
+    const shown = toShape(scened)
+    expect(shown.slides.map((s) => s.options.scene ?? null)).toEqual(scened.slides.map((s) => sceneOf(s)))
+    expect(shown.slides.filter((s) => s.options.scene).length).toBeGreaterThan(3)
+    expect(checkShape(shown)).toBe(true)
+    // 꼴 확인: 모르는 장면, 그 장에 맞지 않는 장면은 받지 않는다. 장면이 없는 예전 모양 파일은 받는다
+    const copy = () => structuredClone(shown)
+    const at = shown.slides.findIndex((s) => s.options.scene)
+    const unknown = copy()
+    unknown.slides[at].options.scene = SECRET as never
+    expect(checkShape(unknown)).toBe(false)
+    const unfit = copy()
+    unfit.slides[at].options.scene = SCENE_IDS.find((id) => !sceneFits(scened.slides[at], id))
+    expect(checkShape(unfit)).toBe(false)
+    const old = copy()
+    for (const s of old.slides) delete s.options.scene
+    expect(checkShape(old)).toBe(true)
+  })
+
   it('Object.prototype의 이름을 레이아웃으로 써도 예외 없이 거른다', () => {
     // `in`으로 찾으면 constructor, toString도 레이아웃으로 알아서, 꼴 확인이 false 대신 예외를 던졌다
     const shape = toShape(createSampleDeck())
@@ -193,8 +220,9 @@ describe('모양만 고르기', () => {
 
   it('마지막 그물은 모르는 글자를 잡는다', () => {
     const shape = toShape(createSampleDeck())
-    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'linkBelow']
+    const words = ['format', 'version', 'deck', 'type', 'audience', 'duration', 'method', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition', 'tone', 'updatedAt', 'slides', 'id', 'layout', 'role', 'section', 'hidden', 'hiddenItems', 'fields', 'items', 'options', 'highlight', 'flip', 'contain', 'place', 'variant', 'base', 'empty', 'filled', 'long', 'html-maker/shape', 'blocks', 'x', 'y', 'w', 'h', 'look', 'effect', 'when', 'speed', 'from', 'order', 'link', 'linkBelow', 'scene']
     expect(onlyKnownStrings(shape, words)).toBe(true)
+    expect(onlyKnownStrings(toShape(withScenes(createSampleDeck(), true)), words)).toBe(true)
     expect(onlyKnownStrings(toShape(secretDeck()), words)).toBe(true)
     expect(onlyKnownStrings({ ...shape, extra: SECRET }, [...words, 'extra'])).toBe(false)
     expect(onlyKnownStrings({ [SECRET]: 1 }, words)).toBe(false)

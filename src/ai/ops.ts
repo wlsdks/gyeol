@@ -56,8 +56,9 @@ import { BLUEPRINTS } from '../deck/blueprints'
 import { relayout, withVisibleCount } from '../deck/edits'
 import { makeSlide } from '../deck/generate'
 import { BOLD_LAYOUTS, LAYOUTS, LAYOUT_ORDER, panesOf, variantIds, variantOf } from '../deck/layouts'
+import { isScene, sceneFits } from '../deck/scenes'
 import { FONTS, FOOTERS, MOTIONS, PLACES, TEXT_SIZES, THEME_ORDER, TONES, TRANSITIONS } from '../deck/themes'
-import type { Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
+import type { Block, BlockEffect, BlockFrom, BlockLink, BlockLook, BlockSpeed, BlockType, BlockWhen, Deck, FontId, FooterMode, Item, ItemKey, LayoutId, Motion, Place as TitlePlace, SceneId, Slide, TextSize, ThemeId, Tone, Transition } from '../deck/types'
 import { HEX, isInt, isObj, isOneOf, onlyKeys } from './guards'
 import { DECK_ID, HIGHLIGHT_MAX, HIGHLIGHT_MIN, MAX_ITEMS, REQUEST_FORMAT, REQUEST_ID, REQUEST_VERSION } from './protocol'
 import { shapeBlockId, shapeDeckId, shapeSlideId } from './share'
@@ -93,6 +94,7 @@ export type Op =
   | { op: 'set_item_count'; slide: SlideRef; count: number }
   /** motion, transition: null이면 발표 전체 설정을 따르게 되돌린다 */
   /** flip, pane: 두 판으로 나뉜 장(LayoutSpec.panes)의 옆 판 자리와 너비. pane이 null이면 기본 너비 */
+  /** scene: 장면(카탈로그 scenes) 하나. 그 장에 맞는 것만 되고(scene_unfit), null이면 장면을 끈다. 고르는 값 하나라 글에 닿지 않는다 */
   | {
       op: 'set_options'
       slide: SlideRef
@@ -104,6 +106,7 @@ export type Op =
       tone?: Tone
       place?: TitlePlace | null
       transition?: Transition | null
+      scene?: SceneId | null
     }
   /** font: null이면 테마의 글꼴로 */
   | {
@@ -198,6 +201,8 @@ export type OpCode =
   | 'look_clash'
   /** 이음표가 잇는 두 부품의 뜻이 서지 않는다 (진행 막대와 시장 원을 견주기 같은. 카탈로그 blocks[].kind) */
   | 'link_clash'
+  /** 그 장에 맞지 않는 장면 (카탈로그 scenes[].layouts, blocks). not_for_layout과 나눠야 AI가 장면만 다시 고른다 */
+  | 'scene_unfit'
 
 /**
  * 결과 파일에 쓸 수 있는 코드. 로컬 서버가 앱이 보낸 결과를 받을 때 이것으로 확인한다.
@@ -218,6 +223,7 @@ const OP_CODE_SET = {
   no_room: true,
   look_clash: true,
   link_clash: true,
+  scene_unfit: true,
 } as const satisfies Record<OpCode, true>
 export const OP_CODES = Object.keys(OP_CODE_SET) as OpCode[]
 export const isOpCode = (v: unknown): v is OpCode => typeof v === 'string' && Object.hasOwn(OP_CODE_SET, v)
@@ -261,7 +267,7 @@ export const OP_KEYS = {
   set_layout: ['op', 'slide', 'layout', 'variant'],
   set_hidden: ['op', 'slide', 'hidden'],
   set_item_count: ['op', 'slide', 'count'],
-  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition'],
+  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'scene'],
   set_theme: ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'],
   set_guide: ['op', 'slide', 'text'],
   set_hint: ['op', 'slide', 'block', 'field', 'item', 'text'],
@@ -448,7 +454,9 @@ export function parseOp(v: unknown): Op | null {
         if (v.tone !== undefined && !isOneOf(TONES, v.tone)) return null
         if (v.place !== undefined && v.place !== null && !isOneOf(PLACES, v.place)) return null
         if (v.transition !== undefined && v.transition !== null && !isOneOf(TRANSITIONS, v.transition)) return null
-        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place, v.transition].every((x) => x === undefined)) return null
+        // 모르는 장면은 꼴부터 틀린 것 (요청을 통째로 받지 않는다). 맞지 않는 장면은 적용할 때 장을 보고 건너뛴다
+        if (v.scene !== undefined && v.scene !== null && !isScene(v.scene)) return null
+        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place, v.transition, v.scene].every((x) => x === undefined)) return null
         return {
           op: v.op,
           slide,
@@ -460,6 +468,7 @@ export function parseOp(v: unknown): Op | null {
           tone: v.tone as Tone | undefined,
           place: v.place as TitlePlace | null | undefined,
           transition: v.transition as Transition | null | undefined,
+          scene: v.scene as SceneId | null | undefined,
         }
       }
       // set_hint
@@ -730,6 +739,14 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
           // 제목 덩어리를 옮길 수 있는 장(표지, 섹션)만. 기본 자리는 값을 지운다
           if (!spec.place) return fail('not_for_layout')
           options.place = op.place === null || op.place === spec.place.base ? undefined : op.place
+        }
+        if (op.scene !== undefined) {
+          // 맞는지는 지금 장으로 본다: 같은 제안에서 레이아웃을 먼저 바꿨으면 바꾼 장으로
+          if (op.scene !== null && !sceneFits(s, op.scene)) return fail('scene_unfit')
+          // 장면 하나만 바꾸자는데 이미 그 장면이면, 바뀌는 것으로 세지 않는다 (미리 보기의 '바꾸는 것' 수가 부풀지 않게)
+          const only = Object.keys(op).every((k) => k === 'op' || k === 'slide' || k === 'scene' || op[k as keyof typeof op] === undefined)
+          if (only && (op.scene ?? undefined) === s.options.scene) return fail('no_change')
+          options.scene = op.scene ?? undefined
         }
         put(i, { ...s, options })
         return done

@@ -31,6 +31,7 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   no_room: '장에 자리가 모자라요',
   look_clash: '이 장의 다른 컴포넌트와 면이 어울리지 않아요',
   link_clash: '이으면 뜻이 서지 않는 두 컴포넌트예요',
+  scene_unfit: '이 장에 맞지 않는 장면이에요',
 }
 
 /**
