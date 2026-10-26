@@ -21,16 +21,13 @@ import { fitBlocks } from '../slides/fitBlocks'
 import { pageProps, SLIDE_H, SLIDE_W, SlideCanvas } from '../slides/SlideCanvas'
 import slidesCss from '../slides/slides.css?inline'
 import blocksCss from '../slides/blocks.css?inline'
-import { codePointsOf, embedFonts, fontFamiliesOf, rangeHits } from './fonts'
+import { codePointsOf, cssGlyphs, embedFonts, fontFamiliesOf, rangeHits } from './fonts'
 import { pptxSlidesOf } from './pptx'
 
 const XHTML = 'http://www.w3.org/1999/xhtml'
 const SLIDE_CSS = `${slidesCss}\n${blocksCss}`
 
-/** CSS가 content로 그리는 글자(인용 부호, 화살표). 글에는 없지만 글꼴 조각을 고를 때 넣는다 */
-const CSS_TEXT = [...SLIDE_CSS.matchAll(/content:\s*(['"])(.*?)\1/g)]
-  .map((m) => m[2].replace(/\\([0-9a-f]{1,6})\s?/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16))))
-  .join('')
+const CSS_TEXT = cssGlyphs(SLIDE_CSS)
 
 function escapeXml(text: string): string {
   return text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)

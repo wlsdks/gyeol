@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FONTS, themeStyle } from '../deck/themes'
-import { fontFamiliesOf, parseRanges, rangeHits } from './fonts'
+import { cssGlyphs, fontFamiliesOf, parseRanges, rangeHits } from './fonts'
 
 /** 글꼴 목록(CSS font-family)의 첫 이름 */
 const first = (stack: unknown) => String(stack).split(',')[0].trim().replace(/^['"]|['"]$/g, '')
@@ -29,5 +29,9 @@ describe('내보낸 파일에 넣는 글꼴', () => {
     expect(rangeHits('U+AC00-AC0F', [0x41])).toBe(false)
     // 범위가 없는 글꼴(SUIT)은 늘 넣는다
     expect(rangeHits('', [0x41])).toBe(true)
+  })
+
+  it('CSS의 content가 그리는 글자를 꺼낸다 (\\201C 같은 글자 번호도)', () => {
+    expect(cssGlyphs(".a::before { content: '\\201C'; } .b::after { content: \"↓\"; } .c::before { content: ''; }")).toBe('“↓')
   })
 })

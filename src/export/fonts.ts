@@ -32,6 +32,13 @@ export function fontFamiliesOf(theme: DeckTheme): RegExp {
   return new RegExp(['Pretendard', ...EXTRA[fontOf(theme)]].join('|'), 'i')
 }
 
+/** CSS가 content로 그리는 글자(인용 부호, 화살표). 글에는 없지만 글꼴 조각을 고를 때 넣는다 */
+export function cssGlyphs(css: string): string {
+  return [...css.matchAll(/content:\s*(['"])(.*?)\1/g)]
+    .map((m) => m[2].replace(/\\([0-9a-f]{1,6})\s?/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16))))
+    .join('')
+}
+
 /** 글에 든 글자들 (글꼴 조각 고르기에 쓴다) */
 export function codePointsOf(text: string): number[] {
   return [...new Set([...text].map((ch) => ch.codePointAt(0)!))]

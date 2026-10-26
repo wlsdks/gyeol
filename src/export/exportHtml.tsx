@@ -8,7 +8,7 @@ import { isDeck, safeFileName } from '../store/deckFile'
 import motionCss from '../motion/motion.css?inline'
 import slidesCss from '../slides/slides.css?inline'
 import blocksCss from '../slides/blocks.css?inline'
-import { embedFonts, fontFamiliesOf } from './fonts'
+import { cssGlyphs, embedFonts, fontFamiliesOf } from './fonts'
 import { VIEWER_CSS, VIEWER_JS, VIEWER_TEXT } from './viewer'
 
 const DATA_ID = 'html-maker-deck'
@@ -73,11 +73,20 @@ export async function exportCsp(): Promise<string> {
   ].join('; ')
 }
 
+const CSS_TEXT = cssGlyphs(`${slidesCss}\n${blocksCss}`)
+
+/**
+ * 넣을 글꼴 조각을 고르는 글자: 장의 글, 발표 이름, 뷰어 단추, CSS가 content로 그리는 글자(퍼널 전환율의 ↓ 같은).
+ * CSS의 글자를 빼면 그 글자만 든 조각이 빠져, 내보낸 파일에서 ↓가 다른 글꼴(윈도우는 맑은 고딕)로 그려지고 전환율 칸이 앱보다 3px 좁았다
+ */
+export function fontText(slides: string, title: string): string {
+  return (slides.replace(/<[^>]+>/g, ' ') + title + VIEWER_TEXT + CSS_TEXT).replace(/&[a-z]+;/g, ' ')
+}
+
 export async function buildHtml(deck: Deck): Promise<string> {
   const slides = renderSlides(deck)
   const families = fontFamiliesOf(deck.theme)
-  const text = (slides.replace(/<[^>]+>/g, ' ') + deck.title + VIEWER_TEXT).replace(/&[a-z]+;/g, ' ')
-  const fonts = await embedFonts(text, families)
+  const fonts = await embedFonts(fontText(slides, deck.title), families)
   const csp = await exportCsp()
   return `<!doctype html>
 <html lang="ko">
