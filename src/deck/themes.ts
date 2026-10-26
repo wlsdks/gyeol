@@ -308,18 +308,49 @@ interface Palette {
 
 const NIGHT = '#0A0D16'
 
-/** 흰 바탕의 짙은 면: 강조색을 밤색(NIGHT) 쪽으로 반쯤 가라앉힌다. 강조색을 바꾸면 면도 그 색의 깊은 색으로 따라간다 */
+/**
+ * 흰 바탕의 짙은 면: 강조색을 밤색(NIGHT) 쪽으로 깊게 가라앉힌다(강조색 30%). 강조색을 바꾸면 면도 그 색의 깊은 색으로 따라간다.
+ * 반쯤(50%) 가라앉히던 때는 면이 쨍한 남색(코발트면 #1D3175)이라 넓은 면이 무겁고 흔한 파란 상자로 보였고, 그 위의 글과 강조가
+ * 면의 색에 묻혔다(흰 글 12:1, 강조 4.8:1, 바뀐 만큼 칩 3.7:1). 먹에 가까운 색까지 내리면 면은 조용해지고 위의 글은 또렷해진다
+ */
+const DEEP_SHARE = 0.3
+
 function deepOf(theme: Theme, accent: string): string {
-  return theme.deep ?? mix(accent, NIGHT, 0.5)
+  return theme.deep ?? mix(accent, NIGHT, DEEP_SHARE)
+}
+
+function toHsl(hex: string): [number, number, number] {
+  const [r, g, b] = rgb(hex).map((c) => c / 255)
+  const hi = Math.max(r, g, b)
+  const lo = Math.min(r, g, b)
+  const l = (hi + lo) / 2
+  if (hi === lo) return [0, 0, l]
+  const d = hi - lo
+  const s = l > 0.5 ? d / (2 - hi - lo) : d / (hi + lo)
+  const h = hi === r ? (g - b) / d + (g < b ? 6 : 0) : hi === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return [h / 6, s, l]
+}
+
+function fromHsl(h: number, s: number, l: number): string {
+  const f = (n: number) => {
+    const k = (n + h * 12) % 12
+    const a = s * Math.min(l, 1 - l)
+    return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))))
+  }
+  return '#' + [f(0), f(8), f(4)].map((c) => c.toString(16).padStart(2, '0')).join('')
 }
 
 /**
- * 짙은 면 위에서 강조할 색: 강조색을 그 면 위에서 읽힐 만큼(4.5:1) 밝힌다. 원래 밝은 색(하늘)은 그대로.
- * 단락 번호처럼 아주 큰 글자도 같게: 검정 위에서 3:1의 짙은 강조색은 가라앉아 흐려 보인다
+ * 짙은 면 위에서 강조할 색: 강조색의 색상과 채도는 두고 밝기만 올려 그 면 위에서 7:1이 되게 한다. 짙은 면 위의 강조는 큰 숫자(답)라
+ * 흰 글(12~16:1)보다 한참 흐리면 답이 이름표보다 가라앉아 보인다. 흰색을 섞어 밝히면 채도가 빠져 회보라, 회분홍처럼 탁해져서
+ * (코발트 #8DA2E7, 4.8:1) 밝기만 올린다. 파랑, 보라는 밝히면 같은 채도에서도 회보라로 바래서 앞의 숫자(옅은 회색)와 갈리지 않아
+ * 채도를 0.85까지 올리고, 청록, 숲처럼 초록 쪽은 밝히면 형광빛이 나서 0.72까지만 둔다. 먹처럼 채도가 낮은 색은 그대로
  */
-function accentOnDeep(accent: string, deep: string, need = 4.5): string {
-  for (let t = 1; t >= 0.2; t -= 0.05) {
-    const c = mix(accent, '#FFFFFF', t)
+function accentOnDeep(accent: string, deep: string, need = 7): string {
+  const [h, s, l] = toHsl(accent)
+  const sat = s < 0.3 ? s : h >= 0.38 && h < 0.55 ? Math.min(s, 0.72) : h >= 0.55 && h < 0.8 ? Math.max(s, 0.85) : s
+  for (let x = l; x <= 0.97; x += 0.01) {
+    const c = fromHsl(h, sat, x)
     if (contrast(c, deep) >= need) return c
   }
   return '#FFFFFF'
@@ -337,7 +368,7 @@ function paletteOf(deckTheme: DeckTheme, tone: Tone): Palette {
   if (tone === 'accent') {
     // 강조색이 바탕이 되면 글자는 그 위에서 읽히는 색, 강조는 글자색 그대로 굵게
     const ink = inkOn(accent)
-    const deep = mix(accent, NIGHT, 0.5)
+    const deep = mix(accent, NIGHT, DEEP_SHARE)
     return {
       bg: accent,
       ink,
