@@ -8,11 +8,12 @@
   min-height: 0;
 }
 
+/* 바닥줄(축)은 옅은 선색(--line)보다 한 단계 진하게: --line은 흰 바탕에서 프로젝터로 보면 묻혀 막대가 떠 보였다(VISUAL-RULES 2-1) */
 .tn-plot {
   position: relative;
   flex: 1;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid var(--line);
+  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
 }
 
 .tn-canvas {
@@ -243,7 +244,7 @@
 }
 
 .tn-zero {
-  border-top: var(--rule-hair) solid var(--line);
+  border-top: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
 }
 
 .tn-legend {

@@ -148,6 +148,7 @@
 }
 
 /* 막대 칸의 너비가 숫자(.one-line의 100cqi)의 기준: 숫자가 칸보다 넓으면 칸에 맞게 작아진다 */
+/* 바닥줄(축)은 옅은 선색(--line)보다 한 단계 진하게: --line은 흰 바탕에서 프로젝터로 보면 묻혀 막대가 떠 보였다(VISUAL-RULES 2-1) */
 .bk-cc-bar {
   position: relative;
   display: flex;
@@ -155,7 +156,7 @@
   align-items: center;
   justify-content: flex-end;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid var(--line);
+  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
   container-type: inline-size;
 }
 

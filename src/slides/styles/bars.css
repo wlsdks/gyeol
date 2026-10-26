@@ -158,10 +158,11 @@
   border-radius: inherit;
 }
 
+/* 바닥줄(축)은 옅은 선색(--line)보다 한 단계 진하게: --line은 흰 바탕에서 프로젝터로 보면 묻혀 막대가 떠 보였다(VISUAL-RULES 2-1) */
 .va-columns .br-label {
   grid-row: 2;
   padding-top: 24px;
-  border-top: var(--rule-hair) solid var(--line);
+  border-top: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
   text-align: center;
 }
 

@@ -73,13 +73,14 @@
   min-width: 0;
 }
 
+/* 바닥줄(축)은 옅은 선색(--line)보다 한 단계 진하게: --line은 흰 바탕에서 프로젝터로 보면 묻혀 막대가 떠 보였다(VISUAL-RULES 2-1) */
 .vs-bars {
   display: flex;
   justify-content: center;
   gap: 12px;
   min-height: 0;
   padding: 0 11%;
-  border-bottom: var(--rule-hair) solid var(--line);
+  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
   container: vs-pair / inline-size;
 }
 
@@ -212,7 +213,7 @@
   grid-row: 1;
   grid-column: 1 / -1;
   min-height: 0;
-  border-bottom: var(--rule-hair) solid var(--line);
+  border-bottom: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
   container-type: inline-size;
 }
 
@@ -260,7 +261,7 @@
 .vs-zero {
   right: 0;
   left: 0;
-  border-top: var(--rule-hair) solid var(--line);
+  border-top: var(--rule-hair) solid color-mix(in srgb, var(--ink-3) 50%, var(--bg));
 }
 
 .vs-pt {
