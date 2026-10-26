@@ -700,7 +700,9 @@ function rowRhythm(area: HTMLElement, k: number): string[] {
         if (Math.min(p.r, q.r) - Math.max(p.l, q.l) < 0.5 * Math.min(p.r - p.l, q.r - q.l)) continue
         const gap = (q.t - p.b) / k
         const h = Math.max(p.b - p.t, q.b - q.t) / k
-        gaps.push(gap)
+        // 연결도의 상자는 같은 높이의 자리(선이 그 가운데로 들어간다)에 가운데로 서서, 글 줄 수가 다르면 글 사이는 달라도 가운데 사이는 같다:
+        // 줄마다 같아야 하는 것은 가운데 사이다(두 줄로 꺾인 이름 옆 한 줄 이름이 66, 104px로 다르다고 했다)
+        gaps.push(cell.dataset.type === 'network' ? (q.t + q.b - p.t - p.b) / 2 / k : gap)
         if (gap > 2 * h && gap > 48) {
           out.push(`${cell.dataset.type}: 줄 사이(${Math.round(gap)}px)가 내용 높이(${Math.round(h)}px)의 두 배를 넘게 늘었어요`)
           break
