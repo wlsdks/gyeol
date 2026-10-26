@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BLOCK_EFFECT_IDS, BLOCK_FROM_IDS, BLOCK_SPEED_IDS, BLOCK_TYPES, BLOCK_WHEN_IDS, isLayoutBlock } from '../deck/blocks'
 import { LAYOUTS } from '../deck/layouts'
+import { SCENE_IDS } from '../deck/scenes'
 import { TRANSITIONS } from '../deck/themes'
 import { motionEngine } from './engine'
 
@@ -33,5 +34,11 @@ describe('움직임 엔진', () => {
     const src = motionEngine.toString()
     const choreo = src.slice(src.indexOf('function choreo'), src.indexOf('function nativeAuto'))
     for (const id of Object.keys(LAYOUTS)) expect(choreo, id).toMatch(new RegExp(`case ["']${id}["']`))
+  })
+
+  it('고를 수 있는 장면마다 엔진이 짠 컷이 있다 (없으면 장면을 골라도 소리 없이 연출표만 움직인다)', () => {
+    const src = motionEngine.toString()
+    const scene = src.slice(src.indexOf('function scene('), src.indexOf('const batches'))
+    for (const id of SCENE_IDS) expect(scene, id).toMatch(new RegExp(`case ["']${id}["']`))
   })
 })

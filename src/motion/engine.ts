@@ -405,6 +405,11 @@ export function motionEngine(): MotionEngine {
     const slideVariant = (/\bva-([a-zA-Z]+)/.exec(slide.className) || [])[1] || 'base'
     // 옆 판을 반대쪽으로 옮긴 장: 판이 들어오는 쪽도 바꾼다
     const flipped = slide.classList.contains('is-flip')
+    // 장면(data-scene): 장 전체를 한 컷으로 짠다. 아래 scene()이 연출표의 움직임을 다시 짜고 층을 얹는다
+    const sceneName = cellOnly ? null : slide.getAttribute('data-scene')
+    const sceneOn = !!sceneName
+    /** 장면이 한 글자씩 내려앉게 할 글 (words가 이 글을 만나면 letters로) */
+    let lettersFor: Element | null = null
     const s = (ms: number) => (t0 + ms * pace) * L.speed + lead
     /** 걸리는 시간은 시작 때와 상관없이 빠르기만 맞춘다 */
     const d = (ms: number) => ms * L.speed
@@ -451,6 +456,8 @@ export function motionEngine(): MotionEngine {
    */
     const words = (el: Element | null, at: number, gap = L.word, blur = false) => {
       if (!el || still || el.closest('[data-mo-keep]')) return at
+      // 장면이 이 글을 초점으로 삼았으면 낱말 대신 한 글자씩 (결론이 한 자씩 내려앉게)
+      if (el === lettersFor) return letters(el, at)
       // 편집 중인 칸의 글자는 나누지 않는다 (입력 칸을 건드리지 않게). 통째로 올라온다
       if (el.closest('.m-edit')) {
         rise(el, at, L.y * 0.6)
@@ -1844,13 +1851,15 @@ export function motionEngine(): MotionEngine {
      * 고른 빠르기(data-speed)는 부품 안의 걸리는 시간과 차례 사이를 함께 바꾸고, 들어오는 쪽(data-from)은 올라오기, 밀려오기, 펼치기에 쓴다
      */
     function block(cell: HTMLElement, at: number) {
-      const effect = (/\bfx-([a-z]+)/.exec(cell.className) || [])[1] || 'auto'
+      // 장면을 고른 동안은 장면이 장 전체를 짠다: 컴포넌트마다 고른 움직임, 빠르기, 들어오는 쪽 대신 짜 둔 움직임(알아서)으로.
+      // 값은 칸에 그대로 남아서 장면을 끄면 돌아온다
+      const effect = sceneOn ? 'auto' : (/\bfx-([a-z]+)/.exec(cell.className) || [])[1] || 'auto'
       const type = cell.getAttribute('data-type') || ''
       const saved = { scope, t0, pace }
       scope = cell
       t0 = at
-      pace = cell.dataset.speed === 'fast' ? 0.6 : cell.dataset.speed === 'slow' ? 1.7 : 1
-      const from = cell.dataset.from
+      pace = sceneOn ? 1 : cell.dataset.speed === 'fast' ? 0.6 : cell.dataset.speed === 'slow' ? 1.7 : 1
+      const from = sceneOn ? undefined : cell.dataset.from
       /** 들어오는 쪽에서 n만큼 떨어진 자리 */
       const off = (n: number) => (from === 'left' ? `${-n}px 0` : from === 'right' ? `${n}px 0` : from === 'above' ? `0 ${-n}px` : `0 ${n}px`)
       if (effect === 'rise') run(anims, cell, [{ opacity: 0, translate: off(L.y) }], s(0), L.move)
@@ -1889,6 +1898,472 @@ export function motionEngine(): MotionEngine {
       scope = saved.scope
       t0 = saved.t0
       pace = saved.pace
+    }
+
+    // ---------- 장면 ----------
+    // 장면은 레이아웃의 연출표를 버리지 않고 그 위에서 한 컷을 짠다. 연출표가 건 움직임(anims)을 다 건 뒤
+    // 1) 때를 다시 짜고(초점이 먼저, 근거는 그다음: 지연만 옮긴다), 2) 그 위에 층(카메라, 가림막, 결 선, 장막)을 얹는다.
+    // 층은 움직이는 동안만 붙였다 떼고, 카메라는 시작 모습만 정해(fill: backwards) 끝나면 원래 자리다. 그래서 끝 모습이 편집 화면과 같다.
+    // 움직임 하나하나는 연출표의 것이라 장면이 레이아웃마다 새로 짜지 않아도 되고, 레이아웃을 고치면 장면도 같이 따라간다
+
+    /** 장면이 얹은 움직임에 붙이는 이름. 모션 스튜디오의 시간표가 '장면' 줄로 따로 그린다 */
+    const SCENE = 'mo-scene'
+    /** 카메라: 천천히 떠나 길게 멈춘다. 먹이 가라앉듯 끝에서 오래 머물러서 언제 멈췄는지 눈에 띄지 않는다 */
+    const CAMERA = 'cubic-bezier(0.33, 0, 0.12, 1)'
+
+    /**
+     * 장면 하나를 준비한다. 움직임을 걸기 전에 자리를 잰다(연출표가 움직임을 걸면 시작 모습으로 옮겨진 자리가 잡힌다).
+     * 돌려주는 함수는 연출표를 건 뒤에 불러 때를 다시 짜고 층을 얹는다. 이 장에서 할 것이 없으면 null
+     */
+    function scene(name: string): (() => void) | null {
+      const host = slide as HTMLElement
+      const W = host.offsetWidth
+      const H = host.offsetHeight
+      const base = host.getBoundingClientRect()
+      const k = W ? base.width / W : 0
+      if (!k) return null
+      type Box = { l: number; t: number; r: number; b: number }
+      const toBox = (r: DOMRect): Box => ({ l: (r.left - base.left) / k, t: (r.top - base.top) / k, r: (r.right - base.left) / k, b: (r.bottom - base.top) / k })
+      const join = (list: Box[]): Box | null =>
+        list.length
+          ? { l: Math.min(...list.map((b) => b.l)), t: Math.min(...list.map((b) => b.t)), r: Math.max(...list.map((b) => b.r)), b: Math.max(...list.map((b) => b.b)) }
+          : null
+      const boxOf = (el: Element | null): Box | null => {
+        if (!el) return null
+        const b = toBox(el.getBoundingClientRect())
+        return b.r - b.l > 0 && b.b - b.t > 0 ? b : null
+      }
+      /** 글이 실제로 그려진 자리: 줄마다의 글자 상자를 합친다(칸은 글보다 넓을 때가 있다) */
+      const textBox = (el: Element | null): Box | null => {
+        if (!el) return null
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        return join(Array.prototype.slice.call(range.getClientRects()).filter((r: DOMRect) => r.width > 1 && r.height > 1).map(toBox))
+      }
+      /** 안의 것을 모두 덮는 자리 (점처럼 크기가 없는 상자도 안의 점과 숫자로) */
+      const deepBox = (el: Element | null): Box | null => {
+        if (!el) return null
+        return boxOf(el) ?? join((Array.prototype.slice.call(el.querySelectorAll('*')) as Element[]).map(boxOf).filter((b): b is Box => !!b))
+      }
+      const q = (sel: string) => slide!.querySelector<HTMLElement>(sel)
+      const qa = (sel: string) => Array.prototype.slice.call(slide!.querySelectorAll(sel)) as HTMLElement[]
+
+      // 장 바로 아래의 것들. 장 가장자리에 닿는 면(표지의 옆 면, 색 면)은 무대라서 카메라가 움직이지 않는다
+      // (작게 당기면 가장자리가 비어 보인다). 아래 띠도 제자리 (장을 바꿀 때와 같은 까닭)
+      const top = Array.prototype.slice.call(host.children) as HTMLElement[]
+      const touches = (el: HTMLElement) => el.offsetLeft <= 1 || el.offsetTop <= 1 || el.offsetLeft + el.offsetWidth >= W - 1 || el.offsetTop + el.offsetHeight >= H - 1
+      const foot = top.filter((el) => el.classList.contains('s-foot'))
+      const stage = top.filter((el) => !foot.includes(el) && touches(el))
+      // 가장자리에 닿는 덩어리(표지의 왼쪽 판 같은) 안의 글은 따로 움직인다. 자리는 움직이기 전에 잰다(카메라의 중심을 맞춘다)
+      const moving: { el: HTMLElement; at: Box }[] = []
+      for (const el of top) {
+        if (foot.includes(el)) continue
+        const inner = stage.includes(el) ? (Array.prototype.slice.call(el.children) as HTMLElement[]) : [el]
+        for (const x of inner) {
+          const b = boxOf(x)
+          if (b && b.l > 1 && b.t > 1 && b.r < W - 1 && b.b < H - 1) moving.push({ el: x, at: b })
+        }
+      }
+      const variant = slideVariant
+
+      // 부품 장: 장이 나올 때 나오는 칸만 (누르면 나오는 칸은 그때 따로 움직인다), 나오는 차례대로
+      const cells = layout === 'compose' ? $('.bk-area > .bk').filter((c) => !c.classList.contains('mo-hold')).sort((a, b) => Number(a.dataset.seq || 0) - Number(b.dataset.seq || 0)) : []
+      const cellOf = (types: string[]) => cells.find((c) => types.includes(c.dataset.type || '')) || null
+
+      // 이 장면이 이 장에서 할 것
+      /** 한 글자씩 내려앉을 글(결론, 제목) */
+      let text: HTMLElement | null = null
+      /** 먼저 나올 것 (결론, 가장 중요한 숫자). 없으면 text */
+      let focal: HTMLElement | null = null
+      let underline = false
+      let cam: { kind: 'in' | 'back' | 'drift'; dur: number } | null = null
+      let spotlight = false
+      /** 읽는 차례를 잇는 선을 지나갈 항목들 */
+      let guide: HTMLElement[] = []
+      /** 근거 사이를 이만큼 벌린다 (선이 따라가며 읽을 수 있게) */
+      let spread = 1
+      /** 시간의 흐름: 지금 단계(강조한 점)에서 머무는 곳 */
+      let now: HTMLElement | null = null
+      /** 비교 드러내기: 장막을 칠 곳과 가르는 선 */
+      let halves: { region: Box; split: number; right?: HTMLElement } | null = null
+      let picture: HTMLElement | null = null
+      /** 다시 짜지 않고 연출표대로 두는 것 (단락 번호처럼 장의 바탕을 이루는 것) */
+      let keep = ''
+
+      switch (name) {
+        case 'opening':
+          text = q('.cv-title, .sc-title')
+          underline = true
+          cam = { kind: 'back', dur: 3800 }
+          keep = '.sc-num, .cv-logo'
+          break
+        case 'answer': {
+          if (layout === 'compose') {
+            focal = cellOf(['message', 'callout'])
+            text = focal && focal.querySelector<HTMLElement>('.bk-msg-t, .bk-call-t')
+          } else text = q(layout === 'statement' ? '.st-title' : layout === 'case' ? '.cs-title' : ':scope > .s-head .s-title')
+          underline = true
+          cam = { kind: 'in', dur: 3200 }
+          break
+        }
+        case 'numbers': {
+          const keys: Record<string, string> = {
+            kpi: '.kp-item',
+            scorecard: '.sk-row.it.is-hl, .sk-row.it',
+            bars: '.br-row.is-hl, .br-row',
+            share: '.sh-item.is-hl, .sh-item',
+            funnel: '.fn-row.is-hl',
+            bridge: '.wf-col.wf-total',
+            versus: '.vs-col.is-hl, .vs-row.is-hl',
+            pricing: '.pr-plan.is-hl',
+          }
+          focal = layout === 'compose' ? cellOf(['number', 'stat', 'delta', 'goal', 'ring', 'attain', 'meter', 'ratio', 'kpi', 'scorecard', 'bars', 'versus', 'share', 'funnel', 'bridge']) : keys[layout] ? q(keys[layout]) : null
+          // 깔때기는 강조가 없으면 마지막 단계(남은 것)가 답, 증감 요인은 마지막 합계
+          if (!focal && layout === 'funnel') focal = qa('.fn-row').pop() || null
+          if (layout === 'bridge') focal = qa('.wf-col.wf-total').pop() || null
+          spotlight = !!focal && cells.length !== 1
+          cam = { kind: 'back', dur: 3200 }
+          break
+        }
+        case 'flow': {
+          spread = 1.45
+          // 단계 흐름(선으로 잇기)과 목차는 제 선이 이미 읽는 차례로 그어진다. 그 위에 선을 하나 더 긋지 않는다
+          if (layout === 'points') guide = qa('.pt-item')
+          else if (layout === 'process' && variant === 'cards') guide = qa('.pc-step')
+          else if (layout === 'compose') guide = cells
+          cam = { kind: 'drift', dur: 0 }
+          break
+        }
+        case 'compare': {
+          if (layout === 'compose') {
+            const two = cells.length === 2 ? cells.map(boxOf) : []
+            if (two.length === 2 && two[0] && two[1] && Math.abs(two[0].t - two[1].t) < 4 && two[0].r <= two[1].l + 1) {
+              halves = { region: join([two[0], two[1]])!, split: (two[0].r + two[1].l) / 2, right: cells[1] }
+            } else {
+              const cell = cellOf(['compare'])
+              const r = boxOf(cell && cell.querySelector('.cp'))
+              if (r) halves = { region: r, split: (r.l + r.r) / 2 }
+            }
+          } else {
+            const r = boxOf(q('.cp'))
+            if (r) halves = { region: r, split: (r.l + r.r) / 2 }
+          }
+          cam = { kind: 'drift', dur: 0 }
+          break
+        }
+        case 'time': {
+          spread = 1.25
+          const scope2 = layout === 'compose' ? cellOf(['timeline', 'gantt', 'trend', 'progress']) : slide
+          if (scope2) now = scope2.querySelector<HTMLElement>('.tl-item.is-now, .tn-pt.is-hl')
+          if (layout === 'progress') guide = qa('.ps-row.it')
+          cam = { kind: 'drift', dur: 0 }
+          break
+        }
+        case 'picture': {
+          if (layout === 'compose') {
+            const cell = cellOf(['image'])
+            picture = cell && !cell.querySelector('.bk-img.is-fit') ? cell.querySelector<HTMLElement>('.bk-img-i img') : null
+          } else {
+            picture = slide!.querySelector('.ix:not(.is-contain) .ix-img img') || q('.ix-img img')
+            text = q('.ix-title')
+          }
+          break
+        }
+        case 'closing':
+          text = q('.cl-title')
+          guide = qa('.cl-step')
+          cam = { kind: 'back', dur: 4200 }
+          break
+        default:
+          return null
+      }
+      if (text && !(text.textContent || '').trim()) text = null
+      if (!focal) focal = text
+      lettersFor = text
+      // 움직이기 전의 자리
+      const textAt = underline ? textBox(text) : null
+      const textSize = text ? parseFloat(getComputedStyle(text).fontSize) || 60 : 60
+      const focalAt = deepBox(focal)
+      const nowAt = deepBox(now)
+      const guideAt = guide.map(boxOf)
+      const origin = textAt ?? focalAt
+      const center: [number, number] = origin ? [(origin.l + origin.r) / 2, (origin.t + origin.b) / 2] : [W / 2, H / 2]
+
+      return () => {
+        const mine = anims.slice()
+        const targetOf = (a: Animation) => (a.effect instanceof KeyframeEffect ? a.effect.target : null)
+        const delayOf = (a: Animation) => Number(a.effect?.getTiming().delay) || 0
+        const endOf = (a: Animation) => Number(a.effect?.getComputedTiming().endTime) || 0
+        /** 지연을 by만큼 옮긴다. 시계(빈 움직임, tally)는 지연 대신 시간을 거꾸로 돌려 같이 늦춘다 */
+        const shift = (a: Animation, by: number) => {
+          if (!by || !(a.effect instanceof KeyframeEffect)) return
+          if (!a.effect.getKeyframes().length) a.currentTime = Number(a.currentTime || 0) - by
+          else a.effect.updateTiming({ delay: Math.max(0, delayOf(a) + by) })
+        }
+        const within = (el: Element, list: Element[]) => list.some((x) => x === el || x.contains(el))
+        /** 장의 머리, 무대, 아래 띠, 장면이 남겨 두라고 한 것은 연출표의 때 그대로 */
+        const kept = (el: Element) => {
+          const t = top.find((x) => x === el || x.contains(el))
+          if (!t || stage.includes(t) || foot.includes(t) || t.classList.contains('s-head')) return true
+          return !!keep && !!el.closest(keep)
+        }
+        const startOf = (list: Animation[]) => (list.length ? Math.min(...list.map(delayOf)) : Infinity)
+        /** 이 안의 것이 처음 움직이는 때 (다시 짠 뒤) */
+        const firstIn = (el: Element) => startOf(mine.filter((a) => {
+          const t = targetOf(a)
+          return !!t && within(t, [el])
+        }))
+
+        /**
+         * 초점을 먼저: 초점 안의 움직임을 본문이 시작하는 때로 당기고, 초점을 감싼 것(본문 상자가 흐리게 들어오는 것)도 그때까지 당긴다.
+         * 나머지(근거)는 돌려준 rest를 moveRest로 옮긴다
+         */
+        const restage = (focus: Element[]) => {
+          const F: Animation[] = []
+          const R: Animation[] = []
+          for (const a of mine) {
+            const t = targetOf(a)
+            if (!t) continue
+            if (focus.length && within(t, focus)) F.push(a)
+            // 초점을 감싼 것(본문 상자)은 아래에서 초점과 같이 당긴다
+            else if (focus.some((f) => t.contains(f))) continue
+            else if (!kept(t)) R.push(a)
+          }
+          const rStart = startOf(R)
+          const fStart = startOf(F)
+          const cue = Math.min(fStart, rStart)
+          if (F.length && fStart > cue) F.forEach((a) => shift(a, cue - fStart))
+          // 초점을 감싼 것이 늦게 나타나면 초점도 그동안 안 보인다
+          for (const a of mine) {
+            const t = targetOf(a)
+            if (t && focus.some((f) => t !== f && t.contains(f)) && delayOf(a) > cue) shift(a, cue - delayOf(a))
+          }
+          return { F, R, cue: Number.isFinite(cue) ? cue : 0, fEnd: F.length ? Math.max(...F.map(endOf)) : Number.isFinite(cue) ? cue : 0, rStart }
+        }
+        /** 근거를 at부터: 서로의 사이는 spread배로 벌린다 */
+        const moveRest = (R: Animation[], from: number, at: number, k2 = 1) => {
+          if (!Number.isFinite(from)) return
+          for (const a of R) shift(a, at + (delayOf(a) - from) * k2 - delayOf(a))
+        }
+        /** 장면의 움직임: 이름을 붙여 시간표가 따로 그린다 */
+        const layer = (el: Element, frames: Keyframe[], at: number, timing: Spring) => {
+          const a = run(anims, el, frames, at, timing)
+          if (a) a.id = SCENE
+          return a
+        }
+        const add = <E extends HTMLElement>(el: E, parent: Element) => {
+          parent.appendChild(el)
+          restores.push(() => el.remove())
+          return el
+        }
+        const div = (cls: string) => {
+          const el = document.createElement('div')
+          el.className = cls
+          el.setAttribute('aria-hidden', 'true')
+          return el
+        }
+        // 렌즈: 카메라가 장의 글과 같이 움직이는 빈 층. 선과 장막을 여기에 그려 글에 붙어 다니게 한다
+        const lens = add(div('mo-scene'), host)
+        const begin = s(0)
+
+        /** 카메라: 장의 글 전체를 한 덩어리로 (각자의 자리에서 같은 점을 중심으로) 조금 당기거나 밀었다가 원래 자리로 */
+        const camera = (kind: 'in' | 'back' | 'drift', at: number, dur: number, about: [number, number], dx = 0, dy = 0) => {
+          // 이어 움직이기로 옮겨 온 것은 이미 제자리다. 옮기면 짝이 어긋난다
+          if (host.querySelector('[data-mo-keep]')) return
+          const sc = kind === 'in' ? 0.965 : kind === 'back' ? 1.045 : 1
+          for (const { el, at: b } of [...moving, { el: lens, at: { l: 0, t: 0, r: W, b: H } }]) {
+            const o = getComputedStyle(el).transformOrigin.split(' ').map(parseFloat)
+            const vx = about[0] - b.l - (o[0] || 0)
+            const vy = about[1] - b.t - (o[1] || 0)
+            const f = (scale: number, x: number, y: number) => `translate(${x}px, ${y}px) translate(${vx}px, ${vy}px) scale(${scale}) translate(${-vx}px, ${-vy}px)`
+            layer(el, [{ transform: f(sc, dx, dy), composite: 'add' }, { transform: f(1, 0, 0), composite: 'add' }], at, { easing: CAMERA, duration: dur })
+          }
+        }
+        /** 결 선: 결론 아래를 왼쪽에서 그어 잠깐 머문 뒤 오른쪽으로 빠져나간다. 끝 모습에는 없다 */
+        const strokeUnder = (b: Box, at: number) => {
+          const ln = add(div('mo-line'), lens)
+          const h = Math.max(4, Math.round(textSize * 0.06))
+          ln.style.cssText = `left:${b.l}px;top:${b.b + textSize * 0.1}px;width:${b.r - b.l}px;height:${h}px;clip-path:inset(0 0 0 100%)`
+          layer(
+            ln,
+            [
+              { clipPath: 'inset(0 100% 0 0)', offset: 0, easing: CARRY },
+              { clipPath: 'inset(0 0% 0 0%)', offset: 0.32, easing: 'linear' },
+              { clipPath: 'inset(0 0% 0 0%)', offset: 0.7, easing: 'cubic-bezier(0.55, 0, 0.3, 1)' },
+              { clipPath: 'inset(0 0% 0 100%)', offset: 1 },
+            ],
+            at,
+            { easing: 'linear', duration: d(2600) },
+          )
+        }
+        /**
+         * 초점: 장의 바탕색을 옅게 덮어 초점 밖을 물리고, 초점 자리는 비운다(구멍). 다 보이면 걷는다.
+         * 덮는 색이 바탕색이라 빈 바탕 위에서는 보이지 않고 글과 면만 옅어진다
+         */
+        const spot = (holes: Box[], at: number, hold: number, release = 900) => {
+          const v = add(div('mo-veil'), host)
+          const pad = 28
+          const r = 18
+          let path = `M0 0H${W}V${H}H0Z`
+          for (const h of holes) {
+            const x = h.l - pad
+            const y = h.t - pad
+            const w = h.r - h.l + pad * 2
+            const hh = h.b - h.t + pad * 2
+            path += `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + hh - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + hh}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + hh - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`
+          }
+          v.style.clipPath = `path(evenodd, '${path}')`
+          const fadeIn = d(420)
+          const total = fadeIn + hold + d(release)
+          layer(
+            v,
+            [
+              { opacity: 0, offset: 0 },
+              { opacity: 0.8, offset: fadeIn / total },
+              { opacity: 0.8, offset: (fadeIn + hold) / total },
+              { opacity: 0, offset: 1 },
+            ],
+            at,
+            { easing: 'ease-in-out', duration: total },
+          )
+        }
+        /**
+         * 읽는 차례를 잇는 선: 항목이 나오는 때에 선 끝이 그 항목에 닿는다. 한 줄에 여럿이면 그 줄 위를 옆으로, 하나씩 쌓였으면 왼쪽을 아래로.
+         * 마지막 항목에 닿으면 잠깐 머물렀다가 꼬리가 끝 쪽으로 빠져나간다(끝 모습에는 없다)
+         */
+        const thread = (els: HTMLElement[], boxes: (Box | null)[]) => {
+          const list = els.map((el, i) => ({ el, b: boxes[i], t: firstIn(el) })).filter((x): x is { el: HTMLElement; b: Box; t: number } => !!x.b && Number.isFinite(x.t))
+          if (list.length < 2) return null
+          const rows: (typeof list)[] = []
+          for (const x of list) {
+            const row = rows[rows.length - 1]
+            if (row && Math.abs(row[0].b.t - x.b.t) < 24) row.push(x)
+            else rows.push([x])
+          }
+          const across = rows.some((r) => r.length > 1)
+          const draw = (row: typeof list, vertical: boolean) => {
+            const ln = add(div('mo-line is-guide'), lens)
+            const first = row[0]
+            const last = row[row.length - 1]
+            const x0 = vertical ? Math.min(...row.map((x) => x.b.l)) - 32 : first.b.l
+            const y0 = vertical ? first.b.t : Math.min(...row.map((x) => x.b.t)) - 30
+            const len = vertical ? last.b.b - first.b.t : last.b.r - first.b.l
+            if (x0 < 24 || y0 < 24 || len < 40) return
+            ln.style.cssText = vertical
+              ? `left:${x0}px;top:${y0}px;width:3px;height:${len}px;clip-path:inset(100% 0 0 0)`
+              : `left:${x0}px;top:${y0}px;width:${len}px;height:3px;clip-path:inset(0 0 0 100%)`
+            const T0 = first.t
+            const reach = last.t + d(500)
+            const tail = reach + d(450)
+            const end = tail + d(700)
+            const total = end - T0
+            const cut = (p: number) => (vertical ? `inset(0 0 ${100 - p}% 0)` : `inset(0 ${100 - p}% 0 0)`)
+            const frames: Keyframe[] = row.map((x) => ({
+              clipPath: cut(((vertical ? x.b.t - first.b.t : x.b.l - first.b.l) / len) * 100),
+              offset: (x.t - T0) / total,
+              easing: CARRY,
+            }))
+            frames.push({ clipPath: cut(100), offset: (reach - T0) / total, easing: 'linear' })
+            frames.push({ clipPath: cut(100), offset: (tail - T0) / total, easing: 'cubic-bezier(0.55, 0, 0.3, 1)' })
+            frames.push({ clipPath: vertical ? 'inset(100% 0 0 0)' : 'inset(0 0 0 100%)', offset: 1 })
+            layer(ln, frames, T0, { easing: 'linear', duration: total })
+          }
+          if (across) rows.filter((r) => r.length > 1).forEach((r) => draw(r, false))
+          else draw(list, true)
+          return { across, end: list[list.length - 1].t }
+        }
+        const lastStart = (list: Animation[]) => (list.length ? Math.max(...list.map(delayOf)) : begin)
+
+        switch (name) {
+          case 'opening':
+          case 'answer':
+          case 'closing':
+          case 'picture': {
+            const r = restage(focal ? [focal] : [])
+            // 결론의 마지막 글자가 내려앉기 시작할 때 선이 떠난다
+            const inText = text ? r.F.filter((a) => within(targetOf(a)!, [text!])) : []
+            const landed = inText.length ? lastStart(inText) + d(80) : r.fEnd
+            if (underline && textAt) strokeUnder(textAt, landed)
+            // 근거는 결론이 다 내려앉고(선이 반쯤 갔을 때) 그다음에
+            const restAt = name === 'picture' || name === 'closing' ? landed + d(300) : landed + d(700)
+            if (r.F.length) moveRest(r.R, r.rStart, restAt)
+            if (picture) {
+              // 이미지 한 컷: 연출표의 당기기를 걷고 더 천천히, 조금 비스듬히 다가간다
+              for (const a of mine) if (targetOf(a) === picture) {
+                a.cancel()
+                anims.splice(anims.indexOf(a), 1)
+              }
+              layer(picture, [{ scale: '1.14', translate: '-1.6% 0.8%' }, { scale: '1', translate: '0 0' }], begin, { easing: 'cubic-bezier(0.25, 0.1, 0.2, 1)', duration: d(5200) })
+            }
+            if (name === 'closing') thread(guide, guideAt)
+            if (cam) camera(cam.kind, begin, d(cam.dur), center)
+            break
+          }
+          case 'numbers': {
+            const r = restage(focal ? [focal] : [])
+            if (r.F.length) {
+              // 숫자가 거의 맞춰질 때 나머지가 따라 나오고, 그동안 덮은 것을 천천히 걷는다
+              const restAt = r.cue + (r.fEnd - r.cue) * 0.72
+              moveRest(r.R, r.rStart, restAt)
+              if (spotlight && focalAt) spot([focalAt], Math.max(0, r.cue - d(120)), restAt - r.cue + d(200))
+            }
+            if (cam) camera(cam.kind, begin, d(cam.dur), center)
+            break
+          }
+          case 'flow':
+          case 'time': {
+            const r = restage([])
+            moveRest(r.R, r.rStart, r.rStart, spread)
+            const g = thread(guide, guideAt)
+            const span = Math.max(d(1600), lastStart(r.R) - begin + d(700))
+            if (now && nowAt) {
+              const at = firstIn(now)
+              if (Number.isFinite(at)) spot([nowAt], at + d(260), d(1300))
+            }
+            // 카메라는 읽는 쪽으로 따라간다: 옆으로 흐르면 오른쪽으로, 아래로 쌓였으면 아래로
+            const down = g ? !g.across : false
+            camera('drift', begin, span, center, down ? 0 : 40, down ? 28 : 0)
+            break
+          }
+          case 'compare': {
+            if (!halves) break
+            const h = halves
+            const side = (a: Animation) => {
+              const t = targetOf(a)
+              if (!t || kept(t)) return 0
+              if (h.right) return within(t, [h.right]) ? 1 : -1
+              const b = boxOf(t)
+              if (!b) return 0
+              if (b.l >= h.split - 16) return 1
+              if (b.r <= h.split + 16) return -1
+              return 0
+            }
+            const left = mine.filter((a) => side(a) < 0)
+            const right = mine.filter((a) => side(a) > 0)
+            const leftEnd = left.length ? Math.max(...left.map(endOf)) : begin + d(900)
+            const open = Math.max(begin + d(700), leftEnd - d(200))
+            moveRest(right, startOf(right), open + d(120))
+            // 장막: 바탕색 면이 가르는 선에서 오른쪽 끝까지 덮었다가 오른쪽으로 걷힌다. 앞 가장자리의 가는 선이 걷히는 자리를 보인다
+            const c = add(div('mo-curtain'), lens)
+            const ct = h.region.t - 16
+            c.style.cssText = `left:${h.split}px;top:${ct}px;width:${W - h.split}px;height:${h.region.b - ct + 16}px`
+            // 가는 선은 걷히기 시작할 때 나타난다. 처음부터 있으면 빈 장 가운데에 선 하나가 떠 있는 것처럼 보였다(녹화)
+            const seam = getComputedStyle(host).getPropertyValue('--ink-3').trim() || 'currentColor'
+            layer(
+              c,
+              [
+                { opacity: 1, translate: '0 0', borderLeftColor: 'transparent' },
+                { opacity: 1, translate: '0 0', borderLeftColor: seam, offset: 0.08 },
+                { opacity: 1, translate: `${W - h.split + 8}px 0`, borderLeftColor: seam },
+              ],
+              open,
+              { easing: 'cubic-bezier(0.55, 0, 0.18, 1)', duration: d(1300) },
+            )
+            camera('drift', begin, open - begin + d(1300), center, 36, 0)
+            break
+          }
+        }
+      }
     }
 
     const batches: { anims: Animation[]; stops: (() => void)[]; restore: () => void }[] = []
@@ -1931,7 +2406,13 @@ export function motionEngine(): MotionEngine {
       Promise.all([...mine.anims.map((a) => a.finished.catch(() => {})), ...waits]).then(restore)
     }
 
-    batch(() => (cellOnly ? block(cellOnly as HTMLElement, 0) : choreo(layout, slideVariant)))
+    batch(() => {
+      if (cellOnly) return block(cellOnly as HTMLElement, 0)
+      // 장면: 움직이기 전에 자리를 재 두고(prepare), 레이아웃의 연출을 건 뒤 그 움직임을 다시 짜고 층을 얹는다
+      const after = sceneName && !still ? scene(sceneName) : null
+      choreo(layout, slideVariant)
+      if (after) after()
+    })
 
     /** 누르면: 다음 묶음을 보이고 그 자리에서 움직인다. 장 바꾸기의 기다림 없이 바로 */
     const next = () => {

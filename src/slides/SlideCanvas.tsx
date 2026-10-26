@@ -2,6 +2,7 @@ import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, t
 import { LAYOUTS, PANE_UNIT, panesOf, placeOf, sideOf, variantOf } from '../deck/layouts'
 import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import { presentable, type PageInfo } from '../deck/fields'
+import { sceneOf } from '../deck/scenes'
 import type { Deck, Slide } from '../deck/types'
 import { cx } from '../lib/cx'
 import { Compose } from './blocks'
@@ -110,6 +111,8 @@ export const SlideCanvas = memo(function SlideCanvas({
           place && place !== spec.place?.base && `pl-${place}`,
         )}
         style={solo ? { ...themed, width: solo.w, height: solo.h } : style}
+        // 장면도 슬라이드에 남겨 내보낸 파일의 뷰어가 같은 컷으로 움직이게 한다. 지금 레이아웃에 맞을 때만(sceneOf)
+        data-scene={sceneOf(slide) ?? undefined}
       >
         <View />
         {mode === 'edit' && spec.panes && !solo && <PaneTools />}
