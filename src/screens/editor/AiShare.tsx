@@ -661,9 +661,7 @@ export function AiReview({
       <header className="vpp-head">
         <div>
           <p className="vpp-title">AI가 구성을 바꾸자고 해요</p>
-          <p className="vpp-sub">
-            바꾸는 것 {okCount}가지{okCount < lines.length ? `, 건너뛰는 것 ${lines.length - okCount}가지` : ''}. 적은 글은 그대로예요.
-          </p>
+          <p className="vpp-sub">{okCount ? `${okCount}가지를 바꿔요. 적은 글은 그대로예요.` : '바꿀 수 있는 것이 없어요. 거절하거나 나중에 다시 봐요.'}</p>
         </div>
         <div className="vpp-actions">
           <button type="button" className="btn btn-ghost" onClick={onClose}>
@@ -685,21 +683,47 @@ export function AiReview({
               <p>{request.note}</p>
             </figure>
           )}
-          <ol className="air-list">
-            {lines.map((l, i) => (
-              <li key={i} className={cx(!l.result.ok && 'is-skip')}>
-                <span className="air-mark" aria-hidden="true">
-                  {l.result.ok ? <CheckIcon /> : '–'}
-                </span>
-                <span>
-                  <span className="air-line">{l.text}</span>
-                  {l.detail && <span className="air-detail">{l.detail}</span>}
-                  {!l.result.ok && <span className="air-skip">건너뜀: {SKIP_REASON[l.result.code as Exclude<OpCode, 'applied'>]}</span>}
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className="air-foot">적용하기 전 지금 상태를 버전으로 남겨요. 되돌리기({keys('mod+Z')})로도 바로 돌아올 수 있어요.</p>
+          {/* 바뀌는 것을 먼저, 건너뛰는 것은 아래에 따로. 섞여 있으면 무엇이 바뀌는지 한눈에 세기 어려웠다 */}
+          {okCount > 0 && (
+            <ol className="air-list">
+              {lines.map(
+                (l, i) =>
+                  l.result.ok && (
+                    <li key={i}>
+                      <span className="air-mark" aria-hidden="true">
+                        <CheckIcon />
+                      </span>
+                      <span>
+                        <span className="air-line">{l.text}</span>
+                        {l.detail && <span className="air-detail">{l.detail}</span>}
+                      </span>
+                    </li>
+                  ),
+              )}
+            </ol>
+          )}
+          {okCount < lines.length && (
+            <>
+              <p className="air-k">건너뛰는 것 {lines.length - okCount}가지</p>
+              <ol className="air-list">
+                {lines.map(
+                  (l, i) =>
+                    !l.result.ok && (
+                      <li key={i} className="is-skip">
+                        <span className="air-mark" aria-hidden="true">
+                          –
+                        </span>
+                        <span>
+                          <span className="air-line">{l.text}</span>
+                          <span className="air-skip">{SKIP_REASON[l.result.code as Exclude<OpCode, 'applied'>]}</span>
+                        </span>
+                      </li>
+                    ),
+                )}
+              </ol>
+            </>
+          )}
+          <p className="air-foot">적용하기 전 모습은 버전으로 남아요. 되돌리기({keys('mod+Z')})로도 돌아와요.</p>
         </aside>
         <div className="vpp-body air-slides">
           {pairs.map((s) => {

@@ -292,17 +292,25 @@
   background: var(--panel);
 }
 
+/* AI의 설명: 파란 면 대신 왼쪽 선 하나로 인용처럼. 파란색은 고른 것에만 쓴다 */
 .air-note {
   margin: 0 0 20px;
-  padding: 14px 16px;
-  border-radius: var(--r);
-  background: var(--sel-soft);
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--line-2);
 }
 
 .air-note figcaption {
-  color: var(--sel);
+  color: var(--ink-3);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+}
+
+/* '건너뛰는 것 N가지' */
+.air-k {
+  margin: 20px 0 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .air-note p {
@@ -321,33 +329,29 @@
 
 .air-list li {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   gap: 8px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 14px;
 }
 
+/* 바뀌는 것은 글자색 체크 하나. 초록 동그라미는 이 화면에서만 다른 색이라 들떠 보였다 */
 .air-mark {
   display: grid;
   place-items: center;
-  width: 22px;
+  width: 20px;
   height: 22px;
-  border-radius: 50%;
-  background: #e7f6ec;
-  color: #1f8a4c;
+  color: var(--ink);
 }
 
 .air-mark .icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
 }
 
-.air-list li.is-skip .air-mark {
-  background: var(--hover-2);
-  color: var(--ink-3);
-}
-
+.air-list li.is-skip .air-mark,
 .air-list li.is-skip .air-line {
   color: var(--ink-3);
 }
