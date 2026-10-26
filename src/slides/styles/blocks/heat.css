@@ -89,7 +89,8 @@
   display: grid;
   place-items: center;
   padding: calc(12px * var(--bk-fit, 1)) 6px;
-  border-radius: 6px;
+  /* 칸도 차트의 막대처럼 각지게(--r-mark) */
+  border-radius: var(--r-mark);
   background: color-mix(in srgb, var(--hm-hi) calc(6% + 94% * var(--t, 0)), var(--bg));
   /* 문턱 밑은 바탕의 글자색, 넘으면 강조색 위의 글자색. clamp로 0과 1 둘 중 하나만 나오게 한다 */
   color: color-mix(in srgb, var(--hm-on) calc(clamp(0, (var(--t, 0) - var(--hm-th)) * 1000, 1) * 100%), var(--ink));
@@ -119,15 +120,10 @@
   font-weight: 800;
 }
 
-/* 가장 높은 칸과 낮은 칸의 고리: 칸에서 조금 떼어 글자색으로. 진한 칸에 붙여 두르면 칸이 커진 것처럼 보인다.
-   테두리가 아니라 outline이라 표 가장자리의 칸에서 고리가 칸 밖으로 나가도 넘침(스크롤 넓이)으로 세지 않는다 */
+/* 가장 높은 칸과 낮은 칸은 고리 없이 굵은 숫자와 위의 요약 줄(강조색 글자)로 짚는다. 3px 검정 고리 둘은 장에서 가장 진한
+   선이라 칸의 농담보다 먼저 보였다(docs/VISUAL-RULES.md 2, 3: 강조는 글자의 굵기와 색으로). 가장 높은 칸은 이미 가장 진하다 */
 .bk-hm-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-  pointer-events: none;
+  display: none;
 }
 
 .bk-cc-sum .bk-hm-low {
