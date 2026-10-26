@@ -30,6 +30,15 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const SETTLE =
   'linear(0, 0.0861, 0.2602, 0.4453, 0.6081, 0.7349, 0.8271, 0.8923, 0.9373, 0.9673, 0.9862, 0.9973, 1.0029, 1.005, 1.0049, 1.0036, 1.002, 1.0007, 1)'
 
+/**
+ * 끌기 시작한 손잡이로 초점을 옮긴다. 글이 골라지지 않게 누르기의 기본 동작을 막으면 초점이 쓰던 칸에 남아,
+ * 판을 옮기거나 너비를 바꾼 뒤 누른 Ctrl+Z가 칸으로 가서 아무것도 되돌리지 않았다 (제목 자리 옮기기, 항목 이름표와 같다).
+ * 도구 막대의 이름에서 넘겨받은 손짓(isTrusted가 아님)은 막대가 이미 초점을 옮겼다
+ */
+function holdFocus(e: ReactPointerEvent<HTMLElement>) {
+  if (e.nativeEvent.isTrusted) e.currentTarget.focus({ preventScroll: true })
+}
+
 /** 너비 단계의 이름: 기본 너비에서 몇 단계 떨어졌는지 */
 export function sideName(n: number, base: number): string {
   const d = n - base
@@ -128,6 +137,7 @@ export function PaneTools() {
     if (e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
+    holdFocus(e)
     const slideEl = ref.current?.closest<HTMLElement>('.slide')
     const pane = slideEl?.querySelector<HTMLElement>(spec.el)
     if (!slideEl || !pane) return
@@ -234,6 +244,7 @@ export function PaneTools() {
     if (e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
+    holdFocus(e)
     const slideEl = ref.current?.closest<HTMLElement>('.slide')
     if (!slideEl) return
     const key = gestureKey('pane.side')
