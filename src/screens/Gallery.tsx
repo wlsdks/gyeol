@@ -137,7 +137,9 @@ function blockSlides(fill: string | null, only?: string[], variant?: string | nu
     const filler = (id: string, t: BlockType) => ({ ...sampleBlock(t), look: 'plain' as BlockLook, id: `${type}-fill-${id}` })
     const narrow = 12 - spec.minSpan
     const slide = (id: string, title: string, rows: { id: string; blocks: Block[]; spans?: number[]; grow?: number }[]): Slide => {
-      const s: Slide = { ...makeSlide('compose'), id: `bk-${n}-${id}`, fields: { title: `${spec.name}: ${title}` } }
+      // 이름은 장 제목이 아니라 부제에: 장 제목이 있으면 핵심 한 줄과 인용이 한 단계 작아져서(message.css, quote.css) 제목 없는 장에서
+      // 그려질 큰 글자로 재지 못했다. 부품의 잘리지 않는 높이는 더 큰 쪽으로 잰다
+      const s: Slide = { ...makeSlide('compose'), id: `bk-${n}-${id}`, fields: { lead: `${spec.name}: ${title}` } }
       const fit = boardFit(composeAreaH(s))
       const blocks = boardFromRows(rows, fit)
       // 위 줄과 같이 들어가지 않으면 그 부품만
