@@ -15,6 +15,7 @@ import { blockDrawn, blockTextLines } from '../slides/fitBlocks'
  *   내용은 칸이 아니라 그려진 것으로 잰다: 바탕 없는 칸은 글과 그림, 칠한 상자가 그려진 범위, 면이 있는 칸은 면 전체
  *   그려진 것끼리 겹치는 것, 이음표가 그려진 것에 걸치는 것, 소제목 아래(같은 단)에 묶을 부품이 없는 것도 본다
  * - 짜임 안의 빈 곳: 면 안에서 내용이 위에 붙고 아래 안쪽만 크게 빈 것, 면이 내용과 나란한 칸보다 훨씬 큰 것, 여러 단으로 흘린 목록의 단 사이가 지나치게 넓거나 단이 고르지 않은 것
+ * - 떠 있는 칸: 바탕 없는 칸에서 칸 높이의 절반도 안 되는 내용이 칸 가운데에 내려가 있는 것
  * - 이음표: 앞 부품과 선 건너편 부품이 뜻이 서는 짝인지 (links.ts의 linkFits)
  * - 짜임: 높이가 넉넉한데 단을 나눈 목록, 내용이 적은데 본문의 왼쪽 위에 몰린 장(너비의 절반도 안 쓰고 아래 3분의 1 넘게 빈)
  * - 글 폭: 글 부품(TEXT_TYPES)의 한 줄이 MEASURE_EM(그 글자 크기의 배수)보다 긴 것, 여러 줄 글의 끝 줄에 낱말 하나만 남은 것
@@ -279,7 +280,8 @@ function inside(area: HTMLElement, k: number): string[] {
     const ir = inner.getBoundingClientRect()
     const top = (t - ir.top) / k - parseFloat(cs.paddingTop)
     const bottom = (ir.bottom - b) / k - parseFloat(cs.paddingBottom)
-    if (bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
+    // 위아래 선(card)은 위에서부터 그리는 단락이라 아래가 비는 것이 맞다(blocks/base.css)
+    if (!cell.classList.contains('bk-look-card') && bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
     // 면이 내용보다 훨씬 큰 것: 면은 제 내용과 고른 안쪽 여백만큼, 나란한 칸이 더 길면 그 높이까지만 (fitBlocks.ts의 hug).
     // 판이 남는 높이를 면에 주면 두 줄짜리 결정 요청의 면이 본문 바닥까지 닿아 글이 면 가운데에 떠 있었다.
     // 나란한 칸들이 그려진 위아래 범위로 견준다: 옆에 둘을 쌓았으면 둘을 합친 높이까지(옆 단 전체와 높이를 맞춘 면은 사람도 그렇게 둔다).
@@ -411,6 +413,36 @@ function linkMeaning(area: HTMLElement): string[] {
   return out
 }
 
+/**
+ * 떠 있는 작은 내용: 바탕 없는 칸에서 그려진 것이 칸 높이의 절반도 안 되는데, 나란한 옆 칸의 그려진 윗선보다 칸 높이의 4분의 1 넘게
+ * 아래에서 시작하는 것(칸 가운데에 내려 둔 것). 높은 칸 가운데에 날짜 하나, 숫자 하나가 혼자 떠 있으면 옆 칸과 윗선이 어긋나
+ * 어디에 딸린 것인지 읽히지 않았다. 옆 칸이 없으면 쌓기가 칸째 옮겨 떠 보이지 않는다
+ */
+function floating(area: HTMLElement, k: number): string[] {
+  const out: string[] = []
+  const cells = [...area.querySelectorAll<HTMLElement>(':scope > .bk')]
+  for (const cell of cells) {
+    if (!cell.classList.contains('bk-look-plain')) continue
+    const ink = inkSpan(cell)
+    if (!ink) continue
+    const r = cell.getBoundingClientRect()
+    if (r.height / k < 200 || ink.b - ink.t >= r.height / 2) continue
+    const tops = cells
+      .filter((o) => o !== cell && o.dataset.band === cell.dataset.band)
+      .filter((o) => {
+        const q = o.getBoundingClientRect()
+        return Math.min(q.bottom, r.bottom) - Math.max(q.top, r.top) > r.height / 2
+      })
+      .map((o) => inkSpan(o)?.t)
+      .filter((t): t is number => t !== undefined)
+    if (!tops.length) continue
+    // 위아래로 쌓인 아래 칸은 제 칸 위에서부터 잰다(옆 칸의 윗선보다 아래에서 시작하는 것이 맞다)
+    const drop = ink.t - Math.max(r.top, Math.min(...tops))
+    if (drop > r.height / 4) out.push(`${cell.dataset.type}: 작은 내용이 높은 칸 가운데에 떠 있어요(옆 칸보다 ${Math.round(drop / k)}px 아래에서 시작)`)
+  }
+  return out
+}
+
 /** 그려진 부품 장마다 위계, 빈 띠, 글 폭을 본다. 없으면 빈 목록 */
 export async function checkAssembly(): Promise<{ slides: number; problems: string[] }> {
   await document.fonts.ready
@@ -421,7 +453,7 @@ export async function checkAssembly(): Promise<{ slides: number; problems: strin
     const slide = area.closest<HTMLElement>('.slide')
     if (!slide) return
     const k = slide.getBoundingClientRect().width / 1920
-    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area)]) problems.push(`${i + 1}번 장: ${p}`)
+    for (const p of [...rivals(slide, area), ...bands(slide, area, k), ...measure(area, k), ...inside(area, k), ...corner(area, k), ...linkMeaning(area), ...floating(area, k)]) problems.push(`${i + 1}번 장: ${p}`)
   })
   return { slides: areas.length, problems }
 }

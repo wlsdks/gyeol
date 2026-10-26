@@ -154,11 +154,20 @@
   align-content: start;
 }
 
-/* 칸 사이에 이음표가 선 줄은 이음표와 같이 가운데에: '앞 → 뒤'가 한 줄로 읽힌다. 이음표로 잇지 않은 옆 칸의 작은 부품(단계 표시,
-   상태 같은)도 같이: 위에 두면 같은 줄에서 그것만 떠 보였다 */
+/* 칸 사이에 이음표가 선 줄도 위에서부터: 줄의 모든 칸이 윗선을 맞추고, 이음표는 쌓기(fitBlocks.ts의 pack)가 앞 칸의 그려진 것
+   가운데 높이로 옮긴다. 예전에는 칸마다 가운데에 두어, 옆 칸이 길면 짧은 칸(주석, 날짜, 숫자 하나)이 높은 칸 가운데에 혼자 떠
+   어디에 딸린 것인지 읽히지 않았고 이음표 옆 목록만 내려가 머리 줄이 어긋났다 */
 .bk.is-shared.lk-row > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx, .bk-ss, .bk-mt, .bk-sp, .bk-sl, .bk-stp, .bk-dt, .bk-rn, .bk-nt) {
-  justify-content: center;
-  align-content: center;
+  justify-content: flex-start;
+  align-content: start;
+}
+
+/* 그림 부품(나누기, 로고 모음)도 옆 칸이 있으면 위에서부터: 그림은 칸 너비로 크기가 정해져 높은 칸에서 내용이 칸의 절반이 안 되는데,
+   가운데에 두면 옆 숫자의 윗선보다 200px 남짓 아래에서 시작해 떠 보였다 */
+.bk.is-shared > .bk-in > .bk-sg,
+.bk-logos.is-shared > .bk-in > .s-body {
+  justify-content: flex-start;
+  align-content: start;
 }
 
 /* 옅은 면, 진한 면은 면이 곧 묶음이라, 옆 칸과 윗선을 맞추기보다 면 안의 위 여백과 아래 여백을 같게 둔다. 위에서부터 그리면
@@ -167,12 +176,19 @@
    몸통이 flex면 justify-content, 격자면 align-content가 위아래를 정해서 둘 다 둔다(격자의 열은 칸 너비를 다 써서 옆으로는 그대로다).
    글자 맞추기(fitBlocks)는 글이 안쪽 여백에 8px까지 들어가도 들어간 것으로 보는데, 넘침을 아래로만 보내면(safe) 그만큼 아래 여백만
    좁았다(점 목록 512×260에서 위 51, 아래 37). 가운데로 넘치게 두어 위아래가 같이 좁아지게 한다.
-   내릴 수 있는 부품이 늘면 여기에도 더한다 */
+   내릴 수 있는 부품이 늘면 여기에도 더한다.
+   위아래 선(card)은 칠한 면이 아니라 두 줄 선 사이의 단락이라 위에서부터 그린다: 가운데에 두면 나란한 칸에 맞춰 높아진 두 선 사이에서
+   글이 떠, 위의 소제목과 그 아래 목록 사이가 한 칸만큼 벌어졌다. 아래 선끼리는 나란한 칸과 맞고 남는 높이는 글 아래에 남는다(지면의 단) */
 .bk.is-shared:is(.bk-look-card, .bk-look-bold) > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx, .bk-ss, .bk-mt, .bk-sp, .bk-sl, .bk-stp, .bk-dt, .bk-rn, .bk-hd, .bk-nt) {
   --bk-lifts: 0;
   justify-content: center;
   align-content: center;
   padding-top: 0;
+}
+
+.bk.is-shared.bk-look-card > .bk-in > :is(.bk-msg, .bk-tx, .bk-bl, .bk-q, .bk-call, .bk-num, .bk-dl, .bk-gl, .bk-rt, .bk-fc, .bk-rk, .bk-qa, .bk-ck, .bk-pp, .bk-ev, .bk-mk, .bk-sx, .bk-ss, .bk-mt, .bk-sp, .bk-sl, .bk-stp, .bk-dt, .bk-rn, .bk-hd, .bk-nt) {
+  justify-content: flex-start;
+  align-content: start;
 }
 
 /* 글의 폭: 문장을 쓰는 글 칸은 한 줄이 글자 크기의 24배(한글로 34자 남짓)를 넘지 않는다. 칸이 넓어도 줄을 끝까지 늘이지 않는다.

@@ -324,7 +324,8 @@ function panelGaps(cell: HTMLElement, inner: HTMLElement, list: Paint[], all: Li
     if (Math.min(top, bottom) < PAD_MIN) out.push(`${what}: 내용이 면 끝에 붙어요 (위 ${Math.round(top)}, 아래 ${Math.round(bottom)})`)
     else if (!card) continue
     else if (top - bottom > tol) out.push(`${what}: 아래 여백이 위보다 ${Math.round(top - bottom)}px 좁아요 (위 ${Math.round(top)}, 아래 ${Math.round(bottom)})`)
-    else if (fill && bottom - top > tol) out.push(`${what}: 아래가 비어요 (위 ${Math.round(top)}, 아래 ${Math.round(bottom)})`)
+    // 위아래 선(card)은 두 줄 선 사이의 단락이라 위에서부터 그리고 남는 높이는 아래에 둔다(blocks/base.css)
+    else if (fill && bottom - top > tol && !(p.el === cell && cell.classList.contains('bk-look-card'))) out.push(`${what}: 아래가 비어요 (위 ${Math.round(top)}, 아래 ${Math.round(bottom)})`)
   }
   return out
 }

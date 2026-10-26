@@ -13,9 +13,8 @@
  *    글자를 더 키우면 장마다 글자 크기가 들쭉날쭉해지고, 가운데에 작게 모아 두면 위아래가 빈다. 줄 사이만 넓히면 칸을 채운다.
  *    칸마다 따로 고른다: 항목 수가 다른 두 목록이 한 줄에 있어도 둘 다 칸 아래까지 닿는다. 이 값을 쓰지 않는 부품은 그대로다
  *
- * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그린다(소제목 윗선을 맞춘다, blocks.css). 칸 높이를 다 쓰는 부품(차트, 표,
- *    바닥까지 채운 목록) 옆의 짧은 부품만 그것들끼리 묶어 가운데로 내리고(--bk-lift, 캔버스 px), 그 가운데 숫자 부품은 그 전에 한두 단계 키운다.
- *    그런 부품이 없는 줄은 위에 그대로 둔다: 남는 높이는 3-4가 맨 아래에 모은다.
+ * 3-3. 한 줄에 부품이 둘 이상이면 부품마다 위에서부터 그린다(소제목 윗선을 맞춘다, blocks.css). 이음표가 선 줄도 같다. 칸 높이를 다 쓰는
+ *    부품(차트, 표) 옆의 숫자 부품만 한두 단계 키운다. 짧은 부품을 가운데로 내리지 않는다: 남는 높이는 3-4가 묶음 사이와 맨 아래에 모은다.
  *
  * 3-4. 발표 화면에서는 판을 위아래로 나눈 줄마다 그려진 내용을 앞 줄 내용 바로 아래(--bk-gap, 소제목 아래는 좁게)로 올려 붙이고,
  *    남는 높이를 맨 아래 한곳에 모은다(--bk-shift, 캔버스 px, 칸째 옮긴다). 칸마다 가운데에 두거나 틈을 고르게 나누면 남는 높이가
@@ -451,17 +450,10 @@ export function blockFitter() {
   }
 
   /**
-   * 차트 옆의 짧은 부품을 가운데로 (맨 위 설명 3-3). 이음표가 선 줄은 부품마다 가운데에 두어서(blocks.css) 건너뛴다.
-   * 내릴 수 있는 부품(blocks.css의 --bk-lifts: 글, 목록, 숫자, 강조 상자)은 글이 시작하는 선 하나(T)를 같이 쓴다. 그 선은
-   * 묶음 가운데 가장 긴 내용이 줄 가운데에 오는 자리이고, 어느 칸도 넘치지 않게 그 안에서만 옮긴다.
-   * 칸마다 칸 위에서 재면 안 된다: 옅은 면, 진한 면은 안쪽 여백만큼 글이 아래에서 시작해서, 옆의 글은 칸 위에 붙고 면 안의 글만
-   * 내려가 있었다.
-   * 줄에 칸 높이를 거의 다 쓰는 부품(차트, 표, 바닥까지 채운 목록)이 있으면 그것은 그대로 두고, 그 옆에서 칸의 60%도 쓰지 않는
-   * 짧은 부품만 자기들끼리 가운데로 내린다. 소제목이 있어도 내린다: 차트 옆 소제목과 두 줄 글을 위에 붙여 두면 칸 아래 절반이
-   * 통째로 비어, 옆 칸만 꽉 차고 이 칸은 덜 만든 것처럼 보였다. 내용이 칸의 60~80%인 부품은 위에 그대로 둔다: 조금만 내려가면
-   * 나란한 소제목의 윗선이 어긋나 실수처럼 보인다. 그런 부품이 없는 줄은 그대로 위에서부터(남는 높이는 pack이 맨 아래로).
-   * 칸 높이를 다 쓰는 차트, 표 옆의 숫자 부품(큰 숫자, 전과 후, 목표 대비)은 내리기 전에 한두 단계 키운다(boosts): 높은 칸에
-   * 작은 숫자가 떠 있으면 칸이 비어 보인다. 글 부품은 키우지 않는다(장 제목과 크기가 가까워진다)
+   * 차트 옆의 짧은 숫자 부품 키우기 (맨 위 설명 3-3). 줄에 칸 높이를 다 쓰는 차트, 표가 있으면 그 옆의 숫자 부품(큰 숫자, 전과 후,
+   * 목표 대비)을 한두 단계 키운다(boosts): 높은 칸에 작은 숫자만 있으면 칸이 비어 보인다. 글 부품은 키우지 않는다(장 제목과 크기가
+   * 가까워진다). 예전에는 짧은 부품을 줄 가운데로 내렸는데(--bk-lift), 날짜 하나나 숫자 하나가 높은 칸 가운데에 혼자 떠 옆 칸과
+   * 윗선이 어긋났고, 소제목 아래 목록만 내려가 소제목과 사이가 벌어져 내리지 않는다. 이음표가 선 줄과 쌓은 부품은 건너뛴다
    */
   const boosts = [1.44, 1.2]
   const boostable = new Set(['number', 'delta', 'goal'])
@@ -471,14 +463,6 @@ export function blockFitter() {
   function liftable(c: HTMLElement): boolean {
     const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)
     return !!body && getComputedStyle(body).getPropertyValue('--bk-lifts').trim() === '1'
-  }
-  /** 내용의 위아래 자리 (화면 px): 글이 시작할 수 있는 선, 끝나야 하는 선, 내용 높이 */
-  function span(c: HTMLElement): { top: number; bottom: number; used: number; k: number } | null {
-    const m = used(c)
-    if (!m) return null
-    const body = Array.from(c.querySelectorAll<HTMLElement>(':scope > .bk-in > *')).find((el) => el.offsetHeight > 0)!
-    const top = body.getBoundingClientRect().top + parseFloat(getComputedStyle(body).paddingTop) * m.k
-    return { top, bottom: top + m.room, used: m.used, k: m.k }
   }
   function lift(cells: HTMLElement[]): void {
     const rows = new Map<string, HTMLElement[]>()
@@ -533,28 +517,9 @@ export function blockFitter() {
           }
         }
       }
-      // 기준이 되는 부품 옆의 짧은 부품끼리만. 기준이 없는 줄(글과 숫자뿐)은 위에 둔다: 줄째 가운데로 내리면 칸이 내용보다 높은 만큼
-      // 줄 위아래가 비어 부품 사이가 들쭉날쭉 벌어졌다. 남는 높이는 쌓기(pack)가 맨 아래에 모은다
-      if (!anchors.length) return
-      const lifted = rest.filter((c) => share(c) <= 0.6)
-      if (!lifted.length) return
-      const ms = lifted.map(span)
-      if (ms.some((m) => !m)) return
-      const k = ms[0]!.k
-      // 줄의 위아래: 칸의 테두리 상자 (면이 있으면 면의 바깥)
-      const boxes = lifted.map((c) => c.getBoundingClientRect())
-      const top = Math.min(...boxes.map((b) => b.top))
-      const bottom = Math.max(...boxes.map((b) => b.bottom))
-      const most = Math.max(...ms.map((m) => m!.used))
-      const lo = Math.max(...ms.map((m) => m!.top))
-      const hi = Math.min(...ms.map((m) => m!.bottom - m!.used))
-      const T = Math.max(lo, Math.min(hi, top + (bottom - top - most) / 2))
-      const d = ms.map((m) => Math.max(0, Math.min(T - m!.top, m!.bottom - m!.used - m!.top)) / k)
-      // 모두 캔버스 8px 밑으로 내려가면 그대로 (내려 봐야 보이지 않고, 글을 적을 때마다 조금씩 움직인다)
-      if (Math.max(...d) < 8) return
-      lifted.forEach((c, i) => {
-        if (d[i] >= 1) c.style.setProperty('--bk-lift', Math.round(d[i]) + 'px')
-      })
+      // 짧은 부품은 내리지 않고 위에 둔다: 차트 옆에서 가운데로 내리면 날짜 하나, 숫자 하나가 높은 칸 가운데에 혼자 떠서 옆 칸과
+      // 윗선이 어긋나고, 소제목 아래 목록만 내려가 소제목과 목록 사이가 한 칸만큼 벌어졌다(사람이 짠 장은 나란한 칸의 윗선을 맞춘다).
+      // 그래서 숫자 부품을 키우는 것(위)만 한다
     })
   }
 
@@ -704,7 +669,9 @@ export function blockFitter() {
       const trim = Math.floor((bottom - top - need) / k)
       // 캔버스 24px 밑이면 그대로 (글을 적을 때마다 면이 조금씩 움직이지 않게)
       if (trim < 24) continue
-      for (const c of faced) c.style.setProperty('--bk-trim', trim + 'px')
+      // 앞서 줄인 만큼에 더한다(아래의 두 번째 줄이기)
+      const was = faced.map((c) => c.style.getPropertyValue('--bk-trim'))
+      for (const [i, c] of faced.entries()) c.style.setProperty('--bk-trim', (parseFloat(was[i]) || 0) + trim + 'px')
       for (const c of faced) {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (inner) place(inner)
@@ -714,7 +681,10 @@ export function blockFitter() {
         return !!inner && over(inner)
       }
       if (faced.some(spills)) {
-        for (const c of faced) c.style.removeProperty('--bk-trim')
+        for (const [i, c] of faced.entries()) {
+          if (was[i]) c.style.setProperty('--bk-trim', was[i])
+          else c.style.removeProperty('--bk-trim')
+        }
         for (const c of faced) {
           const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
           if (inner) place(inner)
@@ -754,10 +724,11 @@ export function blockFitter() {
     }
     // 옆 이음표가 선 줄은 바탕 없는 칸이 칸 높이의 가운데에 서서(blocks.css) 그 줄의 면을 줄이지 않는다. 줄이 모두 면이면 줄인다:
     // 이음표는 쌓기 끝에서 앞 칸의 그려진 것(면) 가운데로 옮긴다. 예전에는 면만 셋인 줄도 건너뛰어 숫자 한 줄짜리 면 셋이 본문 바닥까지 닿았다
-    hug(
-      Array.from(groups.values()).filter((cs) => !cs.some((c) => c.classList.contains('lk-row')) || cs.every((c) => !c.classList.contains('bk-look-plain'))),
-      k,
-    )
+    // 두 번: 면을 줄이면 칸 높이로 정한 글자 단계(--bk-h, 300px 밑은 한 단계 작게)가 바뀌어 내용이 더 작아질 수 있다. 한 번만 줄이면
+    // 결정 요청 면이 줄인 뒤 작아진 글보다 86px 컸다
+    const huggable = Array.from(groups.values()).filter((cs) => !cs.some((c) => c.classList.contains('lk-row')) || cs.every((c) => !c.classList.contains('bk-look-plain')))
+    hug(huggable, k)
+    hug(huggable, k)
     // 칸마다 판의 자리(화면 px)와 그려진 범위, 바로 위에 있는 칸들(판에서 이 칸 위 선보다 위에서 끝나고 옆으로 겹친다)
     const side = (p: DOMRect, q: DOMRect) => Math.min(p.right, q.right) - Math.max(p.left, q.left) > 1
     // 편집 화면의 빈 부품은 안내 글(읽지 않는 글이라 drawn이 세지 않는다)만 보여서 그려진 것이 없다. 그러면 장 전체를 쌓지 않아,
