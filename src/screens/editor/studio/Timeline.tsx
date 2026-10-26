@@ -27,8 +27,11 @@ export function Timeline({
   onHot,
   onMove,
   quiet = null,
+  onEnter = null,
 }: {
   player: Player
+  /** 앞 장에서 이 장으로 넘어오는 모습부터 보기. 첫 장이거나 움직이지 않으면 null */
+  onEnter?: (() => void) | null
   /** 움직이지 않는 까닭: 컴퓨터의 '동작 줄이기'(reduced)나 이 장의 움직임 정도 '없음'(none) */
   quiet?: 'reduced' | 'none' | null
   /** 줄을 끌어 바꿀 수 있는 컴포넌트 id들 (나오는 차례) */
@@ -102,6 +105,15 @@ export function Timeline({
         <button type="button" className="btn btn-ghost btn-sm" disabled={!!quiet} onClick={player.restart}>
           <RestartIcon />
           처음부터
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={!onEnter}
+          title={onEnter ? '앞 장에서 이 장으로 넘어오는 모습부터 보여요' : '앞 장이 없거나 움직이지 않아서 볼 수 없어요'}
+          onClick={onEnter ?? undefined}
+        >
+          <EnterIcon />앞 장에서 넘어오기
         </button>
         <p className="ms-time">
           <span ref={timeRef}>0.0초</span>
@@ -282,6 +294,8 @@ function SortRow({
 }
 
 const PauseIcon = () => <Icon className="icon-fill" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+/** 앞 장에서 넘어오기: 뒤 장 앞에 비켜 선 앞 장 */
+const EnterIcon = () => <Icon d="M3.5 7.5h9v9h-9zM9 4.5h11.5v13" />
 const RestartIcon = () => <Icon d="M4.5 12a7.5 7.5 0 102.2-5.3M4.5 4.5v4h4" />
 /** 누르는 때: 화살표 끝과 퍼지는 금 */
 export const ClickIcon = () => <Icon d="M9 9l10 4-4.2 1.6L13 19zM6.5 3.5l1 2.2M3.5 6.5l2.2 1M3.5 11l2-.6M11 3.5l-.6 2" />

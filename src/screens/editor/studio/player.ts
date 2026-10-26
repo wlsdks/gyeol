@@ -120,6 +120,8 @@ export interface Player {
   playOne(block: string): void
   /** 무대가 새로 그려질 때(움직임을 바꿔서) 장 전체 대신 그 컴포넌트 하나만 움직인다 */
   focusNext(block: string): void
+  /** 장을 움직이는 엔진. 앞 장에서 넘어오는 모습을 볼 때 같은 엔진으로 장을 바꿔야 이어 움직이기의 짝이 맞는다 */
+  engine: ReturnType<typeof motionEngine>
 }
 
 /**
@@ -171,9 +173,18 @@ export function usePlayer(root: HTMLElement | null, slide: Slide, level: MotionL
   useLayoutEffect(() => {
     const s = state.current
     cancelAnimationFrame(s.raf)
-    if (!root || level === 'none') {
+    if (!root) {
+      // 무대를 잠깐 내렸을 때(앞 장에서 넘어오는 모습을 보는 동안) 시간표는 그대로 둔다. 비웠다가 다시 채우면 줄이 깜박인다
+      setSolo(null)
+      setPlaying(false)
+      s.anims = []
+      s.ended = true
+      emit(0, false)
+      return
+    }
+    if (level === 'none') {
       // 움직이지 않아도 줄은 보인다: 누르면 나오는 차례는 움직임 없음에서도 지킨다
-      setPlan(root ? readPlan(slideRef.current, []) : EMPTY)
+      setPlan(readPlan(slideRef.current, []))
       setSolo(null)
       setPlaying(false)
       s.anims = []
@@ -289,5 +300,5 @@ export function usePlayer(root: HTMLElement | null, slide: Slide, level: MotionL
     return () => void listeners.current.delete(fn)
   }, [])
 
-  return { plan, solo, subscribe, playing, toggle, restart, seek, playOne, focusNext }
+  return { plan, solo, subscribe, playing, toggle, restart, seek, playOne, focusNext, engine }
 }

@@ -547,6 +547,42 @@
   translate: 0 -50%;
 }
 
+/* 앞 장에서 넘어오는 동안 무대 위의 표시: 지금 보이는 것이 이 장이 아니라 앞 장임을 */
+.ms-stage-tag {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  margin: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* 앞 장에서 넘어오기: 화면 전체가 아니라 무대의 장만 찍어 넘긴다. 발표 화면의 전환(motion.css)은 화면 전체(root)를
+   넘기므로, 문서의 이름을 떼고 무대에 root라는 이름을 붙여 같은 규칙이 무대에만 걸리게 한다. 둘레(시간표, 오른쪽 칸)는 그대로 보이고,
+   두 장 뒤로 비치는 바탕은 화면 전체가 아니라 무대 안에만 깐다. 밀기와 다가오기가 무대 밖으로 넘치지 않게 자른다 */
+html.ms-vt {
+  view-transition-name: none;
+}
+
+html.ms-vt .ms-slide {
+  view-transition-name: root;
+}
+
+html.ms-vt[data-mo-swap]::view-transition {
+  background: none;
+  pointer-events: none;
+}
+
+html.ms-vt[data-mo-swap]::view-transition-image-pair(root) {
+  overflow: clip;
+  background: var(--mo-vt-bg, transparent);
+}
+
 /* 움직이지 않으면 바늘이 0초에 서서 알림 글을 가른다 */
 .ms-tl.is-quiet :is(.ms-needle, .ms-head) {
   display: none;
@@ -742,11 +778,6 @@
   color: var(--ink-2);
   font-size: 13px;
   line-height: 1.5;
-}
-
-.ms-from-prev {
-  margin-top: 14px;
-  font-size: 13px;
 }
 
 /* 낮은 창(노트북 150%): 시간표를 줄여 무대를 지킨다 */

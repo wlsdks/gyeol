@@ -1,5 +1,6 @@
 import { arrayMove } from '@dnd-kit/sortable'
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { flushSync } from 'react-dom'
 import {
   BLOCK_EFFECTS,
   BLOCK_FROMS,
@@ -19,7 +20,7 @@ import {
 } from '../../../deck/blocks'
 import { pageInfo } from '../../../deck/fields'
 import { sceneOf } from '../../../deck/scenes'
-import { MOTIONS, motionOf, TRANSITIONS } from '../../../deck/themes'
+import { MOTIONS, motionOf, transitionOf, TRANSITIONS } from '../../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide } from '../../../deck/types'
 import { cx } from '../../../lib/cx'
 import { FitSlide, pageProps, SlideCanvas, useStableSections } from '../../../slides/SlideCanvas'
@@ -109,6 +110,49 @@ export function MotionStudio({
     if (next) store.select(next.id)
   }
 
+  // 앞 장에서 넘어오기: 무대에 앞 장(다 보인 모습)을 잠깐 두었다가, 발표 화면과 같은 엔진의 장 바꾸기로 이 장으로 넘긴다.
+  // 장 넘기기는 두 장 사이의 일이라 이 장만 움직여서는 고른 넘기기가 어떤지 알 수 없었다('앞 장부터 발표'로 나가야 했다)
+  const prev = at > 0 ? visible[at - 1] : null
+  const [entering, setEntering] = useState(false)
+  const enterRun = useRef(0)
+  const enter = useCallback(() => {
+    if (!prev || reduced) return
+    const run = ++enterRun.current
+    setEntering(true)
+    window.setTimeout(() => {
+      if (enterRun.current !== run) return
+      // 넘기는 때의 값으로: 장 넘기기를 고르자마자 부르면 그 값이 아직 이 화면에 오기 전이다
+      const now = useDeck.getState().deck
+      const to = now?.slides.find((s) => s.id === slide.id)
+      const html = document.documentElement
+      html.classList.add('ms-vt')
+      player.engine.swap(() => flushSync(() => setEntering(false)), transitionOf(now ?? deck, to ?? slide), 1)
+      // 넘기기가 끝나면(엔진이 data-mo-swap을 뗀다) 무대만 찍는 표시를 거둔다. 시간으로 거두면 느린 PC에서 넘기는 도중에
+      // 문서의 이름이 돌아와 화면 전체가 바탕색으로 덮였다. 바로 바꾸는 넘기기는 표시를 붙이지 않으니 바로 거둔다
+      const clear = () => {
+        if (enterRun.current === run) html.classList.remove('ms-vt')
+      }
+      if (!html.dataset.moSwap) clear()
+      else {
+        const watch = new MutationObserver(() => {
+          if (html.dataset.moSwap) return
+          watch.disconnect()
+          clear()
+        })
+        watch.observe(html, { attributes: true, attributeFilter: ['data-mo-swap'] })
+      }
+    }, ENTER_HOLD)
+  }, [prev, reduced, slide, deck, player.engine])
+  // 장을 옮기거나 닫으면 넘기던 것을 거둔다
+  useEffect(
+    () => () => {
+      enterRun.current++
+      setEntering(false)
+      document.documentElement.classList.remove('ms-vt')
+    },
+    [slide.id],
+  )
+
   const block = (slide.blocks ?? []).find((b) => b.id === selected) ?? null
   const setBlock = (b: Block, patch: Partial<Block>, one: boolean) => {
     // 움직임, 쪽, 빠르기는 그 컴포넌트만 다시 보인다. 언제는 앞뒤와의 사이가 바뀌니 장 전체를
@@ -157,8 +201,12 @@ export function MotionStudio({
           onPointerLeave={() => setHot(null)}
         >
           <FitSlide padding={small ? 14 : 24}>
-            <Stage key={`${slide.id}.${rev.current.n}.${reduced}`} deck={look} slide={slide} page={pageProps(info, slide.id)} sections={sections} attach={setRoot} />
-            <div className="ms-marks" aria-hidden="true">
+            {entering && prev ? (
+              <Stage key={`prev.${prev.id}`} deck={look} slide={prev} page={pageProps(info, prev.id)} sections={sections} />
+            ) : (
+              <Stage key={`${slide.id}.${rev.current.n}.${reduced}`} deck={look} slide={slide} page={pageProps(info, slide.id)} sections={sections} attach={setRoot} />
+            )}
+            <div className="ms-marks" aria-hidden="true" hidden={entering}>
               {boxes.map((b) => {
                 const n = ids.indexOf(b.id) + 1
                 if (!n) return null
@@ -174,9 +222,10 @@ export function MotionStudio({
               })}
             </div>
           </FitSlide>
+          {entering && <p className="ms-stage-tag">앞 장</p>}
         </div>
 
-        <Timeline player={player} quiet={reduced ? 'reduced' : level === 'none' ? 'none' : null} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
+        <Timeline player={player} onEnter={prev && !reduced ? enter : null} quiet={reduced ? 'reduced' : level === 'none' ? 'none' : null} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
 
         <aside className="ms-side" aria-label="움직임 고르기">
           {/* 장면: 장 전체를 한 컷으로. 고르면 무대가 새로 그려져 그 장면으로 처음부터 움직인다 */}
@@ -206,7 +255,7 @@ export function MotionStudio({
               onPlay={() => block && player.playOne(block.id)}
             />
           )}
-          <SlideMotion deck={deck} slide={slide} prevId={visible[at - 1]?.id ?? null} onPresent={onPresent} />
+          <SlideMotion deck={deck} slide={slide} onTransition={enter} />
         </aside>
       </div>
     </div>
@@ -225,10 +274,13 @@ const Stage = memo(function Stage({
   slide: Slide
   page: ReturnType<typeof pageProps>
   sections: readonly string[]
-  attach(el: HTMLDivElement | null): void
+  /** 움직일 무대를 받는다. 앞 장은 보이기만 해서 넘기지 않는다 */
+  attach?(el: HTMLDivElement | null): void
 }) {
+  // present-slide: 엔진이 발표 화면의 지금 장으로 보는 이름. 장을 바꿀 때 이어 움직이기의 짝과 아래 띠를 이 무대에서 찾는다
+  // (발표 화면을 열면 편집기가 통째로 내려가서 둘이 함께 있지 않다)
   return (
-    <div ref={attach} className="ms-slide">
+    <div ref={attach} className="ms-slide present-slide">
       <SlideCanvas deck={deck} slide={slide} mode="final" page={page.page} total={page.total} sections={sections} sectionIndex={page.sectionIndex} />
     </div>
   )
@@ -426,7 +478,7 @@ function BlockMotion({
 }
 
 /** 이 장 전체: 움직임 정도와 장 넘기기 */
-function SlideMotion({ deck, slide, prevId, onPresent }: { deck: Deck; slide: Slide; prevId: string | null; onPresent(slideId: string): void }) {
+function SlideMotion({ deck, slide, onTransition }: { deck: Deck; slide: Slide; onTransition(): void }) {
   const setOptions = useDeck((s) => s.setOptions)
   const onPick = useCallback((m: Motion | undefined) => setOptions(slide.id, { motion: m }), [setOptions, slide.id])
   const own = slide.options.transition ?? undefined
@@ -446,26 +498,27 @@ function SlideMotion({ deck, slide, prevId, onPresent }: { deck: Deck; slide: Sl
           onPick={onPick}
         />
       </Opt>
-      <Opt label="장 넘기기" wide tip="앞 장에서 이 장으로 넘어올 때의 모습이에요. 앞 장부터 발표해 보면 넘어오는 모습을 볼 수 있어요.">
+      <Opt label="장 넘기기" wide tip="앞 장에서 이 장으로 넘어올 때의 모습이에요. 고르면 무대에서 앞 장부터 한 번 넘겨 보여요.">
         <div className="mp-grid" role="group" aria-label="이 장으로 넘어올 때">
           {SLIDE_TRANSITIONS.map((t) => {
             const on = own === t.id
             return (
-              <button key={String(t.id)} type="button" className={cx('mp-pick', on && 'is-on')} aria-pressed={on} title={t.description} onClick={() => setOptions(slide.id, { transition: t.id })}>
+              <button key={String(t.id)} type="button" className={cx('mp-pick', on && 'is-on')} aria-pressed={on} title={t.description} onClick={() => {
+                  setOptions(slide.id, { transition: t.id })
+                  onTransition()
+                }}>
                 {t.name}
               </button>
             )
           })}
         </div>
       </Opt>
-      {prevId && (
-        <button type="button" className="btn-link ms-from-prev" onClick={() => onPresent(prevId)}>
-          앞 장부터 발표해 보기
-        </button>
-      )}
     </section>
   )
 }
+
+/** 앞 장을 보이는 동안: 앞 장이 눈에 들어올 만큼만 */
+const ENTER_HOLD = 650
 
 /** 낮은 창(노트북 150% 같은): 무대 둘레를 좁혀 장을 조금이라도 크게 */
 function useLowWindow() {
