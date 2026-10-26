@@ -20,7 +20,7 @@
   max-width: 1280px;
   margin-top: 56px;
   padding-top: 40px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   color: var(--ink-2);
   line-height: 1.5;
   text-wrap: pretty;

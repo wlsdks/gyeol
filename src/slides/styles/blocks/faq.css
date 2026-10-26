@@ -14,7 +14,7 @@
   align-content: start;
   gap: clamp(6px, 1.4cqh, 12px) 20px;
   padding-top: clamp(14px, 3cqh, 26px);
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .bk-qa-q {

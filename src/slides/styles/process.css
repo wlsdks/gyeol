@@ -163,7 +163,7 @@
   min-height: calc(var(--pc-meta-fs) * 1.35 * var(--scale, 1));
   margin-top: auto;
   padding-top: 28px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .l-process .pc-meta {
@@ -247,7 +247,7 @@
   min-height: 440px;
   padding: 44px 40px;
   /* 칸마다 위에 옅은 줄 선 하나(요점의 타일, 핵심 숫자의 카드와 같은 꼴) */
-  box-shadow: inset 0 var(--rule) 0 var(--line);
+  box-shadow: inset 0 var(--rule-hair) 0 var(--line);
 }
 
 .va-cards .pc:is([data-n='5'], [data-n='6']) .pc-step {
@@ -257,7 +257,7 @@
 /* 강조 단계: 칸을 칠하지 않고 위 선, 번호와 이름을 강조색으로. 짙은 면으로 칸 전체를 칠하던 때는
    지면의 말투에서 상자 하나만 튀었다(사용자: '박스 전체가 색인 건 안 된다') */
 .va-cards .pc-step.is-hl {
-  box-shadow: inset 0 var(--rule) 0 var(--accent);
+  box-shadow: inset 0 var(--rule-hair) 0 var(--accent);
 }
 
 .va-cards .pc-step.is-hl :is(.pc-n, .pc-title) {

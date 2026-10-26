@@ -10,7 +10,7 @@
 
 .bk-rk-head {
   padding-bottom: 14px;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-rk-hk {
@@ -26,7 +26,7 @@
 
 .bk-rk-row {
   padding: calc(26px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-rk-list[data-n='4'] .bk-rk-row {
@@ -70,11 +70,11 @@
     row-gap: 8px;
     column-gap: 16px;
     border-bottom: 0;
-    border-top: var(--rule) solid var(--line);
+    border-top: var(--rule-hair) solid var(--line);
   }
 
   .bk-rk-row:last-child {
-    border-bottom: var(--rule) solid var(--line);
+    border-bottom: var(--rule-hair) solid var(--line);
   }
 
   .bk-rk-t {

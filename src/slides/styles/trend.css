@@ -12,7 +12,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .tn-canvas {
@@ -242,7 +242,7 @@
 }
 
 .tn-zero {
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .tn-legend {

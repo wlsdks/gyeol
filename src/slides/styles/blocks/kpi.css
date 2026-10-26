@@ -303,7 +303,7 @@
     bottom: auto;
     left: 0;
     width: auto;
-    height: var(--rule);
+    height: var(--rule-hair);
   }
 
   /* 카드는 줄마다 면 하나 */
@@ -396,7 +396,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: var(--rule);
+    height: var(--rule-hair);
     background: var(--line);
     content: '';
   }
@@ -586,7 +586,7 @@
     align-content: center;
     min-height: 0;
     padding: calc(12px + var(--bk-air, 0px)) 0;
-    border-top: var(--rule) solid var(--line);
+    border-top: var(--rule-hair) solid var(--line);
   }
 
   /* 마지막 줄 아래는 면의 안쪽 여백만: 줄 아래 여백까지 두면 위(큰 숫자 윗선)보다 아래가 그만큼 넓다 */
@@ -683,7 +683,7 @@
     top: auto;
     bottom: 0;
     border-top: 0;
-    border-bottom: var(--rule) solid var(--line);
+    border-bottom: var(--rule-hair) solid var(--line);
   }
 
   .va-columns > .bk-in > .ag > .ag-list > .ag-item > .ag-n {
@@ -740,7 +740,7 @@
     flex-direction: column;
     justify-content: flex-start;
     padding-top: 24px;
-    border-top: var(--rule) solid var(--line);
+    border-top: var(--rule-hair) solid var(--line);
   }
 
   /* 큰 숫자의 이름과 설명은 한 묶음으로 붙인다 (장에서처럼 36px를 띄우면 설명이 따로 떠 보인다) */
@@ -937,7 +937,7 @@
     align-content: start;
     column-gap: 14px;
     padding: 24px 0 0;
-    border-top: var(--rule) solid var(--line);
+    border-top: var(--rule-hair) solid var(--line);
     border-bottom: 0;
   }
 

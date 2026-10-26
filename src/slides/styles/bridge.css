@@ -28,7 +28,7 @@
 
 .wf-plot {
   position: relative;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 /* 바닥줄은 칸 사이 틈까지 이어지게 */
@@ -37,7 +37,7 @@
   right: calc(var(--wf-gap) * -1);
   bottom: -2px;
   width: var(--wf-gap);
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   content: '';
 }
 
@@ -106,7 +106,7 @@
   left: 50%;
   width: 11px;
   height: calc(var(--wf-cut) - 10px);
-  border-inline: var(--rule) solid var(--line);
+  border-inline: var(--rule-hair) solid var(--line);
   transform: translateX(-50%) skewX(-30deg);
 }
 
@@ -232,7 +232,7 @@
   align-self: stretch;
   min-height: calc(var(--wf-bh) + 40px);
   border-bottom: 0;
-  border-left: var(--rule) solid var(--line);
+  border-left: var(--rule-hair) solid var(--line);
 }
 
 .va-across .wf-col > .wf-title,

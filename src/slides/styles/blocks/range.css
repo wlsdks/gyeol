@@ -63,10 +63,10 @@
 
 .bk-rn-fig::before {
   position: absolute;
-  top: calc(50% - var(--rule) / 2);
+  top: calc(50% - var(--rule-hair) / 2);
   right: 0;
   left: 0;
-  height: var(--rule);
+  height: var(--rule-hair);
   background: var(--line);
   content: '';
 }

@@ -74,8 +74,8 @@
   position: absolute;
   top: -8px;
   bottom: -8px;
-  left: clamp(0px, calc(var(--t) * 1% - var(--rule) / 2), calc(100% - var(--rule)));
-  width: var(--rule);
+  left: clamp(0px, calc(var(--t) * 1% - var(--rule-hair) / 2), calc(100% - var(--rule-hair)));
+  width: var(--rule-hair);
   background: var(--ink);
 }
 

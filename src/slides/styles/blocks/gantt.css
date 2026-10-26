@@ -90,18 +90,18 @@
   width: calc((100% - var(--lw) - 28px) / var(--n));
   border-radius: var(--r-mark);
   /* 지금은 칠하지 않고 그 달의 앞 끝에 강조색 선 하나 */
-  box-shadow: inset var(--rule) 0 0 var(--accent);
+  box-shadow: inset var(--rule-hair) 0 0 var(--accent);
 }
 
 .bk-gt-row {
   align-items: center;
   padding: calc(16px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
 .bk-gt-row:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-gt-list[data-n='5'] .bk-gt-row,

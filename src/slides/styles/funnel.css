@@ -88,8 +88,8 @@
   width: 9px;
   height: 9px;
   margin: -6px 2px 0 6px;
-  border-right: var(--rule) solid var(--line);
-  border-bottom: var(--rule) solid var(--line);
+  border-right: var(--rule-hair) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   rotate: 45deg;
   content: '';
 }

@@ -40,8 +40,8 @@
   height: auto;
   aspect-ratio: var(--ar);
   border-radius: var(--r-mark);
-  outline: var(--rule) solid var(--line);
-  outline-offset: calc(-1 * var(--rule));
+  outline: var(--rule-hair) solid var(--line);
+  outline-offset: calc(-1 * var(--rule-hair));
 }
 
 .bk-img.is-fit > .bk-img-c {

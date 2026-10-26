@@ -26,8 +26,8 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc((var(--kp-gap) + var(--rule)) / -2);
-  width: var(--rule);
+  left: calc((var(--kp-gap) + var(--rule-hair)) / -2);
+  width: var(--rule-hair);
   background: var(--line);
   content: '';
 }
@@ -150,7 +150,7 @@
   grid-column: 2;
   align-self: end;
   padding-top: 40px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   color: var(--ink);
   font-weight: 700;
 }
@@ -179,7 +179,7 @@
 
 .va-cards .kp-item {
   padding: 52px 56px 56px;
-  box-shadow: inset 0 var(--rule) 0 var(--line);
+  box-shadow: inset 0 var(--rule-hair) 0 var(--line);
 }
 
 :is(.va-cards, .va-focus) .kp-item::before {
@@ -214,7 +214,7 @@
 .va-focus .kp:not([data-n='1']) .kp-item {
   justify-content: center;
   padding: 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .va-focus .kp:not([data-n='1']) .kp-item:first-child {

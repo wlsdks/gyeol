@@ -144,18 +144,18 @@
   width: calc((100% - var(--lw) - 28px) / var(--n));
   border-radius: var(--r-mark);
   /* 고른 안의 열은 칠하지 않고 양옆에 옅은 강조색 선: 연파랑 띠가 표 위에 칠한 상자처럼 떴다 */
-  box-shadow: inset var(--rule) 0 0 var(--accent-line), inset calc(-1 * var(--rule)) 0 0 var(--accent-line);
+  box-shadow: inset var(--rule-hair) 0 0 var(--accent-line), inset calc(-1 * var(--rule-hair)) 0 0 var(--accent-line);
 }
 
 .bk-ev-row {
   align-items: center;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
 .bk-ev-row:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-ev-list[data-n='5'] .bk-ev-row,

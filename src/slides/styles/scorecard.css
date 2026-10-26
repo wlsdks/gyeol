@@ -19,12 +19,12 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px 250px 210px;
   column-gap: 48px;
   align-items: center;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .sk-headrow {
   padding-bottom: 18px;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .sk-h {
@@ -189,7 +189,7 @@
   row-gap: 0;
   padding: 8px 48px;
   border-bottom: 0;
-  border-left: var(--rule) solid var(--line);
+  border-left: var(--rule-hair) solid var(--line);
 }
 
 /* 줄의 첫 단은 왼쪽 줄 없이 본문 왼쪽 끝에 */
@@ -203,7 +203,7 @@
 .va-side .sk[data-n='6'] .sk-row:nth-child(n + 5) {
   margin-top: 32px;
   padding-top: 36px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .va-side .sk-name {

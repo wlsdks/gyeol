@@ -152,7 +152,7 @@
   align-items: center;
   justify-content: flex-end;
   min-height: 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   container-type: inline-size;
 }
 

@@ -248,7 +248,7 @@
   grid-row: 1;
   grid-column: 3 / -1;
   align-self: end;
-  height: var(--rule);
+  height: var(--rule-hair);
   margin-bottom: calc(var(--tl-pad) * -1);
   background: var(--line);
   content: '';

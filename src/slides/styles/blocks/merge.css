@@ -102,7 +102,7 @@
   top: 0;
   right: 0;
   left: 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   content: '';
 }
 

@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   padding-block: var(--cp-py);
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   line-height: 1.42;
 }
 
@@ -146,7 +146,7 @@
 .va-table .cp-h {
   --fs: 26px;
   padding: 40px 0 24px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
@@ -204,7 +204,7 @@
 
 .va-apart .cp-h {
   padding: 40px 0 24px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .va-apart :is(.cp-hl, .cp-hr) {

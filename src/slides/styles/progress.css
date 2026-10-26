@@ -63,12 +63,12 @@
   align-items: center;
   gap: 40px;
   padding: 26px 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .ps-headrow {
   padding: 0 0 18px;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .ps-h {
@@ -238,7 +238,7 @@
   margin: 0;
   padding: 22px 0 20px;
   border-top: 2px solid var(--ps-c);
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .ps-lane-h .ps-count {

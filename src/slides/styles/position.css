@@ -22,7 +22,7 @@
 .pm-y::before,
 .pm-x::after {
   /* 선 굵기의 반: 흐름의 잇는 선, 두 면 사이의 화살표와 같은 굵기(줄 선의 1.5배) */
-  --ax-s: calc(var(--rule) * 0.75);
+  --ax-s: calc(var(--rule-hair) * 0.75);
   display: inline-block;
   background: currentColor;
   content: '';
@@ -53,8 +53,8 @@
   --pm-in-y: 44px;
   position: relative;
   min-height: 0;
-  border-bottom: var(--rule) solid var(--line);
-  border-left: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
+  border-left: var(--rule-hair) solid var(--line);
 }
 
 .pm-mid {

@@ -21,7 +21,7 @@
 .va-row .bk-pp-card::before {
   position: absolute;
   inset: 0 0 auto;
-  height: var(--rule);
+  height: var(--rule-hair);
   background: var(--ink);
   content: '';
 }
@@ -59,12 +59,12 @@
 
 .va-list .bk-pp-card {
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
 .va-list .bk-pp-card:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .va-list .bk-pp-text {
@@ -102,7 +102,7 @@
   }
 
   .va-list .bk-pp-list:is([data-n='2'], [data-n='3'], [data-n='4']) .bk-pp-card {
-    border-bottom: var(--rule) solid var(--line);
+    border-bottom: var(--rule-hair) solid var(--line);
   }
 
   .va-list .bk-pp-list[data-n='4'] .bk-pp-card:nth-child(-n + 2) {
@@ -143,7 +143,7 @@
   align-self: center;
   /* 맡은 사람 칸 하나의 너비의 반: 양 끝 사람의 가운데에서 멈춘다 */
   margin: 0 calc((100% - (var(--pp-cols) - 1) * var(--pp-cg)) / var(--pp-cols) / 2);
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   content: '';
 }
 
@@ -165,7 +165,7 @@
   position: absolute;
   left: 50%;
   height: calc(var(--pp-tg) / 2 - var(--pp-air));
-  border-left: var(--rule) solid var(--line);
+  border-left: var(--rule-hair) solid var(--line);
   content: '';
 }
 

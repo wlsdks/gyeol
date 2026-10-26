@@ -84,9 +84,9 @@
 .bk-stp-list::before,
 .bk-stp-list::after {
   position: absolute;
-  top: calc(var(--stp-now) / 2 - var(--rule) / 2);
+  top: calc(var(--stp-now) / 2 - var(--rule-hair) / 2);
   left: calc(var(--stp-d) / 2);
-  height: var(--rule);
+  height: var(--rule-hair);
   content: '';
 }
 

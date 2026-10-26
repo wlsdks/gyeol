@@ -18,7 +18,7 @@
   flex-direction: column;
   min-height: 0;
   padding: var(--pr-top) 0 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 /* 추천안: 위 선과 비용을 강조색으로. 선의 아래 끝이 옆 안의 선과 같은 높이라 이름과 비용이 한 줄에 선다 */
@@ -70,7 +70,7 @@
   --fs: 26px;
   margin-top: 40px;
   padding-top: 36px;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
   color: var(--ink-2);
   line-height: 1.85;
 }
@@ -130,7 +130,7 @@
   --fs: 30px;
   padding: 8px 0 8px 80px;
   border-top: 0;
-  border-left: var(--rule) solid var(--line);
+  border-left: var(--rule-hair) solid var(--line);
 }
 
 /* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄은 이름과 비용을 강조색으로(줄을 칠하지 않는다) */
@@ -140,7 +140,7 @@
   grid-auto-columns: auto;
   grid-auto-rows: minmax(min-content, 1fr);
   gap: 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .va-rows .pr:is([data-n='1'], [data-n='2']) {
@@ -159,7 +159,7 @@
   margin-top: 0;
   padding: 0 40px;
   border-top: 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   border-radius: 0;
   background: none;
   box-shadow: none;

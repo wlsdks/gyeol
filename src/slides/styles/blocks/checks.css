@@ -32,12 +32,12 @@
   align-items: center;
   gap: 24px;
   padding: calc(18px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
 .bk-ck-row:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-ck-list[data-n='5'] .bk-ck-row,
@@ -123,6 +123,6 @@
 
 
   .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-last-child(2) {
-    border-bottom: var(--rule) solid var(--line);
+    border-bottom: var(--rule-hair) solid var(--line);
   }
 }

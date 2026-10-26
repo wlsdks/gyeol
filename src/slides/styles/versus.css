@@ -77,7 +77,7 @@
   gap: 12px;
   min-height: 0;
   padding: 0 11%;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   container: vs-pair / inline-size;
 }
 
@@ -210,7 +210,7 @@
   grid-row: 1;
   grid-column: 1 / -1;
   min-height: 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
   container-type: inline-size;
 }
 
@@ -258,7 +258,7 @@
 .vs-zero {
   right: 0;
   left: 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 .vs-pt {
@@ -368,13 +368,13 @@
   grid-template-columns: subgrid;
   align-items: center;
   padding: calc(20px * var(--vs-k)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 /* 맨 윗줄은 표처럼 글자색 선으로 범례와 나눈다 */
 
 .vs-row:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .vs-row .vs-label {

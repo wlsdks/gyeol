@@ -47,12 +47,12 @@
 .bk-sx-row {
   align-items: center;
   padding: calc(14px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 
 .bk-sx-row:last-child {
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 .bk-sx-name {
@@ -202,7 +202,7 @@
 
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(2),
     .bk-sx-list:is([data-n='5'], [data-n='6']) > .bk-sx-row:nth-child(3) {
-      border-bottom: var(--rule) solid var(--line);
+      border-bottom: var(--rule-hair) solid var(--line);
     }
 
     .bk-sx-list[data-n='4'] > .bk-sx-row:nth-child(3),

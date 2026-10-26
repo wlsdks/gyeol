@@ -230,7 +230,7 @@
   grid-auto-rows: 1fr;
   gap: 0;
   margin-top: 0;
-  border-top: var(--rule) solid var(--line);
+  border-top: var(--rule-hair) solid var(--line);
 }
 
 :is(.va-donut, .va-units) .sh-item {
@@ -243,7 +243,7 @@
   column-gap: 28px;
   padding: 22px 0;
   border-top: 0;
-  border-bottom: var(--rule) solid var(--line);
+  border-bottom: var(--rule-hair) solid var(--line);
 }
 
 :is(.va-donut, .va-units) .sh-item::before {
