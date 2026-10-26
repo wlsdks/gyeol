@@ -345,26 +345,83 @@ function visualBoxes(area: HTMLElement): Map<string, Box> {
   return out
 }
 
-/** 편집할 때 칸이 자리를 옮기면 원래 자리에서 새 자리로 미끄러지게 (FLIP). 새로 생긴 칸은 제자리에서 맞춰 들어온다 */
-const FLIP_EASING =
-  'linear(0, 0.0576, 0.1409, 0.2066, 0.3123, 0.4188, 0.5204, 0.6135, 0.6697, 0.7445, 0.8079, 0.8604, 0.9029, 0.9261, 0.9543, 0.9755, 0.991, 1.0019, 1.007, 1.0122, 1.0151, 1.0162, 1.0161, 1.0156, 1.0143, 1.0127, 1.011, 1.0093, 1.0082, 1.0066, 1.0052, 1.004, 1.003, 1.0025, 1.0017, 1.0011, 1.0007, 1.0004, 1.0002, 1, 1)'
+/**
+ * 편집할 때 칸이 자리를 옮기면 원래 자리에서 새 자리로 미끄러지게 (FLIP). 새로 생긴 칸은 제자리에서 맞춰 들어온다.
+ * 판의 자리가 바뀔 때만이 아니라 그릴 때마다 본다: 편집 화면도 부품을 위로 올려 붙여서(fitBlocks.ts의 pack), 글을 써서 위 부품이
+ * 한 줄 늘거나, 끌기를 시작해 판의 칸으로 내려가거나, 놓아서 다시 올라붙을 때도 칸이 움직인다. 예전에는 그때 칸이 한 번에 튀었다.
+ * 자리가 그대로인 칸은 건드리지 않는다. 끝에서 넘었다 돌아오지 않고 부드럽게 멈춘다(--ease-out과 같은 곡선): 둘레의 칸이
+ * 비켜 나는 것이라 튀면 장 전체가 출렁여 보였다
+ */
+const FLIP_EASING = 'cubic-bezier(0.2, 0.8, 0.2, 1)'
+const FLIP_MS = 360
 
-function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key: string) {
+/**
+ * 빠진 칸이 제자리에서 옅어지며 사라지게. 예전에는 빼자마자 없어지고 옆 칸만 미끄러져 와서, 무엇이 빠졌는지 눈으로 따라가기 어려웠다.
+ * React가 떼어 낸 칸을 손대지 않는 껍데기(.bk-leaving, 본문 상자와 같은 크기라 칸의 자리 계산이 그대로다)에 넣어 잠깐 보여 준다.
+ * 껍데기는 본문 상자의 바로 아래 칸(.bk)이 아니라서 맞추기와 끌기가 세지 않고, 손도 받지 않는다
+ */
+function fadeOut(area: HTMLElement, cell: HTMLElement, at: Box | undefined) {
+  if (!at) return
+  const shell = document.createElement('div')
+  shell.className = 'bk-leaving'
+  shell.setAttribute('aria-hidden', 'true')
+  cell.classList.remove('is-selected')
+  cell.getAnimations().forEach((a) => a.cancel())
+  shell.appendChild(cell)
+  area.appendChild(shell)
+  // 사라지기 직전에 보이던 자리에 (움직이던 중이었으면 그 자리)
+  const dx = at.x - cell.offsetLeft
+  const dy = at.y - cell.offsetTop
+  const out = cell.animate(
+    [
+      { translate: `${dx}px ${dy}px`, opacity: 1, scale: '1' },
+      { translate: `${dx}px ${dy}px`, opacity: 0, scale: '0.97' },
+    ],
+    { duration: FLIP_MS * 0.6, easing: FLIP_EASING, fill: 'forwards' },
+  )
+  out.finished.then(
+    () => shell.remove(),
+    () => shell.remove(),
+  )
+}
+
+function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, scope: string) {
   const before = useRef<Map<string, Box> | null>(null)
+  // 칸마다 지난번에 맞춘 끝자리. 끝자리가 그대로면 움직이는 중이어도 그대로 둔다 (글자 하나 칠 때마다 움직임이 처음부터 다시 돌지 않게)
+  const targets = useRef(new Map<string, Box>())
+  // 지난번에 그린 칸 (빠진 칸을 사라지게 하려고)과 그때의 장. 다른 장으로 넘어가면 움직이지 않는다
+  const nodes = useRef(new Map<string, HTMLElement>())
+  const shown = useRef(scope)
   // 그리기 전에(아직 옛 모습일 때) 지금 보이는 자리를 재 둔다
   if (on && area.current) before.current = visualBoxes(area.current)
   useLayoutEffect(() => {
     const el = area.current
     const first = before.current
     before.current = null
-    if (!on || !el || !first || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    for (const cell of el.querySelectorAll<HTMLElement>(CELLS)) {
+    const cells = el ? Array.from(el.querySelectorAll<HTMLElement>(CELLS)) : []
+    const was = nodes.current
+    nodes.current = new Map(cells.map((c) => [c.dataset.block!, c]))
+    const same = shown.current === scope
+    shown.current = scope
+    if (!on || !el || !first || !same || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      targets.current = new Map()
+      return
+    }
+    was.forEach((cell, id) => {
+      if (!nodes.current.has(id) && !cell.isConnected) fadeOut(el, cell, first.get(id))
+    })
+    const seen = new Map<string, Box>()
+    for (const cell of cells) {
       const id = cell.dataset.block!
       const f = first.get(id)
-      cell.getAnimations().forEach((a) => a.cancel())
+      // 끝자리 (offset은 움직임의 translate를 세지 않는다)
       const last = { x: cell.offsetLeft, y: cell.offsetTop, w: cell.offsetWidth, h: cell.offsetHeight }
+      seen.set(id, last)
+      const prev = targets.current.get(id)
+      if (prev && prev.x === last.x && prev.y === last.y && prev.w === last.w && prev.h === last.h) continue
+      cell.getAnimations().forEach((a) => a.cancel())
       if (!f) {
-        cell.animate([{ opacity: 0, scale: '0.94' }, { opacity: 1, scale: '1' }], { duration: 420, easing: FLIP_EASING })
+        cell.animate([{ opacity: 0, scale: '0.96' }, { opacity: 1, scale: '1' }], { duration: FLIP_MS, easing: FLIP_EASING })
         continue
       }
       const dx = f.x - last.x
@@ -382,10 +439,11 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, key:
           { translate: `${dx}px ${dy}px`, ...(grow ? { clipPath: clip(f.w, f.h) } : {}) },
           { translate: '0 0', ...(grow ? { clipPath: clip(last.w, last.h) } : {}) },
         ],
-        { duration: 470, easing: FLIP_EASING },
+        { duration: FLIP_MS, easing: FLIP_EASING },
       )
     }
-  }, [key, on, area])
+    targets.current = seen
+  })
 }
 
 /** 받은 글꼴 수. 그 사이에 글꼴이 오면 글자 폭이 바뀌어 다시 맞춰야 한다 */
@@ -418,8 +476,6 @@ export function BlockArea() {
   // 발표할 때 나오는 차례 (움직임 탭에서 정한 차례, 없으면 읽는 차례). 엔진이 칸의 data-seq로 읽는다
   const seq = new Map(playOrder({ blocks, options: slide.options }).map((b, i) => [b.id, i]))
   const ref = useRef<HTMLDivElement | null>(null)
-  // 자리가 바뀔 때만: 부품마다 id, 자리, 이음표
-  const key = blocks.map((b) => `${b.id}:${b.at ? `${b.at.x},${b.at.y},${b.at.w},${b.at.h}` : ''}:${b.link ?? ''}:${b.linkBelow ?? ''}`).join('/')
   // 넘치는 부품 맞추기는 자리 옮기는 움직임(useFlip)이 끝자리를 재기 전에
   // 편집 화면이면 맞춘 뒤의 모습으로 부품마다 테두리 자리를 정한다 (blockFrame.ts)
   // 맞추기는 칸마다 글자 크기와 줄 사이를 바꿔 가며 몇 번씩 다시 재서 부품 장에서 가장 무거운 일이다. 예전에는 그릴 때마다,
@@ -477,7 +533,7 @@ export function BlockArea() {
       ro?.disconnect()
     }
   }, [])
-  useFlip(ref, !!live, key)
+  useFlip(ref, !!live, slide.id)
   const setRef = (el: HTMLDivElement | null) => {
     ref.current = el
     live?.areaRef(el)

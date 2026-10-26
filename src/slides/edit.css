@@ -457,6 +457,14 @@
   background: none;
 }
 
+/* 빠진 칸이 옅어지며 사라지는 동안 담아 두는 껍데기 (blocks.tsx의 fadeOut). 본문 상자와 같은 크기라 칸의 자리 계산이 그대로이고 손은 받지 않는다 */
+.bk-leaving {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .bk-area .bk.is-slot {
   background: none;
 }

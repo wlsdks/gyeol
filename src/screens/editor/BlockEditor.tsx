@@ -290,6 +290,9 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       setLanding(null)
       return
     }
+    // FLIP으로 이미 움직이기 시작한 칸은 멈추고 여기서 다시. 재기 전에 멈춘다: 움직이기 시작한 칸은 아직 옛 자리(끄는 동안의 판의 칸)에
+    // 있어서, 그 자리로 재면 놓은 칸이 쌓인 자리와 어긋난 데서 커져 나왔다
+    cell.getAnimations().forEach((a) => a.cancel())
     // 조립되는 느낌: 손에 든 그림은 칸 가운데로 줄어들며 사라지고, 진짜 칸은 그 그림 자리에서 나와
     // 제 비율 그대로 자기 자리로 커지며 살짝 튀어 맞춰진다. 비율을 한 가지로만 키워서 글자가 늘어나 보이지 않게
     const r = cell.getBoundingClientRect()
@@ -298,8 +301,6 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const k = Math.min(gr.width / r.width, gr.height / r.height, 1)
     const dx = (gr.left + gr.width / 2 - (r.left + r.width / 2)) / vs
     const dy = (gr.top + gr.height / 2 - (r.top + r.height / 2)) / vs
-    // FLIP으로 이미 움직이기 시작한 칸은 멈추고 여기서 다시
-    cell.getAnimations().forEach((a) => a.cancel())
     cell.animate(
       [
         { transformOrigin: '50% 50%', transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: 0.35 },
