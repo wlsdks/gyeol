@@ -68,7 +68,7 @@
 
 .ps-headrow {
   padding: 0 0 18px;
-  border-bottom: 3px solid var(--ink);
+  border-bottom: var(--rule) solid var(--line);
 }
 
 .ps-h {
@@ -173,9 +173,10 @@
   background: currentColor;
 }
 
-/* 상태마다: 완료는 좋음 색, 진행 중은 강조색, 지연은 나쁨 색, 예정은 빈 동그라미의 흐린 글자 */
+/* 상태마다: 완료와 예정은 옅은 글자색, 진행 중은 강조색, 지연만 나쁨 색. 완료를 초록, 지연을 빨강으로 모두 칠하던 때는 장이
+   신호등처럼 시끄러웠다(사용자). 예외(지연)만 색으로 드러낸다 */
 .is-done {
-  --ps-c: var(--good);
+  --ps-c: var(--ink-3);
 }
 
 .is-late {
@@ -236,7 +237,7 @@
 .ps-lane-h {
   margin: 0;
   padding: 22px 0 20px;
-  border-top: 6px solid var(--ps-c);
+  border-top: 2px solid var(--ps-c);
   border-bottom: var(--rule) solid var(--line);
 }
 

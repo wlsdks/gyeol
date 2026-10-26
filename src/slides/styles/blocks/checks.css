@@ -21,7 +21,7 @@
 }
 
 .bk-ck-sum b {
-  color: var(--good);
+  color: var(--ink);
   font-weight: 700;
 }
 
@@ -35,9 +35,6 @@
   border-top: var(--rule) solid var(--line);
 }
 
-.bk-ck-row:first-child {
-  border-top-color: var(--ink);
-}
 
 .bk-ck-row:last-child {
   border-bottom: var(--rule) solid var(--line);
@@ -48,12 +45,14 @@
   padding: calc(12px * var(--bk-fit, 1) + var(--bk-air, 0px)) 0;
 }
 
+/* 상태 색은 예외(늦음)에만: 완료를 초록 원, 늦음을 빨간 원으로 모두 칠하던 때는 장이 신호등처럼 시끄러웠다(사용자).
+   완료와 진행 중은 옅은 글자색, 표시는 칠한 원 대신 획만(체크, 느낌표), 진행 중은 반쯤 찬 고리 그대로 */
 .bk-ck-row.is-done {
-  --ck-c: var(--good);
+  --ck-c: var(--ink-3);
 }
 
 .bk-ck-row.is-doing {
-  --ck-c: var(--accent);
+  --ck-c: var(--ink-3);
 }
 
 .bk-ck-row.is-late {
@@ -76,9 +75,13 @@
   fill: var(--ck-c);
 }
 
+.bk-ck-row:is(.is-done, .is-late) .bk-ck-fill {
+  fill: none;
+}
+
 .bk-ck-glyph {
   fill: none;
-  stroke: var(--bg);
+  stroke: var(--ck-c);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3.2;
@@ -118,9 +121,6 @@
     column-gap: 72px;
   }
 
-  .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-child(2) {
-    border-top-color: var(--ink);
-  }
 
   .bk-ck-list:is([data-n='4'], [data-n='5'], [data-n='6']) .bk-ck-row:nth-last-child(2) {
     border-bottom: var(--rule) solid var(--line);
