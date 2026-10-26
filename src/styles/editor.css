@@ -743,6 +743,33 @@
   border-radius: 2px;
   background: var(--ink);
   content: '';
+  /* 탭을 바꾸면 밑줄이 가운데에서 글 너비로 번진다. 물결이 퍼지듯 짧고 조용하게 */
+  animation: side-tab-in var(--t) var(--ease-out);
+}
+
+@keyframes side-tab-in {
+  from {
+    opacity: 0;
+    scale: 0.4 1;
+  }
+}
+
+/* 탭의 내용은 바뀔 때 옅게 떠오른다. 자리는 움직이지 않는다(끌어 놓을 자리를 재는 컴포넌트 목록이 흔들리지 않게) */
+.side > :not(.side-tabs) {
+  animation: side-panel-in var(--t) var(--ease-out);
+}
+
+@keyframes side-panel-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-tab[aria-selected='true']::after,
+  .side > :not(.side-tabs) {
+    animation: none;
+  }
 }
 
 .side-tab:focus-visible {
