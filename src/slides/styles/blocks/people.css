@@ -203,6 +203,17 @@
     --fs: 36px;
   }
 
+  /* 다른 컴포넌트와 같이 선 장에서는 왼쪽 끝에: 왼쪽에 맞춘 일정 위에서 가운데에 서면 한 장에 맞춤 선이 둘이 되어 흩어져 보였다.
+     혼자 선 장에서만 가운데 */
+  .bk-area:has(> .bk ~ .bk) .va-tree .bk-pp-list[data-n='2'] {
+    justify-content: start;
+  }
+
+  .bk-area:has(> .bk ~ .bk) .va-tree .bk-pp-list[data-n='2'] > .bk-pp-card {
+    justify-items: start;
+    text-align: left;
+  }
+
   .va-tree .bk-pp-list[data-n='2']::before {
     grid-row: 1;
     grid-column: 2;
