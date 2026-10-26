@@ -291,8 +291,9 @@ function inside(area: HTMLElement, k: number): string[] {
     const ir = inner.getBoundingClientRect()
     const top = (t - ir.top) / k - parseFloat(cs.paddingTop)
     const bottom = (ir.bottom - b) / k - parseFloat(cs.paddingBottom)
-    // 위아래 선(card)은 위에서부터 그리는 단락이라 아래가 비는 것이 맞다(blocks/base.css)
-    if (!cell.classList.contains('bk-look-card') && bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
+    // 들여 쓰기(card)와 강조(bold)는 선도 면도 없이 그린다(blocks/looks.css): 보이는 면이 없으니 칸 아래가 비어도 면 안이 빈 것이 아니다.
+    // 강조 모양의 비율 원이 높은 차트 옆에서 위에 붙어(옆 칸과 윗선을 맞춘다) 칸 아래가 비었는데 면 안이 251px 빈다고 했다
+    if (!cell.matches('.bk-look-card, .bk-look-bold') && bottom - top > FACE_SLACK && bottom > top * 2) out.push(`${cell.dataset.type}: 면 안의 아래가 ${Math.round(bottom)}px 비어요(위 ${Math.round(Math.max(0, top))}px)`)
     // 면이 내용보다 훨씬 큰 것: 면은 제 내용과 고른 안쪽 여백만큼, 나란한 칸이 더 길면 그 높이까지만 (fitBlocks.ts의 hug).
     // 판이 남는 높이를 면에 주면 두 줄짜리 결정 요청의 면이 본문 바닥까지 닿아 글이 면 가운데에 떠 있었다.
     // 나란한 칸들이 그려진 위아래 범위로 견준다: 옆에 둘을 쌓았으면 둘을 합친 높이까지(옆 단 전체와 높이를 맞춘 면은 사람도 그렇게 둔다).
