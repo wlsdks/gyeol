@@ -4,36 +4,29 @@
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
-  gap: var(--gap);
+  gap: 72px;
 }
 
-/* 안마다 위에 선을 긋고 그 아래에 이름, 비용, 내용을 쌓는다. 추천안은 그 선을 강조색으로 굵게, 비용을 강조색으로.
-   예전에는 안마다 회색 판을 깔고 추천안에 둥근 '추천' 표를 달아서 웹 서비스의 요금제 카드처럼 보였고, 그 뒤에는 추천안만 짙은 면으로
-   칠해 상자 하나가 튀었다(사용자: '박스 전체가 색인 건 안 된다'). 안끼리 이름과 비용이 한 줄에 맞는다 */
+/* 안마다 이름, 비용, 조건, 내용을 쌓고 안끼리는 사이 여백(72px)으로만 나눈다. 추천안은 비용을 강조색으로, 이름 옆에 작은 '추천'.
+   예전에는 안마다 회색 판을 깔고 둥근 '추천' 표를 달아 웹 서비스의 요금제 카드처럼 보였고, 그 뒤에는 추천안만 짙은 면으로
+   칠해 상자 하나가 튀었다(사용자: '박스 전체가 색인 건 안 된다'). 안마다 위와 비용 아래에 끊어 긋던 선도 걷었다: 칸마다 끊긴 선이
+   한 장에 여섯 개 서서 붐볐다(VISUAL-RULES 2). 안끼리 이름과 비용이 한 줄에 맞는다 */
 .pr-plan {
-  --pr-top: 44px;
   position: relative;
   container-type: inline-size;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--pr-top) 0 0;
-  border-top: var(--rule-hair) solid var(--line);
-}
-
-/* 추천안: 위 선과 비용을 강조색으로. 선의 아래 끝이 옆 안의 선과 같은 높이라 이름과 비용이 한 줄에 선다 */
-.pr-plan.is-hl {
-  border-top-color: var(--accent);
 }
 
 .pr-plan.is-hl .pr-price {
   color: var(--accent);
 }
 
+/* '추천'은 이름 바로 옆에: 안의 오른쪽 끝에 두면 옆 안의 이름 앞에 붙어 그 안의 표처럼 읽혔다 */
 .pr-top {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 16px;
 }
 
@@ -51,7 +44,6 @@
   line-height: 1.2;
 }
 
-
 .pr-price {
   --fs: 62px;
   margin-top: 36px;
@@ -68,40 +60,51 @@
 
 .pr-body {
   --fs: 26px;
-  margin-top: 40px;
-  padding-top: 36px;
-  border-top: var(--rule-hair) solid var(--line);
+  margin-top: calc(40px + var(--fill-air, 0px));
   color: var(--ink-2);
-  line-height: 1.85;
+  line-height: 1.6;
 }
 
-/* 장 한 장을 다 쓸 때도 안마다 내용 높이로 서고 묶음째 본문 가운데에(컴포넌트 칸의 안 비교와 같이, blocks/layout.css).
-   본문 높이까지 늘이면 추천안만 아래가 비었다(위 50px, 아래 230px). 안끼리는 위에서부터 맞춰 이름과 비용이 한 줄에 선다.
-   표 모양은 줄이 높이를 나눠 쓰고, 안이 하나면 아래 규칙이 판 하나의 자리를 정한다 */
+/* 장 한 장에서도 안마다 내용 높이로 서고, 묶음은 장 제목 아래(--body-gap)에서 시작한다. 남는 높이는 맨 아래(VISUAL-RULES 6).
+   묶음째 본문 가운데에 두던 때는 제목과 안 이름 사이가 200px 넘게 비었다 */
 .l-pricing:not(.va-rows) .pr:not([data-n='1']) {
-  align-content: safe center;
+  align-content: start;
   align-items: start;
 }
 
+/* 장 한 장의 안 비교는 내용이 본문 높이의 절반에 못 미쳐, 사이를 벌리지 않고 글자 단계를 올려 본문의 60~85%를 채운다
+   (VISUAL-RULES 6): 비용은 한 단계(62 → 74), 내용은 두 단계(26 → 36). 안이 넷이면 칸이 좁아 그대로 */
+.l-pricing:not(.va-rows) .pr:is([data-n='2'], [data-n='3']) .pr-name {
+  --fs: 36px;
+}
+
+.l-pricing:not(.va-rows) .pr:is([data-n='2'], [data-n='3']) .pr-price {
+  --fs: 74px;
+}
+
+.l-pricing:not(.va-rows) .pr:is([data-n='2'], [data-n='3']) .pr-meta {
+  --fs: 30px;
+}
+
+.l-pricing:not(.va-rows) .pr:is([data-n='2'], [data-n='3']) .pr-body {
+  --fs: 36px;
+  margin-top: 48px;
+}
+
 /* 안이 하나면 고를 것이 없으니 한 장을 다 쓰는 판 하나로: 왼쪽에 이름과 비용, 오른쪽에 내용. 판 하나를 760px로 두던 때는
-   장의 오른쪽 절반이 통째로 비었다. :where로 낮춰 두어 표 모양(.va-rows)의 줄 짜임이 이긴다 */
+   장의 오른쪽 절반이 통째로 비었다. :where로 낮춰 두어 표 모양(.va-rows)의 줄 짜임이 이긴다.
+   판은 본문 맨 위에서 시작한다(가운데에 띄우지 않는다, VISUAL-RULES 6). 두 쪽 사이는 선 없이 여백(120px) */
 :where(.pr[data-n='1']) > .pr-plan {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   grid-template-rows: auto auto auto;
-  align-content: center;
-  column-gap: 80px;
-  padding: var(--pr-top) 0 0;
-}
-
-/* 안 하나는 장 높이를 다 쓰면 위의 선과 가운데의 글이 한참 떨어진다. 선과 글을 한 덩어리로 가운데에 */
-:where(.pr[data-n='1']) > .pr-plan {
-  align-self: center;
+  align-content: start;
+  align-self: start;
+  column-gap: 120px;
 }
 
 :where(.pr[data-n='1']) .pr-top {
   grid-column: 1;
-  justify-content: flex-start;
 }
 
 :where(.pr[data-n='1']) :is(.pr-price, .pr-meta) {
@@ -122,29 +125,39 @@
   --fs: 30px;
 }
 
+/* 내용의 첫 줄은 왼쪽 이름의 윗선에 맞춘다(VISUAL-RULES 5) */
 :where(.pr[data-n='1']) .pr-body {
   grid-row: 1 / span 3;
   grid-column: 2;
-  align-self: center;
+  align-self: start;
   margin: 0;
   --fs: 30px;
-  padding: 8px 0 8px 80px;
-  border-top: 0;
-  border-left: var(--rule-hair) solid var(--line);
 }
 
-/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄은 이름과 비용을 강조색으로(줄을 칠하지 않는다) */
+/* 장 한 장의 안 하나는 그래도 본문 절반 넘게 비어서 한 단계씩 더 올린다(VISUAL-RULES 6). 컴포넌트 칸에서는 칸 크기가 정한다 */
+.l-pricing:not(.va-rows) .pr[data-n='1'] .pr-name {
+  --fs: 44px;
+}
+
+.l-pricing:not(.va-rows) .pr[data-n='1'] .pr-price {
+  --fs: 108px;
+}
+
+.l-pricing:not(.va-rows) .pr[data-n='1'] :is(.pr-meta, .pr-body) {
+  --fs: 36px;
+}
+
+/* 모양: 표. 안마다 한 줄: 이름 | 비용과 조건 | 내용. 추천안 줄은 비용을 강조색으로(줄을 칠하지 않는다).
+   줄은 내용 높이에 정해진 위아래 사이(--pr-py)만 더하고 남는 높이로 늘리지 않는다. 줄 선은 줄 사이에만:
+   맨 위와 맨 아래에 긋지 않는다(VISUAL-RULES 2, 6). 줄이 칸 높이를 나눠 갖던 때는 줄마다 200px씩 늘었다 */
 .va-rows .pr,
 .va-rows .pr[data-n='1'] {
+  --pr-py: calc(40px + var(--fill-air, 0px));
   grid-auto-flow: row;
   grid-auto-columns: auto;
-  grid-auto-rows: minmax(min-content, 1fr);
+  grid-auto-rows: auto;
+  align-content: start;
   gap: 0;
-  border-top: var(--rule-hair) solid var(--line);
-}
-
-.va-rows .pr:is([data-n='1'], [data-n='2']) {
-  grid-auto-rows: minmax(min-content, 260px);
 }
 
 .va-rows .pr-plan,
@@ -155,31 +168,40 @@
   grid-template-rows: auto auto;
   column-gap: 56px;
   align-content: center;
-  align-self: stretch;
+  align-self: start;
   margin-top: 0;
-  padding: 0 40px;
-  border-top: 0;
-  border-bottom: var(--rule-hair) solid var(--line);
+  padding: var(--pr-py) 0;
   border-radius: 0;
   background: none;
   box-shadow: none;
   color: var(--ink);
 }
 
+.va-rows .pr-plan + .pr-plan {
+  border-top: var(--rule-hair) solid var(--line);
+}
+
+/* 첫 줄은 본문 맨 위에 붙는다: 위에 선이 없으니 위 사이도 둘 까닭이 없다 */
+.va-rows .pr-plan:first-child {
+  padding-top: 0;
+}
+
+.va-rows .pr-plan:last-child {
+  padding-bottom: 0;
+}
 
 .va-rows .pr-top {
   grid-row: 1 / span 2;
   flex-direction: column;
   align-items: flex-start;
-  align-self: center;
-  justify-content: center;
-  gap: 16px;
+  align-self: start;
+  gap: 8px;
 }
 
 .va-rows .pr-price {
   grid-column: 2;
   margin: 0;
-  align-self: end;
+  align-self: start;
 }
 
 .va-rows .pr-plan.is-hl .pr-price {
@@ -192,19 +214,41 @@
   margin-top: 10px;
 }
 
+/* 내용의 첫 줄은 이름, 비용과 같은 높이에서 시작한다 */
 .va-rows .pr-body,
 .va-rows .pr-plan.is-hl .pr-body {
   grid-column: 3;
   grid-row: 1 / span 2;
-  align-self: center;
+  align-self: start;
   margin: 0;
   padding: 0;
-  border: 0;
   color: var(--ink-2);
   line-height: 1.6;
   opacity: 1;
 }
 
-.va-rows .pr-plan.is-hl .pr-name {
-  color: var(--accent);
+/* 장 한 장의 표 모양도 줄이 셋까지면 본문이 많이 비어 글자 단계를 하나 올린다 */
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2'], [data-n='3']) .pr-name {
+  --fs: 36px;
+}
+
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2'], [data-n='3']) .pr-price {
+  --fs: 74px;
+}
+
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2'], [data-n='3']) :is(.pr-meta, .pr-body) {
+  --fs: 30px;
+}
+
+/* 표 모양에 줄이 둘까지면 그래도 본문 절반이 비어서 한 단계 더(이름 44, 비용 90, 내용 36) */
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2']) .pr-name {
+  --fs: 44px;
+}
+
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2']) .pr-price {
+  --fs: 90px;
+}
+
+.l-pricing.va-rows .pr:is([data-n='1'], [data-n='2']) .pr-body {
+  --fs: 36px;
 }
