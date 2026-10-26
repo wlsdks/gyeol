@@ -1,9 +1,11 @@
 /* ---------- 두 값 비교 ----------
-   항목마다 칸 하나(.vs-col)가 그래프 줄과 이름 줄을 subgrid로 나눠 쓴다. 앞 값(작년)은 옅은 회색, 뒤 값(올해)은 강조색.
+   항목마다 칸 하나(.vs-col)가 그래프 줄과 이름 줄을 subgrid로 나눠 쓴다. 앞 값(작년)은 옅은 무채색, 뒤 값(올해)은 강조색.
+   앞 값을 중간 회색(40%)으로 칠하면 강조색 막대 옆에서 회색 덩어리가 같은 무게로 서서 답이 갈리지 않았다. 옅게 물려
+   '견줄 기준'으로만 읽히게 한다(docs/VISUAL-RULES.md 3: 칠하지 않은 막대는 회색 면보다 옅은 농담).
    막대 높이는 --p(0~100), 두 선의 점 자리는 --x, --y(0~100)로만 받는다. */
 
 .vs {
-  --vs-a: color-mix(in srgb, var(--ink-3) 40%, var(--bg));
+  --vs-a: color-mix(in srgb, var(--ink-3) 26%, var(--bg));
   --vs-b: var(--accent);
   display: flex;
   flex-direction: column;
@@ -19,7 +21,7 @@
 
 /* 어두운 바탕에서는 앞 값이 바탕에 묻히지 않게 조금 밝게 */
 .is-dark .vs {
-  --vs-a: color-mix(in srgb, var(--ink-3) 58%, var(--bg));
+  --vs-a: color-mix(in srgb, var(--ink-3) 46%, var(--bg));
 }
 
 .vs-key {
@@ -291,8 +293,8 @@
   left: -15px;
   width: 30px;
   height: 30px;
+  /* 강조는 꽉 찬 점 하나로: 둘레의 옅은 강조색 고리는 점을 두 배로 키워 보이는 장식이었다 */
   background: var(--accent);
-  box-shadow: 0 0 0 8px var(--bg), 0 0 0 20px var(--accent-soft);
 }
 
 .vs-pt.is-blank .vs-dot {
@@ -348,13 +350,14 @@
 /* 모양: 점 두 개. 줄마다 이름, 점을 잇는 길, 숫자(앞 값, 뒤 값, 바뀐 비율). 점 자리는 --a, --b(0~100), 잇는 길은 --lo, --hi.
    줄은 subgrid로 칸 너비를 나눠 써서 이름 칸이 가장 긴 이름만큼만 차지하고 길이 모든 줄에서 같은 자리에 선다.
    줄 높이는 자리가 있으면 140px까지 늘어난다. 길 양옆은 점 반지름만큼 비워 끝 점이 잘리지 않게.
-   가운데 맞춤은 safe: 칸보다 길어지면 위로도 넘쳐 범례를 덮지 않고 아래로만 넘친다(그때는 글자를 줄인다, fitBlocks) */
+   줄은 범례 아래에서부터 쌓고 남는 높이는 맨 아래에 둔다(VISUAL-RULES 6). 가운데에 두면 줄이 적을 때 범례와 첫 줄 사이에 빈 띠가 섰다.
+   칸보다 길어지면 아래로만 넘친다(그때는 글자를 줄인다, fitBlocks) */
 .vs-rows {
   display: grid;
   flex: 1;
   grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
   grid-auto-rows: minmax(min-content, 140px);
-  align-content: safe center;
+  align-content: start;
   column-gap: 56px;
   min-height: 0;
 }
@@ -371,10 +374,9 @@
   border-top: var(--rule-hair) solid var(--line);
 }
 
-/* 맨 윗줄은 표처럼 글자색 선으로 범례와 나눈다 */
-
-.vs-row:last-child {
-  border-bottom: var(--rule-hair) solid var(--line);
+/* 줄 선은 줄 사이에만: 첫 줄 위와 마지막 줄 아래는 여백이 닫는다(VISUAL-RULES 2). 선은 투명하게 두어 줄 높이는 그대로 */
+.vs-row:first-child {
+  border-top-color: transparent;
 }
 
 .vs-row .vs-label {
