@@ -247,7 +247,9 @@ export function PaneTools() {
     holdFocus(e)
     const slideEl = ref.current?.closest<HTMLElement>('.slide')
     if (!slideEl) return
+    // 한 번 끄는 동안은 되돌리기 한 단계. Esc는 처음 너비로 (같은 손짓이라 단계를 남기지 않는다)
     const key = gestureKey('pane.side')
+    const first = sideOf(slideRef.current)
     const sr = slideEl.getBoundingClientRect()
     const k = slideEl.offsetWidth ? sr.width / slideEl.offsetWidth : 1
     // 판 바깥쪽 끝(장의 가장자리)에서 손까지가 판의 너비. 판이 장 가장자리에서 떨어져 있으면(결정 요청 장) 그만큼 뺀다
@@ -260,14 +262,27 @@ export function PaneTools() {
       const n = spec.sides.reduce((a, b) => (Math.abs(b * PANE_UNIT - w) < Math.abs(a * PANE_UNIT - w) ? b : a))
       sizeTo(n, key)
     }
-    const onUp = () => {
+    const end = (cancel: boolean) => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      window.removeEventListener('keydown', onKey, true)
+      if (cancel && first !== null) sizeTo(first, key)
       document.body.classList.remove('is-pane-sizing')
       setBusy(null)
     }
+    const onUp = () => end(false)
+    const onCancel = () => end(true)
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Escape') return
+      ev.preventDefault()
+      ev.stopPropagation()
+      end(true)
+    }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    window.addEventListener('keydown', onKey, true)
   }
 
   const onHandleKey = (e: ReactKeyboardEvent) => {
