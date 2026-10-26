@@ -100,29 +100,20 @@ jobs:
           # 바깥에서 오는 Host는 받지 않는다
           try { Invoke-WebRequest -UseBasicParsing -Headers @{ Host = 'evil.example' } http://127.0.0.1:41580/ | Out-Null; throw 'Host 검사가 꺼져 있어요' } catch { if ($_.Exception.Message -eq 'Host 검사가 꺼져 있어요') { throw } }
 
-      - name: 엣지와 크롬이 화면을 그리는지
+      - name: 엣지와 크롬이 화면을 그리는지, 바깥으로 요청하지 않는지
         timeout-minutes: 5
         run: |
-          $browsers = @{
-            '엣지' = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
-            '크롬' = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-          }
-          $pages = @{
-            '처음 화면' = @{ url = 'http://127.0.0.1:41580/'; expect = 'Framo' }
-            '예시 발표 편집' = @{ url = 'http://127.0.0.1:41580/#/edit/sample'; expect = '발표하기' }
-          }
-          foreach ($b in $browsers.GetEnumerator()) {
-            if (-not (Test-Path -LiteralPath $b.Value)) { Write-Host "$($b.Key)가 없어 건너뛰어요"; continue }
-            foreach ($pg in $pages.GetEnumerator()) {
-              $profile = Join-Path $env:RUNNER_TEMP "profile-$([guid]::NewGuid())"
-              $dom = & $b.Value --headless=new --disable-gpu --no-first-run --no-default-browser-check "--user-data-dir=$profile" --window-size=1280,600 --virtual-time-budget=15000 --dump-dom $pg.Value.url 2>$null | Out-String
-              if ($dom -notmatch [regex]::Escape($pg.Value.expect)) {
-                Write-Host ($dom.Substring(0, [Math]::Min(2000, $dom.Length)))
-                throw "$($b.Key)에서 '$($pg.Key)'가 그려지지 않았어요"
-              }
-              Write-Host "$($b.Key) / $($pg.Key): 그려짐"
-            }
-          }
+          # 이 단계에서만 쓰는 도구라 package.json에 넣지 않는다(Apache-2.0). 설치된 엣지, 크롬을 그대로 쓴다
+          npm install --no-save playwright-core@1.64.0
+          node scripts/ci-smoke.mjs ci-shots
+
+      - name: 윈도우에서 찍은 화면 남기기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-screens
+          path: ci-shots
+          if-no-files-found: ignore
 
       - name: 서버 끄기
         if: always()
