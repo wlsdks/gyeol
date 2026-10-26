@@ -38,6 +38,12 @@ export function blockFitter() {
   const more = 1.44
   // 그래도 빈 장은 줄 사이를 넓힌다: 줄의 위아래에 더하는 캔버스 px. 넘게 벌리면 줄끼리 따로 떨어져 보여서 이만큼까지만
   const airMax = 12
+  // 레이아웃 장의 채움(본문 윗선부터 장 틀의 아랫선까지, VISUAL-RULES 6): 60% 밑이면 글자 단계를 올리고, 80% 밑이면 줄 사이를
+  // 85%까지 넓히고, 그래도 75% 밑이면 눈높이 가운데로 내린다. 72%가 위에 붙은 비교 장도 아래가 220px 넘게 비어 보였다
+  const FILL_MIN = 0.6
+  const FILL_EYE = 0.75
+  const FILL_AIR = 0.8
+  const FILL_MAX = 0.85
   let range: Range | null = null
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
@@ -1420,16 +1426,24 @@ export function blockFitter() {
     const sr = slide.getBoundingClientRect()
     const k = sr.height / slide.offsetHeight
     if (!b.height || !k) return
-    // 본문이 쓸 수 있는 아래 끝(장의 아래 여백 위)과 장 틀의 아랫선(--pad-y). 그 사이가 하단 표시 몫이다
+    // 본문이 쓸 수 있는 아래 끝(장의 아래 여백 위)과 장 틀의 아랫선(--pad-y). 그 사이가 하단 표시 몫이다.
+    // 채움은 장 틀의 아랫선까지로 잰다(VISUAL-RULES 6: 하단 표시 몫은 공백 설계에 넣지 않는다). 본문 상자 끝까지로 재면
+    // 아래 띠 몫이 빈 곳에서 빠져, 아래가 340px 넘게 빈 비교 장도 64% 찬 것으로 보고 아무것도 하지 않았다.
+    // 글과 그림은 여전히 본문 상자 안에만 둔다(bad): 출처와 단락 지도에 닿지 않게
     const cs = getComputedStyle(slide)
     const end = sr.bottom - (parseFloat(cs.paddingBottom) || 0) * k
     const frame = sr.bottom - (parseFloat(cs.getPropertyValue('--pad-y')) || 0) * k
-    const room = end - b.top
-    if (room <= 0) return
+    const room = frame - b.top
+    if (end - b.top <= 0) return
     const drawnBottom = () => {
       let bottom = -Infinity
       for (const q of lines(body)) bottom = Math.max(bottom, q.b)
       for (const f of figures(body)) bottom = Math.max(bottom, f.getBoundingClientRect().bottom)
+      // 이미지(로고 모음의 로고, 화면 캡처)도 그려진 것이다: 빼면 글 없이 로고만 있는 장을 다 찬 것으로 보고 아무것도 하지 않았다
+      for (const im of Array.from(body.querySelectorAll('img'))) {
+        const r = im.getBoundingClientRect()
+        if (r.width && r.height) bottom = Math.max(bottom, r.bottom)
+      }
       for (const it of Array.from(body.querySelectorAll<HTMLElement>('.it'))) {
         // 칠한 항목(막대, 카드)은 상자째 그려진 것
         const cs = getComputedStyle(it)
@@ -1441,7 +1455,7 @@ export function blockFitter() {
       const bottom = drawnBottom()
       return bottom === -Infinity ? 1 : (bottom - b.top) / room
     }
-    if (fill() >= 0.6) return
+    if (fill() >= FILL_AIR) return
     const shapes = shapesOf(body)
     const bad = () => {
       if (crowded(body, shapes) || rivals(slide, [body])) return true
@@ -1454,24 +1468,32 @@ export function blockFitter() {
     // 내리면 '지금 → 추진 후' 같은 머리 글자만 장 가운데에 떠 보였다
     const eye = () => {
       const f = fill()
-      if (f >= 0.6 || f < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return
+      if (f >= FILL_EYE || f < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return
       const bottom = drawnBottom()
       if (bottom === -Infinity) return
-      const move = Math.round(Math.min((frame - b.top - (bottom - b.top)) / 2.2, end - bottom) / k)
+      // 위의 빈 곳은 보이는 그대로 장 머리(제목, 부제) 아래부터 센다: 본문 윗선부터 세면 --body-gap만큼 위가 넓어져
+      // 단계 흐름이 가운데보다 아래에 앉았다. (gap + move) : (아래 - move) = 1 : 1.2
+      const head = slide.querySelector<HTMLElement>(':scope > .s-head')
+      const gap = head ? Math.max(0, b.top - head.getBoundingClientRect().bottom) : 0
+      const move = Math.round(Math.min((frame - bottom - 1.2 * gap) / 2.2, end - bottom) / k)
       if (move < 8) return
       body.style.setProperty('--eye', move + 'px')
       body.dataset.eye = '1'
     }
-    for (const f of [ups[0], more]) {
-      body.style.setProperty('--bk-fit', String(f))
-      if (bad()) {
-        if (f === ups[0]) body.style.removeProperty('--bk-fit')
-        else body.style.setProperty('--bk-fit', String(ups[0]))
-        break
+    // (가) 글자 단계는 60%를 못 채울 때만 올린다
+    if (fill() < FILL_MIN) {
+      for (const f of [ups[0], more]) {
+        body.style.setProperty('--bk-fit', String(f))
+        if (bad()) {
+          if (f === ups[0]) body.style.removeProperty('--bk-fit')
+          else body.style.setProperty('--bk-fit', String(ups[0]))
+          break
+        }
+        if (fill() >= FILL_MIN) break
       }
-      if (fill() >= 0.6) return
     }
-    // 줄 사이: 바꿔도 그려진 것이 그대로면(이 레이아웃은 --fill-air를 쓰지 않는다) 그만둔다
+    if (fill() >= FILL_AIR) return
+    // (나) 줄 사이: 바꿔도 그려진 것이 그대로면(이 레이아웃은 --fill-air를 쓰지 않는다) 그만둔다
     const before = fill()
     body.style.setProperty('--fill-air', airMax + 'px')
     if (fill() <= before + 0.001) {
@@ -1482,7 +1504,7 @@ export function blockFitter() {
     // 넘치지 않고 85%를 넘지 않는 가장 넓은 값 (반씩 나눠 찾는다)
     const ok = (v: number) => {
       body.style.setProperty('--fill-air', v + 'px')
-      return !bad() && fill() <= 0.85
+      return !bad() && fill() <= FILL_MAX
     }
     let lo = 0
     let hi = airMax + 1

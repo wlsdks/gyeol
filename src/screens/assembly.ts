@@ -883,26 +883,33 @@ function fill(slide: HTMLElement, area: HTMLElement): string[] {
 }
 
 /**
- * 레이아웃 장의 위아래 균형 (VISUAL-RULES 6): 장 채움(fitBlocks.ts의 fitLayout)이 글자를 키우고 줄 사이를 넓혀도 본문의 60%를 못 채우면
- * 눈높이 가운데로 내려야 한다(.s-body의 data-eye). 위에 붙은 채 아래만 길게 빈 장을 찾는다. 본문 높이는 본문 상자가 아니라 장에서
- * 본문이 쓸 수 있는 자리(본문 윗선부터 하단 표시 몫 위까지)다: 비교 장은 본문 상자가 내용 높이뿐이다
+ * 레이아웃 장의 위아래 균형 (VISUAL-RULES 6): 장 채움(fitBlocks.ts의 fitLayout)이 글자를 키우고 줄 사이를 넓혀도 75%를 못 채우면
+ * 눈높이 가운데로 내려야 한다(.s-body의 data-eye). 위에 붙은 채 아래만 길게 빈 장을 찾는다. 채움은 본문 상자가 아니라
+ * 본문 윗선부터 장 틀의 아랫선까지로 잰다(하단 표시 몫은 공백 설계에 넣지 않는다. 비교 장은 본문 상자가 내용 높이뿐이다)
  */
+// fitBlocks.ts의 FILL_EYE와 같은 값
+const LAYOUT_EYE = 0.75
+
 function layoutFill(slide: HTMLElement): string[] {
   const body = slide.querySelector<HTMLElement>(':scope > .s-body')
   if (!body || slide.classList.contains('l-compose') || !slide.querySelector(':scope > .s-head') || body.dataset.eye) return []
   const sr = slide.getBoundingClientRect()
   const k = sr.height / slide.offsetHeight
   const b = body.getBoundingClientRect()
-  const room = sr.bottom - (parseFloat(getComputedStyle(slide).paddingBottom) || 0) * k - b.top
+  const room = sr.bottom - (parseFloat(getComputedStyle(slide).getPropertyValue('--pad-y')) || 0) * k - b.top
   if (!k || room <= 0) return []
   let bottom = -Infinity
   for (const q of blockTextLines(body)) if (!q.n.parentElement?.closest(EDIT_UI)) bottom = Math.max(bottom, q.b)
   for (const f of blockFigures(body)) bottom = Math.max(bottom, f.getBoundingClientRect().bottom)
+  for (const im of body.querySelectorAll('img')) {
+    const r = im.getBoundingClientRect()
+    if (r.width && r.height) bottom = Math.max(bottom, r.bottom)
+  }
   if (bottom === -Infinity) return []
   const used = (bottom - b.top) / room
   // 제목이 없거나 머리 줄뿐인 덜 쓴 장은 fitLayout도 내리지 않는다(내리면 머리 글자만 가운데에 뜬다)
   if (used < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return []
-  return used < FILL_MIN ? [`본문을 ${Math.round(used * 100)}%만 채우고 위에 붙어 있어요(아래 ${Math.round((room - (bottom - b.top)) / k)}px 빔)`] : []
+  return used < LAYOUT_EYE ? [`본문을 ${Math.round(used * 100)}%만 채우고 위에 붙어 있어요(아래 ${Math.round((room - (bottom - b.top)) / k)}px 빔)`] : []
 }
 
 /**
