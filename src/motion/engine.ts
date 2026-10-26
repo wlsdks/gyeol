@@ -438,7 +438,9 @@ export function motionEngine(): MotionEngine {
     const wipe = (el: Element | null, at: number, from: 'left' | 'right' | 'bottom' | 'top', duration = 1000) => {
       if (!el) return
       const inset = { left: 'inset(0 100% 0 0)', right: 'inset(0 0 0 100%)', bottom: 'inset(100% 0 0 0)', top: 'inset(0 0 100% 0)' }[from]
-      run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(duration) })
+      // 걷히는 곡선은 감속만: 천천히 떠나 빨라졌다 멈추는(ease-in-out) 곡선은 흔한 프레젠테이션의 '닦아내기'처럼 기계적으로 보였다.
+      // 먹이 번지듯 처음에 빨리 열리고 끝에서 천천히 멈춘다
+      run(anims, el, [{ clipPath: inset }, { clipPath: 'inset(0 0 0 0)' }], s(at), { easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)', duration: d(duration) })
     }
     /**
    * 낱말마다 아래에서 올라오는 제목. 생동감은 번진 먹이 가라앉듯 조금 흐린 데서 또렷해지며 선다(L.ink).
@@ -1852,15 +1854,17 @@ export function motionEngine(): MotionEngine {
       else if (effect === 'fade') fade(cell, 0, 800)
       else if (effect === 'wipe') wipe(cell, 0, from === 'right' ? 'right' : from === 'below' ? 'bottom' : from === 'above' ? 'top' : 'left', 900)
       else if (effect === 'slide') run(anims, cell, [{ opacity: 0, translate: off(L.y * 2.6) }], s(0), L.move)
-      else if (effect === 'pop') run(anims, cell, [{ opacity: 0, scale: '0.6' }], s(0), L.pop)
-      else if (effect === 'zoom') run(anims, cell, [{ opacity: 0, scale: '1.14' }], s(0), { easing: OUT, duration: d(900) })
+      // 튀어나오기, 다가오기, 세우기는 값(id)은 그대로 두고 느낌만 덜어냈다: 0.6배에서 통통 튀며 커지고, 1.14배에서 줄어들고,
+      // 72도 누워 있다가 서던 것이 흔한 템플릿 효과처럼 보였다. 이제 크기는 몇 %만, 기울기는 28도만 바뀌고 넘치지 않는다
+      else if (effect === 'pop') run(anims, cell, [{ opacity: 0, scale: '0.9' }], s(0), L.pop)
+      else if (effect === 'zoom') run(anims, cell, [{ opacity: 0, scale: '1.05' }], s(0), { easing: OUT, duration: d(800) })
       else if (effect === 'flip')
         // 아래 가장자리를 축으로 누워 있다가 선다. 원근은 칸마다 따로 (장 전체가 휘어 보이지 않게)
         run(
           anims,
           cell,
           [
-            { opacity: 0, transform: 'perspective(1800px) rotateX(-72deg)', transformOrigin: '50% 100%' },
+            { opacity: 0, transform: 'perspective(1800px) rotateX(-28deg)', transformOrigin: '50% 100%' },
             { opacity: 1, transform: 'perspective(1800px) rotateX(0deg)', transformOrigin: '50% 100%' },
           ],
           s(0),
@@ -1871,7 +1875,8 @@ export function motionEngine(): MotionEngine {
         fade(cell, 0, 320)
         letters(cell, 60)
       } else if (effect === 'blur')
-        run(anims, cell, [{ opacity: 0, filter: 'blur(20px)', scale: '1.03' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: 1000 })
+        // 흐림은 8px까지만: 20px이던 때는 칸이 뿌연 덩어리로 떠 있다가 나타나 흔한 AI 데모처럼 보였다
+        run(anims, cell, [{ opacity: 0, filter: 'blur(8px)', scale: '1.015' }, { opacity: 1, filter: 'blur(0px)', scale: '1' }], s(0), { easing: OUT, duration: d(850) })
       else if (effect === 'auto') {
         // 칸 안의 따로 움직이지 않는 줄과 빈 자리도 이 부품의 차례에 (장 머리의 본문 상자와 같은 까닭)
         fade(cell.querySelector(':scope > .bk-in'), 0, 360)

@@ -534,7 +534,7 @@ body.is-block-resizing * {
 }
 
 :is(.bk-menu-item, .ms-fx):not(:hover, :focus-visible) .fx-demo.is-flip {
-  transform: perspective(60px) rotateX(38deg);
+  transform: perspective(60px) rotateX(20deg);
   transform-origin: 50% 100%;
 }
 
@@ -652,13 +652,10 @@ body.is-block-resizing * {
 @keyframes fx-pop {
   0% {
     opacity: 0;
-    scale: 0.5;
-  }
-  30% {
-    opacity: 1;
-    scale: 1.08;
+    scale: 0.8;
   }
   45%, 100% {
+    opacity: 1;
     scale: 1;
   }
 }
@@ -666,7 +663,7 @@ body.is-block-resizing * {
 @keyframes fx-zoom {
   0% {
     opacity: 0;
-    scale: 1.3;
+    scale: 1.12;
   }
   50%, 100% {
     opacity: 1;
@@ -677,7 +674,7 @@ body.is-block-resizing * {
 @keyframes fx-flip {
   0% {
     opacity: 0;
-    transform: perspective(120px) rotateX(-75deg);
+    transform: perspective(120px) rotateX(-35deg);
   }
   50%, 100% {
     opacity: 1;
