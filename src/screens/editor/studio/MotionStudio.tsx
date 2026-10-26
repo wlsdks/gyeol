@@ -98,6 +98,13 @@ export function MotionStudio({
         else st.undo()
         return
       }
+      // ←, →: 앞 장, 다음 장 (발표 화면과 같은 키). 단추를 누른 뒤에도 되게 단추는 막지 않는다. 바늘(slider)은 제 화살표로 옮긴다
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        if ((e.target as Element).closest?.('input, textarea, select, [role="slider"], [contenteditable]')) return
+        e.preventDefault()
+        goRef.current(e.key === 'ArrowLeft' ? -1 : 1)
+        return
+      }
       if (e.key !== ' ' || e.repeat) return
       if ((e.target as Element).closest?.('button, input, textarea, select, [role="slider"], [contenteditable]')) return
       e.preventDefault()
@@ -113,6 +120,8 @@ export function MotionStudio({
     const next = visible[at + d]
     if (next) store.select(next.id)
   }
+  const goRef = useRef(go)
+  goRef.current = go
 
   // 앞 장에서 넘어오기: 무대에 앞 장(다 보인 모습)을 잠깐 두었다가, 발표 화면과 같은 엔진의 장 바꾸기로 이 장으로 넘긴다.
   // 장 넘기기는 두 장 사이의 일이라 이 장만 움직여서는 고른 넘기기가 어떤지 알 수 없었다('앞 장부터 발표'로 나가야 했다)
@@ -178,13 +187,13 @@ export function MotionStudio({
         </button>
         <h1 className="ms-title">움직임 편집</h1>
         <nav className="ms-nav" aria-label="장 옮기기">
-          <button type="button" className="icon-btn ms-prev" aria-label="앞 장" disabled={at <= 0} onClick={() => go(-1)}>
+          <button type="button" className="icon-btn ms-prev" aria-label="앞 장" title="앞 장 (←)" disabled={at <= 0} onClick={() => go(-1)}>
             <ChevronIcon />
           </button>
           <span className="ms-count">
             {at + 1} / {visible.length}
           </span>
-          <button type="button" className="icon-btn" aria-label="다음 장" disabled={at < 0 || at >= visible.length - 1} onClick={() => go(1)}>
+          <button type="button" className="icon-btn" aria-label="다음 장" title="다음 장 (→)" disabled={at < 0 || at >= visible.length - 1} onClick={() => go(1)}>
             <ChevronIcon />
           </button>
           <span className="ms-slide-name">{slide.fields.title || '제목 없는 장'}</span>
