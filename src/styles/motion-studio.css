@@ -199,12 +199,18 @@
   transition: background 0.12s, scale 0.12s;
 }
 
-.ms-play:hover {
+.ms-play:hover:not(:disabled) {
   background: #2c313b;
 }
 
-.ms-play:active {
+.ms-play:active:not(:disabled) {
   scale: 0.94;
+}
+
+/* 움직이지 않는 장(동작 줄이기, 움직임 없음): 누를 것이 없음을 흐리게 */
+.ms-play:disabled {
+  background: var(--ink-3);
+  cursor: default;
 }
 
 .ms-play .icon {
@@ -539,6 +545,11 @@
   color: var(--ink-3);
   font-size: 12px;
   translate: 0 -50%;
+}
+
+/* 움직이지 않으면 바늘이 0초에 서서 알림 글을 가른다 */
+.ms-tl.is-quiet :is(.ms-needle, .ms-head) {
+  display: none;
 }
 
 .ms-tl-empty {

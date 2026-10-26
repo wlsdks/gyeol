@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { blockNames, playOrder, whenOf } from '../../../deck/blocks'
 import type { Slide } from '../../../deck/types'
 import { motionEngine, type MotionLevel, type MotionPlay } from '../../../motion/engine'
@@ -89,6 +89,21 @@ function readPlan(slide: Slide, anims: Animation[]): Plan {
   }
   const total = Math.max(0, ...anims.map((a) => timing(a).end))
   return { lanes, total, clicks }
+}
+
+/**
+ * 컴퓨터의 '동작 줄이기'. 켜 두면 엔진이 움직이지 않으므로 시간표가 빈다. 그때 '움직임 정도를 고르라'고 하면
+ * 고를 것을 다 골라도 그대로라서 무엇이 막는지 알 수 없었다. 켜고 끄는 것을 따라가 알린다
+ */
+export function useReducedMotion(): boolean {
+  const [on, setOn] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => {
+    const m = matchMedia('(prefers-reduced-motion: reduce)')
+    const change = () => setOn(m.matches)
+    m.addEventListener('change', change)
+    return () => m.removeEventListener('change', change)
+  }, [])
+  return on
 }
 
 export interface Player {

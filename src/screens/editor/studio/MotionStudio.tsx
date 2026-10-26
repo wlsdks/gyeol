@@ -29,7 +29,7 @@ import { Opt } from '../Inspector'
 import { useLook, type Look } from '../look'
 import { FROM_SHORT, SLIDE_TRANSITIONS } from '../MotionPanel'
 import { SceneOverride, ScenePicker } from '../ScenePicker'
-import { usePlayer } from './player'
+import { usePlayer, useReducedMotion } from './player'
 import { Timeline } from './Timeline'
 
 // 움직임 편집: 한 장의 움직임을 크게 보며 고치는 화면. 편집기 위에 덮어 연다.
@@ -79,6 +79,7 @@ export function MotionStudio({
   const boxes = useBoxes(root)
   const player = usePlayer(root, slide, level)
   const small = useLowWindow()
+  const reduced = useReducedMotion()
 
   // Space: 재생과 멈춤 (단추나 끌기 막대에 있을 때는 그것의 Space를 둔다). 되돌리기와 다시 하기는 편집기와 같은 키로
   // (스튜디오가 덮은 동안 편집기의 단축키는 쉰다)
@@ -156,7 +157,7 @@ export function MotionStudio({
           onPointerLeave={() => setHot(null)}
         >
           <FitSlide padding={small ? 14 : 24}>
-            <Stage key={`${slide.id}.${rev.current.n}`} deck={look} slide={slide} page={pageProps(info, slide.id)} sections={sections} attach={setRoot} />
+            <Stage key={`${slide.id}.${rev.current.n}.${reduced}`} deck={look} slide={slide} page={pageProps(info, slide.id)} sections={sections} attach={setRoot} />
             <div className="ms-marks" aria-hidden="true">
               {boxes.map((b) => {
                 const n = ids.indexOf(b.id) + 1
@@ -175,7 +176,7 @@ export function MotionStudio({
           </FitSlide>
         </div>
 
-        <Timeline player={player} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
+        <Timeline player={player} quiet={reduced ? 'reduced' : level === 'none' ? 'none' : null} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
 
         <aside className="ms-side" aria-label="움직임 고르기">
           {/* 장면: 장 전체를 한 컷으로. 고르면 무대가 새로 그려져 그 장면으로 처음부터 움직인다 */}

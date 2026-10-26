@@ -4,7 +4,7 @@ import { CSS as DndCss } from '@dnd-kit/utilities'
 import { useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { cx } from '../../../lib/cx'
 import { keys } from '../../../lib/keys'
-import { GripIcon, Icon, PlayIcon } from '../../ui'
+import { GripIcon, Icon, Info, PlayIcon } from '../../ui'
 import type { Lane, Player } from './player'
 
 // 움직임 편집 아래의 시간표. 줄마다 그 컴포넌트가 움직이는 동안을 막대로 보이고, 바늘을 끌어 그때의 모습을 본다.
@@ -26,8 +26,11 @@ export function Timeline({
   onSelect,
   onHot,
   onMove,
+  quiet = null,
 }: {
   player: Player
+  /** 움직이지 않는 까닭: 컴퓨터의 '동작 줄이기'(reduced)나 이 장의 움직임 정도 '없음'(none) */
+  quiet?: 'reduced' | 'none' | null
   /** 줄을 끌어 바꿀 수 있는 컴포넌트 id들 (나오는 차례) */
   order: string[]
   selected: string | null
@@ -91,12 +94,12 @@ export function Timeline({
   const none = !plan.lanes.length
 
   return (
-    <section className={cx('ms-tl', player.solo && 'is-solo')} aria-label="시간표">
+    <section className={cx('ms-tl', player.solo && 'is-solo', quiet && 'is-quiet')} aria-label="시간표">
       <div className="ms-tl-bar">
-        <button type="button" className="ms-play" aria-label={player.playing ? '멈추기' : '재생'} title={`${player.playing ? '멈추기' : '재생'} (Space)`} onClick={player.toggle}>
+        <button type="button" className="ms-play" disabled={!!quiet} aria-label={player.playing ? '멈추기' : '재생'} title={`${player.playing ? '멈추기' : '재생'} (Space)`} onClick={player.toggle}>
           {player.playing ? <PauseIcon /> : <PlayIcon />}
         </button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={player.restart}>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={!!quiet} onClick={player.restart}>
           <RestartIcon />
           처음부터
         </button>
@@ -149,7 +152,18 @@ export function Timeline({
         </div>
 
         <div className="ms-tl-body">
-          {none && <p className="ms-tl-empty">움직이는 것이 없어요. 오른쪽에서 움직임 정도를 골라 보세요.</p>}
+          {quiet === 'reduced' ? (
+            <p className="ms-tl-empty">
+              컴퓨터에서 ‘동작 줄이기’를 켜 두어서 움직이지 않아요. 이 컴퓨터로 발표할 때도 바로 다 보여요.
+              <Info label="동작 줄이기 끄는 법" align="start">
+                윈도우는 설정 › 접근성 › 시각 효과에서 ‘애니메이션 효과’를 켜요. 맥은 시스템 설정 › 손쉬운 사용 › 디스플레이에서 ‘동작 줄이기’를 꺼요.
+              </Info>
+            </p>
+          ) : quiet === 'none' ? (
+            <p className="ms-tl-empty">움직임 정도가 ‘없음’이라 움직이지 않아요. 오른쪽 ‘이 장’에서 움직임 정도를 골라 보세요.</p>
+          ) : (
+            none && <p className="ms-tl-empty">이 장에는 움직이는 것이 없어요.</p>
+          )}
           {head.filter((l) => l.id === 'head').map((l) => (
             <Row key={l.id} lane={l} span={span} />
           ))}
