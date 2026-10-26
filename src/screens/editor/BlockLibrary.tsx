@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
@@ -133,6 +133,19 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [blocks, why])
+
+  // 까닭 창은 목록 아래에 붙어 목록을 줄인다. 누른 카드가 줄어든 목록 밖으로 밀려나지 않게 보이는 자리까지 굴린다
+  // (1280×600에서 둘째 줄 카드를 누르면 창이 뜨며 그 카드가 가려져, 무엇에 대한 설명인지 알 수 없었다).
+  // 카드가 줄어든 목록보다 크면 그림과 이름이 보이게 위에 맞춘다
+  useLayoutEffect(() => {
+    const card = why?.card
+    const list = card?.closest<HTMLElement>('.lib-list')
+    if (!card || !list) return
+    const c = card.getBoundingClientRect()
+    const l = list.getBoundingClientRect()
+    const d = c.top < l.top || c.height > l.height - 16 ? c.top - l.top - 8 : c.bottom > l.bottom ? c.bottom - l.bottom + 8 : 0
+    if (d) list.scrollBy({ top: d, behavior: 'smooth' })
+  }, [why])
 
   /** 마우스를 올리면 그 부품의 움직임을 한 번. 움직이는 중에 다시 올려도 처음부터 다시 하지 않는다 */
   const preview = (card: HTMLElement) => {
