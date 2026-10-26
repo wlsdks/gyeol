@@ -3,23 +3,25 @@ import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
 import { undoLast } from '../store/deckStore'
 
-/** 앱 이름 '결'. 표시는 결(나뭇결, 물결)처럼 나란한 세 줄. 가운데 줄만 강조색: 장마다 답 하나에만 강조색을 쓰는 것처럼 */
+/**
+ * 앱 이름 Framo(frame: 화면의 틀, 영화의 한 컷). 표시는 카메라 뷰파인더의 네 귀퉁이와 그 안의 줄 하나.
+ * 가운데 줄만 강조색: 틀 안에 제자리를 잡은 답 하나, 장마다 답 하나에만 강조색을 쓰는 것처럼
+ */
 function BrandMark({ className }: { className?: string }) {
   return (
     <svg className={cx('brand-mark', className)} viewBox="0 0 24 24" aria-hidden="true">
       <rect x="1" y="1" width="22" height="22" rx="6.5" fill="#191c22" />
-      <path d="M5.75 8.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff" />
-      <path d="M5.75 12.4q3.13-2.1 6.25 0t6.25 0" stroke="#5b86ff" />
-      <path d="M5.75 16.4q3.13-2.1 6.25 0t6.25 0" stroke="#fff" opacity="0.5" />
+      <path d="M6 9.5v-2A1.5 1.5 0 0 1 7.5 6h2M14.5 6h2A1.5 1.5 0 0 1 18 7.5v2M18 14.5v2a1.5 1.5 0 0 1-1.5 1.5h-2M9.5 18h-2A1.5 1.5 0 0 1 6 16.5v-2" stroke="#fff" />
+      <path d="M9.5 12h5" stroke="#5b86ff" />
     </svg>
   )
 }
 
 export function Brand() {
   return (
-    <a className="brand" href="#/" aria-label="결 처음 화면">
+    <a className="brand" href="#/" aria-label="Framo 처음 화면">
       <BrandMark />
-      <span className="brand-name">결</span>
+      <span className="brand-name">Framo</span>
     </a>
   )
 }

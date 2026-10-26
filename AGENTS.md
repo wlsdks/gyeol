@@ -4,7 +4,7 @@
 
 ## 무엇을 만드나
 
-이름은 **결**(영문 `gyeol`, 저장소 `wlsdks/gyeol`)입니다. 화면, 배포본, MCP 서버 이름에 씁니다. 저장 형식과 저장소 이름(`html-maker/deck` 같은 format, IndexedDB 이름, `/__html-maker/` 주소, BroadcastChannel, localStorage 키)은 예전 이름 그대로 둡니다. 바꾸면 예전에 저장한 발표를 읽지 못합니다.
+이름은 **Framo**(frame에서. 예전 이름 ‘결’)입니다. 화면, 배포본, 홍보 페이지, 안내 글에 씁니다. 기계가 읽는 이름은 예전 그대로 `gyeol`입니다(저장소 `wlsdks/gyeol`, 패키지 이름, MCP 서버 id `gyeol`, `gyeol-mcp.mjs`, `release/gyeol-*.zip`, 홍보 페이지 주소): 바꾸면 이미 연결한 AI 설정과 내려받기 주소가 끊깁니다. 저장 형식과 저장소 이름(`html-maker/deck` 같은 format, IndexedDB 이름, `/__html-maker/` 주소, BroadcastChannel, localStorage 키)은 예전 이름 그대로 둡니다. 바꾸면 예전에 저장한 발표를 읽지 못합니다.
 
 PPT로 하던 발표를 HTML로 만드는 도구입니다. 회사 발표에만 쓰는 것이 아니라서 화면과 홍보 페이지에서 ‘회사 발표’로 못 박지 않습니다. 팀장, 본부장께 결정을 받는 보고(사업 제안, 개선 제안, 계획)만이 아니라 주간 업무 보고, 결과·장애 보고, 프로젝트 착수, 지식 공유, 팀 소개처럼 동료나 다른 부서 앞에서 하는 발표도 다룹니다. 어느 한 직무(영업 같은)를 위한 도구가 아니라서, 설명과 안내 문구, 예시도 한 직무에 치우치지 않게 씁니다.
 
@@ -34,7 +34,7 @@ PPT로 하던 발표를 HTML로 만드는 도구입니다. 회사 발표에만 �
    - `mcp/server.ts`의 Node 권한 모델 실행(`--permission`, `--allow-fs-*`)을 빼지 않습니다.
    - 권한 모델은 심볼릭 링크를 따라가므로, 링크와 하드 링크를 거르는 `readJson`을 유지합니다.
    - 오류 메시지에 받은 값이나 경로를 넣지 않습니다. 정해진 문구(`MESSAGES`)만 씁니다. stdout에 로그를 쓰지 않습니다.
-   - ‘AI에게 부탁’(`server/agent.ts`)은 Claude Code를 기본 도구 없이(`--tools ""`), 결 MCP 서버(`gyeol`) 하나만(`--strict-mcp-config`), 사용자 설정 없이(`--restricted`), 권한 질문은 모두 거절로(`--permission-prompts none`) 띄웁니다. 이 인자를 빼거나 다른 도구를 열지 않습니다.
+   - ‘AI에게 부탁’(`server/agent.ts`)은 Claude Code를 기본 도구 없이(`--tools ""`), Framo MCP 서버(`gyeol`) 하나만(`--strict-mcp-config`), 사용자 설정 없이(`--restricted`), 권한 질문은 모두 거절로(`--permission-prompts none`) 띄웁니다. 이 인자를 빼거나 다른 도구를 열지 않습니다.
    - 부탁은 `src/ai/asks.ts`의 id와 해시 id만 받고, AI에게 보낼 문장은 서버가 정해진 말로 만듭니다. 사람이 적은 글을 받는 칸을 만들지 않습니다. 문장은 명령줄이 아니라 stdin으로 넘깁니다.
 5. **실제 업무 자료를 저장소에 넣지 않는다.** 테스트, 예시, 스크린샷, 이슈, 커밋 메시지 모두 해당합니다. 예시 덱(`src/deck/sample.ts`)의 회사, 사람, 숫자는 지어낸 것입니다.
 6. **의존성은 사내에서 써도 되는 오픈소스만.**
@@ -97,7 +97,7 @@ npm run pack         # 나눠 줄 폴더와 zip (release/)
 - 화면 크기: 1920×1080을 150%로 키운 노트북은 브라우저 안이 **1280×600** 남짓입니다. 이 크기에서 잘리거나 가로 스크롤이 생기면 안 됩니다. 1366×650, 1536×730도 봅니다.
 - 스크롤바가 자리를 차지합니다. 맥에서 볼 때는 스크롤바를 항상 보이게 흉내 내서 봅니다. 스크롤되는 상자는 `minmax(0, 1fr)`, `overflow-x: hidden`, `scrollbar-gutter`로 가로로 넘치지 않게 합니다.
 - 파일 이름은 `safeFileName`으로 만듭니다(금지 문자, CON 같은 예약어, 끝의 점, 긴 경로, NFC).
-- 배포본은 윈도우용과 맥용 두 가지입니다(`npm run pack`, `release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 윈도우용은 `.bat`이 CRLF(.gitattributes), 안내 `.txt`가 BOM이 있는 UTF-8이고 node.exe가 들어갑니다. 맥용에는 애플 실리콘과 인텔 맥의 node가 들어가고 `결 시작.command`가 맞는 쪽을 고릅니다. zip은 `scripts/zip.mjs`(UTF-8 이름 표시)로 만들고, 이름에 버전을 넣지 않습니다(홍보 페이지의 내려받기 주소가 늘 최신 판).
+- 배포본은 윈도우용과 맥용 두 가지입니다(`npm run pack`, `release/gyeol-windows.zip`, `release/gyeol-mac.zip`). 윈도우용은 `.bat`이 CRLF(.gitattributes), 안내 `.txt`가 BOM이 있는 UTF-8이고 node.exe가 들어갑니다. 맥용에는 애플 실리콘과 인텔 맥의 node가 들어가고 `Framo 시작.command`가 맞는 쪽을 고릅니다. zip은 `scripts/zip.mjs`(UTF-8 이름 표시)로 만들고, 이름에 버전을 넣지 않습니다(홍보 페이지의 내려받기 주소가 늘 최신 판).
 - 서버 오류는 창이 바로 닫히지 않게 `fail()`로 보여 줍니다(윈도우에서는 서버 창이 작게 내려가 있다).
 
 ## 화면 문구

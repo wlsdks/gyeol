@@ -82,7 +82,7 @@ function NewerDeck({ deck }: { deck: Deck }) {
     <div className="center-msg newer-deck">
       <h1 className="newer-h">새 버전에서 만든 발표예요</h1>
       <p>
-        이 결 앱에는 없는 컴포넌트나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
+        이 버전의 Framo에는 없는 컴포넌트나 모양이 {count}개 들어 있어요. 여기서 고치면 그것과 안에 적은 글이 빠져서 열지 않았어요. 원래 발표는 그대로
         있어요.
       </p>
       <p>

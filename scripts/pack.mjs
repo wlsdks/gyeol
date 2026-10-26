@@ -2,9 +2,9 @@
 //
 // 둘 다 Node.js(공식 배포본)를 같이 넣어서, 받는 사람은 크롬이나 엣지 말고는 아무것도 설치하지 않아도 된다.
 // 회사 PC는 프로그램 설치가 막혀 있는 경우가 많다. 맥용에는 애플 실리콘(arm64)과 인텔(x64) 두 가지를 넣고,
-// '결 시작.command'가 그 맥에 맞는 쪽을 고른다.
+// 'Framo 시작.command'가 그 맥에 맞는 쪽을 고른다.
 // - 윈도우용: .bat은 CRLF, 안내 .txt는 메모장이 한글을 바로 알아보게 BOM과 CRLF로 쓴다.
-// - 맥용: 안내 .txt는 그대로(LF, BOM 없이), '결 시작.command'와 node에는 실행 권한을 남긴다.
+// - 맥용: 안내 .txt는 그대로(LF, BOM 없이), 'Framo 시작.command'와 node에는 실행 권한을 남긴다.
 // - zip은 한글 파일 이름이 윈도우에서 깨지지 않게 직접 만든다 (scripts/zip.mjs). zip 이름에 버전을 넣지 않는다:
 //   홍보 페이지의 내려받기 단추가 늘 같은 주소(releases/latest/download/gyeol-mac.zip)로 최신 판을 받는다.
 //   판은 zip 안의 폴더 이름(gyeol-<버전>)과 첫 화면에 보인다.
@@ -153,13 +153,13 @@ async function putNode(dist, binTo, licenseTo) {
 async function windows() {
   const out = join(root, 'release', 'windows', name)
   common(out)
-  cpSync(join(root, 'launch', '결 시작.bat'), join(out, '결 시작.bat'))
+  cpSync(join(root, 'launch', 'Framo 시작.bat'), join(out, 'Framo 시작.bat'))
   cpSync(join(root, 'launch', '사용법.txt'), join(out, '사용법.txt'))
   if (withNode) {
     await putNode('win-x64', join(out, 'node', 'node.exe'), join(out, 'node', 'LICENSE.txt'))
     windowsText(join(out, 'node', 'LICENSE.txt'), { bom: true })
   }
-  windowsText(join(out, '결 시작.bat'), { bom: false })
+  windowsText(join(out, 'Framo 시작.bat'), { bom: false })
   for (const file of ['사용법.txt', '오픈소스 라이선스.txt']) windowsText(join(out, file), { bom: true })
   const zipFile = join(root, 'release', 'gyeol-windows.zip')
   zipDir(out, zipFile)
@@ -169,8 +169,8 @@ async function windows() {
 async function mac() {
   const out = join(root, 'release', 'mac', name)
   common(out)
-  cpSync(join(root, 'launch', '결 시작.command'), join(out, '결 시작.command'))
-  chmodSync(join(out, '결 시작.command'), 0o755)
+  cpSync(join(root, 'launch', 'Framo 시작.command'), join(out, 'Framo 시작.command'))
+  chmodSync(join(out, 'Framo 시작.command'), 0o755)
   cpSync(join(root, 'launch', '사용법-맥.txt'), join(out, '사용법.txt'))
   if (withNode) {
     // 두 실행 파일의 LICENSE는 같은 판이라 같다
@@ -185,4 +185,4 @@ async function mac() {
 if (only !== 'mac') await windows()
 if (only !== 'windows') await mac()
 rmSync(work, { recursive: true, force: true })
-console.log(`\n${name}을 묶었어요. 받는 사람은 zip을 풀고 '결 시작'을 더블클릭하면 돼요.`)
+console.log(`\n${name}을 묶었어요. 받는 사람은 zip을 풀고 'Framo 시작'을 더블클릭하면 돼요.`)

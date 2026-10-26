@@ -100,7 +100,7 @@ describe('AI에게 부탁', () => {
     }
   })
 
-  it('기본 도구를 모두 끄고 결 MCP 서버 하나만 붙여 띄운다', () => {
+  it('기본 도구를 모두 끄고 Framo MCP 서버 하나만 붙여 띄운다', () => {
     const args = agentArgs('/tmp/mcp.json')
     expect(args[args.indexOf('--tools') + 1]).toBe('')
     expect(args).toContain('--strict-mcp-config')

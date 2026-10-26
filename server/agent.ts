@@ -3,7 +3,7 @@
 //
 // 내용이 새지 않게 이렇게 띄운다.
 // 1. 받는 것은 부탁 id(src/ai/asks.ts)와 해시 id뿐이다. AI에게 보내는 문장은 askPrompt가 정해진 말로 만든다.
-// 2. Claude Code의 기본 도구(파일 읽기·쓰기, 명령 실행, 웹)를 모두 끄고(--tools ""), 결 MCP 서버(gyeol) 하나만
+// 2. Claude Code의 기본 도구(파일 읽기·쓰기, 명령 실행, 웹)를 모두 끄고(--tools ""), Framo MCP 서버(gyeol) 하나만
 //    붙인다(--strict-mcp-config). MCP 서버는 늘 그렇듯 'AI 공유' 폴더 안에서만 움직이므로, AI는 모양 파일 말고는
 //    아무것도 볼 수 없다. 사람이 직접 Claude Code를 쓸 때보다 좁다.
 // 3. 사용자 설정 파일(훅, 플러그인, 다른 MCP 서버)을 읽지 않고(--restricted), 물어야 하는 권한은 모두 거절한다.

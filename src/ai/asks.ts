@@ -125,7 +125,7 @@ export function validAsk(ask: unknown, deck: unknown, slide: unknown): ask is As
 
 /** 이 PC에서 Claude Code를 바로 띄울 수 없을 때, Claude Code나 Codex에 붙여 넣을 부탁 */
 export function askSentence(ask: AskId, deck: string, slide: string | null): string {
-  return `결(gyeol)에 공유한 ${slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`}: ${askOf(ask)!.prompt} 바꿀 것은 propose_changes로 제안해 줘.`
+  return `Framo(gyeol)에 공유한 ${slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`}: ${askOf(ask)!.prompt} 바꿀 것은 propose_changes로 제안해 줘.`
 }
 
 /** AI에게 보내는 문장. 정해진 말과 해시 id만으로 만든다 */
@@ -133,7 +133,7 @@ export function askPrompt(ask: AskId, deck: string, slide: string | null): strin
   const a = askOf(ask)!
   const target = slide ? `발표 ${deck}의 장 ${slide}` : `발표 ${deck}`
   return [
-    `결(gyeol) 앱에서 사람이 ${target}에 대해 부탁했어요.`,
+    `Framo(gyeol) 앱에서 사람이 ${target}에 대해 부탁했어요.`,
     '',
     `부탁: ${a.prompt}`,
     '',

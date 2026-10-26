@@ -33,7 +33,7 @@ async function call(path: string, init: RequestInit = {}): Promise<Response | nu
   }
 }
 
-/** ‘결 시작’ 파일로 켠 서버에서만 쓸 수 있다. 아니면 null */
+/** ‘Framo 시작’ 파일로 켠 서버에서만 쓸 수 있다. 아니면 null */
 export async function aiStatus(): Promise<AiStatus | null> {
   const res = await call('status')
   if (!res?.ok) return null

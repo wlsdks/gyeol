@@ -1,4 +1,4 @@
-// 결(gyeol) MCP 서버. Claude Code, Codex가 발표의 '모양'만 보고 바꾸자고 제안할 수 있게 한다.
+// Framo MCP 서버(id는 예전 이름 gyeol). Claude Code, Codex가 발표의 '모양'만 보고 바꾸자고 제안할 수 있게 한다.
 //
 // 내용이 새지 않게 세 겹으로 막는다.
 // 1. 볼 수 있는 곳: 'AI 공유' 폴더뿐. 스스로를 Node 권한 모델(--permission) 안에서 다시 띄워서
@@ -337,7 +337,7 @@ function callTool(dirs: Dirs, name: string, args: Record<string, unknown>): unkn
 type Message = { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unknown }
 
 const INSTRUCTIONS =
-  '결(gyeol)은 보고, 제안, 공유 같은 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
+  'Framo(gyeol)는 보고, 제안, 공유 같은 발표를 만드는 앱이다. 이 서버로는 발표의 모양(장 구성, 레이아웃, 테마, 안내 문구)만 보고 바꾸자고 제안할 수 있다. ' +
   '사람이 적은 글은 보안 때문에 이 서버에 없고, 사용자에게 붙여 달라고 하지도 않는다. ' +
   '순서: list_decks → get_catalog → get_shape → propose_changes → (사용자가 앱에서 적용) → get_result.'
 
@@ -395,7 +395,7 @@ export function handleMessage(dirs: Dirs, value: unknown): object | null {
 function serve(shareRoot: string) {
   const dirs = Object.fromEntries(SHARE_SUBDIRS.map((d) => [d, join(shareRoot, d)])) as Dirs
   if (!checkDirs(dirs)) {
-    process.stderr.write('gyeol: AI 공유 폴더를 쓸 수 없어요.\n')
+    process.stderr.write('Framo: AI 공유 폴더를 쓸 수 없어요.\n')
     process.exit(1)
   }
   const write = (out: unknown) => process.stdout.write(JSON.stringify(out) + '\n')
@@ -452,7 +452,7 @@ function launch() {
   if (permission) {
     if (sandboxTight(permission, share)) return serve(share)
     // 정해진 말만 쓴다. 경로는 내보내지 않는다
-    process.stderr.write('gyeol: 권한이 넓게 열린 채로 띄워서 시작하지 않았어요. node에 권한 인자를 붙이지 말고 띄워 주세요.\n')
+    process.stderr.write('Framo: 권한이 넓게 열린 채로 띄워서 시작하지 않았어요. node에 권한 인자를 붙이지 말고 띄워 주세요.\n')
     process.exit(1)
   }
 

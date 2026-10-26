@@ -276,7 +276,7 @@ export function pptxParts({ title, slides, date = new Date() }: PptxInput): Pptx
     data:
       XML_HEAD +
       '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-      `<Application>gyeol</Application><Slides>${slides.length}</Slides><Notes>${notesCount}</Notes>` +
+      `<Application>Framo</Application><Slides>${slides.length}</Slides><Notes>${notesCount}</Notes>` +
       '</Properties>',
   })
 
@@ -367,7 +367,7 @@ export function pptxParts({ title, slides, date = new Date() }: PptxInput): Pptx
     },
     [{ id: 'rId1', type: REL_TYPE.theme, target: '../theme/theme2.xml' }],
   )
-  parts.push({ name: 'ppt/theme/theme2.xml', contentType: CONTENT_TYPE.theme, data: themeXml('gyeol notes') })
+  parts.push({ name: 'ppt/theme/theme2.xml', contentType: CONTENT_TYPE.theme, data: themeXml('Framo notes') })
 
   slides.forEach((s, i) => {
     const n = i + 1

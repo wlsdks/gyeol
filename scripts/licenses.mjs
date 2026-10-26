@@ -84,7 +84,7 @@ function main() {
       })
     writeFileSync(
       process.argv[at + 1],
-      `결(gyeol)에 들어 있는 오픈소스\n\n이 프로그램은 아래 오픈소스를 담고 있어요. 각 라이선스 전문을 그대로 옮겨 둡니다.\n\n${sections.join('\n\n\n')}\n`,
+      `Framo에 들어 있는 오픈소스\n\n이 프로그램은 아래 오픈소스를 담고 있어요. 각 라이선스 전문을 그대로 옮겨 둡니다.\n\n${sections.join('\n\n\n')}\n`,
     )
   }
 
