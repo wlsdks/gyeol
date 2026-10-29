@@ -867,7 +867,9 @@ export function blockFitter() {
         lineUp.clear()
         alignTops(stack())
         dy = stack()
-        const end = Math.max(...items.map((x) => (x.c.classList.contains('bk-look-plain') ? x.ink!.b : x.r.bottom) + dy.get(x.c)!))
+        // 옮기는 몫은 캔버스 px로 반올림해 넣으니(아래의 --bk-shift) 반올림한 몫으로 잰다: 반올림 전 몫으로 재면 2px 안이라고 본 것이
+        // 반올림한 만큼 더 나가, 두 값 비교의 아래 끝이 본문 아래로 2.1px 나갔다
+        const end = Math.max(...items.map((x) => (x.c.classList.contains('bk-look-plain') ? x.ink!.b : x.r.bottom) + Math.round(dy.get(x.c)! / k) * k))
         if (end <= a.bottom + 2 * k) return dy
       }
       // 판의 사이로도 본문 아래로 나가면 윗선 맞추기로 내린 것을 거둔다
