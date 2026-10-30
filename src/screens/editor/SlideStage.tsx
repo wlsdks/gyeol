@@ -18,7 +18,7 @@ import type { BlockEditing } from './BlockEditor'
 import { PREVIEW_MOTION } from './DeckMenus'
 import { layoutPreview } from './Inspector'
 import { useLook } from './look'
-import { FloatTools, SelectionBar } from './SelectionBar'
+import { SelectionBar, StageSlot } from './SelectionBar'
 import type { SidePanel } from './sidePanel'
 import { StageTools } from './StageTools'
 import { useTypingStill, useTypingZoom, useZoomTyping } from './zoom'
@@ -139,9 +139,9 @@ export function SlideStage({
         // 부품 밖을 누르면 부품 고르기를 끝낸다
         onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
       >
-        {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판의 도구를 장 아래 도구 줄에, 부품 장은 고른 컴포넌트나 이음표 바로 위에 */}
+        {/* 고른 것의 도구는 장 아래 도구 줄에: 레이아웃 장은 고른 항목이나 옆 판의 도구, 부품 장은 고른 컴포넌트나 이음표의 도구 */}
         {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar slide={slide} canvasRef={canvasRef} />}
-        {!peek && blocks.toolbar && <FloatTools canvasRef={canvasRef}>{blocks.toolbar}</FloatTools>}
+        {!peek && blocks.toolbar && <StageSlot canvasRef={canvasRef}>{blocks.toolbar}</StageSlot>}
         <FitSlide
           padding={4}
           belowHeight={56}

@@ -743,19 +743,26 @@ body.is-block-dragging .slide.m-edit .bk-area.is-live .ed > .ed-halo {
   right: 0;
 }
 
-/* 어디에 두어도 글을 가리면 띄우지 않는다: 컴포넌트를 눌러 고르면 위에 뜨는 도구의 이름표로 옮긴다 */
+/* 어디에 두어도 글을 가리면 띄우지 않는다: 그때는 컴포넌트를 눌러 고르고 장 아래 도구 줄의 앞뒤로 단추로 옮긴다 */
 .bk-handle[data-at='none'] {
   display: none;
 }
 
-/* 고른 부품은 위에 뜬 도구의 이름표가 손잡이를 맡는다 (editor/SelectionBar.tsx의 FloatTools) */
 .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
   visibility: visible;
   transition: opacity 0.14s;
 }
 
-/* 고르거나 끌기 시작하면 바로 숨긴다: 남겨 두면 고른 컴포넌트 위에 뜬 도구의 이름표와 잠깐 둘이 겹쳐 보였다 */
+/* 고른 컴포넌트는 이름표를 늘 보인다: 도구는 장 아래 도구 줄에 있어서 슬라이드 위에서 끌어 옮길 데는 이 이름표다.
+   그 안의 칸에 글을 쓰는 동안은 숨긴다(쓰는 칸 곁에 파란 이름표가 떠 있지 않게) */
+.bk-area.is-live:not(.is-dragging) .bk.is-selected:not(:focus-within) > .bk-handle {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.14s;
+}
+
+/* 끌기 시작하면 바로 숨긴다 */
 .bk-area.is-live .bk.is-selected > .bk-handle,
 .bk-area.is-live.is-dragging .bk > .bk-handle {
   transition: none;

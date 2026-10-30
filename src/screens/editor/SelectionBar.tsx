@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { visibleItems } from '../../deck/fields'
 import { highlightOf, LAYOUTS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
@@ -7,7 +7,6 @@ import type { Place, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { gestureKey, usePointerSessions } from '../../lib/pointerSession'
 import { josa } from '../../lib/josa'
-import { frameRect } from '../../slides/blockFrame'
 import { placeFor, sideName, sideZone, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CopyIcon, Icon, TrashIcon, useEscape } from '../ui'
@@ -19,7 +18,7 @@ import { moving, shownRect, useTrackRect } from './useTrackRect'
  * 앞뒤로, 강조, 복제, 빼기 / 반대쪽으로, 좁게·넓게, 아래로 / 제목 자리. 끌어 옮기기는 항목 왼쪽 여백의 손잡이로 한다.
  *
  * 예전에는 고른 것 바로 위에 막대를 띄웠다. 줄 사이가 막대보다 좁아 막대가 윗줄이나 아랫줄의 글을 덮었고, 고른 항목의 테와
- * 쓰는 칸의 테가 두 겹으로 둘렀다. 부품 장(.bk)은 부품마다 자기 도구가 있어 여기서는 다루지 않는다(FloatTools).
+ * 쓰는 칸의 테가 두 겹으로 둘렀다. 부품 장(.bk)의 도구는 BlockTools가 만들고 같은 자리에 그린다(StageSlot).
  */
 
 type Target =
@@ -51,147 +50,6 @@ const GROUP_PAD = 10
 /** 면이 없는 항목의 면을 옆으로 넓히는 너비(화면 px) */
 const ITEM_PAD = 8
 
-/**
- * 고른 것 위에 띄울 막대의 자리. 위에 자리가 있으면 테 바로 위, 없으면 테 안쪽 위.
- * 슬라이드 위 여백까지 쓴다 (판이나 부품이 장 맨 위에 붙어 있어도 그 글을 가리지 않게)
- */
-function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null, others: TextRect[] = [], slide?: DOMRect | null, beside = false) {
-  const area = (canvas?.closest('.stage') ?? canvas)?.getBoundingClientRect()
-  const bw = bar?.offsetWidth ?? 0
-  const bh = bar?.offsetHeight ?? 36
-  const top = area ? area.top + 4 : 4
-  const bottom = area ? area.bottom - 4 : innerHeight - 4
-  const minX = area ? area.left + 8 : 8
-  const maxX = (area ? area.right : innerWidth) - bw - 8
-  const clampX = (x: number) => Math.max(minX, Math.min(x, maxX))
-  // 고른 것 안의 글은 더 무겁게 친다: 지금 고치는 것이라 다음에 누를 칸이다 (막대 비교에서 줄을 고르면 막대가 그 줄의 숫자를 덮어 누를 수 없었다)
-  const own = (o: DOMRect) => (o.left >= r.left - 1 && o.right <= r.right + 1 && o.top >= r.top - 1 && o.bottom <= r.bottom + 1 ? OWN_WEIGHT : 1)
-  const hit = (x: number, y: number) =>
-    others.reduce(
-      (a, { r: o, w }) =>
-        a + w * own(o) * Math.max(0, Math.min(x + bw, o.right) - Math.max(x, o.left)) * Math.max(0, Math.min(y + bh, o.bottom) - Math.max(y, o.top)),
-      0,
-    )
-  // 놓을 자리들 (앞의 것일수록 먼저): 고른 것 바로 위, 바로 아래. 장(slide)을 주면 장 위 여백, 장 아래 여백, 고른 것 안쪽 위도.
-  // 줄 사이(48px)와 제목 아래 여백은 막대보다 좁아서, 위아래만 견주면 윗줄을 고를 때 위로는 장 제목을, 아래로는
-  // 아랫줄 숫자를 통째로 가렸다(1280×600의 핵심 포인트 아래 숫자 줄). 장 위 여백은 장 밖 회색 띠와 장의 위 틀(--pad-y)이라
-  // 글이 없다. 가로는 고른 것의 왼쪽 끝에 맞추거나, 왼쪽 위의 제목을 피해 오른쪽 끝에, 아니면 가운데에 맞춘다
-  // (막대 비교의 줄처럼 양 끝에 이름과 숫자가 있고 가운데가 그림이면, 가운데가 윗줄의 글을 가리지 않는다)
-  const ys = [r.top - bh - 8, r.bottom + 8]
-  if (slide) ys.push(Math.max(top, slide.top - bh - 8), Math.min(bottom - bh, slide.bottom + 8))
-  const xs = slide ? [clampX(r.left), clampX(r.right - bw), clampX(r.left + (r.width - bw) / 2)] : [clampX(r.left)]
-  const spots = ys.filter((y) => y >= top && y + bh <= bottom).flatMap((y) => xs.map((x) => ({ x, y })))
-  // 장 아래 여백은 장 아래 도구 줄과 겹친다. 왼쪽 묶음(AI 다듬기, 넘침 알림)과 오른쪽 묶음(미리 보기, 발표) 사이가 막대보다
-  // 넓으면 그 사이에도 놓아 본다 (1440×900에서 맨 아래 컴포넌트를 고르면 막대가 'AI 다듬기'를, 1920×1080에서는 '미리 보기'를
-  // 반쯤 덮어 단추 두 줄이 겹쳐 보였다. 견주는 자리가 고른 것에 맞춘 셋뿐이라 그 사이의 빈 곳을 몰랐다).
-  // 도구를 하나도 덮지 않고 양옆 도구와 8px씩 떨어지는 자리만 더한다: 도구는 가볍게 쳐서, 덮는 자리를 더하면 아무것도 덮지 않던
-  // 장 위 여백보다 앞설 수 있고, 틈에 꼭 끼우면 막대가 도구 줄의 단추처럼 보인다
-  const tools = others.filter((t) => t.tool).map((t) => t.r)
-  for (const y of [...new Set(spots.map((s) => s.y))]) {
-    const row = tools.filter((o) => o.top < y + bh && o.bottom > y)
-    for (const o of row) {
-      for (const x of [clampX(o.right + 8), clampX(o.left - bw - 8)]) if (row.every((p) => x + bw + 8 <= p.left || x >= p.right + 8)) spots.push({ x, y })
-    }
-  }
-  if (slide) spots.push({ x: clampX(r.right - bw - 8), y: Math.max(top, r.top + 8) })
-  if (!spots.length) return { x: clampX(r.left), y: r.top + 8, room: area ? area.width - 16 : innerWidth }
-  // 가리는 글(others)의 넓이에, 고른 것에서 떨어진 만큼을 조금 더한다. 그래서 빈칸 안내를 조금 가리는 바로 아래가
-  // 아무것도 가리지 않는 먼 장 위 여백보다 낫고, 장 제목을 가리는 바로 위보다는 장 위 여백이 낫다
-  const away = (y: number) => Math.max(0, r.top - 8 - (y + bh), y - (r.bottom + 8))
-  // 부품 장에서는 두 자리를 더 견준다. 위아래로 쌓인 컴포넌트 가운데 하나를 고르면 바로 위와 아래가 이웃의 글(핵심 한 줄의 부제, 기준)이라,
-  // 테두리 끝에 맞춘 세 자리가 다 그 글을 덮어서 막대가 장 위 여백이나 장 아래 도구 줄까지 150~250px 떨어져 떴다.
-  // 1) 바로 위아래이되 장의 오른쪽 끝이나 왼쪽 끝에 맞춘 자리: 이웃의 짧은 글은 대개 왼쪽에 모여 있다. 막대가 테두리와 3분의 1 넘게
-  //    겹칠 때만(고른 것의 막대로 읽히게). 2) 테두리 옆, 위 끝에 맞춘 자리(왼쪽에 모인 짧은 글, 큰 숫자): 50px 떨어진 것만큼 더 쳐서,
-  //    비어 있는 위나 아래가 있으면 그쪽이 먼저다(위아래가 '고른 것의 도구'로 더 잘 읽힌다)
-  const more: { x: number; y: number }[] = []
-  const sides: { x: number; y: number }[] = []
-  if (beside && slide) {
-    for (const y of [r.top - bh - 8, r.bottom + 8]) {
-      if (y < top || y + bh > bottom) continue
-      for (const x of [clampX(slide.right - bw), clampX(slide.left)])
-        if (Math.min(x + bw, r.right) - Math.max(x, r.left) >= Math.min(bw, r.width) / 3) more.push({ x, y })
-    }
-    for (const x of [r.right + 8, r.left - bw - 8]) if (x >= minX && x <= maxX) sides.push({ x, y: Math.max(top, Math.min(r.top, bottom - bh)) })
-  }
-  // 더한 두 자리는 글과 그림을 조금도 덮지 않을 때만 쓴다(빈칸 안내와 빈 글 칸은 덮어도 된다): 먼 자리보다 싸다고 이웃 글의 끝
-  // (핵심 한 줄 아래 기준의 긴 글)을 덮으면 그 글을 읽지도 누르지도 못했다. 그럴 바에는 예전처럼 아무것도 덮지 않는 장 위 여백이 낫다
-  const covers = (s: { x: number; y: number }) =>
-    others.some(({ r: o, w, tool }) => w >= ART_WEIGHT && !tool && Math.min(s.x + bw, o.right) > Math.max(s.x, o.left) && Math.min(s.y + bh, o.bottom) > Math.max(s.y, o.top))
-  // 부품 장에서는 적은 글(무게 1)을 조금이라도 덮는 자리를 한 번 더 크게 친다: 덮은 넓이로만 치면 이웃 글의 끝 두세 글자를 덮는 바로 아래가
-  // 145px 떨어진 장 위 여백보다 싸서, 1280×600에서 핵심 한 줄, 컴포넌트, 기준을 쌓은 장의 가운데를 고르면 막대가 기준 글의 끝을 덮었다.
-  // 덮인 글은 읽지도 누르지도 못하니 COVER_COST만큼 더 떨어지더라도 덮지 않는 자리가 낫다. 글자 줄 상자의 가장자리 몇 px는 글자가 아니라 뺀다.
-  const hides = (s: { x: number; y: number }) =>
-    beside &&
-    others.some(({ r: o, w }) => w === 1 && Math.min(s.x + bw, o.right) - Math.max(s.x, o.left) > 3 && Math.min(s.y + bh, o.bottom) - Math.max(s.y, o.top) > 3)
-  const score = (s: { x: number; y: number }) => hit(s.x, s.y) + away(s.y) * AWAY_COST + (sides.includes(s) ? 50 * AWAY_COST : 0) + (hides(s) ? COVER_COST : 0)
-  const best = [...spots, ...[...more, ...sides].filter((s) => !covers(s))].reduce((b, s) => (score(s) < score(b) - 1 ? s : b))
-  return { x: best.x, y: best.y, room: area ? area.width - 16 : innerWidth }
-}
-
-/** 고른 것에서 1px 떨어질 때마다 더하는 값 (가린 넓이 px²와 같은 단위). 한 줄 글(20px)을 다 가리는 것보다 100px 떨어지는 게 낫게 */
-const AWAY_COST = 6
-/** 고른 것 안의 글을 가릴 때 곱하는 값 */
-const OWN_WEIGHT = 4
-/** 부품 장에서 적은 글을 조금이라도 덮는 자리에 더하는 값: 200px 더 떨어지는 것과 같다 (장 위 여백까지가 대개 그 안쪽) */
-const COVER_COST = 200 * AWAY_COST
-
-/**
- * 그려진 것의 자리와 가렸을 때의 무게. 빈칸의 안내는 발표 화면에 나오지 않아서 적은 글보다 가려도 덜 아프다. tool은 장 아래 도구 줄의 것
- */
-type TextRect = { r: DOMRect; w: number; tool?: boolean }
-const HINT_WEIGHT = 0.2
-/** 차트와 원 같은 그림: 그림의 네모에는 빈 곳도 있어서 글보다 덜 친다 */
-const ART_WEIGHT = 0.5
-/** 장 아래 도구(미리 보기, 복제 같은): 고른 것을 다 고치고 나서 쓰는 것이라 잠깐 가려도 된다 */
-const TOOL_WEIGHT = 0.3
-/**
- * 글을 적는 칸의 네모 (글자 줄 말고 칸 전체): 누르는 자리라 비어 있어도 가리면 못 누른다.
- * 글자만 견주면 짧은 안내만 있는 빈 강조 상자 안쪽 위가 '아무것도 안 가리는 자리'가 되어, 막대가 칸 위에 올라앉아 적으려고 누르면 막대가 눌렸다
- */
-const FIELD_WEIGHT = 0.3
-
-/**
- * 장 안의 글과 그림이 그려진 자리들 (고른 것 안의 것도: 장 위 여백이나 안쪽 위에 둘 때 그 글을 가리지 않게).
- * 칸의 네모로 견주면 글 없는 차트 윗부분도 가리는 것으로 쳐서 글자 줄로 잰다. 장 아래 도구도 가벼운 무게로 넣는다
- */
-function contentRects(slide: Element | null, canvas: Element | null): TextRect[] {
-  if (!slide) return []
-  const out: TextRect[] = []
-  const range = document.createRange()
-  const walk = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT)
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    // 칸 왼쪽 위의 끌기 이름표(.bk-handle)는 손을 올린 칸에만 보인다. 숨은 이름표를 글로 쳐서, 고른 컴포넌트 바로 위가 늘 막힌 자리가 되어
-    // 막대가 아래나 장 위 여백으로 떨어져 떴다
-    if (!n.nodeValue?.trim() || n.parentElement?.closest('.bk-handle')) continue
-    // 빈 부제의 안내를 피하느라 아래로 내려가 차트의 숫자를 가렸다(1366×650의 핵심 숫자 아래 추이)
-    const hint = !!n.parentElement?.closest('.ed-hint, .ed.is-empty')
-    // 장 아래 띠의 발표 이름과 쪽 번호는 적는 글이 아니고 장마다 같아서 덮어도 되니 빈칸 안내만큼만 친다. 적은 글로 치면 맨 아래 컴포넌트를
-    // 고를 때 바로 아래 대신 장 위 여백까지 150~180px 떨어져 떴다: 1280×600에서는 이 짧은 표시 하나(250점 남짓)로 바로 아래와 장 위 여백이
-    // 1점 차이로 비겨서, 짜임이 거의 같은 두 장에서 막대가 한 장은 바로 아래, 한 장은 위 컴포넌트 너머 장 위에 떴다
-    const mark = !!n.parentElement?.closest('.s-mark')
-    range.selectNodeContents(n)
-    for (const r of range.getClientRects()) if (r.width && r.height) out.push({ r, w: hint || mark ? HINT_WEIGHT : 1 })
-  }
-  for (const f of slide.querySelectorAll('[contenteditable]')) {
-    // 컴포넌트 안의 글 칸은 그 컴포넌트의 테두리(그린 것 둘레) 안만 친다: 한 줄 글 칸은 칸 너비를 다 차지해서, 짧은 상태 글의 옆이나
-    // 짧은 부제 오른쪽처럼 비어 보이는 곳도 막힌 자리로 쳐 막대가 장 위 여백까지 250px 떨어져 떴다
-    const cell = f.closest<HTMLElement>('.bk')
-    const r = cell ? overlap(f.getBoundingClientRect(), frameRect(cell)) : f.getBoundingClientRect()
-    if (r.width > 0 && r.height > 0) out.push({ r, w: FIELD_WEIGHT })
-  }
-  out.push(...paintedRects(slide))
-  for (const g of slide.querySelectorAll('svg, img')) {
-    const r = g.getBoundingClientRect()
-    if (r.width && r.height && !g.closest('button, .bk-handle')) out.push({ r, w: ART_WEIGHT })
-  }
-  // 넘침 알림(.stage-warn)도 도구 줄의 것으로 친다: 도구 사이의 빈 곳을 찾을 때 알림 위를 빈 곳으로 보지 않게
-  for (const b of canvas?.querySelectorAll('.stage-tools button, .stage-tools .stage-warn') ?? []) {
-    const r = b.getBoundingClientRect()
-    if (r.width && r.height) out.push({ r, w: TOOL_WEIGHT, tool: true })
-  }
-  return out
-}
-
 /** 두 네모가 겹친 곳 (겹치지 않으면 너비나 높이가 0 이하) */
 const overlap = (a: DOMRect, b: DOMRect) => {
   const left = Math.max(a.left, b.left)
@@ -199,81 +57,19 @@ const overlap = (a: DOMRect, b: DOMRect) => {
   return new DOMRect(left, top, Math.min(a.right, b.right) - left, Math.min(a.bottom, b.bottom) - top)
 }
 
-/** 그린 것으로 세지 않는 편집 표시: 빈칸과 칸의 면, 항목 도구, 그림 칸의 단추, 끌기 손잡이, 빈 그림 칸 */
-const EDIT_MARKS = '.ed-halo, .it-grip, .it-remove, .img-tools, .bk-handle, .img-ed'
-
 /**
- * 컴포넌트가 칠해서 그린 것(막대, 점, 칸)의 자리. 글자 줄과 svg만 세던 때는 모으기의 막대, 목표 대비의 막대, 칸 조립의 칸 위를
- * 빈 곳으로 보고 고른 컴포넌트 안쪽 위에 막대를 올려 그 그림을 통째로 가렸다. 칸 대부분을 덮는 면(바탕)과 손을 올린 항목의 옅은 면은 뺀다
+ * 컴포넌트 슬라이드에서 고른 컴포넌트(이음표도)의 도구를 슬라이드 아래 도구 줄(StageTools의 .stage-sel)에 그린다. 레이아웃 슬라이드의
+ * 항목 도구와 같은 자리, 같은 생김새다. 예전에는 고른 컴포넌트 바로 위에 막대를 띄웠는데, 컴포넌트 사이가 막대보다 좁아 이웃 컴포넌트의
+ * 글(점 목록의 아랫줄, 표의 마지막 줄)을 덮었다. 슬라이드 위에는 고른 테와 끌어 옮기는 이름표(.bk-handle)만 남는다
  */
-function paintedRects(slide: Element): TextRect[] {
-  const out: TextRect[] = []
-  const seen = (c: string) => !!c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c)
-  for (const inner of slide.querySelectorAll<HTMLElement>('.bk > .bk-in')) {
-    const box = inner.getBoundingClientRect()
-    for (const el of inner.querySelectorAll<HTMLElement>('*')) {
-      if (el.closest(EDIT_MARKS) || el.matches('.it:hover')) continue
-      const s = getComputedStyle(el)
-      if (!seen(s.backgroundColor) && s.backgroundImage === 'none') continue
-      const r = el.getBoundingClientRect()
-      if (r.width && r.height && r.width * r.height < box.width * box.height * 0.6) out.push({ r, w: ART_WEIGHT })
-    }
-  }
-  return out
-}
-
-/**
- * 부품 장에서 고른 컴포넌트(이음표도)의 도구를 그 바로 위에 띄운다. 컴포넌트의 도구는 바탕, 움직임, 칸 더하기까지 많아
- * 장 아래 도구 줄에 다 들어가지 않고, 막대를 끌어 컴포넌트를 옮긴다. 자리는 이웃의 글을 덮지 않는 곳을 고른다(barSpot).
- * 장이 좁아 다 들어가지 않으면 이름표 말고는 글자를 숨긴다 (말풍선으로)
- */
-export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [spot, setSpot] = useState<{ x: number; y: number } | null>(null)
-  const [tight, setTight] = useState(false)
-  const full = useRef(0)
-  const anchor = useRef<HTMLElement | null>(null)
-  const texts = useRef<{ key: string; rects: TextRect[] }>({ key: '', rects: [] })
-  useTrackRect(
-    () => canvasRef.current,
-    () => {
-      // 고른 부품, 아니면 고른 이음표의 그림 (이음표만 고르면 도구가 붙을 데가 없어 보이지 않았다)
-      const el = canvasRef.current?.querySelector<HTMLElement>('.bk-area .bk.is-selected, .bk-area > .bk-link.is-selected > .bk-link-g') ?? null
-      const bar = ref.current
-      if (!el || !bar) return setSpot(null)
-      // 다른 것을 고르면 도구가 달라지니 글자를 다 보인 너비부터 다시 잰다 (다음 프레임에)
-      if (el !== anchor.current) {
-        anchor.current = el
-        full.current = 0
-        setTight(false)
-        return true
-      }
-      // 칸이 아니라 부품의 테두리(그린 것 둘레) 바로 위에: 칸 위에 두면 짧은 내용 위로 빈 데를 건너 떠 보인다
-      // 키운 장(쓸 때 크게 보기)에서는 보이는 곳 안에서: 틀 밖으로 잘린 부분 위에 막대를 세우면 아무것도 없는 데 떠 있다
-      const shown = shownRect(el)
-      const whole = el.classList.contains('bk') ? frameRect(el) : el.getBoundingClientRect()
-      const r = shown ? overlap(whole, shown) : whole
-      if (r.width <= 0 || r.height <= 0) {
-        setSpot(null)
-        return moving(el)
-      }
-      const slide = el.closest('.slide')
-      // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게). 항목 수가 바뀌어도: 위치 비교는
-      // 점수를 적지 않은 점을 판 위쪽에 세워서, 점을 더해도 테두리는 그대로라 예전 자리의 막대가 새 점과 이름을 덮었다
-      const key = `${r.left},${r.top},${r.width},${r.height},${el.querySelectorAll('.it').length}`
-      if (texts.current.key !== key) texts.current = { key, rects: contentRects(slide, canvasRef.current) }
-      const s = barSpot(r, bar, canvasRef.current, texts.current.rects, shown, true)
-      if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
-      setTight(full.current > s.room)
-      setSpot((p) => (p && p.x === s.x && p.y === s.y ? p : { x: s.x, y: s.y }))
-      return moving(el)
-    },
-  )
-  return (
-    <div ref={ref} className={cx('float-tools', tight && 'is-tight')} style={spot ? { translate: `${spot.x}px ${spot.y}px` } : { visibility: 'hidden' }}>
-      {children}
-    </div>
-  )
+export function StageSlot({ canvasRef, children }: { canvasRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+  // 도구 줄은 같은 무대 안에서 장 아래에 그려지고, 미리 보기를 켜고 끄면 다시 만들어진다
+  useLayoutEffect(() => {
+    const s = canvasRef.current?.querySelector<HTMLElement>('.stage-sel') ?? null
+    setSlot((p) => (p === s ? p : s))
+  })
+  return slot ? createPortal(children, slot) : null
 }
 
 /** 누른 곳에서 고를 것을 찾는다: 항목이 먼저, 아니면 옆 판 */

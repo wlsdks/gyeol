@@ -573,7 +573,7 @@
 
 /* 키우거나 돌리는 동안 장 위에 띄운 것(고른 것의 면, 컴포넌트 도구 막대)은 숨긴다. 따라 움직이게 하면 프레임마다 자리를 다시 재서
    움직임이 끊겼다(useTrackRect의 moving). 끝나면 제자리에서 다시 보인다 */
-.ed-canvas:has(.slide-frame.is-zooming) :is(.sel-ring, .float-tools) {
+.ed-canvas:has(.slide-frame.is-zooming) .sel-ring {
   opacity: 0;
   transition: none;
 }

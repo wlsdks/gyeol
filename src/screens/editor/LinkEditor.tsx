@@ -346,14 +346,9 @@ export function useLinkEditing({
   const current = selectedLink ? linkAt(slideRef.current.blocks ?? [], selectedLink) : null
   const toolbar =
     selectedLink && current && !drag ? (
-      <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
-        <span className="bk-tool is-label">
-          <span className="lk-tool-g" aria-hidden="true">
-            <LinkGlyph link={current} />
-          </span>
-          연결 기호
-        </span>
-        <span className="bk-tool-sep" />
+      // 컴포넌트의 도구처럼 슬라이드 아래 도구 줄에 (SlideStage가 .stage-sel에 넣는다)
+      <div className="sel-tools" role="toolbar" aria-label="연결 기호 도구" onPointerDown={(e) => e.stopPropagation()}>
+        <span className="sel-name">연결 기호</span>
         <div className="lk-tool-set" role="radiogroup" aria-label="연결 기호 모양">
           {BLOCK_LINKS.map((l) => (
             <button
@@ -361,20 +356,20 @@ export function useLinkEditing({
               type="button"
               role="radio"
               aria-checked={current === l.id}
-              className={cx('bk-tool', current === l.id && 'is-on')}
+              className={cx('btn btn-ghost btn-sm', current === l.id && 'is-on')}
               title={l.description}
               onClick={() => change(l.id)}
             >
               <span className="lk-tool-g" aria-hidden="true">
                 <LinkGlyph link={l.id} />
               </span>
-              <span>{l.name}</span>
+              <span className="btn-t">{l.name}</span>
             </button>
           ))}
         </div>
-        <span className="bk-tool-sep" />
-        <button type="button" className="bk-tool is-icon" title="빼기 (Delete)" aria-label="연결 기호 빼기" onClick={() => change(null)}>
+        <button type="button" className="btn btn-ghost btn-sm" title="빼기 (Delete)" aria-label="연결 기호 빼기" onClick={() => change(null)}>
           <TrashIcon />
+          <span className="btn-t">빼기</span>
         </button>
       </div>
     ) : null

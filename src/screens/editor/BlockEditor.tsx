@@ -849,7 +849,6 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         const t = noRoomText(r, b.type, 'change')
         toast.show(`${t.why} ${t.fix}`, undefined, 6000)
       }}
-      onGrip={(e) => press(e, (x, y) => startMove(b, x, y))}
       onShift={(dir) => store.setBlocks(slideRef.current.id, shiftBlock(slideRef.current.blocks ?? [], b.id, dir, measureArea(areaEl.current)?.size.h))}
       onLook={(lk) => {
         // 지금 바탕을 다시 고르면 그대로 둔다 (빈 되돌리기 단계가 생겼다). 함께 바뀌는 옆 컴포넌트의 바탕까지 같은지 본다
@@ -1013,7 +1012,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       )
     : null
 
-  // 고른 부품의 도구는 그 부품 바로 위에 뜬다 (Editor의 FloatTools)
+  // 고른 부품의 도구는 슬라이드 아래 도구 줄에 (SlideStage가 .stage-sel에 넣는다)
   const toolbar = selectedBlock && !drag && !landing && compose ? tools(selectedBlock) : compose ? links.toolbar : null
 
   // 부품 장으로 바꿔 아래에 새 줄을 둘 수 있을 만큼 비었을 때만

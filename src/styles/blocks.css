@@ -419,29 +419,26 @@ body.is-block-resizing.is-row-resizing > .drag-cover {
   position: relative;
 }
 
-/* 고른 컴포넌트 위에 띄운 도구 (editor/SelectionBar.tsx의 FloatTools). 아래에 자리가 모자라면 메뉴를 위로 연다 */
-.float-tools {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 31;
-  transition: opacity 0.2s ease-out;
+/* 고른 컴포넌트의 도구는 장 아래 도구 줄에 있어서(BlockTools) 메뉴는 대개 위로 연다(is-up). 바탕 견본과 연결 기호 그림은 글자를 숨겨도 남는다 */
+.sel-tools .btn.is-blocked {
+  cursor: help;
+  opacity: 0.42;
 }
 
-/* 장의 칸에 쓰는 동안 손을 움직이기 전까지는 막대를 흐리게 숨긴다(editor/zoom.ts의 useTypingStill이 is-typing-still을 단다,
-   쓸 때 크게 보기를 꺼도): 막대가 쓰는 줄 바로 위나 이웃 글을 덮었다. 손을 움직이면 다시 보인다 */
-.ed-canvas.is-typing-still:has(.slide .ed-input:focus) .float-tools {
-  opacity: 0;
-  pointer-events: none;
+.bk-menu.is-more {
+  width: 300px;
 }
 
-.float-tools .bk-tools {
-  border-color: var(--line-2);
-  border-radius: 10px;
+.bk-menu.is-more .bk-menu-item {
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.float-tools.is-tight .bk-tool:not(.bk-grip, .is-label) > span:not(.bk-look, .lk-tool-g) {
-  display: none;
+.bk-menu.is-more .bk-menu-item > * {
+  grid-column: 1;
+}
+
+.sel-tools .lk-tool-set {
+  gap: 4px;
 }
 
 .bk-menu.is-up {

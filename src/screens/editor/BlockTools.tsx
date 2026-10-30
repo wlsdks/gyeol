@@ -1,13 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, isAlone, shownLook, variantOfBlock, type NoRoom, type SavedKind } from '../../deck/blocks'
 import { sceneOf } from '../../deck/scenes'
 import type { Block, BlockEffect, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { BookmarkIcon, CopyIcon, GripIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { MoreIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
 import { noRoomText } from './noRoom'
 import { SceneOverride } from './ScenePicker'
 
-// 고른 컴포넌트 바로 위에 뜨는 도구 (옮기기, 바탕, 움직임, 모양, 항목과 칸 더하기, 복제, 빼기). 띄우는 자리는 SelectionBar의 FloatTools
+// 고른 컴포넌트의 도구 (바탕, 움직임, 모양, 항목 더하기, 빼기, 그리고 ⋯ 안에 복제, 앞뒤로, 칸 더하기, 저장). 레이아웃 슬라이드의 항목 도구처럼 슬라이드 아래 도구 줄에
+// 그린다(SlideStage가 .stage-sel에 넣는다). 슬라이드 위에는 고른 테와 끌어 옮기는 이름표(.bk-handle)만 남는다
 
 /** 내 컴포넌트로 저장하는 것의 이름 */
 const SAVE_NAMES: Record<SavedKind, string> = { block: '이 컴포넌트', row: '이 줄', slide: '이 슬라이드 전체' }
@@ -26,7 +27,6 @@ export function BlockTools({
   variantIssue,
   lookIssue,
   onBlocked,
-  onGrip,
   onShift,
   onLook,
   onEffect,
@@ -49,7 +49,6 @@ export function BlockTools({
   lookIssue(look: Block['look']): NoRoom | null
   /** 그런 단추를 눌렀을 때 (막아 두되, 누르면 까닭을 보여 준다) */
   onBlocked(r: NoRoom): void
-  onGrip(e: ReactPointerEvent<HTMLElement>): void
   onShift(dir: -1 | 1): void
   onLook(look: Block['look']): void
   onEffect(effect: BlockEffect): void
@@ -66,7 +65,7 @@ export function BlockTools({
   onSave(kind: SavedKind): void
 }) {
   const spec = BLOCKS[block.type]
-  const [menu, setMenu] = useState<'look' | 'motion' | 'variant' | 'fields' | 'save' | null>(null)
+  const [menu, setMenu] = useState<'look' | 'motion' | 'variant' | 'more' | null>(null)
   const menuRef = useRef<HTMLUListElement>(null)
   // 메뉴는 도구 아래로 연다. 고른 부품이 장 아래쪽이라 아래에 자리가 모자라면 위로 (위 끝은 머리 띠 아래).
   // 남은 높이만큼만 쓰고 나머지는 메뉴 안에서 스크롤 (노트북의 낮은 창에서 잘리지 않게)
@@ -107,35 +106,16 @@ export function BlockTools({
   const variant = variantOfBlock(block)
   const canAdd = !!spec.items && blockItems(block).length < spec.items.max
   const tip = (r: NoRoom | null, ok: string) => (r ? noRoomText(r, block.type, 'change').why : ok)
+  const B = 'btn btn-ghost btn-sm'
   return (
-    <div className="bk-tools" onPointerDown={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        className="bk-tool bk-grip"
-        title="끌어서 옮기기 (화살표 키로도 옮겨요)"
-        aria-label={`${spec.name} 옮기기`}
-        onPointerDown={(e) => {
-          e.preventDefault()
-          // 누르기를 막으면 초점이 쓰던 칸에 남아서, 누른 뒤 화살표 키(제목의 설명대로)가 옮기지 않았다
-          e.currentTarget.focus({ preventScroll: true })
-          onGrip(e)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') onShift(-1)
-          else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') onShift(1)
-          else return
-          e.preventDefault()
-        }}
-      >
-        <GripIcon />
-        <span>{spec.name}</span>
-      </button>
-      <span className="bk-tool-sep" />
+    // 장 밖을 누르면 고르기를 끝내는 편집기의 처리(SlideStage)로 넘기지 않는다
+    <div className="sel-tools" role="toolbar" aria-label={`${spec.name} 도구`} onPointerDown={(e) => e.stopPropagation()}>
+      <span className="sel-name">{spec.name}</span>
       {/* 바탕: 견본만 늘어놓으면 무엇을 고르는지 알 수 없어서, 지금 바탕의 이름을 보이고 누르면 설명과 함께 고른다 */}
       <div className="bk-tool-menu">
-        <button type="button" className={cx('bk-tool', menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="컴포넌트의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
+        <button type="button" className={cx(B, menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="컴포넌트의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
           <span className={cx('bk-look', `is-${look}`)} aria-hidden="true" />
-          <span>{BLOCK_LOOKS.find((l) => l.id === look)?.name}</span>
+          <span className="btn-t">{BLOCK_LOOKS.find((l) => l.id === look)?.name}</span>
         </button>
         {menu === 'look' && (
           <ul ref={menuRef} className="bk-menu is-looks" role="menu">
@@ -169,14 +149,14 @@ export function BlockTools({
       <div className="bk-tool-menu">
         <button
           type="button"
-          className={cx('bk-tool', menu === 'motion' && 'is-on')}
+          className={cx(B, menu === 'motion' && 'is-on')}
           aria-expanded={menu === 'motion'}
           title="발표할 때의 모션"
           onClick={() => setMenu(menu === 'motion' ? null : 'motion')}
         >
           <MotionIcon />
           {/* 기본이면 무엇을 하는 단추인지를, 고른 것이 있으면 그 이름을 ('기본'만 보이면 무엇의 기본인지 모른다) */}
-          <span>{scened ? '장면대로' : effect === 'auto' ? '모션' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
+          <span className="btn-t">{scened ? '장면대로' : effect === 'auto' ? '모션' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
         {menu === 'motion' && scened && (
           // 움직임을 고르게 두면 골라도 발표에서 달라지지 않아 고장 난 것처럼 보였다. 까닭과 끄는 단추만 둔다
@@ -221,13 +201,13 @@ export function BlockTools({
         <div className="bk-tool-menu">
           <button
             type="button"
-            className={cx('bk-tool', menu === 'variant' && 'is-on')}
+            className={cx(B, menu === 'variant' && 'is-on')}
             aria-expanded={menu === 'variant'}
             title="컴포넌트의 모양"
             onClick={() => setMenu(menu === 'variant' ? null : 'variant')}
           >
             <ShapesIcon />
-            <span>{variants.find((v) => v.id === variant)?.name}</span>
+            <span className="btn-t">{variants.find((v) => v.id === variant)?.name}</span>
           </button>
           {menu === 'variant' && (
             <ul ref={menuRef} className="bk-menu is-variants" role="menu">
@@ -260,65 +240,82 @@ export function BlockTools({
       {spec.items && (
         <button
           type="button"
-          className={cx('bk-tool', canAdd && itemIssue && 'is-blocked')}
+          className={cx(B, canAdd && itemIssue && 'is-blocked')}
           disabled={!canAdd}
           aria-disabled={!canAdd || !!itemIssue}
           title={!canAdd ? `${spec.items.label} ${spec.items.max}개까지 넣을 수 있어요` : tip(itemIssue, `${spec.items.label} 추가`)}
           onClick={() => (itemIssue ? onBlocked(itemIssue) : onAddItem())}
         >
           <PlusIcon />
-          <span>{spec.items.label}</span>
+          <span className="btn-t">{spec.items.label}</span>
         </button>
       )}
-      {adds.length > 0 && (
-        <div className="bk-tool-menu">
-          <button
-            type="button"
-            className={cx('bk-tool', menu === 'fields' && 'is-on')}
-            aria-expanded={menu === 'fields'}
-            title="비워 두어 숨긴 칸을 꺼내 써요"
-            onClick={() => setMenu(menu === 'fields' ? null : 'fields')}
-          >
-            <PlusIcon />
-            <span>칸 더하기</span>
-          </button>
-          {menu === 'fields' && (
-            <ul ref={menuRef} className="bk-menu is-fields" role="menu">
-              {adds.map((f) => (
-                <li key={f.key}>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="bk-menu-item"
-                    onClick={() => {
-                      onOpenField(f.key)
-                      setMenu(null)
-                    }}
-                  >
-                    <b>{f.label}</b>
-                    <span className="bk-menu-d">{f.use}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      <span className="bk-tool-sep" />
-      {/* 내 컴포넌트로 저장: 이 컴포넌트, 이 줄, 이 장 가운데 고른다 (다른 장, 다른 발표에서 다시 넣는다) */}
+      <button type="button" className={B} title="빼기 (Delete)" onClick={onRemove}>
+        <TrashIcon />
+        <span className="btn-t">빼기</span>
+      </button>
+      {/* 덜 쓰는 것은 ⋯ 안에: 복제, 앞뒤로 한 칸씩(끌어 옮기기는 슬라이드 위 이름표로), 숨긴 칸 꺼내기, 내 컴포넌트로 저장.
+          다 늘어놓으면 1280×600의 도구 줄에 들어가지 않아 모든 단추가 글자 없는 그림이 되었고, 더하기 그림 둘이 무엇인지 알 수 없었다 */}
       <div className="bk-tool-menu">
         <button
           type="button"
-          className={cx('bk-tool is-icon', menu === 'save' && 'is-on')}
-          aria-expanded={menu === 'save'}
-          title="내 컴포넌트로 저장"
-          aria-label="내 컴포넌트로 저장"
-          onClick={() => setMenu(menu === 'save' ? null : 'save')}
+          className={cx(B, 'sel-btn', menu === 'more' && 'is-on')}
+          aria-expanded={menu === 'more'}
+          aria-haspopup="menu"
+          title="더 보기: 복제, 앞뒤로 옮기기, 칸 더하기, 내 컴포넌트로 저장"
+          aria-label="더 보기"
+          onClick={() => setMenu(menu === 'more' ? null : 'more')}
         >
-          <BookmarkIcon />
+          <MoreIcon />
         </button>
-        {menu === 'save' && (
-          <ul ref={menuRef} className="bk-menu is-save" role="menu" aria-label="내 컴포넌트로 저장">
+        {menu === 'more' && (
+          <ul ref={menuRef} className="bk-menu is-more" role="menu" aria-label={`${spec.name} 더 보기`}>
+            <li>
+              <button
+                type="button"
+                role="menuitem"
+                className="bk-menu-item"
+                onClick={() => {
+                  onDuplicate()
+                  setMenu(null)
+                }}
+              >
+                <b>복제</b>
+                <span className="bk-menu-d">바로 뒤에 같은 컴포넌트를 하나 더 넣어요</span>
+              </button>
+            </li>
+            {([-1, 1] as const).map((dir) => (
+              <li key={dir}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onShift(dir)
+                    setMenu(null)
+                  }}
+                >
+                  <b>{dir < 0 ? '앞으로 옮기기' : '뒤로 옮기기'}</b>
+                  <span className="bk-menu-d">{dir < 0 ? '읽는 차례로 한 칸 앞 자리와 바꿔요' : '읽는 차례로 한 칸 뒤 자리와 바꿔요'}</span>
+                </button>
+              </li>
+            ))}
+            {adds.map((f) => (
+              <li key={f.key}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onOpenField(f.key)
+                    setMenu(null)
+                  }}
+                >
+                  <b>칸 더하기: {f.label}</b>
+                  <span className="bk-menu-d">{f.use}</span>
+                </button>
+              </li>
+            ))}
             {saves.map((x) => (
               <li key={x.kind}>
                 <button
@@ -330,7 +327,7 @@ export function BlockTools({
                     setMenu(null)
                   }}
                 >
-                  <b>{SAVE_NAMES[x.kind]}</b>
+                  <b>내 컴포넌트로 저장: {SAVE_NAMES[x.kind]}</b>
                   <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 모션까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 모션까지`}</span>
                 </button>
               </li>
@@ -338,12 +335,6 @@ export function BlockTools({
           </ul>
         )}
       </div>
-      <button type="button" className="bk-tool is-icon" title="복제" aria-label="복제" onClick={onDuplicate}>
-        <CopyIcon />
-      </button>
-      <button type="button" className="bk-tool is-icon" title="빼기 (Delete)" aria-label="빼기" onClick={onRemove}>
-        <TrashIcon />
-      </button>
     </div>
   )
 }

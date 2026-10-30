@@ -553,6 +553,12 @@ export function BlockArea() {
   useLayoutEffect(() => {
     if (ref.current) fitAll(ref.current, true)
   })
+  // 고른 컴포넌트는 이름표를 늘 보이므로(도구는 장 아래 도구 줄에) 고를 때 이웃의 글을 가리지 않는 모서리를 정한다. 맞춘 뒤에 잰다
+  const selectedId = live?.selected ?? null
+  useLayoutEffect(() => {
+    const cell = selectedId && ref.current?.querySelector<HTMLElement>(`:scope > .bk[data-block="${CSS.escape(selectedId)}"], :scope > .bk-stack > .bk[data-block="${CSS.escape(selectedId)}"]`)
+    if (cell) placeHandle(cell)
+  }, [selectedId])
   useEffect(() => {
     let on = true
     const fit = () => on && ref.current && fitAll(ref.current, false)

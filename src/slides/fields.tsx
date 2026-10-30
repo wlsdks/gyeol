@@ -663,8 +663,8 @@ function toolsSize(item: HTMLElement): { w: number; h: number } | null {
   return { w: sizes.reduce((s, r) => s + r.width, 0) + (tools.length - 1) * 4, h: Math.max(...sizes.map((r) => r.height)) }
 }
 
-/** 고른 컴포넌트 위에 뜬 도구 막대의 자리 (화면 px). 그 밑에 깔린 항목 도구는 보여도 누를 수 없다 */
-const barRect = () => document.querySelector('.float-tools')?.getBoundingClientRect()
+/** 고른 컴포넌트의 끌기 이름표 자리 (화면 px). 그 밑에 깔린 항목 도구는 보여도 누를 수 없다 (도구 막대는 장 아래 도구 줄에 있다) */
+const barRect = () => document.querySelector('.ed-canvas .bk.is-selected > .bk-handle:not([data-at="none"])')?.getBoundingClientRect()
 
 /**
  * 컴포넌트 안 항목의 도구(↕, ✕)를 둘 자리 (캔버스 px): 항목 오른쪽 끝에서 도구 묶음 오른쪽 끝까지(right, 항목 밖이면 음수), 항목 위 끝에서
