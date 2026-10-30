@@ -13,7 +13,8 @@ import type { PresentHow } from './DeckMenus'
  * 물어볼 창은 PresentDialogs가 그린다
  */
 export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason) => void, toast: Toast) {
-  const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
+  // entering: 이 창을 전체 화면으로 바꾸는 중이면 그 약속. 발표 화면은 창이 다 커진 뒤에 첫 장을 움직인다 (Present.tsx)
+  const [presenting, setPresenting] = useState<{ startId?: string; entering?: Promise<boolean> } | null>(null)
   const [confirm, setConfirm] = useState<{ startId?: string; how: PresentHow; check: PresentCheck } | null>(null)
   // 발표자 화면을 처음 쓸 때: 화면 두 개를 다뤄도 되는지 브라우저가 묻는다
   const [askScreens, setAskScreens] = useState<{ startId?: string; placement?: Placement } | null>(null)
@@ -68,8 +69,7 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
           return
         }
       }
-      void enterFullscreen()
-      setPresenting({ startId })
+      setPresenting({ startId, entering: enterFullscreen() })
     },
     [deck, markVersion, launchWithPresenter],
   )
@@ -80,8 +80,7 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
     const placement = askScreens.placement ?? (await findPlacement())
     if (!placement) {
       setAskScreens(null)
-      void enterFullscreen()
-      setPresenting({ startId: askScreens.startId })
+      setPresenting({ startId: askScreens.startId, entering: enterFullscreen() })
       return
     }
     if (!(await launchWithPresenter(askScreens.startId, placement))) setAskScreens({ ...askScreens, placement })
@@ -91,8 +90,7 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
   const slidesOnly = () => {
     if (!askScreens) return
     setAskScreens(null)
-    void enterFullscreen()
-    setPresenting({ startId: askScreens.startId })
+    setPresenting({ startId: askScreens.startId, entering: enterFullscreen() })
   }
 
   return {

@@ -37,7 +37,7 @@ export function barRoom(w: number, h: number): BarRoom {
  * 전체 화면 발표. 클리커가 보내는 PageUp/PageDown도 받는다.
  * 발표자 화면(Presenter)이 열려 있으면 같이 움직인다. 어느 창에서 넘겨도 된다.
  */
-export function Present({ deck, startId, onExit }: { deck: Deck; startId?: string; onExit: () => void }) {
+export function Present({ deck, startId, entering, onExit }: { deck: Deck; startId?: string; entering?: Promise<unknown>; onExit: () => void }) {
   const slides = useMemo(() => deck.slides.filter((s) => !s.hidden), [deck.slides])
   // 장마다 넘기는 쪽 번호와 단락. 그릴 때마다 새로 만들면 단락 목록이 새 배열이라, 마우스를 움직이거나 멈출 때마다(아래 표시를
   // 보이고 숨긴다) 지금 장을 통째로 다시 그렸다
@@ -64,6 +64,21 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
    * 한가할 때 다음 장을 보이지 않게 그려 두고, 넘기면 그것을 보이게만 한다 (React가 같은 key의 것을 그대로 옮긴다)
    */
   const [ahead, setAhead] = useState<string | null>(null)
+  /**
+   * 창이 전체 화면으로 다 커졌는지. 전체 화면은 누른 뒤 조금 지나서(윈도우는 몇 프레임, 맥은 창이 커지는 0.5초 남짓) 들어오는데,
+   * 그 전에 첫 장을 움직이면 작은 창 크기로 제목이 올라오다가 전체 화면이 되는 순간 장이 한 번에 커졌다(창 크기가 바뀌는 것을
+   * 흉내 내 녹화). 커질 때까지는 검은 화면으로 두고, 다 커진 다음 프레임에 첫 장을 들인다. 전체 화면이 거절되거나 늦으면 0.8초에서 그친다
+   */
+  const [settled, setSettled] = useState(!entering)
+  useEffect(() => {
+    if (!entering) return
+    let on = true
+    const limit = new Promise((r) => window.setTimeout(r, 800))
+    void Promise.race([entering.catch(() => {}), limit]).then(() => requestAnimationFrame(() => on && setSettled(true)))
+    return () => {
+      on = false
+    }
+  }, [entering])
   const startedAt = useRef(Date.now())
   const now = useRef({ index: view.index, blank })
   now.current = { index: view.index, blank }
@@ -199,14 +214,14 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   // 장이 화면에 붙자마자(그리기 전에) 움직임을 건다. 그래야 다 보인 모습이 한 번 번쩍이지 않는다.
   const level = motionOf(deck, slides[view.index])
   useLayoutEffect(() => {
-    if (!ready || !view.play || !stageRef.current) return
+    if (!ready || !settled || !view.play || !stageRef.current) return
     const p = engine.play(stageRef.current, level)
     playing.current = p
     return () => {
       playing.current = null
       p()
     }
-  }, [view, ready, engine, level])
+  }, [view, ready, settled, engine, level])
 
   // 다음 장은 지금 장의 움직임이 끝나고(mo-end) 한가할 때 그린다. 움직이는 중에 그리면 굴러가는 숫자가 끊긴다
   useEffect(() => {
@@ -232,7 +247,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
 
   return (
     <div
-      className={cx('present', idle && 'is-idle')}
+      className={cx('present', idle && 'is-idle', !settled && 'is-entering')}
       onMouseMove={wake}
       onClick={(e) => (blank ? setBlank(null) : e.clientX < window.innerWidth * 0.3 ? goTo(view.index - 1) : forward())}
     >

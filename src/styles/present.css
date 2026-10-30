@@ -31,6 +31,11 @@
   pointer-events: none;
 }
 
+/* 창이 전체 화면으로 커지는 동안은 검은 화면 (Present.tsx의 settled). visibility로 숨기지 않는다: 숨긴 글은 컴포넌트 맞추기가 다르게 잰다 */
+.present.is-entering .present-stage {
+  opacity: 0;
+}
+
 .present-blank {
   position: fixed;
   inset: 0;

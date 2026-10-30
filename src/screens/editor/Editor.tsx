@@ -188,7 +188,7 @@ function EditorBody({ deck }: { deck: Deck }) {
     toast.show('슬라이드를 지웠어요', undoAction(toast))
   }
 
-  if (launch.presenting) return <Present deck={deck} startId={launch.presenting.startId} onExit={launch.exit} />
+  if (launch.presenting) return <Present deck={deck} startId={launch.presenting.startId} entering={launch.presenting.entering} onExit={launch.exit} />
 
   return (
     <div className="ed-app">
