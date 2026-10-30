@@ -1,7 +1,9 @@
-import { createDeck, emptyItem } from './generate'
+import { agenda, type Recipe } from './blueprints/recipes'
+import { createDeck, emptyItem, planRecipes } from './generate'
 import type { Deck, Item, Slide, SlideOptions } from './types'
 
 // 처음 쓰는 사람이 완성된 모습을 볼 수 있는 예시 보고. 회사, 사람, 숫자는 모두 지어낸 것이다.
+// 어느 직무든 '나도 이런 발표를 하겠다' 싶게, 직무가 드러나지 않는 사내 개선 제안(회의 줄이기)으로 둔다.
 
 function svg(body: string, w = 360, h = 120): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`)}`
@@ -61,96 +63,132 @@ export const SAMPLE_DASHBOARD = svg(
 
 type Fill = { fields?: Record<string, string>; items?: Partial<Item>[]; options?: SlideOptions }
 
-// 영업 2팀 김민준 매니저가 영업본부장에게 하는 수주 제안 계획 보고
+// 일하는 방식 TF 이서연 책임이 본부장에게 하는 개선 제안: 진행 공유는 보드로, 회의는 결정만
 const CONTENT: Record<string, Fill> = {
   표지: {
     fields: {
-      lead: '수주 전략과 제안 가격 승인 요청',
-      ask: '제안 가격 4.8억 원과 시범 구축 인력 2명 승인',
+      lead: '진행 상황은 보드로 나누고, 회의는 결정만 해요',
+      ask: '두 팀 2개월 시범 운영과 보드 도구 사용료 승인',
     },
   },
   '한 장 요약': {
-    fields: { title: '한빛제조 품질 관리 사업, 12월 계약을 목표로 4.8억 원에 제안하겠습니다' },
+    fields: { title: '진행 공유를 보드로 옮기면 한 사람이 일주일에 3시간을 돌려받아요' },
     items: [
-      { title: '사업 기회', body: '한빛제조가 평택 공장 검사 시스템 교체를 검토 중이고, 12월에 업체를 정해요.' },
-      { title: '제안 내용', body: 'AI 외관 검사와 불량 원인 분석을 묶어 불량이 많은 3개 라인에 먼저 구축해요.' },
-      { title: '예상 매출', body: '첫해 4.8억 원, 3년 유지보수를 더하면 7.2억 원이에요. 이익률은 22%예요.' },
-      { title: '요청 사항', body: '제안 가격 4.8억 원 승인, 시범 구축 인력 2명 지원' },
+      { title: '지금의 문제', body: '한 사람이 일주일에 회의로 9시간을 써요. 그중 3.5시간은 돌아가며 진행 상황을 말하는 시간이에요.' },
+      { title: '개선안', body: '진행 상황은 회의 전에 보드에 적고, 회의는 30분 동안 정할 것만 다뤄요.' },
+      { title: '기대 효과', body: '한 사람이 일주일에 3시간, 본부 80명이 한 해에 1만 2천 시간을 아껴요.' },
+      { title: '요청 사항', body: '두 팀 2개월 시범 운영 승인, 보드 도구 사용료 월 40만 원' },
     ],
   },
-  '섹션: 사업 기회': { fields: { lead: '한빛제조가 앞둔 결정' } },
-  '사업 기회': {
+  '섹션: 문제': { fields: { lead: '회의에 드는 시간' } },
+  '지금의 문제': {
     fields: {
-      title: '한빛제조가 12월에 평택 공장 품질 검사 시스템을 바꿔요',
-      lead: '지금 시스템의 유지보수가 내년 3월에 끝나서 품질팀장이 연내에 업체를 정하려고 해요. 최종 결정은 공장장이 해요.',
+      title: '회의가 많아서 정작 일할 시간이 모자라요',
+      lead: '본부 80명 중 열에 일곱이 회의 때문에 야근한 적이 있다고 답했어요. 가장 오래 걸리는 건 돌아가며 진행 상황을 말하는 주간 회의예요.',
     },
   },
-  '사업 규모': {
-    fields: { title: '첫해 4.8억 원, 3년이면 7.2억 원 규모예요' },
+  '문제의 크기': {
+    fields: { title: '한 사람이 일주일에 회의로 9시간을 써요', lead: '설문에 답한 80명의 평균이에요', unit: '시간', source: '본부 설문, 80명 응답, 9월 기준' },
+    options: { highlight: 0 },
     items: [
-      { title: '예상 매출', value: '4.8억 원', body: '첫해 구축비, 3개 라인 기준' },
-      { title: '계약 기간', value: '3년', body: '유지보수 포함 총 7.2억 원' },
-      { title: '예상 이익률', value: '22%', body: '본부 평균 18%보다 높아요' },
+      { title: '주간 진행 회의', value: '3.5' },
+      { title: '프로젝트 점검', value: '2.5' },
+      { title: '부서 간 협의', value: '2' },
+      { title: '그 밖의 회의', value: '1' },
     ],
   },
-  '경쟁 상황': {
-    fields: { title: '가격은 높지만 구축 기간과 사례로 앞서요' },
+  원인: {
+    fields: { title: '회의가 길어지는 이유', lead: '설문에서 가장 많이 나온 세 가지예요' },
     items: [
-      { title: '대명시스템이 3.9억 원을 낼 것으로 보여요', body: '4.8억 원이지만 불량 원인 분석까지 들어 있어요' },
-      { title: '구축에 6개월, 그동안 라인을 세워야 해요', body: '3개월, 라인을 세우지 않고 구축해요' },
-      { title: '같은 업종 구축 사례가 없어요', body: '자동차 부품사 2곳에 구축했어요' },
+      { title: '진행 상황을 말로 나눠요', body: '한 사람씩 돌아가며 말하느라 회의 시간의 절반이 지나가요.' },
+      { title: '안건을 회의에서 처음 들어요', body: '무엇을 정할지 미리 몰라서 결정이 다음 주로 밀려요.' },
+      { title: '모두가 모든 회의에 들어가요', body: '내 일과 상관없는 이야기를 듣는 시간이 길어요.' },
     ],
   },
-  '섹션: 제안 전략': { fields: { lead: '무엇을 얼마에 제안할지' } },
-  '제안 내용': {
-    fields: { title: '검사 자동화와 원인 분석을 묶어서 제안해요' },
+  '섹션: 개선안': { fields: { lead: '회의는 결정만' } },
+  '과제 우선순위': {
+    fields: { title: '쉽고 효과가 큰 것부터 시작해요' },
     items: [
-      { title: 'AI 외관 검사', body: '사람이 하던 외관 검사를 카메라와 AI로 바꿔 검사 시간을 절반으로 줄여요.' },
-      { title: '불량 원인 분석', body: '검사 결과를 공정 데이터와 묶어 어느 공정에서 불량이 생기는지 보여줘요.' },
-      { title: '3개 라인부터', body: '불량이 가장 많은 3개 라인에 먼저 구축하고, 효과를 확인한 뒤 넓혀요.' },
+      { title: '틈틈이 하기', body: '회의실 예약을 30분 단위로' },
+      { title: '바로 하기', body: '진행 공유를 보드로\n안건 없는 회의는 열지 않기' },
+      { title: '미루기', body: '회의록 양식 새로 만들기' },
+      { title: '계획해서 하기', body: '겹치는 부서 간 회의 합치기' },
     ],
   },
-  '가격 안': {
-    fields: { title: '추천 가격은 B안 4.8억 원이에요' },
+  '바뀌는 모습': {
+    fields: { title: '이렇게 바꾸자고 제안해요' },
     items: [
-      { title: 'A안', value: '3.9억 원', meta: '이익률 9%', body: '경쟁사 가격에 맞춤\n원인 분석 빼고 검사만\n수주 가능성은 높지만 남는 게 적어요' },
-      { title: 'B안', value: '4.8억 원', meta: '이익률 22%', body: '검사 자동화와 원인 분석 함께\n3개 라인 먼저 구축\n가격 차이는 구축 기간으로 설득' },
-      { title: 'C안', value: '6.5억 원', meta: '이익률 25%', body: '8개 라인 전체를 한 번에\n고객 예산을 넘을 가능성이 커요' },
+      { title: '진행 상황을 돌아가며 말해요', body: '회의 전에 보드에 적어 둬요' },
+      { title: '안건을 회의에서 처음 들어요', body: '하루 전에 안건을 받아요' },
+      { title: '팀 모두가 90분 동안 모여요', body: '정할 사람만 30분 모여요' },
     ],
   },
-  '제안할 솔루션': {
+  '바뀌는 절차': {
+    fields: { title: '보드에 적고, 모여서는 정하기만 해요', lead: '지금은 같은 일에 매주 90분 회의를 해요' },
+    items: [
+      { title: '보드에 진행 적기', meta: '모든 팀원, 10분', body: '한 일과 막힌 일을 보드에 남겨요' },
+      { title: '안건 모으기', meta: '팀장, 하루 전', body: '정할 것만 골라 안건으로 올려요' },
+      { title: '30분 결정 회의', meta: '정할 사람만, 30분', body: '안건마다 정하고 맡을 사람을 정해요' },
+      { title: '결정 알리기', meta: '진행자, 당일', body: '정한 것을 보드에 적어 모두가 봐요' },
+    ],
+  },
+  '진행 보드': {
     fields: {
-      title: '고객에게 보여줄 품질 대시보드',
-      body: '라인별 불량률과 원인 공정을 한 화면에서 봐요. 11월 3주 현장 시연 때 시범 라인 데이터로 보여줄 예정이에요.',
+      title: '팀의 한 주를 보드 한 화면에서 봐요',
+      body: '팀원마다 한 일과 막힌 일, 이번 주에 정할 안건이 한 화면에 모여요. 우리 팀이 2주 동안 먼저 써 본 화면이에요.',
       image: SAMPLE_DASHBOARD,
     },
   },
-  '섹션: 실행 계획': { fields: { lead: '수주까지 할 일' } },
-  '수주 일정': {
-    fields: { title: '12월 계약이 목표예요' },
-    options: { highlight: 0 },
+  '방안 비교': {
+    fields: { title: '두 팀이 먼저 해 보는 B안을 추천해요' },
     items: [
-      { meta: '11월 1주', title: '제안서 제출', body: '품질팀장에게 직접 전달' },
-      { meta: '11월 3주', title: '현장 시연', body: '평택 공장 시범 라인에서' },
-      { meta: '12월 1주', title: '가격 협상', body: '구매팀과' },
-      { meta: '12월 3주', title: '계약', body: '공장장 최종 결정' },
+      { title: 'A안', value: '0원', meta: '바로', body: '지금 쓰는 사내 게시판에 진행을 적어요\n돈은 들지 않지만 한눈에 보기 어려워요\n흐지부지될 가능성이 커요' },
+      { title: 'B안', value: '월 40만 원', meta: '두 팀, 2개월', body: '보드 도구를 두 팀이 먼저 써요\n효과를 숫자로 확인한 뒤 넓혀요\n맞지 않으면 바로 멈출 수 있어요' },
+      { title: 'C안', value: '월 300만 원', meta: '본부 전체', body: '처음부터 모든 팀이 같이 바꿔요\n실패하면 되돌리기 어려워요' },
     ],
   },
-  '위험과 대응': {
-    fields: { title: '이런 위험은 이렇게 대비해요' },
+  '기대 효과': {
+    fields: { title: '한 사람이 일주일에 3시간을 돌려받아요', source: '본부 설문을 바탕으로 한 추정, 9월 기준' },
     items: [
-      { title: '경쟁사가 가격을 더 낮출 수 있어요', body: '유지보수 1년 무상을 협상 카드로 준비해요' },
-      { title: '시범 구축 인력이 부족해요', body: '기술팀 2명을 11월부터 지원받아야 해요' },
-      { title: '고객 예산 확정이 늦어질 수 있어요', body: '두 번에 나눠 구축해서 첫해 비용을 낮춘 안을 준비해요' },
+      { value: '3시간', title: '한 사람이 아끼는 시간', body: '회의 9시간이 6시간으로' },
+      { value: '33%', title: '줄어드는 회의 시간', body: '진행 회의 90분이 30분으로' },
+      { value: '12,000시간', title: '본부가 한 해에 아끼는 시간', body: '80명, 한 해 50주 기준' },
+    ],
+  },
+  '섹션: 실행': { fields: { lead: '언제, 어떻게 바꿀지' } },
+  '실행 계획': {
+    fields: { title: '두 팀에서 먼저 시작해요' },
+    options: { highlight: 0 },
+    items: [
+      { meta: '11월', title: '두 팀 시범', body: '손을 든 두 팀이 먼저' },
+      { meta: '12월', title: '중간 점검', body: '회의 시간과 설문으로' },
+      { meta: '1월', title: '본부 확대', body: '점검 결과가 좋으면' },
+      { meta: '2월', title: '모든 팀 적용', body: '30분 사용법 안내와 함께' },
     ],
   },
   '결정 요청': {
     items: [
-      { title: '제안 가격 4.8억 원 승인', body: '11월 1주 제안서 제출 전까지' },
-      { title: '시범 구축 인력 2명 지원', body: '기술팀, 11월부터 3개월' },
-      { title: '유지보수 1년 무상 카드 사용', body: '가격 협상에서 필요할 때만' },
+      { title: '두 팀 2개월 시범 운영 승인', body: '11월 첫 주에 시작하려면 이번 주까지' },
+      { title: '보드 도구 사용료 월 40만 원', body: '시범 기간 두 달, 모두 80만 원' },
+      { title: '본부 주간 보고도 보드로 받기', body: '시범 팀이 같은 내용을 두 번 쓰지 않게' },
     ],
   },
+}
+
+/** 개선 제안 구성에 없는 목차와 이미지 장을 더해, 예시 한 벌로 더 많은 레이아웃을 보여 준다 */
+const SCREEN: Recipe = {
+  layout: 'imageText',
+  purpose: '진행 보드',
+  priority: 3,
+  section: '개선안',
+  guide: '새 방식에서 쓸 화면을 넣어요.',
+}
+
+function recipes(): Recipe[] {
+  const list = [...planRecipes('improve', 'mixed', 30)]
+  list.splice(list.findIndex((r) => r.purpose === '한 장 요약') + 1, 0, agenda)
+  list.splice(list.findIndex((r) => r.purpose === '바뀌는 절차') + 1, 0, SCREEN)
+  return list
 }
 
 function fill(slide: Slide): Slide {
@@ -165,20 +203,23 @@ function fill(slide: Slide): Slide {
 }
 
 export function createSampleDeck(): Deck {
-  const deck = createDeck({
-    type: 'deal',
-    audience: 'mixed',
-    minutes: 30,
-    method: 'live',
-    title: '한빛제조 평택 공장 품질 관리 제안 계획',
-    org: '영업 2팀',
-    presenter: '김민준 매니저',
-    theme: 'white',
-  })
+  const deck = createDeck(
+    {
+      type: 'improve',
+      audience: 'mixed',
+      minutes: 30,
+      method: 'live',
+      title: '주간 회의 줄이기 개선 제안',
+      org: '일하는 방식 TF',
+      presenter: '이서연 책임',
+      theme: 'white',
+    },
+    recipes(),
+  )
   return {
     ...deck,
-    title: '예시: 한빛제조 품질 관리 제안 계획',
-    meta: { ...deck.meta, contact: '내선 2417' },
+    title: '예시: 주간 회의 줄이기 개선 제안',
+    meta: { ...deck.meta, contact: '내선 3051' },
     slides: deck.slides.map(fill),
   }
 }

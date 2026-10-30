@@ -53,8 +53,9 @@ describe('제안 읽기', () => {
 
 describe('제안 적용', () => {
   it('레이아웃, 순서, 숨김, 테마를 바꿔도 적은 글은 그대로다', () => {
+    const kpi = shape.slides.findIndex((s) => s.layout === 'kpi')
     const { deck: next, results } = run(
-      { op: 'set_layout', slide: sid(5), layout: 'bars' },
+      { op: 'set_layout', slide: sid(kpi), layout: 'bars' },
       { op: 'move_slide', slide: sid(3), after: sid(6) },
       { op: 'set_hidden', slide: sid(2), hidden: true },
       { op: 'set_theme', theme: 'navy', accent: '#FF6600' },
@@ -64,7 +65,7 @@ describe('제안 적용', () => {
     expect(results.every((r) => r.ok)).toBe(true)
     expect(writtenText(next)).toEqual(writtenText(deck))
     expect(next.theme).toEqual({ id: 'navy', accent: '#ff6600' })
-    expect(next.slides.find((s) => shapeSlideId(s) === sid(5))?.layout).toBe('bars')
+    expect(next.slides.find((s) => shapeSlideId(s) === sid(kpi))?.layout).toBe('bars')
     expect(next.slides[1].hints['items.0.body']).toBe('배경을 숫자 하나로')
   })
 
