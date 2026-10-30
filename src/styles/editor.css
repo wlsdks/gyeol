@@ -93,22 +93,55 @@
   height: 14px;
 }
 
-.save.is-warn {
-  background: var(--warn-bg);
-  color: var(--warn-ink);
-  font-weight: 600;
-}
-
-.save.is-warn:hover,
-.save.is-warn[aria-expanded='true'] {
-  background: #ffedc2;
-  color: var(--warn-ink);
-}
-
 .save.is-bad {
   background: #fdecea;
   color: var(--danger);
   font-weight: 600;
+}
+
+/* 저장 상태와 그 옆의 할 일 하나 (보관 폴더 정하기). 칠하지 않은 글자 단추: 늘 보이지만 편집보다 먼저 눈에 띄지 않게 */
+.save-wrap {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.save-fix {
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.save-fix:hover {
+  background: var(--hover-2);
+  color: var(--ink);
+}
+
+/* 처음 고친 때 한 번 묻는 창. 저장 상태 바로 아래에 붙고, 쓰는 데 방해되지 않게 초점을 가져가지 않는다 */
+.save-ask {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 360px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+  animation: pop-in var(--t) var(--ease-out);
 }
 
 .save-dot {

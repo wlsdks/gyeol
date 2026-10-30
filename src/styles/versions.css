@@ -317,54 +317,23 @@
   font-weight: 600;
 }
 
-/* 홈: 발표가 어디에 보관되는지 */
+/* 홈: 발표가 어디에 보관되는지. 칠하지 않은 한 줄 */
 .store-note {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: -12px 0 28px;
-  color: var(--ink-2);
-  font-size: 14px;
-}
-
-.store-note p {
-  margin: 0;
-}
-
-.store-note > .icon {
-  flex: none;
-  width: 20px;
-  height: 20px;
-}
-
-.store-note.is-ready {
   color: var(--ink-3);
   font-size: 13px;
 }
 
-.store-note.is-ready > .icon {
+.store-note > .icon {
+  flex: none;
   width: 16px;
   height: 16px;
 }
 
-.store-note.is-ready b {
+.store-note b {
   color: var(--ink-2);
   font-weight: 600;
-}
-
-.store-note.is-warn {
-  padding: 14px 16px;
-  border-radius: var(--r);
-  background: var(--warn-bg);
-  color: var(--warn-ink);
-  line-height: 1.6;
-}
-
-.store-note.is-warn > p,
-.store-note.is-warn > span {
-  flex: 1;
-}
-
-.store-note.is-warn .btn {
-  flex: none;
 }

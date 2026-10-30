@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Deck } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { keys } from '../../lib/keys'
 import { downloadDeckFile } from '../../store/deckFile'
 import { useDeck } from '../../store/deckStore'
 import { saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
-import { AlertIcon, CheckIcon, FolderIcon, Popover } from '../ui'
+import { AlertIcon, CheckIcon, FOLDER_WHY, FolderIcon, Popover } from '../ui'
 
-type Tone = 'ok' | 'warn' | 'bad' | 'busy'
+/** local: 이 브라우저에만 저장했다. 잘못된 것이 아니라 칠하지 않는다 (폴더를 정하는 단추를 옆에 둔다) */
+type Tone = 'ok' | 'local' | 'bad' | 'busy'
 
 function useSaveSummary(): { tone: Tone; label: string } {
   const { folder, browser, folderWrite } = useStorage()
@@ -17,35 +18,115 @@ function useSaveSummary(): { tone: Tone; label: string } {
     if (browser === 'saving' || folderWrite === 'saving') return { tone: 'busy', label: '저장 중' }
     return { tone: 'ok', label: '폴더에 저장됨' }
   }
-  if (folder?.kind === 'locked') return { tone: 'warn', label: '폴더 저장 멈춤' }
   if (browser === 'saving') return { tone: 'busy', label: '저장 중' }
-  return { tone: 'warn', label: '이 브라우저에만 저장됨' }
+  return { tone: 'local', label: '이 브라우저에 저장됨' }
 }
 
-/** 편집기 위쪽의 저장 상태. 누르면 어디에 저장되는지와 할 일을 알려 준다. */
+/** 보관 폴더를 정하라고 저절로 물은 적이 있는지. 한 번만 묻고, 그 뒤로는 옆의 단추로 정한다 */
+const ASKED_KEY = 'html-maker:folder-asked'
+function folderAsked(): boolean {
+  try {
+    return localStorage.getItem(ASKED_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+function markFolderAsked() {
+  try {
+    localStorage.setItem(ASKED_KEY, '1')
+  } catch {
+    /* 저장이 안 되면 이번에만 */
+  }
+}
+
+
+/**
+ * 편집기 위쪽의 저장 상태. 누르면 어디에 저장되는지와 할 일을 알려 준다.
+ * 보관 폴더를 정하지 않았으면 옆에 '보관 폴더 정하기'를 두고, 이 발표를 처음 고친 때 한 번만 까닭과 함께 묻는다.
+ * 예전에는 노란 꼬리표(이 브라우저에만 저장됨)가 편집하는 내내 떠 있어 겁만 주고 무엇을 하면 되는지 알기 어려웠다
+ */
 export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersions: () => void }) {
   const { tone, label } = useSaveSummary()
+  const { folder, choose, allow } = useStorage()
+  const [asking, setAsking] = useState(false)
+  // 연 뒤에 처음 고친 때 묻는다: 막 연 발표는 아직 지킬 것이 없고, 예시는 다시 만들 수 있다
+  const opened = useRef(deck.updatedAt)
+  useEffect(() => {
+    if (deck.updatedAt === opened.current || deck.id === 'sample') return
+    if (folder?.kind !== 'none' || folderAsked()) return
+    markFolderAsked()
+    setAsking(true)
+  }, [deck.updatedAt, deck.id, folder?.kind])
+  // 다른 곳(저장 상태 창)에서 폴더를 정했으면 물음을 닫는다
+  useEffect(() => {
+    if (folder?.kind !== 'none') setAsking(false)
+  }, [folder?.kind])
+
+  const pick = async () => {
+    setAsking(false)
+    if ((await choose()).kind === 'ready') await saveToFolder(useDeck.getState().deck ?? deck)
+  }
+  const reconnect = async () => {
+    if ((await allow()).kind === 'ready') await saveToFolder(useDeck.getState().deck ?? deck)
+  }
+  // 저장하지 못한 때는 저장 상태 창이 할 일을 말하므로 옆 단추는 감춘다
+  const fix = tone === 'local' || tone === 'busy' ? (folder?.kind === 'none' ? 'pick' : folder?.kind === 'locked' ? 'allow' : null) : null
+
   return (
-    <Popover
-      align="left"
-      className="pop-save"
-      button={({ toggle, open }) => (
-        <button
-          type="button"
-          className={cx('save', `is-${tone}`)}
-          aria-expanded={open}
-          // 따로 저장하지 않아도 된다는 것을 마우스만 올려도 알 수 있게
-          title={`고칠 때마다 저장돼요. 바로 저장하려면 ${keys('mod+S')}`}
-          onClick={toggle}
-          aria-live="polite"
-        >
-          {tone === 'ok' ? <CheckIcon /> : tone === 'busy' ? <span className="save-dot" /> : <AlertIcon />}
-          {label}
+    <div className="save-wrap">
+      <Popover
+        align="left"
+        className="pop-save"
+        button={({ toggle, open }) => (
+          <button
+            type="button"
+            className={cx('save', `is-${tone}`)}
+            aria-expanded={open}
+            // 따로 저장하지 않아도 된다는 것을 마우스만 올려도 알 수 있게
+            title={`고칠 때마다 저장돼요. 바로 저장하려면 ${keys('mod+S')}`}
+            onClick={() => {
+              setAsking(false)
+              toggle()
+            }}
+            aria-live="polite"
+          >
+            {tone === 'bad' ? <AlertIcon /> : tone === 'busy' ? <span className="save-dot" /> : <CheckIcon />}
+            {label}
+          </button>
+        )}
+      >
+        {(close) => <SaveDetails deck={deck} close={close} onOpenVersions={onOpenVersions} />}
+      </Popover>
+      {fix === 'pick' && (
+        <button type="button" className="save-fix" onClick={() => void pick()}>
+          보관 폴더 정하기
         </button>
       )}
-    >
-      {(close) => <SaveDetails deck={deck} close={close} onOpenVersions={onOpenVersions} />}
-    </Popover>
+      {fix === 'allow' && folder?.kind === 'locked' && (
+        <button type="button" className="save-fix" title={`‘${folder.name}’ 폴더에 다시 저장하려면 한 번 더 허용해야 해요`} onClick={() => void reconnect()}>
+          폴더 다시 연결하기
+        </button>
+      )}
+      {asking && (
+        // 쓰는 중에 뜨므로 초점을 가져가지 않는다. 화면 읽기 프로그램에는 한 번 읽어 준다
+        <div className="save-ask" role="region" aria-label="보관 폴더 정하기">
+          <p className="save-pop-h" aria-live="polite">
+            <FolderIcon />
+            PC 폴더에도 저장해 둘까요?
+          </p>
+          <p className="save-pop-p">지금은 이 브라우저 안에만 저장돼요. {FOLDER_WHY} 폴더를 정하면 고칠 때마다 그 폴더에 파일로도 저장돼요.</p>
+          <div className="save-pop-actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => void pick()}>
+              <FolderIcon />
+              보관 폴더 고르기
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAsking(false)}>
+              나중에
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -162,9 +243,9 @@ function SaveDetails({ deck, close, onOpenVersions }: { deck: Deck; close: () =>
 
       {folder?.kind === 'none' && (
         <>
-          <p className="save-pop-h">지금은 이 브라우저에만 저장돼요</p>
+          <p className="save-pop-h">지금은 이 브라우저 안에만 저장돼요</p>
           <p className="save-pop-p">
-            브라우저 기록을 지우거나 PC를 바꾸면 사라질 수 있어요. PC나 팀 공유 드라이브의 폴더를 골라 두면 고칠 때마다 그 폴더에도 자동으로 저장돼요.
+            {FOLDER_WHY} 다른 PC에서도 열 수 없어요. PC나 팀 공유 드라이브의 폴더를 골라 두면 고칠 때마다 그 폴더에도 자동으로 저장돼요.
           </p>
           <div className="save-pop-actions">
             <button type="button" className="btn btn-primary btn-sm" onClick={() => choose()}>

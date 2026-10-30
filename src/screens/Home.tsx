@@ -12,7 +12,7 @@ import { decodeDeckFile, DECK_EXT } from '../store/deckFile'
 import { useDeck } from '../store/deckStore'
 import { listDecks } from '../store/library'
 import { importDeck, persistNow, removeDeck, syncWithFolder, useStorage } from '../store/persist'
-import { Brand, CopyIcon, FolderIcon, Info, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
+import { Brand, CopyIcon, FOLDER_WHY, FolderIcon, Info, Modal, MoreIcon, noticeAfterGo, PlusIcon, Popover, SAVE_HELP, TrashIcon, UploadIcon, useToast } from './ui'
 import { UpdateNote } from './UpdateNote'
 
 const SAMPLE_ID = 'sample'
@@ -135,7 +135,8 @@ export function Home() {
           </div>
         </div>
 
-        <StorageNote onSynced={refresh} />
+        {/* 발표가 없으면 지킬 것이 없어 보관 폴더 이야기를 꺼내지 않는다 (다시 연결할 폴더가 있을 때만) */}
+        <StorageNote hasDecks={!!decks && decks.length > 0} onSynced={refresh} />
 
         {decks && decks.length === 0 && (
           <div className="home-empty">
@@ -274,8 +275,12 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
   )
 }
 
-/** 발표가 어디에 보관되는지. 폴더를 정하지 않았으면 정하도록 권한다. */
-function StorageNote({ onSynced }: { onSynced: () => void }) {
+/**
+ * 발표가 어디에 보관되는지 한 줄로. 칠한 띠를 두지 않는다: 이 브라우저에만 저장하는 것은 잘못이 아니라서,
+ * 늘 떠 있는 노란 띠는 겁만 주고 무엇을 하면 되는지 알기 어려웠다. 정하는 것은 줄 끝의 글자 단추 하나로.
+ * 편집기에서 처음 고칠 때 한 번 까닭과 함께 묻는다 (SaveStatus)
+ */
+function StorageNote({ hasDecks, onSynced }: { hasDecks: boolean; onSynced: () => void }) {
   const { folder, choose, allow } = useStorage()
   if (!folder) return null
 
@@ -286,7 +291,7 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
 
   if (folder.kind === 'ready') {
     return (
-      <p className="store-note is-ready">
+      <p className="store-note">
         <FolderIcon />
         <span>
           ‘<b>{folder.name}</b>’ 폴더에 자동으로 보관해요
@@ -303,45 +308,47 @@ function StorageNote({ onSynced }: { onSynced: () => void }) {
 
   if (folder.kind === 'locked') {
     return (
-      <div className="store-note is-warn">
+      <p className="store-note">
         <FolderIcon />
-        <p>
-          <b>‘{folder.name}’ 폴더와 다시 연결해 주세요.</b>
+        <span>
+          ‘<b>{folder.name}</b>’ 폴더와 다시 연결해야 해요
           <Info label="다시 연결하는 이유" align="start">
             브라우저를 새로 열면 한 번 더 허용해야 해요. 허용하기 전까지는 이 브라우저에만 저장돼요.
           </Info>
-        </p>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => run(allow)}>
-          허용하기
+        </span>
+        <button type="button" className="btn-link" onClick={() => run(allow)}>
+          다시 연결하기
         </button>
-      </div>
+      </p>
     )
   }
 
+  if (!hasDecks) return null
+
   if (folder.kind === 'none') {
     return (
-      <div className="store-note is-warn">
+      <p className="store-note">
         <FolderIcon />
-        <p>
-          <b>보관 폴더를 정해 두세요.</b> 지금은 이 브라우저에만 저장돼요.
+        <span>
+          지금은 이 브라우저 안에만 저장해요
           <Info label="보관 폴더 설명" align="start">
-            브라우저 기록을 지우거나 PC를 바꾸면 사라질 수 있어요. 폴더를 정하면 고칠 때마다 그 폴더에 파일로 저장되고, 버전 기록도 함께 남아요.
+            {FOLDER_WHY} 보관 폴더를 정하면 고칠 때마다 그 폴더에 파일로도 저장되고, 버전 기록도 함께 남아요.
           </Info>
-        </p>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => run(choose)}>
-          보관 폴더 고르기
+        </span>
+        <button type="button" className="btn-link" onClick={() => run(choose)}>
+          보관 폴더 정하기
         </button>
-      </div>
+      </p>
     )
   }
 
   return (
-    <p className="store-note is-warn">
+    <p className="store-note">
       <FolderIcon />
       <span>
-        <b>지금은 이 브라우저에만 저장돼요.</b> 크롬이나 엣지에서 열면 PC 폴더에 보관할 수 있어요.
+        지금은 이 브라우저 안에만 저장해요
         <Info label="보관 설명" align="start">
-          그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을 다운로드해 두세요.
+          크롬이나 엣지에서 열면 PC 폴더에 보관할 수 있어요. 그 전까지는 편집 화면의 저장 상태를 눌러 작업 파일을 다운로드해 두세요.
         </Info>
       </span>
     </p>
