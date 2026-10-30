@@ -286,7 +286,18 @@ export function Wizard() {
               <p className="wz-sub">비워 두고 나중에 채워도 돼요.</p>
             </div>
             <div className="wz-form">
-              <div className="wz-fields">
+              <div
+                className="wz-fields"
+                // 칸을 채우고 Enter를 누르면 다음 칸으로, 마지막 칸에서는 발표를 만든다. 예전에는 Enter에 아무 일이 없어 눌러 보고 멈칫했다
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' || e.nativeEvent.isComposing || !(e.target instanceof HTMLInputElement)) return
+                  e.preventDefault()
+                  const inputs = [...e.currentTarget.querySelectorAll('input')]
+                  const next = inputs[inputs.indexOf(e.target) + 1]
+                  if (next) next.focus()
+                  else if (!busy) void create()
+                }}
+              >
                 <label className="field">
                   <span className="field-label">발표 제목</span>
                   <input className="input" value={title} placeholder={`예: ${blueprint.examples.title}`} onChange={(e) => setTitle(e.target.value)} autoFocus />
