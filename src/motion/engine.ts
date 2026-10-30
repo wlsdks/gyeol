@@ -396,6 +396,8 @@ export function motionEngine(): MotionEngine {
     if (!slide) return idle
     // 이어 움직이기로 넘어오는 중이면 앞 장의 것과 짝을 맞춘다 (짝이 된 것은 움직임 없이 옮겨 온다)
     if (morphFrom && !cellOnly && slide.closest(CURRENT)) pairUp(slide)
+    // 장을 바꾸는 중인데 이 장을 움직이지 않으면 swap이 글을 늦게 들인다(두 장의 글이 겹쳐 보이지 않게)
+    if (lead && !cellOnly && slide.closest(CURRENT)) stillSwap = quiet ? slide : null
     // 부품 하나를 움직이는 동안에는 그 칸 안에서만 찾고, 시간은 그 부품이 시작하는 때부터 센다
     let scope: Element = slide
     let t0 = 0
@@ -2445,6 +2447,8 @@ export function motionEngine(): MotionEngine {
   const named: HTMLElement[] = []
   /** 장 바꾸기를 시작할 때마다 하나씩 는다. 앞의 전환이 늦게 끝나도 지금 전환의 표시를 떼지 않게 */
   let turn = 0
+  /** 장을 바꾸는 중에 움직이지 않고(움직임 없음) 그린 다음 장. swap이 그 장의 글을 늦게 들인다 */
+  let stillSwap: Element | null = null
 
   /** 요소마다 짝을 찾을 열쇠들 (앞의 것일수록 먼저 맞춘다) */
   function morphKeys(slide: Element): { el: HTMLElement; keys: string[] }[] {
@@ -2539,7 +2543,28 @@ export function motionEngine(): MotionEngine {
         // 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕을 다음 장의 바탕색으로 (motion.css의 ::view-transition).
         // 비워 두면 브라우저의 흰 바탕이 비쳐서, 검은 장끼리 넘길 때 화면이 잠깐 회색으로 번쩍였다
         const next = document.querySelector(':is(.present-slide, .v-slide.is-current) .slide')
-        if (next) html.style.setProperty('--mo-vt-bg', getComputedStyle(next).backgroundColor)
+        if (next) {
+          const bg = getComputedStyle(next).backgroundColor
+          html.style.setProperty('--mo-vt-bg', bg)
+          // 장 바깥(발표 화면의 검은 띠)은 장 바깥의 색 그대로. 장의 바탕색으로 다 덮으면 밀기와 다가오기에서 앞 장이 옅어지는 동안
+          // 검은 띠가 회색으로 밝아졌다(16:10 화면처럼 띠가 있는 때)
+          let host = next.parentElement
+          let out = ''
+          for (; host && host !== html; host = host.parentElement) {
+            const c = getComputedStyle(host).backgroundColor
+            if (c !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(c)) {
+              out = c
+              break
+            }
+          }
+          const r = next.getBoundingClientRect()
+          if (out) html.style.setProperty('--mo-vt-fill', `linear-gradient(${bg}, ${bg}) ${r.left}px ${r.top}px / ${r.width}px ${r.height}px no-repeat, ${out}`)
+          else html.style.removeProperty('--mo-vt-fill')
+        }
+        // 다음 장이 움직이지 않으면(뒤로 갈 때, 움직임 없음) 다 그려진 채로 와서, 앞 장이 옅어지는 동안 두 장의 글이 겹쳐 보였다.
+        // 앞으로 넘길 때처럼 바탕은 그대로 두고 글만 앞 장이 사라진 뒤(SWAP_LEAD)에 들인다
+        if (next && (direction < 0 || stillSwap === next)) reveal(next, SWAP_LEAD[name] || 0)
+        stillSwap = null
       })
       // 빨리 연달아 넘기면 앞의 전환은 건너뛴다. 그때 나는 거절은 정상이라 조용히 받는다.
       t.ready.catch(() => {})
@@ -2549,6 +2574,24 @@ export function motionEngine(): MotionEngine {
       done()
       update()
     }
+  }
+
+  /**
+   * 움직이지 않는 장을 넘겨받을 때 글만 늦게 들인다. 바탕(장 자체)은 처음부터 있어서 앞 장의 바탕과 이어지고,
+   * 장 바깥 띠도 비치지 않는다. 제자리에 있는 것(아래 띠의 단락 지도와 쪽 번호, 이어 움직이기로 옮겨 오는 짝)은 건드리지 않는다:
+   * 따로 이름이 붙어 제 길로 옮겨 가는데, 감싼 상자를 옅게 하면 그 안까지 들일 수 없다. 그래서 그런 것을 품은 상자는 열어서 그 아이들을
+   */
+  function reveal(slide: Element, at: number) {
+    const fixed = '[data-mo-keep], .s-mark'
+    const fadeIn = (el: Element) => {
+      if (el.matches(fixed)) return
+      if (el.querySelector(fixed)) {
+        for (const c of Array.prototype.slice.call(el.children) as Element[]) fadeIn(c)
+        return
+      }
+      el.animate([{ opacity: 0, offset: 0 }], { delay: at, duration: 320, easing: OUT, fill: 'backwards' })
+    }
+    for (const c of Array.prototype.slice.call(slide.children) as Element[]) fadeIn(c)
   }
 
   function unname() {

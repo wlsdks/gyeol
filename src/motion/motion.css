@@ -172,9 +172,9 @@
     animation: none;
   }
 
-  /* 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕. engine.ts가 다음 장의 바탕색을 넣는다 */
+  /* 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕. engine.ts가 장 자리에는 다음 장의 바탕색을, 그 바깥에는 바깥의 색(발표 화면의 검은 띠)을 넣는다 */
   html[data-mo-swap]::view-transition {
-    background: var(--mo-vt-bg, transparent);
+    background: var(--mo-vt-fill, var(--mo-vt-bg, transparent));
   }
 
   /* 앞 장은 짧게 사라진다. 두 장의 글이 겹쳐 보이는 때가 없게: 다음 장의 글은 앞 장이 다 사라진 뒤에 나온다
