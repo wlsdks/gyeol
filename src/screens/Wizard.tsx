@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { asksDecision, AUDIENCES, BLUEPRINTS, DECK_GROUPS, DURATIONS, METHODS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
 import { createDeck, formatDate, makeSlide } from '../deck/generate'
@@ -9,6 +9,7 @@ import { cx } from '../lib/cx'
 import { go } from '../lib/router'
 import { FitSlide, pageProps, SlideCanvas } from '../slides/SlideCanvas'
 import { persistNow } from '../store/persist'
+import { useDrawSoon } from './drawSoon'
 import { BackIcon, Brand, CheckIcon, ChevronIcon, Info, SAVE_HELP, Segmented, useToast } from './ui'
 
 // 발표 상황: 누구에게, 얼마나, 어떻게 발표하는지. 표지: 제목, 결정 요청(또는 부제), 발표자와 테마
@@ -265,7 +266,7 @@ export function Wizard() {
                   <li key={key} className={cx(s.layout === 'section' && 'is-section')} title={LAYOUTS[s.layout].name}>
                     <span className="wz-shot" aria-hidden="true">
                       <FitSlide>
-                        <SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} />
+                        <Later><SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} /></Later>
                       </FitSlide>
                     </span>
                     <span className="wz-plan-name">
@@ -369,7 +370,7 @@ export function Wizard() {
                   {rest.slice(0, rest.length > strip ? strip - 1 : strip).map((s) => (
                     <li key={s.id} className="wz-shot" aria-hidden="true">
                       <FitSlide>
-                        <SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} />
+                        <Later><SlideCanvas deck={preview} slide={s} mode="preview" {...pageProps(previewInfo, s.id)} /></Later>
                       </FitSlide>
                     </li>
                   ))}
@@ -423,6 +424,14 @@ function planKeys(slides: Slide[]): [string, Slide][] {
   })
 }
 
+/**
+ * 작은 장 그림은 단계가 바뀐 화면이 먼저 그려진 뒤에 차례로 그린다 (drawSoon.ts). 구성 미리 보기는 장 열 장 남짓을 그리고 글을 맞춰서,
+ * 한꺼번에 그리면 느린 PC에서 '다음'을 누른 뒤 0.1초 넘게 멈췄다
+ */
+function Later({ children }: { children: ReactNode }) {
+  return useDrawSoon() ? <>{children}</> : null
+}
+
 /** 발표 종류 미리 보기의 작은 그림들. 그림 아래에 이야기 흐름의 이름 */
 function Film({ type, label }: { type: DeckType; label: string[] }) {
   const film = useMemo(() => filmOf(type), [type])
@@ -434,7 +443,7 @@ function Film({ type, label }: { type: DeckType; label: string[] }) {
         <li key={s.id} className="wz-film-item">
           <span className="wz-shot" aria-hidden="true">
             <FitSlide>
-              <SlideCanvas deck={film.deck} slide={s} mode="preview" {...pageProps(info, s.id)} />
+              <Later><SlideCanvas deck={film.deck} slide={s} mode="preview" {...pageProps(info, s.id)} /></Later>
             </FitSlide>
           </span>
           <span className="wz-film-cap">

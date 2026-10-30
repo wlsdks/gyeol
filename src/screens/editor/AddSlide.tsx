@@ -5,7 +5,8 @@ import type { LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { hashOf } from '../../lib/router'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
-import { useDrawSoon, type Look } from './look'
+import { useDrawSoon } from '../drawSoon'
+import type { Look } from './look'
 
 /*
  * 장 추가: 레이아웃을 그림으로 고른다. 왼쪽에서 묶음을 고르면 오른쪽에 그 묶음의 장이 예시 내용을 채운 그림으로 보인다.
@@ -58,7 +59,7 @@ export function AddSlide({ look, onPick }: { look: Look; onPick: (layout: Layout
 
 const Choice = memo(function Choice({ id, look, slide, onPick }: { id: LayoutId; look: Look; slide?: Slide; onPick: () => void }) {
   const spec = LAYOUTS[id]
-  // 창은 바로 열고 그림은 그 뒤에 차례로 (look.ts의 useDrawSoon)
+  // 창은 바로 열고 그림은 그 뒤에 차례로 (drawSoon.ts의 useDrawSoon)
   const ready = useDrawSoon()
   return (
     <button type="button" className="add-slide-card" title={spec.description} onClick={onPick}>

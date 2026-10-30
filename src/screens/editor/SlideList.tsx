@@ -14,7 +14,8 @@ import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideC
 import { useDeck } from '../../store/deckStore'
 import { AlertIcon, EyeOffIcon, PlusIcon, Popover } from '../ui'
 import { AddSlide } from './AddSlide'
-import { useAfterPaint, useDrawSoon, useLook } from './look'
+import { useDrawSoon } from '../drawSoon'
+import { useAfterPaint, useLook } from './look'
 
 export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string | null }) {
   const select = useDeck((s) => s.select)
@@ -166,13 +167,14 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
   // 장 그림은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint)
   const shown = useAfterPaint(slide)
-  // 장을 더하면 고치는 장과 이 그림을 한꺼번에 그리느라(그림도 글을 맞춘다) 느린 PC에서 누른 뒤 0.2초 동안 멈췄다. 새 그림은 화면이
-  // 한 번 그려진 뒤에 그린다 (look.ts의 useDrawSoon). 편집기를 열 때의 그림은 처음부터 그린다
+  const btnRef = useRef<HTMLButtonElement>(null)
+  // 장 그림은 화면이 한 번 그려진 뒤에 차례로 그린다 (drawSoon.ts의 useDrawSoon). 그림도 글을 맞춰서 한꺼번에 그리면 느린 PC에서
+  // 장을 더할 때(새 그림과 고치는 장) 0.2초, 편집기를 열 때(발표에서 돌아올 때도) 목록 그림 열일곱 장에 0.1초 넘게 멈췄다.
+  // 편집기를 열 때 목록에 보이는 그림은 처음부터 그린다. 새로 더한 장의 그림은 고치는 장이 먼저 보이게 늘 뒤에
   const [fresh] = useState(() => later.current)
-  const ready = useDrawSoon(!fresh)
+  const ready = useDrawSoon(false, fresh ? undefined : btnRef)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 슬라이드' } })
   // 글이 넘친 장: 다른 장을 고치는 동안에도 보이게 그림을 잰다 (편집기의 '글이 넘쳤어요'와 같은 잣대, slides/overflow.ts)
-  const btnRef = useRef<HTMLButtonElement>(null)
   const [over, setOver] = useState(false)
   useEffect(() => {
     const root = btnRef.current?.querySelector<HTMLElement>('.slide')

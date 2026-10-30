@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import type { Deck } from '../../deck/types'
 
 /** 장을 그리는 데 필요한 발표 전체의 설정: 발표 정보, 테마, 발표 이름(아래 표시), 움직임. SlideCanvas의 deck에 넘긴다 */
@@ -52,38 +51,3 @@ export function useAfterPaint<T>(value: T): T {
   return shown
 }
 
-/** 그림을 그릴 차례를 기다리는 것들 (먼저 온 것부터) */
-const soon: (() => void)[] = []
-let pumping = false
-/** 한 일(task)에 그림을 그리는 시간의 끝(ms). 넘으면 나머지는 다음 일로 넘겨 화면이 그 사이에 그려지고 손을 받는다 */
-const SLICE = 12
-
-function pump() {
-  const t0 = performance.now()
-  while (soon.length && performance.now() - t0 < SLICE) flushSync(soon.shift()!)
-  if (soon.length) window.setTimeout(pump)
-  else pumping = false
-}
-
-/**
- * 작은 장 그림을 지금 그릴지. now면 처음부터 그린다. 아니면 화면이 한 번 그려진 뒤 차례대로, 한 일에 SLICE ms까지 그린다.
- * 장 그림 하나는 장을 그리고 글을 맞추느라(fitBlocks) 느린 PC에서 20~50ms가 든다. 새 슬라이드 창의 그림 아홉 장이나 새로 더한 장의
- * 목록 그림까지 누른 그 일에서 한꺼번에 그리면 창이 0.3초 동안 뜨지 않았다. 먼저 창과 고치는 장을 보이고 그림은 바로 뒤따라 채운다
- */
-export function useDrawSoon(now = false): boolean {
-  const [ready, setReady] = useState(now)
-  useEffect(() => {
-    if (ready) return
-    const wake = () => setReady(true)
-    soon.push(wake)
-    if (!pumping) {
-      pumping = true
-      requestAnimationFrame(() => window.setTimeout(pump))
-    }
-    return () => {
-      const i = soon.indexOf(wake)
-      if (i >= 0) soon.splice(i, 1)
-    }
-  }, [ready])
-  return ready
-}
