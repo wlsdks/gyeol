@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { currentPreset, MOTION_PRESETS, type MotionPreset } from '../../../deck/blocks'
 import { LAYOUTS } from '../../../deck/layouts'
 import { planMotionCopy, withMotionCopy } from '../../../deck/motionCopy'
@@ -22,6 +22,14 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
   const titles = useMemo(() => new Map(deck.slides.map((s) => [s.id, s.fields.title?.trim() || LAYOUTS[s.layout]?.name || '슬라이드'])), [deck.slides])
   const same = rows.filter((r) => r.same)
+  // 연 것은 옆 칸 맨 아래에 펼쳐져서, 1536×730에서 '옮기는 것' 첫 줄만 보이고 옮길 슬라이드와 적용하기는 화면 밖에 있었다.
+  // 열면 펼친 곳이 보이게 옆 칸을 굴린다
+  const planRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    planRef.current?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+  }, [open])
 
   if (!open) {
     return (
@@ -78,7 +86,7 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
   return (
     <section className="ms-sec">
       <h2 className="ms-h">다른 슬라이드에도</h2>
-      <div className="sp-plan mc-plan" role="group" aria-label="이 슬라이드의 모션을 다른 슬라이드에도">
+      <div ref={planRef} className="sp-plan mc-plan" role="group" aria-label="이 슬라이드의 모션을 다른 슬라이드에도">
         <p className="sp-plan-h">옮기는 것</p>
         <p className="sp-plan-p">
           {what.join(' · ')}
