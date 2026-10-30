@@ -2544,26 +2544,13 @@ export function motionEngine(): MotionEngine {
         const fresh = morphFrom && document.querySelector(CURRENT + ' .slide')
         if (fresh) pairUp(fresh)
         morphFrom = null
-        // 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕을 다음 장의 바탕색으로 (motion.css의 ::view-transition).
-        // 비워 두면 브라우저의 흰 바탕이 비쳐서, 검은 장끼리 넘길 때 화면이 잠깐 회색으로 번쩍였다
+        // 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕을 다음 장의 바탕색으로 (motion.css의 ::view-transition-group(root)).
+        // 비워 두면 장 뒤의 바탕이 비쳐서, 장끼리 넘길 때 화면이 잠깐 회색으로 번쩍였다
         const next = document.querySelector(':is(.present-slide, .v-slide.is-current) .slide')
         if (next) {
           const bg = getComputedStyle(next).backgroundColor
+          // 장 자리에만 깐다(motion.css의 ::view-transition-group(root)). 장 바깥(발표 화면의 검은 띠)은 찍지 않아 그대로 보인다
           html.style.setProperty('--mo-vt-bg', bg)
-          // 장 바깥(발표 화면의 검은 띠)은 장 바깥의 색 그대로. 장의 바탕색으로 다 덮으면 밀기와 다가오기에서 앞 장이 옅어지는 동안
-          // 검은 띠가 회색으로 밝아졌다(16:10 화면처럼 띠가 있는 때)
-          let host = next.parentElement
-          let out = ''
-          for (; host && host !== html; host = host.parentElement) {
-            const c = getComputedStyle(host).backgroundColor
-            if (c !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(c)) {
-              out = c
-              break
-            }
-          }
-          const r = next.getBoundingClientRect()
-          if (out) html.style.setProperty('--mo-vt-fill', `linear-gradient(${bg}, ${bg}) ${r.left}px ${r.top}px / ${r.width}px ${r.height}px no-repeat, ${out}`)
-          else html.style.removeProperty('--mo-vt-fill')
         }
         // 다음 장이 움직이지 않으면(뒤로 갈 때, 움직임 없음) 다 그려진 채로 와서, 앞 장이 옅어지는 동안 두 장의 글이 겹쳐 보였다.
         // 앞으로 넘길 때처럼 바탕은 그대로 두고 글만 앞 장이 사라진 뒤(SWAP_LEAD)에 들인다

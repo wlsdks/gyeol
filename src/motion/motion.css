@@ -172,9 +172,33 @@
     animation: none;
   }
 
-  /* 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕. engine.ts가 장 자리에는 다음 장의 바탕색을, 그 바깥에는 바깥의 색(발표 화면의 검은 띠)을 넣는다 */
+  /* 화면 전체가 아니라 지금 장만 찍어 넘긴다: 문서의 이름을 떼고 장(앱의 .present-slide, 내보낸 HTML의 지금 장 틀)에 root라는 이름을 붙인다.
+     화면 전체를 찍던 때는 16:10 화면처럼 장 바깥에 검은 띠가 있으면, 다가오기에서 커지는 앞 장이 띠 위로 넘치고 작은 데서 오는 다음 장은
+     제 띠를 장 안쪽으로 끌고 들어와서, 옅어지는 동안 장 가장자리에 회색 띠가 0.1초쯤 보였다(밀기는 옆으로 띠가 있을 때 같았다).
+     장 바깥(검은 띠, 발표 막대)은 찍히지 않고 그대로 보이고, 두 장은 장 자리 밖으로 넘치지 않게 자른다 */
+  html[data-mo-swap] {
+    view-transition-name: none;
+  }
+
+  html[data-mo-swap] :is(.present-slide, .v-slide.is-current > .v-frame) {
+    view-transition-name: root;
+  }
+
   html[data-mo-swap]::view-transition {
-    background: var(--mo-vt-fill, var(--mo-vt-bg, transparent));
+    background: none;
+  }
+
+  /* 장 위에 뜬 발표 막대(쪽 수, 끝내기)는 장이 아니라서 찍히지 않으면 넘기는 동안 장 그림에 가려 사라진다. 따로 찍어 제자리에 둔다 */
+  html[data-mo-swap] :is(.present-bar, .v-count) {
+    view-transition-name: mo-bar;
+  }
+
+  /* 두 장이 함께 옅어지는 동안 뒤로 비치는 바탕은 다음 장의 바탕색(engine.ts의 --mo-vt-bg). 비워 두면 장 뒤의 검은 바탕이 비쳐
+     흰 장끼리 넘길 때 회색으로 번쩍인다. 흐리게의 더하기(plus-lighter)는 image-pair 안에서만 섞으므로 바탕은 그 바깥(group)에 깐다:
+     image-pair에 깔면 어두운 장에서 바탕에 두 장이 더해져 밝아진다 */
+  html[data-mo-swap]::view-transition-group(root) {
+    overflow: clip;
+    background: var(--mo-vt-bg, transparent);
   }
 
   /* 앞 장은 짧게 사라진다. 두 장의 글이 겹쳐 보이는 때가 없게: 다음 장의 글은 앞 장이 다 사라진 뒤에 나온다
