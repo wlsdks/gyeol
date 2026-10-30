@@ -1,4 +1,5 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS, type NoRoom } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
@@ -47,6 +48,35 @@ function drawWhenIdle(wake: () => void): () => void {
   }
 }
 
+/** 이 카드가 목록에 지금 보이는지 (반 넘게) */
+function inView(el: HTMLElement): boolean {
+  const list = el.closest('.lib-list')
+  if (!list) return true
+  const l = list.getBoundingClientRect()
+  const r = el.getBoundingClientRect()
+  return r.bottom > l.top && r.top < l.bottom && r.height > 0
+}
+
+/**
+ * 아직 그리지 않은 카드가 굴려서 보이게 되면 그 그림에서 바로 그린다. 지켜보기는 위아래 한 화면 앞서 깨우지만, 목록 끝으로 뛰거나
+ * 스크롤 막대를 끌어 한 번에 멀리 가면 그린 뒤에야 알려 주어 두세 그림 동안 빈 네모였다. scroll은 그리기 전에 오므로 거기서 그린다
+ */
+const scrollWaiters = new Map<HTMLElement, () => void>()
+function onListScroll(e: Event) {
+  if (!(e.target instanceof HTMLElement) || !e.target.classList.contains('lib-list')) return
+  const due = [...scrollWaiters].filter(([el]) => e.target === el.closest('.lib-list') && inView(el))
+  if (!due.length) return
+  flushSync(() => due.forEach(([, wake]) => wake()))
+}
+function drawOnScroll(el: HTMLElement, wake: () => void): () => void {
+  if (!scrollWaiters.size) document.addEventListener('scroll', onListScroll, true)
+  scrollWaiters.set(el, wake)
+  return () => {
+    scrollWaiters.delete(el)
+    if (!scrollWaiters.size) document.removeEventListener('scroll', onListScroll, true)
+  }
+}
+
 /**
  * 작은 그림을 그릴 너비. lazy면 목록에서 보일 즈음(위아래 한 화면 안)이 되거나 한가할 때 차례가 오면 너비를 알려 그 카드를 그린다.
  * 컴포넌트 탭을 열면 카드 예순여 개가 한꺼번에 장을 그리고 컴포넌트를 맞춰서(fitBlocks) 0.4초쯤(CPU 4배 느리게는 1.6초)
@@ -56,6 +86,15 @@ function useThumbWidth(lazy: boolean) {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [near, setNear] = useState(!lazy)
+  // 목록에 지금 보이는 카드는 처음 그리는 그림에서 바로 그린다(그리기 전에 너비를 잰다). 지켜보기(IntersectionObserver)는 그린 뒤에야
+  // 알려 주어서, 탭을 열거나 다른 탭에서 돌아올 때마다 보이는 카드 여섯 개가 두세 그림 동안 빈 네모였다
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    setWidth(el.clientWidth)
+    if (!near && inView(el)) setNear(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   useEffect(() => {
     const el = ref.current
     if (!el || near || typeof IntersectionObserver === 'undefined') return setNear(true)
@@ -63,9 +102,11 @@ function useThumbWidth(lazy: boolean) {
     const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && wake(), { root: el.closest('.lib-list'), rootMargin: '100% 0px' })
     io.observe(el)
     const forget = drawWhenIdle(wake)
+    const unwatch = drawOnScroll(el, wake)
     return () => {
       io.disconnect()
       forget()
+      unwatch()
     }
   }, [near])
   useEffect(() => {
