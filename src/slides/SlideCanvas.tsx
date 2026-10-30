@@ -50,6 +50,11 @@ export function useStableSections(info: PageInfo): readonly string[] {
   return useMemo(() => info.sections, [key])
 }
 
+/** 다 받은 글꼴 묶음의 수. 글꼴 조각이 새로 오면 는다 (그린 장을 다시 맞출 때를 알려고. 글꼴을 하나씩 세면 장마다 수백 개를 센다) */
+let fontBatches = 0
+if (typeof document !== 'undefined') document.fonts?.addEventListener?.('loadingdone', () => fontBatches++)
+const fontsLoaded = () => fontBatches
+
 /** 1920×1080 슬라이드 한 장. 크기 맞춤은 바깥 프레임이 한다. */
 export const SlideCanvas = memo(function SlideCanvas({
   deck,
@@ -81,21 +86,53 @@ export const SlideCanvas = memo(function SlideCanvas({
   useHalos(ref, mode === 'edit')
   // 레이아웃 장의 채움(fitBlocks.ts의 fitLayout): 내용이 본문의 60%에 못 미치면 글자를 단계로 키우고 줄 사이를 넓힌다.
   // 부품 장은 판(BlockArea)이 맞춘다. 글꼴이 늦게 오면 그 전에 잰 값은 대신 쓴 글꼴의 것이라 한 번 더
+  // 그릴 때마다 맞추던 때는 쪽 번호만 바뀐 그림(장을 더하거나 빼면 목록의 모든 그림)도 장마다 다시 맞춰서, 느린 PC에서 장 하나를
+  // 더하는 데 0.2초 넘게 걸렸다. 맞추기는 앞의 값을 지우고 처음부터 재므로, 장 안(아래 띠 밖)의 글, 칸, 클래스, 스타일과 장의 크기,
+  // 받은 글꼴이 그대로면 다시 맞춰도 같은 값이다. 그래서 그것이 바뀐 때만 맞춘다. 장 안이 바뀐 것은 MutationObserver로 안다:
+  // 무엇이 바뀌는지 값으로 늘어놓으면(글, 레이아웃, 테마, 글꼴, 글자 크기 …) 새 값을 더할 때 빠뜨리기 쉽다
+  const watch = useRef<{ mo: MutationObserver; changed: boolean; sign: string } | null>(null)
+  // 글꼴을 기다리는 중인지 (같은 기다림을 여러 번 걸지 않게)
+  const waiting = useRef(false)
   useLayoutEffect(() => {
     const el = ref.current
     if (!el || given.layout === 'compose' || solo) return
-    fitBlocks(el)
-    // 글꼴을 받는 중일 때만 한 번 더. 맞추기가 글을 재면서 새로 쓸 글자의 글꼴 조각을 부르므로 그 뒤에 본다.
-    // 예전에는 그릴 때마다 물어서, 글꼴이 다 왔어도 바로 이어서 한 번 더 맞췄고(그림마다 두 번) fonts.ready를 읽는 것만으로 스타일을 다시 계산했다
-    if (document.fonts?.status !== 'loading') return
-    let live = true
-    document.fonts.ready.then(() => {
-      if (live && ref.current) fitBlocks(ref.current)
-    })
-    return () => {
-      live = false
+    // 아래 띠(쪽 번호, 단락 지도, 출처)는 장의 틀 밖에 따로 서서(position: absolute) 본문 맞추기에 닿지 않는다
+    const counts = (records: MutationRecord[]) => records.some((r) => !(r.target instanceof Element ? r.target : r.target.parentElement)?.closest('.s-foot'))
+    // 장을 줄여 그리는 배율(감싼 상자의 transform)과 받은 글꼴도 맞추기에 닿는다
+    const signOf = (el: HTMLElement) => `${el.parentElement?.getAttribute('style') ?? ''}|${fontsLoaded()}`
+    const fit = (el: HTMLElement) => {
+      fitBlocks(el)
+      if (typeof MutationObserver === 'undefined') return
+      const mo =
+        watch.current?.mo ??
+        new MutationObserver((records) => {
+          if (watch.current && counts(records)) watch.current.changed = true
+        })
+      if (!watch.current) mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true })
+      // 맞추며 바꾼 값은 바뀐 것으로 세지 않는다
+      mo.takeRecords()
+      watch.current = { mo, changed: false, sign: signOf(el) }
     }
+    const w = watch.current
+    if (!w || counts(w.mo.takeRecords()) || w.changed || w.sign !== signOf(el)) fit(el)
+    // 글꼴을 받는 중이면 다 온 뒤에 한 번 더. 맞추기가 글을 재면서 새로 쓸 글자의 글꼴 조각을 부르므로 그 뒤에 본다.
+    // 예전에는 그릴 때마다 물어서, 글꼴이 다 왔어도 바로 이어서 한 번 더 맞췄고(그림마다 두 번) fonts.ready를 읽는 것만으로 스타일을 다시 계산했다.
+    // 다음 그림에서 건너뛰어도 기다림은 그대로 둔다(그 사이에 다시 그리지 않으면 글꼴이 와도 맞추지 않게 된다)
+    if (document.fonts?.status !== 'loading' || waiting.current) return
+    waiting.current = true
+    document.fonts.ready.then(() => {
+      waiting.current = false
+      const now = ref.current
+      if (now?.isConnected && !now.classList.contains('l-compose') && !now.classList.contains('is-solo')) fit(now)
+    })
   })
+  useLayoutEffect(
+    () => () => {
+      watch.current?.mo.disconnect()
+      watch.current = null
+    },
+    [],
+  )
   // 두 판으로 나뉜 장: 옆 판의 자리(왼쪽, 오른쪽)와 너비. 레이아웃 CSS가 --side-w를 쓴다
   // (편집할 때 너비가 부드럽게 바뀌도록 등록한 값이라 CSS의 기본값이 먹지 않는다. 판이 있는 장은 늘 적는다)
   const panes = panesOf(slide)

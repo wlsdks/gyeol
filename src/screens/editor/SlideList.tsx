@@ -14,7 +14,7 @@ import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideC
 import { useDeck } from '../../store/deckStore'
 import { AlertIcon, EyeOffIcon, PlusIcon, Popover } from '../ui'
 import { AddSlide } from './AddSlide'
-import { useAfterPaint, useLook } from './look'
+import { useAfterPaint, useDrawSoon, useLook } from './look'
 
 export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string | null }) {
   const select = useDeck((s) => s.select)
@@ -23,6 +23,11 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
   const look = useLook(deck)
   const info = pageInfo(deck.slides)
   const sections = useStableSections(info)
+  // 목록을 처음 그린 뒤에 생긴 목록 그림(새로 더하거나 복제한 장)은 고치는 장이 먼저 보이게 그 뒤에 그린다 (Thumb)
+  const later = useRef(false)
+  useEffect(() => {
+    later.current = true
+  }, [])
   // 끌기는 마우스로만. dnd-kit의 키보드 끌기는 Space와 Enter로 시작해서, 장을 고르려고 Enter를 누르면 끌기가 시작됐다.
   // 키보드로는 Alt+위아래 화살표로 한 칸씩 옮긴다 (아래 onKeyDown)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -110,6 +115,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
                 selected={slide.id === selectedId}
                 missing={missingFields(slide, deck.meta).length}
                 onSelect={select}
+                later={later}
               />
             ))}
           </SortableContext>
@@ -151,13 +157,19 @@ interface ThumbProps {
   selected: boolean
   missing: number
   onSelect: (id: string) => void
+  /** 목록을 처음 그린 뒤인지 (늘 같은 상자라 바뀌어도 다시 그리지 않는다) */
+  later: { readonly current: boolean }
 }
 
 const Thumb = memo(function Thumb(props: ThumbProps) {
-  const { meta, theme, title, slide, page, total, sections, sectionIndex, selected, missing, onSelect } = props
+  const { meta, theme, title, slide, page, total, sections, sectionIndex, selected, missing, onSelect, later } = props
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
   // 장 그림은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint)
   const shown = useAfterPaint(slide)
+  // 장을 더하면 고치는 장과 이 그림을 한꺼번에 그리느라(그림도 글을 맞춘다) 느린 PC에서 누른 뒤 0.2초 동안 멈췄다. 새 그림은 화면이
+  // 한 번 그려진 뒤에 그린다 (look.ts의 useDrawSoon). 편집기를 열 때의 그림은 처음부터 그린다
+  const [fresh] = useState(() => later.current)
+  const ready = useDrawSoon(!fresh)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 슬라이드' } })
   // 글이 넘친 장: 다른 장을 고치는 동안에도 보이게 그림을 잰다 (편집기의 '글이 넘쳤어요'와 같은 잣대, slides/overflow.ts)
   const btnRef = useRef<HTMLButtonElement>(null)
@@ -168,7 +180,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
     const check = () => setOver(slideOverflow(root) === 'over')
     check()
     if (document.fonts?.status === 'loading') void document.fonts.ready.then(check)
-  }, [shown, look])
+  }, [shown, look, ready])
   return (
     <div
       ref={setNodeRef}
@@ -190,15 +202,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         role="button"
       >
         <ScaledSlide width={170} decorative>
-          <SlideCanvas
-            deck={look}
-            slide={shown}
-            mode="preview"
-            page={page}
-            total={total}
-            sections={sections}
-            sectionIndex={sectionIndex}
-          />
+          {ready && <SlideCanvas deck={look} slide={shown} mode="preview" page={page} total={total} sections={sections} sectionIndex={sectionIndex} />}
         </ScaledSlide>
         {/* 이 장에 무엇을 쓰면 되는지는 이름에 마우스를 올리면 (오른쪽 칸에 늘 펼쳐 두지 않는다) */}
         <span className="thumb-label" title={slide.guide || undefined} aria-hidden="true">
