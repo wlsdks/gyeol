@@ -16,7 +16,7 @@ export interface Zoom {
 
 /** 배율 규칙의 값 */
 export const ZOOM = {
-  /** 장의 가장 작은 글자가 화면에서 이 크기(px)쯤 되게 키운다 (본문 글을 읽기 편한 16~20px의 가운데) */
+  /** 장의 대표 글자(그 장의 글 칸에 가장 많이 쓰인 크기)가 화면에서 이 크기(px)쯤 되게 키운다 (본문 글을 읽기 편한 16~20px의 가운데) */
   read: 18,
   /**
    * 본문의 가장 작은 글자 단계(base.css: 22는 하단 표시와 출처, 26부터 본문). 이 글자가 화면에서 ZOOM.read px가 되는 데 ZOOM.min배가
@@ -25,19 +25,31 @@ export const ZOOM = {
    */
   body: 26,
   /**
-   * 키우면 적어도 이만큼, 많아도 이만큼. 덜 키울 거라면 움직임이 도움 없이 어지럽기만 하고, 2배에서는 장 제목이 반쯤 잘리고
-   * 비교 장의 오른쪽 글이 밖으로 나가 어디를 쓰는지 잃었다
+   * 키우면 적어도 이만큼, 많아도 이만큼. 덜 키울 거라면 움직임이 도움 없이 어지럽기만 하다. 많아도 장 너비의 70%는 보이게(1 / 0.7):
+   * 2배에서는 장 제목이 반쯤 잘리고 비교 장의 오른쪽 글이 밖으로 나갔고, 1.6배에서는 부품 장의 제목, 오른쪽 단, 아래 숫자가 다 잘렸다
    */
   min: 1.3,
-  max: 1.6,
+  max: Math.min(1.6, 1 / 0.7),
   /** 쓰는 칸(테까지)과 장 틀 끝 사이에 남길 여백 (화면 px) */
   margin: 24,
 } as const
 
 /**
- * 장 하나의 배율. fs는 그 장의 글 칸(하단 표시 빼고) 가운데 가장 작은 글자 크기(캔버스 px), base는 장을 장 틀에 맞춘 배율.
+ * 장의 대표 글자 크기: 글 칸(하단 표시 빼고)에 가장 많이 쓰인 크기, 같은 수면 작은 쪽. 가장 작은 칸으로 보면 부품 장의 작은 덧붙임
+ * 하나 때문에 장 전체를 너무 키웠다
+ */
+export function typicalSize(sizes: readonly number[]): number {
+  const count = new Map<number, number>()
+  for (const v of sizes) if (v > 0) count.set(v, (count.get(v) ?? 0) + 1)
+  let best = Number.NaN
+  for (const [v, n] of count) if (Number.isNaN(best) || n > count.get(best)! || (n === count.get(best) && v < best)) best = v
+  return best
+}
+
+/**
+ * 장 하나의 배율. fs는 그 장의 대표 글자 크기(typicalSize, 캔버스 px), base는 장을 장 틀에 맞춘 배율.
  * 쓰는 칸마다 정하지 않고 장마다 하나로 정해 쓰기를 끝낼 때까지 둔다: 칸을 옮길 때마다(이름 36, 덧붙임 26) 글자가 커졌다 작아졌다 하면 어지럽다.
- * 창이 충분히 크면(ZOOM.body) 1, 아니면 가장 작은 글자가 ZOOM.read px가 되는 배율을 ZOOM.min~ZOOM.max로 자른다
+ * 창이 충분히 크면(ZOOM.body) 1, 아니면 대표 글자가 ZOOM.read px가 되는 배율을 ZOOM.min~ZOOM.max로 자른다
  */
 export function zoomFor(fs: number, base: number): number {
   if (!(base > 0) || ZOOM.read / (ZOOM.body * base) < ZOOM.min) return 1
@@ -190,12 +202,12 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
       if (!k) return undefined
       const base = frame.offsetWidth / slide.offsetWidth
       if (!z) {
-        // 이 장의 글 칸(하단 표시의 출처 빼고) 가운데 가장 작은 글자로
+        // 이 장의 글 칸(하단 표시의 출처 빼고)의 대표 글자로
         const sizes = [...slide.querySelectorAll<HTMLElement>('.ed-input')]
           .filter((el) => !el.closest('.s-foot') && el.getClientRects().length)
           .map((el) => Number.parseFloat(getComputedStyle(el).fontSize))
           .filter((v) => v > 0)
-        z = zoomFor(Math.min(...sizes), base)
+        z = zoomFor(typicalSize(sizes), base)
       }
       if (ed !== field) {
         field = ed

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { zoomShift } from '../../slides/SlideCanvas'
-import { viewStart, ZOOM, zoomFor } from './zoom'
+import { typicalSize, viewStart, ZOOM, zoomFor } from './zoom'
 
 // 1280×600 창의 편집기: 장 틀 664×374, 맞춘 배율 0.346
 const BASE = 664 / 1920
@@ -10,10 +10,20 @@ describe('쓸 때 크게 보기의 배율 (장마다 하나)', () => {
   // 편집기의 장 틀에 맞춘 배율: 1280×600 0.346, 1536×730 0.479, 1512×860 0.467, 1920×960 0.644
   it('작은 창: 장의 가장 작은 글자가 ZOOM.read px쯤 되게, ZOOM.min~ZOOM.max', () => {
     expect(zoomFor(26, BASE)).toBe(ZOOM.max)
-    expect(zoomFor(26, 0.479) * 26 * 0.479).toBeCloseTo(ZOOM.read, 5)
+    expect(zoomFor(30, 0.43) * 30 * 0.43).toBeCloseTo(ZOOM.read, 5)
     // 글자가 큰 장(가장 작은 글자 30, 36)도 같은 창이면 적어도 ZOOM.min: 장마다 커지고 안 커지고가 다르면 놀란다
     expect(zoomFor(30, 0.479)).toBe(ZOOM.min)
     expect(zoomFor(36, 0.467)).toBe(ZOOM.min)
+  })
+
+  it('많아도 장 너비의 70%는 보인다', () => {
+    expect(1 / ZOOM.max).toBeGreaterThanOrEqual(0.7 - 1e-9)
+  })
+
+  it('대표 글자는 가장 많이 쓰인 크기, 같은 수면 작은 쪽', () => {
+    expect(typicalSize([26, 36, 36, 36, 22, 26])).toBe(36)
+    expect(typicalSize([30, 26, 30, 26])).toBe(26)
+    expect(typicalSize([])).toBeNaN()
   })
 
   it('본문의 가장 작은 글자(26px)가 이미 읽기 좋은 큰 창(1920×960)에서는 키우지 않는다', () => {
