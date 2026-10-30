@@ -5,7 +5,7 @@ import { keys } from '../../lib/keys'
 import { downloadDeckFile } from '../../store/deckFile'
 import { useDeck } from '../../store/deckStore'
 import { saveToBrowser, saveToFolder, useStorage } from '../../store/persist'
-import { AlertIcon, CheckIcon, FOLDER_WHY, FolderIcon, Popover } from '../ui'
+import { AlertIcon, CheckIcon, FOLDER_WHY, FolderIcon, Popover, useEscape } from '../ui'
 
 /** local: 이 브라우저에만 저장했다. 잘못된 것이 아니라 칠하지 않는다 (폴더를 정하는 단추를 옆에 둔다) */
 type Tone = 'ok' | 'local' | 'bad' | 'busy'
@@ -57,6 +57,18 @@ export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersion
     markFolderAsked()
     setAsking(true)
   }, [deck.updatedAt, deck.id, folder?.kind])
+  // 바깥을 누르거나 Esc면 '나중에'와 같다 (다시 묻지 않고, 머리줄의 '보관 폴더 정하기'는 남는다).
+  // 누를 때까지 떠 있으면 장 목록의 첫 장을 가렸다
+  const askRef = useRef<HTMLDivElement>(null)
+  useEscape(() => setAsking(false), { active: asking })
+  useEffect(() => {
+    if (!asking) return
+    const onDown = (e: PointerEvent) => {
+      if (!askRef.current?.contains(e.target as Node)) setAsking(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [asking])
   // 다른 곳(저장 상태 창)에서 폴더를 정했으면 물음을 닫는다
   useEffect(() => {
     if (folder?.kind !== 'none') setAsking(false)
@@ -109,7 +121,7 @@ export function SaveStatus({ deck, onOpenVersions }: { deck: Deck; onOpenVersion
       )}
       {asking && (
         // 쓰는 중에 뜨므로 초점을 가져가지 않는다. 화면 읽기 프로그램에는 한 번 읽어 준다
-        <div className="save-ask" role="region" aria-label="보관 폴더 정하기">
+        <div ref={askRef} className="save-ask" role="region" aria-label="보관 폴더 정하기">
           <p className="save-pop-h" aria-live="polite">
             <FolderIcon />
             PC 폴더에도 저장해 둘까요?
