@@ -193,7 +193,9 @@ export function usePlayer(root: HTMLElement | null, slide: Slide, level: MotionL
       s.anims = []
       s.ended = true
       emit(0, false)
-      return
+      // 움직이지 않아도 발표 화면처럼 엔진에 맡긴다: 앞 장에서 넘어오는 중이면 엔진(swap)이 이 장의 글을 앞 장이 비킨 뒤에 들인다.
+      // 엔진을 건너뛰던 때는 다 그려진 이 장의 글이 옅어지는 앞 장의 글과 겹쳐 보였다(발표 화면과 내보낸 HTML은 그렇지 않다)
+      return engine.play(root, 'none', { clicks: 'auto' })
     }
     // 장 전체를 걸어 시간표를 읽는다
     let stop = engine.play(root, level, { clicks: 'auto' })
