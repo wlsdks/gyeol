@@ -367,7 +367,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         type="button"
                         className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
                         // 카드의 설명은 두 줄에서 자르므로 다 읽을 곳은 여기. 예전에는 움직임만 적어서 잘린 설명을 어디서도 볼 수 없었다
-                        title={`${spec.name}: ${spec.description}\n${marked ? '이 슬라이드에 함께 넣을 수 없어요. 눌러서 이유를 보세요' : `모션: ${spec.motion}`}`}
+                        title={`${spec.name}: ${spec.description}\n${marked ? `${closed ? '이 슬라이드에는 넣지 않아요' : '이 슬라이드에 함께 넣을 수 없어요'}. 눌러서 이유를 보세요` : `모션: ${spec.motion}`}`}
                         onPointerDown={(e) => {
                           const card = e.currentTarget
                           blocks.pressCard(e, type, () => tap(card))
@@ -380,10 +380,12 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         <BlockThumb deck={look} type={type} lazy />
                         <span className="lib-name">{spec.name}</span>
                         <span className="lib-desc">{spec.description}</span>
-                        {marked && (
+                        {/* 슬라이드 전체에 넣을 수 없으면(표지와 섹션, 자리가 다 찬 슬라이드) 위 알림 한 줄로 말하고 카드는 옅게만 둔다:
+                            카드마다 같은 잠금 문구가 되풀이되어 목록이 어수선했다. 카드 몇 개만 못 넣을 때만 그 카드에 적는다 */}
+                        {marked && !closed && !full && (
                           <span className="lib-no">
                             <LockIcon />
-                            {closed ? '이 슬라이드에는 넣지 않아요' : '이 슬라이드에 함께 넣을 수 없어요'}
+                            이 슬라이드에 함께 넣을 수 없어요
                           </span>
                         )}
                       </button>
