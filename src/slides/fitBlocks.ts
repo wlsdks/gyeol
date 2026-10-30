@@ -448,17 +448,40 @@ export function blockFitter() {
     return false
   }
 
-  /** 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치거나 그림이 찌그러지면 그대로. 키우기 전 그림의 크기를 돌려준다 */
-  function enlarge(cells: HTMLElement[]): Map<HTMLElement, Shape[]> {
-    const inners = cells.map((c) => c.querySelector<HTMLElement>(':scope > .bk-in')).filter((el): el is HTMLElement => !!el)
-    const shapes = new Map(inners.map((inner) => [inner, shapesOf(inner)] as const))
+  /**
+   * 칸마다 지난번 맞추기의 첫 단계(넘치는 칸 줄이기와 모든 칸 키우기) 결과: 줄인 단계(fit), 키우기 전 그림의 크기(shapes), 한 단계 키웠을 때
+   * 넘쳤는지(crowded), 그때의 조건(key: 줄이는 단계와 칸 안 숫자의 --fs). 칸 안이 그대로이면 다시 재도 같은 값이라 쓴다(fit의 reuse)
+   */
+  type First = { fit: string; key: string; shapes?: Shape[]; crowded?: boolean }
+  const firsts = new WeakMap<HTMLElement, First>()
+
+  /**
+   * 자리가 남는 장의 모든 칸을 같은 단계로 키운다. 한 칸이라도 넘치거나 겹치거나 그림이 찌그러지면 그대로. 키우기 전 그림의 크기를 돌려준다.
+   * known의 칸(칸 안이 지난번 그대로)은 지난번에 잰 그림 크기와 넘침을 쓴다. 그림 크기가 없으면(지난번에 키워 보지 않았다) null
+   */
+  function enlarge(cells: HTMLElement[], known: Map<HTMLElement, First>): Map<HTMLElement, Shape[]> | null {
+    const pairs = cells.map((c) => [c, c.querySelector<HTMLElement>(':scope > .bk-in')] as const).filter((x): x is readonly [HTMLElement, HTMLElement] => !!x[1])
+    if (pairs.some(([c]) => known.has(c) && !known.get(c)!.shapes)) return null
+    const shapes = new Map(pairs.map(([c, inner]) => [inner, known.get(c)?.shapes ?? shapesOf(inner)] as const))
     for (const k of ups) {
-      for (const c of cells) c.style.setProperty('--bk-fit', String(k))
-      for (const inner of inners) place(inner)
-      if (!inners.some((inner) => crowded(inner, shapes.get(inner)))) return shapes
+      // 이미 그 단계인 칸은 적지 않는다(적으면 칸 안 모두의 스타일을 다시 계산한다)
+      for (const c of cells) if (c.style.getPropertyValue('--bk-fit') !== String(k)) c.style.setProperty('--bk-fit', String(k))
+      for (const [, inner] of pairs) place(inner)
+      let full = false
+      for (const [c, inner] of pairs) {
+        const was = known.get(c)?.crowded
+        const hit = was ?? crowded(inner, shapes.get(inner))
+        const f = firsts.get(c)
+        if (f) f.crowded = hit
+        if (hit) {
+          full = true
+          break
+        }
+      }
+      if (!full) return shapes
     }
     for (const c of cells) c.style.removeProperty('--bk-fit')
-    for (const inner of inners) place(inner)
+    for (const [, inner] of pairs) place(inner)
     return shapes
   }
 
@@ -1347,7 +1370,12 @@ export function blockFitter() {
     }
   }
 
-  function fit(root: ParentNode): void {
+  /**
+   * dirty를 주면 그 밖의 칸은 지난번 맞추기 뒤로 칸 안이 그대로다(BlockArea가 MutationObserver로 안다). 그 칸은 첫 단계(줄이기, 키우기)를
+   * 다시 재지 않고 지난 결과를 쓴다: 글자 하나 칠 때마다 모든 칸의 글자 단계를 지웠다가 다시 적어서, 칸마다 그 안 전체의 스타일을 두 번씩
+   * 다시 계산했다. 칸끼리는 서로의 안을 바꾸지 않아(칸 안의 글과 그림은 제 칸 크기와 스타일로만 놓인다) 지난 결과는 다시 잰 값과 같다
+   */
+  function fit(root: ParentNode, dirty?: ReadonlySet<Element> | null): void {
     // 글꼴이 늦게 오면 그 전에 잰 글자 자리는 대신 쓴 글꼴의 것이라, 맞출 때마다 다시 잰다
     inks = {}
     const areas = root instanceof HTMLElement && root.classList.contains('bk-area') ? [root] : Array.from(root.querySelectorAll<HTMLElement>('.bk-area'))
@@ -1368,8 +1396,21 @@ export function blockFitter() {
         l.style.removeProperty('--bk-trim')
         l.classList.remove('is-apart')
       }
+      // 크게(1.2배)의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
+      const large = !!area.closest('.sz-large')
+      const ladder = large ? [1 / 1.2, steps[1]] : steps
+      const least = large ? ladder[0] : 1
+      // 첫 단계의 조건: 줄이는 단계와 칸 안 숫자의 글자 크기(앞 맞추기의 tone이 적은 --fs. 첫 단계는 그것을 둔 채 잰다)
+      const keyOf = (c: HTMLElement) => ladder.join(',') + '|' + Array.from(c.querySelectorAll<HTMLElement>(TONE), (el) => el.style.getPropertyValue('--fs')).join(',')
+      const keys = new Map(cells.map((c) => [c, keyOf(c)] as const))
+      const known = new Map<HTMLElement, First>()
+      if (dirty)
+        for (const c of cells) {
+          const f = firsts.get(c)
+          if (!dirty.has(c) && f && f.key === keys.get(c)) known.set(c, f)
+        }
       for (const c of cells) {
-        c.style.removeProperty('--bk-fit')
+        if (!known.has(c)) c.style.removeProperty('--bk-fit')
         c.style.removeProperty('--bk-air')
         c.style.removeProperty('--bk-lift')
         c.style.removeProperty('--bk-shift')
@@ -1396,10 +1437,6 @@ export function blockFitter() {
       const board = boardOf(cells)
       const before = typing(area) ? held.get(area) : undefined
       const hold = before?.board === board ? before : undefined
-      // 크게(1.2배)의 첫 단계는 1/1.2: 0.84면 보통보다 조금 커서(1.008배) 보통 크기로 잰 높이에 딱 맞는 칸은 또 넘친다
-      const large = !!area.closest('.sz-large')
-      const ladder = large ? [1 / 1.2, steps[1]] : steps
-      const least = large ? ladder[0] : 1
       const shrink = (c: HTMLElement, last: number) => {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (!inner) return
@@ -1410,7 +1447,8 @@ export function blockFitter() {
           place(inner)
         }
       }
-      for (const c of cells) {
+      const fresh = cells.filter((c) => !known.has(c))
+      for (const c of fresh) {
         const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
         if (inner) {
           place(inner)
@@ -1418,12 +1456,41 @@ export function blockFitter() {
         }
         shrink(c, least)
       }
-      for (const c of cells) shrink(c, 0)
+      for (const c of fresh) shrink(c, 0)
+      for (const c of fresh) firsts.set(c, { fit: c.style.getPropertyValue('--bk-fit'), key: keys.get(c)! })
+      // 첫 단계에서 칸마다 줄인 단계 (다시 쓰는 칸은 지난번 값. 그 칸의 글자 단계는 아직 앞 맞추기의 끝 값 그대로다)
+      const firstFit = (c: HTMLElement) => known.get(c)?.fit ?? c.style.getPropertyValue('--bk-fit')
+      // 다시 쓰는 칸을 첫 단계의 모습으로 (키울 때는 enlarge가 놓는다)
+      // 위치 비교의 이름표도 그 모습으로 다시 고른다(앞 맞추기의 끝 모습에서 고른 자리일 수 있다)
+      const settleKnown = () => {
+        for (const [c, f] of known) {
+          if (c.style.getPropertyValue('--bk-fit') !== f.fit) {
+            if (f.fit) c.style.setProperty('--bk-fit', f.fit)
+            else c.style.removeProperty('--bk-fit')
+          }
+          const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+          if (inner) place(inner)
+        }
+      }
       // 줄 사이를 넓혀 칸 바닥까지 채우던 것(--bk-air)은 하지 않는다: 줄 높이는 내용에 정해진 사이를 더한 만큼이고(docs/VISUAL-RULES.md 6),
       // 남는 높이로 줄을 늘리면 장마다 줄 사이가 달라 보였다. 남는 높이는 쌓기(pack)가 맨 아래에 모은다
       // 쓰는 동안은 쓰기 전보다 키우지 않는다: 안내 숫자보다 짧은 숫자를 치면 첫 글자에 글자가 1.2배 커지며 컴포넌트가 96px 올라갔다
       // (넘치면 줄이는 것은 그대로)
-      const shapes = cells.every((c) => !c.style.getPropertyValue('--bk-fit')) && !(hold && hold.up < ups[0]) ? enlarge(cells) : null
+      const grow = cells.every((c) => !firstFit(c)) && !(hold && hold.up < ups[0])
+      if (!grow) settleKnown()
+      const shapes = grow ? enlarge(cells, known) : null
+      // 다시 쓰는 칸에 지난번 잰 그림 크기가 없으면(지난번에는 키워 보지 않았다) 처음부터 다시 맞춘다
+      if (grow && !shapes) {
+        area.classList.remove('is-fitting')
+        for (const f of flips) f.a.currentTime = f.t
+        fit(area)
+        continue
+      }
+      if (shapes) for (const c of fresh) {
+        const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+        const f = firsts.get(c)
+        if (f && inner) f.shapes = shapes.get(inner)
+      }
       lift(cells)
       tone(cells)
       pack(cells, area)
@@ -1743,7 +1810,7 @@ let fitter: ReturnType<typeof blockFitter> | null = null
 const shared = () => (fitter ??= blockFitter())
 
 /** 이 안의 부품 장을 모두 맞춘다 (root가 .bk-area면 그것만) */
-export const fitBlocks = (root: ParentNode) => shared().fit(root)
+export const fitBlocks = (root: ParentNode, dirty?: ReadonlySet<Element> | null) => shared().fit(root, dirty)
 /** 칸 안쪽의 글 줄마다 글자가 그려지는 자리 (부품 높이 재기에서 겹침과 잘림을 볼 때) */
 export const blockTextLines = (inner: HTMLElement) => shared().lines(inner)
 /** 위치 비교의 이름표와 추이의 점 숫자 자리를 그려진 크기로 다시 고른다 (scope 안의 판 모두, scope가 판이면 그것만) */

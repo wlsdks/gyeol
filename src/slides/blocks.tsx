@@ -530,8 +530,23 @@ export function BlockArea() {
   const watch = useRef<MutationObserver | null>(null)
   const changed = useRef(true)
   const fitted = useRef('')
+  // 지난 맞추기 뒤에 안이 바뀐 칸. null이면 칸 밖(본문 상자, 칸을 넣고 뺌, 선)도 바뀌어 모든 칸을 다시 잰다 (fitBlocks.ts의 fit)
+  const dirty = useRef<Set<Element> | null>(null)
+  // 지난 맞추기 때 손을 올렸거나 글을 쓰던 칸
+  const touched = useRef<(Element | null)[]>([])
+  const note = (el: HTMLElement, records: MutationRecord[]) => {
+    for (const r of records) {
+      if (!touches(r)) continue
+      changed.current = true
+      if (!dirty.current) continue
+      let node: Node | null = r.target
+      while (node && node.parentNode !== el) node = node.parentNode
+      if (node instanceof HTMLElement && node.classList.contains('bk') && node !== r.target.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode?.parentNode) dirty.current.add(node)
+      else dirty.current = null
+    }
+  }
   const fitAll = (el: HTMLElement, rendered: boolean) => {
-    if (watch.current?.takeRecords().some(touches)) changed.current = true
+    if (watch.current) note(el, watch.current.takeRecords())
     const outer = outerSign(el)
     if (outer === fitted.current) {
       if (!changed.current) return
@@ -540,27 +555,33 @@ export function BlockArea() {
       // 크기 알림으로 불렸을 때는 건너뛴다. 예전에는 장을 넘길 때마다 움직임이 끝나면 같은 값으로 한 번 더 맞췄다
       if (!rendered && (el.closest('[data-mo-play]') || el.querySelector('[data-mo-play]'))) return
     }
-    fitBlocks(el)
+    // 손을 올린 칸과 글을 쓰는 칸은 늘 다시 잰다: 그 칸의 편집 표시(그림 위에 겹친 칸 같은)는 손과 초점에 따라 보이고 숨어서
+    // 바뀌어도 바뀐 것으로 잡히지 않는다(스타일만 바뀐다). 지난번의 그 칸도 같다
+    const active = [el.querySelector(':scope > .bk:hover'), el.querySelector(':scope > .bk:focus-within')]
+    const cells = outer === fitted.current ? dirty.current : null
+    if (cells) for (const c of [...active, ...touched.current]) if (c) cells.add(c)
+    touched.current = active
+    fitBlocks(el, cells)
     frameCells(el)
     clearLinks(el)
     // 맞추며 바꾼 값(칸의 스타일, 이름표 자리)은 바뀐 것으로 세지 않는다. 지켜보지 못하면 늘 다시 맞춘다
     watch.current?.takeRecords()
     changed.current = !watch.current
+    dirty.current = watch.current ? new Set() : null
     fitted.current = outer
   }
   // 맞추기보다 먼저 지켜보기 시작한다 (같은 컴포넌트의 layout effect는 적은 차례대로 돈다)
   useLayoutEffect(() => {
     const el = ref.current
     if (!el || typeof MutationObserver === 'undefined') return
-    const mo = new MutationObserver((records) => {
-      if (records.some(touches)) changed.current = true
-    })
+    const mo = new MutationObserver((records) => note(el, records))
     mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true })
     watch.current = mo
     return () => {
       mo.disconnect()
       watch.current = null
       changed.current = true
+      dirty.current = null
     }
   }, [])
   useLayoutEffect(() => {
