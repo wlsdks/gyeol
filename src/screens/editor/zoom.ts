@@ -120,14 +120,14 @@ export function useZoomTyping(): boolean {
 // ---------- 쓰는 칸 따라가기 ----------
 
 /**
- * 손으로 누른 칸을 키울 때 누른 점이 손 아래에 그대로 있지 못하고(제목이나 항목을 함께 보이느라) 이만큼(화면 px) 넘게 옮겨 가면,
+ * 손으로 누른 칸을 키울 때 누른 점이 손 아래에 그대로 있지 못하고(제목이나 항목을 함께 보이느라) 조금이라도(1px 넘게) 옮겨 가면,
  * 두 번 누르기가 끝날 만큼(DOUBLE_WAIT ms) 기다렸다 키운다. 그대로 있으면 손을 떼자마자 키운다: 누른 점을 중심으로 커져서
- * 둘째 누름도 같은 글자에 닿는다
+ * 둘째 누름도 같은 글자에 닿는다. 몇 px만 비켜 가도 둘째 누름이 칸 상자 밖(글자가 칸 위아래로 나온 곳)에 닿아 낱말을 고르지 못했다
  */
-const ANCHOR_SLIP = 6
+const ANCHOR_SLIP = 1
 /** 손으로 눌러 키울 때 장 제목을 함께 보이려고 누른 점을 비켜 가게 해도 되는 거리 (화면 px) */
 const HEAD_SLIP = 40
-const DOUBLE_WAIT = 220
+const DOUBLE_WAIT = 260
 /** 쓰는 칸에서 초점이 나간 뒤 돌아가기까지 기다리는 시간(ms): '다음 빈칸'처럼 장 밖의 단추를 거쳐 다른 칸으로 가면 줄었다 커지지 않게 */
 const RETURN_WAIT = 90
 
@@ -153,6 +153,8 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
     /** 손으로 누른 점 (화면 px). 그 누름으로 들어간 칸을 처음 키울 때 쓴다 */
     let anchor: { x: number; y: number } | null = null
     let pressing = false
+    /** 두 번 누르기를 기다리는 중 (그동안은 칸 크기가 바뀌어도 키우지 않는다) */
+    let held = false
     let wait = 0
     let raf = 0
     const ro = new ResizeObserver(() => follow())
@@ -261,7 +263,8 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
       if (!slideEl()?.contains(document.activeElement)) release()
     }
     const follow = () => {
-      if (!pressing && field && !raf) raf = requestAnimationFrame(measure)
+      // 칸을 처음 지켜볼 때 ResizeObserver가 한 번 부르는 것도 여기로 온다: 두 번 누르기를 기다리는 중에 키우면 둘째 누름이 비켜 갔다
+      if (!pressing && !held && field && !raf) raf = requestAnimationFrame(measure)
     }
 
     const onFocusIn = () => {
@@ -281,6 +284,7 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return
       pressing = true
+      held = false
       anchor = { x: e.clientX, y: e.clientY }
       window.clearTimeout(wait)
     }
@@ -298,7 +302,9 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
       const t = target()
       if (t && t.slip > ANCHOR_SLIP) {
         const keep = anchor
+        held = true
         wait = window.setTimeout(() => {
+          held = false
           anchor = keep
           measure()
         }, DOUBLE_WAIT)
