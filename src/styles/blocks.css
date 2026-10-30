@@ -425,6 +425,42 @@ body.is-block-resizing.is-row-resizing > .drag-cover {
   opacity: 0.42;
 }
 
+/* 고른 컴포넌트의 이름: 누르면 그 컴포넌트의 메뉴(복제, 앞뒤로, 칸 더하기, 저장). 이름 끝의 ⌄로 '이것의 메뉴'로 읽힌다.
+   줄 끝의 슬라이드 ⋯와 모양이 달라 둘을 헷갈리지 않는다 */
+.sel-tools .sel-name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  margin-right: 6px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.sel-tools .sel-name-btn::after {
+  content: none;
+}
+
+.sel-tools .sel-name-btn .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-2);
+  transition: rotate 0.15s;
+}
+
+.sel-tools .sel-name-btn:hover {
+  border-color: #b9bec7;
+  background: #f8f9fa;
+}
+
+.sel-tools .sel-name-btn.is-on .icon {
+  rotate: 180deg;
+}
+
 .bk-menu.is-more {
   width: 300px;
 }

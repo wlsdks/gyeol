@@ -3,11 +3,11 @@ import { BLOCK_EFFECTS, BLOCK_LOOKS, BLOCKS, blockItems, effectOf, isAlone, show
 import { sceneOf } from '../../deck/scenes'
 import type { Block, BlockEffect, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
-import { MoreIcon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
+import { Icon, MotionIcon, PlusIcon, ShapesIcon, TrashIcon } from '../ui'
 import { noRoomText } from './noRoom'
 import { SceneOverride } from './ScenePicker'
 
-// 고른 컴포넌트의 도구 (바탕, 움직임, 모양, 항목 더하기, 빼기, 그리고 ⋯ 안에 복제, 앞뒤로, 칸 더하기, 저장). 레이아웃 슬라이드의 항목 도구처럼 슬라이드 아래 도구 줄에
+// 고른 컴포넌트의 도구 (바탕, 움직임, 모양, 항목 더하기, 빼기, 그리고 이름을 누르면 복제, 앞뒤로, 칸 더하기, 저장). 레이아웃 슬라이드의 항목 도구처럼 슬라이드 아래 도구 줄에
 // 그린다(SlideStage가 .stage-sel에 넣는다). 슬라이드 위에는 고른 테와 끌어 옮기는 이름표(.bk-handle)만 남는다
 
 /** 내 컴포넌트로 저장하는 것의 이름 */
@@ -110,7 +110,88 @@ export function BlockTools({
   return (
     // 장 밖을 누르면 고르기를 끝내는 편집기의 처리(SlideStage)로 넘기지 않는다
     <div className="sel-tools" role="toolbar" aria-label={`${spec.name} 도구`} onPointerDown={(e) => e.stopPropagation()}>
-      <span className="sel-name">{spec.name}</span>
+      {/* 이름을 누르면 덜 쓰는 것: 복제, 앞뒤로 한 칸씩(끌어 옮기기는 슬라이드 위 이름표로), 숨긴 칸 꺼내기, 내 컴포넌트로 저장.
+          다 늘어놓으면 1280×600의 도구 줄에 들어가지 않아 모든 단추가 글자 없는 그림이 되었다. 줄 끝의 ⋯에 두던 때는 슬라이드의 ⋯와
+          나란히 서서 어느 것이 무엇의 메뉴인지 알 수 없었다. 이름에 붙여 '이 컴포넌트의 메뉴'로 읽히게 한다 */}
+      <div className="bk-tool-menu">
+        <button
+          type="button"
+          className={cx('sel-name sel-name-btn', menu === 'more' && 'is-on')}
+          aria-expanded={menu === 'more'}
+          aria-haspopup="menu"
+          title={`${spec.name}: 복제, 앞뒤로 옮기기, 칸 더하기, 내 컴포넌트로 저장`}
+          onClick={() => setMenu(menu === 'more' ? null : 'more')}
+        >
+          {spec.name}
+          <Icon d="M6 9l6 6 6-6" />
+        </button>
+        {menu === 'more' && (
+          <ul ref={menuRef} className="bk-menu is-more" role="menu" aria-label={`${spec.name} 더 보기`}>
+            <li>
+              <button
+                type="button"
+                role="menuitem"
+                className="bk-menu-item"
+                onClick={() => {
+                  onDuplicate()
+                  setMenu(null)
+                }}
+              >
+                <b>복제</b>
+                <span className="bk-menu-d">바로 뒤에 같은 컴포넌트를 하나 더 넣어요</span>
+              </button>
+            </li>
+            {([-1, 1] as const).map((dir) => (
+              <li key={dir}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onShift(dir)
+                    setMenu(null)
+                  }}
+                >
+                  <b>{dir < 0 ? '앞으로 옮기기' : '뒤로 옮기기'}</b>
+                  <span className="bk-menu-d">{dir < 0 ? '읽는 차례로 한 칸 앞 자리와 바꿔요' : '읽는 차례로 한 칸 뒤 자리와 바꿔요'}</span>
+                </button>
+              </li>
+            ))}
+            {adds.map((f) => (
+              <li key={f.key}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onOpenField(f.key)
+                    setMenu(null)
+                  }}
+                >
+                  <b>칸 더하기: {f.label}</b>
+                  <span className="bk-menu-d">{f.use}</span>
+                </button>
+              </li>
+            ))}
+            {saves.map((x) => (
+              <li key={x.kind}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="bk-menu-item"
+                  onClick={() => {
+                    onSave(x.kind)
+                    setMenu(null)
+                  }}
+                >
+                  <b>내 컴포넌트로 저장: {SAVE_NAMES[x.kind]}</b>
+                  <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 모션까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 모션까지`}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {/* 바탕: 견본만 늘어놓으면 무엇을 고르는지 알 수 없어서, 지금 바탕의 이름을 보이고 누르면 설명과 함께 고른다 */}
       <div className="bk-tool-menu">
         <button type="button" className={cx(B, menu === 'look' && 'is-on')} aria-expanded={menu === 'look'} title="컴포넌트의 바탕" onClick={() => setMenu(menu === 'look' ? null : 'look')}>
@@ -254,87 +335,6 @@ export function BlockTools({
         <TrashIcon />
         <span className="btn-t">빼기</span>
       </button>
-      {/* 덜 쓰는 것은 ⋯ 안에: 복제, 앞뒤로 한 칸씩(끌어 옮기기는 슬라이드 위 이름표로), 숨긴 칸 꺼내기, 내 컴포넌트로 저장.
-          다 늘어놓으면 1280×600의 도구 줄에 들어가지 않아 모든 단추가 글자 없는 그림이 되었고, 더하기 그림 둘이 무엇인지 알 수 없었다 */}
-      <div className="bk-tool-menu">
-        <button
-          type="button"
-          className={cx(B, 'sel-btn', menu === 'more' && 'is-on')}
-          aria-expanded={menu === 'more'}
-          aria-haspopup="menu"
-          title="더 보기: 복제, 앞뒤로 옮기기, 칸 더하기, 내 컴포넌트로 저장"
-          aria-label="더 보기"
-          onClick={() => setMenu(menu === 'more' ? null : 'more')}
-        >
-          <MoreIcon />
-        </button>
-        {menu === 'more' && (
-          <ul ref={menuRef} className="bk-menu is-more" role="menu" aria-label={`${spec.name} 더 보기`}>
-            <li>
-              <button
-                type="button"
-                role="menuitem"
-                className="bk-menu-item"
-                onClick={() => {
-                  onDuplicate()
-                  setMenu(null)
-                }}
-              >
-                <b>복제</b>
-                <span className="bk-menu-d">바로 뒤에 같은 컴포넌트를 하나 더 넣어요</span>
-              </button>
-            </li>
-            {([-1, 1] as const).map((dir) => (
-              <li key={dir}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="bk-menu-item"
-                  onClick={() => {
-                    onShift(dir)
-                    setMenu(null)
-                  }}
-                >
-                  <b>{dir < 0 ? '앞으로 옮기기' : '뒤로 옮기기'}</b>
-                  <span className="bk-menu-d">{dir < 0 ? '읽는 차례로 한 칸 앞 자리와 바꿔요' : '읽는 차례로 한 칸 뒤 자리와 바꿔요'}</span>
-                </button>
-              </li>
-            ))}
-            {adds.map((f) => (
-              <li key={f.key}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="bk-menu-item"
-                  onClick={() => {
-                    onOpenField(f.key)
-                    setMenu(null)
-                  }}
-                >
-                  <b>칸 더하기: {f.label}</b>
-                  <span className="bk-menu-d">{f.use}</span>
-                </button>
-              </li>
-            ))}
-            {saves.map((x) => (
-              <li key={x.kind}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="bk-menu-item"
-                  onClick={() => {
-                    onSave(x.kind)
-                    setMenu(null)
-                  }}
-                >
-                  <b>내 컴포넌트로 저장: {SAVE_NAMES[x.kind]}</b>
-                  <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 모션까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 모션까지`}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   )
 }
