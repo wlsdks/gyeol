@@ -1537,6 +1537,9 @@ export function blockFitter() {
    * 내용 높이뿐이라(화살표를 내용 가운데에 두려고) 늘 다 찬 것으로 재어, 줄 셋이 위 절반에 몰려도 키우지도 넓히지도 않았다.
    * 표지, 단락 장, 마지막 장, 부품 장, 제목 없는 장은 하지 않는다. 움직이는 중이면 끝난 뒤에
    */
+  /** 본문마다 지난번 맞추기에서 찾은 줄 사이(--fill-air) 값 */
+  const lastAir = new WeakMap<HTMLElement, number>()
+
   function fitLayout(slide: HTMLElement): void {
     const body = slide.querySelector<HTMLElement>(':scope > .s-body')
     if (!body || slide.classList.contains('l-compose') || !slide.querySelector(':scope > .s-head')) return
@@ -1633,13 +1636,18 @@ export function blockFitter() {
       body.style.setProperty('--fill-air', v + 'px')
       return !bad() && fill() <= FILL_MAX
     }
+    // 지난번에 찾은 값부터 본다: 글자 하나를 치는 동안 답은 대개 그대로라, 그 값은 되고 한 칸 넓히면 안 되는지만 보면
+    // 반씩 나눠 찾기(여덟 번 남짓 다시 재기)를 건너뛴다. 넓힐수록 넘치거나 85%를 넘으니(ok가 단조) 찾은 값은 같다
     let lo = 0
     let hi = airMax + 1
+    const was = lastAir.get(body)
+    if (was !== undefined && was <= airMax && (was === 0 || ok(was)) && (was === airMax || !ok(was + 1))) lo = hi = was
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1
       if (ok(mid)) lo = mid
       else hi = mid
     }
+    lastAir.set(body, lo)
     if (lo > 0) body.style.setProperty('--fill-air', lo + 'px')
     else body.style.removeProperty('--fill-air')
     eye()
