@@ -224,8 +224,9 @@ export function ExportMenu({
             <ExportItem
               name="PPT (그림)"
               label="PPT"
-              desc="장마다 그림 한 장, 노트도 들어가요"
-              info="PowerPoint에서 글은 고칠 수 없어요. 발표자 노트가 함께 들어가니 다른 분께 보내기 전에 노트를 확인하세요."
+              // PPT에서 오는 분은 글을 고칠 수 있다고 여기기 쉬워서, 고칠 수 없다는 것을 (i)가 아니라 한 줄 설명에 둔다
+              desc="장마다 그림이라 글은 고칠 수 없어요"
+              info="PowerPoint에서 넘기며 발표할 수 있지만, 장마다 그림 한 장이라 글과 표는 고칠 수 없어요. 고칠 것은 Framo에서 고쳐 다시 내보내세요. 발표자 노트는 PPT의 노트 칸에 들어가니 다른 분께 보내기 전에 확인하세요."
               onPick={pick(onPpt)}
             />
             <div className="menu-sep" role="separator" />
