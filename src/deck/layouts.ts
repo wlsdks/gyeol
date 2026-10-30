@@ -189,8 +189,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     highlight: { label: '강조할 지표', fallback: -1 },
     fields: [
       title('실적을 요약하는 한 문장'),
-      { key: 'metaTitle', label: '목표 머리말', hint: '목표', optional: true, named: true },
-      { key: 'valueTitle', label: '실적 머리말', hint: '실적', optional: true, named: true },
+      { key: 'metaTitle', label: '목표 제목', hint: '목표', optional: true, named: true },
+      { key: 'valueTitle', label: '실적 제목', hint: '실적', optional: true, named: true },
       source,
     ],
     items: {
@@ -372,10 +372,10 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     highlight: { label: '강조할 줄', fallback: -1 },
     fields: [
       title('표가 말해 주는 결론'),
-      { key: 'h1', label: '첫째 칸 머리말', hint: '과제' },
-      { key: 'h2', label: '둘째 칸 머리말', hint: '담당', optional: true },
-      { key: 'h3', label: '셋째 칸 머리말', hint: '기한', optional: true },
-      { key: 'h4', label: '넷째 칸 머리말', hint: '비고', optional: true },
+      { key: 'h1', label: '첫째 열 제목', hint: '과제' },
+      { key: 'h2', label: '둘째 열 제목', hint: '담당', optional: true },
+      { key: 'h3', label: '셋째 열 제목', hint: '기한', optional: true },
+      { key: 'h4', label: '넷째 열 제목', hint: '비고', optional: true },
       source,
     ],
     items: {
@@ -430,8 +430,8 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     ],
     fields: [
       title('비교해서 보여줄 결론'),
-      { key: 'leftTitle', label: '왼쪽 머리말', hint: '지금' },
-      { key: 'rightTitle', label: '오른쪽 머리말', hint: '바뀐 뒤' },
+      { key: 'leftTitle', label: '왼쪽 제목', hint: '지금' },
+      { key: 'rightTitle', label: '오른쪽 제목', hint: '바뀐 뒤' },
     ],
     items: {
       label: '비교 줄',
