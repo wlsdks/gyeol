@@ -1012,11 +1012,13 @@ export function motionEngine(): MotionEngine {
       }
       case 'matrix': {
         const t = head()
-        const grid = one('.mx-grid')
-        if (grid) wipe(grid, t, 'bottom', 700)
-        fade(one('.mx-y'), t + 200, 500)
-        fade(one('.mx-x'), t + 200, 500)
-        items('.mx-cell', t + 260, (el, at) => {
+        // 빈 판이 글보다 먼저 깔리지 않게: 축(판의 왼쪽과 아래 선)은 첫 칸의 글과 함께, 칸 나눔 선(칸의 테두리)은 그 칸의 글과 함께
+        // 흐리게 든다(ruled). 예전에는 판이 아래에서 걷혀 올라온 뒤 0.26초 지나서야 글이 위 칸부터 채워져서, 빈 격자가 먼저 보였다(녹화)
+        ruled(one('.mx-grid'), t)
+        fade(one('.mx-y'), t, 500)
+        fade(one('.mx-x'), t, 500)
+        items('.mx-cell', t, (el, at) => {
+          ruled(el, at)
           rise(el.querySelector('.mx-title'), at, L.y * 0.5)
           rise(el.querySelector('.mx-body'), at + 80, L.y * 0.5)
         })
@@ -1024,14 +1026,16 @@ export function motionEngine(): MotionEngine {
       }
       case 'position': {
         const t = head()
-        // 축이 왼쪽 아래에서 펼쳐지고, 점이 하나씩 위에서 제자리로 내려앉는다. 강조할 점은 맨 나중에, 내려앉은 뒤 고리
+        // 축이 왼쪽 아래에서 펼쳐지는 동안 점이 하나씩 위에서 제자리로 내려앉는다. 강조할 점은 맨 나중에, 내려앉은 뒤 고리.
+        // 축은 처음에 빨리 열리고(감속 곡선) 점은 축이 열리기 시작하면 바로: 축이 다 펼쳐진 뒤(0.42초)에 점을 들이던 때는
+        // 빈 축만 0.4초 남짓 서 있었다(녹화, '빈 틀 먼저 보이지 않기')
         const plot = one('.pm-plot')
-        if (plot) run(anims, plot, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(-40px -40px -40px -40px)' }], s(t), { easing: 'cubic-bezier(0.7, 0, 0.2, 1)', duration: d(700) })
-        fade(one('.pm-y'), t + 200, 500)
-        fade(one('.pm-x'), t + 200, 500)
+        if (plot) run(anims, plot, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(-40px -40px -40px -40px)' }], s(t), { easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)', duration: d(700) })
+        fade(one('.pm-y'), t, 500)
+        fade(one('.pm-x'), t, 500)
         const pts = $('.pm-pt')
         const ordered = pts.filter((el) => !el.classList.contains('is-hl')).concat(pts.filter((el) => el.classList.contains('is-hl')))
-        let at = t + 420
+        let at = t + 120
         for (const el of ordered) {
           const hl = el.classList.contains('is-hl')
           run(anims, el.querySelector('.pm-dot') || el, [{ opacity: 0, translate: `0 ${-L.y * 1.4}px` }, { opacity: 1, offset: 0.25 }, { translate: '0 0' }], s(at), L.pop)
