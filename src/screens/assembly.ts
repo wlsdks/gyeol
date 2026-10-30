@@ -698,11 +698,19 @@ function sides(area: HTMLElement, k: number): string[] {
         const qi = q.n.parentElement?.closest('.it') ?? null
         if (pi !== qi) continue
         // 줄 선이 있는 항목(목차, 표의 줄)은 선이 두 끝을 잇는 한 줄이라 찢어진 것이 아니다
+        // 선은 테두리로도, 칠한 가상 요소(::after)로도 긋는다(목차의 항목 사이 선)
         const ruled = (el: Element) => {
           const cs = getComputedStyle(el)
-          return parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0
+          if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0) return true
+          return (['::before', '::after'] as const).some((p) => {
+            const ps = getComputedStyle(el, p)
+            return ps.content !== 'none' && (ps.backgroundColor !== 'rgba(0, 0, 0, 0)' || parseFloat(ps.borderTopWidth) > 0 || parseFloat(ps.borderBottomWidth) > 0)
+          })
         }
-        if (pi && [pi, ...pi.querySelectorAll('*')].some(ruled)) continue
+        // 목록의 줄 선은 항목 사이에만 서서(아래 선이면 끝 항목, 위 선이면 첫 항목에는 없다) 같은 목록의 다른 항목에 선이 있어도 그 꼴이다:
+        // 목차의 끝 항목 '실행 … 3'만 선이 없어(선은 앞 두 항목의 ::after) 찢어졌다고 재어졌다
+        const rows = pi ? [pi, ...[...(pi.parentElement?.children ?? [])].filter((x) => x !== pi && x.classList.contains('it'))] : []
+        if (rows.some((row) => [row, ...row.querySelectorAll('*')].some(ruled))) continue
         // 항목 밖의 두 글도 줄 선이 있는 한 줄(표의 머리 줄: 진행 현황의 '과제'와 상태별 개수)에 함께 서면 찢어진 것이 아니다.
         // 두 글을 함께 담은 가장 가까운 상자부터 칸 안쪽까지 올라가며 그 상자 자신의 선만 본다(아래 줄들의 선까지 보면 다 빠진다)
         if (!pi) {
