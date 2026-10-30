@@ -463,7 +463,8 @@ function focusNextItem(from: HTMLElement): boolean {
 /**
  * Tab, Shift+Tab으로 같은 장의 다음(앞) 글 칸으로. 표에서 다음 칸으로 가듯 이어 쓸 수 있게.
  * 그대로 두면 칸 사이의 항목 손잡이, 빼기 단추에 초점이 멈춰서, 이어 친 글이 엉뚱한 칸에 들어갔다(추이의 기간 이름).
- * 옮긴 칸의 글은 모두 고른다(입력 칸에 Tab으로 들어갈 때처럼 바로 고쳐 쓰게). 장의 첫 칸, 마지막 칸에서는 브라우저에 맡긴다
+ * 옮긴 칸에서는 커서를 글 끝에 둔다(Enter로 다음 항목에 갈 때와 같다). 예전에는 글을 모두 골라서, 이미 적힌 줄 이름('지금의 문제')에
+ * Tab으로 들어간 채 치면 그 이름이 통째로 지워졌다. 통째로 바꾸려면 Ctrl+A. 장의 첫 칸, 마지막 칸에서는 브라우저에 맡긴다
  */
 function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
   const slide = from.closest('.slide')
@@ -474,10 +475,8 @@ function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
   next.focus()
   const sel = window.getSelection()
   if (sel) {
-    const range = document.createRange()
-    range.selectNodeContents(next)
-    sel.removeAllRanges()
-    sel.addRange(range)
+    sel.selectAllChildren(next)
+    sel.collapseToEnd()
   }
   return true
 }
