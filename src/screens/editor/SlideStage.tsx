@@ -33,7 +33,6 @@ export function SlideStage({
   side,
   layoutPeek,
   onRemove,
-  onPresentHere,
 }: {
   deck: Deck
   slide: Slide
@@ -45,7 +44,6 @@ export function SlideStage({
   side: SidePanel
   layoutPeek: LayoutId | null
   onRemove: (s: Slide) => void
-  onPresentHere: () => void
 }) {
   // 할 일(액션)만 쓴다: 덱 전체를 구독하면 고칠 때마다 이 장이 한 번 더 그려진다 (장과 덱은 위에서 받는다)
   const store = useDeck.getState()
@@ -148,7 +146,6 @@ export function SlideStage({
                 overflow={overflow}
                 onTogglePeek={() => (peek ? setPeek(false) : startPeek())}
                 onReplay={() => setPreview((n) => n + 1)}
-                onPresentHere={onPresentHere}
                 onRemove={onRemove}
               />
             </>

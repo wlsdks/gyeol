@@ -6,13 +6,11 @@ import type { Deck, Slide } from '../../deck/types'
 import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { cx } from '../../lib/cx'
-import { keys } from '../../lib/keys'
 import { useDeck } from '../../store/deckStore'
 import { BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
 import { SlideAsk } from './AiShare'
 import type { BlockEditing } from './BlockEditor'
 import type { SidePanel } from './sidePanel'
-import { VariantMenu } from './VariantMenu'
 
 /**
  * 슬라이드 아래 단추줄: 왼쪽과 오른쪽 단추가 한 줄에 다 들어가지 않으면 글자를 숨긴다.
@@ -63,7 +61,11 @@ function PeekNote({ slide, layout }: { slide: Slide; layout: Slide['layout'] }) 
   )
 }
 
-/** 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 미리 보기, 발표, 그리고 '더 보기'(복제, 빼기, 지우기) */
+/**
+ * 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 이 장 미리 보기와 '더 보기'(복제, 빼기, 지우기).
+ * 예전에는 '모양'과 '지금 장부터 발표'도 여기 있었다. 모양은 오른쪽 '이 장 설정'에, 지금 장부터 발표는 위 '발표하기' 옆 메뉴(Shift+F5)에
+ * 같은 일이 있어서, 무엇이 다른지 헷갈리고 1280 너비에서는 단추가 그림만 남았다
+ */
 export function StageTools({
   deck,
   slide,
@@ -76,7 +78,6 @@ export function StageTools({
   overflow,
   onTogglePeek,
   onReplay,
-  onPresentHere,
   onRemove,
 }: {
   deck: Deck
@@ -93,14 +94,12 @@ export function StageTools({
   onTogglePeek: () => void
   /** 미리보기의 움직임을 한 번 더 */
   onReplay: () => void
-  onPresentHere: () => void
   onRemove: (s: Slide) => void
 }) {
   // 할 일(액션)만 쓴다
   const store = useDeck.getState()
   const spec = LAYOUTS[slide.layout]
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
-  const variants = spec.variants ?? []
   const toolsRef = useRef<HTMLDivElement>(null)
   useTightTools(toolsRef)
   return (
@@ -143,7 +142,6 @@ export function StageTools({
             <span className="btn-t">이 장 설정</span>
           </button>
           <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
-          {variants.length > 1 && <VariantMenu deck={deck} slide={slide} />}
           {spec.items && (
             <button
               type="button"
@@ -178,15 +176,12 @@ export function StageTools({
           type="button"
           className={cx('btn btn-ghost btn-sm', peek && 'is-on')}
           aria-pressed={peek}
-          title={peek ? '편집으로 돌아가기' : '발표 화면처럼 미리 보기'}
+          // 발표를 시작하지 않고 이 장만 듣는 분이 볼 모습으로 본다. 발표는 위의 '발표하기'(F5), 지금 장부터는 그 옆 메뉴와 Shift+F5
+          title={peek ? '편집으로 돌아가기 (Esc)' : '듣는 분이 볼 모습을 여기서 봐요. 발표는 시작하지 않아요'}
           onClick={onTogglePeek}
         >
           <ScreenIcon />
-          <span className="btn-t">{peek ? '편집으로' : '미리 보기'}</span>
-        </button>
-        <button type="button" className="btn btn-ghost btn-sm" title={`지금 장부터 발표 (${keys('shift+F5')})`} onClick={onPresentHere}>
-          <PlayIcon />
-          <span className="btn-t">지금 장부터 발표</span>
+          <span className="btn-t">{peek ? '편집으로' : '이 장 미리 보기'}</span>
         </button>
         {/* 복제, 빼기, 지우기는 덜 쓰는 일이라 '더 보기'에 이름과 함께 둔다. 예전에는 그림만 남은 단추 셋이 나란히 있어서
             빗금 친 눈이 '발표에서 빼기'인지 알기 어려웠다(1280 너비에서는 늘 그림만 보였다) */}

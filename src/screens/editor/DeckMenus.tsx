@@ -295,6 +295,7 @@ export function PresentButton({ onStart }: { onStart: (how: PresentHow, here: bo
               }}
             >
               <span className="menu-item-name">지금 장부터 발표 <kbd>{keys('shift+F5')}</kbd></span>
+              <span className="menu-item-desc">고치고 있는 장에서 시작해요.</span>
             </button>
             <div className="menu-sep" role="separator" />
             <div className="menu-toggle">

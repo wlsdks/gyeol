@@ -1268,17 +1268,6 @@
   padding-bottom: 28px;
 }
 
-/* 슬라이드 아래 '모양': 이 레이아웃의 모양들을 그림으로 */
-.variant-pop {
-  padding: 6px 12px 14px;
-}
-
-.variant-grid {
-  display: flex;
-  gap: 12px;
-  padding: 0 2px;
-}
-
 .ins-layouts {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

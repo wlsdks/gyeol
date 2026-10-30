@@ -81,8 +81,8 @@ function barSpot(r: DOMRect, bar: HTMLElement | null, canvas: HTMLElement | null
   if (slide) ys.push(Math.max(top, slide.top - bh - 8), Math.min(bottom - bh, slide.bottom + 8))
   const xs = slide ? [clampX(r.left), clampX(r.right - bw), clampX(r.left + (r.width - bw) / 2)] : [clampX(r.left)]
   const spots = ys.filter((y) => y >= top && y + bh <= bottom).flatMap((y) => xs.map((x) => ({ x, y })))
-  // 장 아래 여백은 장 아래 도구 줄과 겹친다. 왼쪽 묶음(AI로 다듬기, 넘침 알림)과 오른쪽 묶음(미리 보기, 발표) 사이가 막대보다
-  // 넓으면 그 사이에도 놓아 본다 (1440×900에서 맨 아래 컴포넌트를 고르면 막대가 'AI로 다듬기'를, 1920×1080에서는 '미리 보기'를
+  // 장 아래 여백은 장 아래 도구 줄과 겹친다. 왼쪽 묶음(AI 다듬기, 넘침 알림)과 오른쪽 묶음(미리 보기, 발표) 사이가 막대보다
+  // 넓으면 그 사이에도 놓아 본다 (1440×900에서 맨 아래 컴포넌트를 고르면 막대가 'AI 다듬기'를, 1920×1080에서는 '미리 보기'를
   // 반쯤 덮어 단추 두 줄이 겹쳐 보였다. 견주는 자리가 고른 것에 맞춘 셋뿐이라 그 사이의 빈 곳을 몰랐다).
   // 도구를 하나도 덮지 않고 양옆 도구와 8px씩 떨어지는 자리만 더한다: 도구는 가볍게 쳐서, 덮는 자리를 더하면 아무것도 덮지 않던
   // 장 위 여백보다 앞설 수 있고, 틈에 꼭 끼우면 막대가 도구 줄의 단추처럼 보인다

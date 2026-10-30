@@ -237,7 +237,7 @@ function AskList({
   )
 }
 
-/** 슬라이드 아래의 'AI로 다듬기'. 이 장 하나를 맡긴다 */
+/** 슬라이드 아래의 'AI 다듬기'. 이 장 하나를 맡긴다 (위쪽 'AI 다듬기'와 같은 이름, 맡기는 범위만 다르다) */
 export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; ai: AiShare; ask: AiAsk }) {
   if (!ai.status) return null
   const busy = ask.job?.state === 'running'
@@ -250,11 +250,11 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
           type="button"
           className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')}
           aria-expanded={open}
-          title="레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요"
+          title="이 장의 레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요"
           onClick={toggle}
         >
           <AskIcon />
-          {busy ? 'AI가 보는 중' : 'AI로 다듬기'}
+          {busy ? 'AI가 보는 중' : 'AI 다듬기'}
         </button>
       )}
     >
@@ -327,7 +327,7 @@ export function AiMenu({ deck, ai, ask }: { deck: Deck; ai: AiShare; ask: AiAsk 
     <Popover
       className="pop-ai"
       button={({ toggle, open }) => (
-        // 'AI' 한 낱말은 누르면 무엇이 되는지 말하지 않았다. 장 아래의 'AI로 다듬기'와 같은 말로, 이쪽은 발표 전체를 다듬는다.
+        // 'AI' 한 낱말은 누르면 무엇이 되는지 말하지 않았다. 장 아래의 'AI 다듬기'와 같은 이름으로, 이쪽은 발표 전체를 다듬는다.
         // 사용법, README, MCP 안내도 이 이름으로 부른다
         <button type="button" className="btn btn-ghost ai-btn" title="AI에게 발표 전체의 구성과 모양을 제안받아요" aria-expanded={open} onClick={toggle}>
           <AskIcon />
@@ -410,7 +410,7 @@ function AiHead({ title, ai, ask, compact }: { title: string; ai: AiShare; ask: 
     <header className="ai-head">
       <p className="ai-head-h">
         {title}
-        <Info label="AI로 다듬기 설명">고르면 AI가 발표의 모양을 살펴보고 바꿀 것을 제안해요. 바뀌는 모습을 미리 보고 적용할지 정해요. 적용한 뒤에도 되돌릴 수 있어요.</Info>
+        <Info label="AI 다듬기 설명">고르면 AI가 발표의 모양을 살펴보고 바꿀 것을 제안해요. 바뀌는 모습을 미리 보고 적용할지 정해요. 적용한 뒤에도 되돌릴 수 있어요.</Info>
       </p>
       <AiConn ai={ai} ask={ask} compact={compact} />
     </header>
