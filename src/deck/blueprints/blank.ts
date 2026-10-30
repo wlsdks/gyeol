@@ -8,6 +8,7 @@ export const blank: Blueprint = {
   description: '처음부터 직접 구성해요',
   storyline: [],
   defaultTitle: '새 발표',
+  defaults: { audience: 'mixed', minutes: 20 },
   examples: { title: '하반기 팀 운영 계획 보고', ask: '하반기 교육 예산 승인' },
   recipes: [
     cover,

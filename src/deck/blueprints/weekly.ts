@@ -10,6 +10,8 @@ export const weekly: Blueprint = {
   storyline: ['진행', '숫자', '이슈', '할 일'],
   showcase: ['진행 현황', '주요 숫자', '이슈와 대응', '다음 할 일'],
   defaultTitle: '주간 업무 보고',
+  // 마법사에서 먼저 골라 둘 값: 늘 하는 짧은 보고라 팀장께 10분
+  defaults: { audience: 'practitioner', minutes: 10 },
   examples: { title: '10월 4주 서비스운영팀 주간 업무 보고', lead: '10월 21일 ~ 25일' },
   recipes: [
     plainCover,

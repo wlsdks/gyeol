@@ -39,8 +39,7 @@ function filmOf(type: DeckType): { deck: Deck; slides: Slide[] } {
   const bp = BLUEPRINTS[type]
   const deck = createDeck({
     type,
-    audience: 'mixed',
-    minutes: 20,
+    ...bp.defaults,
     method: 'live',
     title: '',
     org: '',
@@ -62,9 +61,25 @@ export function Wizard() {
     setDir(next < step ? -1 : 1)
     setStepNow(next)
   }
-  const [type, setType] = useState<DeckType>('business')
-  const [audience, setAudience] = useState<Audience>('mixed')
-  const [minutes, setMinutes] = useState(20)
+  const [type, setTypeNow] = useState<DeckType>('business')
+  const [audience, setAudienceNow] = useState<Audience>(BLUEPRINTS.business.defaults.audience)
+  const [minutes, setMinutesNow] = useState(BLUEPRINTS.business.defaults.minutes)
+  // 듣는 사람과 시간은 종류마다 흔한 값(blueprints의 defaults)으로 먼저 골라 둔다. 사람이 고른 값은 종류를 바꿔도 덮지 않는다
+  const [picked, setPicked] = useState({ audience: false, minutes: false })
+  const setType = (t: DeckType) => {
+    setTypeNow(t)
+    const d = BLUEPRINTS[t].defaults
+    if (!picked.audience) setAudienceNow(d.audience)
+    if (!picked.minutes) setMinutesNow(d.minutes)
+  }
+  const setAudience = (a: Audience) => {
+    setPicked((p) => ({ ...p, audience: true }))
+    setAudienceNow(a)
+  }
+  const setMinutes = (m: number) => {
+    setPicked((p) => ({ ...p, minutes: true }))
+    setMinutesNow(m)
+  }
   const [method, setMethod] = useState<Method>('live')
   const [title, setTitle] = useState('')
   const [org, setOrg] = useState('')
@@ -482,8 +497,8 @@ function CoverPreview(props: {
   }, [type, title, ask, lead])
   const meta: DeckMeta = {
     type,
-    audience: 'mixed',
-    duration: 20,
+    audience: BLUEPRINTS[type].defaults.audience,
+    duration: BLUEPRINTS[type].defaults.minutes,
     method: 'live',
     org,
     presenter,

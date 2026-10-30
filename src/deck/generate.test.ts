@@ -194,6 +194,17 @@ describe('createDeck', () => {
   })
 })
 
+describe('마법사에서 먼저 골라 둘 값 (defaults)', () => {
+  it('종류마다 고를 수 있는 듣는 사람과 시간이고, 모두 같은 값은 아니다', () => {
+    for (const bp of Object.values(BLUEPRINTS)) {
+      expect(AUDIENCES.map((a) => a.id)).toContain(bp.defaults.audience)
+      expect(DURATIONS.map((d) => d.minutes)).toContain(bp.defaults.minutes)
+    }
+    expect(BLUEPRINTS.weekly.defaults).toEqual({ audience: 'practitioner', minutes: 10 })
+    expect(new Set(DECK_TYPES.map((t) => `${BLUEPRINTS[t].defaults.audience}/${BLUEPRINTS[t].defaults.minutes}`)).size).toBeGreaterThan(3)
+  })
+})
+
 describe('레이아웃 묶음과 예시', () => {
   it('모든 레이아웃이 묶음에 한 번씩 들어간다', () => {
     const grouped = LAYOUT_GROUPS.flatMap((g) => g.layouts)

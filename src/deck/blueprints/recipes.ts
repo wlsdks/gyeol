@@ -42,6 +42,11 @@ export interface Blueprint {
   showcase?: string[]
   defaultTitle: string
   /**
+   * 마법사에서 이 종류를 고르면 먼저 골라 둘 듣는 사람과 시간. 늘 '여러 분이 함께, 20분'이면 주간 보고도 20분 구성이 됐다.
+   * 그 자리에서 흔한 값을 어림으로 정한 것이라, 사람이 바꾼 값은 종류를 바꿔도 덮지 않는다(Wizard)
+   */
+  defaults: { audience: Audience; minutes: number }
+  /**
    * 마법사의 입력 예시. ask가 없는 발표(나누고 알리는 발표)는 결정 요청 대신 부제(lead)를 묻는다.
    * 결정받을 것이 없는 자리에서 '결정받고 싶은 것'을 물으면 무엇을 적을지 헷갈린다
    */
