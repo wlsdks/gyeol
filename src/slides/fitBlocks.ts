@@ -286,34 +286,63 @@ export function blockFitter() {
       const dots = pts.map((p) => p.querySelector<HTMLElement>('.pm-dot')?.getBoundingClientRect() ?? null)
       // 판을 넷으로 나누는 가운데 선: 이름표가 걸치면 선이 글을 취소선처럼 지나간다(편집할 때 이름표 아래에 붙는 점수 줄이 가운데 가로선에 걸렸다)
       const mids = Array.from(plot.querySelectorAll<HTMLElement>(':scope > .pm-mid')).map((m) => m.getBoundingClientRect()).filter((m) => m.width || m.height)
-      const taken: DOMRect[] = []
-      pts.forEach((p, i) => {
-        const label = p.querySelector<HTMLElement>('.pm-label')
-        if (!label) return
-        // 어림한 자리는 그릴 때 data-pm-side에 적어 둔다: 다시 맞출 때(글꼴이 오거나 글자가 줄 때) 거기서부터 다시 고른다
-        const first = (p.dataset.pmSide ?? '').split(' ').filter(Boolean)
-        // 겹치지 않는 첫 자리. 어디에 두어도 겹치면 가장 덜 겹치는 자리 (판 밖으로 나간 것은 크게 친다)
-        let pick = first
-        let best = Infinity
-        for (const o of [first, ...tries]) {
-          set(p, o)
-          const r = label.getBoundingClientRect()
-          let cost = outside(r) * r.height * 4
-          for (const t of taken) cost += meet(r, t)
-          dots.forEach((d, j) => {
-            if (j !== i && d) cost += meet(r, d) * 2
-          })
-          for (const m of mids) cost += meet(r, m)
-          if (cost < best) {
-            best = cost
-            pick = o
-          }
-          if (cost === 0) break
-        }
-        set(p, pick)
-        taken.push(label.getBoundingClientRect())
+      // 어림한 자리는 그릴 때 data-pm-side에 적어 둔다: 다시 맞출 때(글꼴이 오거나 글자가 줄 때) 거기서부터 다시 고른다.
+      // 겹치지 않는 첫 자리. 어디에 두어도 겹치면 가장 덜 겹치는 자리 (판 밖으로 나간 것은 크게 친다)
+      pickSides(pts, '.pm-label', (p) => p.dataset.pmSide, tries, set, (r, i, taken) => {
+        let cost = outside(r) * r.height * 4
+        for (const t of taken) cost += meet(r, t)
+        dots.forEach((d, j) => {
+          if (j !== i && d) cost += meet(r, d) * 2
+        })
+        for (const m of mids) cost += meet(r, m)
+        return cost
       })
     }
+  }
+
+  /**
+   * 점마다 이름표(숫자)를 둘 자리를 앞 점부터 차례로 고른다: 그릴 때 어림한 자리(first)부터 tries 차례로 보고 값(cost)이 0인 첫 자리,
+   * 없으면 가장 작은 자리. 앞 점이 고른 이름표(taken)는 뒤 점의 값에 든다.
+   * 이름표는 저마다 제 점 안에 따로 서서(position: absolute) 한 점의 자리를 바꿔도 다른 점의 이름표는 그대로다. 그래서 같은 차례의 자리를
+   * 모든 점에 한꺼번에 놓고 한 번에 잰다: 점마다 자리마다 놓고 재던 때는 그때마다 스타일과 자리를 다시 계산해서(점 여섯에 자리 아홉이면
+   * 쉰 번 남짓) 느린 PC에서 추이 그림 하나에 80ms가 들었다. 재는 것은 쓰는 차례가 왔을 때만이라, 모두 첫 자리에 들면 한 번이다
+   */
+  function pickSides(
+    pts: HTMLElement[],
+    labelSel: string,
+    firstOf: (p: HTMLElement) => string | undefined,
+    tries: string[][],
+    set: (el: HTMLElement, on: string[]) => void,
+    costOf: (r: DOMRect, i: number, taken: DOMRect[]) => number,
+  ): void {
+    const labels = pts.map((p) => p.querySelector<HTMLElement>(labelSel))
+    const options = pts.map((p) => [(firstOf(p) ?? '').split(' ').filter(Boolean), ...tries])
+    const table: (DOMRect | null)[][] = []
+    const rect = (i: number, o: number) => {
+      if (!table[o]) {
+        pts.forEach((p, j) => labels[j] && set(p, options[j][o]))
+        table[o] = labels.map((l) => (l ? l.getBoundingClientRect() : null))
+      }
+      return table[o][i]!
+    }
+    const picks: number[] = []
+    const taken: DOMRect[] = []
+    pts.forEach((_, i) => {
+      if (!labels[i]) return
+      let pick = 0
+      let best = Infinity
+      for (let o = 0; o < options[i].length; o++) {
+        const cost = costOf(rect(i, o), i, taken)
+        if (cost < best) {
+          best = cost
+          pick = o
+        }
+        if (cost === 0) break
+      }
+      picks[i] = pick
+      taken.push(rect(i, pick))
+    })
+    pts.forEach((p, i) => labels[i] && set(p, options[i][picks[i]]))
   }
 
   /**
@@ -356,29 +385,13 @@ export function blockFitter() {
       Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left) + gap) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) + gap)
     // 위는 그림 판(숫자 띠까지), 아래는 바닥줄, 양옆은 판 끝까지
     const outside = (r: DOMRect) => Math.max(0, P.top - r.top) + Math.max(0, r.bottom - (P.bottom - 4 * k)) + Math.max(0, P.left - r.left) + Math.max(0, r.right - P.right)
-    const taken: DOMRect[] = []
-    pts.forEach((p, i) => {
-      const label = p.querySelector<HTMLElement>('.tn-val')
-      if (!label) return
-      const first = (p.dataset.tnSide ?? '').split(' ').filter(Boolean)
-      let pick = first
-      let best = Infinity
-      for (const o of [first, ...tries]) {
-        set(p, o)
-        const r = label.getBoundingClientRect()
-        let cost = (crossed(r) + outside(r)) * r.height * 40
-        for (const t of taken) cost += meet(r, t)
-        dots.forEach((d, j) => {
-          if (j !== i && d) cost += meet(r, d) * 2
-        })
-        if (cost < best) {
-          best = cost
-          pick = o
-        }
-        if (cost === 0) break
-      }
-      set(p, pick)
-      taken.push(label.getBoundingClientRect())
+    pickSides(pts, '.tn-val', (p) => p.dataset.tnSide, tries, set, (r, i, taken) => {
+      let cost = (crossed(r) + outside(r)) * r.height * 40
+      for (const t of taken) cost += meet(r, t)
+      dots.forEach((d, j) => {
+        if (j !== i && d) cost += meet(r, d) * 2
+      })
+      return cost
     })
   }
 
