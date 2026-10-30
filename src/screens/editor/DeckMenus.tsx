@@ -161,7 +161,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <div className="theme-toggle">
             <Toggle label="쓸 때 크게 보기" on={zoomTyping} onChange={setZoomTyping} />
             <Info label="쓸 때 크게 보기 설명" align="end">
-              칸을 눌러 쓰는 동안 장을 그 칸 둘레로 크게 보여요. 다 쓰면 원래 크기로 돌아와요. 이 화면에서만 커지고, 발표에는 영향이 없어요.
+              칸을 눌러 쓰는 동안 슬라이드를 그 칸 둘레로 크게 보여요. 다 쓰면 원래 크기로 돌아와요. 이 화면에서만 커지고, 발표에는 영향이 없어요.
             </Info>
           </div>
         </div>
