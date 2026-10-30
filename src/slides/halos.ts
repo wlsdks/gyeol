@@ -1,4 +1,5 @@
 import { useLayoutEffect, type RefObject } from 'react'
+import { fitsText } from './selVariant'
 
 /**
  * 편집할 때 칸마다 두르는 면과 점선(.ed-halo)의 넓이를 칸 사이 틈에 맞춘다.
@@ -21,6 +22,8 @@ const CELL_OUT = 7
  * 바짝 붙어 쓰는 칸이 좁아 보였다
  */
 const FOCUS_MAX = 48
+/** (시안 a, b, d) 글에 맞춘 테가 항목과 부품 칸 밖으로 나가도 되는 넓이 */
+const FIT_OUT = 24
 
 interface Box {
   el: HTMLElement
@@ -58,10 +61,13 @@ export function placeHalos(slide: HTMLElement): Box[] {
     for (const wrap of [el.parentElement?.closest('.it'), el.closest('.bk')]) {
       const c = wrap?.getBoundingClientRect()
       if (!c) continue
-      const room = (d: number) => Math.max(0, d / k + CELL_OUT)
+      const room = (d: number, out = CELL_OUT) => Math.max(0, d / k + out)
       const cell = [room(q.top - c.top), room(c.right - q.right), room(c.bottom - q.bottom), room(q.left - c.left)]
       box.h = box.h.map((v, i) => Math.min(v, cell[i])) as Box['h']
-      box.f = box.f.map((v, i) => Math.min(v, cell[i])) as Box['f']
+      // (시안 a, b, d) 글에 맞춘 테는 칸 상자보다 작아서 항목 끝 밖으로 조금 더 나가도 된다: 항목 끝에 붙은 글(줄의 이름)에서 테가 1~2px로 붙었다
+      const out = fitsText ? FIT_OUT : CELL_OUT
+      const focus = [room(q.top - c.top, out), room(c.right - q.right, out), room(c.bottom - q.bottom, out), room(q.left - c.left, out)]
+      box.f = box.f.map((v, i) => Math.min(v, focus[i])) as Box['f']
     }
     boxes.push(box)
     inkOut(el, q, k)
@@ -149,6 +155,68 @@ function inkOut(el: HTMLElement, q: DOMRect, k: number) {
   }
 }
 
+/**
+ * (시안 a, b, d) 칸 상자 안에서 그려진 글(빈칸은 안내 글)이 차지한 네모: 칸 상자 끝에서 안쪽으로 든 거리(캔버스 px, 글이 상자 밖으로
+ * 나오면 음수). 왼쪽, 오른쪽, 위, 아래. 쓰는 칸의 테를 칸 상자가 아니라 글에 맞추려고: 제목 칸은 칸이 장 너비만큼 넓어서 테가 글 오른쪽으로
+ * 한참 빈 채 장 끝까지 늘어났다. 위아래는 줄 상자가 아니라 그려지는 글자 모양으로. 읽기만 한다(쓰기는 writeGlyph)
+ */
+function readGlyph(ed: HTMLElement): number[] | null {
+  const slide = ed.closest<HTMLElement>('.slide')
+  if (!slide?.offsetWidth) return null
+  const k = slide.getBoundingClientRect().width / slide.offsetWidth
+  const input = ed.querySelector(':scope > .ed-input')
+  const text = input?.textContent ? input : ed.querySelector(':scope > .ed-hint')
+  if (!k || !text?.textContent?.trim()) return null
+  const r = document.createRange()
+  r.selectNodeContents(text)
+  const lines = [...r.getClientRects()].filter((x) => x.width > 0.5 && x.height)
+  if (!lines.length) return null
+  const q = ed.getBoundingClientRect()
+  const ink = inkOf(text)
+  let left = Infinity
+  let right = -Infinity
+  let top = Infinity
+  let bottom = -Infinity
+  for (const x of lines) {
+    left = Math.min(left, x.left)
+    right = Math.max(right, x.right)
+    top = Math.min(top, x.top)
+    bottom = Math.max(bottom, x.bottom)
+  }
+  return [(left - q.left) / k, (q.right - right) / k, (top - q.top) / k + ink.top, (q.bottom - bottom) / k + ink.bottom]
+}
+
+const GLYPH_VARS = ['--ed-gx0', '--ed-gx1', '--ed-gy0', '--ed-gy1'] as const
+
+/** readGlyph로 잰 네모를 --ed-gx0, --ed-gx1, --ed-gy0, --ed-gy1에. 값이 같으면 건드리지 않는다(스타일을 다시 계산하지 않게) */
+function writeGlyph(ed: HTMLElement, v: number[] | null) {
+  const st = ed.style
+  GLYPH_VARS.forEach((name, i) => {
+    const want = v ? `${Math.round(v[i] * 10) / 10}px` : ''
+    if (st.getPropertyValue(name) === want) return
+    if (want) st.setProperty(name, want)
+    else st.removeProperty(name)
+  })
+}
+
+/**
+ * (시안 a, b, d) 글 네모는 테가 보이는 칸(손을 올린 칸, 쓰는 칸)만, 다음 그리기 직전(rAF) 한 번에 잰다: 바뀐 칸을 모아 다 읽은 뒤에
+ * 다 쓴다(읽기와 쓰기가 번갈아 레이아웃을 여러 번 하지 않게). 장의 모든 칸을 그릴 때마다 재지 않는다
+ */
+const glyphQueue = new Set<HTMLElement>()
+let glyphRaf = 0
+function refitGlyph(ed: HTMLElement) {
+  glyphQueue.add(ed)
+  if (glyphRaf) return
+  glyphRaf = requestAnimationFrame(() => {
+    glyphRaf = 0
+    const eds = [...glyphQueue].filter((e) => e.isConnected)
+    glyphQueue.clear()
+    const vs = eds.map(readGlyph)
+    eds.forEach((e, i) => writeGlyph(e, vs[i]))
+  })
+}
+
 let pen: CanvasRenderingContext2D | null | undefined
 /** 줄 상자의 위아래 끝에서 그려지는 글자까지의 빈 키(캔버스 px) */
 function inkOf(el: Element): { top: number; bottom: number } {
@@ -177,10 +245,23 @@ export function useHalos(ref: RefObject<HTMLElement | null>, on: boolean) {
     if (document.fonts?.status === 'loading') document.fonts.ready.then(() => alive && placeHalos(el))
     const ro = new ResizeObserver(() => placeHalos(el))
     ro.observe(el)
+    // (시안 a, b, d) 테가 보이는 칸만 글 네모를 잰다: 손을 올린 칸, 쓰기 시작한 칸, 쓰는 동안 글 폭이 바뀐 칸(칸 상자는 그대로라
+    // ResizeObserver가 못 본다). 장이 다시 그려지면 쓰는 칸 하나만
+    const fit = (e: Event) => {
+      const ed = (e.target as Element | null)?.closest?.<HTMLElement>('.ed')
+      if (ed && el.contains(ed)) refitGlyph(ed)
+    }
+    const off = new AbortController()
+    if (fitsText) {
+      for (const type of ['pointerover', 'focusin', 'input']) el.addEventListener(type, fit, { signal: off.signal })
+      const a = document.activeElement?.closest?.<HTMLElement>('.ed')
+      if (a && el.contains(a)) refitGlyph(a)
+    }
     return () => {
       alive = false
       clearTimeout(later)
       ro.disconnect()
+      off.abort()
     }
   })
 }

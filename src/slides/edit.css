@@ -88,6 +88,96 @@
   left: calc(min(var(--ed-fl, 14px), max(var(--ed-l, 14px), 0.65em)) * -1);
 }
 
+/* ---------- 쓰는 칸 표시 시안 (개발용, slides/selVariant.ts의 data-sel). 사용자가 하나를 고르면 걷고 위 규칙을 그것으로 바꾼다 ----------
+   모든 시안: 테 한 겹, 글을 덮지 않음, 칸 크기와 글 자리는 그대로(테만 움직인다). 띄우는 거리와 두께는 화면 px로 (--vs) */
+:root[data-sel] .slide.m-edit .ed > .ed-halo {
+  --sel-ox: calc(8px / var(--vs, 0.5));
+  --sel-oy: calc(5px / var(--vs, 0.5));
+  --sel-min: calc(2px / var(--vs, 0.5));
+}
+
+/* a, b, d: 칸 상자가 아니라 그려진 글(빈칸은 안내 글)에 맞춘다 (halos.ts의 --ed-g*). 글에서 화면 8px(옆), 5px(위아래) 띄우고,
+   이웃 칸 쪽으로는 halos.ts가 잰 끝(--ed-f*)을 넘지 않는다. 손을 올린 때와 쓰는 때가 같은 네모라 눌러도 테가 튀지 않는다 */
+:root:is([data-sel='a'], [data-sel='b'], [data-sel='d']) .slide.m-edit .ed > .ed-halo {
+  top: calc(var(--ed-gy0, 0px) - max(var(--sel-min), min(var(--sel-oy), var(--ed-gy0, 0px) + var(--ed-ft, 10px))));
+  bottom: calc(var(--ed-gy1, 0px) - max(var(--sel-min), min(var(--sel-oy), var(--ed-gy1, 0px) + var(--ed-fb, 10px))));
+  left: calc(var(--ed-gx0, 0px) - max(var(--sel-min), min(var(--sel-ox), var(--ed-gx0, 0px) + var(--ed-fl, 14px))));
+  right: calc(var(--ed-gx1, 0px) - max(var(--sel-min), min(var(--sel-ox), var(--ed-gx1, 0px) + var(--ed-fr, 14px))));
+  border-radius: calc(4px / var(--vs, 0.5));
+}
+
+/* a: 글에 맞춘 얇은 테. 올리면 옅은 1px, 쓰면 1.5px 실선. 빈칸을 올리면 안내 글 둘레에 아주 옅은 면 */
+:root[data-sel='a'] .slide.m-edit .ed:hover > .ed-halo {
+  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 45%, transparent);
+}
+
+:root[data-sel='a'] .slide.m-edit .ed:focus-within > .ed-halo {
+  background: transparent;
+  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) var(--sel);
+}
+
+/* b: 테 없이 글 밑줄. 입력 칸의 밑줄처럼 글 폭만큼, 쓰면 2px, 올리면 옅은 1px. 칸의 경계는 커서와 밑줄 끝이 알려 준다 */
+:root[data-sel='b'] .slide.m-edit .ed > .ed-halo {
+  bottom: calc(var(--ed-gy1, 0px) - max(var(--sel-min), min(calc(8px / var(--vs, 0.5)), var(--ed-gy1, 0px) + var(--ed-fb, 10px))));
+  left: calc(var(--ed-gx0, 0px));
+  right: calc(var(--ed-gx1, 0px));
+  border-radius: 0;
+}
+
+:root[data-sel='b'] .slide.m-edit .ed.is-empty:hover:not(:focus-within) > .ed-halo {
+  background: transparent;
+}
+
+:root[data-sel='b'] .slide.m-edit .ed:hover > .ed-halo {
+  box-shadow: inset 0 calc(-1px / var(--vs, 0.5)) 0 color-mix(in srgb, var(--sel) 50%, transparent);
+}
+
+:root[data-sel='b'] .slide.m-edit .ed:focus-within > .ed-halo {
+  background: transparent;
+  box-shadow: inset 0 calc(-2px / var(--vs, 0.5)) 0 var(--sel);
+}
+
+/* c: 칸 자리 전체(글을 쓸 수 있는 넓이)에 아주 옅은 면과 1px 테. 띄우는 거리는 사방 같게. 쓰는 동안 고른 줄의 면은 걷어 면이 한 겹 */
+:root[data-sel='c'] .slide.m-edit .ed > .ed-halo {
+  top: calc(max(var(--ed-ink-t, 0px), min(var(--ed-ft, 10px), var(--sel-oy))) * -1);
+  bottom: calc(max(var(--ed-ink-b, 0px), min(var(--ed-fb, 10px), var(--sel-oy))) * -1);
+  left: calc(min(var(--ed-fl, 14px), var(--sel-ox)) * -1);
+  right: calc(min(var(--ed-fr, 14px), var(--sel-ox)) * -1);
+  border-radius: calc(4px / var(--vs, 0.5));
+}
+
+:root[data-sel='c'] .slide.m-edit .ed:hover > .ed-halo {
+  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 40%, transparent);
+}
+
+:root[data-sel='c'] .slide.m-edit .ed:focus-within > .ed-halo {
+  background: color-mix(in srgb, var(--sel) 6%, transparent);
+  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) var(--sel);
+}
+
+/* d: a의 네모에 상태 위계. 올리면 점선(쓸 수 있는 칸), 쓰면 실선(지금 쓰는 칸). 쓰는 동안 고른 줄의 면은 걷는다 */
+:root[data-sel='d'] .slide.m-edit .ed.is-empty:hover:not(:focus-within) > .ed-halo {
+  background: transparent;
+}
+
+:root[data-sel='d'] .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
+  box-shadow: none;
+  outline: calc(1px / var(--vs, 0.5)) dashed color-mix(in srgb, var(--sel) 70%, transparent);
+  outline-offset: calc(-1px / var(--vs, 0.5));
+}
+
+:root[data-sel='d'] .slide.m-edit .ed:focus-within > .ed-halo {
+  background: transparent;
+  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) var(--sel);
+}
+
+/* 쓰는 동안 손을 움직이기 전에는 손 아래 칸에 손을 올린 표시를 하지 않는다 (위의 is-typing-still과 같게) */
+:root[data-sel] .is-typing-still .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
 .ed-hint {
   opacity: 0.5;
   pointer-events: none;
