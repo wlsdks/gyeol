@@ -1194,7 +1194,9 @@ export function blockFitter() {
    * 옆으로 나란한 단의 남는 너비 (docs/VISUAL-RULES.md 6의 가로). 판은 본문 너비를 칸으로 다 나누지만, 글 폭(--measure)이나 내용이
    * 칸보다 좁으면 내용이 칸마다 왼쪽에 붙어 컴포넌트 둘이 본문 왼쪽 70% 안에 몰리고 오른쪽이 통째로 비었다. 줄(data-band)마다
    * 단(어느 칸도 가로지르지 않는 세로 경계로 나눈 묶음)의 그려진 너비를 재어, 남는 너비를 단 사이와 오른쪽 끝에 2 : 1로 나눈다
-   * (단을 칸째 오른쪽으로 옮긴다, --bk-shift-x). 단 사이를 좁히지는 않는다. 면이 있는 칸(면이 칸 너비다)과 이음표가 선 줄은 그대로
+   * (단을 칸째 오른쪽으로 옮긴다, --bk-shift-x). 단 사이를 좁히지는 않는다. 이음표가 선 줄은 그대로.
+   * 바탕(들여 쓰기, 강조)이 있는 칸도 같이 옮긴다: 예전에는 면이 칸 너비라서 뺐는데, 지금은 어느 바탕도 면이나 선을 그리지 않아
+   * (looks.css) 강조로 쓴 결정 요청 옆의 목록이 본문 왼쪽 70% 안에 몰리고 오른쪽 30%가 통째로 비었다
    */
   function balance(cells: HTMLElement[], area: HTMLElement, hold?: Map<string, number>): void {
     if (hold) {
@@ -1211,7 +1213,7 @@ export function blockFitter() {
     const bands = new Map<string, HTMLElement[]>()
     for (const c of cells) bands.set(c.dataset.band ?? '', (bands.get(c.dataset.band ?? '') || []).concat(c))
     bands.forEach((band) => {
-      if (band.some((c) => !c.classList.contains('bk-look-plain') || c.classList.contains('lk-row'))) return
+      if (band.some((c) => c.classList.contains('lk-row'))) return
       // 다른 줄이 본문 오른쪽까지 그려져 있으면(오른쪽 4분의 1 안까지) 장의 오른쪽은 비지 않았다: 이 줄의 단을 옮기면 판의 칸 선에서 벗어나
       // 그 줄과 어긋나기만 한다. 로고 모음 위의 숫자 둘이 0과 50%가 아니라 0과 70%로 벌어져 양쪽으로 찢어져 보였다
       let others = -Infinity
