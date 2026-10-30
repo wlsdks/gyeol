@@ -55,6 +55,22 @@ let fontBatches = 0
 if (typeof document !== 'undefined') document.fonts?.addEventListener?.('loadingdone', () => fontBatches++)
 const fontsLoaded = () => fontBatches
 
+/**
+ * 글꼴이 온 뒤 다시 맞출 장들. 기다리던 장(고치는 장, 목록 그림, 미리 보기)이 한꺼번에 다시 맞추면 한 일이 길어져(느린 PC에서 장을 더한 뒤
+ * 0.1초 넘게) 그 사이 손을 받지 못했다. 한 일에 12ms까지만 맞추고 나머지는 다음 일로 넘긴다
+ */
+const refits: (() => void)[] = []
+function afterFonts(refit: () => void) {
+  refits.push(refit)
+  if (refits.length > 1) return
+  const pump = () => {
+    const t0 = performance.now()
+    while (refits.length && performance.now() - t0 < 12) refits.shift()!()
+    if (refits.length) window.setTimeout(pump)
+  }
+  window.setTimeout(pump)
+}
+
 /** 1920×1080 슬라이드 한 장. 크기 맞춤은 바깥 프레임이 한다. */
 export const SlideCanvas = memo(function SlideCanvas({
   deck,
@@ -120,11 +136,13 @@ export const SlideCanvas = memo(function SlideCanvas({
     // 다음 그림에서 건너뛰어도 기다림은 그대로 둔다(그 사이에 다시 그리지 않으면 글꼴이 와도 맞추지 않게 된다)
     if (document.fonts?.status !== 'loading' || waiting.current) return
     waiting.current = true
-    document.fonts.ready.then(() => {
-      waiting.current = false
-      const now = ref.current
-      if (now?.isConnected && !now.classList.contains('l-compose') && !now.classList.contains('is-solo')) fit(now)
-    })
+    document.fonts.ready.then(() =>
+      afterFonts(() => {
+        waiting.current = false
+        const now = ref.current
+        if (now?.isConnected && !now.classList.contains('l-compose') && !now.classList.contains('is-solo')) fit(now)
+      }),
+    )
   })
   useLayoutEffect(
     () => () => {
