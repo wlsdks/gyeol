@@ -32,7 +32,18 @@ export interface PointerSession {
 export function pointerSession(bodyClass?: string): PointerSession {
   const ctrl = new AbortController()
   const cleanups: (() => void)[] = []
+  // 끄는 동안 화면 전체를 덮는 빈 막. 커서(잡은 손, 너비 화살표)를 이 막 하나에만 준다. 예전에는 body 아래 모든 요소(*)에
+  // !important 커서를 걸어서, 끌기를 시작하고 놓을 때마다 문서 전체(컴포넌트 목록의 작은 슬라이드까지 3,000개 남짓)의 스타일을
+  // 다시 계산했다(CPU 4배 느림에서 한 번에 45ms). 손 아래 요소의 :hover와 올림 표시도 끄는 동안 쉬게 된다
+  const cover = bodyClass ? document.createElement('div') : null
   if (bodyClass) document.body.classList.add(bodyClass)
+  if (cover) {
+    cover.className = 'drag-cover'
+    cover.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(cover)
+    // 끄는 동안 글이 골라지지 않게 (body에 user-select를 걸면 물려받는 모든 요소의 스타일을 다시 계산한다)
+    window.addEventListener('selectstart', (e) => e.preventDefault(), { capture: true, signal: ctrl.signal })
+  }
   return {
     on(type, fn, capture = false) {
       window.addEventListener(type, fn, { capture, signal: ctrl.signal })
@@ -44,6 +55,7 @@ export function pointerSession(bodyClass?: string): PointerSession {
       if (ctrl.signal.aborted) return
       ctrl.abort()
       if (bodyClass) document.body.classList.remove(bodyClass)
+      cover?.remove()
       for (const fn of cleanups) fn()
     },
   }
