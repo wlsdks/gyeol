@@ -51,15 +51,31 @@ export function inkOf(slide: HTMLElement): Ink {
     pen.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
     pen.letterSpacing = cs.letterSpacing === 'normal' ? '0px' : cs.letterSpacing
     const m = pen.measureText(text)
+    // 위아래는 문장 부호를 빼고 잰다: 쉼표와 마침표의 꼬리는 글자 밑선 아래로 내려오지만 틀은 글자의 밑선으로 맞춘다.
+    // 크게에서 표지 부제 '…나누고, 회의는…'의 쉼표 꼬리(4px)만 아래 틀 밖으로 재어졌다(글자 밑선은 틀선 위)
+    const letters = text.replace(/[,.;:!?…·'"‘’“”()[\]{}]/g, '')
+    const v = letters && letters !== text ? pen.measureText(letters) : m
     const range = document.createRange()
     range.selectNodeContents(n)
-    const rects = [...range.getClientRects()]
+    let rects = [...range.getClientRects()]
+    // 여러 줄이면 줄 상자 대신 낱말마다의 상자로: 편집 칸(빈칸을 그대로 두는 글)은 줄 끝의 빈칸까지 줄 상자에 들어가, 글자는
+    // 틀 안인데 빈칸 하나만큼(크게에서 7px) 오른쪽 틀 밖으로 재어졌다(한 장 요약의 오른쪽 단, 편집 화면에서만)
+    if (rects.length > 1) {
+      const data = n.textContent ?? ''
+      rects = [...data.matchAll(/\S+/g)].flatMap((w) => {
+        const word = document.createRange()
+        word.setStart(n, w.index!)
+        word.setEnd(n, w.index! + w[0].length)
+        return [...word.getClientRects()]
+      })
+    }
+    const one = rects.length === 1
     for (const r of rects) {
       const ky = r.height / (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)
-      const top = r.top + (m.fontBoundingBoxAscent - m.actualBoundingBoxAscent) * ky
-      const bottom = r.bottom - (m.fontBoundingBoxDescent - m.actualBoundingBoxDescent) * ky
+      const top = r.top + (m.fontBoundingBoxAscent - v.actualBoundingBoxAscent) * ky
+      const bottom = r.bottom - (m.fontBoundingBoxDescent - v.actualBoundingBoxDescent) * ky
       // 한 줄이면 글자 옆 빈칸도 뺀다 (큰 숫자는 옆 빈칸이 넓다). 여러 줄이면 줄마다 글이 달라 상자로
-      const kx = rects.length === 1 && m.width ? r.width / m.width : 0
+      const kx = one && m.width ? r.width / m.width : 0
       const left = kx ? r.left - m.actualBoundingBoxLeft * kx : r.left
       const right = kx ? r.left + m.actualBoundingBoxRight * kx : r.right
       add(left, top, right, bottom, el, false)
