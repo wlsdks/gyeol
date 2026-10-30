@@ -5,7 +5,7 @@ import type { LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { hashOf } from '../../lib/router'
 import { ScaledSlide, SlideCanvas } from '../../slides/SlideCanvas'
-import type { Look } from './look'
+import { useDrawSoon, type Look } from './look'
 
 /*
  * 장 추가: 레이아웃을 그림으로 고른다. 왼쪽에서 묶음을 고르면 오른쪽에 그 묶음의 장이 예시 내용을 채운 그림으로 보인다.
@@ -17,6 +17,9 @@ import type { Look } from './look'
 const OFTEN: LayoutId[] = ['compose', 'summary', 'points', 'kpi', 'bars', 'trend', 'timeline', 'compare', 'table']
 
 const GROUPS = [{ name: '자주 쓰는 슬라이드', layouts: OFTEN }, ...LAYOUT_GROUPS.filter((g) => !g.layouts.every((id) => OFTEN.includes(id)))]
+
+/** 그림 안 아래 띠의 단락 지도 (예시) */
+const SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
 
 /** 그림 한 장의 너비 (화면 px). 셋이 한 줄 */
 const THUMB_W = 176
@@ -55,12 +58,14 @@ export function AddSlide({ look, onPick }: { look: Look; onPick: (layout: Layout
 
 const Choice = memo(function Choice({ id, look, slide, onPick }: { id: LayoutId; look: Look; slide?: Slide; onPick: () => void }) {
   const spec = LAYOUTS[id]
+  // 창은 바로 열고 그림은 그 뒤에 차례로 (look.ts의 useDrawSoon)
+  const ready = useDrawSoon()
   return (
     <button type="button" className="add-slide-card" title={spec.description} onClick={onPick}>
       <span className="add-slide-pic">
         {slide && (
           <ScaledSlide width={THUMB_W} decorative>
-            <SlideCanvas deck={look} slide={slide} mode="final" sections={['섹션 1', '섹션 2', '섹션 3']} sectionIndex={0} />
+            {ready && <SlideCanvas deck={look} slide={slide} mode="final" sections={SECTIONS} sectionIndex={0} />}
           </ScaledSlide>
         )}
       </span>
