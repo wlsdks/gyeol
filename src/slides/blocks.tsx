@@ -578,7 +578,7 @@ export function BlockArea() {
   }
   return (
     <div ref={setRef} className={cx('bk-area', live && 'is-live', live?.dragId && 'is-dragging', !blocks.length && 'is-empty')}>
-      {!blocks.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 장이에요</p>)}
+      {!blocks.length && mode !== 'final' && (live ? live.empty() : <p className="bk-empty-t">컴포넌트를 골라 넣어 꾸미는 슬라이드예요</p>)}
       {/* 끌거나 크기를 바꾸는 동안 판의 칸을 점으로 보여 준다 (부품이 붙는 자리) */}
       {live && blocks.length > 0 && <div className="bk-board" aria-hidden="true" />}
       {/* 읽는 차례로 그린다: 칸 사이를 Tab으로 옮겨 다니는 차례와 화면 읽기 차례가 보이는 차례와 같게 (넣은 차례로 그리면 왼쪽에 넣은 부품이 나중에 온다) */}

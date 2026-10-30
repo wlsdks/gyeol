@@ -112,10 +112,10 @@ export function Timeline({
           type="button"
           className="btn btn-ghost btn-sm"
           disabled={!onEnter}
-          title={onEnter ? '앞 장에서 이 장으로 넘어오는 모습부터 보여요' : '앞 장이 없거나 움직이지 않아서 볼 수 없어요'}
+          title={onEnter ? '앞 슬라이드에서 이 슬라이드로 넘어오는 모습부터 보여요' : '앞 슬라이드가 없거나 움직이지 않아서 볼 수 없어요'}
           onClick={onEnter ?? undefined}
         >
-          <EnterIcon />앞 장에서 넘어오기
+          <EnterIcon />앞 슬라이드에서 넘어오기
         </button>
         <p className="ms-time">
           <span ref={timeRef}>0.0초</span>
@@ -174,9 +174,9 @@ export function Timeline({
               </Info>
             </p>
           ) : quiet === 'none' ? (
-            <p className="ms-tl-empty">움직임 정도가 ‘없음’이라 움직이지 않아요. 오른쪽 ‘이 장’에서 움직임 정도를 골라 보세요.</p>
+            <p className="ms-tl-empty">움직임 정도가 ‘없음’이라 움직이지 않아요. 오른쪽 ‘이 슬라이드’에서 움직임 정도를 골라 보세요.</p>
           ) : (
-            none && <p className="ms-tl-empty">이 장에는 움직이는 것이 없어요.</p>
+            none && <p className="ms-tl-empty">이 슬라이드에는 움직이는 것이 없어요.</p>
           )}
           {head.filter((l) => l.id === 'head').map((l) => (
             <Row key={l.id} lane={l} span={span} />

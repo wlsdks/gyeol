@@ -112,22 +112,22 @@ function OverflowNote({ slide, overflow, side }: { slide: Slide; overflow: Overf
         )}
       >
         {(close) => (
-          <div className="warn-pop" role="dialog" aria-label={over ? '글이 넘친 칸' : '자리가 모자란 장'}>
+          <div className="warn-pop" role="dialog" aria-label={over ? '글이 넘친 칸' : '자리가 모자란 슬라이드'}>
             {over ? (
               <>
                 <p className="warn-pop-h">
                   {pushed
-                    ? `${name(fields[0])}의 글이 길어 아래 칸이 장 밖으로 밀렸어요`
+                    ? `${name(fields[0])}의 글이 길어 아래 칸이 슬라이드 밖으로 밀렸어요`
                     : fields.length > 1
-                      ? `${name(fields[0])} 등 ${fields.length}곳이 장 안에 다 들어가지 않아요`
+                      ? `${name(fields[0])} 등 ${fields.length}곳이 슬라이드 안에 다 들어가지 않아요`
                       : fields.length
-                        ? `${name(fields[0])}의 글이 장 밖으로 넘쳤어요`
-                        : '글이 장 밖으로 넘쳤어요'}
+                        ? `${name(fields[0])}의 글이 슬라이드 밖으로 넘쳤어요`
+                        : '글이 슬라이드 밖으로 넘쳤어요'}
                 </p>
                 <p className="warn-pop-p">
                   {pushed
-                    ? '장 위에 점선으로 보이는 칸이에요. 그 칸의 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'
-                    : '장 위에 점선으로 보이는 칸이에요. 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'}
+                    ? '슬라이드 위에 점선으로 보이는 칸이에요. 그 칸의 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'
+                    : '슬라이드 위에 점선으로 보이는 칸이에요. 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'}
                 </p>
               </>
             ) : (
@@ -236,7 +236,7 @@ export function StageTools({
             type="button"
             className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}
             aria-pressed={blocks.libraryOpen}
-            title="컴포넌트를 골라 이 장에 넣어요"
+            title="컴포넌트를 골라 이 슬라이드에 넣어요"
             onClick={side.toggleLibrary}
           >
             <BlocksIcon />
@@ -247,11 +247,11 @@ export function StageTools({
             type="button"
             className={cx('btn btn-sm stage-side', side.settingsShown ? 'is-on' : 'btn-ghost')}
             aria-pressed={side.settingsShown}
-            title="이 장의 레이아웃, 모양, 바탕, 움직임"
+            title="이 슬라이드의 레이아웃, 모양, 바탕, 움직임"
             onClick={side.toggleSettings}
           >
             <SlidersIcon />
-            <span className="btn-t">이 장 설정</span>
+            <span className="btn-t">이 슬라이드 설정</span>
           </button>
           <SlideAsk deck={deck} slide={slide} ai={ai} ask={ask} />
           {spec.items && (
@@ -281,7 +281,7 @@ export function StageTools({
           onClick={onTogglePeek}
         >
           <ScreenIcon />
-          <span className="btn-t">{peek ? '편집으로' : '이 장 미리 보기'}</span>
+          <span className="btn-t">{peek ? '편집으로' : '이 슬라이드 미리 보기'}</span>
         </button>
         {/* 복제, 빼기, 지우기는 덜 쓰는 일이라 '더 보기'에 이름과 함께 둔다. 예전에는 그림만 남은 단추 셋이 나란히 있어서
             빗금 친 눈이 '발표에서 빼기'인지 알기 어려웠다(1280 너비에서는 늘 그림만 보였다) */}
@@ -291,7 +291,7 @@ export function StageTools({
             <button
               type="button"
               className={cx('btn btn-ghost btn-sm stage-more', open && 'is-on')}
-              aria-label="이 장 더 보기"
+              aria-label="이 슬라이드 더 보기"
               aria-expanded={open}
               aria-haspopup="menu"
               title="복제, 발표에서 빼기, 지우기"
@@ -327,7 +327,7 @@ export function StageTools({
                 {slide.hidden ? <EyeIcon /> : <EyeOffIcon />}
                 <span className="menu-item-t">
                   {slide.hidden ? '발표에 다시 넣기' : '발표에서 빼기'}
-                  <span className="menu-item-desc">{slide.hidden ? '발표할 때 이 장을 다시 보여요' : '지우지 않고 발표할 때만 건너뛰어요'}</span>
+                  <span className="menu-item-desc">{slide.hidden ? '발표할 때 이 슬라이드를 다시 보여요' : '지우지 않고 발표할 때만 건너뛰어요'}</span>
                 </span>
               </button>
               <div className="menu-sep" role="separator" />
@@ -336,7 +336,7 @@ export function StageTools({
                 role="menuitem"
                 className="menu-item is-danger"
                 // 막아 둔 일은 왜 안 되는지를 말한다
-                title={deck.slides.length <= 1 ? '장이 하나뿐이라 지울 수 없어요' : undefined}
+                title={deck.slides.length <= 1 ? '슬라이드가 하나뿐이라 지울 수 없어요' : undefined}
                 disabled={deck.slides.length <= 1}
                 onClick={() => {
                   close()
@@ -344,7 +344,7 @@ export function StageTools({
                 }}
               >
                 <TrashIcon />
-                이 장 지우기
+                이 슬라이드 지우기
               </button>
             </div>
           )}

@@ -25,8 +25,8 @@ export function ScenePicker({ deck, slide, thumb = THUMB_W }: { deck: Deck; slid
   if (!fits.length) {
     return (
       <p className="sp-none">
-        이 장에 맞는 장면이 없어요
-        <Info label="장면이 맞는 장">장면은 표지, 요약, 숫자, 흐름, 비교, 일정, 이미지, 마지막 장처럼 모양이 뚜렷한 장에 맞춰 짜 두었어요. 컴포넌트 장은 들어 있는 컴포넌트로 골라요.</Info>
+        이 슬라이드에 맞는 장면이 없어요
+        <Info label="장면이 맞는 슬라이드">장면은 표지, 요약, 숫자, 흐름, 비교, 일정, 이미지, 마지막 슬라이드처럼 모양이 뚜렷한 슬라이드에 맞춰 짜 두었어요. 컴포넌트 슬라이드는 들어 있는 컴포넌트로 골라요.</Info>
       </p>
     )
   }
@@ -124,8 +124,8 @@ export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
   }
   return (
     <div className="sp-plan" role="group" aria-label="장면 알아서 고르기">
-      <p className="sp-plan-h">{rows.length ? `힘줄 ${rows.length}장에 장면을 넣어요` : '새로 넣을 장이 없어요'}</p>
-      <p className="sp-plan-p">처음, 결론, 숫자, 마지막처럼 힘줄 장에만 넣고 나머지는 차분하게 둬요.</p>
+      <p className="sp-plan-h">{rows.length ? `힘줄 ${rows.length}장에 장면을 넣어요` : '새로 넣을 슬라이드가 없어요'}</p>
+      <p className="sp-plan-p">처음, 결론, 숫자, 마지막처럼 힘줄 슬라이드에만 넣고 나머지는 차분하게 둬요.</p>
       {rows.length > 0 && (
         <ol className="sp-rows">
           {rows.map((r) => (
@@ -142,7 +142,7 @@ export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
       {plan.kept.length > 0 && (
         <label className="sp-keep">
           <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
-          이미 고른 장까지 처음부터 다시 고르기
+          이미 고른 슬라이드까지 처음부터 다시 고르기
         </label>
       )}
       <div className="sp-plan-btns">

@@ -175,7 +175,7 @@ export function Presenter({ id }: { id: string }) {
     return (
       <div className="pv pv-wait">
         <p className="pv-wait-t">발표 화면과 연결하고 있어요</p>
-        <p className="pv-wait-b">편집 화면에서 발표를 시작하면 여기에 지금 장과 노트가 보여요.</p>
+        <p className="pv-wait-b">편집 화면에서 발표를 시작하면 여기에 지금 슬라이드와 노트가 보여요.</p>
       </div>
     )
   }
@@ -241,7 +241,7 @@ export function Presenter({ id }: { id: string }) {
       )}
 
       <main className="pv-main">
-        <section className="pv-now" aria-label="지금 장">
+        <section className="pv-now" aria-label="지금 슬라이드">
           <FitSlide className="pv-now-stage">
             {slide && <SlideCanvas deck={deck} slide={slide} mode="final" {...pageProps(info, slide.id)} />}
           </FitSlide>
@@ -269,18 +269,18 @@ export function Presenter({ id }: { id: string }) {
         </section>
 
         <aside className="pv-side">
-          <section className="pv-next" aria-label="다음 장">
+          <section className="pv-next" aria-label="다음 슬라이드">
             <div className="pv-next-head">
-              <h2 className="pv-h">다음 장</h2>
+              <h2 className="pv-h">다음 슬라이드</h2>
               {/* '다음'을 눌러도 아직 이 장이다: 누를 때마다 나오는 컴포넌트가 남았다 */}
-              {steps > 0 && <span className="pv-steps">이 장에서 {steps}번 더 눌러요</span>}
+              {steps > 0 && <span className="pv-steps">이 슬라이드에서 {steps}번 더 눌러요</span>}
             </div>
             {next ? (
               <FitSlide className="pv-next-stage">
                 <SlideCanvas deck={deck} slide={next} mode="final" {...pageProps(info, next.id)} />
               </FitSlide>
             ) : (
-              <p className="pv-last">마지막 장이에요</p>
+              <p className="pv-last">마지막 슬라이드예요</p>
             )}
           </section>
           <section className="pv-notes" aria-label="발표자 노트">
@@ -296,20 +296,20 @@ export function Presenter({ id }: { id: string }) {
               </div>
             </div>
             <div className="pv-notes-body" style={{ fontSize: noteSize }}>
-              {slide?.notes.trim() ? slide.notes : <span className="pv-notes-empty">이 장에는 노트가 없어요.</span>}
+              {slide?.notes.trim() ? slide.notes : <span className="pv-notes-empty">이 슬라이드에는 노트가 없어요.</span>}
             </div>
           </section>
         </aside>
       </main>
 
-      <ol className="pv-strip" ref={stripRef} aria-label="모든 장">
+      <ol className="pv-strip" ref={stripRef} aria-label="모든 슬라이드">
         {slides.map((s, i) => (
           <li key={s.id}>
             <button
               type="button"
               className={cx('pv-thumb', i === index && 'is-on')}
               aria-current={i === index}
-              aria-label={`${i + 1}번 장, ${slideName(s)}`}
+              aria-label={`슬라이드 ${i + 1}, ${slideName(s)}`}
               onClick={() => go(i)}
             >
               <ScaledSlide width={136} decorative>

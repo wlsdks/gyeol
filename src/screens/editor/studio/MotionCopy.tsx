@@ -20,29 +20,29 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
   const [open, setOpen] = useState(false)
   // 고른 장. 처음에는 모양이 같은 장만 (열 때마다 다시)
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
-  const titles = useMemo(() => new Map(deck.slides.map((s) => [s.id, s.fields.title?.trim() || LAYOUTS[s.layout]?.name || '장'])), [deck.slides])
+  const titles = useMemo(() => new Map(deck.slides.map((s) => [s.id, s.fields.title?.trim() || LAYOUTS[s.layout]?.name || '슬라이드'])), [deck.slides])
   const same = rows.filter((r) => r.same)
 
   if (!open) {
     return (
       <section className="ms-sec">
         <h2 className="ms-h">
-          다른 장에도
-          <Info label="다른 장에도 옮기는 것">
-            이 장의 장면, 장 넘기기, 움직임 정도를 다른 장에 그대로 옮겨요. 컴포넌트 장끼리는 연출과 같은 종류 컴포넌트의 움직임도 옮겨요. 글은 바뀌지 않아요.
+          다른 슬라이드에도
+          <Info label="다른 슬라이드에도 옮기는 것">
+            이 슬라이드의 장면, 장 넘기기, 움직임 정도를 다른 슬라이드에 그대로 옮겨요. 컴포넌트 슬라이드끼리는 연출과 같은 종류 컴포넌트의 움직임도 옮겨요. 글은 바뀌지 않아요.
           </Info>
         </h2>
         <button
           type="button"
           className="btn btn-ghost btn-sm mc-open"
           disabled={!rows.length}
-          title={rows.length ? undefined : '옮길 다른 장이 없어요'}
+          title={rows.length ? undefined : '옮길 다른 슬라이드가 없어요'}
           onClick={() => {
             setPicked(new Set(same.map((r) => r.slideId)))
             setOpen(true)
           }}
         >
-          이 장의 움직임을 다른 장에도
+          이 슬라이드의 움직임을 다른 슬라이드에도
         </button>
       </section>
     )
@@ -68,32 +68,32 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
     const next = withMotionCopy(deck, slide.id, [...picked], prefer)
     setOpen(false)
     if (next === deck) {
-      toast?.show('고른 장이 이미 이 장과 같은 움직임이에요.')
+      toast?.show('고른 슬라이드가 이미 이 슬라이드와 같은 움직임이에요.')
       return
     }
     replaceDeck(next)
-    toast?.show(`${chosen.length}장에 이 장의 움직임을 옮겼어요.`, undoAction(toast))
+    toast?.show(`${chosen.length}장에 이 슬라이드의 움직임을 옮겼어요.`, undoAction(toast))
   }
 
   return (
     <section className="ms-sec">
-      <h2 className="ms-h">다른 장에도</h2>
-      <div className="sp-plan mc-plan" role="group" aria-label="이 장의 움직임을 다른 장에도">
+      <h2 className="ms-h">다른 슬라이드에도</h2>
+      <div className="sp-plan mc-plan" role="group" aria-label="이 슬라이드의 움직임을 다른 슬라이드에도">
         <p className="sp-plan-h">옮기는 것</p>
         <p className="sp-plan-p">
           {what.join(' · ')}
           {slide.layout === 'compose' && ' · 같은 종류 컴포넌트의 움직임'}
         </p>
         <div className="mc-quick">
-          <span className="sp-plan-h">옮길 장</span>
+          <span className="sp-plan-h">옮길 슬라이드</span>
           <button type="button" className="mp-reset" disabled={!same.length} onClick={() => setPicked(new Set(same.map((r) => r.slideId)))}>
-            모양이 같은 장만
+            모양이 같은 슬라이드만
           </button>
           <button type="button" className="mp-reset" onClick={() => setPicked(new Set(rows.map((r) => r.slideId)))}>
             모두
           </button>
         </div>
-        {!same.length && <p className="sp-plan-p">모양이 같은 장이 없어요. 옮길 장을 직접 골라 주세요.</p>}
+        {!same.length && <p className="sp-plan-p">모양이 같은 슬라이드가 없어요. 옮길 슬라이드를 직접 골라 주세요.</p>}
         {/* 모양이 같은 장을 먼저: 장 차례대로 늘어놓으면 골라 둔 장이 목록 아래에 묻혀 무엇을 골랐는지 보이지 않았다 */}
         <ul className="sp-rows mc-rows">
           {[...same, ...rows.filter((r) => !r.same)].map((r, i) => (
@@ -103,7 +103,7 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
                 <span className="sp-page">{r.page}</span>
                 <span className="mc-name">{titles.get(r.slideId)}</span>
                 {r.sceneSkipped && picked.has(r.slideId) && (
-                  <span className="mc-note" title="이 장의 장면이 그 장에는 맞지 않아서, 그 장의 장면은 그대로 두고 나머지만 옮겨요.">
+                  <span className="mc-note" title="이 슬라이드의 장면이 그 슬라이드에는 맞지 않아서, 그 슬라이드의 장면은 그대로 두고 나머지만 옮겨요.">
                     장면은 그대로
                   </span>
                 )}

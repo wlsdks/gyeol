@@ -669,7 +669,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
     name: '컴포넌트로 꾸미기',
     description: '컴포넌트를 골라 끌어다 놓으면 알맞은 자리에 들어가요',
     fields: [
-      { key: 'title', label: '제목', hint: '이 장의 결론 한 줄', multiline: true, optional: true },
+      { key: 'title', label: '제목', hint: '이 슬라이드의 결론 한 줄', multiline: true, optional: true },
       lead(),
       source,
     ],
@@ -717,7 +717,7 @@ export const LAYOUT_GROUPS: { name: string; description: string; layouts: Layout
   { name: '진행과 계획', description: '언제, 어떤 순서로', layouts: ['progress', 'timeline', 'process'] },
   { name: '비교와 선택', description: '여러 안을 나란히 놓고 고르기', layouts: ['compare', 'matrix', 'position', 'pricing', 'table'] },
   { name: '자료와 사례', description: '화면, 사례, 로고', layouts: ['imageText', 'case', 'logos'] },
-  { name: '시작과 끝', description: '표지, 목차, 섹션, 마지막 장', layouts: ['cover', 'agenda', 'section', 'closing'] },
+  { name: '시작과 끝', description: '표지, 목차, 섹션, 마지막 슬라이드', layouts: ['cover', 'agenda', 'section', 'closing'] },
 ]
 
 /** 칸의 안내 문구. 항목 하나에 붙은 안내, 슬라이드에 지정된 안내, 레이아웃 기본값 순으로 쓴다. */

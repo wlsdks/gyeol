@@ -12,7 +12,7 @@ function widthText(span: number): string {
 }
 
 /** 그 너비가 있어야 한다는 말. 장 너비를 다 쓰는 것은 따로: '장 너비의 전체 이상이 있어야'는 말이 되지 않았다 */
-const needWidth = (span: number) => (span >= 12 ? '장 너비를 다 써야' : `장 너비의 ${widthText(span)} 이상이 있어야`)
+const needWidth = (span: number) => (span >= 12 ? '슬라이드 너비를 다 써야' : `슬라이드 너비의 ${widthText(span)} 이상이 있어야`)
 
 /** 판의 선을 더 끌 수 없을 때 (deck/blocks/place.ts의 gutterLimit) */
 export function narrowText(limit: SpanLimit): string {
@@ -37,11 +37,11 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
   const name = BLOCKS[type].name
   switch (r.kind) {
     case 'full':
-      return { why: `한 장에는 컴포넌트를 ${MAX_BLOCKS}개까지 넣어요.`, fix: '컴포넌트를 하나 빼거나 새 장에 넣어 주세요.' }
+      return { why: `슬라이드 하나에는 컴포넌트를 ${MAX_BLOCKS}개까지 넣어요.`, fix: '컴포넌트를 하나 빼거나 새 슬라이드에 넣어 주세요.' }
     case 'large':
       return {
-        why: `작은 컴포넌트가 아닌 것은 한 장에 ${MAX_LARGE}개까지 넣어요. 더 많으면 어디를 봐야 할지 흐려져요.`,
-        fix: '컴포넌트를 하나 빼거나 새 장에 넣어 주세요. 소제목, 숫자 한 줄 같은 작은 컴포넌트는 더 넣을 수 있어요.',
+        why: `작은 컴포넌트가 아닌 것은 슬라이드 하나에 ${MAX_LARGE}개까지 넣어요. 더 많으면 어디를 봐야 할지 흐려져요.`,
+        fix: '컴포넌트를 하나 빼거나 새 슬라이드에 넣어 주세요. 소제목, 숫자 한 줄 같은 작은 컴포넌트는 더 넣을 수 있어요.',
       }
     case 'narrow':
       return {
@@ -51,17 +51,17 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
     case 'solo': {
       const solo = BLOCKS[r.type].name
       return {
-        why: `${josa(solo, '은', '는')} 장 너비를 혼자 써요. 옆에 다른 컴포넌트를 두면 둘 다 좁아져 읽기 어려워요.`,
+        why: `${josa(solo, '은', '는')} 슬라이드 너비를 혼자 써요. 옆에 다른 컴포넌트를 두면 둘 다 좁아져 읽기 어려워요.`,
         fix: '위나 아래에 새 줄로 놓아 보세요.',
       }
     }
     case 'look':
       return r.why === 'one-bold'
-        ? { why: '강조는 한 장에 하나만 써요. 둘이면 어느 쪽이 결론인지 흐려져요.', fix: '다른 컴포넌트의 강조를 먼저 바꿔 주세요.' }
+        ? { why: '강조는 슬라이드 하나에 하나만 써요. 둘이면 어느 쪽이 결론인지 흐려져요.', fix: '다른 컴포넌트의 강조를 먼저 바꿔 주세요.' }
         : r.why === 'mix'
-          ? { why: '들여 쓰기와 강조는 한 장에 같이 쓰지 않아요. 묶는 방식 두 가지가 눈길을 나눠 가져요.', fix: '이 장의 다른 컴포넌트와 같은 면을 골라 주세요.' }
+          ? { why: '들여 쓰기와 강조는 한 슬라이드에 같이 쓰지 않아요. 묶는 방식 두 가지가 눈길을 나눠 가져요.', fix: '이 슬라이드의 다른 컴포넌트와 같은 면을 골라 주세요.' }
           : r.why === 'alone'
-            ? { why: '장 너비를 혼자 다 쓰는 컴포넌트는 바탕 없이 써요. 넓은 칸 안에 글이 한쪽에만 있어 비어 보여요.', fix: '옆에 컴포넌트를 하나 더 놓으면 둘 다 고를 수 있어요.' }
+            ? { why: '슬라이드 너비를 혼자 다 쓰는 컴포넌트는 바탕 없이 써요. 넓은 칸 안에 글이 한쪽에만 있어 비어 보여요.', fix: '옆에 컴포넌트를 하나 더 놓으면 둘 다 고를 수 있어요.' }
             : r.why === 'no-bold'
               ? { why: '강조는 숫자나 강조할 말 하나에만 써요. 목록이나 그림까지 강조하면 어디가 결론인지 흐려져요.', fix: '들여 쓰기를 골라 보세요.' }
               : { why: '이 컴포넌트는 바탕 없이 써요. 안에 이미 칸과 줄이 있어요.', fix: '강조할 것은 큰 숫자나 강조 상자에 강조를 골라 보세요.' }
@@ -75,18 +75,18 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
       // 넣기 전부터 넘친 장: '넣으면 장 높이를 넘어서'라고 하면 지금은 들어가는 줄 안다
       if (r.already)
         return {
-          why: '이 장의 컴포넌트들이 이미 장 높이를 넘었어요.',
+          why: '이 슬라이드의 컴포넌트들이 이미 슬라이드 높이를 넘었어요.',
           fix: where === 'change' ? '항목을 줄이거나 컴포넌트를 빼면 바꿀 수 있어요.' : '항목을 줄이거나 컴포넌트를 빼면 들어가요.',
         }
       // 몇 %인지는 쓰는 사람에게 뜻이 없다. 조금 넘치는지만 알려 주면 항목 하나만 빼도 되는지 가늠한다
-      const over = r.need / Math.max(1, r.room) <= 1.1 ? '장 높이를 조금 넘어서' : '장 높이를 넘어서'
+      const over = r.need / Math.max(1, r.room) <= 1.1 ? '슬라이드 높이를 조금 넘어서' : '슬라이드 높이를 넘어서'
       return {
         why:
           where === 'change'
-            ? `이렇게 바꾸면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`
+            ? `이렇게 바꾸면 이 슬라이드의 컴포넌트들이 ${over} 글이 잘려요.`
             : where === 'move'
-              ? `${josa(name, '을', '를')} 여기로 옮기면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`
-              : `${josa(name, '을', '를')} 넣으면 이 장의 컴포넌트들이 ${over} 글이 잘려요.`,
+              ? `${josa(name, '을', '를')} 여기로 옮기면 이 슬라이드의 컴포넌트들이 ${over} 글이 잘려요.`
+              : `${josa(name, '을', '를')} 넣으면 이 슬라이드의 컴포넌트들이 ${over} 글이 잘려요.`,
         fix: where === 'change' ? '다른 컴포넌트를 빼거나 항목을 줄이면 바꿀 수 있어요.' : '다른 컴포넌트를 빼거나 항목을 줄이면 들어가요.',
       }
     }
@@ -98,7 +98,7 @@ export function noRoomText(r: NoRoom, type: BlockType, where: 'here' | 'move' | 
  * 넣지 못하면 저절로 다음 장을 만들지 않고 이 말과 '새 장에 넣기'를 보인다
  */
 export function refuseText(r: NoRoom | null, type: BlockType, composable: boolean): string {
-  if (!composable) return '표지와 섹션 장에는 컴포넌트를 넣지 않아요.'
+  if (!composable) return '표지와 섹션 슬라이드에는 컴포넌트를 넣지 않아요.'
   const name = josa(BLOCKS[type].name, '은', '는')
-  return r ? `${name} 이 장에 함께 넣을 수 없어요. ${noRoomText(r, type, 'slide').why}` : `${name} 이 장에 함께 넣을 수 없어요. 자리가 모자라요.`
+  return r ? `${name} 이 슬라이드에 함께 넣을 수 없어요. ${noRoomText(r, type, 'slide').why}` : `${name} 이 슬라이드에 함께 넣을 수 없어요. 자리가 모자라요.`
 }

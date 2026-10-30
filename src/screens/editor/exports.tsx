@@ -41,7 +41,7 @@ export function useExports(deck: Deck, markVersion: (reason: VersionReason) => v
     }
     const total = deck.slides.filter((s) => !s.hidden).length
     if (!total) {
-      toast.show('모든 장을 숨겨서 PPT에 넣을 장이 없어요. 장 하나 이상의 숨기기를 풀어 주세요.')
+      toast.show('모든 슬라이드를 숨겨서 PPT에 넣을 슬라이드가 없어요. 슬라이드 하나 이상의 숨기기를 풀어 주세요.')
       return
     }
     pptBusy.current = true

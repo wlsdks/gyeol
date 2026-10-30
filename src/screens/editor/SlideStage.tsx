@@ -152,7 +152,7 @@ export function SlideStage({
                   장 위가 좁은 창에서 장 제목을 덮었다 */}
               {(blocks.hint || fileOver) && (
                 <p className="bk-hint" role="status">
-                  {blocks.hint ?? '놓으면 이 장에 이미지로 들어가요'}
+                  {blocks.hint ?? '놓으면 이 슬라이드에 이미지로 들어가요'}
                 </p>
               )}
               <StageTools

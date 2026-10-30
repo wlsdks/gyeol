@@ -40,7 +40,7 @@ const MAX_RATIO = 4
 /** 한 줄 전체의 너비 (본문 너비와 그림 둘레의 여백) */
 const ROW_W = 12 * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80
 
-const KIND_NAMES: Record<SavedPart['kind'], string> = { block: '컴포넌트', row: '한 줄', slide: '장 하나' }
+const KIND_NAMES: Record<SavedPart['kind'], string> = { block: '컴포넌트', row: '한 줄', slide: '슬라이드 하나' }
 
 /** 카드 밑의 한 줄: 무엇을 저장했는지와 든 컴포넌트 수 (컴포넌트 하나는 이름을 바꿨을 때만 무슨 컴포넌트인지) */
 function kindText(p: SavedPart): string {
@@ -92,10 +92,10 @@ const SavedThumb = memo(function SavedThumb({ deck, part }: { deck: Look; part: 
 /** 한 줄이나 장 하나를 이 장에 넣을 수 없는 까닭을 읽는 말로 */
 function rowsNoRoomText(r: NoRoom, part: SavedPart, slide: Slide): NoRoomText {
   const blocks = dropBlocks(slide)?.blocks ?? []
-  const fix = '새 장에 넣거나, 이 장의 컴포넌트를 줄여 주세요.'
-  if (r.kind === 'full') return { why: `이 장의 컴포넌트 ${blocks.length}개에 ${part.blocks.length}개를 더하면 한 장에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
-  if (r.kind === 'large') return { why: `차트나 표 같은 큰 컴포넌트는 한 장에 ${MAX_LARGE}개까지 넣어요.`, fix }
-  return { why: '넣으면 컴포넌트들이 장보다 높아져서 글이 잘려요.', fix }
+  const fix = '새 슬라이드에 넣거나, 이 슬라이드의 컴포넌트를 줄여 주세요.'
+  if (r.kind === 'full') return { why: `이 슬라이드의 컴포넌트 ${blocks.length}개에 ${part.blocks.length}개를 더하면 슬라이드 하나에 넣는 ${MAX_BLOCKS}개를 넘어요.`, fix }
+  if (r.kind === 'large') return { why: `차트나 표 같은 큰 컴포넌트는 슬라이드 하나에 ${MAX_LARGE}개까지 넣어요.`, fix }
+  return { why: '넣으면 컴포넌트들이 슬라이드보다 높아져서 글이 잘려요.', fix }
 }
 
 export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
@@ -151,7 +151,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     }
     if (part.kind === 'slide') {
       store.insertSlide(slideFromPart(part), slide.id)
-      toast.show(`‘${part.name}’${particle(part.name, '을', '를')} 이 장 다음에 새 장으로 넣었어요`, undoAction(toast), 6000)
+      toast.show(`‘${part.name}’${particle(part.name, '을', '를')} 이 슬라이드 다음에 새 슬라이드로 넣었어요`, undoAction(toast), 6000)
       return
     }
     const fresh = freshBlocks(part.blocks).blocks
@@ -161,14 +161,14 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
     if (at && placed) {
       if (at.composed) {
         store.replaceSlide(slide.id, { ...at.composed, blocks: placed })
-        toast.show('이 장을 컴포넌트 장으로 바꿔 맨 아래에 넣었어요', undoAction(toast), 6000)
+        toast.show('이 슬라이드를 컴포넌트 슬라이드로 바꿔 맨 아래에 넣었어요', undoAction(toast), 6000)
       } else store.setBlocks(slide.id, placed)
       blocks.select(ids[0])
       playIn(ids)
       return
     }
     store.addComposeSlide(insertParts([], { at: null, side: 'below' }, fresh) ?? fresh, slide.id)
-    toast.show(`새 컴포넌트 장을 만들어 ‘${part.name}’${particle(part.name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
+    toast.show(`새 컴포넌트 슬라이드를 만들어 ‘${part.name}’${particle(part.name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
   }
 
   const tap = (part: SavedPart, card: HTMLElement) => (lockedOf(part) ? setWhy(why?.id === part.id ? null : { id: part.id, card }) : insert(part, card))
@@ -200,7 +200,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
   const shownWhy = (() => {
     const part = why && parts.find((p) => p.id === why.id)
     if (!part || !lockedOf(part)) return null
-    if (closed) return { part, card: why.card, text: { why: '표지와 섹션 장에는 컴포넌트를 넣지 않아요.', fix: '새 장에 넣으면 이 장 다음에 컴포넌트 장을 만들어 넣어요.' } }
+    if (closed) return { part, card: why.card, text: { why: '표지와 섹션 슬라이드에는 컴포넌트를 넣지 않아요.', fix: '새 슬라이드에 넣으면 이 슬라이드 다음에 컴포넌트 슬라이드를 만들어 넣어요.' } }
     const r = issueOf(part)!
     return { part, card: why.card, text: part.kind === 'block' ? noRoomText(r, part.blocks[0].type, 'slide') : rowsNoRoomText(r, part, slide) }
   })()
@@ -215,7 +215,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
           </span>
           <p className="mine-empty-t">자주 쓰는 조합을 저장해 두세요</p>
           <p className="mine-empty-p">
-            장 위에서 컴포넌트를 고르고 도구의 <BookmarkIcon /> 를 누르면 그 컴포넌트, 그 줄, 장 전체를 저장해요. 어느 발표에서든 다시 넣을 수 있어요.
+            슬라이드 위에서 컴포넌트를 고르고 도구의 <BookmarkIcon /> 를 누르면 그 컴포넌트, 그 줄, 슬라이드 전체를 저장해요. 어느 발표에서든 다시 넣을 수 있어요.
           </p>
           <button type="button" className="btn btn-sm" onClick={() => fileRef.current?.click()}>
             <UploadIcon />
@@ -246,11 +246,11 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
                     className={cx('lib-card', !drag && 'is-tap', locked && 'is-blocked', why?.id === part.id && 'is-why')}
                     title={
                       locked
-                        ? `${part.name}: 이 장에 ${closed ? '넣지 않아요' : '함께 넣을 수 없어요'}. 눌러서 이유를 보세요`
+                        ? `${part.name}: 이 슬라이드에 ${closed ? '넣지 않아요' : '함께 넣을 수 없어요'}. 눌러서 이유를 보세요`
                         : part.kind === 'slide'
-                          ? `${part.name}: 눌러서 이 장 다음에 새 장으로 넣어요`
+                          ? `${part.name}: 눌러서 이 슬라이드 다음에 새 슬라이드로 넣어요`
                           : part.kind === 'row'
-                            ? `${part.name}: 눌러서 이 장 맨 아래에 넣어요`
+                            ? `${part.name}: 눌러서 이 슬라이드 맨 아래에 넣어요`
                             : `${part.name}: 끌어다 놓거나 눌러서 넣어요`
                     }
                     onPointerDown={(e) => {
@@ -294,7 +294,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
                       {locked ? (
                         <>
                           <LockIcon />
-                          {closed ? '이 장에는 넣지 않아요' : '이 장에 함께 넣을 수 없어요'}
+                          {closed ? '이 슬라이드에는 넣지 않아요' : '이 슬라이드에 함께 넣을 수 없어요'}
                         </>
                       ) : (
                         kindText(part)
@@ -354,7 +354,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
 
       {shownWhy && (
         <div className="lib-why" role="dialog" aria-label={`${josa(shownWhy.part.name, '을', '를')} 넣을 수 없는 이유`}>
-          <p className="lib-why-t">{josa(shownWhy.part.name, '은', '는')} 이 장에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
+          <p className="lib-why-t">{josa(shownWhy.part.name, '은', '는')} 이 슬라이드에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
           <div className="lib-why-actions">
@@ -362,7 +362,7 @@ export function SavedParts({ deck, slide, blocks, toast }: { deck: Deck; slide: 
               닫기
             </button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => insert(shownWhy.part, shownWhy.card, true)}>
-              새 장에 넣기
+              새 슬라이드에 넣기
             </button>
           </div>
         </div>

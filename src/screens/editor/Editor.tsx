@@ -185,7 +185,7 @@ function EditorBody({ deck }: { deck: Deck }) {
 
   const removeSlide = (s: Slide) => {
     store.removeSlide(s.id)
-    toast.show('장을 지웠어요', undoAction(toast))
+    toast.show('슬라이드를 지웠어요', undoAction(toast))
   }
 
   if (launch.presenting) return <Present deck={deck} startId={launch.presenting.startId} onExit={launch.exit} />
@@ -244,7 +244,7 @@ function EditorBody({ deck }: { deck: Deck }) {
             <aside className="side" aria-label="오른쪽 칸">
               <div className="side-tabs" role="tablist">
                 <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'settings'} onClick={side.settings}>
-                  이 장 설정
+                  이 슬라이드 설정
                 </button>
                 <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'motion'} onClick={side.motion}>
                   움직임

@@ -558,7 +558,7 @@ export function SelectionBar({ slide, canvasRef }: { slide: Slide; canvasRef: Re
           </button>
         )}
         {spec.panes.below && (
-          <button type="button" className="btn btn-ghost btn-sm" title={zone === 'below' ? '옆으로 세우기' : '장 아래에 띠로 깔기'} onClick={() => place(zone === 'below' ? sideZone(slide) : 'below')}>
+          <button type="button" className="btn btn-ghost btn-sm" title={zone === 'below' ? '옆으로 세우기' : '슬라이드 아래에 띠로 깔기'} onClick={() => place(zone === 'below' ? sideZone(slide) : 'below')}>
             <BelowIcon />
             <span className="btn-t">{zone === 'below' ? '옆으로' : '아래로'}</span>
           </button>

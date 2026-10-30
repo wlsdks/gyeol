@@ -53,9 +53,9 @@ function changeText(v: DeckVersion, older?: DeckVersion): string {
     const q = names.map((n) => `‘${n}’`)
     return q.length > 3 ? `${q.slice(0, 3).join(', ')} 외 ${q.length - 3}장` : q.join(', ')
   }
-  if (c.changed.length) parts.push(`고친 장: ${list(c.changed)}`)
-  if (c.added.length) parts.push(`더한 장: ${list(c.added)}`)
-  if (c.removed.length) parts.push(`뺀 장: ${list(c.removed)}`)
+  if (c.changed.length) parts.push(`고친 슬라이드: ${list(c.changed)}`)
+  if (c.added.length) parts.push(`더한 슬라이드: ${list(c.added)}`)
+  if (c.removed.length) parts.push(`뺀 슬라이드: ${list(c.removed)}`)
   return parts.join(' · ') || '발표 이름, 테마, 발표 정보가 바뀜'
 }
 
@@ -363,7 +363,7 @@ function VersionPreview({
 }) {
   const info = pageInfo(deck.slides)
   const now = new Map(current.slides.map((s) => [s.id, JSON.stringify(s)]))
-  const diff = (s: Deck['slides'][number]) => (!now.has(s.id) ? '지금은 없는 장' : now.get(s.id) !== JSON.stringify(s) ? '지금과 달라요' : null)
+  const diff = (s: Deck['slides'][number]) => (!now.has(s.id) ? '지금은 없는 슬라이드' : now.get(s.id) !== JSON.stringify(s) ? '지금과 달라요' : null)
   const visible = deck.slides.filter((s) => !s.hidden)
   const differs = visible.filter((s) => diff(s)).length
   const ref = useRef<HTMLDivElement>(null)
@@ -374,8 +374,8 @@ function VersionPreview({
         <div>
           <p className="vpp-title">{versionTitle(version)}</p>
           <p className="vpp-sub">
-            {fullFmt.format(version.createdAt)}에 남김, {version.slideCount}장
-            {isCurrent ? ', 지금 화면과 같아요' : differs > 0 ? `, 지금과 다른 장 ${differs}개` : ''}
+            {fullFmt.format(version.createdAt)}에 남김, 슬라이드 {version.slideCount}장
+            {isCurrent ? ', 지금 화면과 같아요' : differs > 0 ? `, 지금과 다른 슬라이드 ${differs}개` : ''}
           </p>
         </div>
         <div className="vpp-actions">

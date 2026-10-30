@@ -10,13 +10,13 @@ import { SceneOverride } from './ScenePicker'
 // 고른 컴포넌트 바로 위에 뜨는 도구 (옮기기, 바탕, 움직임, 모양, 항목과 칸 더하기, 복제, 빼기). 띄우는 자리는 SelectionBar의 FloatTools
 
 /** 내 컴포넌트로 저장하는 것의 이름 */
-const SAVE_NAMES: Record<SavedKind, string> = { block: '이 컴포넌트', row: '이 줄', slide: '이 장 전체' }
+const SAVE_NAMES: Record<SavedKind, string> = { block: '이 컴포넌트', row: '이 줄', slide: '이 슬라이드 전체' }
 
 /** 바탕 메뉴의 설명 */
 const LOOK_NOTES: Record<Block['look'] & string, string> = {
-  plain: '장 바탕 위에 바로 놓여요. 가장 가벼워요.',
+  plain: '슬라이드 바탕 위에 바로 놓여요. 가장 가벼워요.',
   card: '안쪽으로 들여 놓여 옆 컴포넌트와 갈려 보여요.',
-  bold: '답을 강조색 글자로 써서 가장 눈에 띄어요. 한 장에 하나만 써요.',
+  bold: '답을 강조색 글자로 써서 가장 눈에 띄어요. 슬라이드 하나에 하나만 써요.',
 }
 
 export function BlockTools({

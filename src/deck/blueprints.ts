@@ -71,7 +71,7 @@ export const DECK_TYPES: DeckType[] = DECK_GROUPS.flatMap((g) => g.types)
  * 우선순위 1인 장은 그대로 두고 2와 3 사이에서만 오르내린다.
  */
 export const AUDIENCES: { id: Audience; name: string; description: string; up?: Focus[]; down?: Focus[] }[] = [
-  { id: 'exec', name: '본부장·임원', description: '결론과 숫자 위주로, 장 수는 적게', up: ['numbers'], down: ['detail'] },
+  { id: 'exec', name: '본부장·임원', description: '결론과 숫자 위주로, 슬라이드 수는 적게', up: ['numbers'], down: ['detail'] },
   { id: 'practitioner', name: '팀장', description: '근거와 실행 계획까지 자세히', up: ['detail'] },
   { id: 'peers', name: '팀 동료', description: '할 일과 진행 방법을 자세히', up: ['detail'], down: ['numbers'] },
   { id: 'partners', name: '다른 부서', description: '배경을 먼저 풀고, 부탁을 분명히', up: ['context'] },

@@ -36,7 +36,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
 
   const nameOf = (id: UniqueIdentifier) => {
     const i = deck.slides.findIndex((s) => s.id === id)
-    return i < 0 ? '장' : `${i + 1}번째 장 ‘${slideName(deck.slides[i])}’`
+    return i < 0 ? '슬라이드' : `${i + 1}번째 슬라이드 ‘${slideName(deck.slides[i])}’`
   }
   const placeOf = (id: UniqueIdentifier) => deck.slides.findIndex((s) => s.id === id) + 1
   const announcements: Announcements = {
@@ -121,7 +121,7 @@ export function SlideList({ deck, selectedId }: { deck: Deck; selectedId: string
         button={({ toggle, open }) => (
           <button type="button" className="btn btn-ghost sl-add" aria-expanded={open} onClick={toggle}>
             <PlusIcon />
-            장 추가
+            슬라이드 추가
           </button>
         )}
       >
@@ -158,7 +158,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
   const look = useMemo(() => ({ meta, theme, title }), [meta, theme, title])
   // 장 그림은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint)
   const shown = useAfterPaint(slide)
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 장' } })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 슬라이드' } })
   // 글이 넘친 장: 다른 장을 고치는 동안에도 보이게 그림을 잰다 (편집기의 '글이 넘쳤어요'와 같은 잣대, slides/overflow.ts)
   const btnRef = useRef<HTMLButtonElement>(null)
   const [over, setOver] = useState(false)
@@ -183,7 +183,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         className="thumb-btn"
         aria-current={selected || undefined}
         // 이름은 짧게: 몇 번 장, 장 이름, 빈칸 수. 장 그림과 아래 이름은 이 이름과 겹치니 읽지 않는다
-        aria-label={`${page ? `${page}번 장` : '숨긴 장'}, ${slideName(slide)}${missing ? `, 빈칸 ${missing}곳` : ''}`}
+        aria-label={`${page ? `슬라이드 ${page}` : '숨긴 슬라이드'}, ${slideName(slide)}${missing ? `, 빈칸 ${missing}곳` : ''}`}
         onClick={() => onSelect(slide.id)}
         {...attributes}
         {...listeners}
@@ -204,7 +204,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         <span className="thumb-label" title={slide.guide || undefined} aria-hidden="true">
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}
           {over && (
-            <span className="thumb-over" title="글이 장 밖으로 넘쳤어요">
+            <span className="thumb-over" title="글이 슬라이드 밖으로 넘쳤어요">
               <AlertIcon />
             </span>
           )}

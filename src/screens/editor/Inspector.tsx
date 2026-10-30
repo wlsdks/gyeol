@@ -88,7 +88,7 @@ export function Inspector({
     )
   }
   return (
-    <div className="ins" role="tabpanel" aria-label="이 장 설정">
+    <div className="ins" role="tabpanel" aria-label="이 슬라이드 설정">
       <section className="ins-sec ins-top">
         <button type="button" className="ins-cur" title="레이아웃 바꾸기" onClick={() => setPicking(true)}>
           <ScaledSlide width={104} decorative>
@@ -125,7 +125,7 @@ function Unshown({ slide }: { slide: Slide }) {
       <EyeOffIcon />
       가려진 칸 {n}곳
       <Info label="가려진 칸 설명" align="start">
-        채워 둔 칸 가운데 이 레이아웃에는 없는 칸이라 장에 보이지 않아요. 지우지 않고 남겨 두었으니, 그 칸이 있는 레이아웃으로 바꾸면 다시
+        채워 둔 칸 가운데 이 레이아웃에는 없는 칸이라 슬라이드에 보이지 않아요. 지우지 않고 남겨 두었으니, 그 칸이 있는 레이아웃으로 바꾸면 다시
         보여요. 발표 파일(HTML), PDF, PPT에는 들어가지 않고 작업 파일에만 남아요.
       </Info>
     </p>
@@ -260,7 +260,7 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
       )}
       {panes && side !== null && (
         <>
-          <Opt label={`${panes.name} 위치`} tip={`장 위에서 ${panes.name}의 이름표를 끌어 반대쪽에 놓아도 돼요.`}>
+          <Opt label={`${panes.name} 위치`} tip={`슬라이드 위에서 ${panes.name}의 이름표를 끌어 반대쪽에 놓아도 돼요.`}>
             <Segmented
               label={`${panes.name} 위치`}
               options={[
@@ -271,7 +271,7 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
               onPick={(at) => setOptions(slide.id, { flip: at === flipAt || undefined })}
             />
           </Opt>
-          <Opt label={`${panes.name} 너비`} wide={panes.sides.length > 3} tip="장 위에서 두 영역 사이의 경계를 끌어도 돼요.">
+          <Opt label={`${panes.name} 너비`} wide={panes.sides.length > 3} tip="슬라이드 위에서 두 영역 사이의 경계를 끌어도 돼요.">
             <Segmented
               className={panes.sides.length > 3 ? 'seg-fill' : undefined}
               label={`${panes.name} 너비`}
@@ -283,7 +283,7 @@ function ShapeSection({ slide, shown, look }: { slide: Slide; shown: Slide; look
         </>
       )}
       {place && placeSpec && (
-        <Opt label={`${placeSpec.name} 자리`} tip="장 위에서 제목을 누르고 위쪽 막대의 이름을 위아래로 끌어도 돼요.">
+        <Opt label={`${placeSpec.name} 자리`} tip="슬라이드 위에서 제목을 누르고 위쪽 막대의 이름을 위아래로 끌어도 돼요.">
           <Segmented
             label={`${placeSpec.name} 자리`}
             options={PLACES}
@@ -360,7 +360,7 @@ function LayoutPicker({
   return (
     <div className="ins ins-picker" role="tabpanel" aria-label="레이아웃 바꾸기" onPointerLeave={() => onPeek(null)}>
       <div className="ins-picker-h">
-        <button type="button" className="icon-btn" aria-label="이 장 설정으로 돌아가기" title="돌아가기 (Esc)" onClick={onBack}>
+        <button type="button" className="icon-btn" aria-label="이 슬라이드 설정으로 돌아가기" title="돌아가기 (Esc)" onClick={onBack}>
           <BackIcon />
         </button>
         <h2 className="ins-picker-t">레이아웃 바꾸기</h2>

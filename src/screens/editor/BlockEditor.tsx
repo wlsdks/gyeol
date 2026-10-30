@@ -313,7 +313,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
   const addToNew = useCallback(
     (block: Block) => {
       store.addComposeSlide(autoPlace([], block) ?? [{ ...block, at: WHOLE }], slideRef.current.id)
-      toast.show(`새 컴포넌트 장을 만들어 ${josa(BLOCKS[block.type].name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
+      toast.show(`새 컴포넌트 슬라이드를 만들어 ${josa(BLOCKS[block.type].name, '을', '를')} 넣었어요`, undoAction(toast), 6000)
     },
     [store, toast],
   )
@@ -339,12 +339,12 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         store.setBlocks(s.id, d.result)
       } else if (d.plan === 'convert' && d.result && d.composed) {
         store.replaceSlide(s.id, { ...d.composed, blocks: d.result })
-        toast.show('이 장을 컴포넌트 장으로 바꿔 넣었어요', undoAction(toast), 6000)
+        toast.show('이 슬라이드를 컴포넌트 슬라이드로 바꿔 넣었어요', undoAction(toast), 6000)
       } else {
         // 이 장에 넣을 수 없으면 넣지 않는다: 들고 온 카드로 돌아가고, 까닭과 '새 장에 넣기'를 알린다.
         // 예전에는 묻지 않고 다음 장을 새로 만들어 넣어서, 컴포넌트를 넣을 때마다 장이 하나씩 늘었다
         setLanding({ id: null, ghost: d })
-        toast.show(refuseText(d.blocked, block.type, s.layout === 'compose' || canCompose(s.layout)), { label: '새 장에 넣기', run: () => addToNew(block) }, 8000)
+        toast.show(refuseText(d.blocked, block.type, s.layout === 'compose' || canCompose(s.layout)), { label: '새 슬라이드에 넣기', run: () => addToNew(block) }, 8000)
         return
       }
       land(d)
@@ -769,7 +769,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     const area = measureArea(areaEl.current)
     const next = autoPlace(s.blocks ?? [], copy, area?.size.h)
     if (!next) {
-      toast.show('이 장에는 더 넣을 자리가 없어요. 컴포넌트를 빼거나 다음 장에 넣어 주세요.')
+      toast.show('이 슬라이드에는 더 넣을 자리가 없어요. 컴포넌트를 빼거나 다음 슬라이드에 넣어 주세요.')
       return
     }
     store.setBlocks(s.id, next)
@@ -941,10 +941,10 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     resizing,
     empty: () => (
       <div className="bk-empty">
-        <p className="bk-empty-t">컴포넌트를 골라 넣어 이 장을 꾸며요</p>
+        <p className="bk-empty-t">컴포넌트를 골라 넣어 이 슬라이드를 꾸며요</p>
         {/* 목록이 열려 있으면 고르기 단추 대신 어디서 고르는지를: 열린 목록 옆에서 같은 일을 하는 단추가 또 보였다 */}
         <p className="bk-empty-s">
-          {libraryOpen ? '오른쪽 목록에서 누르거나 이 장으로 끌어다 놓아요.' : '끌어다 놓으면 알맞은 자리에 들어가요.'} 크기는 옆 컴포넌트와 맞춰 알아서 정해져요.
+          {libraryOpen ? '오른쪽 목록에서 누르거나 이 슬라이드로 끌어다 놓아요.' : '끌어다 놓으면 알맞은 자리에 들어가요.'} 크기는 옆 컴포넌트와 맞춰 알아서 정해져요.
         </p>
         {!libraryOpen && (
           <button type="button" className="bk-empty-btn" onClick={() => setLibraryOpen(true)}>
@@ -971,7 +971,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
           drag.target.kind === 'stay' || (drag.moving && drag.result && sameBoard(drag.moving, drag.result)) ? '놓으면 그대로 둘게요.' : '가장 가까운 자리에 놓을게요.'
         }`
     : drag.plan === 'convert'
-      ? '놓으면 이 장을 컴포넌트 장으로 바꿔서 넣어요. 지금 내용은 그대로예요.'
+      ? '놓으면 이 슬라이드를 컴포넌트 슬라이드로 바꿔서 넣어요. 지금 내용은 그대로예요.'
       : drag.plan === 'next'
         ? `${refuseText(drag.blocked, drag.block.type, compose || canCompose(slide.layout))} 놓아도 넣지 않아요.`
         : drag.kind === 'new' && !drag.plan
@@ -1069,7 +1069,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     },
     convert: () => {
       store.toCompose(slide.id)
-      toast.show('이 장을 컴포넌트 장으로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', undoAction(toast), 6000)
+      toast.show('이 슬라이드를 컴포넌트 슬라이드로 바꿨어요. 컴포넌트를 끌어 옮기거나 더 넣을 수 있어요.', undoAction(toast), 6000)
     },
   }
 }

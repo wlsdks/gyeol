@@ -96,7 +96,7 @@ export function summary(conclusion: string, labels: string[], bodies: string[]):
     layout: 'summary',
     purpose: '한 장 요약',
     priority: 1,
-    guide: '이 장만 봐도 알 수 있게, 줄마다 한두 문장으로 써요.',
+    guide: '이 슬라이드만 봐도 알 수 있게, 줄마다 한두 문장으로 써요.',
     hints: { title: conclusion, ...rows('body', bodies) },
     prefill: labels.map((title) => ({ title })),
     items: labels.length,

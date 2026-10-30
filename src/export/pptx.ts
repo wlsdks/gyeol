@@ -218,7 +218,7 @@ function slideXml(index: number): string {
   return (
     XML_HEAD +
     `<p:sld ${NS}><p:cSld><p:spTree>${TREE_HEAD}` +
-    `<p:pic><p:nvPicPr><p:cNvPr id="2" name="장 ${index}"/><p:cNvPicPr><a:picLocks noGrp="1" noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
+    `<p:pic><p:nvPicPr><p:cNvPr id="2" name="슬라이드 ${index}"/><p:cNvPicPr><a:picLocks noGrp="1" noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
     `<p:blipFill><a:blip r:embed="rId2"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
     `<p:spPr>${xfrm(0, 0, SLIDE_CX, SLIDE_CY)}${RECT}</p:spPr></p:pic>` +
     `</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`

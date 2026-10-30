@@ -12,7 +12,7 @@ import { setZoomTyping, useZoomTyping } from './zoom'
 
 /**
  * 지금 장의 움직임을 발표할 때처럼 한 번 보여 달라는 창(window) 이벤트. 내용 없이 신호만 보낸다 (new Event).
- * 보내는 곳: 테마 메뉴(발표할 때 움직임을 고를 때, '지금 장에서 보기'), 이 장 설정의 움직임 ▶(Inspector).
+ * 보내는 곳: 테마 메뉴(발표할 때 움직임을 고를 때, '이 슬라이드에서 보기'), 이 장 설정의 움직임 ▶(Inspector).
  * 받는 곳: 편집 화면의 무대(SlideStage)가 받아 지금 장에 움직임을 한 번 돌린다.
  * 메뉴와 무대는 화면 나무에서 멀리 떨어져 있어 속성으로 잇지 않고 이벤트로 보낸다. 이 창 안에서만 오가고 저장하지 않는다
  */
@@ -150,7 +150,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                   window.dispatchEvent(new Event(PREVIEW_MOTION))
                 }}
               >
-                지금 장에서 보기
+                이 슬라이드에서 보기
               </button>
             )}
           </div>
@@ -217,7 +217,7 @@ export function ExportMenu({
               name="발표 파일 (HTML)"
               label="발표 파일"
               desc="인터넷 없이 브라우저로 열려요"
-              info="미리 보내기 좋아요. 발표자 노트와 숨긴 장, 레이아웃을 바꿔 가려진 칸의 글은 들어가지 않아요."
+              info="미리 보내기 좋아요. 발표자 노트와 숨긴 슬라이드, 레이아웃을 바꿔 가려진 칸의 글은 들어가지 않아요."
               onPick={pick(onHtml)}
             />
             <ExportItem
@@ -235,8 +235,8 @@ export function ExportMenu({
               name="PPT (그림)"
               label="PPT"
               // PPT에서 오는 분은 글을 고칠 수 있다고 여기기 쉬워서, 고칠 수 없다는 것을 (i)가 아니라 한 줄 설명에 둔다
-              desc="장마다 그림이라 글은 고칠 수 없어요"
-              info="PowerPoint에서 넘기며 발표할 수 있지만, 장마다 그림 한 장이라 글과 표는 고칠 수 없어요. 고칠 것은 Framo에서 고쳐 다시 내보내세요. 발표자 노트는 PPT의 노트 칸에 들어가니 다른 분께 보내기 전에 확인하세요."
+              desc="슬라이드마다 그림이라 글은 고칠 수 없어요"
+              info="PowerPoint에서 넘기며 발표할 수 있지만, 슬라이드마다 그림 한 장이라 글과 표는 고칠 수 없어요. 고칠 것은 Framo에서 고쳐 다시 내보내세요. 발표자 노트는 PPT의 노트 칸에 들어가니 다른 분께 보내기 전에 확인하세요."
               onPick={pick(onPpt)}
             />
             <div className="menu-sep" role="separator" />
@@ -283,7 +283,7 @@ export function PresentButton({ onStart }: { onStart: (how: PresentHow, here: bo
               }}
             >
               <span className="menu-item-name">발표자 화면과 함께 발표 <kbd>{keys('alt+F5')}</kbd></span>
-              <span className="menu-item-desc">큰 화면에는 슬라이드만, 이 화면에는 다음 장, 노트, 시간이 보여요.</span>
+              <span className="menu-item-desc">큰 화면에는 슬라이드만, 이 화면에는 다음 슬라이드, 노트, 시간이 보여요.</span>
             </button>
             <button
               type="button"
@@ -304,8 +304,8 @@ export function PresentButton({ onStart }: { onStart: (how: PresentHow, here: bo
                 onStart('auto', true)
               }}
             >
-              <span className="menu-item-name">지금 장부터 발표 <kbd>{keys('shift+F5')}</kbd></span>
-              <span className="menu-item-desc">고치고 있는 장에서 시작해요.</span>
+              <span className="menu-item-name">이 슬라이드부터 발표 <kbd>{keys('shift+F5')}</kbd></span>
+              <span className="menu-item-desc">고치고 있는 슬라이드에서 시작해요.</span>
             </button>
             <div className="menu-sep" role="separator" />
             <div className="menu-toggle">

@@ -182,23 +182,23 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   })
   // 알림은 상자 없이 한 줄로 (목록이 위에서부터 바로 보이게). 무엇이 어디에 들어가는지만 말한다
   const note = closed
-    ? '표지와 섹션 장에는 컴포넌트를 넣지 않아요'
+    ? '표지와 섹션 슬라이드에는 컴포넌트를 넣지 않아요'
     : slide.layout === 'compose'
       ? full
         ? counted
-          ? `한 장에는 ${MAX_BLOCKS}개까지 넣어요. 하나를 빼면 더 넣을 수 있어요`
+          ? `슬라이드 하나에는 ${MAX_BLOCKS}개까지 넣어요. 하나를 빼면 더 넣을 수 있어요`
           : over
-            ? '이 장은 이미 넘쳤어요. 항목이나 컴포넌트를 줄이면 더 넣을 수 있어요'
-            : '이 장은 자리가 다 찼어요. 하나를 빼면 더 넣을 수 있어요'
+            ? '이 슬라이드는 이미 넘쳤어요. 항목이나 컴포넌트를 줄이면 더 넣을 수 있어요'
+            : '이 슬라이드는 자리가 다 찼어요. 하나를 빼면 더 넣을 수 있어요'
         : null
-      : '넣으면 컴포넌트 장이 돼요'
+      : '넣으면 컴포넌트 슬라이드가 돼요'
   const groups = group ? BLOCK_GROUPS.filter((g) => g.name === group) : BLOCK_GROUPS
   const showLinks = !group || group === LINK_GROUP.name
   const chips: { id: string | null; name: string; title?: string }[] = [
     { id: null, name: '전체' },
     ...BLOCK_GROUPS.map((g) => ({ id: g.name, name: g.short, title: `${g.name}: ${g.description}` })),
     { id: LINK_GROUP.name, name: LINK_GROUP.short, title: `${LINK_GROUP.name}: ${LINK_GROUP.description}` },
-    { id: MINE, name: saved ? `내 컴포넌트 ${saved}` : '내 컴포넌트', title: '저장해 둔 컴포넌트, 줄, 장을 어느 발표에서든 다시 넣어요' },
+    { id: MINE, name: saved ? `내 컴포넌트 ${saved}` : '내 컴포넌트', title: '저장해 둔 컴포넌트, 줄, 슬라이드를 어느 발표에서든 다시 넣어요' },
   ]
   // 이음표는 컴포넌트 장에서 컴포넌트가 둘 이상일 때만 끼울 수 있다
   const linkable = slide.layout === 'compose' && linkTargets(slide.blocks ?? []).length > 0
@@ -208,7 +208,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   const shownWhy = !why
     ? null
     : closed
-      ? { ...why, text: { why: '표지와 섹션 장에는 컴포넌트를 넣지 않아요.', fix: '새 장에 넣으면 이 장 다음에 컴포넌트 장을 만들어 넣어요.' } }
+      ? { ...why, text: { why: '표지와 섹션 슬라이드에는 컴포넌트를 넣지 않아요.', fix: '새 슬라이드에 넣으면 이 슬라이드 다음에 컴포넌트 슬라이드를 만들어 넣어요.' } }
       : issues.get(why.type)
         ? { ...why, text: noRoomText(issues.get(why.type)!, why.type, 'slide') }
         : null
@@ -248,12 +248,12 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
           <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
             <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 내용이 컴포넌트로 나뉘어 하나씩 옮길 수 있게 돼요" onClick={blocks.convert}>
-              컴포넌트 장으로 바꾸기
+              컴포넌트 슬라이드로 바꾸기
             </button>
           )}
           {(closed || full) && (
-            <button type="button" className="lib-note-btn" title="이 장 다음에 빈 컴포넌트 장을 만들어요" onClick={() => useDeck.getState().addComposeSlide([], slide.id)}>
-              새 컴포넌트 장
+            <button type="button" className="lib-note-btn" title="이 슬라이드 다음에 빈 컴포넌트 슬라이드를 만들어요" onClick={() => useDeck.getState().addComposeSlide([], slide.id)}>
+              새 컴포넌트 슬라이드
             </button>
           )}
         </div>
@@ -284,7 +284,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         type="button"
                         className={cx('lib-card', marked && 'is-blocked', why?.type === type && 'is-why')}
                         // 카드의 설명은 두 줄에서 자르므로 다 읽을 곳은 여기. 예전에는 움직임만 적어서 잘린 설명을 어디서도 볼 수 없었다
-                        title={`${spec.name}: ${spec.description}\n${marked ? '이 장에 함께 넣을 수 없어요. 눌러서 이유를 보세요' : `움직임: ${spec.motion}`}`}
+                        title={`${spec.name}: ${spec.description}\n${marked ? '이 슬라이드에 함께 넣을 수 없어요. 눌러서 이유를 보세요' : `움직임: ${spec.motion}`}`}
                         onPointerDown={(e) => {
                           const card = e.currentTarget
                           blocks.pressCard(e, type, () => tap(card))
@@ -300,7 +300,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         {marked && (
                           <span className="lib-no">
                             <LockIcon />
-                            {closed ? '이 장에는 넣지 않아요' : '이 장에 함께 넣을 수 없어요'}
+                            {closed ? '이 슬라이드에는 넣지 않아요' : '이 슬라이드에 함께 넣을 수 없어요'}
                           </span>
                         )}
                       </button>
@@ -315,7 +315,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                   {LINK_GROUP.name}
                   <span className="lib-group-n">{BLOCK_LINKS.length}</span>
                 </h3>
-                <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 장에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
+                <p className="lib-group-d">{linkable ? `${LINK_GROUP.description}. 끌어서 컴포넌트 사이에 놓아요.` : '컴포넌트 슬라이드에 컴포넌트를 둘 이상 넣으면 그 사이에 끼울 수 있어요.'}</p>
                 <div className="lib-grid">
                   {BLOCK_LINKS.map((l) => {
                     // 끼울 사이가 없는 이음표도 누르면 까닭을 알린다(LinkEditor의 insert가 알림으로)
@@ -325,7 +325,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         key={l.id}
                         type="button"
                         className={cx('lib-card', (!linkable || shut) && 'is-blocked')}
-                        title={`${l.name}: ${l.description}${shut ? '\n이 장에 끼울 자리가 없어요. 눌러서 이유를 보세요' : ''}`}
+                        title={`${l.name}: ${l.description}${shut ? '\n이 슬라이드에 끼울 자리가 없어요. 눌러서 이유를 보세요' : ''}`}
                         onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
                         onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
                       >
@@ -335,7 +335,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         {shut && (
                           <span className="lib-no">
                             <LockIcon />
-                            이 장에 끼울 자리가 없어요
+                            이 슬라이드에 끼울 자리가 없어요
                           </span>
                         )}
                       </button>
@@ -350,7 +350,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
 
       {shownWhy && (
         <div className="lib-why" role="dialog" aria-label={`${josa(BLOCKS[shownWhy.type].name, '을', '를')} 넣을 수 없는 이유`}>
-          <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 장에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
+          <p className="lib-why-t">{josa(BLOCKS[shownWhy.type].name, '은', '는')} 이 슬라이드에 {closed ? '넣지 않아요' : '함께 넣을 수 없어요'}</p>
           <p className="lib-why-p">{shownWhy.text.why}</p>
           <p className="lib-why-p is-fix">{shownWhy.text.fix}</p>
           <div className="lib-why-actions">
@@ -365,7 +365,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                 setWhy(null)
               }}
             >
-              새 장에 넣기
+              새 슬라이드에 넣기
             </button>
           </div>
         </div>

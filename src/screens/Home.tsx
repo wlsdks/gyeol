@@ -20,7 +20,7 @@ const SAMPLE_ID = 'sample'
 /** 빈 홈에 보이는 새 발표의 차례. 마법사의 세 단계와 이름을 맞춘다 */
 const EMPTY_STEPS: [string, string][] = [
   ['발표 종류', '사업 제안, 주간 업무 보고처럼 어떤 자리인지 골라요'],
-  ['발표 상황', '듣는 사람과 시간에 맞춰 장 수가 정해져요'],
+  ['발표 상황', '듣는 사람과 시간에 맞춰 슬라이드 수가 정해져요'],
   ['표지', '제목만 적으면 바로 채우기 시작해요'],
 ]
 
@@ -125,7 +125,7 @@ export function Home() {
           </h1>
           <div className="home-links">
             <button type="button" className="btn-link" onClick={() => go({ name: 'system' })}>
-              장 모음 보기
+              슬라이드 모음 보기
             </button>
             {decks && decks.length > 0 && (
               <button type="button" className="btn-link" onClick={openSample}>
@@ -143,7 +143,7 @@ export function Home() {
             <div className="home-empty-lead">
               <Waves />
               <h2 className="home-empty-h">첫 발표를 만들어 볼까요?</h2>
-              <p className="home-empty-p">발표 종류를 고르면 장 구성을 잡아 드려요. 내용만 채우면 돼요.</p>
+              <p className="home-empty-p">발표 종류를 고르면 슬라이드 구성을 잡아 드려요. 내용만 채우면 돼요.</p>
               <div className="home-empty-actions">
                 <button type="button" className="btn btn-primary btn-lg" onClick={() => go({ name: 'new' })}>
                   <PlusIcon />새 발표 만들기
@@ -232,7 +232,7 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
           {/* 한 줄로: 두 줄이면 카드마다 글이 길어져 그림보다 글이 먼저 읽힌다 */}
           <p className="card-meta">
             {typeName && <span>{typeName}</span>}
-            <span>{deck.slides.length}장</span>
+            <span>슬라이드 {deck.slides.length}장</span>
             <span>{timeAgo(deck.updatedAt)} 수정</span>
           </p>
         </div>

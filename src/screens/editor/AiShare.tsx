@@ -21,19 +21,19 @@ import { useDeck } from '../../store/deckStore'
 import { AskIcon, BackIcon, CheckIcon, ChevronIcon, CopyIcon, Info, Popover, Toggle, useDialog } from '../ui'
 
 const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
-  no_slide: '그 장이 지금은 없어요',
+  no_slide: '그 슬라이드가 지금은 없어요',
   has_content: '적은 내용이 있어서 지우지 않아요',
   out_of_range: '고를 수 있는 범위를 넘어요',
   not_for_layout: '이 레이아웃에는 없는 설정이에요',
-  last_slide: '마지막 남은 장은 지울 수 없어요',
-  unknown_role: '모르는 장이에요',
+  last_slide: '마지막 남은 슬라이드는 지울 수 없어요',
+  unknown_role: '모르는 슬라이드예요',
   no_change: '이미 그렇게 되어 있어요',
   not_reviewed: '보지 않았어요',
   no_block: '그 컴포넌트가 지금은 없어요',
-  no_room: '장에 자리가 모자라요',
-  look_clash: '이 장의 다른 컴포넌트와 면이 어울리지 않아요',
+  no_room: '슬라이드에 자리가 모자라요',
+  look_clash: '이 슬라이드의 다른 컴포넌트와 면이 어울리지 않아요',
   link_clash: '이으면 뜻이 서지 않는 두 컴포넌트예요',
-  scene_unfit: '이 장에 맞지 않는 장면이에요',
+  scene_unfit: '이 슬라이드에 맞지 않는 장면이에요',
 }
 
 /** 장면 줄이 같이 고른 다른 설정 때문에 빠졌으면, 장면이 아니라 그 설정이 이유라고 말한다 */
@@ -57,7 +57,7 @@ export const ASK_ERROR: Record<AskError, string> = {
   busy: 'AI가 다른 부탁을 하고 있어요. 끝난 뒤에 다시 눌러 주세요.',
   no_agent: '이 PC에서 Claude Code를 찾지 못했어요. Claude Code를 설치한 뒤 다시 눌러 주세요.',
   not_shared: '발표의 모양을 AI에게 보여 주지 못했어요. 다시 눌러 주세요.',
-  bad_ask: '이 장에는 할 수 없는 부탁이에요.',
+  bad_ask: '이 슬라이드에는 할 수 없는 부탁이에요.',
   timeout: 'AI가 3분 안에 끝내지 못해서 멈췄어요. 다시 눌러 주세요.',
   // '직접 연결하기'의 안내와 같게, 윈도우에서는 PowerShell
   login: `Claude Code에 로그인돼 있지 않아요. ${isMac ? '터미널' : 'PowerShell'}에서 claude를 한 번 실행해 로그인한 뒤 다시 눌러 주세요.`,
@@ -66,7 +66,7 @@ export const ASK_ERROR: Record<AskError, string> = {
 
 const jobTarget = (deck: Deck, job: AskJob) => {
   const i = job.slideId ? deck.slides.findIndex((s) => s.id === job.slideId) : -1
-  return i >= 0 ? `${i + 1}장 ‘${slideName(deck.slides[i])}’` : '발표 전체'
+  return i >= 0 ? `슬라이드 ${i + 1} ‘${slideName(deck.slides[i])}’` : '발표 전체'
 }
 
 // ---------- 부탁 고르기 ----------
@@ -98,7 +98,7 @@ function Consent({ direct, onMore, onCancel, onOk }: { direct: boolean; onMore?:
     <div className="ask-consent" role="group" aria-label="AI에게 모양 보여 주기">
       <p className="ask-consent-p">
         이 발표의 모양만 AI에게 보여 줘요. 적은 글은 보내지 않아요.
-        {!onMore && <Info label="AI에게 보이는 것">장 순서, 레이아웃, 칸이 비었는지, 테마가 보여요. 제목과 적은 글, 숫자, 이미지, 노트는 보이지 않아요.</Info>}
+        {!onMore && <Info label="AI에게 보이는 것">슬라이드 순서, 레이아웃, 칸이 비었는지, 테마가 보여요. 제목과 적은 글, 숫자, 이미지, 노트는 보이지 않아요.</Info>}
       </p>
       <div className="ask-consent-actions">
         {onMore && (
@@ -250,7 +250,7 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
           type="button"
           className={cx('btn btn-ghost btn-sm ask-btn', busy && 'is-busy')}
           aria-expanded={open}
-          title="이 장의 레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요"
+          title="이 슬라이드의 레이아웃, 강조, 칸 안내를 AI가 제안해요. 적은 글은 보내지 않아요"
           onClick={toggle}
         >
           <AskIcon />
@@ -260,7 +260,7 @@ export function SlideAsk({ deck, slide, ai, ask }: { deck: Deck; slide: Slide; a
     >
       {(close) => (
         <div className="ask-pop">
-          <AiHead title="이 장에서 무엇을 맡길까요?" ai={ai} ask={ask} compact />
+          <AiHead title="이 슬라이드에서 무엇을 맡길까요?" ai={ai} ask={ask} compact />
           <AskList scope="slide" deck={deck} slide={slide} ai={ai} ask={ask} onPicked={close} />
         </div>
       )}
@@ -491,7 +491,7 @@ function AiMore({ deck, ai, onBack }: { deck: Deck; ai: AiShare; onBack: () => v
           <p className="ai-pop-k">보여요</p>
           <ul>
             <li>보고 종류와 시간</li>
-            <li>장 순서와 레이아웃</li>
+            <li>슬라이드 순서와 레이아웃</li>
             <li>칸이 비었는지, 긴지</li>
             <li>테마와 강조색</li>
           </ul>
@@ -587,9 +587,9 @@ export function AiInbox({ ai, onOpen }: { ai: AiShare; onOpen: (r: ChangeRequest
 function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Applied): { text: string; detail?: string; also?: string } {
   const name = (ref: string | null) => {
     if (ref === null) return '맨 앞'
-    if (/^n\d+$/.test(ref)) return named.get(ref) ?? '새 장'
+    if (/^n\d+$/.test(ref)) return named.get(ref) ?? '새 슬라이드'
     const i = deck.slides.findIndex((s) => shapeSlideId(s) === ref)
-    return i < 0 ? '없는 장' : `${i + 1}장 ‘${slideName(deck.slides[i])}’`
+    return i < 0 ? '없는 슬라이드' : `슬라이드 ${i + 1} ‘${slideName(deck.slides[i])}’`
   }
   // 부품: 모양 파일의 id면 지금 발표에서, 같은 제안에서 넣은 부품(p1...)이면 넣을 때 붙인 이름으로
   const blockName = (ref: string) => {
@@ -603,8 +603,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       ? `${blockName(p.swap)}와 자리 바꾸기`
       : p.edge
         ? p.edge === 'top'
-          ? '맨 위에 장 너비로'
-          : '맨 아래에 장 너비로'
+          ? '맨 위에 슬라이드 너비로'
+          : '맨 아래에 슬라이드 너비로'
         : p.beside
           ? `${blockName(p.beside)} ${SIDE_TEXT[p.side ?? 'after']}`
           : '빈자리에'
@@ -617,11 +617,11 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
   switch (op.op) {
     case 'add_slide': {
       const label = `‘${op.role ?? LAYOUTS[op.layout!].name}’`
-      if (op.as) named.set(op.as, `새 장 ${label}`)
-      return { text: `${label} 장 넣기`, detail: op.after === null ? '맨 앞에' : `${name(op.after)} 뒤에` }
+      if (op.as) named.set(op.as, `새 슬라이드 ${label}`)
+      return { text: `${label} 슬라이드 넣기`, detail: op.after === null ? '맨 앞에' : `${name(op.after)} 뒤에` }
     }
     case 'remove_slide':
-      return { text: `${name(op.slide)} 지우기`, detail: '빈 장만 지워요' }
+      return { text: `${name(op.slide)} 지우기`, detail: '빈 슬라이드만 지워요' }
     case 'move_slide':
       return { text: `${name(op.slide)} 옮기기`, detail: op.after === null ? '맨 앞으로' : `${name(op.after)} 뒤로` }
     case 'set_layout': {
@@ -665,7 +665,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '움직임 정도 바꾸기', detail: parts.join(', ') }
     }
     case 'set_guide':
-      return { text: `${name(op.slide)} 장 안내 바꾸기`, detail: op.text }
+      return { text: `${name(op.slide)}의 안내 바꾸기`, detail: op.text }
     case 'add_block': {
       const label = `‘${BLOCKS[op.type].name}’ 컴포넌트`
       if (op.as) named.set(op.as, `새 ${label}`)
@@ -690,7 +690,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     }
     case 'set_size': {
       const parts = [op.w !== undefined && `너비 ${op.w}칸`, op.h !== undefined && `높이 ${op.h}칸`].filter(Boolean)
-      return { text: `${name(op.slide)}의 ${blockName(op.block)} 크기 바꾸기`, detail: `${parts.join(', ')} (장 너비와 높이를 12칸으로 볼 때)` }
+      return { text: `${name(op.slide)}의 ${blockName(op.block)} 크기 바꾸기`, detail: `${parts.join(', ')} (슬라이드 너비와 높이를 12칸으로 볼 때)` }
     }
     case 'set_link': {
       const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}와 아래 컴포넌트 사이`
@@ -844,7 +844,7 @@ export function AiReview({
             const was = deck.slides.find((x) => x.id === s.id)!
             const n = applied.deck.slides.indexOf(s) + 1
             return (
-              <section key={`pair-${s.id}`} className="air-pair" aria-label={`${n}장 바뀌기 전과 뒤`}>
+              <section key={`pair-${s.id}`} className="air-pair" aria-label={`슬라이드 ${n} 바뀌기 전과 뒤`}>
                 <figure className="vpp-item">
                   <ScaledSlide width={400} className="vpp-slide">
                     <SlideCanvas deck={deck} slide={was} mode="preview" {...pageProps(beforeInfo, was.id)} />
@@ -874,7 +874,7 @@ export function AiReview({
           {pairs.length > 0 && <p className="air-all">발표 전체</p>}
           {applied.deck.slides.map((s, i) => {
             const scene = newScene(deck, s)
-            const note = !before.has(s.id) ? '새 장' : s.hidden ? '발표에서 빠짐' : scene ? `‘${sceneSpec(scene).name}’ 장면` : applied.touched.has(s.id) ? '바뀌는 장' : null
+            const note = !before.has(s.id) ? '새 슬라이드' : s.hidden ? '발표에서 빠짐' : scene ? `‘${sceneSpec(scene).name}’ 장면` : applied.touched.has(s.id) ? '바뀌는 슬라이드' : null
             return (
               <ScenePlay key={s.id} deck={applied.deck} slide={s} on={!!scene} className={cx('vpp-item', note && 'is-diff', s.hidden && 'is-hidden')}>
                 <ScaledSlide width={480} className="vpp-slide">

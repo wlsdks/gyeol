@@ -74,7 +74,7 @@ export function MotionPanel({
       </button>
       <section className="ins-sec">
         <div className="mp-head">
-          <h2 className="ins-h">이 장만</h2>
+          <h2 className="ins-h">이 슬라이드만</h2>
           <button type="button" className="btn btn-ghost btn-sm mp-preview" disabled={!moving} onClick={() => window.dispatchEvent(new Event(PREVIEW_MOTION))}>
             <PlayIcon />
             미리 보기
@@ -87,14 +87,14 @@ export function MotionPanel({
         <Opt label="움직임 정도" wide>
           <Segmented<Motion | undefined>
             className="seg-fill"
-            label="이 장의 움직임 정도"
+            label="이 슬라이드의 움직임 정도"
             options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
             value={slide.options.motion ?? undefined}
             onPick={(m) => setOptions(slide.id, { motion: m })}
           />
         </Opt>
-        <Opt label="장 넘기기" wide tip="앞 장에서 이 장으로 넘어올 때의 모습이에요. 뒤로 돌아갈 때도 같은 모습으로 되돌아가요.">
-          <div className="mp-grid" role="group" aria-label="이 장으로 넘어올 때">
+        <Opt label="장 넘기기" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 뒤로 돌아갈 때도 같은 모습으로 되돌아가요.">
+          <div className="mp-grid" role="group" aria-label="이 슬라이드로 넘어올 때">
             {SLIDE_TRANSITIONS.map((t) => {
               const on = (slide.options.transition ?? undefined) === t.id
               return (
@@ -110,9 +110,9 @@ export function MotionPanel({
         <Sequence deck={deck} slide={slide} blocks={blocks} />
       ) : (
         <section className="ins-sec mp-empty">
-          <p>컴포넌트 장에서는 컴포넌트마다 나오는 차례와 때를 정할 수 있어요.</p>
+          <p>컴포넌트 슬라이드에서는 컴포넌트마다 나오는 차례와 때를 정할 수 있어요.</p>
           <button type="button" className="btn btn-ghost btn-sm" onClick={blocks.convert}>
-            컴포넌트 장으로 바꾸기
+            컴포넌트 슬라이드로 바꾸기
           </button>
         </section>
       )}
@@ -170,7 +170,7 @@ function Sequence({ deck, slide, blocks }: { deck: Deck; slide: Slide; blocks: P
         {said}
       </p>
       <SceneOverride slide={slide} />
-      {steps[0] === 0 && <p className="mp-step">장이 나올 때</p>}
+      {steps[0] === 0 && <p className="mp-step">슬라이드가 나올 때</p>}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

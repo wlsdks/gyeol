@@ -114,13 +114,13 @@ export const MOTIONS: { id: Motion; name: string; description: string }[] = [
  */
 export const FONTS: { id: FontId; name: string; description: string }[] = [
   { id: 'sans', name: '프리텐다드', description: '기본 글꼴이에요. 제목과 본문 모두 또렷하고 현대적이라 어느 보고에나 잘 맞아요.' },
-  { id: 'suit', name: 'SUIT', description: '제목과 본문 모두 SUIT예요. 글자가 반듯하고 둥글어서 숫자가 많은 장이 산뜻해 보여요.' },
+  { id: 'suit', name: 'SUIT', description: '제목과 본문 모두 SUIT예요. 글자가 반듯하고 둥글어서 숫자가 많은 슬라이드가 산뜻해 보여요.' },
   { id: 'serif', name: '명조 제목', description: '제목은 굵은 명조, 본문은 프리텐다드예요. 큰 화면에서도 제목이 또렷하고 격식 있어 보여요.' },
   { id: 'myeongjo', name: '본명조 제목', description: '제목은 가늘고 단정한 본명조, 본문은 프리텐다드예요. 보내 드리는 문서 같은 보고에 어울려요.' },
 ]
 
 export const TEXT_SIZES: { id: TextSize; name: string; description: string }[] = [
-  { id: 'small', name: '작게', description: '글이 많은 장도 넉넉하게 들어가요.' },
+  { id: 'small', name: '작게', description: '글이 많은 슬라이드도 넉넉하게 들어가요.' },
   { id: 'normal', name: '보통', description: '회의실 화면에 맞춘 크기예요.' },
   { id: 'large', name: '크게', description: '큰 회의실이나 화면 공유에서 잘 읽혀요.' },
 ]
@@ -134,24 +134,24 @@ export const FOOTERS: { id: FooterMode; name: string; description: string }[] = 
 
 export const TRANSITIONS: { id: Transition; name: string; description: string }[] = [
   { id: 'auto', name: '움직임에 맞춰', description: '차분하게는 흐리게, 생동감은 밀기로 넘어가요.' },
-  { id: 'none', name: '바로', description: '전환 없이 바로 다음 장이 보여요.' },
-  { id: 'fade', name: '흐리게', description: '앞 장이 흐려지며 다음 장이 나타나요.' },
-  { id: 'slide', name: '밀기', description: '다음 장이 옆에서 밀고 들어와요.' },
-  { id: 'zoom', name: '다가오기', description: '다음 장이 앞으로 다가오듯 커지며 나타나요.' },
-  { id: 'morph', name: '이어 움직이기', description: '두 장에 같은 제목이나 컴포넌트가 있으면 사라지지 않고 새 자리와 크기로 옮겨 가요. 나머지는 흐리게 바뀌어요.' },
+  { id: 'none', name: '바로', description: '전환 없이 바로 다음 슬라이드가 보여요.' },
+  { id: 'fade', name: '흐리게', description: '앞 슬라이드가 흐려지며 다음 슬라이드가 나타나요.' },
+  { id: 'slide', name: '밀기', description: '다음 슬라이드가 옆에서 밀고 들어와요.' },
+  { id: 'zoom', name: '다가오기', description: '다음 슬라이드가 앞으로 다가오듯 커지며 나타나요.' },
+  { id: 'morph', name: '이어 움직이기', description: '두 슬라이드에 같은 제목이나 컴포넌트가 있으면 사라지지 않고 새 자리와 크기로 옮겨 가요. 나머지는 흐리게 바뀌어요.' },
 ]
 
 /** 제목 덩어리의 자리 (표지, 섹션). 장 위에서 제목을 위아래로 끌거나 이 장 설정에서 고른다 */
 export const PLACES: { id: Place; name: string; description: string }[] = [
-  { id: 'top', name: '위', description: '제목을 장 위쪽에 둬요. 아래가 넓게 비어 차분해 보여요.' },
-  { id: 'middle', name: '가운데', description: '제목을 장 가운데에 둬요. 한 문장을 크게 보일 때 좋아요.' },
-  { id: 'bottom', name: '아래', description: '제목을 장 아래쪽에 둬요. 보고 표지에 많이 쓰는 자리예요.' },
+  { id: 'top', name: '위', description: '제목을 슬라이드 위쪽에 둬요. 아래가 넓게 비어 차분해 보여요.' },
+  { id: 'middle', name: '가운데', description: '제목을 슬라이드 가운데에 둬요. 한 문장을 크게 보일 때 좋아요.' },
+  { id: 'bottom', name: '아래', description: '제목을 슬라이드 아래쪽에 둬요. 보고 표지에 많이 쓰는 자리예요.' },
 ]
 
 export const TONES: { id: Tone; name: string; description: string }[] = [
   { id: 'base', name: '바탕', description: '발표 전체와 같은 바탕이에요.' },
   { id: 'invert', name: '반대 색', description: '밝은 테마는 어둡게, 어두운 테마는 밝게. 흐름을 끊고 눈길을 모아요.' },
-  { id: 'accent', name: '강조색', description: '강조색 면 위에 글을 놓아요. 가장 중요한 장 한두 곳에만 써요.' },
+  { id: 'accent', name: '강조색', description: '강조색 면 위에 글을 놓아요. 가장 중요한 슬라이드 한두 곳에만 써요.' },
 ]
 
 /** 고른 색 조합의 이름 (테마 기본색, 직접 고른 색도) */

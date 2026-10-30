@@ -16,7 +16,7 @@ import type { Look } from './look'
 /** 처음 보이는 묶음: 보고에서 가장 자주 쓰는 장. 컴포넌트로 꾸미는 빈 장이 맨 앞 */
 const OFTEN: LayoutId[] = ['compose', 'summary', 'points', 'kpi', 'bars', 'trend', 'timeline', 'compare', 'table']
 
-const GROUPS = [{ name: '자주 쓰는 장', layouts: OFTEN }, ...LAYOUT_GROUPS.filter((g) => !g.layouts.every((id) => OFTEN.includes(id)))]
+const GROUPS = [{ name: '자주 쓰는 슬라이드', layouts: OFTEN }, ...LAYOUT_GROUPS.filter((g) => !g.layouts.every((id) => OFTEN.includes(id)))]
 
 /** 그림 한 장의 너비 (화면 px). 셋이 한 줄 */
 const THUMB_W = 176
@@ -31,8 +31,8 @@ export function AddSlide({ look, onPick }: { look: Look; onPick: (layout: Layout
   }, [])
   const g = GROUPS[group]
   return (
-    <div className="add-slide" role="dialog" aria-label="장 추가">
-      <div className="add-slide-nav" role="tablist" aria-label="장 묶음" aria-orientation="vertical">
+    <div className="add-slide" role="dialog" aria-label="슬라이드 추가">
+      <div className="add-slide-nav" role="tablist" aria-label="슬라이드 묶음" aria-orientation="vertical">
         {GROUPS.map((x, i) => (
           <button key={x.name} type="button" role="tab" aria-selected={i === group} className={cx('add-slide-tab', i === group && 'is-on')} onClick={() => setGroup(i)}>
             {x.name}
@@ -41,7 +41,7 @@ export function AddSlide({ look, onPick }: { look: Look; onPick: (layout: Layout
         ))}
         {/* 편집하던 화면은 그대로 두고 새 탭에서 모든 장을 크게 본다 */}
         <a className="add-slide-all" href={hashOf({ name: 'system' })} target="_blank" rel="noopener">
-          장 모음 보기
+          슬라이드 모음 보기
         </a>
       </div>
       <div className="add-slide-grid" role="tabpanel" aria-label={g.name}>

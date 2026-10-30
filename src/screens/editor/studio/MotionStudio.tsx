@@ -194,20 +194,20 @@ export function MotionStudio({
           편집으로
         </button>
         <h1 className="ms-title">움직임 편집</h1>
-        <nav className="ms-nav" aria-label="장 옮기기">
-          <button type="button" className="icon-btn ms-prev" aria-label="앞 장" title="앞 장 (←)" disabled={at <= 0} onClick={() => go(-1)}>
+        <nav className="ms-nav" aria-label="슬라이드 넘기기">
+          <button type="button" className="icon-btn ms-prev" aria-label="앞 슬라이드" title="앞 슬라이드 (←)" disabled={at <= 0} onClick={() => go(-1)}>
             <ChevronIcon />
           </button>
           <span className="ms-count">
             {at + 1} / {visible.length}
           </span>
-          <button type="button" className="icon-btn" aria-label="다음 장" title="다음 장 (→)" disabled={at < 0 || at >= visible.length - 1} onClick={() => go(1)}>
+          <button type="button" className="icon-btn" aria-label="다음 슬라이드" title="다음 슬라이드 (→)" disabled={at < 0 || at >= visible.length - 1} onClick={() => go(1)}>
             <ChevronIcon />
           </button>
-          <span className="ms-slide-name">{slide.fields.title || '제목 없는 장'}</span>
+          <span className="ms-slide-name">{slide.fields.title || '제목 없는 슬라이드'}</span>
         </nav>
         <button type="button" className="btn btn-primary btn-sm ms-present" onClick={() => onPresent(slide.id)}>
-          <PlayIcon />이 장부터 발표
+          <PlayIcon />이 슬라이드부터 발표
         </button>
       </header>
 
@@ -243,7 +243,7 @@ export function MotionStudio({
               })}
             </div>
           </FitSlide>
-          {entering && <p className="ms-stage-tag">앞 장</p>}
+          {entering && <p className="ms-stage-tag">앞 슬라이드</p>}
         </div>
 
         <Timeline player={player} onEnter={prev && !reduced ? enter : null} quiet={reduced ? 'reduced' : level === 'none' ? 'none' : null} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
@@ -259,9 +259,9 @@ export function MotionStudio({
           ) : (
             <section className="ms-sec ms-convert">
               <h2 className="ms-h">컴포넌트마다 고르기</h2>
-              <p>컴포넌트 장으로 바꾸면 컴포넌트마다 나오는 차례와 움직임을 고를 수 있어요. 글은 그대로예요.</p>
+              <p>컴포넌트 슬라이드로 바꾸면 컴포넌트마다 나오는 차례와 움직임을 고를 수 있어요. 글은 그대로예요.</p>
               <button type="button" className="btn btn-ghost btn-sm" onClick={onConvert}>
-                컴포넌트 장으로 바꾸기
+                컴포넌트 슬라이드로 바꾸기
               </button>
             </section>
           )}
@@ -382,7 +382,7 @@ function Presets({ slide, prefer, onPick }: { slide: Slide; prefer: MotionPreset
               className={cx('ms-preset', now === p.id && 'is-on')}
               aria-pressed={now === p.id}
               disabled={!fits}
-              title={fits ? p.description : '핵심 한 줄이나 강조 상자가 있는 장에서 골라요'}
+              title={fits ? p.description : '핵심 한 줄이나 강조 상자가 있는 슬라이드에서 골라요'}
               onClick={() => onPick(p.id)}
             >
               <PresetGlyph id={p.id} />
@@ -437,7 +437,7 @@ function BlockMotion({
   if (!block) {
     return (
       <section className="ms-sec">
-        <p className="ms-none">장이나 시간표에서 컴포넌트를 고르면 움직임을 바꿀 수 있어요.</p>
+        <p className="ms-none">슬라이드나 시간표에서 컴포넌트를 고르면 움직임을 바꿀 수 있어요.</p>
       </section>
     )
   }
@@ -506,7 +506,7 @@ function SlideMotion({ deck, slide, onTransition }: { deck: Deck; slide: Slide; 
   const own = slide.options.transition ?? undefined
   return (
     <section className="ms-sec">
-      <h2 className="ms-h">이 장</h2>
+      <h2 className="ms-h">이 슬라이드</h2>
       {/* 움직임 탭과 같은 말: 예전에는 여기만 '기본'이라 같은 값이 두 이름으로 보였고, 기본이 무엇인지도 알 수 없었다 */}
       <p className="mp-inherit">
         발표 전체는 움직임 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 장 넘기기 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
@@ -514,14 +514,14 @@ function SlideMotion({ deck, slide, onTransition }: { deck: Deck; slide: Slide; 
       <Opt label="움직임 정도" wide>
         <Segmented<Motion | undefined>
           className="seg-fill"
-          label="이 장의 움직임 정도"
+          label="이 슬라이드의 움직임 정도"
           options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
           value={slide.options.motion ?? undefined}
           onPick={onPick}
         />
       </Opt>
-      <Opt label="장 넘기기" wide tip="앞 장에서 이 장으로 넘어올 때의 모습이에요. 고르면 무대에서 앞 장부터 한 번 넘겨 보여요.">
-        <div className="mp-grid" role="group" aria-label="이 장으로 넘어올 때">
+      <Opt label="장 넘기기" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 고르면 무대에서 앞 슬라이드부터 한 번 넘겨 보여요.">
+        <div className="mp-grid" role="group" aria-label="이 슬라이드로 넘어올 때">
           {SLIDE_TRANSITIONS.map((t) => {
             const on = own === t.id
             return (

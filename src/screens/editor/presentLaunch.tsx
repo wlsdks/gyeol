@@ -43,7 +43,7 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
     async (startId?: string, force = false, how: PresentHow = 'auto') => {
       // 모든 장을 발표에서 빼 두었으면 빈 전체 화면만 뜬다
       if (!deck.slides.some((s) => !s.hidden)) {
-        toast.show('모든 장이 발표에서 빠져 있어서 발표할 장이 없어요. 장을 골라 ‘발표에 다시 넣기’를 눌러 주세요.', undefined, 6000)
+        toast.show('모든 슬라이드가 발표에서 빠져 있어서 발표할 슬라이드가 없어요. 슬라이드를 골라 ‘발표에 다시 넣기’를 눌러 주세요.', undefined, 6000)
         return
       }
       if (!force) {
@@ -150,8 +150,8 @@ export function presentCheck(deck: Deck): PresentCheck {
 }
 
 function checkTitle({ missing, over }: PresentCheck): string {
-  if (missing && over) return `빈칸 ${missing}곳, 글이 넘친 장 ${over}장이 있어요`
-  if (over) return `글이 넘친 장이 ${over}장 있어요`
+  if (missing && over) return `빈칸 ${missing}곳, 글이 넘친 슬라이드 ${over}장이 있어요`
+  if (over) return `글이 넘친 슬라이드가 ${over}장 있어요`
   return `빈칸이 ${missing}곳 남았어요`
 }
 
@@ -179,7 +179,7 @@ export function PresentDialogs({ launch, onGoTo }: { launch: PresentLaunch; onGo
         >
           <p>
             {check.missing ? '빈칸은 발표 화면에 나오지 않아요. ' : ''}
-            {check.over ? '넘친 글은 잘려 보일 수 있어요. ' : ''}장을 누르면 그 자리로 가요.
+            {check.over ? '넘친 글은 잘려 보일 수 있어요. ' : ''}슬라이드를 누르면 그 자리로 가요.
           </p>
           <ul className="pck-list">
             {check.rows.map((r) => (
@@ -213,10 +213,10 @@ export function PresentDialogs({ launch, onGoTo }: { launch: PresentLaunch; onGo
           }
         >
           {askScreens.placement ? (
-            <p>큰 화면에 슬라이드를, 이 화면에 다음 장과 노트를 띄워요.</p>
+            <p>큰 화면에 슬라이드를, 이 화면에 다음 슬라이드와 노트를 띄워요.</p>
           ) : (
             <p>
-              화면이 두 개 연결돼 있어요. 큰 화면에는 슬라이드만, 이 화면에는 다음 장, 노트, 시간이 보여요.
+              화면이 두 개 연결돼 있어요. 큰 화면에는 슬라이드만, 이 화면에는 다음 슬라이드, 노트, 시간이 보여요.
               <br />
               브라우저가 ‘창 관리’를 물으면 <b>허용</b>을 눌러 주세요. 처음 한 번만 물어요.
             </p>

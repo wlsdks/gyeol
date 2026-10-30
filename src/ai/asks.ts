@@ -42,7 +42,7 @@ export const ASKS = [
     id: 'slide_layout',
     scope: 'slide',
     name: '더 어울리는 모양으로',
-    description: '이 장에 맞는 레이아웃을 골라요',
+    description: '이 슬라이드에 맞는 레이아웃을 골라요',
     prompt:
       '이 장의 역할, 칸이 비었는지, 항목 수를 보고 더 잘 맞는 레이아웃이나 같은 레이아웃의 다른 모양(variant)이 있으면 바꿔 주세요. 지금 채운 칸이 새 레이아웃에도 있는지 확인하고, 없어지는 칸이 많으면 바꾸지 마세요.',
   },
@@ -65,8 +65,8 @@ export const ASKS = [
   {
     id: 'slide_around',
     scope: 'slide',
-    name: '앞뒤에 필요한 장',
-    description: '앞뒤로 빠진 장을 넣어요',
+    name: '앞뒤에 필요한 슬라이드',
+    description: '앞뒤로 빠진 슬라이드를 넣어요',
     prompt:
       '이 장 앞뒤로 보고 흐름에 꼭 필요한데 빠진 장이 있으면 넣어 주세요(add_slide). 많아야 두 장이고, 이미 비슷한 역할의 장이 있으면 넣지 마세요.',
   },
@@ -86,7 +86,7 @@ export const ASKS = [
     id: 'deck_flow',
     scope: 'deck',
     name: '보고 흐름 점검',
-    description: '결론이 먼저 오게 장 순서를 다듬어요',
+    description: '결론이 먼저 오게 슬라이드 순서를 다듬어요',
     prompt:
       '듣는 사람이 결론부터 듣도록 장 순서를 다듬고, 빠진 장은 넣고, 쓰지 않는 빈 장은 빼 주세요. 지울 때는 빈 장만 지울 수 있어요.',
   },
@@ -94,7 +94,7 @@ export const ASKS = [
     id: 'deck_time',
     scope: 'deck',
     name: '시간에 맞추기',
-    description: '발표 시간에 맞게 장 수를 줄이거나 늘려요',
+    description: '발표 시간에 맞게 슬라이드 수를 줄이거나 늘려요',
     prompt:
       '발표 시간(duration)과 발표 방식(method)에 맞게 보이는 장 수를 맞춰 주세요. 줄일 때는 지우지 말고 발표에서 빼기(set_hidden)를 쓰고, 결론과 결정 요청 장은 남겨 두세요.',
   },
@@ -113,7 +113,7 @@ export const ASKS = [
     id: 'deck_scenes',
     scope: 'deck',
     name: '장면 연출',
-    description: '장마다 어울리는 장면을 골라 이어요',
+    description: '슬라이드마다 어울리는 장면을 골라 이어요',
     prompt:
       '발표 전체를 한 편의 영화처럼 연출해 주세요. 장마다 그 장에 맞는 장면(카탈로그 scenes, set_options의 scene)을 골라 이야기가 쌓이게 하세요: ' +
       '여는 장은 첫 장면, 결론과 요약은 결론 한 방, 근거는 차분하게, 가장 중요한 숫자가 있는 장에서 가장 힘을 주고(숫자가 말한다), 마지막 장은 마무리로 조용히 닫으세요. ' +

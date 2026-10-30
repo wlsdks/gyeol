@@ -54,7 +54,7 @@ const DECKS = {
     list.replaceChildren(...items)
     typeName.textContent = deck.name
     typeNote.textContent = deck.note
-    count.textContent = `${items.length}장으로 만들어요`
+    count.textContent = `슬라이드 ${items.length}장으로 만들어요`
   }
 
   sim.addEventListener('change', render)

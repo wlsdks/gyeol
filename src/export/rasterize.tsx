@@ -229,7 +229,7 @@ function showShots(shots: Blob[]): void {
     fig.style.cssText = 'margin:0;width:min(100%,1280px);color:#c9cbd1;font:600 13px/1.4 sans-serif'
     const img = new Image()
     img.src = url
-    img.alt = `장 ${i + 1}`
+    img.alt = `슬라이드 ${i + 1}`
     img.style.cssText = 'display:block;width:100%;height:auto;box-shadow:0 2px 16px rgb(0 0 0/.5)'
     const cap = document.createElement('figcaption')
     cap.textContent = `${i + 1} / ${urls.length}`

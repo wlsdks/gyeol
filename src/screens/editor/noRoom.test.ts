@@ -3,16 +3,16 @@ import { narrowText, noRoomText } from './noRoom'
 
 describe('넣을 수 없는 까닭의 말', () => {
   it('너비: 장 너비의 몫으로, 장 너비를 다 쓰는 것은 다 써야 한다고', () => {
-    expect(noRoomText({ kind: 'narrow', span: 6 }, 'message', 'here').why).toBe('핵심 한 줄은 장 너비의 절반 이상이 있어야 해서, 여기에 끼우면 너무 좁아져요.')
-    expect(noRoomText({ kind: 'narrow', span: 12 }, 'table', 'move').why).toBe('표는 장 너비를 다 써야 해서, 여기에 끼우면 너무 좁아져요.')
-    expect(narrowText({ kind: 'block', type: 'table', minSpan: 12 })).toBe('표는 장 너비를 다 써야 해서 더 좁힐 수 없어요.')
-    expect(narrowText({ kind: 'block', type: 'bars', minSpan: 4 })).toContain('장 너비의 3분의 1 이상이 있어야 해서')
+    expect(noRoomText({ kind: 'narrow', span: 6 }, 'message', 'here').why).toBe('핵심 한 줄은 슬라이드 너비의 절반 이상이 있어야 해서, 여기에 끼우면 너무 좁아져요.')
+    expect(noRoomText({ kind: 'narrow', span: 12 }, 'table', 'move').why).toBe('표는 슬라이드 너비를 다 써야 해서, 여기에 끼우면 너무 좁아져요.')
+    expect(narrowText({ kind: 'block', type: 'table', minSpan: 12 })).toBe('표는 슬라이드 너비를 다 써야 해서 더 좁힐 수 없어요.')
+    expect(narrowText({ kind: 'block', type: 'bars', minSpan: 4 })).toContain('슬라이드 너비의 3분의 1 이상이 있어야 해서')
   })
 
   it('높이: 넣기 전부터 넘친 장이면 넣어서 넘는다고 하지 않는다', () => {
-    expect(noRoomText({ kind: 'height', need: 800, room: 700 }, 'table', 'here').why).toBe('표를 넣으면 이 장의 컴포넌트들이 장 높이를 넘어서 글이 잘려요.')
+    expect(noRoomText({ kind: 'height', need: 800, room: 700 }, 'table', 'here').why).toBe('표를 넣으면 이 슬라이드의 컴포넌트들이 슬라이드 높이를 넘어서 글이 잘려요.')
     const already = noRoomText({ kind: 'height', need: 900, room: 700, already: true }, 'table', 'here')
-    expect(already.why).toBe('이 장의 컴포넌트들이 이미 장 높이를 넘었어요.')
+    expect(already.why).toBe('이 슬라이드의 컴포넌트들이 이미 슬라이드 높이를 넘었어요.')
     expect(already.fix).toBe('항목을 줄이거나 컴포넌트를 빼면 들어가요.')
     expect(noRoomText({ kind: 'height', need: 900, room: 700, already: true }, 'bullets', 'change').fix).toBe('항목을 줄이거나 컴포넌트를 빼면 바꿀 수 있어요.')
   })

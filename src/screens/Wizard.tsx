@@ -197,7 +197,7 @@ export function Wizard() {
           <section className="wz-sec wz-split wz-split-types">
             <div className="wz-head">
               <h1 className="wz-h">어떤 발표인가요?</h1>
-              <p className="wz-sub">고르면 그에 맞는 순서로 장을 만들어 드려요.</p>
+              <p className="wz-sub">고르면 그에 맞는 순서로 슬라이드를 만들어 드려요.</p>
             </div>
             <div className="wz-form">
               {/* 열셋을 한 줄로 늘어놓으면 찾기 어려워서, 회사에서 PPT를 만드는 자리 셋으로 나눠 나란히 둔다 */}
@@ -257,7 +257,7 @@ export function Wizard() {
             <aside className="wz-plan">
               <p className="wz-plan-k">{blueprint.name}</p>
               <p className="wz-plan-h" aria-live="polite">
-                {preview.slides.length}장으로 만들어요
+                슬라이드 {preview.slides.length}장으로 만들어요
               </p>
               {/* 실제로 만들어질 장을 작게 그린다. 칸마다 들어갈 예시가 보이고, 편집기에서는 이 자리에 회색 안내로 남는다 */}
               <ol className="wz-plan-grid wz-real">

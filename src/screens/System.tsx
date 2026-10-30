@@ -26,14 +26,14 @@ import { BackIcon, Brand, CheckIcon, Segmented } from './ui'
 type View = 'sample' | 'blank'
 
 const TOKENS: { v: string; name: string; use: string }[] = [
-  { v: '--bg', name: '바탕', use: '장의 바탕' },
+  { v: '--bg', name: '바탕', use: '슬라이드의 바탕' },
   { v: '--ink', name: '글자', use: '제목과 본문' },
   { v: '--ink-2', name: '보조 글자', use: '이끄는 말, 설명' },
   { v: '--ink-3', name: '흐린 글자', use: '출처, 보충, 쪽 번호' },
   { v: '--line', name: '줄', use: '표와 목록의 나눔선' },
   { v: '--surface', name: '면', use: '카드, 막대의 바탕' },
   { v: '--accent', name: '강조', use: '답에만: 숫자, 추천안, 강조한 막대' },
-  { v: '--bold-bg', name: '짙은 면', use: '섹션 장, 표지 옆면. 강조색과 짝인 깊은 색' },
+  { v: '--bold-bg', name: '짙은 면', use: '섹션 슬라이드, 표지 옆면. 강조색과 짝인 깊은 색' },
   { v: '--bold-accent', name: '짙은 면 위 강조', use: '짙은 면 안의 숫자와 점. 강조색을 밝힌 색' },
   { v: '--good', name: '좋음', use: '목표 달성, 늘어남 (▲과 함께)' },
   { v: '--bad', name: '나쁨', use: '못 미침, 줄어듦 (▼과 함께)' },
@@ -43,7 +43,7 @@ const TOKENS: { v: string; name: string; use: string }[] = [
 const TYPE: { name: string; px: number; text: string; head?: boolean; tone?: 'accent' | 'ink-2' | 'ink-3' }[] = [
   { name: '큰 숫자', px: 154, text: '3시간', head: true, tone: 'accent' },
   { name: '표지 제목', px: 90, text: '주간 회의 줄이기 개선 제안', head: true },
-  { name: '장 제목', px: 62, text: '두 팀이 먼저 해 보는 B안을 추천해요', head: true },
+  { name: '슬라이드 제목', px: 62, text: '두 팀이 먼저 해 보는 B안을 추천해요', head: true },
   { name: '이끄는 말', px: 36, text: '지금은 같은 일에 매주 90분 회의를 해요', tone: 'ink-2' },
   { name: '본문', px: 30, text: '진행 상황은 회의 전에 보드에 적어 둬요' },
   { name: '보충', px: 26, text: '일주일 기준, 회의 9시간이 6시간으로', tone: 'ink-3' },
@@ -56,13 +56,13 @@ const FONT_SAMPLE: LayoutId = 'kpi'
 const VARIANT_COUNT = LAYOUT_ORDER.reduce((n, id) => n + (LAYOUTS[id].variants?.length ?? 1), 0)
 
 /** 부품이 가장 좁게 들어가는 너비 (12칸 격자의 칸 수 → 쓰는 사람의 말) */
-const NARROWEST: Record<number, string> = { 3: '장 너비의 4분의 1', 4: '장 너비의 3분의 1', 6: '장 너비의 절반', 8: '장 너비의 3분의 2', 12: '한 줄 전체' }
+const NARROWEST: Record<number, string> = { 3: '슬라이드 너비의 4분의 1', 4: '슬라이드 너비의 3분의 1', 6: '슬라이드 너비의 절반', 8: '슬라이드 너비의 3분의 2', 12: '한 줄 전체' }
 
 /** 이 레이아웃이 어느 발표 구성에 들어가는지. 종류가 열셋이라 넷 이상이면 셋만 적고 수를 센다(한 줄을 넘지 않게) */
 function usedIn(id: LayoutId): string {
   const names = DECK_TYPES.filter((t) => BLUEPRINTS[t].recipes.some((r) => r.layout === id)).map((t) => BLUEPRINTS[t].name)
   if (names.length === DECK_TYPES.length) return '모든 발표 구성에 들어가요'
-  if (!names.length) return '발표 구성에는 없어요. 편집할 때 장 추가에서 넣어요'
+  if (!names.length) return '발표 구성에는 없어요. 편집할 때 슬라이드 추가에서 넣어요'
   if (names.length > 3) return `${names.slice(0, 3).join(', ')} 등 ${names.length}가지 구성에 들어가요`
   return `${names.join(', ')} 구성에 들어가요`
 }
@@ -220,7 +220,7 @@ export function System() {
       </header>
 
       <div className="sys-body">
-        <nav className="sys-nav" aria-label="장 모음 목차">
+        <nav className="sys-nav" aria-label="슬라이드 모음 목차">
           {sections.map((s) => (
             <button
               key={s.id}
@@ -237,16 +237,16 @@ export function System() {
 
         <main className="sys-main" ref={mainRef}>
           <div className="sys-intro">
-            <h1 className="sys-h1">장 모음</h1>
+            <h1 className="sys-h1">슬라이드 모음</h1>
             <p className="sys-lead">
-              만들 수 있는 장 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지, 컴포넌트 장에 넣는 컴포넌트 {BLOCK_TYPES.length}가지를 모았어요. 위에서 테마와
-              강조색을 바꾸면 모두 함께 바뀌어요. 발표를 편집할 때 ‘장 추가’와 ‘컴포넌트 넣기’에서 넣을 수 있어요.
+              만들 수 있는 슬라이드 {LAYOUT_ORDER.length}가지와 모양 {VARIANT_COUNT}가지, 컴포넌트 슬라이드에 넣는 컴포넌트 {BLOCK_TYPES.length}가지를 모았어요. 위에서 테마와
+              강조색을 바꾸면 모두 함께 바뀌어요. 발표를 편집할 때 ‘슬라이드 추가’와 ‘컴포넌트 넣기’에서 넣을 수 있어요.
             </p>
           </div>
 
           <section id="sys-tokens" className="sys-group">
             <h2 className="sys-h2">색과 글자</h2>
-            <p className="sys-group-desc">장마다 같은 색과 글자 크기를 써요. 강조색은 답에만 써서 보는 분의 눈이 한곳에 모이게 해요.</p>
+            <p className="sys-group-desc">슬라이드마다 같은 색과 글자 크기를 써요. 강조색은 답에만 써서 보는 분의 눈이 한곳에 모이게 해요.</p>
             <Tokens deckTheme={deckTheme} />
             {thumbW > 0 && (
               <div className="sys-thumbs" style={{ '--cols': cols, '--gap': `${gap}px` }}>
@@ -280,7 +280,7 @@ export function System() {
                 })}
               </div>
             )}
-            <h3 className="sys-h3 sys-tones-h">장의 바탕</h3>
+            <h3 className="sys-h3 sys-tones-h">슬라이드의 바탕</h3>
             {width > 0 && examples.get('statement') && (
               <div className="sys-thumbs" style={{ '--cols': 3, '--gap': `${gap}px` }}>
                 {TONES.map((t) => {
@@ -342,7 +342,7 @@ export function System() {
           <section id="sys-parts" className="sys-group">
             <h2 className="sys-h2">컴포넌트</h2>
             <p className="sys-group-desc">
-              컴포넌트 장에 끌어다 놓는 컴포넌트예요. 정해진 줄과 너비에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+              컴포넌트 슬라이드에 끌어다 놓는 컴포넌트예요. 정해진 줄과 너비에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
             </p>
             {width > 0 &&
               BLOCK_GROUPS.map((g) => (
