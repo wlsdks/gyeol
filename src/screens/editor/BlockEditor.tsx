@@ -27,6 +27,7 @@ import {
   placeIssue,
   removeBlock,
   shiftBlock,
+  shiftIssue,
   variantOfBlock,
   WHOLE,
   whyNot,
@@ -850,6 +851,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
         toast.show(`${t.why} ${t.fix}`, undefined, 6000)
       }}
       onShift={(dir) => store.setBlocks(slideRef.current.id, shiftBlock(slideRef.current.blocks ?? [], b.id, dir, measureArea(areaEl.current)?.size.h))}
+      shiftIssue={(dir) => shiftIssue(slide.blocks ?? [], b.id, dir, measureArea(areaEl.current)?.size.h)}
       onLook={(lk) => {
         // 지금 바탕을 다시 고르면 그대로 둔다 (빈 되돌리기 단계가 생겼다). 함께 바뀌는 옆 컴포넌트의 바탕까지 같은지 본다
         const cur = slideRef.current.blocks ?? []

@@ -51,6 +51,7 @@ import {
   removeBlock,
   resizeBlock,
   shiftBlock,
+  shiftIssue,
   shownBlocks,
   shownLook,
   slideName,
@@ -431,6 +432,18 @@ describe('자리 정하기', () => {
     expect(areaOf(right, 'b')).toEqual({ x: 3, y: 5, w: 9, h: 7 })
     const back = shiftBlock(right, 'b', -1, H)
     expect(back.map((b) => [b.id, b.at])).toEqual(bs.map((b) => [b.id, b.at]))
+  })
+
+  it('화살표로 옮길 수 없으면 까닭을 알려 준다: 맨 앞, 맨 뒤', () => {
+    const bs: Block[] = [
+      { ...block('message', 'm'), at: { x: 0, y: 0, w: 12, h: 5 } },
+      { ...block('bullets', 'b'), at: { x: 0, y: 5, w: 9, h: 7 } },
+      { ...block('number', 'n'), at: { x: 9, y: 5, w: 3, h: 7 } },
+    ]
+    expect(shiftIssue(bs, 'm', -1, H)).toBe('first')
+    expect(shiftIssue(bs, 'n', 1, H)).toBe('last')
+    expect(shiftIssue(bs, 'b', 1, H)).toBeNull()
+    expect(shiftIssue(bs, 'b', -1, H)).toBe(shiftBlock(bs, 'b', -1, H) === bs ? 'stuck' : null)
   })
 
   it('나누는 선을 더 끌 수 없으면 막는 부품을 알려 준다', () => {

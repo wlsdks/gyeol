@@ -689,6 +689,18 @@ export function shiftBlock(blocks: Block[], blockId: string, dir: -1 | 1, areaH?
 }
 
 /**
+ * shiftBlock이 자리를 바꿀 수 없는 까닭: 읽는 차례의 맨 앞('first')이나 맨 뒤('last')이거나, 서로의 자리에 들어가지 않거나('stuck').
+ * 바꿀 수 있으면 null. 메뉴가 못 하는 항목을 잠그고 까닭을 보이게 (예전에는 눌러도 아무 일 없이 무시됐다)
+ */
+export function shiftIssue(blocks: Block[], blockId: string, dir: -1 | 1, areaH?: number): 'first' | 'last' | 'stuck' | null {
+  const order = byReading(blocks)
+  const i = order.findIndex((b) => b.id === blockId)
+  if (i < 0) return 'stuck'
+  if (!order[i + dir]) return dir < 0 ? 'first' : 'last'
+  return shiftBlock(blocks, blockId, dir, areaH) === blocks ? 'stuck' : null
+}
+
+/**
  * 같은 줄에 옆으로(또는 같은 단에 위아래로) 붙어 선 두 부품의 차례를 바꾼다. 저마다의 너비(높이)는 그대로, 이음표는 맞바꾸기처럼 자리에 남는다.
  * 화살표 키로 옮길 때 쓴다: 끌어서 가운데에 놓을 때처럼 자리를 통째로 맞바꾸면 좁은 자리에 간 부품이 가장 좁은 너비까지 넓어져서
  * (점 목록 9칸과 큰 숫자 3칸이 8칸과 4칸으로) →를 누른 뒤 ←를 눌러도 처음으로 돌아오지 않았다.

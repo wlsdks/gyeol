@@ -242,16 +242,19 @@ export function SelectionBar({ slide, canvasRef }: { slide: Slide; canvasRef: Re
     }
     const back = target.across ? '왼쪽으로' : '위로'
     const fwd = target.across ? '오른쪽으로' : '아래로'
+    // 끝이라 옮길 수 없으면 단추는 잠그고 까닭을 (컴포넌트의 '앞으로 옮기기'와 같게)
+    const first = `${target.across ? '맨 왼쪽' : '맨 위'} ${josa(spec.items.label, '이에요', '예요')}`
+    const last = `${target.across ? '맨 오른쪽' : '맨 아래'} ${josa(spec.items.label, '이에요', '예요')}`
     return (
       <>
         {soft}
         {bar(
           `${spec.items.label} ${i + 1}`,
           <>
-            <button type="button" className="btn btn-ghost btn-sm sel-btn" title={back} aria-label={back} disabled={i <= 0} onClick={() => moveTo(i - 1)}>
+            <button type="button" className="btn btn-ghost btn-sm sel-btn" title={i <= 0 ? first : back} aria-label={back} disabled={i <= 0} onClick={() => moveTo(i - 1)}>
               <ArrowIcon dir={target.across ? 'left' : 'up'} />
             </button>
-            <button type="button" className="btn btn-ghost btn-sm sel-btn" title={fwd} aria-label={fwd} disabled={i >= n - 1} onClick={() => moveTo(i + 1)}>
+            <button type="button" className="btn btn-ghost btn-sm sel-btn" title={i >= n - 1 ? last : fwd} aria-label={fwd} disabled={i >= n - 1} onClick={() => moveTo(i + 1)}>
               <ArrowIcon dir={target.across ? 'right' : 'down'} />
             </button>
             {highlight && (

@@ -28,6 +28,7 @@ export function BlockTools({
   lookIssue,
   onBlocked,
   onShift,
+  shiftIssue,
   onLook,
   onEffect,
   onPreview,
@@ -50,6 +51,8 @@ export function BlockTools({
   /** 그런 단추를 눌렀을 때 (막아 두되, 누르면 까닭을 보여 준다) */
   onBlocked(r: NoRoom): void
   onShift(dir: -1 | 1): void
+  /** 앞(뒤)으로 옮길 수 없는 까닭. 메뉴를 열 때만 묻는다(판을 다시 맞춰 봐야 해서) */
+  shiftIssue(dir: -1 | 1): 'first' | 'last' | 'stuck' | null
   onLook(look: Block['look']): void
   onEffect(effect: BlockEffect): void
   onPreview(effect: BlockEffect): void
@@ -141,22 +144,38 @@ export function BlockTools({
                 <span className="bk-menu-d">바로 뒤에 같은 컴포넌트를 하나 더 넣어요</span>
               </button>
             </li>
-            {([-1, 1] as const).map((dir) => (
-              <li key={dir}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="bk-menu-item"
-                  onClick={() => {
-                    onShift(dir)
-                    setMenu(null)
-                  }}
-                >
-                  <b>{dir < 0 ? '앞으로 옮기기' : '뒤로 옮기기'}</b>
-                  <span className="bk-menu-d">{dir < 0 ? '읽는 차례로 한 칸 앞 자리와 바꿔요' : '읽는 차례로 한 칸 뒤 자리와 바꿔요'}</span>
-                </button>
-              </li>
-            ))}
+            {([-1, 1] as const).map((dir) => {
+              // 옮길 수 없으면 잠그고 까닭을 보인다. 예전에는 눌러도 아무 일 없이 메뉴만 닫혀서 고장 난 것처럼 보였다
+              const r = shiftIssue(dir)
+              return (
+                <li key={dir}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-disabled={!!r}
+                    className={cx('bk-menu-item', r && 'is-blocked')}
+                    onClick={() => {
+                      if (r) return
+                      onShift(dir)
+                      setMenu(null)
+                    }}
+                  >
+                    <b>{dir < 0 ? '앞으로 옮기기' : '뒤로 옮기기'}</b>
+                    <span className="bk-menu-d">
+                      {r === 'first'
+                        ? '읽는 차례로 맨 앞이에요'
+                        : r === 'last'
+                          ? '읽는 차례로 맨 뒤예요'
+                          : r
+                            ? `${dir < 0 ? '앞' : '뒤'} 컴포넌트와 자리를 바꿀 수 없어요. 끌어서 옮겨 보세요`
+                            : dir < 0
+                              ? '읽는 차례로 한 칸 앞 자리와 바꿔요'
+                              : '읽는 차례로 한 칸 뒤 자리와 바꿔요'}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
             {adds.map((f) => (
               <li key={f.key}>
                 <button
