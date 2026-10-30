@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDeck } from '../deck/generate'
-import { startIndex } from './Present'
+import { barRoom, startIndex } from './Present'
 
 describe('발표를 시작할 장', () => {
   const deck = createDeck({ type: 'report', audience: 'mixed', minutes: 20, method: 'live', title: '', org: '', presenter: '', theme: 'white' })
@@ -20,5 +20,21 @@ describe('발표를 시작할 장', () => {
 
   it('고른 장이 없으면 첫 장부터', () => {
     expect(startIndex(deck, shown)).toBe(0)
+  })
+})
+
+describe('발표 막대의 자리', () => {
+  it('윈도우 노트북 창(1280×600, 1366×650)에서는 장 오른쪽 여백에 둔다', () => {
+    expect(barRoom(1280, 600)).toBe('side')
+    expect(barRoom(1366, 650)).toBe('side')
+  })
+
+  it('세로로 긴 창에서는 위 여백에 둔다', () => {
+    expect(barRoom(1280, 900)).toBe('top')
+  })
+
+  it('여백이 모자란 16:9 전체 화면에서는 장 위에 겹친다', () => {
+    expect(barRoom(1920, 1080)).toBe('over')
+    expect(barRoom(1280, 720)).toBe('over')
   })
 })

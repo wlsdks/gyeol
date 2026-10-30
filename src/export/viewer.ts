@@ -24,12 +24,14 @@ html,body{margin:0;background:#e9ebef;font-family:'Pretendard Variable',Pretenda
 .v-count{display:none}
 body.is-present{overflow:hidden;background:#000}
 body.is-present .v-bar{display:none}
-body.is-present .v-deck{position:fixed;inset:0;display:block;padding:0}
+body.is-present .v-deck{position:fixed;inset:0;display:block;padding:0;background:#000}
 body.is-present .v-slide{position:absolute;inset:0;display:none;max-width:none}
 body.is-present .v-slide.is-current{display:flex;align-items:center;justify-content:center}
 body.is-present .v-frame{width:var(--pw);height:var(--ph);aspect-ratio:auto;border-radius:0;box-shadow:none;cursor:default}
 body.is-present .v-count{position:fixed;right:20px;top:16px;display:block;padding:8px 12px;border-radius:999px;background:rgb(0 0 0/.45);color:rgb(255 255 255/.8);font:600 13px/1 inherit;opacity:0;transition:opacity .2s}
 body.is-present.is-awake .v-count{opacity:1}
+body.is-present.v-side .v-count{right:0;width:calc((100vw - var(--pw))/2);box-sizing:border-box;text-align:center;background:none}
+body.is-present.v-top .v-count{top:calc((100vh - var(--ph))/4);transform:translateY(-50%);background:none}
 body.is-present:not(.is-awake){cursor:none}
 .v-blank{display:none}
 body.is-present .v-blank:not([hidden]){position:fixed;inset:0;z-index:5;display:block;background:#000}
@@ -61,6 +63,9 @@ function fit(){
   if(presenting()){
     var s=Math.min(innerWidth/1920,innerHeight/1080);
     root.style.setProperty('--pw',1920*s+'px');root.style.setProperty('--ph',1080*s+'px');
+    // 쪽 번호는 장 밖의 검은 여백에 둔다(앱의 발표 화면과 같게). 여백이 없으면 장 위에 겹치니 마우스를 움직일 때만
+    var side=(innerWidth-1920*s)/2,top=(innerHeight-1080*s)/2;
+    body.classList.toggle('v-side',side>=72);body.classList.toggle('v-top',side<72&&top>=40);
     slides.forEach(function(el){el.querySelector('.v-frame').style.setProperty('--s',s)});
   }else{
     slides.forEach(function(el){var f=el.querySelector('.v-frame');f.style.setProperty('--s',f.clientWidth/1920)});
@@ -84,12 +89,13 @@ function show(n,first){
 function forwardOne(){if(stopMotion&&stopMotion.next())return;show(i+1)}
 function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
+function roomy(){return body.classList.contains('v-side')||body.classList.contains('v-top')}
 function start(n){
-  body.classList.add('is-present');fit();show(n,true);wake();
+  body.classList.add('is-present');fit();show(n,true);if(roomy())wake();
   if(root.requestFullscreen)root.requestFullscreen().catch(function(){});
 }
 function stop(){
-  body.classList.remove('is-present');setBlank(null);
+  body.classList.remove('is-present','v-side','v-top');setBlank(null);
   halt();
   if(document.fullscreenElement)document.exitFullscreen().catch(function(){});
   fit();if(slides[i])slides[i].scrollIntoView({block:'center'});
@@ -113,7 +119,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
   if(a.kind==='blank')setBlank(a.blank);else if(a.kind==='go'&&a.index===i+1)forwardOne();else if(a.kind==='go')show(a.index);else stop();
 });
-addEventListener('resize',fit);
+addEventListener('resize',function(){fit();if(presenting()&&!roomy()){clearTimeout(timer);body.classList.remove('is-awake')}});
 fit();fitBlocks(document);
 if(document.fonts)document.fonts.ready.then(function(){fit();fitBlocks(document)});
 })();`

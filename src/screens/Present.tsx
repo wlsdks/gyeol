@@ -17,6 +17,22 @@ export function startIndex(deck: Deck, shown: Deck['slides'], startId?: string):
   return Math.max(0, shown.findIndex((s) => s.id === from?.id))
 }
 
+/** 장 밖에 남는 검은 여백 가운데 발표 막대(쪽 번호, 발표 끝내기)를 둘 곳. 막대 너비와 높이에 여유를 더한 값 */
+const SIDE_ROOM = 104
+const TOP_ROOM = 44
+export type BarRoom = 'side' | 'top' | 'over'
+
+/**
+ * 발표 막대를 어디에 둘지. 창이 장보다 넓으면 오른쪽 여백에 세로로, 높으면 위 여백에 둔다.
+ * 둘 다 모자라면(16:9 전체 화면) 장 위에 겹치므로 마우스를 움직일 때만 잠깐 보인다.
+ * 1280×600 창에서 장 오른쪽 위에 늘 겹쳐 그려져 장 제목과 쪽 번호를 가렸다
+ */
+export function barRoom(w: number, h: number): BarRoom {
+  const side = (w - (h * 16) / 9) / 2
+  const top = (h - (w * 9) / 16) / 2
+  return side >= SIDE_ROOM ? 'side' : top >= TOP_ROOM ? 'top' : 'over'
+}
+
 /**
  * 전체 화면 발표. 클리커가 보내는 PageUp/PageDown도 받는다.
  * 발표자 화면(Presenter)이 열려 있으면 같이 움직인다. 어느 창에서 넘겨도 된다.
@@ -31,7 +47,8 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
   const [view, setView] = useState(() => ({ index: startIndex(deck, slides, startId), play: true }))
   /** 지금 장의 움직임. 누르면 나오는 컴포넌트가 남았으면 다음 키에 그것부터 보인다 */
   const playing = useRef<MotionPlay | null>(null)
-  const [idle, setIdle] = useState(false)
+  const [idle, setIdle] = useState(true)
+  const [room, setRoom] = useState<BarRoom>(() => barRoom(window.innerWidth, window.innerHeight))
   const [blank, setBlankState] = useState<Blank>(null)
   const idleTimer = useRef(0)
   const stageRef = useRef<HTMLDivElement | null>(null)
@@ -161,8 +178,22 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
     idleTimer.current = window.setTimeout(() => setIdle(true), 2200)
   }
   useEffect(() => {
-    wake()
-    return () => window.clearTimeout(idleTimer.current)
+    const onResize = () => {
+      const next = barRoom(window.innerWidth, window.innerHeight)
+      setRoom(next)
+      // 전체 화면이 되어 여백이 없어지면 장 위에 떠 있던 막대를 바로 거둔다
+      if (next === 'over') {
+        window.clearTimeout(idleTimer.current)
+        setIdle(true)
+      }
+    }
+    window.addEventListener('resize', onResize)
+    // 처음에는 막대가 장을 가리지 않는 자리에 있을 때만 잠깐 보인다 (끝내는 곳을 알 수 있게)
+    if (barRoom(window.innerWidth, window.innerHeight) !== 'over') wake()
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.clearTimeout(idleTimer.current)
+    }
   }, [])
 
   // 장이 화면에 붙자마자(그리기 전에) 움직임을 건다. 그래야 다 보인 모습이 한 번 번쩍이지 않는다.
@@ -219,7 +250,7 @@ export function Present({ deck, startId, onExit }: { deck: Deck; startId?: strin
         )}
       </FitSlide>
       {blank && <div className={cx('present-blank', `is-${blank}`)} />}
-      <div className="present-bar" onClick={(e) => e.stopPropagation()}>
+      <div className={cx('present-bar', `is-${room}`)} onClick={(e) => e.stopPropagation()}>
         <span className="present-count">
           {view.index + 1} / {slides.length}
         </span>

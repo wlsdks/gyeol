@@ -41,7 +41,10 @@
   background: #fff;
 }
 
-/* 장 아래쪽 오른편에는 장의 쪽 번호가 있어 겹친다. 거의 모든 장에서 비어 있는 위 오른편에 둔다 */
+/*
+ * 발표 막대(쪽 번호, 발표 끝내기). 장을 가리지 않게 장 밖의 검은 여백에 둔다 (Present.tsx의 barRoom).
+ * 장 아래쪽 오른편에는 장의 쪽 번호가 있어서, 여백이 없을 때(.is-over)는 거의 모든 장에서 비어 있는 위 오른편에 겹친다
+ */
 .present-bar {
   position: fixed;
   top: 14px;
@@ -54,6 +57,24 @@
   transition:
     opacity 160ms cubic-bezier(0.2, 0.7, 0.2, 1),
     translate 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 창이 장보다 넓다: 오른쪽 여백 한가운데에 세로로 (장의 오른쪽 끝 = 가운데 맞춘 장 너비의 절반) */
+.present-bar.is-side {
+  right: 0;
+  width: calc((100vw - 100vh * 16 / 9) / 2);
+  flex-direction: column;
+}
+
+/* 창이 장보다 높다: 위 여백 한가운데 높이에 */
+.present-bar.is-top {
+  top: 0;
+  height: calc((100vh - 100vw * 9 / 16) / 2);
+}
+
+.present-bar.is-side .present-count,
+.present-bar.is-side .present-exit {
+  padding-inline: 10px;
 }
 
 .present.is-idle .present-bar {
