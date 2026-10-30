@@ -85,8 +85,11 @@ export const SlideCanvas = memo(function SlideCanvas({
     const el = ref.current
     if (!el || given.layout === 'compose' || solo) return
     fitBlocks(el)
+    // 글꼴을 받는 중일 때만 한 번 더. 맞추기가 글을 재면서 새로 쓸 글자의 글꼴 조각을 부르므로 그 뒤에 본다.
+    // 예전에는 그릴 때마다 물어서, 글꼴이 다 왔어도 바로 이어서 한 번 더 맞췄고(그림마다 두 번) fonts.ready를 읽는 것만으로 스타일을 다시 계산했다
+    if (document.fonts?.status !== 'loading') return
     let live = true
-    document.fonts?.ready.then(() => {
+    document.fonts.ready.then(() => {
       if (live && ref.current) fitBlocks(ref.current)
     })
     return () => {
