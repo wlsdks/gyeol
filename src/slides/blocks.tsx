@@ -454,6 +454,13 @@ function useFlip(area: React.RefObject<HTMLDivElement | null>, on: boolean, scop
       const dw = f.w - last.w
       const dh = f.h - last.h
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dw) < 1 && Math.abs(dh) < 1) continue
+      // 끄는 동안 놓일 자리에 흐리게 그린 칸은 미끄러지지 않고 새 자리에서 나타난다. 미끄러지면 흐린 칸이 다른 컴포넌트를 지나가며
+      // 0.1초 남짓 그 글 위에 반투명하게 겹쳐 보였다 (손에 든 컴포넌트가 이미 그 자리로 가는 것을 보여 준다)
+      // 비켜 나는 이웃이 거의 다 빠진 뒤에 나타난다: 바로 나타나면 아직 그 자리를 떠나는 이웃의 글과 겹쳤다
+      if (cell.classList.contains('is-slot')) {
+        cell.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FLIP_MS * 0.5, delay: FLIP_MS * 0.6, easing: FLIP_EASING, fill: 'backwards' })
+        continue
+      }
       // 자리는 미끄러지고, 크기는 늘이지 않는다(가로세로를 다르게 늘이면 글자가 찌그러져 보인다).
       // 커지는 칸은 옛 크기만큼 보이던 데서 새 크기로 펼쳐지고, 작아지는 칸은 새 크기로 바로 바뀐 채 미끄러진다
       const round = getComputedStyle(cell).borderTopLeftRadius || '0px'
