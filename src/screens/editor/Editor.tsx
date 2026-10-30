@@ -4,7 +4,7 @@ import { useAiAsk } from '../../ai/useAiAsk'
 import { useAiShare } from '../../ai/useAiShare'
 import { blockFieldPrefix } from '../../deck/blocks'
 import { knownOnly, unknownParts } from '../../deck/compat'
-import { deckBlanks, type Missing } from '../../deck/fields'
+import type { Missing } from '../../deck/fields'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
@@ -168,12 +168,11 @@ function EditorBody({ deck }: { deck: Deck }) {
     await ai.resolve(request, 'rejected', [])
   }
 
-  const focusFirstMissing = () => {
+  /** 발표 전 확인 창에서 고른 장으로. 빈칸이 있으면 그 장의 첫 빈칸에 커서를 둔다 */
+  const goToSlide = (slideId: string, m?: Missing) => {
     launch.closeConfirm()
-    const first = deckBlanks(deck)[0]
-    if (!first) return
-    store.select(first.slide.id)
-    window.setTimeout(() => focusField(first.slide.id, first.missing[0]), 60)
+    store.select(slideId)
+    if (m) window.setTimeout(() => focusField(slideId, m), 60)
   }
 
   useEditorShortcuts({
@@ -296,7 +295,7 @@ function EditorBody({ deck }: { deck: Deck }) {
           toast={toast}
         />
       )}
-      <PresentDialogs launch={launch} onFillBlanks={focusFirstMissing} />
+      <PresentDialogs launch={launch} onGoTo={goToSlide} />
       {exporting.print}
       {!reviewing && (job ? <AskStatus deck={deck} job={job} onCancel={ask.cancel} /> : <AiInbox ai={ai} onOpen={setReviewing} />)}
       {reviewing && (

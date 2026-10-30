@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
-import { deckMissingCount } from '../../deck/fields'
+import { slideName } from '../../deck/blocks'
+import { deckBlanks, pageInfo, type Missing } from '../../deck/fields'
 import type { Deck } from '../../deck/types'
+import { slideOverflow } from '../../slides/overflow'
 import { enterFullscreen, findPlacement, hasSecondScreen, openPresenterWindow, presenterAuto, screensPermission, type Placement } from '../../present/link'
 import type { VersionReason } from '../../store/versions'
 import { Modal, type Toast } from '../ui'
@@ -12,7 +14,7 @@ import type { PresentHow } from './DeckMenus'
  */
 export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason) => void, toast: Toast) {
   const [presenting, setPresenting] = useState<{ startId?: string } | null>(null)
-  const [confirm, setConfirm] = useState<{ startId?: string; how: PresentHow; missing: number } | null>(null)
+  const [confirm, setConfirm] = useState<{ startId?: string; how: PresentHow; check: PresentCheck } | null>(null)
   // 발표자 화면을 처음 쓸 때: 화면 두 개를 다뤄도 되는지 브라우저가 묻는다
   const [askScreens, setAskScreens] = useState<{ startId?: string; placement?: Placement } | null>(null)
 
@@ -44,10 +46,12 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
         toast.show('모든 장이 발표에서 빠져 있어서 발표할 장이 없어요. 장을 골라 ‘발표에 다시 넣기’를 눌러 주세요.', undefined, 6000)
         return
       }
-      const missing = deckMissingCount(deck)
-      if (missing > 0 && !force) {
-        setConfirm({ startId, how, missing })
-        return
+      if (!force) {
+        const check = presentCheck(deck)
+        if (check.rows.length) {
+          setConfirm({ startId, how, check })
+          return
+        }
       }
       setConfirm(null)
       markVersion('present')
@@ -109,19 +113,63 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
 
 export type PresentLaunch = ReturnType<typeof usePresentLaunch>
 
+/** 발표 전에 알릴 장 하나: 쪽 번호, 이름, 남은 빈칸, 글이 넘쳤는지 */
+export interface CheckRow {
+  id: string
+  page: number
+  name: string
+  missing: Missing[]
+  over: boolean
+}
+
+export interface PresentCheck {
+  rows: CheckRow[]
+  /** 모든 장의 빈칸 수 */
+  missing: number
+  /** 글이 넘친 장 수 */
+  over: number
+}
+
+/**
+ * 발표하기 전에 알릴 것: 장마다 남은 빈칸(편집기의 빈칸 세기 deckBlanks 그대로)과 글이 넘친 장.
+ * 예전에는 '빈칸이 49곳'만 알려서 어느 장을 고치면 되는지 몰랐고, 넘친 글은 묻지도 않았다.
+ * 넘침은 장 목록의 작은 그림(실제 크기로 그린 장을 줄여 보인 것)을 편집기의 넘침 표시와 같은 잣대(slideOverflow)로 잰다:
+ * 따로 그려 재면 시간이 걸려 전체 화면을 여는 클릭의 효력이 끝날 수 있다. 그림이 없으면(목록을 접은 화면) 넘침은 건너뛴다
+ */
+export function presentCheck(deck: Deck): PresentCheck {
+  const info = pageInfo(deck.slides)
+  const blanks = new Map(deckBlanks(deck).map((b) => [b.slide.id, b.missing]))
+  const rows = deck.slides
+    .filter((s) => !s.hidden)
+    .map((s) => {
+      const el = document.getElementById(`thumb-${s.id}`)?.querySelector<HTMLElement>('.slide')
+      return { id: s.id, page: info.page.get(s.id) ?? 0, name: slideName(s), missing: blanks.get(s.id) ?? [], over: !!el && slideOverflow(el) === 'over' }
+    })
+    .filter((r) => r.missing.length || r.over)
+  return { rows, missing: rows.reduce((n, r) => n + r.missing.length, 0), over: rows.filter((r) => r.over).length }
+}
+
+function checkTitle({ missing, over }: PresentCheck): string {
+  if (missing && over) return `빈칸 ${missing}곳, 글이 넘친 장 ${over}장이 있어요`
+  if (over) return `글이 넘친 장이 ${over}장 있어요`
+  return `빈칸이 ${missing}곳 남았어요`
+}
+
 /** 발표를 시작하기 전에 묻는 창: 남은 빈칸, 발표자 화면의 허락 */
-export function PresentDialogs({ launch, onFillBlanks }: { launch: PresentLaunch; onFillBlanks: () => void }) {
+export function PresentDialogs({ launch, onGoTo }: { launch: PresentLaunch; onGoTo: (slideId: string, m?: Missing) => void }) {
   const { confirm, askScreens } = launch
+  const check = confirm?.check
+  const first = check?.rows[0]
   return (
     <>
-      {confirm && (
+      {confirm && check && first && (
         <Modal
-          title={`빈칸이 ${confirm.missing}곳 남았어요`}
+          title={checkTitle(check)}
           onClose={launch.closeConfirm}
           actions={
             <>
-              <button type="button" className="btn btn-ghost" onClick={onFillBlanks}>
-                빈칸 채우기
+              <button type="button" className="btn btn-ghost" onClick={() => onGoTo(first.id, first.missing[0])}>
+                {check.missing ? '빈칸 채우기' : '고치러 가기'}
               </button>
               <button type="button" className="btn btn-primary" data-autofocus onClick={() => void launch.start(confirm.startId, true, confirm.how)}>
                 그대로 발표하기
@@ -129,7 +177,24 @@ export function PresentDialogs({ launch, onFillBlanks }: { launch: PresentLaunch
             </>
           }
         >
-          <p>빈칸은 발표 화면에서 보이지 않아요. 그래도 발표할까요?</p>
+          <p>
+            {check.missing ? '빈칸은 발표 화면에 나오지 않아요. ' : ''}
+            {check.over ? '넘친 글은 잘려 보일 수 있어요. ' : ''}장을 누르면 그 자리로 가요.
+          </p>
+          <ul className="pck-list">
+            {check.rows.map((r) => (
+              <li key={r.id}>
+                <button type="button" className="pck-row" onClick={() => onGoTo(r.id, r.missing[0])}>
+                  <span className="pck-n">{r.page}</span>
+                  <span className="pck-name">{r.name}</span>
+                  <span className="pck-what">
+                    {r.over && <span className="pck-over">글이 넘쳤어요</span>}
+                    {r.missing.length > 0 && <span className="pck-blank">빈칸 {r.missing.length}곳</span>}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </Modal>
       )}
       {askScreens && (
