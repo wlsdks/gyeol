@@ -1693,17 +1693,19 @@ export function blockFitter() {
     let lo = 0
     let hi = airMax + 1
     const was = lastAir.get(body)
-    if (was !== undefined && was <= airMax && (was === 0 || ok(was)) && (was === airMax || !ok(was + 1))) lo = hi = was
+    // 한 칸 넓힌 값을 먼저 본다: 맞으면 답(was)을 마지막에 재어 그 모습 그대로 끝난다(답을 다시 적고 또 재지 않는다)
+    if (was !== undefined && was <= airMax && (was === airMax || !ok(was + 1)) && (was === 0 || ok(was))) lo = hi = was
     // 처음 맞추는 본문은 줄 사이를 넓힌 만큼 채움이 거의 고르게 느는 것을 써서, 0과 끝값에서 잰 채움으로 85%가 되는 값을 어림해
-    // 그 값과 하나 위만 본다(맞으면 두 번 재기로 끝난다). 어림이 틀려도 그 값으로 찾는 범위를 좁힐 뿐이라 찾은 값은 같다
+    // 하나 위와 그 값만 본다(맞으면 두 번 재기로 끝나고, 답을 마지막에 재어 그 모습 그대로 끝난다). 어림이 틀려도 그 값으로 찾는 범위를
+    // 좁힐 뿐이라 찾은 값은 같다
     const probe = (v: number) => {
       if (ok(v)) lo = v
       else hi = v
     }
     if (hi - lo > 1) {
       const guess = Math.max(1, Math.min(airMax, Math.floor(((FILL_MAX - before) / (full - before)) * airMax)))
-      probe(guess)
-      if (lo === guess && guess + 1 < hi) probe(guess + 1)
+      if (guess + 1 < hi) probe(guess + 1)
+      if (guess > lo && guess < hi) probe(guess)
     }
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1
@@ -1711,8 +1713,10 @@ export function blockFitter() {
       else hi = mid
     }
     lastAir.set(body, lo)
-    if (lo > 0) setB('--fill-air', lo + 'px')
-    else delB('--fill-air')
+    // 이미 그 값이면 적지 않는다: 적으면 같은 모습을 눈높이 맞추기(eye)에서 다시 잰다
+    const now = body.style.getPropertyValue('--fill-air')
+    if (lo > 0 && now !== lo + 'px') setB('--fill-air', lo + 'px')
+    else if (lo === 0 && now) delB('--fill-air')
     eye()
   }
 
