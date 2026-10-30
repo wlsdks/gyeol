@@ -1,5 +1,5 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS } from '../../deck/blocks'
+import { blockPrefH, BLOCK_COL_GAP, BLOCK_GROUPS, BLOCK_LINKS, BLOCKS, canCompose, linkTargets, makeBlock, MAX_BLOCKS, type NoRoom } from '../../deck/blocks'
 import { sampleBlock } from '../../deck/blockSamples'
 import { emptyItem } from '../../deck/generate'
 import { motionOf } from '../../deck/themes'
@@ -104,6 +104,50 @@ const MINE = '$mine'
 
 const LINK_GROUP = { name: '연결 기호', short: '연결', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
 
+type Issues = ReadonlyMap<BlockType, NoRoom | null>
+
+/**
+ * 카드마다 이 장 어디에도 넣을 수 없는 까닭. 처음 열 때와 다른 장으로 갈 때는 바로 재고, 같은 장이 바뀌면(글 한 자, 너비 끌기,
+ * 놓기, 되돌리기) 쉬는 틈에 나눠 다시 잰다. 카드 예순 개마다 판의 모든 자리를 넣어 보느라 한 번에 60ms(느린 노트북에서는
+ * 250ms)가 들었는데, 예전에는 장이 바뀐 그 그림에서 재서 컴포넌트에 글을 쓰면 한 자마다, 너비 선을 끌면 손이 움직일 때마다
+ * 화면이 멈췄다. 잠금 표시가 한 박자 늦게 바뀌어도 누를 때는 넣기가 자리를 다시 따지므로(planDrop) 잘못 넣지 않는다
+ */
+function useIdleIssues(slide: Slide, areaH: number | undefined, issueFor: (t: BlockType) => NoRoom | null): Issues {
+  const measure = () => new Map(TYPES.map((t) => [t, issueFor(t)]))
+  const [state, setState] = useState<{ slide: Slide; areaH: number | undefined; issues: Issues }>(() => ({ slide, areaH, issues: measure() }))
+  const ask = useRef(issueFor)
+  ask.current = issueFor
+  // 다른 장으로 오면 그 장의 잠금을 바로 보인다 (앞 장의 잠금이 잠깐이라도 남지 않게)
+  let shown = state
+  if (state.slide.id !== slide.id) {
+    shown = { slide, areaH, issues: measure() }
+    setState(shown)
+  }
+  const fresh = shown.slide === slide && Object.is(shown.areaH, areaH)
+  useEffect(() => {
+    if (fresh) return
+    const next = new Map<BlockType, NoRoom | null>()
+    let i = 0
+    let idle = 0
+    const work = (deadline: IdleDeadline) => {
+      // 시간이 다 되어 불려도 하나는 잰다 (쉬는 틈이 없을 만큼 바빠도 언젠가는 끝나게)
+      do {
+        next.set(TYPES[i], ask.current(TYPES[i]))
+        i++
+      } while (i < TYPES.length && deadline.timeRemaining() > 2)
+      if (i < TYPES.length) idle = requestIdleCallback(work, { timeout: 500 })
+      else setState({ slide, areaH, issues: next })
+    }
+    // 글을 이어 쓰는 동안에는 한 자마다 다시 시작하지 않게 조금 기다린다
+    const wait = setTimeout(() => (idle = requestIdleCallback(work, { timeout: 500 })), 150)
+    return () => {
+      clearTimeout(wait)
+      cancelIdleCallback(idle)
+    }
+  }, [slide, areaH, fresh])
+  return shown.issues
+}
+
 export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
   const [group, setGroup] = useState<string | null>(null)
   // 이 장에 넣을 수 없는 카드를 눌렀을 때 그 까닭을 보여 줄 부품
@@ -165,7 +209,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
   // 장과 본문 높이가 그대로면 다시 재지 않는다: 끄는 동안 목록이 포인터가 움직일 때마다 다시 그려지는데, 그때마다 카드마다
   // 판의 모든 자리를 다시 재서 한 번에 150ms씩 걸려 끄는 것이 끊겼다
   const areaH = blocks.areaHeight()
-  const issues = useMemo(() => new Map(TYPES.map((t) => [t, blocks.issueFor(t)])), [slide, areaH])
+  const issues = useIdleIssues(slide, areaH, blocks.issueFor)
   // 그릴 때 읽은 본문 높이가 그린 뒤와 다르면 한 번 더 그려 잠금을 다시 본다. 레이아웃 장을 '컴포넌트 장으로 바꾸기'로 바꾼 바로 그때는
   // 바뀐 본문 상자가 아직 그려지지 않아 높이를 몰라서 어느 카드도 잠그지 않았다: 모든 카드가 열려 보였는데, 눌러 보면 한 장 요약 장에서는
   // 서른하나가 '함께 넣을 수 없어요'로 들어가지 않았다. 끄는 동안은 다시 재지 않는다
