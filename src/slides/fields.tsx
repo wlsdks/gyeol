@@ -545,15 +545,17 @@ export function ImageSlot({ k = 'image', i, className, contain, optional }: Imag
           <img src={value} alt="" />
         </div>
       )
-    if (mode === 'final' && optional) return null
+    // 비워 둬도 되는 그림 칸(표지와 사례의 로고)은 미리 보기에서도 발표 화면처럼 그리지 않는다.
+    // 회색 면에 '회사 로고'가 늘 깔리면 채워야 하는 칸처럼 보였고, 장 목록의 작은 그림과 발표 화면이 달랐다
+    if (optional) return null
     return <div className={cx('img img-empty', className)}>{mode === 'preview' && <span>{hint}</span>}</div>
   }
 
   const set = (v: string) => (i === undefined ? actions.setField(k, v) : actions.setItem(i, 'image', v))
-  return <EditableImage value={value} hint={hint} set={set} className={cx(fitCls, className)} />
+  return <EditableImage value={value} hint={hint} set={set} className={cx(fitCls, className)} optional={optional} />
 }
 
-function EditableImage({ value, hint, set, className }: { value: string; hint: string; set: (v: string) => void; className?: string }) {
+function EditableImage({ value, hint, set, className, optional }: { value: string; hint: string; set: (v: string) => void; className?: string; optional?: boolean }) {
   const [over, setOver] = useState(false)
   const choose = async () => {
     const file = await pickImage()
@@ -561,7 +563,7 @@ function EditableImage({ value, hint, set, className }: { value: string; hint: s
   }
   return (
     <div
-      className={cx('img img-ed', className, !value && 'img-empty', over && 'is-over')}
+      className={cx('img img-ed', className, !value && 'img-empty', !value && optional && 'is-optional', over && 'is-over')}
       onDragOver={(e) => {
         e.preventDefault()
         setOver(true)

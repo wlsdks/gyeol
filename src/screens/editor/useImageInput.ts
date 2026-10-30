@@ -56,7 +56,7 @@ export function useImageInput(blocks: BlockEditing, toast: Toast): boolean {
           return
         }
       } else {
-        // 이미지와 설명 장처럼 이미지가 주인공인 칸이 비어 있으면 거기에 (표지의 회사 로고처럼 덧붙이는 칸은 아니다)
+        // 이미지와 설명 장처럼 이미지가 주인공인 칸이 비어 있으면 거기에 (표지의 로고처럼 덧붙이는 칸은 아니다)
         const slot = LAYOUTS[s.layout].fields.find((f) => f.image && !f.optional && !f.key.startsWith('$'))
         if (slot && !s.fields[slot.key]?.trim()) {
           st.setField(s.id, slot.key, url)

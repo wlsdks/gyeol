@@ -95,7 +95,7 @@ export const LAYOUTS: Record<LayoutId, LayoutSpec> = {
       { key: '$org', label: '소속', hint: '소속 (예: 경영지원팀)', optional: true },
       { key: '$presenter', label: '발표자', hint: '발표자 이름', optional: true },
       { key: '$date', label: '날짜', hint: '발표 날짜', optional: true },
-      { key: '$logo', label: '회사 로고', hint: '회사 로고', optional: true, image: true },
+      { key: '$logo', label: '로고', hint: '로고', optional: true, image: true },
     ],
   },
   section: {
