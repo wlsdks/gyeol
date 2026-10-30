@@ -102,7 +102,7 @@ const TYPES = BLOCK_GROUPS.flatMap((g) => g.types)
 /** 칩 줄에서 '내 컴포넌트'를 가리키는 id (묶음 이름과 겹치지 않게) */
 const MINE = '$mine'
 
-const LINK_GROUP = { name: '이음표', short: '이음표', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
+const LINK_GROUP = { name: '연결 기호', short: '연결', description: '컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요' }
 
 export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide: Slide; blocks: BlockEditing; toast: Toast }) {
   const [group, setGroup] = useState<string | null>(null)
@@ -248,7 +248,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
           <p className="lib-note-t">{note}</p>
           {slide.layout !== 'compose' && canCompose(slide.layout) && (
             <button type="button" className="lib-note-btn" title="지금 내용은 그대로 남고, 내용이 컴포넌트로 나뉘어 하나씩 옮길 수 있게 돼요" onClick={blocks.convert}>
-              컴포넌트 슬라이드로 바꾸기
+              지금 바꾸기
             </button>
           )}
           {(closed || full) && (

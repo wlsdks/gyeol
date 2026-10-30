@@ -31,7 +31,7 @@ const SKIP_REASON: Record<Exclude<OpCode, 'applied'>, string> = {
   not_reviewed: '보지 않았어요',
   no_block: '그 컴포넌트가 지금은 없어요',
   no_room: '슬라이드에 자리가 모자라요',
-  look_clash: '이 슬라이드의 다른 컴포넌트와 면이 어울리지 않아요',
+  look_clash: '이 슬라이드의 다른 컴포넌트와 바탕이 어울리지 않아요',
   link_clash: '이으면 뜻이 서지 않는 두 컴포넌트예요',
   scene_unfit: '이 슬라이드에 맞지 않는 장면이에요',
 }
@@ -695,7 +695,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
     case 'set_link': {
       const where = op.side === 'right' ? `${blockName(op.block)}와 오른쪽 컴포넌트 사이` : `${blockName(op.block)}와 아래 컴포넌트 사이`
       const kind = BLOCK_LINKS.find((l) => l.id === op.link)?.name
-      return op.link ? { text: `${name(op.slide)}에 이음표 ‘${kind}’ 넣기`, detail: where } : { text: `${name(op.slide)}에서 이음표 빼기`, detail: where }
+      return op.link ? { text: `${name(op.slide)}에 연결 기호 ‘${kind}’ 넣기`, detail: where } : { text: `${name(op.slide)}에서 연결 기호 빼기`, detail: where }
     }
     case 'set_order':
       return { text: `${name(op.slide)}의 컴포넌트 나오는 차례 바꾸기`, detail: op.order.length ? op.order.map(blockName).join(' → ') : '놓인 차례대로' }

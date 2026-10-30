@@ -357,7 +357,7 @@ export function System() {
               ))}
             {width > 0 && (
               <div className="sys-parts">
-                <h3 className="sys-h3">이음표</h3>
+                <h3 className="sys-h3">연결 기호</h3>
                 <p className="sys-group-desc">컴포넌트 사이에 끼워 둘이 어떻게 이어지는지 보여 줘요. 컴포넌트 사이의 빈자리에 혼자 서서 컴포넌트를 가리지 않아요.</p>
                 <div className="sys-thumbs" style={{ '--cols': partCols, '--gap': `${gap}px` }}>
                   {BLOCK_LINKS.map((l) => (

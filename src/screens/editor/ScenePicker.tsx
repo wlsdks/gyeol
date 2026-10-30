@@ -124,8 +124,8 @@ export function SceneAll({ deck, toast }: { deck: Deck; toast?: Toast }) {
   }
   return (
     <div className="sp-plan" role="group" aria-label="장면 알아서 고르기">
-      <p className="sp-plan-h">{rows.length ? `힘줄 ${rows.length}장에 장면을 넣어요` : '새로 넣을 슬라이드가 없어요'}</p>
-      <p className="sp-plan-p">처음, 결론, 숫자, 마지막처럼 힘줄 슬라이드에만 넣고 나머지는 차분하게 둬요.</p>
+      <p className="sp-plan-h">{rows.length ? `중요한 슬라이드 ${rows.length}장에 장면을 넣어요` : '새로 넣을 슬라이드가 없어요'}</p>
+      <p className="sp-plan-p">처음, 결론, 숫자, 마지막처럼 힘을 줄 슬라이드에만 넣고 나머지는 차분하게 둬요.</p>
       {rows.length > 0 && (
         <ol className="sp-rows">
           {rows.map((r) => (

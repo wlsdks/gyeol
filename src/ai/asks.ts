@@ -74,8 +74,8 @@ export const ASKS = [
     // 컴포넌트 장은 자리, 크기, 면, 이음표, 나오는 차례를 사람이 하나씩 맞춰야 해서 손이 가장 많이 간다. 글을 건드리지 않고 고칠 수 있는 것이 가장 많은 장이기도 하다
     id: 'slide_compose',
     scope: 'slide',
-    name: '컴포넌트 짜임 다듬기',
-    description: '자리, 크기, 면, 이음표를 맞춰요',
+    name: '컴포넌트 배치 다듬기',
+    description: '자리, 크기, 바탕, 연결 기호를 맞춰요',
     layouts: ['compose'],
     prompt:
       '이 부품 장(layout compose)의 짜임을 다듬어 주세요. 뜻이 이어지는 부품끼리 나란히 두고(move_block의 beside, swap), 가장 중요한 부품이 더 넓게 보이게 하세요(set_size). ' +

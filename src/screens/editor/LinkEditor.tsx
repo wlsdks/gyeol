@@ -38,7 +38,7 @@ interface LinkDrag {
 }
 
 const NO_HEIGHT = '컴포넌트 사이를 넓힐 높이가 모자라요. 컴포넌트를 빼거나 항목을 줄여 주세요.'
-const NO_PAIR = '컴포넌트가 둘 이상 있어야 그 사이에 이음표를 끼울 수 있어요.'
+const NO_PAIR = '컴포넌트가 둘 이상 있어야 그 사이에 연결 기호를 끼울 수 있어요.'
 
 /** 지금 그려진 부품들로 놓을 자리를 잰다. 양쪽 부품이 똑같이 비켜 나서, 미리 보기로 부품이 움직여도 가운데는 그대로다 */
 function measureSpots(area: HTMLElement, blocks: Block[]): Spot[] {
@@ -66,7 +66,7 @@ function pairText(from: Block['type'], to: Block['type'], link: BlockLink): stri
   const b = BLOCKS[to].name
   const rule =
     from === 'heading' || from === 'note' || to === 'heading' || to === 'note'
-      ? '소제목과 주석은 옆 컴포넌트에 딸린 글이라 이음표로 잇지 않아요.'
+      ? '소제목과 주석은 옆 컴포넌트에 딸린 글이라 연결 기호로 잇지 않아요.'
       : link === 'equals'
         ? '결과는 앞의 것이 모여 숫자나 결론 한마디가 될 때 써요.'
         : link === 'arrow'
@@ -274,7 +274,7 @@ export function useLinkEditing({
       const pair = all.map((a) => !linkAt(blocks, a) && linkIssue(blocks, a, link)).find(Boolean)
       toast.show(
         all.every((a) => linkAt(blocks, a))
-          ? '모든 컴포넌트 사이에 이미 이음표가 있어요. 이음표를 눌러 모양을 바꿀 수 있어요.'
+          ? '모든 컴포넌트 사이에 이미 연결 기호가 있어요. 연결 기호를 눌러 모양을 바꿀 수 있어요.'
           : pair
             ? pairText(pair.from, pair.to, link)
             : NO_HEIGHT,
@@ -322,7 +322,7 @@ export function useLinkEditing({
     store.setBlocks(s.id, withLink(blocks, t, link))
     if (!link) {
       setSelected(null)
-      toast.show('이음표를 뺐어요', undoAction(toast))
+      toast.show('연결 기호를 뺐어요', undoAction(toast))
     }
   }
 
@@ -351,10 +351,10 @@ export function useLinkEditing({
           <span className="lk-tool-g" aria-hidden="true">
             <LinkGlyph link={current} />
           </span>
-          이음표
+          연결 기호
         </span>
         <span className="bk-tool-sep" />
-        <div className="lk-tool-set" role="radiogroup" aria-label="이음표 모양">
+        <div className="lk-tool-set" role="radiogroup" aria-label="연결 기호 모양">
           {BLOCK_LINKS.map((l) => (
             <button
               key={l.id}
@@ -373,7 +373,7 @@ export function useLinkEditing({
           ))}
         </div>
         <span className="bk-tool-sep" />
-        <button type="button" className="bk-tool is-icon" title="빼기 (Delete)" aria-label="이음표 빼기" onClick={() => change(null)}>
+        <button type="button" className="bk-tool is-icon" title="빼기 (Delete)" aria-label="연결 기호 빼기" onClick={() => change(null)}>
           <TrashIcon />
         </button>
       </div>
