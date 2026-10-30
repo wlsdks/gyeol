@@ -2443,6 +2443,8 @@ export function motionEngine(): MotionEngine {
   let morphFrom: Map<string, string> | null = null
   /** 이름을 붙인 요소들. 전환이 끝나면 이름을 뗀다 */
   const named: HTMLElement[] = []
+  /** 장 바꾸기를 시작할 때마다 하나씩 는다. 앞의 전환이 늦게 끝나도 지금 전환의 표시를 떼지 않게 */
+  let turn = 0
 
   /** 요소마다 짝을 찾을 열쇠들 (앞의 것일수록 먼저 맞춘다) */
   function morphKeys(slide: Element): { el: HTMLElement; keys: string[] }[] {
@@ -2517,7 +2519,12 @@ export function motionEngine(): MotionEngine {
       const old = document.querySelector(CURRENT + ' .slide')
       if (old) nameFrom(old)
     }
+    // 빨리 연달아 넘기면 앞 전환은 건너뛰어지고, 그 끝맺음(finished)은 다음 전환이 시작된 뒤에 온다.
+    // 그때 표시를 떼면 다음 전환이 motion.css의 규칙을 잃고 브라우저 기본 흐리게(250ms)로, 다음 장의 움직임은 SWAP_LEAD 없이
+    // 바로 시작했다(두 장의 글이 겹치고 밀기가 흐리게로 바뀐다). 마지막에 시작한 전환만 끝맺는다
+    const mine = ++turn
     const done = () => {
+      if (mine !== turn) return
       delete html.dataset.moSwap
       delete html.dataset.moDir
       unname()
