@@ -156,14 +156,8 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
     let wait = 0
     let raf = 0
     const ro = new ResizeObserver(() => follow())
-    // 쓰는 동안(그리고 장이 커지거나 줄어든 뒤) 손을 움직이기 전까지: 장 위의 컴포넌트 도구 막대를 흐리게 숨기고, 가만히 있는 손 아래로 온 칸에
-    // 손을 올린 테를 두르지 않는다(edit.css, blocks.css). 막대가 쓰는 글을 가렸고, 손 아래 칸의 테가 쓰는 칸의 테처럼 보였다
-    let still: { x: number; y: number } | null = null
-    let pt = { x: -1, y: -1 }
-    const hush = () => {
-      still = pt
-      root.classList.add('is-typing-still')
-    }
+    // 장이 커지거나 줄어든 뒤에도 손을 움직이기 전까지는 손 아래로 온 칸의 테와 도구 막대를 걷는다 (useTypingStill)
+    const hush = () => hushTyping(root)
     const put = (next: Zoom | null) => {
       if (next && cur && next.z === cur.z && Math.abs(next.x - cur.x) < 1 && Math.abs(next.y - cur.y) < 1) return
       if (!next && !cur) return
@@ -272,7 +266,6 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
 
     const onFocusIn = () => {
       window.clearTimeout(wait)
-      if (typing()) hush()
       if (pressing) return
       // 키보드로 들어오면 바로
       cancelAnimationFrame(raf)
@@ -324,32 +317,16 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
       }, 120)
     }
 
-    const onMove = (e: PointerEvent) => {
-      pt = { x: e.clientX, y: e.clientY }
-      if (still && Math.hypot(pt.x - still.x, pt.y - still.y) > 4) {
-        still = null
-        root.classList.remove('is-typing-still')
-      }
-    }
-
     const off = new AbortController()
     const { signal } = off
-    window.addEventListener('pointermove', onMove, { passive: true, signal })
     root.addEventListener('focusin', onFocusIn, { signal })
     root.addEventListener('focusout', onFocusOut, { signal })
     root.addEventListener('pointerdown', onDown, { capture: true, signal })
     window.addEventListener('pointerup', onUp, { capture: true, signal })
     window.addEventListener('pointercancel', onUp, { capture: true, signal })
     window.addEventListener('resize', onResize, { signal })
-    // 긴 글에서 쓰는 줄이 바뀌면 따라가고, 치는 동안은 도구 막대를 숨긴다
-    root.addEventListener(
-      'input',
-      () => {
-        hush()
-        follow()
-      },
-      { signal },
-    )
+    // 긴 글에서 쓰는 줄이 바뀌면 따라간다
+    root.addEventListener('input', follow, { signal })
     // 이미 쓰는 중에 켰으면 바로
     if (typing()) raf = requestAnimationFrame(measure)
     return () => {
@@ -358,8 +335,52 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
       window.clearTimeout(wait)
       window.clearTimeout(resized)
       cancelAnimationFrame(raf)
-      root.classList.remove('is-typing-still')
     }
   }, [canvasRef, on, slideId])
   return zoom
+}
+
+// ---------- 쓰는 동안 손을 움직이기 전까지 ----------
+
+/** 마지막으로 본 손의 자리(화면 px)와, 걷기 시작할 때의 손의 자리 */
+let lastPt = { x: -1, y: -1 }
+const stillFrom = new WeakMap<HTMLElement, { x: number; y: number }>()
+
+/** 손을 움직일 때까지 장 위의 컴포넌트 도구 막대와 손 아래 칸의 테를 걷는다 (useTypingStill) */
+export function hushTyping(root: HTMLElement) {
+  stillFrom.set(root, lastPt)
+  root.classList.add('is-typing-still')
+}
+
+/**
+ * 장의 글 칸에 쓰는 동안 손을 움직이기 전까지: 장 위의 컴포넌트 도구 막대를 흐리게 숨기고(blocks.css), 가만히 있는 손 아래 칸에 손을 올린 테를
+ * 두르지 않는다(edit.css). 막대가 쓰는 줄 바로 위나 이웃 글을 덮었고, 손 아래 칸의 테가 쓰는 칸의 테처럼 보였다. 손을 4px 넘게 움직이면 다시 보인다.
+ * 쓸 때 크게 보기를 꺼도 한다
+ */
+export function useTypingStill(canvasRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const root = canvasRef.current
+    if (!root) return
+    const inSlide = (t: EventTarget | null) => t instanceof HTMLElement && t.classList.contains('ed-input') && !!t.closest('.slide-frame .slide.m-edit')
+    const off = new AbortController()
+    const { signal } = off
+    root.addEventListener('focusin', (e) => inSlide(e.target) && hushTyping(root), { signal })
+    root.addEventListener('input', (e) => inSlide(e.target) && hushTyping(root), { signal })
+    window.addEventListener(
+      'pointermove',
+      (e) => {
+        lastPt = { x: e.clientX, y: e.clientY }
+        const from = stillFrom.get(root)
+        if (from && Math.hypot(lastPt.x - from.x, lastPt.y - from.y) > 4) {
+          stillFrom.delete(root)
+          root.classList.remove('is-typing-still')
+        }
+      },
+      { passive: true, signal },
+    )
+    return () => {
+      off.abort()
+      root.classList.remove('is-typing-still')
+    }
+  }, [canvasRef])
 }

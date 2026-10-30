@@ -20,7 +20,7 @@ import { useLook } from './look'
 import { FloatTools, SelectionBar } from './SelectionBar'
 import type { SidePanel } from './sidePanel'
 import { StageTools } from './StageTools'
-import { useTypingZoom, useZoomTyping } from './zoom'
+import { useTypingStill, useTypingZoom, useZoomTyping } from './zoom'
 
 // 편집기 가운데: 고치는 장(무대), 그 위에 뜨는 도구, 아래 단추줄과 발표자 노트
 
@@ -94,6 +94,8 @@ export function SlideStage({
   // 쓸 때 크게 보기: 쓰는 칸으로 장을 키운다. 미리 보기와 움직임을 보이는 동안, 레이아웃을 바꿔 볼 때는 하지 않는다
   const zoomOn = useZoomTyping()
   const zoom = useTypingZoom(canvasRef, zoomOn && !peek && !preview && !peekSlide, slide.id)
+  // 쓰는 동안 손을 움직이기 전까지 장 위의 컴포넌트 도구 막대를 숨긴다 (쓸 때 크게 보기를 꺼도)
+  useTypingStill(canvasRef)
 
   const engine = useMemo(() => motionEngine(), [])
   const level = motionOf(deck, slide)
