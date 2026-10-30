@@ -1028,6 +1028,15 @@ body.is-pane-sizing * {
   scale: 1 calc(1 / var(--vs, 1));
 }
 
+/* 선 위에 선 연결 기호 자리는 손잡이를 비운다 (blockFrame.ts의 clearLinks가 그 자리를 --cut-a, --cut-b로 적는다) */
+.bk-line.is-h .bk-line-grip[style*='--cut-a'] {
+  mask-image: linear-gradient(to bottom, #000 var(--cut-a), transparent var(--cut-a) var(--cut-b), #000 var(--cut-b));
+}
+
+.bk-line.is-v .bk-line-grip[style*='--cut-a'] {
+  mask-image: linear-gradient(to right, #000 var(--cut-a), transparent var(--cut-a) var(--cut-b), #000 var(--cut-b));
+}
+
 /* 고른 컴포넌트의 가장자리에 닿는 선만 손잡이가 옅게 보여 크기를 바꿀 수 있는 곳을 알린다(blocks.tsx의 Lines). 손잡이 위에서는 진하게.
    본문 위에 손만 올려도 모든 선을 보이던 때는 컴포넌트 사이의 빈 곳마다 파란 막대가 떠서, 무엇을 고른 것인지 어지러웠다 */
 .bk-area.is-live .bk-line.is-near .bk-line-grip {

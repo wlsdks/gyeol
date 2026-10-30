@@ -53,7 +53,7 @@ import { Text } from './blocks/Text'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { T } from './fields'
 import { placeHandle } from './handleSpot'
-import { frameCells } from './blockFrame'
+import { clearLinks, frameCells } from './blockFrame'
 import { fitBlocks } from './fitBlocks'
 import { LAYOUT_VIEWS } from './layouts'
 
@@ -522,6 +522,7 @@ export function BlockArea() {
     }
     fitBlocks(el)
     frameCells(el)
+    clearLinks(el)
     // 맞추며 바꾼 값(칸의 스타일, 이름표 자리)은 바뀐 것으로 세지 않는다. 지켜보지 못하면 늘 다시 맞춘다
     watch.current?.takeRecords()
     changed.current = !watch.current

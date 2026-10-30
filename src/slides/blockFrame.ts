@@ -217,3 +217,34 @@ export function frameRect(cell: HTMLElement): DOMRect {
   const top = box.top + v('--fr-t')
   return new DOMRect(left, top, box.right - v('--fr-r') - left, box.bottom - v('--fr-b') - top)
 }
+
+/** 연결 기호 둘레에서 손잡이를 비우는 여유 (캔버스 px) */
+const LINK_CLEAR = 10
+
+/**
+ * 칸 사이 선의 손잡이(.bk-line-grip)를 그 선 위에 선 연결 기호 자리에서 비운다. 연결 기호는 선 위 가운데에 서서, 선에 손을 올리거나
+ * 고른 컴포넌트 곁의 옅은 손잡이가 보일 때 파란 막대가 화살표 동그라미를 가로질렀다. 비운 자리 밖의 손잡이로는 그대로 크기를 바꾼다
+ * (연결 기호가 선보다 위에 있어 그 자리를 누르면 연결 기호를 고른다). 편집 화면(.is-live)만
+ */
+export function clearLinks(area: HTMLElement): void {
+  if (!area.classList.contains('is-live')) return
+  const links = [...area.querySelectorAll<HTMLElement>(':scope > .bk-link:not(.is-preview)')].map((l) => l.getBoundingClientRect())
+  for (const grip of area.querySelectorAll<HTMLElement>(':scope > .bk-line > .bk-line-grip')) {
+    // 세로 손잡이(옆 칸 사이)는 위아래로, 가로 손잡이(줄 사이)는 옆으로 길다. 길이 쪽은 줄이지 않아 칸과 같은 배율이다
+    const tall = grip.parentElement!.classList.contains('is-h')
+    const g = grip.getBoundingClientRect()
+    const k = tall ? (grip.offsetHeight ? g.height / grip.offsetHeight : 0) : grip.offsetWidth ? g.width / grip.offsetWidth : 0
+    const hit = links.find((l) =>
+      tall ? l.left < g.right + 2 && g.left - 2 < l.right && l.top < g.bottom && g.top < l.bottom : l.top < g.bottom + 2 && g.top - 2 < l.bottom && l.left < g.right && g.left < l.right,
+    )
+    if (!hit || !k) {
+      grip.style.removeProperty('--cut-a')
+      grip.style.removeProperty('--cut-b')
+      continue
+    }
+    const from = tall ? (hit.top - g.top) / k : (hit.left - g.left) / k
+    const to = tall ? (hit.bottom - g.top) / k : (hit.right - g.left) / k
+    grip.style.setProperty('--cut-a', `${Math.round(from - LINK_CLEAR)}px`)
+    grip.style.setProperty('--cut-b', `${Math.round(to + LINK_CLEAR)}px`)
+  }
+}
