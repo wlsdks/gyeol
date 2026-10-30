@@ -674,6 +674,18 @@
   }
 }
 
+/* 사라질 때: 나타날 때의 반만큼 내려가며 흐려진다 */
+.toast.is-out {
+  animation: toast-out var(--t-fast) ease-in forwards;
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pop,
   .toast {

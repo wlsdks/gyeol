@@ -493,12 +493,18 @@ export function undoAction(toast: Toast): ToastAction {
  * 돌려주는 묶음도 알림이 바뀔 때만 새로 만든다 (그릴 때마다 바뀌면 이것을 받은 도우미의 함수가 매번 다시 만들어진다)
  */
 export function useToast(): Toast & { node: ReactNode } {
-  const [toast, setToast] = useState<{ text: string; action?: ToastAction } | null>(null)
+  const [toast, setToast] = useState<{ text: string; action?: ToastAction; out?: boolean } | null>(null)
   const timer = useRef<number>(0)
   const show = useCallback((text: string, action?: ToastAction, ms = 4000) => {
     setToast({ text, action })
     window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setToast(null), ms)
+    // 때가 되면 흐려지며 내려간 뒤에 뺀다(--t-fast). 나타날 때만 움직이고 툭 사라지면 화면이 끊겨 보였다.
+    // 손으로 닫을 때(할 일 단추, 쓸모없어진 되돌리기)는 바로 뺀다
+    timer.current = window.setTimeout(() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return setToast(null)
+      setToast((t) => t && { ...t, out: true })
+      timer.current = window.setTimeout(() => setToast(null), 120)
+    }, ms)
   }, [])
   // 할 일이 쓸모없어지면(되돌리기 단추인데 이미 되돌렸으면) 바로 닫는다
   useEffect(() => {
@@ -513,7 +519,7 @@ export function useToast(): Toast & { node: ReactNode } {
   const node = useMemo(
     () =>
       toast ? (
-        <div className="toast" role="status">
+        <div className={cx('toast', toast.out && 'is-out')} role="status">
           {toast.text}
           {toast.action && (
             <button
