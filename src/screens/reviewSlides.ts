@@ -64,5 +64,7 @@ export function reviewSlides(look?: Look): Slide[] {
     scene('callout', { title: '교육 담당 2명을 지원해 주세요' }, [{ type: 'callout', look: 'bold' }, { type: 'bullets', n: 4 }], look),
     // 소제목과 목록 둘
     scene('heading', { title: '잘된 것과 남은 것' }, [{ type: 'heading' }, { type: 'bullets', n: 2 }, { type: 'heading' }, { type: 'checks', n: 2 }], look),
+    // 긴 목록과 차트 다음에 넣은 핵심 한 줄 (맨 위에도 목록 왼쪽에도 자리가 없어 맨 아래에 깔리던 장)
+    scene('lead-late', { title: '시범 부서의 반응' }, [{ type: 'bullets', n: 6 }, { type: 'trend' }, { type: 'message' }], look),
   ]
 }

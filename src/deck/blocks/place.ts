@@ -231,7 +231,7 @@ export function autoPlace(blocks: Block[], block: Block, areaH?: number): Block[
   }
   return remember(AUTO, blocks, block, { at: null, side: 'below' }, areaH, () => {
     const next = slotIn(blocks, block, areaH)
-    return next && areaH !== undefined ? arranged(blocks, next, areaH) : next
+    return next && areaH !== undefined ? arranged(blocks, next, areaH, block) : next
   })
 }
 
@@ -240,13 +240,19 @@ const AUTO: Memo<Block[] | null> = new WeakMap()
 /**
  * 짜임 틀 고르기(arrange.ts): 컴포넌트가 넷까지인 장에서, 지금 판이 알아서 고른 판 그대로면(사람이 옮기거나 선을 끌지 않았으면)
  * 끼워 넣은 판(next) 대신 같은 부품들로 짤 수 있는 틀 가운데 가장 보기 좋은 판. 끼운 판이 더 나으면 그대로.
- * 읽는 차례는 끼운 판의 것을 따른다(결론은 근거 위, 소제목은 그 아래 부품 위)
+ * 읽는 차례는 끼운 판의 것을 따른다(결론은 근거 위, 소제목은 그 아래 부품 위).
+ * 장의 첫 결론(added가 핵심 한 줄, 강조 상자)은 끼운 자리가 어디든 맨 앞에 두고 짠다: 긴 목록 아래에 차트를 쌓은 장은 맨 위에도
+ * 첫 부품 왼쪽에도 높이나 너비가 모자라(slotFirst) 판이 맨 아래나 옆에 끼웠고, 틀도 그 차례대로 골라 결론이 근거 밑에 깔렸다.
+ * 목록과 차트를 나란히 두면 결론이 위에 들어간다. 그런 틀이 있으면 끼운 판보다 점수가 나빠도 그것을 쓴다(결론부터)
  */
-function arranged(blocks: Block[], next: Block[], areaH: number): Block[] {
+function arranged(blocks: Block[], next: Block[], areaH: number, added: Block): Block[] {
   if (next.length > ARRANGE_MAX || !isArranged(blocks, fitFor(blocks, areaH), areaH, aspectOf)) return next
   const fit = fitFor(next, areaH)
-  const best = arrangeBest(arrangeOrder(next), fit, areaH, aspectOf)
-  if (!best || best.cost >= boardCost(next, fit, areaH) - 0.5) return next
+  const lead = LEADS.has(added.type) && !blocks.some((b) => LEADS.has(b.type)) && byReading(next)[0].id !== added.id ? next.find((b) => b.id === added.id) : undefined
+  const order = arrangeOrder(next)
+  const best = arrangeBest(lead ? [lead, ...order.filter((b) => b !== lead)] : order, fit, areaH, aspectOf)
+  // 결론을 앞에 둔 틀도 판 너비를 혼자 쓰는 부품을 좁히는 것처럼 틀이 깨지면(1000점) 끼운 판과 그냥 견준다
+  if (!best || (best.cost >= boardCost(next, fit, areaH) - 0.5 && !(lead && best.cost < 1000))) return next
   const byId = new Map(best.blocks.map((b) => [b.id, b]))
   return tidyLinks(next.map((b) => byId.get(b.id) ?? b))
 }

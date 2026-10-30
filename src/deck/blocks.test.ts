@@ -199,6 +199,11 @@ describe('자리 정하기', () => {
       expect(top(bs), lead).toBe('m')
       expect(sound(bs), lead).toBe(true)
     }
+    // 긴 목록 아래에 차트를 쌓은 장: 맨 위에도 목록 왼쪽에도 자리가 없어도 다시 짜서 결론을 맨 위에
+    const long = { ...block('bullets', 'l'), items: Array.from({ length: 6 }, (_, i) => ({ ...block('bullets').items[0], id: `l${i}`, title: `항목 ${i}` })) }
+    const stacked = board(long, block('trend', 't'), block('message', 'm'))
+    expect(top(stacked)).toBe('m')
+    expect(sound(stacked)).toBe(true)
     // 이미 결론이 위에 있으면 두 번째 결론은 맨 위로 끼어들지 않는다
     const two = board(block('kpi', 'k'), block('message', 'm'), block('callout', 'c'))
     expect(top(two)).toBe('m')
