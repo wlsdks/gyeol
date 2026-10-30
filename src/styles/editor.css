@@ -553,7 +553,9 @@
   min-width: 0;
 }
 
+/* 알림은 단추보다 먼저 줄어든다(StageTools의 useTightTools가 알림은 재지 않는다) */
 .stage-warn {
+  flex: 0 1 auto;
   min-width: 0;
   margin: 0;
   padding: 7px 12px;
@@ -565,15 +567,6 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.stage-warn-s,
-.stage-tools[data-tight] .stage-warn-l {
-  display: none;
-}
-
-.stage-tools[data-tight] .stage-warn-s {
-  display: inline;
 }
 
 .stage-tools {
@@ -635,6 +628,11 @@
 }
 
 .stage-tools-r {
+  flex: none;
+}
+
+.stage-tools-l > :not(.stage-warn),
+.sel-tools > * {
   flex: none;
 }
 

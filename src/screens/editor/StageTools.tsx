@@ -14,7 +14,9 @@ import type { SidePanel } from './sidePanel'
 
 /**
  * 슬라이드 아래 단추줄: 왼쪽과 오른쪽 단추가 한 줄에 다 들어가지 않으면 글자를 숨긴다.
- * 1단계는 오른쪽 단추, 2단계는 왼쪽의 덜 쓰는 단추(다른 모양, 항목 추가)까지. 왼쪽 단추 수가 장마다 달라서 너비 하나로 정하지 않고 잰다
+ * 1단계는 오른쪽 단추, 2단계는 왼쪽 단추까지. 왼쪽 단추 수가 장마다(고른 것의 도구도) 달라서 너비 하나로 정하지 않고 잰다.
+ * 넘침 알림(.stage-warn)은 재지 않고 남는 자리에 줄여 넣는다: 알림까지 재던 때는 알림이 뜨는 순간 '미리 보기'와 '발표'가
+ * 글자 없는 그림으로 바뀌어 줄이 흔들렸다
  */
 function useTightTools(ref: RefObject<HTMLDivElement | null>) {
   const check = useCallback(() => {
@@ -23,7 +25,11 @@ function useTightTools(ref: RefObject<HTMLDivElement | null>) {
     const need = () => {
       const l = el.querySelector<HTMLElement>('.stage-tools-l')
       const r = el.querySelector<HTMLElement>('.stage-tools-r')
-      return (l?.scrollWidth ?? 0) + (r?.scrollWidth ?? 0) + 16
+      // 고른 것의 도구는 .stage-sel(display: contents) 안에 있다
+      const parts = [...(l?.children ?? [])].flatMap((c) => (c.classList.contains('stage-sel') ? [...c.children] : c.classList.contains('stage-warn') ? [] : [c]))
+      const shown = parts.filter((c): c is HTMLElement => c instanceof HTMLElement && c.offsetWidth > 0)
+      const left = shown.reduce((a, c) => a + c.scrollWidth, 0) + Math.max(0, shown.length - 1) * 6
+      return left + (r?.scrollWidth ?? 0) + 16
     }
     for (const level of ['', '1', '2']) {
       if (level) el.dataset.tight = level
@@ -155,17 +161,18 @@ export function StageTools({
               <span className="btn-t">{spec.items.label} 추가</span>
             </button>
           )}
-          {overflow === 'over' && (
-            // 자리가 모자라면 짧은 말만 (말줄임으로 '글이 슬...'처럼 잘리면 무슨 뜻인지 모른다)
-            <p className="stage-warn" role="status" title="글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.">
-              <span className="stage-warn-l">글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 레이아웃을 바꿔 보세요.</span>
-              <span className="stage-warn-s">글이 넘쳤어요</span>
-            </p>
-          )}
-          {overflow === 'tight' && (
-            <p className="stage-warn" role="status" title="컴포넌트가 들어갈 높이가 모자라 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 하나 빼 주세요.">
-              <span className="stage-warn-l">높이가 모자라 컴포넌트를 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 빼 주세요.</span>
-              <span className="stage-warn-s">자리가 모자라요</span>
+          {overflow && (
+            // 짧은 말 하나로: 자리에 따라 긴 말과 짧은 말을 바꾸던 때는 알림이 뜰 때마다 줄의 단추 모양까지 바뀌었다
+            <p
+              className="stage-warn"
+              role="status"
+              title={
+                overflow === 'over'
+                  ? '글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.'
+                  : '컴포넌트가 들어갈 높이가 모자라 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 하나 빼 주세요.'
+              }
+            >
+              {overflow === 'over' ? '글이 넘쳤어요' : '자리가 모자라요'}
             </p>
           )}
         </div>
