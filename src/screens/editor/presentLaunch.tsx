@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { slideName } from '../../deck/blocks'
 import { deckBlanks, pageInfo, type Missing } from '../../deck/fields'
 import type { Deck } from '../../deck/types'
@@ -23,18 +24,29 @@ export function usePresentLaunch(deck: Deck, markVersion: (reason: VersionReason
   const launchWithPresenter = useCallback(
     async (startId: string | undefined, placement: Placement | null) => {
       // 같은 클릭 안에서 전체 화면 다음에 창을 열어야 크롬·엣지가 둘 다 허락한다
-      if (placement && !(await enterFullscreen(placement.audience))) return false
+      if (placement) {
+        // 전체 화면을 부르고, 같은 순간(브라우저가 화면을 그리기 전)에 발표 화면(검은 바탕)을 깐다. 전체 화면이 다 들어온 뒤에
+        // 발표 화면을 그리던 때는, 창이 큰 화면으로 옮겨 가 커지는 동안 편집 화면이 그 크기로 비쳤다(늦은 전체 화면을 흉내 내 0.7초).
+        // 첫 장은 전체 화면이 다 들어온 뒤에 들인다(Present.tsx의 entering)
+        const entering = enterFullscreen(placement.audience)
+        flushSync(() => setPresenting({ startId, entering }))
+        if (!(await entering)) {
+          setPresenting(null)
+          return false
+        }
+      }
       // 화면이 하나면 연습용: 발표자 화면은 보통 창으로, 발표 화면은 이 창에
       const win = placement ? openPresenterWindow(deck.id, placement.presenter) : openPresenterWindow(deck.id)
       setAskScreens(null)
       if (!win) {
         // 팝업 차단: 발표자 화면 없이 시작하면 노트도 다음 장도 볼 수 없다. 시작하지 않고 허용하는 법을 알린다.
         // 전체 화면을 빠져나와야 주소창의 차단 아이콘이 보인다
+        setPresenting(null)
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
         toast.show('브라우저가 발표자 화면 창을 막았어요. 주소창의 팝업 차단 아이콘에서 허용한 뒤 다시 발표해 주세요.', undefined, 10000)
         return true
       }
-      setPresenting({ startId })
+      if (!placement) setPresenting({ startId })
       return true
     },
     [deck.id, toast.show],
