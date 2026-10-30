@@ -45,6 +45,15 @@ export function blockFitter() {
   const FILL_AIR = 0.8
   const FILL_MAX = 0.85
   let range: Range | null = null
+  // 잰 글 줄과 그림을 담아 두는 곳. 쓰는 쪽(fitLayout)이 값을 적을 때마다 새로 만들고 다 쓰면 null로 둔다(그 밖에서는 늘 새로 잰다)
+  let memo: Map<Node, Map<string, unknown>> | null = null
+  function remember<T>(el: Node, key: string, f: () => T): T {
+    if (!memo) return f()
+    let m = memo.get(el)
+    if (!m) memo.set(el, (m = new Map()))
+    if (!m.has(key)) m.set(key, f())
+    return m.get(key) as T
+  }
   let ctx: CanvasRenderingContext2D | null | undefined
   let inks: Record<string, [number, number]> = {}
   // 움직임이 끝나기를 기다리는 본문 상자와 판 (같은 것을 여러 번 기다리지 않게)
@@ -76,6 +85,9 @@ export function blockFitter() {
    * 이 함수 밖에 두면 내보낸 HTML에서는 없는 이름이라 맞추기가 처음부터 멈췄다(뷰어는 blockFitter의 소스만 넣는다)
    */
   function figures(inner: HTMLElement): Element[] {
+    return remember(inner, 'f', () => figuresNow(inner))
+  }
+  function figuresNow(inner: HTMLElement): Element[] {
     return Array.from(inner.querySelectorAll(':scope svg, :scope [aria-hidden="true"]')).filter((el) => {
       if (el.parentElement?.closest('svg')) return false
       const r = el.getBoundingClientRect()
@@ -135,6 +147,9 @@ export function blockFitter() {
    * 부품을 위로 끌어올려서 S, W가 앞 부품의 글 위에 겹쳤다
    */
   function lines(inner: HTMLElement, hints = false, marks = false): { n: Node; t: number; b: number; l: number; r: number }[] {
+    return remember(inner, `l${+hints}${+marks}`, () => linesNow(inner, hints, marks))
+  }
+  function linesNow(inner: HTMLElement, hints: boolean, marks: boolean): { n: Node; t: number; b: number; l: number; r: number }[] {
     const out: { n: Node; t: number; b: number; l: number; r: number }[] = []
     if (!range) range = document.createRange()
     const walk = document.createTreeWalker(inner, NodeFilter.SHOW_TEXT)
@@ -1545,6 +1560,16 @@ export function blockFitter() {
   const lastAir = new WeakMap<HTMLElement, number>()
 
   function fitLayout(slide: HTMLElement): void {
+    // 한 모습에서 채움, 넘침, 제목과 다툼을 볼 때마다 같은 글 줄을 다섯 번씩 다시 쟀다. 값을 적기 전까지는 잰 것을 같이 쓴다(memo)
+    memo = new Map()
+    try {
+      fitLayoutNow(slide)
+    } finally {
+      memo = null
+    }
+  }
+
+  function fitLayoutNow(slide: HTMLElement): void {
     const body = slide.querySelector<HTMLElement>(':scope > .s-body')
     if (!body || slide.classList.contains('l-compose') || !slide.querySelector(':scope > .s-head')) return
     const mover = moving(slide)
@@ -1552,9 +1577,18 @@ export function blockFitter() {
       later(slide, mover, () => fitLayout(slide))
       return
     }
-    body.style.removeProperty('--bk-fit')
-    body.style.removeProperty('--fill-air')
-    body.style.removeProperty('--eye')
+    // 본문에 값을 적으면 잰 것을 비운다
+    const setB = (name: string, v: string) => {
+      body.style.setProperty(name, v)
+      memo = new Map()
+    }
+    const delB = (name: string) => {
+      body.style.removeProperty(name)
+      memo = new Map()
+    }
+    delB('--bk-fit')
+    delB('--fill-air')
+    delB('--eye')
     delete body.dataset.eye
     const b = body.getBoundingClientRect()
     const sr = slide.getBoundingClientRect()
@@ -1611,16 +1645,16 @@ export function blockFitter() {
       const gap = head ? Math.max(0, b.top - head.getBoundingClientRect().bottom) : 0
       const move = Math.round(Math.min((frame - bottom - 1.2 * gap) / 2.2, end - bottom) / k)
       if (move < 8) return
-      body.style.setProperty('--eye', move + 'px')
+      setB('--eye', move + 'px')
       body.dataset.eye = '1'
     }
     // (가) 글자 단계는 60%를 못 채울 때만 올린다
     if (fill() < FILL_MIN) {
       for (const f of [ups[0], more]) {
-        body.style.setProperty('--bk-fit', String(f))
+        setB('--bk-fit', String(f))
         if (bad()) {
-          if (f === ups[0]) body.style.removeProperty('--bk-fit')
-          else body.style.setProperty('--bk-fit', String(ups[0]))
+          if (f === ups[0]) delB('--bk-fit')
+          else setB('--bk-fit', String(ups[0]))
           break
         }
         if (fill() >= FILL_MIN) break
@@ -1629,15 +1663,16 @@ export function blockFitter() {
     if (fill() >= FILL_AIR) return
     // (나) 줄 사이: 바꿔도 그려진 것이 그대로면(이 레이아웃은 --fill-air를 쓰지 않는다) 그만둔다
     const before = fill()
-    body.style.setProperty('--fill-air', airMax + 'px')
-    if (fill() <= before + 0.001) {
-      body.style.removeProperty('--fill-air')
+    setB('--fill-air', airMax + 'px')
+    const full = fill()
+    if (full <= before + 0.001) {
+      delB('--fill-air')
       eye()
       return
     }
     // 넘치지 않고 85%를 넘지 않는 가장 넓은 값 (반씩 나눠 찾는다)
     const ok = (v: number) => {
-      body.style.setProperty('--fill-air', v + 'px')
+      setB('--fill-air', v + 'px')
       return !bad() && fill() <= FILL_MAX
     }
     // 지난번에 찾은 값부터 본다: 글자 하나를 치는 동안 답은 대개 그대로라, 그 값은 되고 한 칸 넓히면 안 되는지만 보면
@@ -1646,14 +1681,25 @@ export function blockFitter() {
     let hi = airMax + 1
     const was = lastAir.get(body)
     if (was !== undefined && was <= airMax && (was === 0 || ok(was)) && (was === airMax || !ok(was + 1))) lo = hi = was
+    // 처음 맞추는 본문은 줄 사이를 넓힌 만큼 채움이 거의 고르게 느는 것을 써서, 0과 끝값에서 잰 채움으로 85%가 되는 값을 어림해
+    // 그 값과 하나 위만 본다(맞으면 두 번 재기로 끝난다). 어림이 틀려도 그 값으로 찾는 범위를 좁힐 뿐이라 찾은 값은 같다
+    const probe = (v: number) => {
+      if (ok(v)) lo = v
+      else hi = v
+    }
+    if (hi - lo > 1) {
+      const guess = Math.max(1, Math.min(airMax, Math.floor(((FILL_MAX - before) / (full - before)) * airMax)))
+      probe(guess)
+      if (lo === guess && guess + 1 < hi) probe(guess + 1)
+    }
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1
       if (ok(mid)) lo = mid
       else hi = mid
     }
     lastAir.set(body, lo)
-    if (lo > 0) body.style.setProperty('--fill-air', lo + 'px')
-    else body.style.removeProperty('--fill-air')
+    if (lo > 0) setB('--fill-air', lo + 'px')
+    else delB('--fill-air')
     eye()
   }
 
