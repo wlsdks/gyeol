@@ -69,7 +69,7 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
                 aria-pressed={deck.theme.id === id}
                 onClick={() => setTheme(id)}
               >
-                <ScaledSlide width={THEME_THUMB}>
+                <ScaledSlide width={THEME_THUMB} decorative>
                   <SlideCanvas deck={{ ...deck, theme: { ...deck.theme, id } }} slide={cover} mode="final" />
                 </ScaledSlide>
                 <span>{THEMES[id].name}</span>

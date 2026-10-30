@@ -170,13 +170,14 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         id={`thumb-${slide.id}`}
         className="thumb-btn"
         aria-current={selected || undefined}
-        aria-label={`${page || '숨김'}. ${slideName(slide)}${missing ? `, 빈칸 ${missing}곳` : ''}`}
+        // 이름은 짧게: 몇 번 장, 장 이름, 빈칸 수. 장 그림과 아래 이름은 이 이름과 겹치니 읽지 않는다
+        aria-label={`${page ? `${page}번 장` : '숨긴 장'}, ${slideName(slide)}${missing ? `, 빈칸 ${missing}곳` : ''}`}
         onClick={() => onSelect(slide.id)}
         {...attributes}
         {...listeners}
         role="button"
       >
-        <ScaledSlide width={170}>
+        <ScaledSlide width={170} decorative>
           <SlideCanvas
             deck={look}
             slide={shown}
@@ -188,7 +189,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
           />
         </ScaledSlide>
         {/* 이 장에 무엇을 쓰면 되는지는 이름에 마우스를 올리면 (오른쪽 칸에 늘 펼쳐 두지 않는다) */}
-        <span className="thumb-label" title={slide.guide || undefined}>
+        <span className="thumb-label" title={slide.guide || undefined} aria-hidden="true">
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}
           {slideName(slide)}
         </span>

@@ -163,10 +163,14 @@ export const SlideCanvas = memo(function SlideCanvas({
 })
 
 /** 정해진 너비로 축소한 슬라이드 (목록, 미리보기) */
-export function ScaledSlide({ width, children, className }: { width: number; children: ReactNode; className?: string }) {
+/**
+ * 작게 줄인 슬라이드. decorative면 화면 읽기 프로그램에서 뺀다: 장 목록이나 장 고르기의 단추 안에 그대로 두면
+ * 단추 이름이 장 안의 모든 글이 되어 '3번 장' 하나를 듣는 데 수십 줄을 들어야 했다. 이름은 단추가 따로 짧게 단다
+ */
+export function ScaledSlide({ width, children, className, decorative }: { width: number; children: ReactNode; className?: string; decorative?: boolean }) {
   const scale = width / SLIDE_W
   return (
-    <div className={cx('slide-frame', className)} style={{ width, height: (width * SLIDE_H) / SLIDE_W }}>
+    <div className={cx('slide-frame', className)} style={{ width, height: (width * SLIDE_H) / SLIDE_W }} aria-hidden={decorative || undefined}>
       <div className="slide-scale" style={{ transform: `scale(${scale})` }}>
         {children}
       </div>

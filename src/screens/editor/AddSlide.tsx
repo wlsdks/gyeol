@@ -59,7 +59,7 @@ const Choice = memo(function Choice({ id, look, slide, onPick }: { id: LayoutId;
     <button type="button" className="add-slide-card" title={spec.description} onClick={onPick}>
       <span className="add-slide-pic">
         {slide && (
-          <ScaledSlide width={THUMB_W}>
+          <ScaledSlide width={THUMB_W} decorative>
             <SlideCanvas deck={look} slide={slide} mode="final" sections={['섹션 1', '섹션 2', '섹션 3']} sectionIndex={0} />
           </ScaledSlide>
         )}

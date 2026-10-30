@@ -64,7 +64,7 @@ export function Inspector({
     <div className="ins" role="tabpanel" aria-label="이 장 설정">
       <section className="ins-sec ins-top">
         <button type="button" className="ins-cur" title="레이아웃 바꾸기" onClick={() => setPicking(true)}>
-          <ScaledSlide width={104}>
+          <ScaledSlide width={104} decorative>
             <SlideCanvas deck={look} slide={shown} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
           </ScaledSlide>
           <span className="ins-cur-t">
@@ -403,7 +403,7 @@ export function LayoutChoice({
       onFocus={onPeek && (() => onPeek(true))}
       onBlur={onPeek && (() => onPeek(false))}
     >
-      <ScaledSlide width={width}>
+      <ScaledSlide width={width} decorative>
         <SlideCanvas deck={look} slide={preview} mode="preview" sections={PREVIEW_SECTIONS} sectionIndex={0} />
       </ScaledSlide>
       <span>{name}</span>

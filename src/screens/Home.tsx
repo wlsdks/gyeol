@@ -222,7 +222,7 @@ function DeckCard({ deck, onDuplicate, onDelete }: { deck: Deck; onDuplicate: ()
   return (
     <article className="card">
       <a className="card-link" href={`#/edit/${deck.id}`} aria-label={`${deck.title} 열기`}>
-        <div className="card-thumb">
+        <div className="card-thumb" aria-hidden="true">
           <FitSlide>{first && <SlideCanvas deck={shown} slide={first} mode="final" />}</FitSlide>
         </div>
       </a>

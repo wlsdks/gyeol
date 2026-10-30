@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { slideName } from '../deck/blocks'
 import { pageInfo } from '../deck/fields'
 import type { Deck } from '../deck/types'
 import { cx } from '../lib/cx'
@@ -304,8 +305,14 @@ export function Presenter({ id }: { id: string }) {
       <ol className="pv-strip" ref={stripRef} aria-label="모든 장">
         {slides.map((s, i) => (
           <li key={s.id}>
-            <button type="button" className={cx('pv-thumb', i === index && 'is-on')} aria-current={i === index} onClick={() => go(i)}>
-              <ScaledSlide width={136}>
+            <button
+              type="button"
+              className={cx('pv-thumb', i === index && 'is-on')}
+              aria-current={i === index}
+              aria-label={`${i + 1}번 장, ${slideName(s)}`}
+              onClick={() => go(i)}
+            >
+              <ScaledSlide width={136} decorative>
                 <SlideCanvas deck={deck} slide={s} mode="final" {...pageProps(info, s.id)} />
               </ScaledSlide>
               <span>{i + 1}</span>
