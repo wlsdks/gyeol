@@ -84,7 +84,7 @@
   font: 600 12px/1.4 inherit;
 }
 
-/* 쓰는 칸 표시 시안 c, d(개발용, slides/selVariant.ts): 쓰는 동안은 고른 줄의 면을 걷어 쓰는 칸의 표시 하나만 남긴다 */
-:root:is([data-sel='c'], [data-sel='d']) .ed-canvas:has(.slide .ed-input:focus) .sel-ring {
+/* 칸에 쓰는 동안은 고른 줄의 면을 걷는다: 쓰는 칸의 실선(edit.css) 한 겹만 남게. 면과 테가 같이 있으면 둘의 끝이 어긋나 보였다 */
+.ed-canvas:has(.slide .ed-input:focus) .sel-ring {
   opacity: 0;
 }

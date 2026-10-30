@@ -28,7 +28,6 @@
   inset: calc(var(--ed-t, 10px) * -1) calc(var(--ed-r, 14px) * -1) calc(var(--ed-b, 10px) * -1) calc(var(--ed-l, 14px) * -1);
   border-radius: calc(6px / var(--vs, 0.5));
   pointer-events: none;
-  transition: box-shadow 0.12s, background-color 0.12s;
 }
 
 /* 넘침을 재는 동안(Editor의 useOverflow, 부품 장을 맞추는 fitBlocks): 글 밖으로 나온 편집 표시는 넘침이 아니다.
@@ -46,136 +45,48 @@
   --bk-shift-x: 0px !important;
 }
 
-/* 빈칸은 파워포인트의 개체 틀처럼 흐린 안내 글로만 보인다. 옅은 면을 늘 깔면 면이 글보다 옆으로 번져서
-   채운 제목과 빈 부제의 왼쪽 끝이 어긋나 보이고, 빈칸이 많은 장은 회색 상자로 덮인다. 면은 올렸을 때만 */
-.slide.m-edit .ed.is-empty:hover:not(:focus-within) > .ed-halo {
-  background: color-mix(in srgb, currentColor 7%, transparent);
+/* 칸의 표시는 칸 상자가 아니라 그려진 글(빈칸은 안내 글)에 맞춘 네모 하나다(halos.ts의 --ed-g*: 칸 상자 끝에서 글까지 안쪽으로 든 거리,
+   글이 상자 밖으로 나오면 음수). 글에서 화면 8px(옆), 5px(위아래) 띄우고, 이웃 칸 쪽으로는 halos.ts가 잰 끝(--ed-f*)을 넘지 않는다.
+   칸 상자에 맞추던 때는 제목 칸이 장 너비만큼 넓어서 글은 왼쪽 반인데 테가 장 오른쪽 끝까지 늘어났고, 한 장 요약의 이름 칸은 테가 옆 칸
+   바로 앞까지 넓었다. 손을 올린 때와 쓰는 때가 같은 네모라 눌러도 테가 튀지 않는다. 테만 움직이고 칸은 그대로라 글의 자리와 줄바꿈은
+   바뀌지 않는다. 띄우는 거리와 두께는 화면 px(--vs)라 창 크기와 상관없이 같게 보인다 */
+.slide.m-edit .ed > .ed-halo {
+  --halo-x: calc(8px / var(--vs, 0.5));
+  --halo-y: calc(5px / var(--vs, 0.5));
+  --halo-min: calc(2px / var(--vs, 0.5));
+  top: calc(var(--ed-gy0, 0px) - max(var(--halo-min), min(var(--halo-y), var(--ed-gy0, 0px) + var(--ed-ft, 10px))));
+  bottom: calc(var(--ed-gy1, 0px) - max(var(--halo-min), min(var(--halo-y), var(--ed-gy1, 0px) + var(--ed-fb, 10px))));
+  left: calc(var(--ed-gx0, 0px) - max(var(--halo-min), min(var(--halo-x), var(--ed-gx0, 0px) + var(--ed-fl, 14px))));
+  right: calc(var(--ed-gx1, 0px) - max(var(--halo-min), min(var(--halo-x), var(--ed-gx1, 0px) + var(--ed-fr, 14px))));
+  border-radius: calc(4px / var(--vs, 0.5));
 }
 
-.slide.m-edit .ed:hover > .ed-halo {
-  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 50%, transparent);
+/* 손을 올리면 점선(쓸 수 있는 칸), 쓰면 실선(지금 쓰는 칸). 면은 깔지 않는다: 빈칸은 흐린 안내 글만으로 칸임을 알리고(파워포인트의 개체 틀처럼),
+   옅은 면을 늘 깔면 빈칸이 많은 장이 회색 상자로 덮였다. 점선은 그 칸의 글자색을 옅게: 파란 점선은 강조색 바탕과 짙은 면에서 사라졌다 */
+.slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
+  outline: calc(1px / var(--vs, 0.5)) dashed color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: calc(-1px / var(--vs, 0.5));
 }
 
 /* 쓰는 동안 손을 움직이기 전(editor/typingStill.ts의 is-typing-still): 가만히 있는 손 아래로 온 칸에 손을 올린 테를 두르지 않는다.
    쓰는 칸 옆에 테가 하나 더 생겨 어느 칸에 쓰는지 헷갈렸다 */
 .is-typing-still .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
-  background: transparent;
-  box-shadow: none;
+  outline: none;
 }
 
-/* 쓰는 중: 면을 걷고 파란 실선 하나. 입력 칸처럼 보이게 */
+/* 쓰는 중: 파란 실선 하나, 화면 2px (WCAG 2.4.13의 2px 둘레). 고른 줄의 옅은 면은 그동안 걷어(selection.css) 테 한 겹만 남는다.
+   바깥에 흰 1px를 붙인다: 흰 바탕에서는 보이지 않고, 강조색 바탕(파랑)과 짙은 면에서는 파란 실선이 묻혀도 테가 보인다 */
 .slide.m-edit .ed:focus-within > .ed-halo {
-  background: transparent;
-  box-shadow: inset 0 0 0 calc(2px / var(--vs, 0.5)) var(--sel);
+  box-shadow:
+    inset 0 0 0 calc(2px / var(--vs, 0.5)) var(--sel),
+    0 0 0 calc(1px / var(--vs, 0.5)) rgb(255 255 255 / 0.9);
 }
 
-/* 글이 넘친 칸(editor/SlideStage.tsx의 useOverflow가 data-over를 단다): 주황 점선 하나. 쓰는 중이면 파란 실선 하나만 (두 겹이 되지 않게) */
+/* 글이 넘친 칸(editor/SlideStage.tsx의 useOverflow가 data-over를 단다): 주황 점선 하나. 쓰는 중이면 파란 실선 하나만 (두 겹이 되지 않게).
+   손을 올린 점선보다 뒤에 둔다: 넘친 칸은 올려도 주황 */
 .slide.m-edit .ed[data-over]:not(:focus-within) > .ed-halo {
   outline: calc(1.5px / var(--vs, 0.5)) dashed var(--warn-ink, #7a5200);
   outline-offset: calc(-1.5px / var(--vs, 0.5));
-}
-
-/* 줄 높이가 글자 높이보다 낮은 큰 숫자(줄 높이 0.95~1.1)와 위아래 빈 키를 잘라 낸 숫자(text-box)는 글자가 칸 상자 위아래로 나와서,
-   쓰는 중의 실선이 '억', '원' 같은 글자를 가로질렀다. 글자가 나온 칸만 그만큼(--ed-ink-t, -b. halos.ts가 띄울 넓이까지 잰다) 더 둘러
-   글자가 실선 안에 들게 한다.
-   그리고 쓰는 칸의 테는 글에서 숨 쉴 만큼 띄운다: 글자 크기에 맞춰 위아래 0.45em, 옆 0.65em. 이웃 칸의 글 쪽으로는 halos.ts가 잰 끝
-   (--ed-ft, -fr, -fb, -fl)까지만. 쓰는 동안은 이 칸의 테 하나만 보여서 이웃과 틈을 나누지 않는다. 테만 넓히고 칸은 그대로라
-   글의 자리와 줄바꿈은 바뀌지 않는다. 예전에는 늘 두르는 넓이(캔버스 10px)라 줄인 장에서 테가 글에 3px 남짓으로 붙어 좁아 보였다 */
-.slide.m-edit .ed:focus-within > .ed-halo {
-  top: calc(max(var(--ed-ink-t, 0px), min(var(--ed-ft, 10px), max(var(--ed-t, 10px), 0.45em))) * -1);
-  right: calc(min(var(--ed-fr, 14px), max(var(--ed-r, 14px), 0.65em)) * -1);
-  bottom: calc(max(var(--ed-ink-b, 0px), min(var(--ed-fb, 10px), max(var(--ed-b, 10px), 0.45em))) * -1);
-  left: calc(min(var(--ed-fl, 14px), max(var(--ed-l, 14px), 0.65em)) * -1);
-}
-
-/* ---------- 쓰는 칸 표시 시안 (개발용, slides/selVariant.ts의 data-sel). 사용자가 하나를 고르면 걷고 위 규칙을 그것으로 바꾼다 ----------
-   모든 시안: 테 한 겹, 글을 덮지 않음, 칸 크기와 글 자리는 그대로(테만 움직인다). 띄우는 거리와 두께는 화면 px로 (--vs) */
-:root[data-sel] .slide.m-edit .ed > .ed-halo {
-  --sel-ox: calc(8px / var(--vs, 0.5));
-  --sel-oy: calc(5px / var(--vs, 0.5));
-  --sel-min: calc(2px / var(--vs, 0.5));
-}
-
-/* a, b, d: 칸 상자가 아니라 그려진 글(빈칸은 안내 글)에 맞춘다 (halos.ts의 --ed-g*). 글에서 화면 8px(옆), 5px(위아래) 띄우고,
-   이웃 칸 쪽으로는 halos.ts가 잰 끝(--ed-f*)을 넘지 않는다. 손을 올린 때와 쓰는 때가 같은 네모라 눌러도 테가 튀지 않는다 */
-:root:is([data-sel='a'], [data-sel='b'], [data-sel='d']) .slide.m-edit .ed > .ed-halo {
-  top: calc(var(--ed-gy0, 0px) - max(var(--sel-min), min(var(--sel-oy), var(--ed-gy0, 0px) + var(--ed-ft, 10px))));
-  bottom: calc(var(--ed-gy1, 0px) - max(var(--sel-min), min(var(--sel-oy), var(--ed-gy1, 0px) + var(--ed-fb, 10px))));
-  left: calc(var(--ed-gx0, 0px) - max(var(--sel-min), min(var(--sel-ox), var(--ed-gx0, 0px) + var(--ed-fl, 14px))));
-  right: calc(var(--ed-gx1, 0px) - max(var(--sel-min), min(var(--sel-ox), var(--ed-gx1, 0px) + var(--ed-fr, 14px))));
-  border-radius: calc(4px / var(--vs, 0.5));
-}
-
-/* a: 글에 맞춘 얇은 테. 올리면 옅은 1px, 쓰면 1.5px 실선. 빈칸을 올리면 안내 글 둘레에 아주 옅은 면 */
-:root[data-sel='a'] .slide.m-edit .ed:hover > .ed-halo {
-  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 45%, transparent);
-}
-
-:root[data-sel='a'] .slide.m-edit .ed:focus-within > .ed-halo {
-  background: transparent;
-  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) var(--sel);
-}
-
-/* b: 테 없이 글 밑줄. 입력 칸의 밑줄처럼 글 폭만큼, 쓰면 2px, 올리면 옅은 1px. 칸의 경계는 커서와 밑줄 끝이 알려 준다 */
-:root[data-sel='b'] .slide.m-edit .ed > .ed-halo {
-  bottom: calc(var(--ed-gy1, 0px) - max(var(--sel-min), min(calc(8px / var(--vs, 0.5)), var(--ed-gy1, 0px) + var(--ed-fb, 10px))));
-  left: calc(var(--ed-gx0, 0px));
-  right: calc(var(--ed-gx1, 0px));
-  border-radius: 0;
-}
-
-:root[data-sel='b'] .slide.m-edit .ed.is-empty:hover:not(:focus-within) > .ed-halo {
-  background: transparent;
-}
-
-:root[data-sel='b'] .slide.m-edit .ed:hover > .ed-halo {
-  box-shadow: inset 0 calc(-1px / var(--vs, 0.5)) 0 color-mix(in srgb, var(--sel) 50%, transparent);
-}
-
-:root[data-sel='b'] .slide.m-edit .ed:focus-within > .ed-halo {
-  background: transparent;
-  box-shadow: inset 0 calc(-2px / var(--vs, 0.5)) 0 var(--sel);
-}
-
-/* c: 칸 자리 전체(글을 쓸 수 있는 넓이)에 아주 옅은 면과 1px 테. 띄우는 거리는 사방 같게. 쓰는 동안 고른 줄의 면은 걷어 면이 한 겹 */
-:root[data-sel='c'] .slide.m-edit .ed > .ed-halo {
-  top: calc(max(var(--ed-ink-t, 0px), min(var(--ed-ft, 10px), var(--sel-oy))) * -1);
-  bottom: calc(max(var(--ed-ink-b, 0px), min(var(--ed-fb, 10px), var(--sel-oy))) * -1);
-  left: calc(min(var(--ed-fl, 14px), var(--sel-ox)) * -1);
-  right: calc(min(var(--ed-fr, 14px), var(--sel-ox)) * -1);
-  border-radius: calc(4px / var(--vs, 0.5));
-}
-
-:root[data-sel='c'] .slide.m-edit .ed:hover > .ed-halo {
-  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 40%, transparent);
-}
-
-:root[data-sel='c'] .slide.m-edit .ed:focus-within > .ed-halo {
-  background: color-mix(in srgb, var(--sel) 6%, transparent);
-  box-shadow: inset 0 0 0 calc(1px / var(--vs, 0.5)) var(--sel);
-}
-
-/* d: a의 네모에 상태 위계. 올리면 점선(쓸 수 있는 칸), 쓰면 실선(지금 쓰는 칸). 쓰는 동안 고른 줄의 면은 걷는다 */
-:root[data-sel='d'] .slide.m-edit .ed.is-empty:hover:not(:focus-within) > .ed-halo {
-  background: transparent;
-}
-
-:root[data-sel='d'] .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
-  box-shadow: none;
-  outline: calc(1px / var(--vs, 0.5)) dashed color-mix(in srgb, var(--sel) 70%, transparent);
-  outline-offset: calc(-1px / var(--vs, 0.5));
-}
-
-:root[data-sel='d'] .slide.m-edit .ed:focus-within > .ed-halo {
-  background: transparent;
-  box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) var(--sel);
-}
-
-/* 쓰는 동안 손을 움직이기 전에는 손 아래 칸에 손을 올린 표시를 하지 않는다 (위의 is-typing-still과 같게) */
-:root[data-sel] .is-typing-still .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
-  background: transparent;
-  box-shadow: none;
-  outline: none;
 }
 
 .ed-hint {

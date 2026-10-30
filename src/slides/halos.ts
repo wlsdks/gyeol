@@ -1,5 +1,4 @@
 import { useLayoutEffect, type RefObject } from 'react'
-import { fitsText } from './selVariant'
 
 /**
  * 편집할 때 칸마다 두르는 면과 점선(.ed-halo)의 넓이를 칸 사이 틈에 맞춘다.
@@ -22,8 +21,10 @@ const CELL_OUT = 7
  * 바짝 붙어 쓰는 칸이 좁아 보였다
  */
 const FOCUS_MAX = 48
-/** (시안 a, b, d) 글에 맞춘 테가 항목과 부품 칸 밖으로 나가도 되는 넓이 */
+/** 글에 맞춘 테(쓰는 칸, 손을 올린 칸)가 항목과 부품 칸 밖으로 나가도 되는 넓이: 항목 끝에 붙은 글(줄의 이름)에서 테가 1~2px로 붙지 않게 */
 const FIT_OUT = 24
+/** 빈칸의 테는 적어도 글자 크기의 이만큼 넓게: '80%'처럼 짧은 안내 글의 빈칸이 글자만 한 테로 칸처럼 보이지 않았다 */
+const EMPTY_MIN = 3
 
 interface Box {
   el: HTMLElement
@@ -64,13 +65,11 @@ export function placeHalos(slide: HTMLElement): Box[] {
       const room = (d: number, out = CELL_OUT) => Math.max(0, d / k + out)
       const cell = [room(q.top - c.top), room(c.right - q.right), room(c.bottom - q.bottom), room(q.left - c.left)]
       box.h = box.h.map((v, i) => Math.min(v, cell[i])) as Box['h']
-      // (시안 a, b, d) 글에 맞춘 테는 칸 상자보다 작아서 항목 끝 밖으로 조금 더 나가도 된다: 항목 끝에 붙은 글(줄의 이름)에서 테가 1~2px로 붙었다
-      const out = fitsText ? FIT_OUT : CELL_OUT
-      const focus = [room(q.top - c.top, out), room(c.right - q.right, out), room(c.bottom - q.bottom, out), room(q.left - c.left, out)]
+      // 글에 맞춘 테는 칸 상자보다 작아서 항목 끝 밖으로 조금 더 나가도 된다
+      const focus = [room(q.top - c.top, FIT_OUT), room(c.right - q.right, FIT_OUT), room(c.bottom - q.bottom, FIT_OUT), room(q.left - c.left, FIT_OUT)]
       box.f = box.f.map((v, i) => Math.min(v, focus[i])) as Box['f']
     }
     boxes.push(box)
-    inkOut(el, q, k)
   }
   const room = (gap: number) => Math.max(0, (gap - KEEP) / 2)
   // 쓰는 칸 하나만 넓힐 때는 틈을 나누지 않는다
@@ -124,41 +123,10 @@ export function placeHalos(slide: HTMLElement): Box[] {
 }
 
 /**
- * 글자가 칸 상자 위아래로 나왔으면 쓰는 중의 실선을 둘러야 할 넓이(나온 만큼과 글자에서 띄울 화면 4px, 캔버스 px)를 --ed-ink-t,
- * --ed-ink-b로 둔다. 줄 높이가 글자 높이보다 낮은 큰 숫자와 위아래 빈 키를 잘라 낸 숫자(text-box)는 글자가 칸 상자 밖으로 나와서,
- * 쓰는 중의 실선(edit.css)이 '억', '원' 같은 글자를 가로질렀다. 글자의 줄 상자(위아래 빈 키까지)로 재면 실선이 위 칸의 글까지
- * 내려가서, 그려지는 글자 모양으로 잰다. 빈 칸은 안내 글로 잰다. 나오지 않은 칸은 두지 않는다: 띄울 4px를 CSS에서 늘 더하면
- * 이웃 칸과 가까워 줄여 둔 넓이(--ed-t)를 넘어, 글자가 나오지도 않은 칸의 실선이 이웃 칸의 글에 닿았다
- */
-function inkOut(el: HTMLElement, q: DOMRect, k: number) {
-  const input = el.querySelector(':scope > .ed-input')
-  const text = input?.textContent ? input : el.querySelector(':scope > .ed-hint')
-  let t = 0
-  let b = 0
-  if (text?.textContent) {
-    const r = document.createRange()
-    r.selectNodeContents(text)
-    const lines = [...r.getClientRects()].filter((x) => x.height)
-    const top = Math.min(...lines.map((x) => x.top))
-    const bottom = Math.max(...lines.map((x) => x.bottom))
-    if (lines.length && (top < q.top || bottom > q.bottom)) {
-      const ink = inkOf(text)
-      t = (q.top - top) / k - ink.top
-      b = (bottom - q.bottom) / k - ink.bottom
-    }
-  }
-  for (const [name, v] of [['--ed-ink-t', t], ['--ed-ink-b', b]] as const) {
-    const want = v > 0 ? `${Math.ceil(v + 4 / k)}px` : ''
-    if (el.style.getPropertyValue(name) === want) continue
-    if (want) el.style.setProperty(name, want)
-    else el.style.removeProperty(name)
-  }
-}
-
-/**
- * (시안 a, b, d) 칸 상자 안에서 그려진 글(빈칸은 안내 글)이 차지한 네모: 칸 상자 끝에서 안쪽으로 든 거리(캔버스 px, 글이 상자 밖으로
- * 나오면 음수). 왼쪽, 오른쪽, 위, 아래. 쓰는 칸의 테를 칸 상자가 아니라 글에 맞추려고: 제목 칸은 칸이 장 너비만큼 넓어서 테가 글 오른쪽으로
- * 한참 빈 채 장 끝까지 늘어났다. 위아래는 줄 상자가 아니라 그려지는 글자 모양으로. 읽기만 한다(쓰기는 writeGlyph)
+ * 칸 상자 안에서 그려진 글(빈칸은 안내 글)이 차지한 네모: 칸 상자 끝에서 안쪽으로 든 거리(캔버스 px, 글이 상자 밖으로 나오면 음수).
+ * 왼쪽, 오른쪽, 위, 아래. 쓰는 칸의 테를 칸 상자가 아니라 글에 맞추려고(edit.css): 제목 칸은 칸이 장 너비만큼 넓어서 테가 글 오른쪽으로
+ * 한참 빈 채 장 끝까지 늘어났다. 위아래는 줄 상자가 아니라 그려지는 글자 모양으로: 줄 높이가 글자보다 낮은 큰 숫자는 글자가 칸 상자
+ * 위아래로 나와서 상자에 맞춘 테가 '억', '원'을 가로질렀다. 읽기만 한다(쓰기는 writeGlyph)
  */
 function readGlyph(ed: HTMLElement): number[] | null {
   const slide = ed.closest<HTMLElement>('.slide')
@@ -183,7 +151,19 @@ function readGlyph(ed: HTMLElement): number[] | null {
     top = Math.min(top, x.top)
     bottom = Math.max(bottom, x.bottom)
   }
-  return [(left - q.left) / k, (q.right - right) / k, (top - q.top) / k + ink.top, (q.bottom - bottom) / k + ink.bottom]
+  const v = [(left - q.left) / k, (q.right - right) / k, (top - q.top) / k + ink.top, (q.bottom - bottom) / k + ink.bottom]
+  // 빈칸은 안내 글이 짧아도 칸으로 보이게 적어도 EMPTY_MIN em 넓게. 글이 선 쪽(text-align)을 두고 반대쪽으로, 칸 상자 안에서만 넓힌다
+  if (text !== input) {
+    const cs = getComputedStyle(text)
+    const lack = EMPTY_MIN * (Number.parseFloat(cs.fontSize) || 0) - (right - left) / k
+    if (lack > 0) {
+      const align = cs.textAlign
+      const share = align === 'center' ? [0.5, 0.5] : align === 'right' || align === 'end' ? [1, 0] : [0, 1]
+      v[0] = Math.max(Math.min(v[0], 0), v[0] - lack * share[0])
+      v[1] = Math.max(Math.min(v[1], 0), v[1] - lack * share[1])
+    }
+  }
+  return v
 }
 
 const GLYPH_VARS = ['--ed-gx0', '--ed-gx1', '--ed-gy0', '--ed-gy1'] as const
@@ -200,7 +180,7 @@ function writeGlyph(ed: HTMLElement, v: number[] | null) {
 }
 
 /**
- * (시안 a, b, d) 글 네모는 테가 보이는 칸(손을 올린 칸, 쓰는 칸)만, 다음 그리기 직전(rAF) 한 번에 잰다: 바뀐 칸을 모아 다 읽은 뒤에
+ * 글 네모는 테가 보이는 칸(손을 올린 칸, 쓰는 칸)만, 다음 그리기 직전(rAF) 한 번에 잰다: 바뀐 칸을 모아 다 읽은 뒤에
  * 다 쓴다(읽기와 쓰기가 번갈아 레이아웃을 여러 번 하지 않게). 장의 모든 칸을 그릴 때마다 재지 않는다
  */
 const glyphQueue = new Set<HTMLElement>()
@@ -245,18 +225,16 @@ export function useHalos(ref: RefObject<HTMLElement | null>, on: boolean) {
     if (document.fonts?.status === 'loading') document.fonts.ready.then(() => alive && placeHalos(el))
     const ro = new ResizeObserver(() => placeHalos(el))
     ro.observe(el)
-    // (시안 a, b, d) 테가 보이는 칸만 글 네모를 잰다: 손을 올린 칸, 쓰기 시작한 칸, 쓰는 동안 글 폭이 바뀐 칸(칸 상자는 그대로라
+    // 테가 보이는 칸만 글 네모를 잰다: 손을 올린 칸, 쓰기 시작한 칸, 쓰는 동안 글 폭이 바뀐 칸(칸 상자는 그대로라
     // ResizeObserver가 못 본다). 장이 다시 그려지면 쓰는 칸 하나만
     const fit = (e: Event) => {
       const ed = (e.target as Element | null)?.closest?.<HTMLElement>('.ed')
       if (ed && el.contains(ed)) refitGlyph(ed)
     }
     const off = new AbortController()
-    if (fitsText) {
-      for (const type of ['pointerover', 'focusin', 'input']) el.addEventListener(type, fit, { signal: off.signal })
-      const a = document.activeElement?.closest?.<HTMLElement>('.ed')
-      if (a && el.contains(a)) refitGlyph(a)
-    }
+    for (const type of ['pointerover', 'focusin', 'input']) el.addEventListener(type, fit, { signal: off.signal })
+    const a = document.activeElement?.closest?.<HTMLElement>('.ed')
+    if (a && el.contains(a)) refitGlyph(a)
     return () => {
       alive = false
       clearTimeout(later)
