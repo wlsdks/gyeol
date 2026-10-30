@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { missingFields, optionalBlanks, unshownCount, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
@@ -13,6 +13,15 @@ import { BackIcon, CheckIcon, ChevronIcon, EyeOffIcon, Info, Segmented, Toggle, 
 import { useDeck } from '../../store/deckStore'
 
 const PREVIEW_SECTIONS = ['섹션 1', '섹션 2', '섹션 3']
+
+const OPEN_LAYOUTS = 'framo:open-layouts'
+let pickNext = false
+
+/** '이 장 설정'의 레이아웃 고르기를 연다. 칸이 아직 없으면(움직임 탭, 접힌 좁은 창) 다음에 그릴 때 연다 */
+export function openLayoutPicker() {
+  pickNext = true
+  window.dispatchEvent(new Event(OPEN_LAYOUTS))
+}
 
 /**
  * 오른쪽 칸의 '이 장 설정'. 늘 보는 것(지금 레이아웃, 빈칸, 모양, 바탕)만 한 화면에 두고
@@ -32,9 +41,27 @@ export function Inspector({
   onPeekLayout: (layout: LayoutId | null) => void
 }) {
   const changeLayout = useDeck((s) => s.changeLayout)
-  const [picking, setPicking] = useState(false)
-  // 다른 장을 고르면 레이아웃 고르기를 닫는다
-  useEffect(() => setPicking(false), [slide.id])
+  // 장 아래 '글이 넘쳤어요'의 '레이아웃 바꾸기'가 열어 달라고 했으면 처음부터 연다 (움직임 탭을 보던 중이면 이 칸이 새로 그려진다)
+  const [picking, setPicking] = useState(() => {
+    const v = pickNext
+    pickNext = false
+    return v
+  })
+  useEffect(() => {
+    const on = () => {
+      pickNext = false
+      setPicking(true)
+    }
+    window.addEventListener(OPEN_LAYOUTS, on)
+    return () => window.removeEventListener(OPEN_LAYOUTS, on)
+  }, [])
+  // 다른 장을 고르면 레이아웃 고르기를 닫는다 (처음 그릴 때는 그대로: 위에서 열어 달라고 했을 수 있다)
+  const shownId = useRef(slide.id)
+  useEffect(() => {
+    if (shownId.current === slide.id) return
+    shownId.current = slide.id
+    setPicking(false)
+  }, [slide.id])
   const look = useLook(deck)
   // 장 그림(지금 레이아웃, 모양 고르기)은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint).
   // 다른 장을 골랐을 때는 바로 그 장으로 (앞 장 그림이 잠깐 남지 않게)

@@ -3,12 +3,15 @@ import { withLayout } from '../../deck/blocks'
 import { LAYOUTS } from '../../deck/layouts'
 import { unshownCount, visibleItems } from '../../deck/fields'
 import type { Deck, Slide } from '../../deck/types'
+import type { OverField } from '../../slides/overflow'
 import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { cx } from '../../lib/cx'
 import { useDeck } from '../../store/deckStore'
-import { BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
+import { AlertIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
 import { SlideAsk } from './AiShare'
+import { openLayoutPicker } from './Inspector'
+import type { Overflow } from './SlideStage'
 import type { BlockEditing } from './BlockEditor'
 import type { SidePanel } from './sidePanel'
 
@@ -67,6 +70,100 @@ function PeekNote({ slide, layout }: { slide: Slide; layout: Slide['layout'] }) 
   )
 }
 
+/** 넘친 칸에 쓰기 시작한다 (글 끝에 커서를 두고 그 칸이 든 항목을 고른다: SelectionBar가 초점을 보고 고른다) */
+function focusOver(id: string) {
+  const el = document.querySelector<HTMLElement>(`.ed-canvas .slide .ed-input[data-field="${CSS.escape(id)}"]`)
+  if (!el) return
+  el.focus({ preventScroll: true })
+  const sel = getSelection()
+  sel?.selectAllChildren(el)
+  sel?.collapseToEnd()
+}
+
+/**
+ * 장 아래의 '글이 넘쳤어요'. 누르면 어느 칸이 넘쳤는지와 고치는 법(그 칸으로 가서 글 줄이기, 레이아웃 바꾸기)을 보인다.
+ * 넘친 칸은 장 위에도 점선으로 보인다(edit.css의 .ed[data-over]). 예전에는 짧은 꼬리표뿐이라 눌러도 아무 일이 없었고
+ * 어느 칸이 넘쳤는지 몰랐다
+ */
+function OverflowNote({ slide, overflow, side }: { slide: Slide; overflow: Overflow; side: SidePanel }) {
+  const { kind, fields } = overflow
+  const at = useRef(0)
+  const over = kind === 'over'
+  const name = (f: OverField) => (f.label ? `‘${f.label}’ 칸` : '이름 없는 칸')
+  return (
+    <div className="stage-warn">
+      <Popover
+        align="left"
+        flip
+        className="pop-warn"
+        button={({ open, toggle }) => (
+          <button
+            type="button"
+            className={cx('stage-warn-btn', open && 'is-on')}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            title={over ? '어느 칸이 넘쳤는지와 고치는 법을 봐요' : '고치는 법을 봐요'}
+            onClick={toggle}
+          >
+            <AlertIcon />
+            {/* 짧은 말 하나로: 자리에 따라 긴 말과 짧은 말을 바꾸던 때는 알림이 뜰 때마다 줄의 단추 모양까지 바뀌었다 */}
+            <span className="stage-warn-t">{over ? '글이 넘쳤어요' : '자리가 모자라요'}</span>
+          </button>
+        )}
+      >
+        {(close) => (
+          <div className="warn-pop" role="dialog" aria-label={over ? '글이 넘친 칸' : '자리가 모자란 장'}>
+            {over ? (
+              <>
+                <p className="warn-pop-h">
+                  {fields.length > 1 ? `${name(fields[0])} 등 ${fields.length}곳이 장 안에 다 들어가지 않아요` : fields.length ? `${name(fields[0])}이 장 안에 다 들어가지 않아요` : '글이 장 밖으로 넘쳤어요'}
+                </p>
+                {/* 넘친 칸이 꼭 긴 글을 쓴 칸은 아니다: 위 칸의 긴 글에 밀려 아래 칸이 장 밖으로 나가기도 한다 */}
+                <p className="warn-pop-p">장 위에 점선으로 보이는 칸이에요. 그 칸이나 그 위 칸의 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.</p>
+              </>
+            ) : (
+              <>
+                <p className="warn-pop-h">컴포넌트가 들어갈 높이가 모자라요</p>
+                <p className="warn-pop-p">컴포넌트를 줄여서 보이고 있어요. 제목이나 부제를 줄이거나 컴포넌트를 하나 빼 주세요.</p>
+              </>
+            )}
+            <div className="warn-pop-acts">
+              {over && slide.layout !== 'compose' && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    close()
+                    side.settings()
+                    openLayoutPicker()
+                  }}
+                >
+                  레이아웃 바꾸기
+                </button>
+              )}
+              {/* 칸으로 가면 이 창은 닫는다: 장 아래쪽을 덮고 있어서, 열어 둔 채 칸에 쓰면 쓰는 글이 이 창에 가렸다.
+                  넘친 칸이 여럿이면 누를 때마다 다음 칸으로 */}
+              {fields.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    close()
+                    focusOver(fields[at.current % fields.length].id)
+                    at.current = (at.current + 1) % fields.length
+                  }}
+                >
+                  {fields.length > 1 ? `넘친 칸 고치기 (${(at.current % fields.length) + 1}/${fields.length})` : '넘친 칸 고치기'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Popover>
+    </div>
+  )
+}
+
 /**
  * 슬라이드 아래 단추줄: 왼쪽은 이 장에 넣고 바꾸는 일, 오른쪽은 이 장 미리 보기와 '더 보기'(복제, 빼기, 지우기).
  * 예전에는 '모양'과 '지금 장부터 발표'도 여기 있었다. 모양은 오른쪽 '이 장 설정'에, 지금 장부터 발표는 위 '발표하기' 옆 메뉴(Shift+F5)에
@@ -96,7 +193,7 @@ export function StageTools({
   peekSlide: Slide | null
   /** 이 장 미리보기 중 */
   peek: boolean
-  overflow: 'over' | 'tight' | null
+  overflow: Overflow
   onTogglePeek: () => void
   /** 미리보기의 움직임을 한 번 더 */
   onReplay: () => void
@@ -161,20 +258,7 @@ export function StageTools({
               <span className="btn-t">{spec.items.label} 추가</span>
             </button>
           )}
-          {overflow && (
-            // 짧은 말 하나로: 자리에 따라 긴 말과 짧은 말을 바꾸던 때는 알림이 뜰 때마다 줄의 단추 모양까지 바뀌었다
-            <p
-              className="stage-warn"
-              role="status"
-              title={
-                overflow === 'over'
-                  ? '글이 슬라이드 밖으로 넘쳤어요. 글을 줄이거나 ‘이 장 설정’에서 레이아웃을 바꿔 보세요.'
-                  : '컴포넌트가 들어갈 높이가 모자라 줄여서 보여요. 제목이나 부제를 줄이거나 컴포넌트를 하나 빼 주세요.'
-              }
-            >
-              {overflow === 'over' ? '글이 넘쳤어요' : '자리가 모자라요'}
-            </p>
-          )}
+          {overflow.kind && <OverflowNote slide={slide} overflow={overflow} side={side} />}
         </div>
       )}
       {/* 단추가 한 줄에 다 들어가지 않으면 오른쪽부터 글자를 숨기고 그림만 남긴다 (이름은 title로, useTightTools) */}

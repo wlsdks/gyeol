@@ -9,7 +9,7 @@ import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import { BlockEditContext } from '../../slides/blockEdit'
 import type { SlideActions } from '../../slides/context'
-import { slideOverflow } from '../../slides/overflow'
+import { overflowAt, type OverField } from '../../slides/overflow'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
 import { useEscape } from '../ui'
@@ -191,13 +191,20 @@ export function SlideStage({
   )
 }
 
+/** 장 아래에 알릴 것: 글이 넘쳤는지('over'), 컴포넌트가 들어갈 자리가 모자란지('tight'), 넘친 칸들 */
+export interface Overflow {
+  kind: 'over' | 'tight' | null
+  fields: OverField[]
+}
+
 /**
  * 슬라이드 안의 글이 영역을 넘치는지('over') 확인한다. 부품 장은 모든 부품이 잘리지 않을 자리가 판에 없는 것도('tight') 알린다.
  * 꽉 채운 장에 나중에 부제를 쓰거나 제목이 두 줄이 되면 컴포넌트를 더 넣지 않아도 자리가 줄어서, 알리지 않으면 글자와 차트가
- * 조용히 작아진다 (판은 고칠 때마다 다시 나누고, 그래도 안 될 때만)
+ * 조용히 작아진다 (판은 고칠 때마다 다시 나누고, 그래도 안 될 때만).
+ * 넘친 칸에는 data-over를 달아 장 위에 표시한다(edit.css): 넘쳤다는 말만 있던 때는 어느 칸을 줄여야 하는지 몰랐다
  */
-function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown, deck: Deck): 'over' | 'tight' | null {
-  const [overflow, setOverflow] = useState<'over' | null>(null)
+function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown, deck: Deck): Overflow {
+  const [over, setOver] = useState<{ on: boolean; fields: OverField[] }>({ on: false, fields: [] })
   // 그려진 본문 상자의 높이. 컴포넌트 잠금(BlockEditor의 roomOf)과 같은 잰 높이로 '자리가 모자라요'를 본다: 어림으로 보던 때는
   // 둘이 몇 px 어긋나, 잠기지 않은 컴포넌트를 넣자마자 이 알림이 뜨거나 실제로 모자란데도 뜨지 않았다
   const [areaH, setAreaH] = useState<number | null>(null)
@@ -213,7 +220,15 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
         wait = window.setTimeout(check, 300)
         return
       }
-      setOverflow(slideOverflow(root))
+      const now = overflowAt(root)
+      const ids = new Set(now.fields.map((f) => f.id))
+      for (const input of root.querySelectorAll<HTMLElement>('.ed > .ed-input[data-field]')) {
+        const ed = input.parentElement!
+        const on = ids.has(input.dataset.field!)
+        // 값이 그대로면 건드리지 않는다: 부품 장은 본문 상자 안의 바뀜을 지켜보고 다시 맞춘다(blocks.tsx의 BlockArea)
+        if (on !== ed.hasAttribute('data-over')) ed.toggleAttribute('data-over', on)
+      }
+      setOver((p) => (p.on === now.over && p.fields.map((f) => f.id + f.label).join() === now.fields.map((f) => f.id + f.label).join() ? p : { on: now.over, fields: now.fields }))
       setAreaH(root.querySelector<HTMLElement>(':scope .bk-area')?.offsetHeight || null)
     }
     check()
@@ -225,5 +240,5 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
       window.clearTimeout(wait)
     }
   }, [ref, slide, look])
-  return overflow ?? (tight ? 'tight' : null)
+  return { kind: over.on ? 'over' : tight ? 'tight' : null, fields: over.on ? over.fields : [] }
 }

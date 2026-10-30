@@ -517,6 +517,18 @@
   background: var(--blank);
 }
 
+/* 글이 넘친 장 (장 아래 '글이 넘쳤어요'와 같은 색) */
+.thumb-over {
+  display: inline-flex;
+  flex: none;
+  color: var(--warn-ink);
+}
+
+.thumb-over .icon {
+  width: 13px;
+  height: 13px;
+}
+
 /* 가운데 작업 영역 */
 .stage {
   display: flex;
@@ -553,20 +565,81 @@
   min-width: 0;
 }
 
-/* 알림은 단추보다 먼저 줄어든다(StageTools의 useTightTools가 알림은 재지 않는다) */
+/* 넘침 알림: 단추보다 먼저 줄어든다(StageTools의 useTightTools가 알림은 재지 않는다). 누르면 넘친 칸으로 가고 고치는 법을 보인다 */
 .stage-warn {
+  display: flex;
   flex: 0 1 auto;
   min-width: 0;
-  margin: 0;
-  padding: 7px 12px;
-  overflow: hidden;
+}
+
+.stage-warn .pop-wrap {
+  display: flex;
+  min-width: 0;
+}
+
+.stage-warn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  border: 0;
   border-radius: 8px;
   background: var(--warn-bg);
   color: var(--warn-ink);
   font-size: 13px;
   font-weight: 600;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.stage-warn-btn:hover,
+.stage-warn-btn.is-on {
+  background: color-mix(in srgb, var(--warn-ink) 10%, var(--warn-bg));
+}
+
+.stage-warn-btn .icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.stage-warn-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.warn-pop {
+  width: 300px;
+  padding: 8px 10px 6px;
+}
+
+.warn-pop-h {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.warn-pop-p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.warn-pop-acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.warn-pop-acts:empty {
+  display: none;
 }
 
 .stage-tools {

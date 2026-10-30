@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type Announcements, type DragEndEvent, type UniqueIdentifier } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { keys } from '../../lib/keys'
 import { slideName } from '../../deck/blocks'
 import { missingFields, pageInfo } from '../../deck/fields'
@@ -9,9 +9,10 @@ import type { Deck, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { josa } from '../../lib/josa'
 import { useListDrag } from '../../lib/listDrag'
+import { slideOverflow } from '../../slides/overflow'
 import { ScaledSlide, SlideCanvas, useStableSections } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
-import { EyeOffIcon, PlusIcon, Popover } from '../ui'
+import { AlertIcon, EyeOffIcon, PlusIcon, Popover } from '../ui'
 import { AddSlide } from './AddSlide'
 import { useAfterPaint, useLook } from './look'
 
@@ -158,6 +159,16 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
   // 장 그림은 고친 것이 화면에 그려진 다음에 고친다 (look.ts의 useAfterPaint)
   const shown = useAfterPaint(slide)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id, attributes: { roleDescription: '옮길 수 있는 장' } })
+  // 글이 넘친 장: 다른 장을 고치는 동안에도 보이게 그림을 잰다 (편집기의 '글이 넘쳤어요'와 같은 잣대, slides/overflow.ts)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [over, setOver] = useState(false)
+  useEffect(() => {
+    const root = btnRef.current?.querySelector<HTMLElement>('.slide')
+    if (!root) return
+    const check = () => setOver(slideOverflow(root) === 'over')
+    check()
+    if (document.fonts?.status === 'loading') void document.fonts.ready.then(check)
+  }, [shown, look])
   return (
     <div
       ref={setNodeRef}
@@ -167,6 +178,7 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
       <span className="thumb-n">{slide.hidden ? <EyeOffIcon /> : page}</span>
       <button
         type="button"
+        ref={btnRef}
         id={`thumb-${slide.id}`}
         className="thumb-btn"
         aria-current={selected || undefined}
@@ -191,6 +203,11 @@ const Thumb = memo(function Thumb(props: ThumbProps) {
         {/* 이 장에 무엇을 쓰면 되는지는 이름에 마우스를 올리면 (오른쪽 칸에 늘 펼쳐 두지 않는다) */}
         <span className="thumb-label" title={slide.guide || undefined} aria-hidden="true">
           {missing > 0 && <span className="thumb-dot" aria-hidden="true" />}
+          {over && (
+            <span className="thumb-over" title="글이 장 밖으로 넘쳤어요">
+              <AlertIcon />
+            </span>
+          )}
           {slideName(slide)}
         </span>
       </button>
