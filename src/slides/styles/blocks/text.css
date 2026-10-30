@@ -185,6 +185,39 @@
   }
 }
 
+/* 바탕 없는 칸은 면의 위아래 여백(88px)이 없어 더 낮은 줄에서도 한 단이 든다(blockHeights.ts의 bullets 6칸, 바탕 없음).
+   면 기준 높이만 쓰던 때는 숫자나 차트 아래의 낮은 줄(250~290px)에서 요점 셋이 한 줄에 01 … 02 … 03으로 늘어서
+   문장 하나처럼 읽혔다(소제목은 왼쪽 위에 혼자). 그 높이면 소제목 옆에 한 단으로 세워도 넉넉하다 */
+@container bk (min-width: 1300px) and (min-height: 160px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-list[data-n='2']) {
+    --bl-one: 1;
+  }
+}
+
+@container bk (min-width: 1300px) and (min-height: 220px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-list[data-n='3']) {
+    --bl-one: 1;
+  }
+}
+
+@container bk (min-width: 1300px) and (min-height: 270px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-list[data-n='4']) {
+    --bl-one: 1;
+  }
+}
+
+@container bk (min-width: 1300px) and (min-height: 310px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-list[data-n='5']) {
+    --bl-one: 1;
+  }
+}
+
+@container bk (min-width: 1300px) and (min-height: 360px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-list[data-n='6']) {
+    --bl-one: 1;
+  }
+}
+
 @container style(--bl-one: 1) {
   .bk-bl > .bk-list {
     display: flex;
