@@ -305,15 +305,15 @@ function LookSection({ deck, slide }: { deck: Deck; slide: Slide }) {
   if (BOLD_LAYOUTS.includes(slide.layout)) return null
   return (
     <section className="ins-sec">
-      <h2 className="ins-h">꾸미기</h2>
-      <Opt label="바탕">
-        <Segmented
-          label="바탕"
-          options={TONES.map((t) => ({ ...t, name: t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name }))}
-          value={toneOf(slide)}
-          onPick={(t) => setOptions(slide.id, { tone: t === 'base' ? undefined : t })}
-        />
-      </Opt>
+      {/* 구역에 고를 것이 바탕 하나라 구역 제목이 곧 줄 이름이다(예전 '꾸미기' 아래 '바탕' 한 줄은 같은 말을 두 번 했다) */}
+      <h2 className="ins-h">바탕</h2>
+      <Segmented
+        className="seg-fill"
+        label="바탕"
+        options={TONES.map((t) => ({ ...t, name: t.id === 'base' ? '기본' : t.id === 'invert' ? (isDarkLook(deck.theme) ? '밝게' : '어둡게') : t.name }))}
+        value={toneOf(slide)}
+        onPick={(t) => setOptions(slide.id, { tone: t === 'base' ? undefined : t })}
+      />
     </section>
   )
 }
