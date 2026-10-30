@@ -90,9 +90,13 @@ function forwardOne(){if(stopMotion&&stopMotion.next())return;show(i+1)}
 function setBlank(kind){blank.className=kind?'v-blank is-'+kind:'v-blank';blank.hidden=!kind}
 function wake(){body.classList.add('is-awake');clearTimeout(timer);timer=setTimeout(function(){body.classList.remove('is-awake')},2200)}
 function roomy(){return body.classList.contains('v-side')||body.classList.contains('v-top')}
+// 전체 화면은 창이 다 커진 뒤에 들어온다. 그 전에 첫 장을 움직이면 작은 크기로 올라오다가 한 번에 커진다(앱의 발표 화면과 같은 까닭).
+// 커질 때까지는 검은 화면으로 두고(아직 지금 장이 없다), 다 커진 다음 프레임에 첫 장을 들인다. 거절되거나 늦어도 0.8초에서 그친다
 function start(n){
-  body.classList.add('is-present');fit();show(n,true);if(roomy())wake();
-  if(root.requestFullscreen)root.requestFullscreen().catch(function(){});
+  body.classList.add('is-present');fit();if(roomy())wake();
+  var done=false;
+  function go(){if(done||!presenting())return;done=true;fit();show(n,true)}
+  if(root.requestFullscreen){root.requestFullscreen().then(function(){requestAnimationFrame(go)},go);setTimeout(go,800)}else go();
 }
 function stop(){
   body.classList.remove('is-present','v-side','v-top');setBlank(null);
