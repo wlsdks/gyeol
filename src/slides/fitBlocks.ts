@@ -1269,11 +1269,15 @@ export function blockFitter() {
    */
   function gutters(items: { c: HTMLElement; ink: { t: number; b: number } | null }[], dy: Map<HTMLElement, number>, area: HTMLElement, k: number): void {
     const num = (el: HTMLElement, v: string) => Number(el.style.getPropertyValue(v)) || 0
-    for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-line'))) {
+    // 선의 자리를 먼저 다 재고 옮긴다: 선을 하나 옮길 때마다 다음 선을 재면 그때마다 스타일과 자리를 다시 계산했다(선 수만큼).
+    // 선은 저마다 제 자리에만 서서(absolute) 한 선을 옮겨도 다른 선의 자리는 그대로다
+    const all = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-line'))
+    const rects = all.map((l) => l.getBoundingClientRect())
+    for (const [i, l] of all.entries()) {
       const at = num(l, '--at')
       const from = num(l, '--from')
       const to = num(l, '--to')
-      const r = l.getBoundingClientRect()
+      const r = rects[i]
       if (l.classList.contains('is-v')) {
         // 같은 열 범위에서 이 선 위에서 끝나는 칸과 이 선 아래에서 시작하는 칸
         const across = (x: { c: HTMLElement }) => num(x.c, '--x') < to && from < num(x.c, '--x') + num(x.c, '--w')

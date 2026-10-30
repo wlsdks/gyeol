@@ -187,7 +187,11 @@ const faced = (cell: HTMLElement) => {
 /** 이 부품 장의 칸마다 테두리 자리를 정한다. 편집 화면(.is-live)이 아니면 아무것도 하지 않는다 */
 export function frameCells(area: HTMLElement): void {
   if (!area.classList.contains('is-live')) return
-  for (const cell of area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk')) {
+  // 모든 칸을 먼저 재고 그다음에 한꺼번에 적는다. 칸마다 재고 적기를 번갈아 하면 적을 때마다(이 값은 칸 안의 이름표가 물려받는다)
+  // 다음 칸을 재기 전에 칸 안 전체의 스타일을 다시 계산해서, 글자 하나 칠 때마다 칸 수만큼 되풀이했다. 이 값은 칸 안의 그린 것에
+  // 닿지 않아(테두리와 이름표만 쓴다) 잰 값은 같다. 값이 그대로인 칸은 적지 않는다
+  const cells = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk, :scope > .bk-stack > .bk'))
+  const frames = cells.map((cell) => {
     const box = cell.getBoundingClientRect()
     const k = cell.offsetWidth ? box.width / cell.offsetWidth : 1
     const ink = !k || faced(cell) ? null : inkBox(cell)
@@ -197,11 +201,13 @@ export function frameCells(area: HTMLElement): void {
     const b = ink ? Math.max(0, (box.bottom - ink.bottom) / k) : 0
     const l = ink ? Math.max(0, (ink.left - box.left) / k) : 0
     const r = ink ? Math.max(0, (box.right - ink.right) / k) : 0
-    cell.style.setProperty('--fr-t', at(t))
-    cell.style.setProperty('--fr-b', at(b))
-    cell.style.setProperty('--fr-l', at(l))
-    cell.style.setProperty('--fr-r', at(r))
-  }
+    return [at(t), at(b), at(l), at(r)]
+  })
+  cells.forEach((cell, i) => {
+    ;['--fr-t', '--fr-b', '--fr-l', '--fr-r'].forEach((name, j) => {
+      if (cell.style.getPropertyValue(name) !== frames[i][j]) cell.style.setProperty(name, frames[i][j])
+    })
+  })
 }
 
 /** 칸의 테두리가 그려진 네모 (화면 px). 고른 부품 위에 도구를 띄울 때 테두리 바로 위에 두려고 */

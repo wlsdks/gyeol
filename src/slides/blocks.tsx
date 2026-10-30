@@ -487,6 +487,19 @@ function loadedFonts(): number {
   return n
 }
 
+/** 칸 표시의 자리(halos.ts가 .ed에 적는 --ed-*)를 뺀 스타일. 이 값은 맞추는 동안 숨는 칸 표시(.ed-halo)만 쓴다 */
+const withoutHalo = (style: string | null) => (style ?? '').replace(/--ed-[\w-]+:[^;]*;?\s*/g, '')
+
+/**
+ * 맞추기에 닿을 수 있는 바뀜인지. 칸 표시의 자리만 바뀐 것은 아니다: 글자 하나 칠 때마다 맞춘 뒤에 칸 표시가 제 자리를 고쳐 적어서,
+ * 그것을 바뀐 것으로 세면 같은 키에 장이 한 번 더 그려질 때(고른 것, 넘침 알림 같은) 같은 값으로 다시 맞췄다(느린 PC에서 키 하나가 두 배)
+ */
+function touches(r: MutationRecord): boolean {
+  if (r.type !== 'attributes' || r.attributeName !== 'style') return true
+  const el = r.target as HTMLElement
+  return !el.classList.contains('ed') || withoutHalo(r.oldValue) !== withoutHalo(el.getAttribute('style'))
+}
+
 /** 본문 상자 밖에서 맞추기에 닿는 것: 본문 상자의 크기, 장의 클래스(테마, 글꼴, 글자 크기, 바탕)와 스타일(색), 받은 글꼴 */
 function outerSign(area: HTMLElement): string {
   const slide = area.closest('.slide')
@@ -518,7 +531,7 @@ export function BlockArea() {
   const changed = useRef(true)
   const fitted = useRef('')
   const fitAll = (el: HTMLElement, rendered: boolean) => {
-    if (watch.current?.takeRecords().length) changed.current = true
+    if (watch.current?.takeRecords().some(touches)) changed.current = true
     const outer = outerSign(el)
     if (outer === fitted.current) {
       if (!changed.current) return
@@ -539,10 +552,10 @@ export function BlockArea() {
   useLayoutEffect(() => {
     const el = ref.current
     if (!el || typeof MutationObserver === 'undefined') return
-    const mo = new MutationObserver(() => {
-      changed.current = true
+    const mo = new MutationObserver((records) => {
+      if (records.some(touches)) changed.current = true
     })
-    mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true })
+    mo.observe(el, { subtree: true, childList: true, characterData: true, attributes: true, attributeOldValue: true })
     watch.current = mo
     return () => {
       mo.disconnect()

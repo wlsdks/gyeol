@@ -1,3 +1,24 @@
+/* 쌓기가 칸, 이음표, 크기 손잡이에 적는 값(fitBlocks.ts의 --bk-shift, --bk-shift-x, --bk-trim)은 그 상자의 자리와 높이에만 쓴다.
+   물려주지 않게 등록해 둔다: 물려주는 값이면 맞추기가 값을 적을 때마다 칸 안의 글과 그림 모두의 스타일을 다시 계산해서, 느린 PC에서
+   컴포넌트 장에 글자 하나를 칠 때 그것만 키마다 10ms 넘게 들었다(맞추는 동안 값을 여러 번 고친다). 안쪽에서 이 값을 읽는 곳은 없다 */
+@property --bk-shift {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --bk-shift-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --bk-trim {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
 .slide.l-compose {
   /* 줄 사이(쌓은 부품 사이도)와 옆 칸 사이 (deck/blocks/rules.ts의 BLOCK_GAP, BLOCK_COL_GAP) */
   --bk-gap: 48px;
