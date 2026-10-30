@@ -50,7 +50,7 @@ export const ASKS = [
     id: 'slide_focus',
     scope: 'slide',
     name: '핵심이 눈에 띄게',
-    description: '강조, 바탕, 움직임을 골라요',
+    description: '강조, 바탕, 모션을 골라요',
     prompt:
       '듣는 사람이 이 장에서 가장 먼저 봐야 할 것이 눈에 띄도록 강조할 항목(highlight), 장의 바탕(tone), 발표할 때 움직임(motion)을 골라 주세요. 발표 전체에서 반대 색이나 강조색 바탕이 너무 많아지지 않게 하세요.',
   },
@@ -101,8 +101,8 @@ export const ASKS = [
   {
     id: 'deck_look',
     scope: 'deck',
-    name: '테마와 움직임',
-    description: '듣는 사람에 맞게 테마와 움직임을 골라요',
+    name: '테마와 모션',
+    description: '듣는 사람에 맞게 테마와 모션을 골라요',
     prompt:
       '듣는 사람(audience)과 발표 방식(method)에 맞게 테마, 글꼴, 장 넘기기, 발표할 때 움직임을 골라 주세요. 장마다 바탕을 바꿀 필요가 있으면 섹션을 여는 장 위주로만 바꾸세요.',
   },

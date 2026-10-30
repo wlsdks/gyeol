@@ -29,7 +29,7 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
         <h2 className="ms-h">
           다른 슬라이드에도
           <Info label="다른 슬라이드에도 옮기는 것">
-            이 슬라이드의 장면, 장 넘기기, 움직임 정도를 다른 슬라이드에 그대로 옮겨요. 컴포넌트 슬라이드끼리는 연출과 같은 종류 컴포넌트의 움직임도 옮겨요. 글은 바뀌지 않아요.
+            이 슬라이드의 장면, 화면 전환, 모션 정도를 다른 슬라이드에 그대로 옮겨요. 컴포넌트 슬라이드끼리는 연출과 같은 종류 컴포넌트의 모션도 옮겨요. 글은 바뀌지 않아요.
           </Info>
         </h2>
         <button
@@ -42,7 +42,7 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
             setOpen(true)
           }}
         >
-          이 슬라이드의 움직임을 다른 슬라이드에도
+          이 슬라이드의 모션을 다른 슬라이드에도
         </button>
       </section>
     )
@@ -52,8 +52,8 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
   const preset = slide.layout === 'compose' ? currentPreset(slide, prefer) : null
   const what = [
     `장면 ${scene ? sceneSpec(scene).name : '없음'}`,
-    `장 넘기기 ${nameOf(SLIDE_TRANSITIONS, slide.options.transition ?? undefined)}`,
-    `움직임 정도 ${slide.options.motion ? nameOf(MOTIONS, slide.options.motion) : INHERIT}`,
+    `화면 전환 ${nameOf(SLIDE_TRANSITIONS, slide.options.transition ?? undefined)}`,
+    `모션 정도 ${slide.options.motion ? nameOf(MOTIONS, slide.options.motion) : INHERIT}`,
     preset && `연출 ${nameOf(MOTION_PRESETS, preset)}`,
   ].filter(Boolean)
   const toggle = (id: string) =>
@@ -68,21 +68,21 @@ export function MotionCopy({ deck, slide, prefer, toast }: { deck: Deck; slide: 
     const next = withMotionCopy(deck, slide.id, [...picked], prefer)
     setOpen(false)
     if (next === deck) {
-      toast?.show('고른 슬라이드가 이미 이 슬라이드와 같은 움직임이에요.')
+      toast?.show('고른 슬라이드가 이미 이 슬라이드와 같은 모션이에요.')
       return
     }
     replaceDeck(next)
-    toast?.show(`${chosen.length}장에 이 슬라이드의 움직임을 옮겼어요.`, undoAction(toast))
+    toast?.show(`${chosen.length}장에 이 슬라이드의 모션을 옮겼어요.`, undoAction(toast))
   }
 
   return (
     <section className="ms-sec">
       <h2 className="ms-h">다른 슬라이드에도</h2>
-      <div className="sp-plan mc-plan" role="group" aria-label="이 슬라이드의 움직임을 다른 슬라이드에도">
+      <div className="sp-plan mc-plan" role="group" aria-label="이 슬라이드의 모션을 다른 슬라이드에도">
         <p className="sp-plan-h">옮기는 것</p>
         <p className="sp-plan-p">
           {what.join(' · ')}
-          {slide.layout === 'compose' && ' · 같은 종류 컴포넌트의 움직임'}
+          {slide.layout === 'compose' && ' · 같은 종류 컴포넌트의 모션'}
         </p>
         <div className="mc-quick">
           <span className="sp-plan-h">옮길 슬라이드</span>

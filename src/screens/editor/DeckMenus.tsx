@@ -125,11 +125,11 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <Segmented className="seg-full" label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>
           <Segmented className="seg-full" label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
-          <p className="menu-h">움직임 정도</p>
+          <p className="menu-h">모션 정도</p>
           <div className="theme-row">
             <Segmented
               className="seg-full"
-              label="발표 전체의 움직임 정도"
+              label="발표 전체의 모션 정도"
               options={MOTIONS}
               value={motion}
               onPick={(id) => {
@@ -154,8 +154,8 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
               </button>
             )}
           </div>
-          <p className="menu-h">장 넘기기</p>
-          <Segmented className="seg-full" label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
+          <p className="menu-h">화면 전환</p>
+          <Segmented className="seg-full" label="화면 전환" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
           {/* 발표가 아니라 이 편집 화면의 보기 설정이라 맨 아래에 따로. 이 브라우저에 남는다(editor/zoom.ts) */}
           <div className="menu-sep" role="separator" />
           <div className="theme-toggle">

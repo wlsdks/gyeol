@@ -247,14 +247,14 @@ function EditorBody({ deck }: { deck: Deck }) {
                   이 슬라이드 설정
                 </button>
                 <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'motion'} onClick={side.motion}>
-                  움직임
+                  모션
                 </button>
                 <button type="button" role="tab" className="side-tab" aria-selected={side.tab === 'library'} onClick={() => blocks.setLibraryOpen(true)}>
                   컴포넌트
                 </button>
                 {blocks.libraryOpen && (
                   <Info label="컴포넌트 넣는 법">
-                    슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요. 그림에 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+                    슬라이드로 끌어다 놓거나 눌러서 넣어요. 아무 데나 놓아도 알맞은 자리에 맞춰져요. 그림에 마우스를 올리면 발표할 때의 모션을 보여 줘요.
                   </Info>
                 )}
                 {/* 좁은 창에서 슬라이드 위에 띄웠을 때만 보인다 */}

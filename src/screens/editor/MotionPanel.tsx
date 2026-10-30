@@ -26,7 +26,7 @@ export const INHERIT = '전체대로'
 
 /** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '전체대로' 하나로 묶는다 */
 export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
-  { id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 장 넘기기를 따라요.' },
+  { id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 화면 전환을 따라요.' },
   ...TRANSITIONS.filter((t) => t.id !== 'auto'),
 ]
 
@@ -56,7 +56,7 @@ export function MotionPanel({
   const setOptions = useDeck((s) => s.setOptions)
   const moving = motionOf(deck, slide) !== 'none'
   return (
-    <div className="ins mp" role="tabpanel" aria-label="움직임">
+    <div className="ins mp" role="tabpanel" aria-label="모션">
       {/* 장면: 장 전체를 한 컷으로. 고르기만 하면 되는 것이라 맨 위에 둔다 */}
       <section className="ins-sec sp">
         <h2 className="ins-h">장면</h2>
@@ -67,8 +67,8 @@ export function MotionPanel({
       <button type="button" className="mp-studio" onClick={onOpenStudio}>
         <StudioIcon />
         <span>
-          <b>움직임 편집</b>
-          <span className="mp-studio-d">크게 보면서 차례와 움직임을 고쳐요</span>
+          <b>모션 편집</b>
+          <span className="mp-studio-d">크게 보면서 차례와 모션을 고쳐요</span>
         </span>
         <ChevronIcon />
       </button>
@@ -82,18 +82,18 @@ export function MotionPanel({
         </div>
         {/* '전체대로'가 지금 무엇인지. 테마 메뉴의 값이 바뀌면 같이 바뀐다 */}
         <p className="mp-inherit">
-          발표 전체는 움직임 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 장 넘기기 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+          발표 전체는 모션 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 화면 전환 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
         </p>
-        <Opt label="움직임 정도" wide>
+        <Opt label="모션 정도" wide>
           <Segmented<Motion | undefined>
             className="seg-fill"
-            label="이 슬라이드의 움직임 정도"
-            options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
+            label="이 슬라이드의 모션 정도"
+            options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 정도를 따라요.' }, ...MOTIONS]}
             value={slide.options.motion ?? undefined}
             onPick={(m) => setOptions(slide.id, { motion: m })}
           />
         </Opt>
-        <Opt label="장 넘기기" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 뒤로 돌아갈 때도 같은 모습으로 되돌아가요.">
+        <Opt label="화면 전환" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 뒤로 돌아갈 때도 같은 모습으로 되돌아가요.">
           <div className="mp-grid" role="group" aria-label="이 슬라이드로 넘어올 때">
             {SLIDE_TRANSITIONS.map((t) => {
               const on = (slide.options.transition ?? undefined) === t.id
@@ -275,14 +275,14 @@ function Row({
             <span className="mp-name">{name}</span>
             <span className="mp-sum">{summary}</span>
           </button>
-          <button type="button" className="icon-btn mp-play" title="이것만 보기" aria-label={`${name} 움직임 보기`} disabled={effect === 'none'} onClick={play}>
+          <button type="button" className="icon-btn mp-play" title="이것만 보기" aria-label={`${name} 모션 보기`} disabled={effect === 'none'} onClick={play}>
             <PlayIcon />
           </button>
         </div>
         {open && (
           <div className="mp-edit">
-            <Opt label="움직임" wide>
-              <div className="mp-grid" role="group" aria-label="움직임">
+            <Opt label="모션" wide>
+              <div className="mp-grid" role="group" aria-label="모션">
                 {BLOCK_EFFECTS.map((x) => (
                   <button
                     key={x.id}

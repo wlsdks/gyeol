@@ -32,7 +32,7 @@ export function ScenePicker({ deck, slide, thumb = THUMB_W }: { deck: Deck; slid
   }
   return (
     <>
-      {level === 'none' && <p className="sp-quiet">움직임이 ‘없음’이라 발표할 때 장면이 쉬어요.</p>}
+      {level === 'none' && <p className="sp-quiet">모션이 ‘없음’이라 발표할 때 장면이 쉬어요.</p>}
       <div className="sp-grid" role="group" aria-label="장면">
         <SceneCard deck={look} slide={slide} id={null} on={!now} width={thumb} level={level} onPick={() => pick(undefined)} />
         {fits.map((id) => (
@@ -81,7 +81,7 @@ const SceneCard = memo(function SceneCard({
       type="button"
       className={cx('sp-card', on && 'is-on')}
       aria-pressed={on}
-      title={spec?.description ?? '장면 없이, 아래에서 고른 움직임대로 움직여요.'}
+      title={spec?.description ?? '장면 없이, 아래에서 고른 모션대로 움직여요.'}
       onClick={onPick}
       onPointerEnter={play}
       onFocus={play}
@@ -164,7 +164,7 @@ export function SceneOverride({ slide }: { slide: Slide }) {
   if (!now) return null
   return (
     <p className="sp-over">
-      <span>‘{SCENES.find((s) => s.id === now)?.name}’ 장면이 움직임과 빠르기를 정하고 있어요</span>
+      <span>‘{SCENES.find((s) => s.id === now)?.name}’ 장면이 모션과 빠르기를 정하고 있어요</span>
       <button type="button" className="mp-reset" onClick={() => setOptions(slide.id, { scene: undefined }, 'scene')}>
         장면 끄기
       </button>

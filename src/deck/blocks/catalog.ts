@@ -98,7 +98,7 @@ export const BLOCK_GROUPS: { name: string; short: string; description: string; t
   },
   { name: '흐름과 일정', short: '일정', description: '할 일, 일정표, 단계, 진행률, 순서', types: ['checks', 'gantt', 'process', 'timeline', 'progress', 'agenda'] },
   // 발표할 때의 움직임이 내용을 말하는 컴포넌트: 데이터가 건너가고, 갈라지고, 모이고, 조립된다. 다 보인 모습도 그 자체로 읽히는 그림이다
-  { name: '움직이는 컴포넌트', short: '움직임', description: '흐름, 연결도, 나누기, 모으기, 칸 조립', types: ['flow', 'network', 'split', 'merge', 'tiles'] },
+  { name: '움직이는 컴포넌트', short: '모션', description: '흐름, 연결도, 나누기, 모으기, 칸 조립', types: ['flow', 'network', 'split', 'merge', 'tiles'] },
   { name: '비교와 표', short: '비교', description: '표, 두 안 비교, 평가표, 우선순위, 위치, 가격안', types: ['facts', 'risks', 'swot', 'compare', 'rating', 'matrix', 'position', 'pricing', 'table'] },
   { name: '이미지와 사람', short: '이미지', description: '화면 캡처, 사진, 담당자, 로고', types: ['image', 'people', 'logos'] },
 ]
@@ -133,7 +133,7 @@ export const BLOCK_WHENS: { id: BlockWhen; name: string; description: string }[]
 
 export const BLOCK_SPEEDS: { id: BlockSpeed; name: string; description: string }[] = [
   { id: 'fast', name: '빠르게', description: '짧게 움직여요' },
-  { id: 'normal', name: '보통', description: '움직임 정도에 맞춘 빠르기예요' },
+  { id: 'normal', name: '보통', description: '모션 정도에 맞춘 빠르기예요' },
   { id: 'slow', name: '천천히', description: '길게 움직여 눈길을 끌어요' },
 ]
 

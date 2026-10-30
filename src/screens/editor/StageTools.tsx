@@ -224,7 +224,7 @@ export function StageTools({
         <div className="stage-tools-l">
           <button type="button" className="btn btn-ghost btn-sm" onClick={onReplay}>
             <PlayIcon />
-            움직임 다시 보기
+            모션 다시 보기
           </button>
           <p className="stage-peek" title="빈칸과 편집 표시는 보이지 않아요">발표 화면에서 보이는 모습이에요</p>
         </div>
@@ -247,7 +247,7 @@ export function StageTools({
             type="button"
             className={cx('btn btn-sm stage-side', side.settingsShown ? 'is-on' : 'btn-ghost')}
             aria-pressed={side.settingsShown}
-            title="이 슬라이드의 레이아웃, 모양, 바탕, 움직임"
+            title="이 슬라이드의 레이아웃, 모양, 바탕, 모션"
             onClick={side.toggleSettings}
           >
             <SlidersIcon />

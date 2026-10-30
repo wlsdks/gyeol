@@ -174,7 +174,7 @@ export function Timeline({
               </Info>
             </p>
           ) : quiet === 'none' ? (
-            <p className="ms-tl-empty">움직임 정도가 ‘없음’이라 움직이지 않아요. 오른쪽 ‘이 슬라이드’에서 움직임 정도를 골라 보세요.</p>
+            <p className="ms-tl-empty">모션 정도가 ‘없음’이라 움직이지 않아요. 오른쪽 ‘이 슬라이드’에서 모션 정도를 골라 보세요.</p>
           ) : (
             none && <p className="ms-tl-empty">이 슬라이드에는 움직이는 것이 없어요.</p>
           )}
@@ -222,7 +222,7 @@ export function Timeline({
 }
 
 function Bar({ lane, span }: { lane: Lane; span: number }) {
-  if (lane.start < 0) return <span className="ms-still">움직임 없음</span>
+  if (lane.start < 0) return <span className="ms-still">모션 없음</span>
   const s = lane.start / span
   const e = Math.max(lane.end, lane.start + 60) / span
   return <span className="ms-bar" style={{ left: `${s * 100}%`, width: `${(e - s) * 100}%`, '--s': s, '--e': e } as CSSProperties} />

@@ -342,7 +342,7 @@ export function System() {
           <section id="sys-parts" className="sys-group">
             <h2 className="sys-h2">컴포넌트</h2>
             <p className="sys-group-desc">
-              컴포넌트 슬라이드에 끌어다 놓는 컴포넌트예요. 정해진 줄과 너비에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 움직임을 보여 줘요.
+              컴포넌트 슬라이드에 끌어다 놓는 컴포넌트예요. 정해진 줄과 너비에만 들어가서 대충 놓아도 반듯해요. 마우스를 올리면 발표할 때의 모션을 보여 줘요.
             </p>
             {width > 0 &&
               BLOCK_GROUPS.map((g) => (
@@ -399,7 +399,7 @@ function PartCard({ look, type, blank }: { look: Look; type: BlockType; blank: b
       <figcaption>
         <b>{spec.name}</b>
         <span>{spec.description}</span>
-        <span className="sys-part-meta">움직임: {spec.motion}</span>
+        <span className="sys-part-meta">모션: {spec.motion}</span>
         <span className="sys-part-meta">{NARROWEST[spec.minSpan] ?? ''}까지 좁아져요</span>
       </figcaption>
     </figure>

@@ -171,12 +171,12 @@ export function BlockTools({
           type="button"
           className={cx('bk-tool', menu === 'motion' && 'is-on')}
           aria-expanded={menu === 'motion'}
-          title="발표할 때의 움직임"
+          title="발표할 때의 모션"
           onClick={() => setMenu(menu === 'motion' ? null : 'motion')}
         >
           <MotionIcon />
           {/* 기본이면 무엇을 하는 단추인지를, 고른 것이 있으면 그 이름을 ('기본'만 보이면 무엇의 기본인지 모른다) */}
-          <span>{scened ? '장면대로' : effect === 'auto' ? '움직임' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
+          <span>{scened ? '장면대로' : effect === 'auto' ? '모션' : BLOCK_EFFECTS.find((x) => x.id === effect)?.name}</span>
         </button>
         {menu === 'motion' && scened && (
           // 움직임을 고르게 두면 골라도 발표에서 달라지지 않아 고장 난 것처럼 보였다. 까닭과 끄는 단추만 둔다
@@ -331,7 +331,7 @@ export function BlockTools({
                   }}
                 >
                   <b>{SAVE_NAMES[x.kind]}</b>
-                  <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 움직임까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 움직임까지`}</span>
+                  <span className="bk-menu-d">{x.kind === 'block' ? `${spec.name}, 글과 바탕, 모션까지` : x.kind === 'row' ? `컴포넌트 ${x.count}개를 놓인 비율 그대로` : `제목과 컴포넌트 ${x.count}개, 바탕과 모션까지`}</span>
                 </button>
               </li>
             ))}

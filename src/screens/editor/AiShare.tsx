@@ -648,9 +648,9 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       if (panes && op.pane !== undefined) parts.push(`${panes.name} 너비: ${sideName(op.pane ?? panes.base, panes.base)}`)
       if (op.contain !== undefined) parts.push(op.contain ? '이미지 전체 보이기' : '이미지로 채우기')
       if (op.tone) parts.push(`바탕: ${TONES.find((t) => t.id === op.tone)?.name}`)
-      if (op.motion !== undefined) parts.push(op.motion === null ? '움직임: 발표 전체 설정대로' : `움직임: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
+      if (op.motion !== undefined) parts.push(op.motion === null ? '모션: 발표 전체 설정대로' : `모션: ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
       if (op.transition !== undefined)
-        parts.push(op.transition === null || op.transition === 'auto' ? '장 넘기기: 발표 전체 설정대로' : `장 넘기기: ${TRANSITIONS.find((t) => t.id === op.transition)?.name}`)
+        parts.push(op.transition === null || op.transition === 'auto' ? '화면 전환: 발표 전체 설정대로' : `화면 전환: ${TRANSITIONS.find((t) => t.id === op.transition)?.name}`)
       // 장면은 줄의 제목으로: 장면 연출 부탁은 장마다 이 한 줄이라, 무엇을 고쳤는지보다 어느 장에 어떤 장면인지가 먼저 읽혀야 한다
       // also: 한 op는 하나라도 안 되면 통째로 건너뛰므로, 장면 줄이 다른 설정 때문에 빠졌을 때 그 설정을 이유에 적는다
       if (op.scene !== undefined)
@@ -661,8 +661,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       const parts: string[] = []
       if (op.theme) parts.push(`테마: ${THEMES[deck.theme.id].name} → ${THEMES[op.theme].name}`)
       if (op.accent !== undefined) parts.push(op.accent === null ? '강조색: 테마 기본색' : `강조색: ${op.accent}`)
-      if (op.motion) parts.push(`움직임 정도: ${MOTIONS.find((m) => m.id === (deck.motion ?? 'calm'))?.name} → ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
-      return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '움직임 정도 바꾸기', detail: parts.join(', ') }
+      if (op.motion) parts.push(`모션 정도: ${MOTIONS.find((m) => m.id === (deck.motion ?? 'calm'))?.name} → ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
+      return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '모션 정도 바꾸기', detail: parts.join(', ') }
     }
     case 'set_guide':
       return { text: `${name(op.slide)}의 안내 바꾸기`, detail: op.text }
@@ -680,7 +680,7 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       const b = /^p\d+$/.test(op.block) ? undefined : deck.slides.flatMap((s) => s.blocks ?? []).find((x) => shapeBlockId(x) === op.block)
       if (op.variant) parts.push(`모양: ${(b && BLOCKS[b.type].variants?.find((v) => v.id === op.variant)?.name) ?? op.variant}`)
       if (op.look) parts.push(`바탕: ${BLOCK_LOOKS.find((l) => l.id === op.look)?.name}`)
-      if (op.effect) parts.push(`움직임: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)
+      if (op.effect) parts.push(`모션: ${BLOCK_EFFECTS.find((e) => e.id === op.effect)?.name}`)
       if (op.when) parts.push(`나오는 때: ${BLOCK_WHENS.find((w) => w.id === op.when)?.name}`)
       if (op.from) parts.push(`들어오는 쪽: ${BLOCK_FROMS.find((f) => f.id === op.from)?.name}`)
       if (op.speed) parts.push(`빠르기: ${BLOCK_SPEEDS.find((x) => x.id === op.speed)?.name}`)

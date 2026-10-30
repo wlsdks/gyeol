@@ -187,13 +187,13 @@ export function MotionStudio({
   }
 
   return (
-    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="움직임 편집" tabIndex={-1} data-autofocus>
+    <div ref={dialogRef} className="ms" role="dialog" aria-modal="true" aria-label="모션 편집" tabIndex={-1} data-autofocus>
       <header className="ms-top">
         <button type="button" className="btn btn-ghost btn-sm ms-back" onClick={onClose} title="편집으로 돌아가기 (Esc)">
           <BackIcon />
           편집으로
         </button>
-        <h1 className="ms-title">움직임 편집</h1>
+        <h1 className="ms-title">모션 편집</h1>
         <nav className="ms-nav" aria-label="슬라이드 넘기기">
           <button type="button" className="icon-btn ms-prev" aria-label="앞 슬라이드" title="앞 슬라이드 (←)" disabled={at <= 0} onClick={() => go(-1)}>
             <ChevronIcon />
@@ -248,7 +248,7 @@ export function MotionStudio({
 
         <Timeline player={player} onEnter={prev && !reduced ? enter : null} quiet={reduced ? 'reduced' : level === 'none' ? 'none' : null} order={compose ? ids : []} selected={selected} hot={hot} onSelect={setSelected} onHot={setHot} onMove={move} />
 
-        <aside className="ms-side" aria-label="움직임 고르기">
+        <aside className="ms-side" aria-label="모션 고르기">
           {/* 장면: 장 전체를 한 컷으로. 고르면 무대가 새로 그려져 그 장면으로 처음부터 움직인다 */}
           <section className="ms-sec sp">
             <h2 className="ms-h">장면</h2>
@@ -259,7 +259,7 @@ export function MotionStudio({
           ) : (
             <section className="ms-sec ms-convert">
               <h2 className="ms-h">컴포넌트마다 고르기</h2>
-              <p>컴포넌트 슬라이드로 바꾸면 컴포넌트마다 나오는 차례와 움직임을 고를 수 있어요. 글은 그대로예요.</p>
+              <p>컴포넌트 슬라이드로 바꾸면 컴포넌트마다 나오는 차례와 모션을 고를 수 있어요. 글은 그대로예요.</p>
               <button type="button" className="btn btn-ghost btn-sm" onClick={onConvert}>
                 컴포넌트 슬라이드로 바꾸기
               </button>
@@ -437,7 +437,7 @@ function BlockMotion({
   if (!block) {
     return (
       <section className="ms-sec">
-        <p className="ms-none">슬라이드나 시간표에서 컴포넌트를 고르면 움직임을 바꿀 수 있어요.</p>
+        <p className="ms-none">슬라이드나 시간표에서 컴포넌트를 고르면 모션을 바꿀 수 있어요.</p>
       </section>
     )
   }
@@ -463,8 +463,8 @@ function BlockMotion({
       {scened ? (
         <SceneOverride slide={slide} />
       ) : (
-        <Opt label="움직임" wide>
-          <div className="ms-fxs" role="group" aria-label="움직임">
+        <Opt label="모션" wide>
+          <div className="ms-fxs" role="group" aria-label="모션">
             {BLOCK_EFFECTS.map((x) => (
               <button
                 key={x.id}
@@ -509,18 +509,18 @@ function SlideMotion({ deck, slide, onTransition }: { deck: Deck; slide: Slide; 
       <h2 className="ms-h">이 슬라이드</h2>
       {/* 움직임 탭과 같은 말: 예전에는 여기만 '기본'이라 같은 값이 두 이름으로 보였고, 기본이 무엇인지도 알 수 없었다 */}
       <p className="mp-inherit">
-        발표 전체는 움직임 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 장 넘기기 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+        발표 전체는 모션 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 화면 전환 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
       </p>
-      <Opt label="움직임 정도" wide>
+      <Opt label="모션 정도" wide>
         <Segmented<Motion | undefined>
           className="seg-fill"
-          label="이 슬라이드의 움직임 정도"
-          options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 움직임 정도를 따라요.' }, ...MOTIONS]}
+          label="이 슬라이드의 모션 정도"
+          options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 정도를 따라요.' }, ...MOTIONS]}
           value={slide.options.motion ?? undefined}
           onPick={onPick}
         />
       </Opt>
-      <Opt label="장 넘기기" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 고르면 무대에서 앞 슬라이드부터 한 번 넘겨 보여요.">
+      <Opt label="화면 전환" wide tip="앞 슬라이드에서 이 슬라이드로 넘어올 때의 모습이에요. 고르면 무대에서 앞 슬라이드부터 한 번 넘겨 보여요.">
         <div className="mp-grid" role="group" aria-label="이 슬라이드로 넘어올 때">
           {SLIDE_TRANSITIONS.map((t) => {
             const on = own === t.id

@@ -133,7 +133,7 @@ export const FOOTERS: { id: FooterMode; name: string; description: string }[] = 
 ]
 
 export const TRANSITIONS: { id: Transition; name: string; description: string }[] = [
-  { id: 'auto', name: '움직임에 맞춰', description: '차분하게는 흐리게, 생동감은 밀기로 넘어가요.' },
+  { id: 'auto', name: '모션에 맞춰', description: '차분하게는 흐리게, 생동감은 밀기로 넘어가요.' },
   { id: 'none', name: '바로', description: '전환 없이 바로 다음 슬라이드가 보여요.' },
   { id: 'fade', name: '흐리게', description: '앞 슬라이드가 흐려지며 다음 슬라이드가 나타나요.' },
   { id: 'slide', name: '밀기', description: '다음 슬라이드가 옆에서 밀고 들어와요.' },
