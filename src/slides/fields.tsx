@@ -360,7 +360,7 @@ function Editable({
           }
           if (e.key === 'Tab' && !e.nativeEvent.isComposing && focusNextField(e.currentTarget, e.shiftKey ? -1 : 1)) e.preventDefault()
         }}
-        onDoubleClick={(e) => selectWord(e.currentTarget)}
+        onDoubleClick={(e) => selectWord(e.currentTarget, e.clientX, e.clientY)}
         onPaste={(e) => {
           e.preventDefault()
           // 서식 없이 글만. 윈도우의 줄 끝(\r\n), 엑셀 칸 사이의 탭, 붙지 않는 빈칸은 보통 글로 바꾸고 앞뒤의 빈 줄은 뺀다:
@@ -381,16 +381,17 @@ function Editable({
  * 두 번 눌러 고른 낱말을 띄어 쓴 말 하나(어절)로 넓힌다(파워포인트처럼). 크롬은 숫자와 한글 사이도 낱말 경계로 봐서 '20분'을
  * 두 번 누르면 20만 골라 '30분'을 치면 '30분분'이 됐고, 칸의 마지막 글자 오른쪽 반을 두 번 누르면 아무것도 고르지 않아 친 글이
  * 뒤에 붙었다. 괄호, 따옴표, 문장 부호에서는 끊는다(숫자 사이의 쉼표, 점, 쌍점, 빗금은 숫자의 일부: 1,200명, 4.8억, 10:30).
- * 빈칸 위를 두 번 누른 것은 그대로 둔다
+ * 빈칸 위를 두 번 누른 것은 그대로 둔다.
+ * 크롬은 낱말의 끝 글자 오른쪽 반을 두 번 누르면 낱말 대신 뒤의 빈칸 하나를 고른다(글자 커서가 낱말 끝에 서고, 거기서 다음 '낱말'인 빈칸을 잡는다).
+ * 그래서 빈칸만 골랐으면 누른 자리(x, y)의 글자를 보고, 빈칸이 아닌 글자 위였으면 그 글자의 어절을 고른다. 예전에는 '상담 챗봇'의 '담'을
+ * 두 번 누르면 빈칸이 골라져, 이어 친 글이 낱말을 바꾸지 않고 빈칸 자리에 들어갔다.
+ * outside면 칸 밖을 두 번 누른 것(SlideStage): 누른 자리가 이 칸의 글자 위일 때만 고른다
  */
-function selectWord(el: HTMLElement) {
+export function selectWord(el: HTMLElement, x?: number, y?: number, outside = false) {
   const sel = getSelection()
   if (!sel?.rangeCount || !sel.anchorNode || !el.contains(sel.anchorNode)) return
   const r = sel.getRangeAt(0)
-  // 빈칸이나 문장 부호만 고른 것(두 번 누른 곳이 그 위)은 그대로 둔다
   const marks = /[\s()[\]{}<>«»"'“”‘’,.!?;:…·/]/
-  const picked = r.toString()
-  if (picked && [...picked].every((c) => marks.test(c))) return
   // 칸의 글에서 몇째 글자인지 (숫자 칸은 단위 칸(span)으로 나뉘어 글 마디가 여럿이다)
   const at = (node: Node, offset: number) => {
     const pre = document.createRange()
@@ -398,16 +399,6 @@ function selectWord(el: HTMLElement) {
     pre.setEnd(node, offset)
     return pre.toString().length
   }
-  const text = el.textContent ?? ''
-  const cut = (i: number) => marks.test(text[i]) && !(/[,.:/]/.test(text[i]) && /\d/.test(text[i - 1] ?? '') && /\d/.test(text[i + 1] ?? ''))
-  let s = at(r.startContainer, r.startOffset)
-  let e = at(r.endContainer, r.endOffset)
-  // 윈도우의 크롬은 낱말 뒤의 빈칸까지 고른다. 끊는 글자를 먼저 빼고 넓힌다
-  while (s < e && cut(s)) s++
-  while (e > s && cut(e - 1)) e--
-  while (s > 0 && !cut(s - 1)) s--
-  while (e < text.length && !cut(e)) e++
-  if (s >= e) return
   const point = (n: number): [Node, number] => {
     const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     for (let t = walk.nextNode(); t; t = walk.nextNode()) {
@@ -417,7 +408,36 @@ function selectWord(el: HTMLElement) {
     }
     return [el, el.childNodes.length]
   }
+  const text = el.textContent ?? ''
+  const cut = (i: number) => marks.test(text[i]) && !(/[,.:/]/.test(text[i]) && /\d/.test(text[i - 1] ?? '') && /\d/.test(text[i + 1] ?? ''))
+  let s = at(r.startContainer, r.startOffset)
+  let e = at(r.endContainer, r.endOffset)
+  // 빈칸이나 문장 부호만 골랐으면: 누른 자리가 그 앞뒤 글자 위였는지 본다. 정말 빈칸 위를 두 번 누른 것이면 그대로 둔다
+  const picked = r.toString()
+  // outside: 칸 밖(글자가 칸 상자 위아래로 나온 곳)을 두 번 누른 것. 크롬이 고른 것은 믿지 않고 누른 자리의 글자로만
+  if (outside || (picked && [...picked].every((c) => marks.test(c)))) {
+    // 고른 빈칸의 앞뒤 글자부터, 없으면 칸의 모든 글자에서 (쓸 때 크게 보기로 장이 커지는 동안 두 번째 누름은 다른 글자 옆에 닿기도 한다)
+    const near = [s - 1, e, ...text.split('').map((_, i) => i)]
+    const hit = x === undefined || y === undefined ? -1 : near.find((i) => i >= 0 && i < text.length && !cut(i) && charHas(point(i), point(i + 1), x, y))
+    if (hit === undefined || hit < 0) return
+    s = hit
+    e = hit + 1
+  }
+  // 윈도우의 크롬은 낱말 뒤의 빈칸까지 고른다. 끊는 글자를 먼저 빼고 넓힌다
+  while (s < e && cut(s)) s++
+  while (e > s && cut(e - 1)) e--
+  while (s > 0 && !cut(s - 1)) s--
+  while (e < text.length && !cut(e)) e++
+  if (s >= e) return
   sel.setBaseAndExtent(...point(s), ...point(e))
+}
+
+/** 글자 하나(from~to)가 그려진 네모에 (x, y)가 드는지. 줄 높이 안이면 위아래는 너그럽게 */
+function charHas(from: [Node, number], to: [Node, number], x: number, y: number): boolean {
+  const r = document.createRange()
+  r.setStart(...from)
+  r.setEnd(...to)
+  return [...r.getClientRects()].some((q) => x >= q.left - 1 && x <= q.right + 1 && y >= q.top - 2 && y <= q.bottom + 2)
 }
 
 /**

@@ -9,6 +9,7 @@ import { cx } from '../../lib/cx'
 import { motionEngine } from '../../motion/engine'
 import { BlockEditContext } from '../../slides/blockEdit'
 import type { SlideActions } from '../../slides/context'
+import { selectWord } from '../../slides/fields'
 import { overflowAt, type OverField } from '../../slides/overflow'
 import { FitSlide, pageProps, SlideCanvas } from '../../slides/SlideCanvas'
 import { useDeck } from '../../store/deckStore'
@@ -96,6 +97,19 @@ export function SlideStage({
   const zoom = useTypingZoom(canvasRef, zoomOn && !peek && !preview && !peekSlide, slide.id)
   // 쓰는 동안 손을 움직이기 전까지 장 위의 컴포넌트 도구 막대를 숨긴다 (쓸 때 크게 보기를 꺼도)
   useTypingStill(canvasRef)
+  // 두 번 누르기가 쓰는 칸 바로 밖(글자가 칸 상자 위아래로 나온 곳, 장이 커지는 동안 조금 비켜 간 곳)에 닿아도 그 칸의 낱말을 고른다.
+  // 칸의 처리기(fields.tsx)는 칸 안을 두 번 누른 것만 받아서, 크롬이 고른 낱말 뒤 빈칸이 그대로 남았다
+  useEffect(() => {
+    const root = canvasRef.current
+    if (!root) return
+    const on = (e: MouseEvent) => {
+      const a = document.activeElement
+      if (!(a instanceof HTMLElement) || !a.classList.contains('ed-input') || (e.target as Element).closest?.('.ed-input')) return
+      if (a.closest('.slide') === (e.target as Element).closest?.('.slide')) selectWord(a, e.clientX, e.clientY, true)
+    }
+    root.addEventListener('dblclick', on)
+    return () => root.removeEventListener('dblclick', on)
+  }, [])
 
   const engine = useMemo(() => motionEngine(), [])
   const level = motionOf(deck, slide)
