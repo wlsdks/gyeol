@@ -1071,6 +1071,31 @@
   color: #1f8a4c;
 }
 
+/* 비워 둬도 되는 칸 (Inspector의 Optional). 빈칸 줄 아래에 한 단계 옅게. (i)의 설명은 가려진 칸처럼 줄 아래에 연다 */
+.ins-optional {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ins-optional-t {
+  min-width: 0;
+}
+
+.ins-optional-n {
+  color: var(--ink-2);
+}
+
+.ins-optional > .info {
+  position: static;
+  flex: none;
+}
+
 /* 레이아웃에 없어 가려진 칸 (Inspector의 Unshown). 빈칸 줄 아래에 같은 크기로.
    (i)가 칸 가운데쯤에 있어 설명을 (i)에 맞추면 좁은 창에서 칸 밖으로 잘린다: 줄의 왼쪽 끝에 맞춰 줄 아래에 연다 */
 .ins-unshown {

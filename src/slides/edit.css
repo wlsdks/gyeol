@@ -80,6 +80,16 @@
   opacity: 0.32;
 }
 
+/* 비워 둬도 되는 칸(부제, 발표자, 출처 같은)은 안내를 한 단계 옅게: 꼭 채울 칸과 같은 진하기면 모두 채워야 하는 것처럼 보였다.
+   빈칸으로 세지 않고, 비워 두면 발표 화면에 나오지 않는다 */
+.ed.is-optional > .ed-hint {
+  opacity: 0.3;
+}
+
+.ed.is-optional:focus-within > .ed-hint {
+  opacity: 0.22;
+}
+
 .ed:not(.is-empty) > .ed-hint {
   display: none;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isBlankItem, presentable, shownOnly, unshownCount } from './fields'
-import { emptyItem, makeSlide } from './generate'
+import { deckBlanks, deckMissingCount, isBlankItem, missingFields, optionalBlanks, presentable, shownOnly, unshownCount } from './fields'
+import { createDeck, emptyItem, makeSlide } from './generate'
 import { BLOCKS, withLayout } from './blocks'
 import { labelFor, labelIn, LAYOUT_ORDER, LAYOUTS } from './layouts'
 import type { Item } from './types'
@@ -143,5 +143,29 @@ describe('칸의 이름 (labelFor)', () => {
       for (const f of spec.items?.fields ?? []) expect(labelIn(spec, f.key, f.key, 0), `${spec.type}.items.${f.key}`).not.toBe('')
     }
     expect(labelIn(BLOCKS.bullets, 'title', 'title', 1)).toBe('줄 2 요점')
+  })
+})
+
+describe('빈칸과 비워 둬도 되는 칸', () => {
+  const deck = createDeck({ type: 'weekly', audience: 'practitioner', minutes: 10, method: 'live', title: '주간 업무 보고', org: '', presenter: '', theme: 'white' })
+  const cover = deck.slides.find((s) => s.layout === 'cover')!
+
+  it('표지의 부제, 발표자, 소속, 로고는 빈칸으로 세지 않고 따로 알린다', () => {
+    expect(missingFields(cover, deck.meta)).toEqual([])
+    const keys = optionalBlanks(cover, deck.meta).map((m) => m.key)
+    expect(keys).toEqual(expect.arrayContaining(['lead', '$presenter', '$org', '$logo']))
+  })
+
+  it('결정을 받지 않는 발표의 표지에는 그리지 않는 결정 요청을 늘어놓지 않는다', () => {
+    expect(optionalBlanks(cover, deck.meta).map((m) => m.key)).not.toContain('ask')
+    const biz = createDeck({ type: 'business', audience: 'exec', minutes: 20, method: 'live', title: '제안', org: '', presenter: '', theme: 'white' })
+    expect(optionalBlanks(biz.slides[0], biz.meta).map((m) => m.key)).toContain('ask')
+  })
+
+  it('발표의 빈칸 수는 장마다 센 빈칸을 더한 것 (숨긴 장은 빼고)', () => {
+    const hidden = { ...deck, slides: deck.slides.map((s, i) => (i === 1 ? { ...s, hidden: true } : s)) }
+    const sum = hidden.slides.filter((s) => !s.hidden).reduce((n, s) => n + missingFields(s, hidden.meta).length, 0)
+    expect(deckMissingCount(hidden)).toBe(sum)
+    expect(deckBlanks(hidden).every((b) => !b.slide.hidden && b.missing.length > 0)).toBe(true)
   })
 })

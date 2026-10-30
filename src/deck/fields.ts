@@ -1,3 +1,4 @@
+import { asksDecision } from './blueprints'
 import { allBlocks, blockMissing, blockNames, BLOCKS } from './blocks'
 import { LAYOUTS } from './layouts'
 import type { Deck, DeckMeta, Item, ItemKey, MetaKey, Slide } from './types'
@@ -104,7 +105,28 @@ export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
   return out
 }
 
-type CellSpec = { fields: { key: string }[]; items?: { max: number; fields: { key: ItemKey }[] } }
+/**
+ * 비워 둬도 되는 칸 가운데 비어 있는 것 (장의 칸만. 부제, 발표자, 소속, 로고, 출처 같은).
+ * 빈칸(missingFields)으로 세지 않아서 표지에 부제와 발표자가 비어도 '빈칸을 모두 채웠어요'라고 했는데,
+ * 그 말만으로는 일부러 세지 않은 것인지 몰랐다. 따로 보여 주려고 꺼낸다.
+ * 비워 두면 정해진 이름으로 보이는 칸(named)과, 이 발표에서 그리지 않는 칸(결정을 받지 않는 발표의 결정 요청)은 뺀다
+ */
+export function optionalBlanks(slide: Slide, meta: DeckMeta): Missing[] {
+  return LAYOUTS[slide.layout].fields
+    .filter((f) => f.optional && !f.named && !readField(slide, meta, f.key).trim())
+    .filter((f) => !(slide.layout === 'cover' && f.key === 'ask' && !asksDecision(meta.type)))
+    .map((f) => ({ key: f.key, label: f.label }))
+}
+
+/** 발표에 들어가는 장(숨긴 장은 빼고)마다 남은 빈칸. 빈칸이 없는 장은 없다. 편집기의 빈칸 세기는 모두 이것(missingFields)을 쓴다 */
+export function deckBlanks(deck: Deck): { slide: Slide; missing: Missing[] }[] {
+  return deck.slides.filter((s) => !s.hidden).flatMap((slide) => {
+    const missing = missingFields(slide, deck.meta)
+    return missing.length ? [{ slide, missing }] : []
+  })
+}
+
+type CellSpec ={ fields: { key: string }[]; items?: { max: number; fields: { key: ItemKey }[] } }
 type Cells = { fields: Record<string, string>; items: Item[] }
 
 /** 칸 정의가 그리는 칸만 남긴 것: 정의에 없는 칸, 정의에 없는 항목의 칸, 최대 수 너머의 항목을 뺀다 */
@@ -140,7 +162,7 @@ export function unshownCount(slide: Slide): number {
 }
 
 export function deckMissingCount(deck: Deck): number {
-  return deck.slides.filter((s) => !s.hidden).reduce((n, s) => n + missingFields(s, deck.meta).length, 0)
+  return deckBlanks(deck).reduce((n, b) => n + b.missing.length, 0)
 }
 
 export interface PageInfo {

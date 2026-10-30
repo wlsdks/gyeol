@@ -211,6 +211,8 @@ interface FieldProps extends TextProps {
   fold?: boolean
   /** 글자 수 단계(fit)를 이 글로 고른다: 목록의 칸은 가장 긴 항목의 글 (IT) */
   fitText?: string
+  /** 비워 둬도 되는 칸. 편집할 때 빈 안내를 한 단계 옅게 그려 꼭 채울 칸과 구분한다 (빈칸으로 세지 않는 칸) */
+  optional?: boolean
 }
 
 function clean(text: string, multiline?: boolean): string {
@@ -219,7 +221,7 @@ function clean(text: string, multiline?: boolean): string {
   return multiline ? t : t.replace(/\s*\n\s*/g, ' ')
 }
 
-function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText, enterNext }: FieldProps) {
+function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', className, fit, multiline, oneLine, units, numeral, fold, fitText, enterNext, optional }: FieldProps) {
   const { mode } = useSlide()
   if (mode === 'final') {
     const text = value.trim()
@@ -255,6 +257,7 @@ function Field({ value, hint, label, fieldId, onChange, as: Tag = 'div', classNa
       multiline={multiline}
       numeral={numeral}
       enterNext={enterNext}
+      optional={optional}
     />
   )
 }
@@ -271,6 +274,7 @@ function Editable({
   multiline,
   numeral,
   enterNext,
+  optional,
 }: FieldProps & { style?: CSSProperties }) {
   const ref = useRef<HTMLSpanElement>(null)
   // 이 칸이 마지막으로 저장소에 보낸 값. 쓰는 동안 값이 이것과 다르게 바뀌면 바깥에서 바꾼 것이다(쓰다가 누른 되돌리기)
@@ -298,7 +302,7 @@ function Editable({
   }, [value, numeral, multiline])
 
   return (
-    <Tag className={cx(className, 'ed', !value && 'is-empty')} style={style}>
+    <Tag className={cx(className, 'ed', !value && 'is-empty', optional && 'is-optional')} style={style}>
       {/* 칸에 두르는 면과 점선. 넓이는 이웃한 칸과의 틈에 맞춘다 (halos.ts) */}
       <span className="ed-halo" aria-hidden="true" />
       <span className="ed-hint" aria-hidden="true">
@@ -458,6 +462,12 @@ function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
   return true
 }
 
+/** 비워 둬도 되는 칸인지. 비워 두면 정해진 이름(목표, 실적)으로 보이는 칸은 그 이름이 글처럼 보여야 해서 옅게 하지 않는다 */
+function isOptional(spec: { fields: { key: string; optional?: boolean; named?: boolean }[] }, k: string): boolean {
+  const f = spec.fields.find((x) => x.key === k)
+  return !!f?.optional && !f.named
+}
+
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
   const { slide, meta, actions, fieldPrefix = '', folds, labels } = useSlide()
@@ -466,6 +476,7 @@ export function T({ k, ...props }: TextProps & { k: string }) {
       value={readField(slide, meta, k)}
       hint={hintFor(slide.layout, slide.hints, k)}
       label={labelIn(labels ?? LAYOUTS[slide.layout], k)}
+      optional={isOptional(labels ?? LAYOUTS[slide.layout], k)}
       fieldId={fieldPrefix + k}
       onChange={actions && ((v) => actions.setField(k, v))}
       fold={folds?.has(k)}
@@ -489,6 +500,7 @@ export function IT({ i, k, ...props }: TextProps & { i: number; k: ItemKey }) {
       value={slide.items[i]?.[k] ?? ''}
       hint={hintFor(slide.layout, slide.hints, k, k, i)}
       label={labelIn(labels ?? LAYOUTS[slide.layout], k, k, i)}
+      optional={!!(labels ?? LAYOUTS[slide.layout]).items?.fields.find((f) => f.key === k)?.optional}
       fieldId={`${fieldPrefix}${i}.${k}`}
       onChange={actions && ((v) => actions.setItem(i, k, v))}
       fold={folds?.has(`items.${k}`)}

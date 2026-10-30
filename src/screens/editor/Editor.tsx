@@ -4,7 +4,7 @@ import { useAiAsk } from '../../ai/useAiAsk'
 import { useAiShare } from '../../ai/useAiShare'
 import { blockFieldPrefix } from '../../deck/blocks'
 import { knownOnly, unknownParts } from '../../deck/compat'
-import { missingFields, type Missing } from '../../deck/fields'
+import { deckBlanks, type Missing } from '../../deck/fields'
 import type { Deck, LayoutId, Slide } from '../../deck/types'
 import { cx } from '../../lib/cx'
 import { isMac, keys } from '../../lib/keys'
@@ -170,11 +170,10 @@ function EditorBody({ deck }: { deck: Deck }) {
 
   const focusFirstMissing = () => {
     launch.closeConfirm()
-    const target = deck.slides.find((s) => !s.hidden && missingFields(s, deck.meta).length > 0)
-    if (!target) return
-    store.select(target.id)
-    const m = missingFields(target, deck.meta)[0]
-    window.setTimeout(() => focusField(target.id, m), 60)
+    const first = deckBlanks(deck)[0]
+    if (!first) return
+    store.select(first.slide.id)
+    window.setTimeout(() => focusField(first.slide.id, first.missing[0]), 60)
   }
 
   useEditorShortcuts({

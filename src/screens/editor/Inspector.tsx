@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { missingFields, unshownCount, visibleItems, type Missing } from '../../deck/fields'
+import { missingFields, optionalBlanks, unshownCount, visibleItems, type Missing } from '../../deck/fields'
 import { emptyItem } from '../../deck/generate'
 import { highlightOf, LAYOUTS, LAYOUT_GROUPS, panesOf, placeOf, sideOf, variantOf } from '../../deck/layouts'
 import { isDarkLook, PLACES, toneOf, TONES } from '../../deck/themes'
@@ -77,6 +77,7 @@ export function Inspector({
           </span>
         </button>
         <Blanks deck={deck} slide={slide} onFocusField={onFocusField} />
+        <Optional deck={deck} slide={slide} />
         <Unshown slide={slide} />
       </section>
       <ShapeSection slide={slide} shown={shown} look={look} />
@@ -104,6 +105,25 @@ function Unshown({ slide }: { slide: Slide }) {
   )
 }
 
+/**
+ * 비워 둬도 되는 칸 가운데 비어 있는 것. 빈칸으로 세지 않는 칸이라 빈칸 수와 따로 이름만 늘어놓는다.
+ * 비워 두면 발표 화면에 나오지 않는다는 것은 (i)에
+ */
+function Optional({ deck, slide }: { deck: Deck; slide: Slide }) {
+  const names = optionalBlanks(slide, deck.meta).map((m) => m.label)
+  if (!names.length) return null
+  return (
+    <p className="ins-optional">
+      <span className="ins-optional-t">
+        비워 둬도 되는 칸: <span className="ins-optional-n">{names.join(', ')}</span>
+      </span>
+      <Info label="비워 둬도 되는 칸 설명" align="start">
+        빈칸으로 세지 않는 칸이에요. 비워 두면 발표 화면과 발표 파일에 나오지 않아요. 편집할 때는 다른 칸보다 옅게 보여요.
+      </Info>
+    </p>
+  )
+}
+
 /** 빈칸: 몇 곳 남았는지와 '다음 빈칸'. 목록은 펼쳐야 보인다 (빈칸이 열 곳이면 목록만으로 칸이 찬다) */
 function Blanks({ deck, slide, onFocusField }: { deck: Deck; slide: Slide; onFocusField: (m: Missing) => void }) {
   const missing = missingFields(slide, deck.meta)
@@ -115,10 +135,11 @@ function Blanks({ deck, slide, onFocusField }: { deck: Deck; slide: Slide; onFoc
     return <p className="ins-blank">아직 넣은 컴포넌트가 없어요</p>
   }
   if (!missing.length) {
+    // 비워 둔 선택 칸이 있으면 '모두 채웠어요'가 틀린 말로 들린다(표지의 부제, 발표자가 비었는데). 꼭 채울 칸만 센 것이라고 밝힌다
     return (
       <p className="ins-blank is-done">
         <CheckIcon />
-        빈칸을 모두 채웠어요
+        {optionalBlanks(slide, deck.meta).length ? '꼭 채울 칸은 모두 채웠어요' : '빈칸을 모두 채웠어요'}
       </p>
     )
   }
