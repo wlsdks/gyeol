@@ -4,6 +4,7 @@ import v040 from './fixtures/deck-v0.4.0.json'
 import v042 from './fixtures/deck-v0.4.2.json'
 import v050 from './fixtures/deck-v0.5.0.json'
 import v051 from './fixtures/deck-v0.5.1.json'
+import v052 from './fixtures/deck-v0.5.2.json'
 import { migrateDeck } from './migrate'
 import type { Deck } from './types'
 
@@ -15,6 +16,7 @@ const RELEASES: [string, { rich: Deck; made: Deck[] }][] = [
   ['v0.4.2', v042 as unknown as { rich: Deck; made: Deck[] }],
   ['v0.5.0', v050 as unknown as { rich: Deck; made: Deck[] }],
   ['v0.5.1', v051 as unknown as { rich: Deck; made: Deck[] }],
+  ['v0.5.2', v052 as unknown as { rich: Deck; made: Deck[] }],
 ]
 
 /** 사람이 적은 글: 칸, 항목, 컴포넌트(줄 안의 컴포넌트도) 안의 글. id와 이미지는 뺀다 */
