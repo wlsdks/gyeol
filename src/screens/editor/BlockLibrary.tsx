@@ -24,10 +24,65 @@ import { SavedParts } from './SavedParts'
 const THUMB_RATIO = 1.5
 
 /**
+ * 아직 그리지 않은 카드들. 한가할 때 하나씩 그린다(한 번에 하나: 여럿을 한꺼번에 깨우면 한 번에 그려져 다시 멈춘다).
+ * 그래서 굴려 내려갈 즈음에는 대부분 그려져 있다
+ */
+const idleQueue: (() => void)[] = []
+let idlePumping = false
+function drawWhenIdle(wake: () => void): () => void {
+  idleQueue.push(wake)
+  if (!idlePumping && typeof requestIdleCallback !== 'undefined') {
+    idlePumping = true
+    const pump = () =>
+      requestIdleCallback(() => {
+        idleQueue.shift()?.()
+        if (idleQueue.length) pump()
+        else idlePumping = false
+      })
+    pump()
+  }
+  return () => {
+    const i = idleQueue.indexOf(wake)
+    if (i >= 0) idleQueue.splice(i, 1)
+  }
+}
+
+/**
+ * 작은 그림을 그릴 너비. lazy면 목록에서 보일 즈음(위아래 한 화면 안)이 되거나 한가할 때 차례가 오면 너비를 알려 그 카드를 그린다.
+ * 컴포넌트 탭을 열면 카드 예순여 개가 한꺼번에 장을 그리고 컴포넌트를 맞춰서(fitBlocks) 0.4초쯤(CPU 4배 느리게는 1.6초)
+ * 화면이 멈췄다. 한 번 그린 카드는 굴려 지나가도 그대로 둔다(다시 맞추지 않게). 카드는 비율(aspect-ratio)로 자리를 지킨다
+ */
+function useThumbWidth(lazy: boolean) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  const [near, setNear] = useState(!lazy)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || near || typeof IntersectionObserver === 'undefined') return setNear(true)
+    const wake = () => setNear(true)
+    const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && wake(), { root: el.closest('.lib-list'), rootMargin: '100% 0px' })
+    io.observe(el)
+    const forget = drawWhenIdle(wake)
+    return () => {
+      io.disconnect()
+      forget()
+    }
+  }, [near])
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return [ref, near ? width : 0] as const
+}
+
+/**
  * 예시 부품 하나를 작은 그림으로. 부품이 잘리지 않을 높이로 그린 뒤 같은 비율의 카드에 맞춰 줄인다.
  * blank면 글을 비워 칸마다 안내만 (장 모음의 '빈 칸' 보기)
  */
-export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = 'preview' }: { deck: Look; type: BlockType; blank?: boolean; mode?: SlideMode }) {
+export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = 'preview', lazy = false }: { deck: Look; type: BlockType; blank?: boolean; mode?: SlideMode; lazy?: boolean }) {
   const block = useMemo(() => {
     const b = sampleBlock(type)
     return blank ? { ...b, fields: {}, items: b.items.map(() => emptyItem()) } : b
@@ -37,15 +92,7 @@ export const BlockThumb = memo(function BlockThumb({ deck, type, blank, mode = '
   const minW = BLOCKS[type].minSpan * (COL_W + BLOCK_COL_GAP) - BLOCK_COL_GAP + 80
   const h = Math.max(480, blockPrefH(block) + 80, Math.round(minW / THUMB_RATIO))
   const canvas = { w: Math.round(h * THUMB_RATIO), h }
-  const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
+  const [ref, width] = useThumbWidth(lazy)
   return (
     <div ref={ref} className="lib-thumb">
       {width > 0 && (
@@ -68,22 +115,14 @@ const LINK_SAMPLES: Record<BlockLink, [string, string, string, string]> = {
 const LINK_CANVAS = { w: 660, h: 440 }
 
 /** 이음표 하나를 작은 그림으로: 컴포넌트 둘 사이에 선 모습 그대로 */
-export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview' }: { deck: Look; link: BlockLink; mode?: SlideMode }) {
+export const LinkThumb = memo(function LinkThumb({ deck, link, mode = 'preview', lazy = false }: { deck: Look; link: BlockLink; mode?: SlideMode; lazy?: boolean }) {
   const slide = useMemo<Slide>(() => {
     const [l1, v1, l2, v2] = LINK_SAMPLES[link]
     const a = { ...makeBlock('number'), id: `lk-a-${link}`, fields: { label: l1, value: v1 }, link }
     const b = { ...makeBlock('number'), id: `lk-b-${link}`, fields: { label: l2, value: v2 } }
     return { ...soloSlide(a), id: `solo-link-${link}`, rows: [{ id: 'solo', blocks: [a, b] }] }
   }, [link])
-  const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(0)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
+  const [ref, width] = useThumbWidth(lazy)
   return (
     <div ref={ref} className="lib-thumb">
       {width > 0 && (
@@ -338,7 +377,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         onPointerEnter={(e) => preview(e.currentTarget)}
                         onFocus={(e) => preview(e.currentTarget)}
                       >
-                        <BlockThumb deck={look} type={type} />
+                        <BlockThumb deck={look} type={type} lazy />
                         <span className="lib-name">{spec.name}</span>
                         <span className="lib-desc">{spec.description}</span>
                         {marked && (
@@ -373,7 +412,7 @@ export function BlockLibrary({ deck, slide, blocks, toast }: { deck: Deck; slide
                         onPointerDown={(e) => blocks.pressLinkCard(e, l.id)}
                         onClick={(e) => e.detail === 0 && blocks.insertLink(l.id)}
                       >
-                        <LinkThumb deck={look} link={l.id} />
+                        <LinkThumb deck={look} link={l.id} lazy />
                         <span className="lib-name">{l.name}</span>
                         <span className="lib-desc">{l.description}</span>
                         {shut && (
