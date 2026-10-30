@@ -211,7 +211,10 @@ export function useTypingZoom(canvasRef: RefObject<HTMLElement | null>, on: bool
         ro.observe(ed)
       }
       if (z === 1) return { zoom: null, slip: 0 }
-      const box = (r: DOMRect) => ({ l: (r.left - s.left) / k, t: (r.top - s.top) / k, r: (r.right - s.left) / k, b: (r.bottom - s.top) / k })
+      // 아직 키우지 않았는데 쓰는 칸의 글자가 이미 화면에서 읽기 편한 크기면(장 제목, 큰 숫자) 키우지 않는다.
+      // 장의 대표 글자로 정한 배율을 제목에도 쓰면 이미 큰 제목을 더 키우느라 차트와 오른쪽 숫자가 잘렸다. 키운 채로 옮겨 온 것이면 그대로 둔다
+      if (!cur && (Number.parseFloat(getComputedStyle(input).fontSize) || 0) * base >= ZOOM.read) return { zoom: null, slip: 0 }
+      const box =(r: DOMRect) => ({ l: (r.left - s.left) / k, t: (r.top - s.top) / k, r: (r.right - s.left) / k, b: (r.bottom - s.top) / k })
       const f = box((ed.querySelector(':scope > .ed-halo') ?? ed).getBoundingClientRect())
       const S = base * z
       // 손으로 누른 칸은 여백을 덜 챙긴다: 여백을 맞추느라 누른 글자가 손 아래에서 비켜 갔다
