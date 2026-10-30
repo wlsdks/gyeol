@@ -12,30 +12,59 @@ export interface OverField {
   label: string
 }
 
+/** 칸의 글이 한 줄보다 높은 만큼(화면 px). 글이 긴 칸일수록 크다. 빈칸(안내 글)은 0: 안내는 칸에 맞게 써 두었다 */
+function grown(input: HTMLElement, r: DOMRect): number {
+  if (input.parentElement!.classList.contains('is-empty') || !input.offsetHeight) return 0
+  const s = getComputedStyle(input)
+  const lh = Number.parseFloat(s.lineHeight) || Number.parseFloat(s.fontSize) * 1.3
+  return r.height - lh * (r.height / input.offsetHeight)
+}
+
 /**
- * 장의 글이 넘쳤는지와 넘친 칸들. 넘친 칸은 넘친 상자의 아래 끝(장 전체는 오른쪽 끝도) 밖으로 나간 글 칸이다.
+ * 장의 글이 넘쳤는지와 짚을 칸들. 넘친 상자의 아래 끝(장 전체는 오른쪽 끝도) 밖으로 나간 글 칸을 찾고,
+ * 그 상자 안에서 글이 가장 길게 늘어난 칸이 따로 있으면 그 칸을 짚는다(pushed): 진행 현황에서 1번 과제 이름을 세 줄로 쓰면
+ * 밖으로 나가는 것은 맨 아래 5번 과제라, 나간 칸만 짚던 때는 '나는 1번을 썼는데?' 하고 헷갈렸다.
+ * 늘어난 칸이 나간 칸이기도 하면(한 칸 안에서 잘림) 그 칸을 넘친 칸으로 짚는다.
  * 예전에는 넘쳤다는 것만 알려서, 어느 칸을 줄여야 하는지 장을 뒤져 찾아야 했다
  */
-export function overflowAt(root: HTMLElement): { over: boolean; fields: OverField[] } {
+export function overflowAt(root: HTMLElement): { over: boolean; fields: OverField[]; pushed: boolean } {
   const boxes = [root, ...root.querySelectorAll<HTMLElement>(BOXES)]
   // 빈칸의 옅은 면(.ed-halo)은 글보다 조금 넓게 깔려서 맨 아래 칸이면 상자 밖으로 나온다. 글이 넘친 것이 아니니 재는 동안만 숨긴다
   root.classList.add('is-measuring')
   // 항목 빼기 버튼이 칸 오른쪽으로 살짝 나와 있어서, 가로 넘침은 슬라이드 전체만 본다.
   const wide = root.scrollWidth - root.clientWidth > 4
   const tall = boxes.filter((el) => el.scrollHeight - el.clientHeight > 4)
-  const fields: OverField[] = []
+  let fields: OverField[] = []
+  let pushed = false
   if (wide || tall.length) {
     const right = root.getBoundingClientRect().right
     const bottoms = tall.map((b) => [b, b.getBoundingClientRect().bottom] as const)
-    for (const input of root.querySelectorAll<HTMLElement>('.ed > .ed-input[data-field]')) {
+    const field = (input: HTMLElement): OverField => ({ id: input.dataset.field!, label: input.getAttribute('aria-label') || '' })
+    const inputs = [...root.querySelectorAll<HTMLElement>('.ed > .ed-input[data-field]')]
+    const out: HTMLElement[] = []
+    for (const input of inputs) {
       const r = input.parentElement!.getBoundingClientRect()
       if (!r.width && !r.height) continue
-      const out = (wide && r.right > right + 1) || bottoms.some(([b, bottom]) => b.contains(input) && r.bottom > bottom + 1)
-      if (out) fields.push({ id: input.dataset.field!, label: input.getAttribute('aria-label') || '' })
+      if ((wide && r.right > right + 1) || bottoms.some(([b, bottom]) => b.contains(input) && r.bottom > bottom + 1)) out.push(input)
     }
+    // 밀어낸 칸: 첫 나간 칸이 든 가장 안쪽의 넘친 상자에서, 글이 한 줄의 반 넘게 늘어난 칸 가운데 가장 많이 늘어난 칸
+    const box = out.length ? tall.filter((b) => b.contains(out[0])).sort((x, y) => (x.contains(y) ? 1 : y.contains(x) ? -1 : 0))[0] : undefined
+    let top: { input: HTMLElement; by: number } | null = null
+    for (const input of box ? inputs.filter((i) => box.contains(i)) : []) {
+      const r = input.parentElement!.getBoundingClientRect()
+      const by = grown(input, r)
+      const half = (Number.parseFloat(getComputedStyle(input).fontSize) || 16) * 0.6 * (r.height / (input.offsetHeight || 1))
+      if (by > half && (!top || by > top.by)) top = { input, by }
+    }
+    // 늘어난 칸이 나간 칸이기도 하면 그 칸 하나만: 그 칸에 밀려 나간 아래 줄까지 짚으면 '7곳'처럼 고칠 곳이 많아 보였다.
+    // 늘어난 칸이 없으면(줄 수가 고르게 많은 장) 나간 칸들을 짚는다
+    if (top) {
+      fields = [field(top.input)]
+      pushed = !out.includes(top.input)
+    } else fields = out.map(field)
   }
   root.classList.remove('is-measuring')
-  return { over: wide || tall.length > 0, fields }
+  return { over: wide || tall.length > 0, fields, pushed }
 }
 
 export function slideOverflow(root: HTMLElement): 'over' | null {

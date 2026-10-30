@@ -195,6 +195,8 @@ export function SlideStage({
 export interface Overflow {
   kind: 'over' | 'tight' | null
   fields: OverField[]
+  /** fields가 넘친 칸이 아니라 글이 길어 다른 칸을 장 밖으로 밀어낸 칸이다 */
+  pushed: boolean
 }
 
 /**
@@ -204,7 +206,7 @@ export interface Overflow {
  * 넘친 칸에는 data-over를 달아 장 위에 표시한다(edit.css): 넘쳤다는 말만 있던 때는 어느 칸을 줄여야 하는지 몰랐다
  */
 function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: unknown, deck: Deck): Overflow {
-  const [over, setOver] = useState<{ on: boolean; fields: OverField[] }>({ on: false, fields: [] })
+  const [over, setOver] = useState<{ on: boolean; fields: OverField[]; pushed: boolean }>({ on: false, fields: [], pushed: false })
   // 그려진 본문 상자의 높이. 컴포넌트 잠금(BlockEditor의 roomOf)과 같은 잰 높이로 '자리가 모자라요'를 본다: 어림으로 보던 때는
   // 둘이 몇 px 어긋나, 잠기지 않은 컴포넌트를 넣자마자 이 알림이 뜨거나 실제로 모자란데도 뜨지 않았다
   const [areaH, setAreaH] = useState<number | null>(null)
@@ -228,7 +230,7 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
         // 값이 그대로면 건드리지 않는다: 부품 장은 본문 상자 안의 바뀜을 지켜보고 다시 맞춘다(blocks.tsx의 BlockArea)
         if (on !== ed.hasAttribute('data-over')) ed.toggleAttribute('data-over', on)
       }
-      setOver((p) => (p.on === now.over && p.fields.map((f) => f.id + f.label).join() === now.fields.map((f) => f.id + f.label).join() ? p : { on: now.over, fields: now.fields }))
+      setOver((p) => (p.on === now.over && p.pushed === now.pushed && p.fields.map((f) => f.id + f.label).join() === now.fields.map((f) => f.id + f.label).join() ? p : { on: now.over, fields: now.fields, pushed: now.pushed }))
       setAreaH(root.querySelector<HTMLElement>(':scope .bk-area')?.offsetHeight || null)
     }
     check()
@@ -240,5 +242,5 @@ function useOverflow(ref: RefObject<HTMLDivElement | null>, slide: Slide, look: 
       window.clearTimeout(wait)
     }
   }, [ref, slide, look])
-  return { kind: over.on ? 'over' : tight ? 'tight' : null, fields: over.on ? over.fields : [] }
+  return { kind: over.on ? 'over' : tight ? 'tight' : null, fields: over.on ? over.fields : [], pushed: over.on && over.pushed }
 }

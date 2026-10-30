@@ -86,7 +86,7 @@ function focusOver(id: string) {
  * 어느 칸이 넘쳤는지 몰랐다
  */
 function OverflowNote({ slide, overflow, side }: { slide: Slide; overflow: Overflow; side: SidePanel }) {
-  const { kind, fields } = overflow
+  const { kind, fields, pushed } = overflow
   const at = useRef(0)
   const over = kind === 'over'
   const name = (f: OverField) => (f.label ? `‘${f.label}’ 칸` : '이름 없는 칸')
@@ -116,10 +116,19 @@ function OverflowNote({ slide, overflow, side }: { slide: Slide; overflow: Overf
             {over ? (
               <>
                 <p className="warn-pop-h">
-                  {fields.length > 1 ? `${name(fields[0])} 등 ${fields.length}곳이 장 안에 다 들어가지 않아요` : fields.length ? `${name(fields[0])}이 장 안에 다 들어가지 않아요` : '글이 장 밖으로 넘쳤어요'}
+                  {pushed
+                    ? `${name(fields[0])}의 글이 길어 아래 칸이 장 밖으로 밀렸어요`
+                    : fields.length > 1
+                      ? `${name(fields[0])} 등 ${fields.length}곳이 장 안에 다 들어가지 않아요`
+                      : fields.length
+                        ? `${name(fields[0])}의 글이 장 밖으로 넘쳤어요`
+                        : '글이 장 밖으로 넘쳤어요'}
                 </p>
-                {/* 넘친 칸이 꼭 긴 글을 쓴 칸은 아니다: 위 칸의 긴 글에 밀려 아래 칸이 장 밖으로 나가기도 한다 */}
-                <p className="warn-pop-p">장 위에 점선으로 보이는 칸이에요. 그 칸이나 그 위 칸의 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.</p>
+                <p className="warn-pop-p">
+                  {pushed
+                    ? '장 위에 점선으로 보이는 칸이에요. 그 칸의 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'
+                    : '장 위에 점선으로 보이는 칸이에요. 글을 줄이거나, 글이 더 들어가는 레이아웃으로 바꿔 보세요.'}
+                </p>
               </>
             ) : (
               <>
@@ -153,7 +162,7 @@ function OverflowNote({ slide, overflow, side }: { slide: Slide; overflow: Overf
                     at.current = (at.current + 1) % fields.length
                   }}
                 >
-                  {fields.length > 1 ? `넘친 칸 고치기 (${(at.current % fields.length) + 1}/${fields.length})` : '넘친 칸 고치기'}
+                  {pushed ? '그 칸 고치기' : fields.length > 1 ? `넘친 칸 고치기 (${(at.current % fields.length) + 1}/${fields.length})` : '넘친 칸 고치기'}
                 </button>
               )}
             </div>
