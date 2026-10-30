@@ -20,7 +20,7 @@ import {
 } from '../../../deck/blocks'
 import { pageInfo } from '../../../deck/fields'
 import { sceneOf } from '../../../deck/scenes'
-import { MOTIONS, motionOf, transitionOf, TRANSITIONS } from '../../../deck/themes'
+import { MOTIONS, motionOf, transitionOf } from '../../../deck/themes'
 import type { Block, BlockEffect, BlockFrom, BlockSpeed, BlockWhen, Deck, Motion, Slide } from '../../../deck/types'
 import { cx } from '../../../lib/cx'
 import { FitSlide, pageProps, SlideCanvas, useStableSections } from '../../../slides/SlideCanvas'
@@ -28,7 +28,7 @@ import { useDeck } from '../../../store/deckStore'
 import { BackIcon, ChevronIcon, PlayIcon, Segmented, useDialog, type Toast } from '../../ui'
 import { Opt } from '../Inspector'
 import { useLook, type Look } from '../look'
-import { FROM_SHORT, INHERIT, nameOf, SLIDE_TRANSITIONS } from '../MotionPanel'
+import { FROM_SHORT, INHERIT, InheritNote, SLIDE_TRANSITIONS } from '../MotionPanel'
 import { SceneOverride, ScenePicker } from '../ScenePicker'
 import { usePlayer, useReducedMotion } from './player'
 import { MotionCopy } from './MotionCopy'
@@ -509,13 +509,13 @@ function SlideMotion({ deck, slide, onTransition }: { deck: Deck; slide: Slide; 
       <h2 className="ms-h">이 슬라이드</h2>
       {/* 움직임 탭과 같은 말: 예전에는 여기만 '기본'이라 같은 값이 두 이름으로 보였고, 기본이 무엇인지도 알 수 없었다 */}
       <p className="mp-inherit">
-        발표 전체는 모션 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 화면 전환 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+        <InheritNote deck={deck} />
       </p>
-      <Opt label="모션 정도" wide>
+      <Opt label="모션 세기" wide>
         <Segmented<Motion | undefined>
-          className="seg-fill"
-          label="이 슬라이드의 모션 정도"
-          options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 정도를 따라요.' }, ...MOTIONS]}
+          className="seg-fill seg-fit"
+          label="이 슬라이드의 모션 세기"
+          options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 세기를 따라요.' }, ...MOTIONS]}
           value={slide.options.motion ?? undefined}
           onPick={onPick}
         />

@@ -125,11 +125,11 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           <Segmented className="seg-full" label="글자 크기" options={TEXT_SIZES} value={size} onPick={(id) => setLook({ size: id })} />
           <p className="menu-h">아래 표시</p>
           <Segmented className="seg-full" label="아래 표시" options={FOOTERS} value={footer} onPick={(id) => setLook({ footer: id })} />
-          <p className="menu-h">모션 정도</p>
+          <p className="menu-h">모션 세기</p>
           <div className="theme-row">
             <Segmented
               className="seg-full"
-              label="발표 전체의 모션 정도"
+              label="발표 전체의 모션 세기"
               options={MOTIONS}
               value={motion}
               onPick={(id) => {

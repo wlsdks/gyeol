@@ -661,8 +661,8 @@ function describe(deck: Deck, op: Op, named: Map<string, string>, applied: Appli
       const parts: string[] = []
       if (op.theme) parts.push(`테마: ${THEMES[deck.theme.id].name} → ${THEMES[op.theme].name}`)
       if (op.accent !== undefined) parts.push(op.accent === null ? '강조색: 테마 기본색' : `강조색: ${op.accent}`)
-      if (op.motion) parts.push(`모션 정도: ${MOTIONS.find((m) => m.id === (deck.motion ?? 'calm'))?.name} → ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
-      return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '모션 정도 바꾸기', detail: parts.join(', ') }
+      if (op.motion) parts.push(`모션 세기: ${MOTIONS.find((m) => m.id === (deck.motion ?? 'calm'))?.name} → ${MOTIONS.find((m) => m.id === op.motion)?.name}`)
+      return { text: op.theme || op.accent !== undefined ? '테마 바꾸기' : '모션 세기 바꾸기', detail: parts.join(', ') }
     }
     case 'set_guide':
       return { text: `${name(op.slide)}의 안내 바꾸기`, detail: op.text }

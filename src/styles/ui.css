@@ -195,6 +195,12 @@
   padding: 0 4px;
 }
 
+/* 한 단추만 이름이 긴 고르기(모션 세기의 '발표 설정대로'): 같은 너비로 나누면 긴 이름이 단추 여백까지 밀고 나가서,
+   이름만큼은 지키고 남는 너비를 나눈다 */
+.seg-fill.seg-fit {
+  grid-auto-columns: minmax(max-content, 1fr);
+}
+
 .seg-btn {
   height: 30px;
   padding: 0 14px;

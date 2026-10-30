@@ -22,7 +22,7 @@ import { SceneAll, SceneOverride, ScenePicker } from './ScenePicker'
  * 이 장만 바꾸지 않고 발표 전체 설정을 따르는 값의 이름. 예전에는 '기본'이라서, 기본이 무엇인지(차분하게? 없음?)
  * 테마 메뉴를 열어 봐야 알았다. 무엇을 따르는지는 머리말 아래에 지금 값으로 같이 보인다
  */
-export const INHERIT = '전체대로'
+export const INHERIT = '발표 설정대로'
 
 /** 이 장 설정의 '장 넘기기'에 보일 것. 움직임에 맞춰(auto)는 발표 전체에만 있는 값이라 '전체대로' 하나로 묶는다 */
 export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; description: string }[] = [
@@ -31,6 +31,17 @@ export const SLIDE_TRANSITIONS: { id: Transition | undefined; name: string; desc
 ]
 
 export const nameOf = <T,>(list: { id: T; name: string }[], id: T) => list.find((o) => o.id === id)?.name ?? ''
+
+/** '발표 설정대로'를 고르면 무엇이 되는지. 테마 메뉴의 값이 바뀌면 같이 바뀐다. 모션 편집의 좁은 칸에서도 한 줄에 들게 끝말 없이 */
+export function InheritNote({ deck }: { deck: Deck }) {
+  const motion = nameOf(MOTIONS, deck.motion ?? 'calm')
+  const transition = nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')
+  return (
+    <>
+      발표 설정은 모션 ‘{motion}’, 화면 전환 ‘{transition}’
+    </>
+  )
+}
 
 /** 들어오는 쪽은 짧게 (네 단추가 한 줄에 들어가게) */
 export const FROM_SHORT: Record<BlockFrom, string> = { below: '아래', above: '위', left: '왼쪽', right: '오른쪽' }
@@ -82,13 +93,13 @@ export function MotionPanel({
         </div>
         {/* '전체대로'가 지금 무엇인지. 테마 메뉴의 값이 바뀌면 같이 바뀐다 */}
         <p className="mp-inherit">
-          발표 전체는 모션 {nameOf(MOTIONS, deck.motion ?? 'calm')}, 화면 전환 {nameOf(TRANSITIONS, deck.theme.transition ?? 'auto')}
+          <InheritNote deck={deck} />
         </p>
-        <Opt label="모션 정도" wide>
+        <Opt label="모션 세기" wide>
           <Segmented<Motion | undefined>
-            className="seg-fill"
-            label="이 슬라이드의 모션 정도"
-            options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 정도를 따라요.' }, ...MOTIONS]}
+            className="seg-fill seg-fit"
+            label="이 슬라이드의 모션 세기"
+            options={[{ id: undefined, name: INHERIT, description: '테마 메뉴에서 정한 발표 전체의 모션 세기를 따라요.' }, ...MOTIONS]}
             value={slide.options.motion ?? undefined}
             onPick={(m) => setOptions(slide.id, { motion: m })}
           />
