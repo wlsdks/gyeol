@@ -52,6 +52,7 @@ import { Swot } from './blocks/Swot'
 import { Text } from './blocks/Text'
 import { SlideContext, useSlide, type SlideActions } from './context'
 import { T } from './fields'
+import { placeHandle } from './handleSpot'
 import { frameCells } from './blockFrame'
 import { fitBlocks } from './fitBlocks'
 import { LAYOUT_VIEWS } from './layouts'
@@ -281,6 +282,8 @@ function BlockCell({ block: b, blocks, live, seq, band, linked }: { block: Block
       data-speed={speed === 'normal' ? undefined : speed}
       data-from={from ?? undefined}
       onPointerDown={live && !slot ? (e) => live.onCellPointerDown(e, b) : undefined}
+      // 이름표가 이웃의 글을 덮지 않는 모서리에 뜨게, 보이기 전에 자리를 고른다
+      onPointerEnter={live && !slot ? (e) => placeHandle(e.currentTarget) : undefined}
       // 놓일 자리에 흐리게 미리 그린 것은 누르거나 쓸 수 없다
       inert={slot || undefined}
     >

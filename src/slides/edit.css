@@ -700,6 +700,54 @@ body.is-block-dragging .slide.m-edit .bk-area.is-live .ed > .ed-halo {
   content: '';
 }
 
+/* 이름표가 위 컴포넌트의 글을 덮으면 글을 가리지 않는 다른 모서리에 둔다 (handleSpot.ts의 placeHandle). 다리는 이름표에서 테두리 쪽으로 */
+.bk-handle[data-at='tr'] {
+  left: auto;
+  right: calc(var(--fr-r, -14px) - 1px);
+  border-radius: 6px 6px 0 6px;
+  transform-origin: 100% 100%;
+}
+
+.bk-handle[data-at='tr']::after {
+  left: auto;
+  right: 0;
+}
+
+.bk-handle[data-at='bl'],
+.bk-handle[data-at='br'] {
+  top: calc(100% - var(--fr-b, -14px) + 1px);
+  translate: none;
+}
+
+.bk-handle[data-at='bl'] {
+  border-radius: 0 6px 6px 6px;
+  transform-origin: 0 0;
+}
+
+.bk-handle[data-at='br'] {
+  left: auto;
+  right: calc(var(--fr-r, -14px) - 1px);
+  border-radius: 6px 0 6px 6px;
+  transform-origin: 100% 0;
+}
+
+.bk-handle[data-at='bl']::after,
+.bk-handle[data-at='br']::after {
+  top: auto;
+  bottom: 100%;
+  height: max(0px, calc((2px - var(--fr-b, -14px)) * var(--vs, 1)));
+}
+
+.bk-handle[data-at='br']::after {
+  left: auto;
+  right: 0;
+}
+
+/* 어디에 두어도 글을 가리면 띄우지 않는다: 컴포넌트를 눌러 고르면 위에 뜨는 도구의 이름표로 옮긴다 */
+.bk-handle[data-at='none'] {
+  display: none;
+}
+
 /* 고른 부품은 위에 뜬 도구의 이름표가 손잡이를 맡는다 (editor/SelectionBar.tsx의 FloatTools) */
 .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-selected) > .bk-handle {
   opacity: 1;
