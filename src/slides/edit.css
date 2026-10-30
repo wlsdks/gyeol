@@ -771,21 +771,46 @@ body.is-block-resizing .bk-area.is-live:not(.is-dragging) .bk:hover:not(.is-sele
   opacity: 1;
 }
 
-/* 편집기에서 항목을 골라 도구 막대가 떠 있으면 모서리의 손잡이와 빼기는 막대가 맡는다 */
-.it[data-sel='item'] > :is(.it-grip, .it-remove) {
+/* 레이아웃 장의 항목 손잡이는 항목 왼쪽 여백에, 높이 가운데: 모서리에 반쯤 걸쳐 두면 줄의 첫 글자를 덮었다.
+   가로로 놓인 목록(카드, 단계)은 왼쪽이 앞 항목이라 항목 바로 위 왼쪽에 (부품 장의 항목은 위의 .bk 규칙대로) */
+.slide.m-edit .it:not(.bk .it) > .it-grip {
+  top: 50%;
+  left: calc((var(--d) + 8px / var(--vs, 0.5)) * -1);
+  translate: 0 -50%;
+}
+
+.slide.m-edit .it:not(.bk .it):is([data-sel-axis='x'], :not([data-sel-axis]):has(> .it-grip[data-axis='x'])) > .it-grip {
+  top: calc((var(--d) + 6px / var(--vs, 0.5)) * -1);
+  left: 0;
+  translate: none;
+}
+
+/* 편집기에서 고른 항목(editor/SelectionBar.tsx): 빼기는 장 아래 도구 줄이 맡고, 끌기 손잡이는 늘 보인다 */
+.it[data-sel='item'] > .it-remove {
   opacity: 0 !important;
   pointer-events: none;
 }
 
-/* 편집기에서 판을 골라 도구 막대(editor/SelectionBar.tsx)가 떠 있으면: 판의 테와 판 사이 손잡이를 켜 두고,
-   이름표는 막대의 이름이 맡는다 (같은 이름이 두 번 보이지 않게) */
+.it[data-sel='item'] > .it-grip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 편집기에서 고른 판: 테 대신 옅은 면(쓰는 칸의 실선과 두 겹이 되지 않게)과 판 사이 손잡이, 끌어 옮기는 이름표를 켜 둔다.
+   판의 도구는 장 아래 도구 줄에 */
 .slide[data-sel='pane'] .pn-tools::after {
+  background: color-mix(in srgb, var(--sel) 6%, transparent);
+  box-shadow: none;
   opacity: 1;
 }
 
 .slide[data-sel='pane'] .pn-tools .pn-handle {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 1;
+}
+
+/* 판 안의 칸에 쓰는 동안은 손을 올린 판의 테를 걷는다: 쓰는 칸의 실선과 두 겹이 된다 (이름표와 판 사이 손잡이는 그대로) */
+.slide.m-edit:has(.ed-input:focus) .pn-tools.is-on::after {
+  box-shadow: none;
 }
 
 /* 판 사이: 판의 안쪽 끝에 걸친 손잡이. 올리면 파란 선이 보이고, 끄는 동안 붙을 자리가 옅게 보인다 */

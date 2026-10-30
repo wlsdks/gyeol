@@ -111,7 +111,7 @@
 | 무엇 | 어디 |
 |---|---|
 | 편집기의 틀(위 막대, 세 칸, 메뉴) | `screens/editor/Editor.tsx` |
-| 고치는 장(무대)과 그 위에 뜨는 것, 아래 단추줄 | `SlideStage.tsx`, `StageTools.tsx`, `SelectionBar.tsx`(레이아웃 장의 고른 것), `BlockTools.tsx`(컴포넌트 장의 고른 것) |
+| 고치는 장(무대)과 그 위에 뜨는 것, 아래 단추줄 | `SlideStage.tsx`, `StageTools.tsx`, `SelectionBar.tsx`(레이아웃 장의 고른 것, 도구는 아래 단추줄에), `BlockTools.tsx`(컴포넌트 장의 고른 것) |
 | 컴포넌트 끌기, 눌러 넣기, 칸 너비, 줄 높이 | `BlockEditor.tsx`(다루기), `planDrop.ts`(어디에 놓을지), `RoomZone.tsx`(장 아래 빈자리) |
 | 띄운 것을 장 안의 것에 맞춰 두기 | `useTrackRect.ts`. 바뀔 만한 때만 잰다(매 프레임 재지 않는다) |
 | 발표 시작, 단축키, 내보내기, 오른쪽 칸 | `presentLaunch.tsx`, `shortcuts.ts`, `exports.tsx`, `sidePanel.ts`(탭과 좁은 창) |

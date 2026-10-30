@@ -39,7 +39,13 @@ function useTightTools(ref: RefObject<HTMLDivElement | null>) {
     if (!el) return
     const ro = new ResizeObserver(check)
     ro.observe(el)
-    return () => ro.disconnect()
+    // 장 위에서 고른 것의 도구(SelectionBar가 .stage-sel에 그린다)가 들어오고 나갈 때도 다시 잰다
+    const mo = new MutationObserver(check)
+    mo.observe(el, { childList: true, subtree: true })
+    return () => {
+      ro.disconnect()
+      mo.disconnect()
+    }
   }, [check, ref])
 }
 
@@ -113,6 +119,8 @@ export function StageTools({
         </div>
       ) : (
         <div className="stage-tools-l">
+          {/* 장 위에서 항목이나 판을 고르면 그 도구가 여기에 들어오고(SelectionBar), 그동안 이 장의 단추는 숨긴다(editor.css) */}
+          <div className="stage-sel" />
           <button
             type="button"
             className={cx('btn btn-sm stage-blocks', blocks.libraryOpen ? 'is-on' : 'btn-ghost')}

@@ -121,8 +121,8 @@ export function SlideStage({
         // 부품 밖을 누르면 부품 고르기를 끝낸다
         onPointerDown={(e) => !(e.target as Element).closest('.bk') && blocks.select(null)}
       >
-        {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판, 부품 장은 고른 컴포넌트나 이음표. 둘 다 그 바로 위에 뜬다 */}
-        {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar deck={deck} slide={slide} canvasRef={canvasRef} />}
+        {/* 고른 것의 도구: 레이아웃 장은 고른 항목이나 옆 판의 도구를 장 아래 도구 줄에, 부품 장은 고른 컴포넌트나 이음표 바로 위에 */}
+        {!peek && !preview && !peekSlide && slide.layout !== 'compose' && <SelectionBar slide={slide} canvasRef={canvasRef} />}
         {!peek && blocks.toolbar && <FloatTools canvasRef={canvasRef}>{blocks.toolbar}</FloatTools>}
         <FitSlide
           padding={4}

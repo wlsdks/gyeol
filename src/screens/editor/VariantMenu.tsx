@@ -10,7 +10,7 @@ import { useLook } from './look'
  * 슬라이드 아래의 '모양': 이 레이아웃의 다른 모양을 그림으로 보고 고른다.
  * 예전에는 '다른 모양'을 누를 때마다 다음 모양으로 넘어가기만 해서, 무엇이 나올지 몰랐다
  */
-export function VariantMenu({ deck, slide, compact }: { deck: Deck; slide: Slide; compact?: boolean }) {
+export function VariantMenu({ deck, slide }: { deck: Deck; slide: Slide }) {
   const setVariant = useDeck((s) => s.setVariant)
   const variants = LAYOUTS[slide.layout].variants ?? []
   const current = variantOf(slide)
@@ -23,7 +23,7 @@ export function VariantMenu({ deck, slide, compact }: { deck: Deck; slide: Slide
       button={({ toggle, open }) => (
         <button
           type="button"
-          className={compact ? cx('sel-btn has-t', open && 'is-on') : cx('btn btn-ghost btn-sm', open && 'is-on')}
+          className={cx('btn btn-ghost btn-sm', open && 'is-on')}
           aria-expanded={open}
           title="이 레이아웃의 다른 모양을 골라요"
           onClick={toggle}
