@@ -974,7 +974,7 @@
   font-weight: 400;
 }
 
-/* (i) 단추와 말풍선. 말풍선은 단추 밑에 작게 붙는다 */
+/* (i) 단추와 말풍선. 말풍선은 body에 붙어 창 기준으로 뜬다(ui.tsx의 Info): 단추 밑, 자리가 없으면 위 */
 .info {
   position: relative;
   display: inline-flex;
@@ -1003,8 +1003,7 @@
   stroke-width: 1.8;
 }
 
-.info:hover .info-btn,
-.info:focus-within .info-btn {
+.info.is-open .info-btn {
   background: var(--hover-2);
   color: var(--ink);
 }
@@ -1015,9 +1014,10 @@
 }
 
 .info-tip {
-  position: absolute;
-  top: calc(100% + 6px);
-  z-index: 40;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1001;
   width: max-content;
   max-width: 248px;
   padding: 8px 11px;
@@ -1038,16 +1038,11 @@
   transition: opacity 0.12s, translate 0.12s, visibility 0s 0.12s;
 }
 
-.info-end .info-tip {
-  right: -2px;
+.info-tip[data-side='above'] {
+  translate: 0 3px;
 }
 
-.info-start .info-tip {
-  left: -2px;
-}
-
-.info:hover .info-tip,
-.info:focus-within .info-tip {
+.info-tip.is-on {
   opacity: 1;
   visibility: visible;
   translate: 0 0;

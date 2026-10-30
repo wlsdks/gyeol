@@ -624,17 +624,6 @@ html.ms-vt[data-mo-swap]::view-transition-image-pair(root) {
   position: relative;
 }
 
-.ms-side :is(.ins-opt-l, .ms-h) .info {
-  position: static;
-}
-
-.ms-side :is(.ins-opt-l, .ms-h) .info-tip {
-  right: 0;
-  left: 0;
-  width: auto;
-  max-width: none;
-}
-
 .ms-h {
   margin: 0 0 10px;
   color: var(--ink-3);

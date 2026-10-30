@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { cx } from '../lib/cx'
 import { keys } from '../lib/keys'
 import { LIST_DRAGGING } from '../lib/listDrag'
@@ -72,16 +73,82 @@ export const AskIcon = () => <Icon d="M5 5h14a1.5 1.5 0 011.5 1.5v8.5a1.5 1.5 0 
  * (i) 단추: 늘 펼쳐 둘 필요 없는 안내를 접어 둔다. 마우스를 올리거나 눌러서(키보드로 옮겨 와도) 보인다.
  * 말풍선은 단추 밑에 붙는다. align: 단추의 어느 쪽 끝에 말풍선 끝을 맞출지 (칸 오른쪽 끝의 단추는 end)
  */
+/** 말풍선과 단추 사이, 창 가장자리와의 틈 */
+const INFO_GAP = 6
+const INFO_EDGE = 8
+
+/**
+ * (i) 단추와 그 설명. 설명은 body에 붙여 창 기준(fixed)으로 띄운다: 메뉴나 오른쪽 칸 안에 두면 그 상자의
+ * overflow에 갇혀, 테마 메뉴 맨 아래의 '쓸 때 크게 보기' 설명이 메뉴 아래 끝에서 잘렸다.
+ * 아래에 자리가 없으면 위로 뒤집고, 좌우는 창 안에 들게 민다. align은 단추의 어느 쪽 끝에 맞출지(end: 오른쪽).
+ */
 export function Info({ label, children, align = 'end' }: { label: string; children: ReactNode; align?: 'start' | 'end' }) {
   const id = useId()
+  const btn = useRef<HTMLButtonElement>(null)
+  const tip = useRef<HTMLSpanElement>(null)
+  const [hover, setHover] = useState(false)
+  const [focus, setFocus] = useState(false)
+  const open = hover || focus
+  const [pos, setPos] = useState<{ left: number; top: number; side: 'below' | 'above' } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open) return setPos(null)
+    const b = btn.current?.getBoundingClientRect()
+    const t = tip.current
+    if (!b || !t) return
+    const w = t.offsetWidth
+    const h = t.offsetHeight
+    const vw = document.documentElement.clientWidth
+    const vh = document.documentElement.clientHeight
+    const below = b.bottom + INFO_GAP + h <= vh - INFO_EDGE || b.top - INFO_GAP - h < INFO_EDGE
+    const top = below ? b.bottom + INFO_GAP : b.top - INFO_GAP - h
+    const want = align === 'end' ? b.right + 2 - w : b.left - 2
+    const left = Math.min(Math.max(INFO_EDGE, want), vw - INFO_EDGE - w)
+    setPos({ left: Math.round(left), top: Math.round(top), side: below ? 'below' : 'above' })
+  }, [open, align])
+
+  // 띄운 채 스크롤하거나 Esc를 누르면 걷는다 (단추에서 멀어진 말풍선이 남지 않게)
+  useEffect(() => {
+    if (!open) return
+    const close = () => {
+      setHover(false)
+      setFocus(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    document.addEventListener('scroll', close, true)
+    document.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('scroll', close, true)
+      document.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
+
   return (
-    <span className={cx('info', `info-${align}`)}>
-      <button type="button" className="info-btn" aria-label={label} aria-describedby={id}>
+    <span className={cx('info', `info-${align}`, open && 'is-open')} onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)}>
+      <button
+        ref={btn}
+        type="button"
+        className="info-btn"
+        aria-label={label}
+        aria-describedby={id}
+        onFocus={(e) => setFocus(e.currentTarget.matches(':focus-visible'))}
+        onBlur={() => setFocus(false)}
+      >
         <InfoIcon />
       </button>
-      <span role="tooltip" id={id} className="info-tip">
-        {children}
-      </span>
+      {createPortal(
+        <span
+          ref={tip}
+          role="tooltip"
+          id={id}
+          className={cx('info-tip', pos && 'is-on')}
+          data-side={pos?.side}
+          style={pos ? { left: pos.left, top: pos.top } : undefined}
+        >
+          {children}
+        </span>,
+        document.body,
+      )}
     </span>
   )
 }
