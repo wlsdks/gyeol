@@ -473,23 +473,6 @@
   flex: 1;
 }
 
-/* 맨 아래의 편집 화면 보기 설정(쓸 때 크게 보기): 발표의 테마와 나눠 두 칸을 다 쓴다 */
-.theme-menu > .menu-sep,
-.theme-toggle {
-  grid-column: 1 / -1;
-}
-
-.theme-menu > .menu-sep {
-  margin: 2px 0 0;
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-bottom: 4px;
-}
-
 .theme-row > .link-btn {
   flex: none;
   margin: 0;

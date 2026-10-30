@@ -416,7 +416,7 @@ export function selectWord(el: HTMLElement, x?: number, y?: number, outside = fa
   const picked = r.toString()
   // outside: 칸 밖(글자가 칸 상자 위아래로 나온 곳)을 두 번 누른 것. 크롬이 고른 것은 믿지 않고 누른 자리의 글자로만
   if (outside || (picked && [...picked].every((c) => marks.test(c)))) {
-    // 고른 빈칸의 앞뒤 글자부터, 없으면 칸의 모든 글자에서 (쓸 때 크게 보기로 장이 커지는 동안 두 번째 누름은 다른 글자 옆에 닿기도 한다)
+    // 고른 빈칸의 앞뒤 글자부터, 없으면 칸의 모든 글자에서
     const near = [s - 1, e, ...text.split('').map((_, i) => i)]
     const hit = x === undefined || y === undefined ? -1 : near.find((i) => i >= 0 && i < text.length && !cut(i) && charHas(point(i), point(i + 1), x, y))
     if (hit === undefined || hit < 0) return

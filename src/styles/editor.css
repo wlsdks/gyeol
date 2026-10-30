@@ -544,38 +544,11 @@
 }
 
 .ed-canvas .slide-frame {
-  /* hidden이 아니라 clip: 키운 장(쓸 때 크게 보기)에서 틀 밖의 칸에 초점이 가거나 커서가 움직여도 브라우저가 틀을 스크롤하지 못하게.
+  /* hidden이 아니라 clip: 글이 넘쳐 틀 밖으로 나간 칸에 초점이 가거나 커서가 움직여도 브라우저가 틀을 스크롤하지 못하게.
      스크롤되면 장이 틀 안에서 밀린 채 남는다 */
   overflow: clip;
   border-radius: 6px;
   box-shadow: 0 1px 2px rgb(16 20 31 / 0.06), 0 10px 30px rgb(16 20 31 / 0.1);
-}
-
-/* 쓸 때 크게 보기(editor/zoom.ts): 장을 그 칸으로 키우고 돌릴 때만 움직인다. transform만 바꾸고, 편집 도구의 크기(--vs)도 같은 곡선으로
-   바꿔 테 두께와 단추가 화면에서 늘 같은 크기로 보이게. 짧고 끝이 부드럽게 (SlideCanvas의 ZOOM_MS) */
-@property --vs {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0.5;
-}
-
-.ed-canvas .slide-frame.is-zooming > .slide-scale {
-  transition:
-    transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1),
-    --vs 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ed-canvas .slide-frame.is-zooming > .slide-scale {
-    transition: none;
-  }
-}
-
-/* 키우거나 돌리는 동안 장 위에 띄운 것(고른 것의 면, 컴포넌트 도구 막대)은 숨긴다. 따라 움직이게 하면 프레임마다 자리를 다시 재서
-   움직임이 끊겼다(useTrackRect의 moving). 끝나면 제자리에서 다시 보인다 */
-.ed-canvas:has(.slide-frame.is-zooming) .sel-ring {
-  opacity: 0;
-  transition: none;
 }
 
 /* 이미지 파일을 장 위로 끌고 올 때: 놓으면 이 장에 들어간다 */

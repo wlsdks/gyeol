@@ -56,7 +56,7 @@
   box-shadow: inset 0 0 0 calc(1.5px / var(--vs, 0.5)) color-mix(in srgb, var(--sel) 50%, transparent);
 }
 
-/* 쓰는 동안, 그리고 쓸 때 크게 보기로 장이 커지거나 줄어든 뒤 손을 움직이기 전(editor/zoom.ts의 is-typing-still): 가만히 있는 손 아래로 온 칸에 손을 올린 테를 두르지 않는다.
+/* 쓰는 동안 손을 움직이기 전(editor/typingStill.ts의 is-typing-still): 가만히 있는 손 아래로 온 칸에 손을 올린 테를 두르지 않는다.
    쓰는 칸 옆에 테가 하나 더 생겨 어느 칸에 쓰는지 헷갈렸다 */
 .is-typing-still .slide.m-edit .ed:hover:not(:focus-within) > .ed-halo {
   background: transparent;

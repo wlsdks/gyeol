@@ -67,25 +67,8 @@ export function useTrackRect(root: () => HTMLElement | null, measure: () => bool
   }, [frame])
 }
 
-/**
- * el이 든 장에서 움직임(옮긴 뒤 제자리로 가는 것, 발표 움직임 미리 보기)이 도는 중인지. 도는 동안은 프레임마다 따라간다.
- * 장을 키우거나 돌리는 움직임(쓸 때 크게 보기, zoom.ts)은 세지 않는다: 그동안 프레임마다 재면 장의 모든 글자 줄을 다시 재고(도구 막대의
- * 자리 고르기) 다시 그려서 움직임이 끊겼다. 그동안 띄운 것은 숨겨 두고(editor.css의 .is-zooming) 끝날 때(transitionend) 한 번 잰다
- */
+/** el이 든 장에서 움직임(옮긴 뒤 제자리로 가는 것, 발표 움직임 미리 보기)이 도는 중인지. 도는 동안은 프레임마다 따라간다 */
 export function moving(el: Element): boolean {
   const slide = el.closest('.slide') ?? el
   return slide.getAnimations({ subtree: true }).some((a) => a.playState === 'running' || a.pending)
-}
-
-/**
- * el이 든 장에서 화면에 보이는 곳. 장을 키우면(쓸 때 크게 보기) 장의 네모가 장 틀보다 커지고 틀 밖은 잘려 보이지 않는다.
- * 장 위에 띄우는 것(고른 것의 면, 도구 막대)은 이 안에서 자리를 잡는다
- */
-export function shownRect(el: Element): DOMRect | undefined {
-  const s = el.closest('.slide')?.getBoundingClientRect()
-  const f = el.closest('.slide-frame')?.getBoundingClientRect()
-  if (!s || !f) return s
-  const left = Math.max(s.left, f.left)
-  const top = Math.max(s.top, f.top)
-  return new DOMRect(left, top, Math.max(0, Math.min(s.right, f.right) - left), Math.max(0, Math.min(s.bottom, f.bottom) - top))
 }

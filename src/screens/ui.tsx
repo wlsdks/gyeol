@@ -79,7 +79,7 @@ const INFO_EDGE = 8
 
 /**
  * (i) 단추와 그 설명. 설명은 body에 붙여 창 기준(fixed)으로 띄운다: 메뉴나 오른쪽 칸 안에 두면 그 상자의
- * overflow에 갇혀, 테마 메뉴 맨 아래의 '쓸 때 크게 보기' 설명이 메뉴 아래 끝에서 잘렸다.
+ * overflow에 갇혀, 메뉴 아래 끝의 설명이 잘렸다.
  * 아래에 자리가 없으면 위로 뒤집고, 좌우는 창 안에 들게 민다. align은 단추의 어느 쪽 끝에 맞출지(end: 오른쪽).
  */
 export function Info({ label, children, align = 'end' }: { label: string; children: ReactNode; align?: 'start' | 'end' }) {

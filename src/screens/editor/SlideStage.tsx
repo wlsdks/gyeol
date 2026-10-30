@@ -21,7 +21,7 @@ import { useLook } from './look'
 import { SelectionBar, StageSlot } from './SelectionBar'
 import type { SidePanel } from './sidePanel'
 import { StageTools } from './StageTools'
-import { useTypingStill, useTypingZoom, useZoomTyping } from './zoom'
+import { useTypingStill } from './typingStill'
 
 // 편집기 가운데: 고치는 장(무대), 그 위에 뜨는 도구, 아래 단추줄과 발표자 노트
 
@@ -92,12 +92,9 @@ export function SlideStage({
     setPeek(true)
     setPreview((n) => n + 1)
   }
-  // 쓸 때 크게 보기: 쓰는 칸으로 장을 키운다. 미리 보기와 움직임을 보이는 동안, 레이아웃을 바꿔 볼 때는 하지 않는다
-  const zoomOn = useZoomTyping()
-  const zoom = useTypingZoom(canvasRef, zoomOn && !peek && !preview && !peekSlide, slide.id)
-  // 쓰는 동안 손을 움직이기 전까지 장 위의 컴포넌트 도구 막대를 숨긴다 (쓸 때 크게 보기를 꺼도)
+  // 쓰는 동안 손을 움직이기 전까지 손 아래 칸에 손을 올린 테를 두르지 않는다
   useTypingStill(canvasRef)
-  // 두 번 누르기가 쓰는 칸 바로 밖(글자가 칸 상자 위아래로 나온 곳, 장이 커지는 동안 조금 비켜 간 곳)에 닿아도 그 칸의 낱말을 고른다.
+  // 두 번 누르기가 쓰는 칸 바로 밖(글자가 칸 상자 위아래로 나온 곳)에 닿아도 그 칸의 낱말을 고른다.
   // 칸의 처리기(fields.tsx)는 칸 안을 두 번 누른 것만 받아서, 크롬이 고른 낱말 뒤 빈칸이 그대로 남았다
   useEffect(() => {
     const root = canvasRef.current
@@ -145,7 +142,6 @@ export function SlideStage({
         <FitSlide
           padding={4}
           belowHeight={56}
-          zoom={zoom}
           below={
             <>
               {/* 끄는 동안 놓으면 할 일은 장 아래 단추줄 자리에 (그동안 단추줄은 숨긴다). 장 위쪽에 띄우던 때는 1280×600처럼

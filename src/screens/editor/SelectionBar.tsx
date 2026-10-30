@@ -10,7 +10,7 @@ import { josa } from '../../lib/josa'
 import { placeFor, sideName, sideZone, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CopyIcon, Icon, TrashIcon, useEscape } from '../ui'
-import { moving, shownRect, useTrackRect } from './useTrackRect'
+import { moving, useTrackRect } from './useTrackRect'
 
 /**
  * 장 위에서 고른 것과 그 도구. 레이아웃 장에서 칸을 누르면 그 칸이 든 항목(카드, 줄, 단계)이나 옆 판, 제목 덩어리를 고른다.
@@ -182,13 +182,9 @@ export function SelectionBar({ slide, canvasRef }: { slide: Slide; canvasRef: Re
       const flat = target.kind === 'item' && !target.across && !inPane && getComputedStyle(target.el).backgroundColor === 'rgba(0, 0, 0, 0)'
       const padX = flat ? ITEM_PAD : pad
       // 장 안까지만: 글이 넘친 항목은 상자가 장 밖(머리줄)까지 걸쳐서 면이 편집기 화면을 덮었다
-      const frame = shownRect(target.el)
+      const frame = target.el.closest('.slide')?.getBoundingClientRect()
       const full = new DOMRect(box.left - padX, box.top - pad, box.width + padX * 2, box.height + pad * 2)
       const r = frame ? overlap(full, frame) : full
-      if (r.width <= 0 || r.height <= 0) {
-        setRing(null)
-        return moving(target.el)
-      }
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
       return moving(target.el)
     },
