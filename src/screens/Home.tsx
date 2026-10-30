@@ -64,11 +64,14 @@ export function Home() {
   // 예시는 하나만 둔다. 누를 때마다 새로 만들면 같은 예시가 목록에 쌓인다. 지웠으면 다시 만든다.
   const openSample = async () => {
     const existing = (await listDecks()).find((d) => d.id === SAMPLE_ID)
-    if (existing) {
+    const fresh = { ...createSampleDeck(), id: SAMPLE_ID }
+    // 예시를 바꾼 새 버전에서도 예전에 만들어 둔 예시가 그대로 열려 새 예시를 볼 길이 없었다.
+    // 손대지 않은(만든 뒤 고친 적 없는) 예전 예시만 새 예시로 바꾸고, 고친 예시는 그 사람의 것이라 그대로 연다
+    if (existing && (existing.updatedAt !== existing.createdAt || existing.title === fresh.title)) {
       go({ name: 'edit', id: existing.id })
       return
     }
-    const deck = { ...createSampleDeck(), id: SAMPLE_ID }
+    const deck = fresh
     // 저장하지 못한 채 편집기로 가면 '찾을 수 없는 발표'로 보인다
     if (!(await persistNow(deck))) {
       toast.show(`예시를 열지 못했어요. ${SAVE_HELP}`, undefined, 8000)
