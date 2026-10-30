@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { LAYOUTS, PANE_UNIT, panesOf, placeOf, sideOf, variantOf } from '../deck/layouts'
 import { fontOf, footerOf, isDarkLook, motionOf, themeStyle, toneOf, transitionOf } from '../deck/themes'
 import { presentable, type PageInfo } from '../deck/fields'
@@ -178,6 +178,18 @@ export function ScaledSlide({ width, children, className, decorative }: { width:
   )
 }
 
+/** 장 틀 안에서 장을 키우거나 돌릴 때 걸리는 시간(ms). edit.css의 .is-zooming과 같다 */
+export const ZOOM_MS = 300
+
+/**
+ * 키운 장을 장 틀 안에 둘 자리(화면 px의 translate). 점(x, y, 캔버스 px)을 틀 가운데에 두되, 장 끝이 틀 안으로 들어와 옆이 비지 않게 막는다.
+ * S는 장의 배율(맞춘 배율 × z), w와 h는 장 틀의 크기
+ */
+export function zoomShift(zoom: { x: number; y: number }, S: number, w: number, h: number): { x: number; y: number } {
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+  return { x: clamp(w / 2 - zoom.x * S, w - SLIDE_W * S, 0), y: clamp(h / 2 - zoom.y * S, h - SLIDE_H * S, 0) }
+}
+
 /** 부모 영역 안에 최대한 크게 맞추는 슬라이드. `below`는 슬라이드 바로 아래에 같은 너비로 붙는다. */
 export function FitSlide({
   children,
@@ -185,12 +197,18 @@ export function FitSlide({
   padding = 0,
   below,
   belowHeight = 0,
+  zoom,
 }: {
   children: ReactNode
   className?: string
   padding?: number
   below?: ReactNode
   belowHeight?: number
+  /**
+   * 장 틀 안에서 장을 키워 보일 때(편집기의 '쓸 때 크게 보기', screens/editor/zoom.ts): z배로 키우고 점 (x, y)(캔버스 px)를 틀 가운데에.
+   * 틀의 크기와 자리는 그대로라 아래(below)는 움직이지 않는다
+   */
+  zoom?: { z: number; x: number; y: number } | null
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState({ w: 0, h: 0 })
@@ -208,10 +226,22 @@ export function FitSlide({
   const scale = Math.max(0.05, Math.min((box.w - padding * 2) / SLIDE_W, (box.h - padding * 2 - belowHeight) / SLIDE_H))
   const w = SLIDE_W * scale
   const h = SLIDE_H * scale
+  // 키운 배율과 자리. 늘 translate와 scale 둘을 같은 차례로 적는다: 바뀌는 동안(edit.css의 .is-zooming) 두 값이 따로 부드럽게 바뀌게
+  const S = scale * (zoom?.z ?? 1)
+  const at = zoom ? zoomShift(zoom, S, w, h) : { x: 0, y: 0 }
+  // 확대가 바뀌는 동안만 움직임을 건다. 늘 걸어 두면 창 크기를 바꿀 때 장이 창을 늦게 따라온다
+  const key = zoom ? `${zoom.z} ${zoom.x} ${zoom.y}` : ''
+  const [glide, setGlide] = useState({ key, on: false })
+  if (glide.key !== key) setGlide({ key, on: true })
+  useEffect(() => {
+    if (!glide.on) return
+    const t = window.setTimeout(() => setGlide((g) => ({ ...g, on: false })), ZOOM_MS + 80)
+    return () => window.clearTimeout(t)
+  }, [glide])
   const frame = (
-    <div className="slide-frame" style={{ width: w, height: h }}>
-      {/* --vs: 슬라이드 안의 편집 도구(부품 도구)가 축소와 상관없이 같은 크기로 보이게 */}
-      <div className="slide-scale" style={{ transform: `scale(${scale})`, '--vs': scale }}>
+    <div className={cx('slide-frame', zoom && 'is-zoomed', glide.on && 'is-zooming')} style={{ width: w, height: h }}>
+      {/* --vs: 슬라이드 안의 편집 도구(부품 도구)가 축소와 상관없이 같은 크기로 보이게 (키운 배율까지) */}
+      <div className="slide-scale" style={{ transform: `translate(${at.x}px, ${at.y}px) scale(${S})`, '--vs': S }}>
         {children}
       </div>
     </div>

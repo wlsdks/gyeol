@@ -11,7 +11,7 @@ import { frameRect } from '../../slides/blockFrame'
 import { placeFor, sideName, sideZone, zoneOf } from '../../slides/panes'
 import { useDeck } from '../../store/deckStore'
 import { CopyIcon, Icon, TrashIcon, useEscape } from '../ui'
-import { moving, useTrackRect } from './useTrackRect'
+import { moving, shownRect, useTrackRect } from './useTrackRect'
 
 /**
  * 장 위에서 고른 것과 그 도구. 레이아웃 장에서 칸을 누르면 그 칸이 든 항목(카드, 줄, 단계)이나 옆 판, 제목 덩어리를 고른다.
@@ -249,13 +249,20 @@ export function FloatTools({ canvasRef, children }: { canvasRef: RefObject<HTMLD
         return true
       }
       // 칸이 아니라 부품의 테두리(그린 것 둘레) 바로 위에: 칸 위에 두면 짧은 내용 위로 빈 데를 건너 떠 보인다
-      const r = el.classList.contains('bk') ? frameRect(el) : el.getBoundingClientRect()
+      // 키운 장(쓸 때 크게 보기)에서는 보이는 곳 안에서: 틀 밖으로 잘린 부분 위에 막대를 세우면 아무것도 없는 데 떠 있다
+      const shown = shownRect(el)
+      const whole = el.classList.contains('bk') ? frameRect(el) : el.getBoundingClientRect()
+      const r = shown ? overlap(whole, shown) : whole
+      if (r.width <= 0 || r.height <= 0) {
+        setSpot(null)
+        return moving(el)
+      }
       const slide = el.closest('.slide')
       // 글자 줄은 고른 것이 움직이거나 커질 때만 다시 잰다 (잴 때마다 장의 모든 글을 재지 않게). 항목 수가 바뀌어도: 위치 비교는
       // 점수를 적지 않은 점을 판 위쪽에 세워서, 점을 더해도 테두리는 그대로라 예전 자리의 막대가 새 점과 이름을 덮었다
       const key = `${r.left},${r.top},${r.width},${r.height},${el.querySelectorAll('.it').length}`
       if (texts.current.key !== key) texts.current = { key, rects: contentRects(slide, canvasRef.current) }
-      const s = barSpot(r, bar, canvasRef.current, texts.current.rects, slide?.getBoundingClientRect(), true)
+      const s = barSpot(r, bar, canvasRef.current, texts.current.rects, shown, true)
       if (!bar.classList.contains('is-tight')) full.current = bar.offsetWidth
       setTight(full.current > s.room)
       setSpot((p) => (p && p.x === s.x && p.y === s.y ? p : { x: s.x, y: s.y }))
@@ -379,9 +386,13 @@ export function SelectionBar({ slide, canvasRef }: { slide: Slide; canvasRef: Re
       const flat = target.kind === 'item' && !target.across && !inPane && getComputedStyle(target.el).backgroundColor === 'rgba(0, 0, 0, 0)'
       const padX = flat ? ITEM_PAD : pad
       // 장 안까지만: 글이 넘친 항목은 상자가 장 밖(머리줄)까지 걸쳐서 면이 편집기 화면을 덮었다
-      const frame = target.el.closest('.slide')?.getBoundingClientRect()
+      const frame = shownRect(target.el)
       const full = new DOMRect(box.left - padX, box.top - pad, box.width + padX * 2, box.height + pad * 2)
       const r = frame ? overlap(full, frame) : full
+      if (r.width <= 0 || r.height <= 0) {
+        setRing(null)
+        return moving(target.el)
+      }
       setRing((p) => (p && p.x === r.left && p.y === r.top && p.w === r.width && p.h === r.height ? p : { x: r.left, y: r.top, w: r.width, h: r.height }))
       return moving(target.el)
     },

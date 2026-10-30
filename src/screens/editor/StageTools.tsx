@@ -8,12 +8,13 @@ import type { AiAsk } from '../../ai/useAiAsk'
 import type { AiShare } from '../../ai/useAiShare'
 import { cx } from '../../lib/cx'
 import { useDeck } from '../../store/deckStore'
-import { AlertIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, TrashIcon } from '../ui'
+import { AlertIcon, BlocksIcon, CopyIcon, EyeIcon, EyeOffIcon, MoreIcon, PlayIcon, PlusIcon, Popover, ScreenIcon, SlidersIcon, Toggle, TrashIcon } from '../ui'
 import { SlideAsk } from './AiShare'
 import { openLayoutPicker } from './Inspector'
 import type { Overflow } from './SlideStage'
 import type { BlockEditing } from './BlockEditor'
 import type { SidePanel } from './sidePanel'
+import { setZoomTyping, useZoomTyping } from './zoom'
 
 /**
  * 슬라이드 아래 단추줄: 왼쪽과 오른쪽 단추가 한 줄에 다 들어가지 않으면 글자를 숨긴다.
@@ -212,6 +213,7 @@ export function StageTools({
   const store = useDeck.getState()
   const spec = LAYOUTS[slide.layout]
   const canAddItem = !!spec.items && visibleItems(slide).length < spec.items.max
+  const zoomTyping = useZoomTyping()
   const toolsRef = useRef<HTMLDivElement>(null)
   useTightTools(toolsRef)
   return (
@@ -294,7 +296,7 @@ export function StageTools({
               aria-label="이 장 더 보기"
               aria-expanded={open}
               aria-haspopup="menu"
-              title="복제, 발표에서 빼기, 지우기"
+              title="복제, 발표에서 빼기, 지우기, 쓸 때 크게 보기"
               onClick={toggle}
             >
               <MoreIcon />
@@ -346,6 +348,11 @@ export function StageTools({
                 <TrashIcon />
                 이 장 지우기
               </button>
+              {/* 이 장만이 아니라 편집기 전체의 보기 설정. 장 바로 아래라 쓰다가 장이 커지는 것을 본 자리에서 끌 수 있게 여기에 둔다 */}
+              <div className="menu-sep" role="separator" />
+              <div className="menu-toggle" title="칸을 눌러 쓰는 동안 장을 그 칸으로 크게 보여요. 다 쓰면 원래 크기로 돌아와요">
+                <Toggle label="쓸 때 크게 보기" on={zoomTyping} onChange={setZoomTyping} />
+              </div>
             </div>
           )}
         </Popover>

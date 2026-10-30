@@ -15,6 +15,12 @@ const KEEP = 6
  * 부품을 고르면 칸 둘레 14px 밖에 생기는 테두리에 면이 닿지 않게. 0이면 글자가 면 끝에 붙어 답답해서 조금은 둔다
  */
 const CELL_OUT = 7
+/**
+ * 쓰는 칸의 테는 이웃 칸 쪽으로 이만큼(캔버스 px)까지 넓어질 수 있다. 쓰는 동안에는 그 칸의 테 하나만 보여서 이웃의 테와 나눠 가질
+ * 틈이 아니라, 이웃 칸의 글에서 KEEP만큼 떨어진 곳까지 쓴다(edit.css의 --ed-ft, -fr, -fb, -fl). 늘 두르는 넓이(WANT)로는 테가 글에
+ * 바짝 붙어 쓰는 칸이 좁아 보였다
+ */
+const FOCUS_MAX = 48
 
 interface Box {
   el: HTMLElement
@@ -24,6 +30,8 @@ interface Box {
   l: number
   /** 두를 넓이: 위, 오른쪽, 아래, 왼쪽 */
   h: [number, number, number, number]
+  /** 쓰는 중에 넓힐 수 있는 끝: 위, 오른쪽, 아래, 왼쪽 */
+  f: [number, number, number, number]
 }
 
 /** 이 안의 편집 칸(.ed)마다 --ed-t, --ed-r, --ed-b, --ed-l을 정한다. 다 정한 칸 상자를 돌려준다 (점검용) */
@@ -36,22 +44,31 @@ export function placeHalos(slide: HTMLElement): Box[] {
   for (const el of slide.querySelectorAll<HTMLElement>('.ed')) {
     const q = el.getBoundingClientRect()
     if (!q.width && !q.height) continue
-    const box: Box = { el, t: (q.top - s.top) / k, r: (q.right - s.left) / k, b: (q.bottom - s.top) / k, l: (q.left - s.left) / k, h: [WANT.y, WANT.x, WANT.y, WANT.x] }
+    const box: Box = {
+      el,
+      t: (q.top - s.top) / k,
+      r: (q.right - s.left) / k,
+      b: (q.bottom - s.top) / k,
+      l: (q.left - s.left) / k,
+      h: [WANT.y, WANT.x, WANT.y, WANT.x],
+      f: [FOCUS_MAX, FOCUS_MAX, FOCUS_MAX, FOCUS_MAX],
+    }
+    // 장 끝 밖으로는 넓히지 않는다
+    box.f = [Math.min(FOCUS_MAX, box.t), Math.min(FOCUS_MAX, slide.offsetWidth - box.r), Math.min(FOCUS_MAX, slide.offsetHeight - box.b), Math.min(FOCUS_MAX, box.l)]
     for (const wrap of [el.parentElement?.closest('.it'), el.closest('.bk')]) {
       const c = wrap?.getBoundingClientRect()
       if (!c) continue
       const room = (d: number) => Math.max(0, d / k + CELL_OUT)
-      box.h = [
-        Math.min(box.h[0], room(q.top - c.top)),
-        Math.min(box.h[1], room(c.right - q.right)),
-        Math.min(box.h[2], room(c.bottom - q.bottom)),
-        Math.min(box.h[3], room(q.left - c.left)),
-      ]
+      const cell = [room(q.top - c.top), room(c.right - q.right), room(c.bottom - q.bottom), room(q.left - c.left)]
+      box.h = box.h.map((v, i) => Math.min(v, cell[i])) as Box['h']
+      box.f = box.f.map((v, i) => Math.min(v, cell[i])) as Box['f']
     }
     boxes.push(box)
     inkOut(el, q, k)
   }
   const room = (gap: number) => Math.max(0, (gap - KEEP) / 2)
+  // 쓰는 칸 하나만 넓힐 때는 틈을 나누지 않는다
+  const reach = (gap: number) => Math.max(0, gap - KEEP)
   for (let i = 0; i < boxes.length; i++) {
     const a = boxes[i]
     for (let j = i + 1; j < boxes.length; j++) {
@@ -59,29 +76,43 @@ export function placeHalos(slide: HTMLElement): Box[] {
       // 가로 틈과 세로 틈 (겹치면 음수)
       const gx = Math.max(b.l - a.r, a.l - b.r)
       const gy = Math.max(b.t - a.b, a.t - b.b)
-      // 면을 다 둘러도 닿지 않는 칸은 건너뛴다
-      if (gx >= WANT.x * 2 + KEEP || gy >= WANT.y * 2 + KEEP) continue
+      // 쓰는 중에 넓혀도 닿지 않는 칸은 건너뛴다
+      if (gx >= FOCUS_MAX + KEEP || gy >= FOCUS_MAX + KEEP) continue
+      // 면을 다 둘러도 닿지 않는 칸이면 늘 두르는 넓이는 그대로
+      const near = gx < WANT.x * 2 + KEEP && gy < WANT.y * 2 + KEEP
       // 나란히 있으면 옆을, 위아래로 있으면 위아래를 줄인다. 비스듬히 있으면 틈이 넓은 쪽을 (덜 줄여도 된다).
       // 칸끼리 조금 겹치면(줄여 그린 글자의 반올림 같은) 덜 겹친 쪽을 0으로
       const side = gx < 0 && gy < 0 ? gx >= gy : gy < 0 || (gx >= 0 && gx >= gy)
       if (side) {
         const left = a.l + a.r <= b.l + b.r ? [a, b] : [b, a]
-        left[0].h[1] = Math.min(left[0].h[1], room(gx))
-        left[1].h[3] = Math.min(left[1].h[3], room(gx))
+        if (near) {
+          left[0].h[1] = Math.min(left[0].h[1], room(gx))
+          left[1].h[3] = Math.min(left[1].h[3], room(gx))
+        }
+        left[0].f[1] = Math.min(left[0].f[1], reach(gx))
+        left[1].f[3] = Math.min(left[1].f[3], reach(gx))
       } else {
         const top = a.t + a.b <= b.t + b.b ? [a, b] : [b, a]
-        top[0].h[2] = Math.min(top[0].h[2], room(gy))
-        top[1].h[0] = Math.min(top[1].h[0], room(gy))
+        if (near) {
+          top[0].h[2] = Math.min(top[0].h[2], room(gy))
+          top[1].h[0] = Math.min(top[1].h[0], room(gy))
+        }
+        top[0].f[2] = Math.min(top[0].f[2], reach(gy))
+        top[1].f[0] = Math.min(top[1].f[0], reach(gy))
       }
     }
   }
   for (const box of boxes) {
-    const [t, r, b, l] = box.h.map((v) => `${Math.floor(v)}px`)
     const st = box.el.style
-    if (st.getPropertyValue('--ed-t') !== t) st.setProperty('--ed-t', t)
-    if (st.getPropertyValue('--ed-r') !== r) st.setProperty('--ed-r', r)
-    if (st.getPropertyValue('--ed-b') !== b) st.setProperty('--ed-b', b)
-    if (st.getPropertyValue('--ed-l') !== l) st.setProperty('--ed-l', l)
+    const put = (name: string, v: number) => {
+      const px = `${Math.floor(v)}px`
+      if (st.getPropertyValue(name) !== px) st.setProperty(name, px)
+    }
+    ;(['t', 'r', 'b', 'l'] as const).forEach((side, i) => {
+      put(`--ed-${side}`, box.h[i])
+      // 쓰는 중의 끝은 늘 두르는 넓이보다 좁아지지 않는다
+      put(`--ed-f${side}`, Math.max(box.h[i], box.f[i]))
+    })
   }
   return boxes
 }
