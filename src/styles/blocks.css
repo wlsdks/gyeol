@@ -420,6 +420,14 @@ body.is-block-resizing.is-row-resizing * {
   top: 0;
   left: 0;
   z-index: 31;
+  transition: opacity 0.2s ease-out;
+}
+
+/* 컴포넌트 안의 칸에 쓰는 동안 손을 움직이기 전까지는 막대를 흐리게 숨긴다(editor/zoom.ts가 is-typing-still을 단다): 쓸 때 크게 보기로
+   키운 장에서 막대가 쓰는 줄 바로 위나 이웃 글을 덮었다. 손을 움직이면 다시 보인다 */
+.ed-canvas.is-typing-still:has(.slide .ed-input:focus) .float-tools {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .float-tools .bk-tools {

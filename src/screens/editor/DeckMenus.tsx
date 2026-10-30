@@ -8,6 +8,7 @@ import { useDeck } from '../../store/deckStore'
 import { keys } from '../../lib/keys'
 import { presenterAuto, setPresenterAuto } from '../../present/link'
 import { CheckIcon, ChevronIcon, DownloadIcon, Info, PlayIcon, Popover, Segmented, Toggle } from '../ui'
+import { setZoomTyping, useZoomTyping } from './zoom'
 
 /**
  * 지금 장의 움직임을 발표할 때처럼 한 번 보여 달라는 창(window) 이벤트. 내용 없이 신호만 보낸다 (new Event).
@@ -21,6 +22,7 @@ export const PREVIEW_MOTION = 'html-maker:preview-motion'
 const THEME_THUMB = 226
 
 export function ThemeMenu({ deck }: { deck: Deck }) {
+  const zoomTyping = useZoomTyping()
   const setTheme = useDeck((s) => s.setTheme)
   const setAccent = useDeck((s) => s.setAccent)
   const setMotion = useDeck((s) => s.setMotion)
@@ -154,6 +156,14 @@ export function ThemeMenu({ deck }: { deck: Deck }) {
           </div>
           <p className="menu-h">장 넘기기</p>
           <Segmented className="seg-full" label="장 넘기기" options={TRANSITIONS} value={transition} onPick={(id) => setLook({ transition: id })} />
+          {/* 발표가 아니라 이 편집 화면의 보기 설정이라 맨 아래에 따로. 이 브라우저에 남는다(editor/zoom.ts) */}
+          <div className="menu-sep" role="separator" />
+          <div className="theme-toggle">
+            <Toggle label="쓸 때 크게 보기" on={zoomTyping} onChange={setZoomTyping} />
+            <Info label="쓸 때 크게 보기 설명" align="end">
+              칸을 눌러 쓰는 동안 장을 그 칸 둘레로 크게 보여요. 다 쓰면 원래 크기로 돌아와요. 이 화면에서만 커지고, 발표에는 영향이 없어요.
+            </Info>
+          </div>
         </div>
       )}
     </Popover>
