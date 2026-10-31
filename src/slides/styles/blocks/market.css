@@ -135,8 +135,10 @@
   color: var(--accent);
 }
 
-/* 규모는 '3,200억 / 원'처럼 단위만 다음 줄로 떨어지면 숫자로 읽히지 않는다. 넘치면 fitBlocks가 글자를 줄인다 */
-.bk-in .bk-mk-v {
+/* 규모는 '3,200억 / 원'처럼 단위만 다음 줄로 떨어지면 숫자로 읽히지 않는다. 편집 칸도 발표 화면과 같이 한 줄로 두어
+   넘치면 fitBlocks가 알아채게 한다: 편집 칸의 기본 pre-wrap이 부모의 pre를 덮어 단위만 다음 줄로 떨어졌다. */
+.bk-in .bk-mk-v,
+.bk-in .bk-mk-v > :is(.ed-input, .ed-hint) {
   white-space: pre;
 }
 
