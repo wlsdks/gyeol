@@ -25,7 +25,9 @@ function scene(id: string, fields: Record<string, string>, puts: Put[], look?: L
   const areaH = composeAreaH(base, look, true)
   let blocks: Block[] = []
   puts.forEach((p, i) => {
-    blocks = autoPlace(blocks, block(p, `${id}-b${i}`), areaH) ?? blocks
+    const placed = autoPlace(blocks, block(p, `${id}-b${i}`), areaH)
+    if (!placed) throw new Error(`대표 조합 ${id}에 ${p.type}을 넣을 수 없습니다`)
+    blocks = placed
   })
   return { ...base, blocks }
 }
@@ -59,7 +61,7 @@ export function reviewSlides(look?: Look): Slide[] {
     // 제목 없는 결론 한 장
     scene('bare', {}, [{ type: 'message' }, { type: 'quote' }], look),
     // 빽빽한 장
-    scene('dense', { title: '3분기 운영 지표', lead: '목표 대비 달성과 다음 분기 과제' }, [{ type: 'number' }, { type: 'delta' }, { type: 'goal' }, { type: 'trend' }, { type: 'bullets' }, { type: 'callout' }], look),
+    scene('dense', { title: '3분기 운영 지표', lead: '목표 대비 달성과 다음 분기 과제' }, [{ type: 'number' }, { type: 'delta' }, { type: 'goal' }, { type: 'bullets' }, { type: 'callout' }], look),
     // 강조 상자와 근거
     scene('callout', { title: '교육 담당 2명을 지원해 주세요' }, [{ type: 'callout', look: 'bold' }, { type: 'bullets', n: 4 }], look),
     // 소제목과 목록 둘
