@@ -120,11 +120,15 @@ export function blockMinH(block: Block, span: number): number {
   const variant = variantOfBlock(block)
   const n = spec.items ? heightCount(block, variant) : 0
   // 그려지는 면으로 본다: 판 너비를 다 쓰면 혼자인 줄이라 고른 면이 있어도 바탕 없이 그려진다 (shownLook)
-  const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${shownLook(block, span >= BOARD_COLS) === 'plain' ? 'plain' : 'card'}`]
+  const plain = shownLook(block, span >= BOARD_COLS) === 'plain'
+  const table = BLOCK_HEIGHTS[`${block.type}.${variant}.${plain ? 'plain' : 'card'}`]
   // 아직 재지 않은 부품 (새로 만들고 갤러리에서 재기 전): 넉넉하게
   const found = measuredAt(table, span, n)
   if (found !== undefined && found >= NO_FIT) return found
-  const measured = (found ?? 400) + HEIGHT_SLACK
+  // 좁은 강조 상자는 명조에서 글이 카드 안쪽 여백까지 넘을 수 있다.
+  // 보통 글자에서 잰 높이에 여유를 더해 아래 줄의 자리를 먼저 확보한다.
+  const slack = block.type === 'callout' && !plain && span <= 4 ? 30 : HEIGHT_SLACK
+  const measured = (found ?? 400) + slack
   const base = block.type === 'logos' ? logoFloor(n) : (FLOOR[block.type]?.(variant) ?? 0)
   const floor = span >= 12 && base && lineChart(block.type, variant) ? base - WIDE_CUT : base
   // 항목이 옆으로 늘어서는 너비(항목 수가 늘어도 높이가 같은 너비)에서는 줄 사이가 붙을 일이 없어 바닥을 두지 않는다.
