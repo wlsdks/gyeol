@@ -109,6 +109,12 @@
   opacity: 0.85;
 }
 
+/* 출처는 본래 가장 옅은 글자색을 써서 선택해도 안내가 짙은 바탕에 묻혔다. 쓰는 동안만 본문 글자색으로 읽히게 한다. */
+.slide.m-edit .s-source.ed.is-empty:focus-within > .ed-hint {
+  color: var(--ink);
+  opacity: 0.85;
+}
+
 .ed:not(.is-empty) > .ed-hint {
   display: none;
 }
