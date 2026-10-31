@@ -22,6 +22,7 @@ describe('대표 조합', () => {
       'funnel-stat': ['funnel', 'stat', 'text'],
       'chart-summary': ['diverge', 'summary'],
       'goal-stack': ['ring', 'stat', 'goal', 'stack'],
+      'number-ring': ['number', 'ring', 'number', 'bars'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -51,6 +52,13 @@ describe('대표 조합', () => {
             expect(stat.at).toEqual({ x: 0, y: 0, w: 4, h: 5 })
             expect(goal.at).toEqual({ x: 0, y: 5, w: 5, h: 7 })
             expect(stack.at).toEqual({ x: 5, y: 5, w: 7, h: 7 })
+          }
+          if (slide.id === 'review-number-ring') {
+            const [first, ring, second, bars] = slide.blocks!
+            expect(first.at).toEqual({ x: 0, y: 0, w: 4, h: 5 })
+            expect(ring.at).toEqual({ x: 8, y: 5, w: 4, h: 7 })
+            expect(second.at).toEqual({ x: 4, y: 0, w: 8, h: 5 })
+            expect(bars.at).toEqual({ x: 0, y: 5, w: 8, h: 7 })
           }
         }
       }

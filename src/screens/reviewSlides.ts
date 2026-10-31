@@ -98,6 +98,23 @@ function goalStack(): Slide {
   }
 }
 
+/** 숫자의 빈 입력 영역이 위로 당겨진 비율 컴포넌트를 덮던 장 */
+function numberRing(): Slide {
+  const puts: Put[] = [
+    { type: 'number' }, { type: 'ring', look: 'bold' },
+    { type: 'number', fields: { value: '1,240건', label: '한 달 문의', note: '지난해보다 18% 늘었어요' } },
+    { type: 'bars', variant: 'columns', n: 4 },
+  ]
+  const positions = [
+    { x: 0, y: 0, w: 4, h: 5 }, { x: 8, y: 5, w: 4, h: 7 },
+    { x: 4, y: 0, w: 8, h: 5 }, { x: 0, y: 5, w: 8, h: 7 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-number-ring', fields: { title: '주요 지표를 함께 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `number-ring-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -144,5 +161,6 @@ export function reviewSlides(look?: Look): Slide[] {
     funnelStat(),
     chartSummary(),
     goalStack(),
+    numberRing(),
   ]
 }

@@ -563,6 +563,12 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   max-width: 100%;
 }
 
+/* 큰 숫자의 빈 입력 영역이 옆에 올라온 비율 컴포넌트의 클릭을 가리지 않게 한다. */
+.slide.m-edit .bk-num > .ed {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 /* 목록 소제목도 빈 너비로 다른 컴포넌트의 입력 칸을 가리지 않는다. */
 .slide.m-edit .bk-bl > .bk-h {
   width: fit-content;
