@@ -174,8 +174,15 @@
 }
 
 /* 좁은 칸에 셋 이상을 나란히 두면 항목마다 몇 글자씩만 들어간다. 높이가 넉넉할 때는 두 단으로 나누어 글이 읽히게 둔다. */
+@container bk (max-width: 1300px) and (min-height: 320px) {
+  .bk-points:is(.va-columns, .va-tiles) .pt[data-n='3'] {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px;
+  }
+}
 @container bk (max-width: 1300px) and (min-height: 440px) {
-  .bk-points:is(.va-columns, .va-tiles) .pt:is([data-n='3'], [data-n='4']) {
+  .bk-points:is(.va-columns, .va-tiles) .pt[data-n='4'] {
     grid-auto-flow: row;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 48px;
