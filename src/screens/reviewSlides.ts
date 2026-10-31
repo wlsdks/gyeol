@@ -52,6 +52,24 @@ function messageList(look?: Look): Slide {
   return { ...slide, blocks: slide.blocks!.map((b, i) => ({ ...b, at: { x: i * 6, y: 0, w: 6, h: 12 } })) }
 }
 
+/** 높이가 긴 단계 차트 옆에 숫자와 글을 쌓은 장 */
+function funnelStat(): Slide {
+  const puts: Put[] = [
+    { type: 'funnel', look: 'card', n: 4 },
+    { type: 'stat', look: 'card' },
+    { type: 'text', look: 'card' },
+  ]
+  const positions = [
+    { x: 0, y: 0, w: 8, h: 12 },
+    { x: 8, y: 0, w: 4, h: 5 },
+    { x: 8, y: 5, w: 4, h: 7 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-funnel-stat', fields: { title: '지원에서 합격까지의 흐름을 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `funnel-stat-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -95,5 +113,6 @@ export function reviewSlides(look?: Look): Slide[] {
     // 전체 너비 차트가 아래에 있어도 위의 짧은 두 글은 바깥과 사이 여백을 고르게
     pairChart(look),
     messageList(look),
+    funnelStat(),
   ]
 }

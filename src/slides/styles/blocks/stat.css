@@ -63,3 +63,8 @@
   justify-content: flex-start;
   padding-top: var(--bk-lift, 0px);
 }
+
+/* 들여 쓴 숫자 한 줄의 이름은 차트의 첫 글보다 아래에서 시작한다. 칸은 그대로 두고 안쪽에서 윗선을 맞춘다. */
+.bk-stat.is-shared.bk-look-card > .bk-in {
+  padding-top: calc(var(--bk-py) - 4px);
+}

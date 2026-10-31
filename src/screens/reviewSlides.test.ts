@@ -19,6 +19,7 @@ describe('대표 조합', () => {
       'pareto-number': ['pareto', 'number'],
       'pair-chart': ['bullets', 'callout', 'trend'],
       'message-list': ['message', 'bullets'],
+      'funnel-stat': ['funnel', 'stat', 'text'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -29,6 +30,12 @@ describe('대표 조합', () => {
             expect(list.at?.y).toBe(callout.at?.y)
             expect(chart.at?.y).toBeGreaterThan(list.at!.y)
             expect([chart.at?.x, chart.at?.w]).toEqual([0, 12])
+          }
+          if (slide.id === 'review-funnel-stat') {
+            const [funnel, stat, text] = slide.blocks!
+            expect(funnel.at).toEqual({ x: 0, y: 0, w: 8, h: 12 })
+            expect(stat.at).toEqual({ x: 8, y: 0, w: 4, h: 5 })
+            expect(text.at).toEqual({ x: 8, y: 5, w: 4, h: 7 })
           }
         }
       }
