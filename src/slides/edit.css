@@ -563,6 +563,12 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   max-width: 100%;
 }
 
+/* 목록 소제목도 빈 너비로 다른 컴포넌트의 입력 칸을 가리지 않는다. */
+.slide.m-edit .bk-bl > .bk-h {
+  width: fit-content;
+  max-width: 100%;
+}
+
 /* 그 안내는 장 제목에 손을 올리거나 제목, 부제를 쓰는 동안만 보인다. 늘 보이면 제목 아래 여백(--body-gap)을 안내 글이 채워서
    제목, 부제 안내, 첫 컴포넌트가 사이 없이 붙어 보였다(발표 화면에서는 빈 부제가 빠지고 그 자리가 비어 있다).
    안 보일 때도 자리는 그대로라 그 자리에 손을 올리면 나타난다 */
