@@ -189,22 +189,28 @@
   }
 }
 
-/* 여섯 항목을 낮고 넓은 줄에 쌓으면 소제목이 글자 높이를 차지해 목록이 지나치게 작아진다.
+/* 다섯 항목 이상을 낮은 줄에 쌓으면 소제목이 글자 높이를 차지해 목록이 지나치게 작아진다.
    소제목을 옆에 두고 두 단을 한 묶음으로 읽게 해 남는 가로 공간으로 높이를 아낀다. */
-@container bk (min-width: 1300px) and (height < 310px) {
+@container bk (min-width: 900px) and (height < 310px) {
   .bk-look-plain > .bk-in:has(> .bk-bl > .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) {
     --bk-h: 1;
   }
 
   .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) {
     display: grid;
-    grid-template-columns: fit-content(350px) minmax(0, 1fr);
+    grid-template-columns: fit-content(250px) minmax(0, 1fr);
     column-gap: var(--bk-col-gap);
     align-content: start;
   }
 
   .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) > .bk-h {
     margin-bottom: 0;
+  }
+}
+
+@container bk (min-width: 1300px) and (height < 310px) {
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) {
+    grid-template-columns: fit-content(350px) minmax(0, 1fr);
   }
 }
 
