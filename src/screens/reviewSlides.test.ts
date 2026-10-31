@@ -15,6 +15,8 @@ describe('대표 조합', () => {
       callout: ['callout', 'bullets'],
       heading: ['heading', 'bullets', 'heading', 'checks'],
       'lead-late': ['bullets', 'trend', 'message'],
+      'timeline-facts': ['timeline', 'facts'],
+      'pareto-number': ['pareto', 'number'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -23,5 +25,17 @@ describe('대표 조합', () => {
         }
       }
     }
+  })
+
+  it('여백을 견줄 두 조합은 항목 수와 차트의 총건수가 맞는다', () => {
+    const slides = reviewSlides()
+    const timeline = slides.find((s) => s.id === 'review-timeline-facts')!
+    expect(timeline.blocks?.map((b) => b.items.length)).toEqual([3, 2])
+
+    const pareto = slides.find((s) => s.id === 'review-pareto-number')!.blocks![0]
+    expect(pareto.variant).toBe('rows')
+    expect(pareto.items).toHaveLength(4)
+    const total = pareto.items.reduce((sum, item) => sum + Number(item.value), 0)
+    expect(pareto.fields.heading).toContain(`${total}건`)
   })
 })
