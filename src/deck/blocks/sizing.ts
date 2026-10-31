@@ -224,6 +224,8 @@ export function boardFit(areaH: number, blocks: readonly Block[] = []): Fit {
       }
       return hs[w]
     },
+    // 항목이 많은 목록은 300px 이하에서 글자 단계가 작아진다. 자동 배치에 여유가 있을 때만 이 높이를 먼저 확보한다.
+    readableH: (b) => b.type === 'bullets' && blockItems(b).length >= 5 ? rowsFor(320 + linkRoom(b, blocks), areaH) : 0,
     prefW: (b) => (BLOCKS[b.type] ? Math.min(BOARD_COLS, Math.max(minW(b), BLOCKS[b.type].prefSpan)) : 1),
     stretchy: (b) => STRETCHY.has(b.type),
     // 그려지는 면으로 본다: 판 너비를 다 쓰는 부품은 고른 면이 있어도 바탕 없이 그려진다(shownLook)

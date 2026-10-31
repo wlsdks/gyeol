@@ -566,6 +566,24 @@ describe('파일에서 읽은 부품 장', () => {
     expect(bs.find((b) => b.id === 'n')!.fields.value).toBe('12%')
     expect(lost.n).toBe(1)
   })
+
+  it('항목이 많은 목록은 여유가 있을 때 읽기 좋은 높이를 먼저 받고, 부족하면 최소 높이로 배치한다', () => {
+    const sample = sampleBlock('bullets')
+    const list = { ...sample, id: 'list', items: Array.from({ length: 6 }, (_, i) => ({ ...sample.items[i % sample.items.length], id: `item-${i}` })) }
+    const message = { ...sampleBlock('message'), id: 'message' }
+    const place = (height: number) => insertAt(insertAt([], { at: null, side: 'below' }, message, height)!, { at: null, side: 'below' }, list, height)!
+    const roomy = 688
+    const placed = place(roomy)
+    // 12칸과 줄 사이 48px을 감안한 실제 목록 높이
+    expect(areaOf(placed, 'list').h * ((roomy + 48) / BOARD_ROWS) - 48).toBeGreaterThanOrEqual(320)
+    expect(sound(placed, roomy)).toBe(true)
+
+    const tight = 500
+    const constrained = place(tight)
+    expect(constrained.map((b) => b.id)).toEqual(['message', 'list'])
+    expect(sound(constrained, tight)).toBe(true)
+    expect(areaOf(constrained, 'list').h * ((tight + 48) / BOARD_ROWS) - 48).toBeLessThan(320)
+  })
 })
 
 describe('발표할 때 나오는 차례', () => {

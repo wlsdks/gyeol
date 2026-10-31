@@ -24,6 +24,8 @@ export interface Fit {
   minW(b: Block): number
   /** 이 너비에서 잘리지 않는 가장 낮은 높이 (칸 수). 그 너비로는 높이가 아무리 높아도 안 되면 Infinity */
   minH(b: Block, w: number): number
+  /** 여유가 있을 때 확보할 읽기 좋은 높이. 들어가지 않으면 minH로 다시 놓는다 */
+  readableH?(b: Block, w: number): number
   /** 보기 좋은 너비 (칸 수). 옆에 넣을 때 이만큼 받기를 바란다 */
   prefW(b: Block): number
   /** 높이를 받으면 커지는 부품(차트, 표, 그림). 남는 자리는 이것들이 먼저 받는다 */
@@ -371,6 +373,14 @@ function place(blocks: Block[], t: Tree, fit: Fit): Block[] | null {
   return [...blocks.filter((b) => byId.has(b.id)).map((b) => byId.get(b.id)!), ...out.filter((b) => !known.has(b.id))]
 }
 
+/** 자동 배치에는 읽기 좋은 높이를 먼저 시도한다. 자리가 부족해도 기존 조합은 놓을 수 있게 최소 높이로 다시 시도한다. */
+function placeReadable(blocks: Block[], t: Tree, fit: Fit): Block[] | null {
+  const readable = fit.readableH
+  if (!readable || !leaves(t).some((b) => readable(b, fit.prefW(b)) > 0)) return place(blocks, t, fit)
+  const preferred = { ...fit, minH: (b: Block, w: number) => Math.max(fit.minH(b, w), readable(b, w)) }
+  return place(blocks, t, preferred) ?? place(blocks, t, fit)
+}
+
 /** 나무를 판에 놓은 부품들 (나무의 차례). 예전 줄을 판으로 바꿀 때(legacy.ts). 들어가지 않으면 null */
 export const layTree = (t: Tree, fit: Fit): Block[] | null => place([], t, fit)
 
@@ -524,7 +534,7 @@ function insertTree(blocks: Block[], add: Tree, spot: Spot, fit: Fit): Block[] |
   if (!blocks.length) return place([], add, fit)
   const root = treeOf(normalize(blocks, fit))
   const t = root && inserted(root, add, spot, fit)
-  return t ? place(blocks, t, fit) : null
+  return t ? placeReadable(blocks, t, fit) : null
 }
 
 /** 그 자리가 가리키는 묶음의 부품들 (그 자리에 넣으면 나란히 서거나 위아래로 붙는 것들). 자리가 없으면 빈 목록 */

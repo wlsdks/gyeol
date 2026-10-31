@@ -95,6 +95,14 @@
   --bk-w: 0.84;
 }
 
+/* 목록과 설명이 나란히 있어도 칸이 충분히 넓고 높으면 본문을 한 단계 줄이지 않는다.
+   공간이 부족하거나 글이 길면 맞추기가 실제 내용을 다시 검사한다. */
+@container bk (min-width: 490px) and (min-height: 320px) {
+  .bk:is(.bk-bullets, .bk-text).bk-look-plain.is-shared > .bk-in {
+    --bk-w: 1;
+  }
+}
+
 @container bk (max-width: 450px) {
   .bk > .bk-in {
     --bk-w: 0.7;
