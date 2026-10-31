@@ -165,6 +165,30 @@
   }
 }
 
+/* 아주 낮고 넓은 줄에서 두 항목과 소제목을 위아래로 쌓으면 큰 글자도 출처 크기까지 줄어든다.
+   한 줄에 함께 두어 읽는 크기를 지키고, 긴 글은 실제 너비와 높이에 맞춘다. */
+@container bk (min-width: 1300px) and (height < 160px) {
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list[data-n='2']) {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: var(--bk-col-gap);
+  }
+
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list[data-n='2']) > .bk-h {
+    margin-bottom: 0;
+  }
+
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list[data-n='2']) > .bk-list {
+    min-width: 0;
+    column-gap: var(--bk-col-gap);
+  }
+
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list[data-n='2']) > .bk-list > .bk-li {
+    padding-top: 0;
+  }
+}
+
 /* 한 줄을 다 쓰는 넓은 칸이 넉넉히 높으면 단을 나누지 않는다. 단 나누기와 나란히 세우기는 높이가 모자랄 때의 짜임이다:
    높이가 넉넉한데 다섯을 셋과 둘로 나누면 목록이 장의 왼쪽 위 4분의 1에 작게 몰리고, 오른쪽 단 아래와 장의 아래 3분의 1이 통째로 비었다.
    사람이 짠 장처럼 한 단(글 폭 --measure)으로 두고 줄 사이를 높이에 맞게 넓힌다(--bk-air). 소제목이 있으면 소제목을 왼쪽 반,
