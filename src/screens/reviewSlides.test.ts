@@ -23,6 +23,7 @@ describe('대표 조합', () => {
       'chart-summary': ['diverge', 'summary'],
       'goal-stack': ['ring', 'stat', 'goal', 'stack'],
       'number-ring': ['number', 'ring', 'number', 'bars'],
+      'linked-numbers': ['number', 'number', 'number', 'stack'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -59,6 +60,14 @@ describe('대표 조합', () => {
             expect(ring.at).toEqual({ x: 8, y: 5, w: 4, h: 7 })
             expect(second.at).toEqual({ x: 4, y: 0, w: 8, h: 5 })
             expect(bars.at).toEqual({ x: 0, y: 5, w: 8, h: 7 })
+          }
+          if (slide.id === 'review-linked-numbers') {
+            const [first, second, third, chart] = slide.blocks!
+            expect([first.look, first.link, second.look, third.look]).toEqual(['card', 'arrow', 'plain', 'plain'])
+            expect([first.at, second.at, third.at, chart.at]).toEqual([
+              { x: 0, y: 0, w: 4, h: 6 }, { x: 4, y: 0, w: 4, h: 6 },
+              { x: 8, y: 0, w: 4, h: 6 }, { x: 0, y: 6, w: 12, h: 6 },
+            ])
           }
         }
       }

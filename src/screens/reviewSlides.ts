@@ -115,6 +115,24 @@ function numberRing(): Slide {
   }
 }
 
+/** 연결된 숫자 중 들여 쓴 칸이 아래 차트 쪽으로 길게 남던 장 */
+function linkedNumbers(): Slide {
+  const puts: Put[] = [
+    { type: 'number', look: 'card' },
+    { type: 'number', look: 'plain', fields: { value: '1,240건', label: '한 달 문의', note: '지난해보다 18% 늘었어요' } },
+    { type: 'number', look: 'plain', fields: { value: '1,240건', label: '한 달 문의', note: '지난해보다 18% 늘었어요' } },
+    { type: 'stack', look: 'plain', variant: 'sum', n: 3 },
+  ]
+  const positions = [
+    { x: 0, y: 0, w: 4, h: 6 }, { x: 4, y: 0, w: 4, h: 6 },
+    { x: 8, y: 0, w: 4, h: 6 }, { x: 0, y: 6, w: 12, h: 6 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-linked-numbers', fields: {},
+    blocks: puts.map((p, i) => ({ ...block(p, `linked-numbers-b${i}`), at: positions[i], ...(i === 0 ? { link: 'arrow' as const } : {}) })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -162,5 +180,6 @@ export function reviewSlides(look?: Look): Slide[] {
     chartSummary(),
     goalStack(),
     numberRing(),
+    linkedNumbers(),
   ]
 }

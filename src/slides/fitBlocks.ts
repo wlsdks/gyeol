@@ -801,11 +801,10 @@ export function blockFitter() {
       const key = c.dataset.band ?? c.dataset.block ?? ''
       groups.set(key, (groups.get(key) || []).concat(c))
     }
-    // 옆 이음표가 선 줄은 바탕 없는 칸이 칸 높이의 가운데에 서서(blocks.css) 그 줄의 면을 줄이지 않는다. 줄이 모두 면이면 줄인다:
-    // 이음표는 쌓기 끝에서 앞 칸의 그려진 것(면) 가운데로 옮긴다. 예전에는 면만 셋인 줄도 건너뛰어 숫자 한 줄짜리 면 셋이 본문 바닥까지 닿았다
+    // 이음표가 있는 줄도 내용은 위에서 시작한다. 면을 내용에 맞춘 뒤 이음표는 쌓기 끝에서 앞 칸의 그려진 것 가운데로 옮긴다.
     // 두 번: 면을 줄이면 칸 높이로 정한 글자 단계(--bk-h, 300px 밑은 한 단계 작게)가 바뀌어 내용이 더 작아질 수 있다. 한 번만 줄이면
     // 결정 요청 면이 줄인 뒤 작아진 글보다 86px 컸다
-    const huggable = Array.from(groups.values()).filter((cs) => !cs.some((c) => c.classList.contains('lk-row')) || cs.every((c) => !c.classList.contains('bk-look-plain')))
+    const huggable = Array.from(groups.values())
     hug(huggable, k)
     hug(huggable, k)
     // 칸마다 판의 자리(화면 px)와 그려진 범위, 바로 위에 있는 칸들(판에서 이 칸 위 선보다 위에서 끝나고 옆으로 겹친다)
