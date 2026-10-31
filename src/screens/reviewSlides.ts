@@ -149,6 +149,20 @@ function sparkKpiList(): Slide {
   }
 }
 
+/** 쌓인 두 칸 옆 준비 상황의 높이가 줄었다가 되돌아가던 장 */
+function stackedChecks(): Slide {
+  const puts: Put[] = [
+    { type: 'delta', look: 'card' }, { type: 'checks', look: 'card', n: 3 }, { type: 'callout', look: 'card' },
+  ]
+  const positions = [
+    { x: 0, y: 4, w: 6, h: 8 }, { x: 6, y: 0, w: 6, h: 12 }, { x: 0, y: 0, w: 6, h: 4 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-stacked-checks', fields: { title: '준비와 변화 상황을 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `stacked-checks-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -198,5 +212,6 @@ export function reviewSlides(look?: Look): Slide[] {
     numberRing(),
     linkedNumbers(),
     sparkKpiList(),
+    stackedChecks(),
   ]
 }

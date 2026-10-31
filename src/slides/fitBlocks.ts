@@ -694,8 +694,9 @@ export function blockFitter() {
         if (inner) place(inner)
       }
       const was = parseFloat(x.c.style.getPropertyValue('--bk-trim')) || 0
-      // 캔버스 24px 밑이면 줄이지 않는다 (hug와 같이: 글을 적을 때마다 면이 조금씩 움직이지 않게)
-      const want = cut < 24 ? o.trim : o.trim + cut
+      // 처음에는 24px 밑이면 줄이지 않는다. 이미 줄인 뒤 다시 쟀을 때 남는 몫이 24px보다 작아져도 그 몫만 남긴다:
+      // 처음 높이로 되돌리면 다음 맞추기에서 다시 줄고 돌아오는 사이를 반복한다.
+      const want = cut < 24 && was === o.trim ? o.trim : o.trim + cut
       if (want === was) continue
       set(want)
       if (inner && over(inner)) {

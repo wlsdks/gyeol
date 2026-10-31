@@ -25,6 +25,7 @@ describe('대표 조합', () => {
       'number-ring': ['number', 'ring', 'number', 'bars'],
       'linked-numbers': ['number', 'number', 'number', 'stack'],
       'spark-kpi-list': ['spark', 'kpi', 'bullets'],
+      'stacked-checks': ['delta', 'checks', 'callout'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -76,6 +77,13 @@ describe('대표 조합', () => {
               { x: 0, y: 0, w: 12, h: 5 }, { x: 0, y: 5, w: 8, h: 7 }, { x: 8, y: 5, w: 4, h: 7 },
             ])
             expect([kpi.look, list.look, kpi.items.length, list.items.length]).toEqual(['card', 'card', 2, 3])
+          }
+          if (slide.id === 'review-stacked-checks') {
+            const [delta, checks, callout] = slide.blocks!
+            expect([delta.at, checks.at, callout.at]).toEqual([
+              { x: 0, y: 4, w: 6, h: 8 }, { x: 6, y: 0, w: 6, h: 12 }, { x: 0, y: 0, w: 6, h: 4 },
+            ])
+            expect(checks.items).toHaveLength(3)
           }
         }
       }
