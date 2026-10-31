@@ -316,16 +316,23 @@ function Lines({ gutters, blocks, live }: { gutters: Gutter[]; blocks: Block[]; 
   return (
     <>
       {gutters.flatMap((g) =>
-        lineParts(g, blocks).map(({ from, to }) => (
+        lineParts(g, blocks).map(({ from, to }, index) => (
           <div
-            key={`${g.dir}${g.at}-${from}-${to}-${g.key}`}
+            key={`${g.dir}-${g.depth}-${g.key}-${index}`}
             className={cx('bk-line', `is-${g.dir}`, near(g, from, to) && 'is-near', live.resizing === `${g.dir}${g.key}` && 'is-active')}
             style={{ '--at': g.at, '--from': from, '--to': to } as React.CSSProperties}
-            role="separator"
+            role={index === 0 ? 'separator' : undefined}
+            tabIndex={index === 0 ? 0 : undefined}
+            aria-hidden={index > 0 ? true : undefined}
             aria-orientation={g.dir === 'h' ? 'vertical' : 'horizontal'}
             aria-label={g.dir === 'h' ? '컴포넌트 너비 바꾸기' : '컴포넌트 높이 바꾸기'}
-            title={g.dir === 'h' ? '끌어서 너비 바꾸기' : '끌어서 높이 바꾸기'}
+            aria-valuemin={0}
+            aria-valuemax={12}
+            aria-valuenow={g.at}
+            aria-valuetext={`격자 ${g.at}칸 위치`}
+            title={g.dir === 'h' ? '끌거나 좌우 화살표로 너비 바꾸기' : '끌거나 위아래 화살표로 높이 바꾸기'}
             onPointerDown={(e) => live.onGutterPointerDown(e, g)}
+            onKeyDown={(e) => live.onGutterKeyDown(e, g)}
           >
             <span className="bk-line-grip" />
           </div>

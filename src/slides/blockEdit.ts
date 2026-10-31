@@ -1,4 +1,4 @@
-import { createContext, type PointerEvent, type ReactNode } from 'react'
+import { createContext, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import type { Gutter, LinkTarget } from '../deck/blocks'
 import type { Block, BlockLink } from '../deck/types'
 
@@ -17,6 +17,7 @@ export interface BlockEdit {
   onCellPointerDown(e: PointerEvent<HTMLElement>, block: Block): void
   /** 판을 나누는 선을 끌어 양쪽의 너비나 높이를 바꾼다 */
   onGutterPointerDown(e: PointerEvent<HTMLElement>, gutter: Gutter): void
+  onGutterKeyDown(e: KeyboardEvent<HTMLElement>, gutter: Gutter): void
   /** 끄고 있는 선 (dir + key). 그 손잡이를 진하게 그린다 */
   resizing?: string | null
   /** 고른 이음표의 자리 */

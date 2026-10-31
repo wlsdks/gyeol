@@ -471,6 +471,13 @@ function focusNextField(from: HTMLElement, dir: 1 | -1): boolean {
   if (!slide) return false
   const all = [...slide.querySelectorAll<HTMLElement>('.ed-input')].filter((el) => el.getClientRects().length > 0)
   const next = all[all.indexOf(from) + dir]
+  // 컴포넌트의 글을 다 돈 다음에는 크기 조절선도 키보드로 찾을 수 있어야 한다. 글 칸 사이는 그대로 건너뛴다.
+  const area = slide.querySelector<HTMLElement>('.bk-area.is-live')
+  const lines = area ? [...area.querySelectorAll<HTMLElement>('.bk-line[tabindex="0"]')].filter((el) => el.getClientRects().length > 0) : []
+  if (area && lines.length && (dir === 1 ? area.contains(from) && !area.contains(next ?? null) : !area.contains(from) && !!next && area.contains(next))) {
+    lines[dir === 1 ? 0 : lines.length - 1].focus()
+    return true
+  }
   if (!next) return false
   next.focus()
   const sel = window.getSelection()

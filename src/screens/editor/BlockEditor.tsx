@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   autoPlace,
@@ -754,6 +754,36 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
     [store, toast, startSession],
   )
 
+  const onGutterKeyDown = (e: ReactKeyboardEvent<HTMLElement>, gutter: Gutter) => {
+    if (e.key === 'Tab') {
+      const area = e.currentTarget.closest<HTMLElement>('.bk-area')
+      const lines = area ? [...area.querySelectorAll<HTMLElement>('.bk-line[tabindex="0"]')] : []
+      const index = lines.indexOf(e.currentTarget)
+      const next = lines[index + (e.shiftKey ? -1 : 1)]
+      const previousField = e.shiftKey && !next ? [...(area?.querySelectorAll<HTMLElement>('.ed-input') ?? [])].filter((el) => el.getClientRects().length > 0).at(-1) : null
+      if (next || previousField) {
+        e.preventDefault()
+        ;(next ?? previousField)?.focus()
+      }
+      return
+    }
+    const delta = gutter.dir === 'h'
+      ? e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0
+      : e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+    if (!delta) return
+    e.preventDefault()
+    e.stopPropagation()
+    const area = measureArea(areaEl.current)
+    if (!area) return
+    const cur = slideRef.current
+    const blocks = cur.blocks ?? []
+    const to = gutter.at + delta
+    const limit = gutterLimit(blocks, gutter, to, area.size.h)
+    if (limit) toast.show(narrowText(limit), undefined, 4000)
+    const next = dragGutter(blocks, gutter, to, area.size.h)
+    if (next) store.setBlocks(cur.id, next)
+  }
+
   // ---------- 고른 부품의 도구 ----------
 
   const update = (id: string, fn: (b: Block) => Block) => store.updateBlock(slideRef.current.id, id, fn)
@@ -939,6 +969,7 @@ export function useBlockEditing(deck: Deck, slide: Slide, toast: Toast): BlockEd
       press(e, (x, y) => startMove(b, x, y), ed ? () => caretAt(ed, sx, sy) : undefined)
     },
     onGutterPointerDown,
+    onGutterKeyDown,
     resizing,
     empty: () => (
       <div className="bk-empty">
