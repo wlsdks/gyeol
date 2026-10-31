@@ -1601,6 +1601,27 @@ export function blockFitter() {
         const f = firsts.get(c)
         if (f && inner) f.shapes = shapes.get(inner)
       }
+      // 다섯·여섯 항목은 기본 간격이 좁다. 옆 차트가 높으면 장 전체 채움은 충분하다고 판단해 목록은 좁은 간격 그대로 남는다.
+      // 목록 칸을 직접 재어 한 줄 목록과 비슷한 간격까지 넓힌다. 글이 길어 줄이 늘거나 칸이 낮으면 들어가는 만큼만 쓴다.
+      for (const c of cells) {
+        const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+        if (!inner?.querySelector('.bk-list:is([data-n="5"], [data-n="6"])')) continue
+        const fits = (v: number) => {
+          if (v) c.style.setProperty('--bk-air', `${v}px`)
+          else c.style.removeProperty('--bk-air')
+          return !crowded(inner)
+        }
+        if (!fits(6)) {
+          let lo = 0
+          let hi = 6
+          while (hi - lo > 1) {
+            const mid = (lo + hi) >> 1
+            if (fits(mid)) lo = mid
+            else hi = mid
+          }
+          fits(lo)
+        }
+      }
       lift(cells)
       tone(cells)
       pack(cells, area)
