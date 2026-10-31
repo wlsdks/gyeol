@@ -163,6 +163,15 @@
   .bk-in .sm:is([data-n]) .sm-row {
     padding-block: calc(18px + var(--bk-air, 0px));
   }
+
+  /* 줄 사이에만 여백을 둔다. 양 끝에도 넣으면 낮은 요약에서 글을 불필요하게 줄인다. */
+  .bk-summary:not(.va-grid) > .bk-in .sm:is([data-n]) .sm-row:first-child {
+    padding-top: 0;
+  }
+
+  .bk-summary:not(.va-grid) > .bk-in .sm:is([data-n]) .sm-row:last-child {
+    padding-bottom: 0;
+  }
 }
 
 /* 큰 숫자 묶음의 숫자 하나: 장에서는 숫자 옆에 이름과 설명을 두지만, 장보다 좁은 칸에서는 숫자가 너비를 거의 다 써서

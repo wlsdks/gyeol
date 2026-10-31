@@ -70,6 +70,19 @@ function funnelStat(): Slide {
   }
 }
 
+/** 낮은 요약의 양 끝 여백 때문에 글자가 두 단계 줄던 장 */
+function chartSummary(): Slide {
+  const puts: Put[] = [
+    { type: 'diverge', variant: 'down', n: 2, fields: { heading: '부서별 야근 증감', basis: '작년 같은 분기 대비' } },
+    { type: 'summary', variant: 'base', n: 4 },
+  ]
+  const positions = [{ x: 0, y: 0, w: 12, h: 5 }, { x: 0, y: 5, w: 12, h: 7 }]
+  return {
+    ...makeSlide('compose'), id: 'review-chart-summary', fields: { title: '업무 시간과 개선안을 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `chart-summary-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -114,5 +127,6 @@ export function reviewSlides(look?: Look): Slide[] {
     pairChart(look),
     messageList(look),
     funnelStat(),
+    chartSummary(),
   ]
 }
