@@ -43,6 +43,15 @@ function pairChart(look?: Look): Slide {
   return { ...slide, blocks: slide.blocks!.map((b, i) => ({ ...b, at: positions[i] })) }
 }
 
+/** 나란한 글의 보이는 여백을 맞출 때 왼쪽 입력 칸이 오른쪽까지 넘어가던 장 */
+function messageList(look?: Look): Slide {
+  const slide = scene('message-list', { title: '주간 보고를 간결하게 바꿔요' }, [
+    { type: 'message', fields: { text: '주간 보고를 한 양식으로 맞추면 회의가 20분 줄어요', sub: '기획팀 시범 3개월 결과 기준' } },
+    { type: 'bullets', n: 3 },
+  ], look)
+  return { ...slide, blocks: slide.blocks!.map((b, i) => ({ ...b, at: { x: i * 6, y: 0, w: 6, h: 12 } })) }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -85,5 +94,6 @@ export function reviewSlides(look?: Look): Slide[] {
     scene('pareto-number', { title: '불량 원인을 우선순위대로 개선해요' }, [{ type: 'pareto', variant: 'rows', n: 4, fields: { heading: '9월 불량 원인 (830건)' } }, { type: 'number', fields: { label: '연간 예상 절감액' } }], look),
     // 전체 너비 차트가 아래에 있어도 위의 짧은 두 글은 바깥과 사이 여백을 고르게
     pairChart(look),
+    messageList(look),
   ]
 }

@@ -18,6 +18,7 @@ describe('대표 조합', () => {
       'timeline-facts': ['timeline', 'facts'],
       'pareto-number': ['pareto', 'number'],
       'pair-chart': ['bullets', 'callout', 'trend'],
+      'message-list': ['message', 'bullets'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {

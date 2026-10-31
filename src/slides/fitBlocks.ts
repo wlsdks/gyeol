@@ -1259,8 +1259,7 @@ export function blockFitter() {
         const contentPx = contentHold?.get(c.dataset.block ?? '')
         if (inner && contentPx) {
           inner.style.setProperty('--bk-content-shift', contentPx + 'px')
-          if (Number(c.style.getPropertyValue('--x')) + Number(c.style.getPropertyValue('--w')) === 12 && contentPx > 0)
-            inner.style.setProperty('--bk-content-limit', contentPx + 'px')
+          if (contentPx > 0) inner.style.setProperty('--bk-content-limit', contentPx + 'px')
         }
       }
       return
@@ -1292,8 +1291,8 @@ export function blockFitter() {
             const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
             if (inner && px) {
               inner.style.setProperty('--bk-content-shift', px + 'px')
-              if (i === 1 && num(c, '--x') + num(c, '--w') === 12 && px > 0)
-                inner.style.setProperty('--bk-content-limit', px + 'px')
+              // 옮긴 안쪽 상자의 빈 부분도 원래 칸 밖으로 나가면 옆 입력 칸의 클릭 영역과 겹친다.
+              if (px > 0) inner.style.setProperty('--bk-content-limit', px + 'px')
             }
           })
           balanced.add(key)
