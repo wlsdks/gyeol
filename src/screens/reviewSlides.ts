@@ -133,6 +133,22 @@ function linkedNumbers(): Slide {
   }
 }
 
+/** 본문 아래까지 찬 숫자 묶음 옆에서 목록의 첫 줄을 맞추던 장 */
+function sparkKpiList(): Slide {
+  const puts: Put[] = [
+    { type: 'spark', look: 'plain' },
+    { type: 'kpi', look: 'card', variant: 'base', n: 2 },
+    { type: 'bullets', look: 'card', n: 3 },
+  ]
+  const positions = [
+    { x: 0, y: 0, w: 12, h: 5 }, { x: 0, y: 5, w: 8, h: 7 }, { x: 8, y: 5, w: 4, h: 7 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-spark-kpi-list', fields: { title: '변화와 다음 할 일을 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `spark-kpi-list-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -181,5 +197,6 @@ export function reviewSlides(look?: Look): Slide[] {
     goalStack(),
     numberRing(),
     linkedNumbers(),
+    sparkKpiList(),
   ]
 }

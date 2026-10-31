@@ -24,6 +24,7 @@ describe('대표 조합', () => {
       'goal-stack': ['ring', 'stat', 'goal', 'stack'],
       'number-ring': ['number', 'ring', 'number', 'bars'],
       'linked-numbers': ['number', 'number', 'number', 'stack'],
+      'spark-kpi-list': ['spark', 'kpi', 'bullets'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
@@ -68,6 +69,13 @@ describe('대표 조합', () => {
               { x: 0, y: 0, w: 4, h: 6 }, { x: 4, y: 0, w: 4, h: 6 },
               { x: 8, y: 0, w: 4, h: 6 }, { x: 0, y: 6, w: 12, h: 6 },
             ])
+          }
+          if (slide.id === 'review-spark-kpi-list') {
+            const [spark, kpi, list] = slide.blocks!
+            expect([spark.at, kpi.at, list.at]).toEqual([
+              { x: 0, y: 0, w: 12, h: 5 }, { x: 0, y: 5, w: 8, h: 7 }, { x: 8, y: 5, w: 4, h: 7 },
+            ])
+            expect([kpi.look, list.look, kpi.items.length, list.items.length]).toEqual(['card', 'card', 2, 3])
           }
         }
       }

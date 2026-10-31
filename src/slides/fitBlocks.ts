@@ -931,6 +931,58 @@ export function blockFitter() {
     tail(items, settle(), k, base)
     tail(items, settle(), k, base)
     const dy = settle()
+    // 본문 아래가 꽉 차면 settle은 윗선 맞추기를 거둔다. 들여 쓴 칸은 선과 면이 없으므로, 안에 여유가 있으면 아래 끝을 유지한 채
+    // 칸의 윗부분을 줄여 글줄을 맞출 수 있다. 글이 넘치거나 줄인 높이에서 글자 단계가 바뀌어 맞지 않으면 원래 자리로 되돌린다.
+    if (!lineUp.size) {
+      const rows = new Map<string, typeof items>()
+      for (const x of items) {
+        if (!firstTop.has(x.c)) continue
+        const key = (x.c.dataset.band ?? '') + '|' + x.c.style.getPropertyValue('--y')
+        rows.set(key, (rows.get(key) || []).concat(x))
+      }
+      for (const row of rows.values()) {
+        if (row.length < 2) continue
+        const top = (c: HTMLElement) => {
+          const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+          const ls = inner ? lines(inner, true) : []
+          return ls.length ? Math.min(...ls.map((q) => q.t)) : Infinity
+        }
+        const ts = row.map((x) => top(x.c) + dy.get(x.c)!)
+        const goal = Math.max(...ts)
+        const diff = goal - Math.min(...ts)
+        if (!Number.isFinite(diff) || diff <= 4 * k || diff > 32 * k) continue
+        const changes = row.flatMap((x, i) => {
+          const px = Math.round((goal - ts[i]) / k)
+          return px ? [{ x, px, was: x.c.style.getPropertyValue('--bk-trim') }] : []
+        })
+        if (!changes.length || changes.some(({ x }) => !x.c.classList.contains('bk-look-card'))) continue
+        for (const { x, px, was } of changes) {
+          x.c.style.setProperty('--bk-trim', (parseFloat(was) || 0) + px + 'px')
+          const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
+          if (inner) place(inner)
+        }
+        const fits = changes.every(({ x }) => {
+          const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
+          return !!inner && !over(inner)
+        })
+        const after = row.map((x) => top(x.c) + dy.get(x.c)! + (changes.find((c) => c.x === x)?.px ?? 0) * k)
+        if (!fits || Math.max(...after) - Math.min(...after) > 4 * k) {
+          for (const { x, was } of changes) {
+            if (was) x.c.style.setProperty('--bk-trim', was)
+            else x.c.style.removeProperty('--bk-trim')
+            const inner = x.c.querySelector<HTMLElement>(':scope > .bk-in')
+            if (inner) place(inner)
+          }
+          continue
+        }
+        for (const { x, px } of changes) {
+          x.r = x.c.getBoundingClientRect()
+          x.ink = drawn(x.c)
+          dy.set(x.c, dy.get(x.c)! + px * k)
+          lineUp.set(x.c, px * k)
+        }
+      }
+    }
     const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
     // 제목 없는 한 문장 장(부품 하나)만 위아래 가운데에: 장 전체가 그 한 문장이다
     if ((!head || !head.getClientRects().length) && items.length === 1) {
