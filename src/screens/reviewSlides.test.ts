@@ -17,11 +17,18 @@ describe('대표 조합', () => {
       'lead-late': ['bullets', 'trend', 'message'],
       'timeline-facts': ['timeline', 'facts'],
       'pareto-number': ['pareto', 'number'],
+      'pair-chart': ['bullets', 'callout', 'trend'],
     }
     for (const id of ['white', 'navy', 'serif'] as const) {
       for (const size of [undefined, 'large'] as const) {
         for (const slide of reviewSlides({ theme: { id, size } })) {
           expect(slide.blocks?.map((b) => b.type), `${id} ${size ?? 'normal'} ${slide.id}`).toEqual(expected[slide.id.replace('review-', '')])
+          if (slide.id === 'review-pair-chart') {
+            const [list, callout, chart] = slide.blocks!
+            expect(list.at?.y).toBe(callout.at?.y)
+            expect(chart.at?.y).toBeGreaterThan(list.at!.y)
+            expect([chart.at?.x, chart.at?.w]).toEqual([0, 12])
+          }
         }
       }
     }

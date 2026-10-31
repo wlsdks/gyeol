@@ -32,6 +32,17 @@ function scene(id: string, fields: Record<string, string>, puts: Put[], look?: L
   return { ...base, blocks }
 }
 
+/** 글 둘의 자리를 맞바꾼 다음 전체 너비 차트를 넣은 실제 편집 장면 */
+function pairChart(look?: Look): Slide {
+  const slide = scene('pair-chart', {}, [{ type: 'bullets', n: 3 }, { type: 'callout' }, { type: 'trend' }], look)
+  const positions = [
+    { x: 0, y: 0, w: 6, h: 6 },
+    { x: 6, y: 0, w: 6, h: 6 },
+    { x: 0, y: 6, w: 12, h: 6 },
+  ]
+  return { ...slide, blocks: slide.blocks!.map((b, i) => ({ ...b, at: positions[i] })) }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -72,5 +83,7 @@ export function reviewSlides(look?: Look): Slide[] {
     scene('timeline-facts', { title: '시범 운영을 세 단계로 진행해요' }, [{ type: 'timeline', n: 3 }, { type: 'facts', n: 2 }], look),
     // 가로 원인 차트 아래 숫자와 설명이 붙어 보이던 장
     scene('pareto-number', { title: '불량 원인을 우선순위대로 개선해요' }, [{ type: 'pareto', variant: 'rows', n: 4, fields: { heading: '9월 불량 원인 (830건)' } }, { type: 'number', fields: { label: '연간 예상 절감액' } }], look),
+    // 전체 너비 차트가 아래에 있어도 위의 짧은 두 글은 바깥과 사이 여백을 고르게
+    pairChart(look),
   ]
 }

@@ -1269,11 +1269,16 @@ export function blockFitter() {
     const k = a.width / area.offsetWidth
     if (!a.width || !k) return
     const num = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
-    // 짧은 글 둘은 칸 전체를 옮기면 칸이 겹치거나 본문 밖으로 나갈 수 있다. 각 칸 안의 그려진 글만 남는 공간 안에서 옮긴다.
-    // 같은 줄의 글 둘에만 쓰므로 다른 줄과의 정렬, 그림과 연결 기호는 건드리지 않는다.
+    const bands = new Map<string, HTMLElement[]>()
+    for (const c of cells) bands.set(c.dataset.band ?? '', (bands.get(c.dataset.band ?? '') || []).concat(c))
+    // 짧은 글 둘은 칸 전체가 아닌 그려진 글만 칸 안에서 옮긴다. 다른 줄이 본문 전체를 쓰는 차트처럼 한 칸이면 그 줄과
+    // 맞출 단이 없으므로 이 줄만 균형을 잡는다. 다른 줄도 여러 단이면 단 사이 정렬을 지키려고 건드리지 않는다.
     const shortText = new Set(['callout', 'message', 'bullets', 'text', 'quote'])
-    if (cells.length === 2 && cells.every((c) => shortText.has(c.dataset.type ?? '') && !c.classList.contains('lk-row')) && num(cells[0], '--y') === num(cells[1], '--y') && cells[0].dataset.band === cells[1].dataset.band) {
-      const pair = [...cells].sort((p, q) => num(p, '--x') - num(q, '--x'))
+    const balanced = new Set<string>()
+    bands.forEach((band, key) => {
+      if (band.length !== 2 || !band.every((c) => shortText.has(c.dataset.type ?? '') && !c.classList.contains('lk-row')) || num(band[0], '--y') !== num(band[1], '--y')) return
+      if (cells.some((c) => !band.includes(c) && (num(c, '--x') !== 0 || num(c, '--w') !== 12 || c.classList.contains('lk-row')))) return
+      const pair = [...band].sort((p, q) => num(p, '--x') - num(q, '--x'))
       const ink = pair.map((c) => drawnX(c, true))
       if (ink.every((x): x is { l: number; r: number } => !!x) && ink[0].r <= ink[1].l) {
         const widths = ink.map((x) => x!.r - x!.l)
@@ -1291,13 +1296,12 @@ export function blockFitter() {
                 inner.style.setProperty('--bk-content-limit', px + 'px')
             }
           })
-          return
+          balanced.add(key)
         }
       }
-    }
-    const bands = new Map<string, HTMLElement[]>()
-    for (const c of cells) bands.set(c.dataset.band ?? '', (bands.get(c.dataset.band ?? '') || []).concat(c))
-    bands.forEach((band) => {
+    })
+    bands.forEach((band, key) => {
+      if (balanced.has(key)) return
       if (band.some((c) => c.classList.contains('lk-row'))) return
       // 다른 줄이 본문 오른쪽까지 그려져 있으면(오른쪽 4분의 1 안까지) 장의 오른쪽은 비지 않았다: 이 줄의 단을 옮기면 판의 칸 선에서 벗어나
       // 그 줄과 어긋나기만 한다. 로고 모음 위의 숫자 둘이 0과 50%가 아니라 0과 70%로 벌어져 양쪽으로 찢어져 보였다
