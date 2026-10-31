@@ -467,16 +467,13 @@ function floating(area: HTMLElement, k: number): string[] {
 const LINE_ROWS_MAX = 12
 const DOUBLE_GAP = 40
 
-type Line = { y: number; x1: number; x2: number; w: number; dark: boolean; section: boolean }
+type Line = { y: number; x1: number; x2: number; w: number; dark: boolean; section: boolean; el: HTMLElement }
 
 function linesOf(area: HTMLElement, k: number): Line[] {
   const out: Line[] = []
   const ink = getComputedStyle(area).color
   let dark = false
   let section = false
-  const add = (y: number, x1: number, x2: number, w: number) => {
-    if (x2 - x1 >= 60 * k && w > 0) out.push({ y, x1, x2, w: Math.round(w * 10) / 10, dark, section })
-  }
   for (const el of area.querySelectorAll<HTMLElement>('*')) {
     if (el instanceof SVGElement || el.closest(EDIT_UI)) continue
     const s = getComputedStyle(el)
@@ -485,6 +482,9 @@ function linesOf(area: HTMLElement, k: number): Line[] {
     if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity) === 0) continue
     const r = el.getBoundingClientRect()
     if (!r.width || !r.height) continue
+    const add = (y: number, x1: number, x2: number, w: number) => {
+      if (x2 - x1 >= 60 * k && w > 0) out.push({ y, x1, x2, w: Math.round(w * 10) / 10, dark, section, el })
+    }
     // 굵기는 계산된 값(장 크기로 줄이기 전)이라 k로 나누지 않는다. 자리(r)만 줄어든 화면 값이다
     const seen = (c: string) => !/rgba\(.*,\s*0\)$/.test(c) && c !== 'transparent'
     const bt = s.borderTopStyle !== 'none' ? parseFloat(s.borderTopWidth) || 0 : 0
@@ -520,7 +520,17 @@ function lineEconomy(area: HTMLElement, k: number): string[] {
   const texts = blockTextLinesOf(area)
   // 선이 글을 지나는 것(취소선처럼)
   for (const l of lines) {
-    const hit = texts.find((t) => l.y > t.t + 3 * k && l.y < t.b - 3 * k && Math.min(t.r, l.x2) - Math.max(t.l, l.x1) > 4 * k)
+    const hit = texts.find((t) => {
+      if (!(l.y > t.t + 3 * k && l.y < t.b - 3 * k && Math.min(t.r, l.x2) - Math.max(t.l, l.x1) > 4 * k)) return false
+      // 위치 비교의 이름표는 불투명한 바탕으로 가운데 기준선을 실제로 가린다.
+      const label = t.n.parentElement?.closest<HTMLElement>('.pm-label')
+      if (label && l.el.matches('.pm-mid') && label.closest('.pm-plot') === l.el.parentElement) {
+        const s = getComputedStyle(label)
+        const r = label.getBoundingClientRect()
+        if (s.backgroundColor !== 'transparent' && !s.backgroundColor.startsWith('rgba(') && Number(s.zIndex) > 0 && r.top <= l.y && r.bottom >= l.y) return false
+      }
+      return true
+    })
     if (hit) {
       out.push('선이 글을 지나가요')
       break
@@ -815,8 +825,8 @@ function textOverlap(area: HTMLElement, k: number): string[] {
   return []
 }
 
-function blockTextLinesOf(area: HTMLElement): { t: number; b: number; l: number; r: number }[] {
-  const out: { t: number; b: number; l: number; r: number }[] = []
+function blockTextLinesOf(area: HTMLElement): ReturnType<typeof blockTextLines> {
+  const out: ReturnType<typeof blockTextLines> = []
   for (const inner of area.querySelectorAll<HTMLElement>('.bk-in')) for (const q of blockTextLines(inner)) out.push(q)
   return out
 }
