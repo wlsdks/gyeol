@@ -941,11 +941,28 @@ export function blockFitter() {
     }
     // 모두 캔버스 8px 밑이면 그대로 (글을 적을 때마다 조금씩 움직이지 않게). 다만 한 줄의 첫 글줄 윗선을 맞춘 것(lineUp)은 몇 px라도
     // 옮긴다: 결론 한 줄(44px)과 목차(52px)의 윗선이 15px 어긋났는데, 맞추려 한쪽을 7px 내리고 다른 쪽을 8px 올린 것이 둘 다 8px 밑이라 버려졌다
+    // 서로 다른 윗줄 아래에 쌓인 칸은 stack의 작은 이동만으로도 첫 글줄이 맞을 수 있다.
+    // lineUp에 별도 보정이 없다는 이유로 그 이동을 버리면 맞추기 전의 어긋난 줄이 그대로 남는다.
     if (!lineUp.size && Math.max(...items.map((x) => Math.abs(dy.get(x.c)!))) / k < 8) {
-      // 칸은 그대로 두어도 편집 화면의 선은 양옆 칸의 그려진 범위로 줄인다: 한 줄뿐인 장(옆으로 나란한 둘)은 여기서 끝나 선이 판 높이
-      // 그대로 남았고, 눈높이로 내린 만큼 장 아래로 길게 나가 '글이 넘쳤어요'가 떴다
-      if (edit) gutters(items, new Map(items.map((x) => [x.c, 0])), area, k)
-      return
+      const topGroups = new Map<string, typeof items>()
+      for (const x of items) {
+        if (!firstTop.has(x.c)) continue
+        const key = (x.c.dataset.band ?? '') + '|' + x.c.style.getPropertyValue('--y')
+        topGroups.set(key, (topGroups.get(key) || []).concat(x))
+      }
+      const improvesTops = Array.from(topGroups.values()).some((group) => {
+        if (group.length < 2) return false
+        const spread = (ts: number[]) => Math.max(...ts) - Math.min(...ts)
+        const before = spread(group.map((x) => firstTop.get(x.c)!))
+        const after = spread(group.map((x) => firstTop.get(x.c)! + dy.get(x.c)!))
+        return before > 4 * k && before <= 48 * k && after < before - k
+      })
+      if (!improvesTops) {
+        // 칸은 그대로 두어도 편집 화면의 선은 양옆 칸의 그려진 범위로 줄인다: 한 줄뿐인 장(옆으로 나란한 둘)은 여기서 끝나 선이 판 높이
+        // 그대로 남았고, 눈높이로 내린 만큼 장 아래로 길게 나가 '글이 넘쳤어요'가 떴다
+        if (edit) gutters(items, new Map(items.map((x) => [x.c, 0])), area, k)
+        return
+      }
     }
     for (const x of items) {
       const px = Math.round(dy.get(x.c)! / k)

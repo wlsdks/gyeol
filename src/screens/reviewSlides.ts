@@ -83,6 +83,21 @@ function chartSummary(): Slide {
   }
 }
 
+/** 윗줄이 다른 칸 아래에 목표와 쌓은 막대를 나란히 둔 장 */
+function goalStack(): Slide {
+  const puts: Put[] = [
+    { type: 'ring' }, { type: 'stat' }, { type: 'goal' }, { type: 'stack', variant: 'sum', n: 2 },
+  ]
+  const positions = [
+    { x: 4, y: 0, w: 8, h: 5 }, { x: 0, y: 0, w: 4, h: 5 },
+    { x: 0, y: 5, w: 5, h: 7 }, { x: 5, y: 5, w: 7, h: 7 },
+  ]
+  return {
+    ...makeSlide('compose'), id: 'review-goal-stack', fields: { title: '주요 지표의 변화를 살펴봐요' },
+    blocks: puts.map((p, i) => ({ ...block(p, `goal-stack-b${i}`), at: positions[i] })),
+  }
+}
+
 /** look: 갤러리의 테마(글꼴)와 글자 크기. 판을 그 본문 높이로 짠다 */
 export function reviewSlides(look?: Look): Slide[] {
   return [
@@ -128,5 +143,6 @@ export function reviewSlides(look?: Look): Slide[] {
     messageList(look),
     funnelStat(),
     chartSummary(),
+    goalStack(),
   ]
 }
