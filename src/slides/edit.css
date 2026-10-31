@@ -552,7 +552,15 @@ body:not(.is-block-dragging, .is-block-resizing) .slide.m-edit .bk-area.is-live:
   top: calc(100% + 6px);
   left: 0;
   margin: 0;
+  /* 큰 글자에서도 빈 안내가 본문 첫 칸의 클릭 영역을 덮지 않게 한다. */
+  line-height: 1.1;
   transition: opacity var(--t) var(--ease-out);
+}
+
+/* 짧은 이름이 전체 너비를 차지하면 위아래 다른 컴포넌트의 입력 칸을 덮을 수 있다. */
+.slide.m-edit .bk-dl-l {
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 /* 그 안내는 장 제목에 손을 올리거나 제목, 부제를 쓰는 동안만 보인다. 늘 보이면 제목 아래 여백(--body-gap)을 안내 글이 채워서
