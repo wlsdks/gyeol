@@ -337,7 +337,8 @@ function inside(area: HTMLElement, k: number): string[] {
         const above = (list.getBoundingClientRect().top - ir.top) / k - parseFloat(cs.paddingTop)
         const one = above + items.reduce((sum, it) => sum + it.getBoundingClientRect().height / k, 0) + rowGap * (items.length - 1)
         const room = ir.height / k - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-        if (one <= room) out.push(`${cell.dataset.type}: 높이가 넉넉한데 목록을 ${cols.size}단으로 나눴어요(한 단 ${Math.round(one)}px, 칸 ${Math.round(room)}px)`)
+        // 한 단으로 겨우 들어가는 경우는 글꼴과 줄바꿈에 대비할 여유가 없다. 실제로 여유가 있을 때만 단 나누기를 지적한다.
+        if (one + 16 <= room) out.push(`${cell.dataset.type}: 높이가 넉넉한데 목록을 ${cols.size}단으로 나눴어요(한 단 ${Math.round(one)}px, 칸 ${Math.round(room)}px)`)
       }
     }
     if (cols.size < 2 || items.length <= cols.size) continue
