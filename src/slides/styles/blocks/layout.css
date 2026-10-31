@@ -173,6 +173,15 @@
   --fs: var(--t-h);
 }
 
+/* 좁은 칸에 셋 이상을 나란히 두면 항목마다 몇 글자씩만 들어간다. 높이가 넉넉할 때는 두 단으로 나누어 글이 읽히게 둔다. */
+@container bk (max-width: 1300px) and (min-height: 500px) {
+  .bk-points:is(.va-columns, .va-tiles) .pt:is([data-n='3'], [data-n='4']) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px;
+  }
+}
+
 /* 핵심 포인트의 세로 칸 모양도 컴포넌트에서는 위에서부터: 장 한 장에서는 칸들을 본문 가운데에 두지만(points.css), 컴포넌트 칸이
    옆 칸에 맞춰 높아지면 칸들이 높은 칸 가운데에 떠서 위의 소제목과 한 칸만큼 떨어졌다. 진한 면 안에서는 그대로 가운데 */
 .bk-points.va-columns:not(.bk-look-bold) .pt {

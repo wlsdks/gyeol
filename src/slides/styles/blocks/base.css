@@ -71,6 +71,9 @@
   /* 회의실 뒷자리에서도 읽히게: 칸이 작아도 글자는 출처 글자(22px)보다 작아지지 않는다 */
   --fs-min: 22px;
   position: relative;
+  left: var(--bk-content-shift, 0px);
+  /* 보이는 글만 칸 안에 있어도 안쪽 상자가 장 밖으로 나가면 편집기가 넘침으로 판단한다. */
+  width: calc(100% - max(0px, var(--bk-content-limit, 0px)));
   /* 한 줄로 줄이는 글(.one-line의 100cqi)이 칸이 아니라 안쪽 여백을 뺀 너비에 맞게. 칸 크기 단계(@container bk)와 cqh는 그대로 칸을 본다 */
   container-type: inline-size;
   height: 100%;

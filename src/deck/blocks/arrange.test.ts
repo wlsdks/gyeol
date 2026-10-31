@@ -11,6 +11,14 @@ const board = (...bs: Block[]): Block[] => bs.reduce<Block[]>((out, b) => autoPl
 const at = (bs: Block[], id: string) => bs.find((b) => b.id === id)!.at!
 
 describe('짜임 틀 고르기', () => {
+  it('큰 숫자와 짧은 설명은 본문의 양쪽에 나란히 놓는다', () => {
+    const number = { ...block('number', 'n'), fields: { label: '평균 처리 시간', value: '2.4일' } }
+    const text = { ...block('text', 't'), fields: { body: '접수 경로를 하나로 합쳐 담당자가 요청을 바로 확인해요.' } }
+    const bs = board(number, text)
+    expect(tiles(bs)).toBe(true)
+    expect(at(bs, 'n').y).toBe(at(bs, 't').y)
+    expect(at(bs, 't').x).toBeGreaterThan(at(bs, 'n').x)
+  })
   it('로고 모음 다음에 넣은 숫자 둘은 한 줄에 나란히, 로고 위에 선다 (숫자가 답)', () => {
     const logos = sampleBlock('logos')
     const bs = board({ ...logos, id: 'l' }, { ...sampleBlock('stat'), id: 's1' }, { ...sampleBlock('stat'), id: 's2' })

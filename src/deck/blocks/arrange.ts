@@ -18,7 +18,7 @@ import { AREA_W, atRect, blockMinH, isStretchy } from './sizing'
 /** 틀을 견주는 가장 많은 부품 수. 더 많으면 사람이 짠 차례가 짜임의 뜻이라 판에 맡긴다 */
 export const ARRANGE_MAX = 4
 
-/** 그리는 쪽(slides/fitBlocks.ts)의 묶음 사이(--bk-gap의 1.5배)와 소제목 아래 사이 */
+/** 틀의 내용 높이를 견줄 때 쓰는 묶음 사이. 그리는 쪽은 자리가 남으면 이보다 넓힌다(slides/fitBlocks.ts). */
 const BAND_GAP = 72
 const HEAD_GAP = 32
 /** 잰 높이에 더한 여유(sizing.ts의 HEIGHT_SLACK). 내용의 높이를 어림할 때 뺀다 */
@@ -27,7 +27,9 @@ const SLACK = 10
 /**
  * 한 줄로 서는 결론 글의 가장 긴 줄 (캔버스 px): 글 폭(--measure, 24em) × 장 제목 아래의 글자 크기(44). 잰 높이로는 한 줄을 다 쓰는 칸에서
  * 한 줄로 들어가 그보다 좁으면 두 줄로 꺾이니 판 너비를 다 쓰는 것으로 보이지만, 글은 글 폭에서 꺾여 본문 너비의 63%에서 끝난다.
- * 그 아래에 좁은 목록을 쌓으면 오른쪽 37%가 통째로 비었다(결론 한 줄 + 개요)
+ * 그 아래에 좁은 목록을 쌓으면 오른쪽 37%가 통째로 비었다(결론 한 줄 + 개요). 제목과 글의 본문도 24em에서 꺾이므로
+ * 큰 숫자와 위아래로 놓으면 짧은 두 내용이 왼쪽에 몰리고 오른쪽이 비었다. 다만 소제목이 있으면 넓은 칸에서 소제목과 본문이
+ * 나란히 서서 너비를 다 쓴다(styles/blocks/text.css).
  */
 const MEASURE_W: Partial<Record<BlockType, number>> = { message: 24 * 44, callout: 24 * 44 }
 
@@ -36,7 +38,11 @@ const MEASURE_W: Partial<Record<BlockType, number>> = { message: 24 * 44, callou
  * 1300px 밑의 칸) 이름(이름만큼, 100px 남짓)과 사이(40), 글 폭에서 꺾이는 내용(24em × 30px)까지다: 넓은 칸에서 한 줄로 들어가 넓게 보였지만
  * 본문의 절반에서 끝났다(blocks/facts.css)
  */
-const measureW = (b: Block, w: number): number => MEASURE_W[b.type] ?? (b.type === 'facts' && (b.items.length <= 3 || w < 1300) ? 140 + 24 * 30 : Infinity)
+function measureW(b: Block, w: number): number {
+  if (b.type === 'text' && !(w >= 1300 && b.fields.heading?.trim())) return 24 * 30
+  if (b.type === 'facts' && (b.items.length <= 3 || w < 1300)) return 140 + 24 * 30
+  return MEASURE_W[b.type] ?? Infinity
+}
 
 /** 같은 말투로 맞출 숫자 부품: 한 장에 둘 이상이면 나란히 한 줄에 서야 크기와 이름표 자리를 맞출 수 있다 */
 export const NUMBER_TYPES = new Set<BlockType>(['number', 'stat', 'delta', 'goal', 'ring', 'ratio'])

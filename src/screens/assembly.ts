@@ -546,12 +546,8 @@ function lineEconomy(area: HTMLElement, k: number): string[] {
   return out
 }
 
-/** 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 면이 있는 칸은 면째, 바탕 없는 칸은 글 줄과 그림 */
+/** 그려진 것의 왼쪽, 오른쪽 끝 (화면 px). 들여 쓰기와 강조도 칸에는 면이 없어 글 줄과 그림으로 잰다. */
 function inkX(cell: HTMLElement): { l: number; r: number } | null {
-  if (!cell.classList.contains('bk-look-plain')) {
-    const q = cell.getBoundingClientRect()
-    return { l: q.left, r: q.right }
-  }
   const inner = cell.querySelector<HTMLElement>(':scope > .bk-in')
   if (!inner) return null
   let l = Infinity
@@ -575,7 +571,7 @@ function inkX(cell: HTMLElement): { l: number; r: number } | null {
     if (cs.visibility === 'hidden' || cs.opacity === '0') continue
     const bg = cs.backgroundColor
     // 그림자로 테를 두른 상자(흐름의 단계 상자)도 그려진 것이다
-    if ((!bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)) && cs.backgroundImage === 'none' && cs.boxShadow === 'none') continue
+    if ((!bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg)) && cs.backgroundImage === 'none' && cs.boxShadow === 'none' && !(parseFloat(cs.borderTopWidth) > 0) && !(parseFloat(cs.borderBottomWidth) > 0) && !(parseFloat(cs.borderLeftWidth) > 0) && !(parseFloat(cs.borderRightWidth) > 0)) continue
     const q = el.getBoundingClientRect()
     if (!q.width || !q.height) continue
     l = Math.min(l, q.left)
@@ -784,7 +780,9 @@ function rowRhythm(area: HTMLElement, k: number): string[] {
         const h = Math.max(p.b - p.t, q.b - q.t) / k
         // 연결도의 상자는 같은 높이의 자리(선이 그 가운데로 들어간다)에 가운데로 서서, 글 줄 수가 다르면 글 사이는 달라도 가운데 사이는 같다:
         // 줄마다 같아야 하는 것은 가운데 사이다(두 줄로 꺾인 이름 옆 한 줄 이름이 66, 104px로 다르다고 했다)
-        gaps.push(cell.dataset.type === 'network' ? (q.t + q.b - p.t - p.b) / 2 / k : gap)
+        // 하나 크게 모양은 첫 숫자를 나머지 줄과 의도적으로 떼어 둔다. 그 사이는 나머지 같은 크기 줄의 간격과 견주지 않는다.
+        const focusLead = i === 1 && cell.dataset.type === 'kpi' && cell.classList.contains('va-focus') && getComputedStyle(inner).getPropertyValue('--kp-fstack').trim() === '1'
+        if (!focusLead) gaps.push(cell.dataset.type === 'network' ? (q.t + q.b - p.t - p.b) / 2 / k : gap)
         if (gap > 2 * h && gap > 48) {
           out.push(`${cell.dataset.type}: 줄 사이(${Math.round(gap)}px)가 내용 높이(${Math.round(h)}px)의 두 배를 넘게 늘었어요`)
           break

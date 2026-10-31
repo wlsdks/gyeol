@@ -60,7 +60,7 @@ export function blockFitter() {
   const waiting = new WeakSet<Element>()
   // 편집 화면에서 글을 쓰는 동안 붙잡아 둔 자리 (본문 상자마다, typing의 설명): 판의 짜임, 눈높이로 내린 값, 칸마다 옆으로 옮긴 값,
   // 키운 단계(--bk-fit의 가장 큰 값)
-  const held = new WeakMap<HTMLElement, { board: string; eye: number; xs: Map<string, number>; up: number }>()
+  const held = new WeakMap<HTMLElement, { board: string; eye: number; xs: Map<string, number>; contentXs: Map<string, number>; up: number }>()
   // 편집 화면의 컴포넌트 칸마다 지난번에 맞춘 뒤의 자리 (본문 상자 위에서부터, 캔버스 px). 쓰는 칸이 든 칸을 이 자리에 붙잡는다 (anchor)
   const tops = new WeakMap<Element, number>()
 
@@ -790,10 +790,10 @@ export function blockFitter() {
     const k = a.height / area.offsetHeight
     if (!a.height || !k) return
     const style = getComputedStyle(area)
-    // 묶음 사이는 --bk-gap의 1.5배(docs/VISUAL-RULES.md 5): 묶음 안의 사이(글 사이, 줄 사이)와 같은 폭이면 위아래 컴포넌트가 한 덩어리로 붙어 보였다.
-    // 그만큼 벌려 본문 아래로 나가면 판의 사이(--bk-gap)까지 좁힌다(settle)
+    // 서로 다른 묶음은 묶음 안의 줄보다 확실히 떨어져야 한다. 공간이 있으면 판 간격의 두 배로 시작하고,
+    // 내용이 본문 밖으로 나가지 않도록 필요할 때만 판의 사이까지 단계적으로 좁힌다(settle).
     const gap0 = (parseFloat(style.getPropertyValue('--bk-gap')) || 48) * k
-    let gap = gap0 * 1.5
+    let gap = gap0 * 2
     const pad = (parseFloat(style.getPropertyValue('--lk-pad')) || 24) * k
     const links = Array.from(area.querySelectorAll<HTMLElement>(':scope > .bk-link'))
     const groups = new Map<string, HTMLElement[]>()
@@ -910,10 +910,10 @@ export function blockFitter() {
     // 남는 높이는 맨 아래 한곳에 모은다(docs/VISUAL-RULES.md 6). 예전에는 내용이 적은 장이 위에 몰려 보인다고 남는 높이를 묶음 사이와
     // 장 머리 아래(2 : 3)에 나눴는데, 그러면 장마다 제목과 본문 사이, 묶음 사이가 달라 대충 놓은 것처럼 보였고 혼자 있는 소제목,
     // 상태가 장 세로 가운데에 떴다. 내용이 적은 장은 글자 단계를 올려(3-1) 채운다
-    // 그려진 것이 본문 아래로 나가지 않는 가장 넓은 묶음 사이로 (1.5배, 1.25배, 1배)
+    // 그려진 것이 본문 아래로 나가지 않는 가장 넓은 묶음 사이로
     const settle = () => {
       let dy = new Map<HTMLElement, number>()
-      for (const f of [1.5, 1.25, 1]) {
+      for (const f of [2, 1.75, 1.5, 1.25, 1]) {
         gap = gap0 * f
         lineUp.clear()
         alignTops(stack())
@@ -1128,9 +1128,9 @@ export function blockFitter() {
    * 글과 그림만 보면 흐름의 단계 상자(그림자로 두른 테)를 몰라서, 옆 맞추기(balance)가 흐름을 글 끝까지만 그려진 것으로 알고 오른쪽으로
    * 92px 옮겨 마지막 상자가 장 틀 밖으로 46px 나갔다
    */
-  function drawnX(c: HTMLElement): { l: number; r: number } | null {
+  function drawnX(c: HTMLElement, visibleOnly = false): { l: number; r: number } | null {
     const box = c.getBoundingClientRect()
-    if (!c.classList.contains('bk-look-plain')) return { l: box.left, r: box.right }
+    if (!visibleOnly && !c.classList.contains('bk-look-plain')) return { l: box.left, r: box.right }
     const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
     if (!inner) return null
     let l = Infinity
@@ -1152,7 +1152,7 @@ export function blockFitter() {
       if (cs.visibility === 'hidden' || cs.opacity === '0') continue
       const bg = cs.backgroundColor
       const clear = !bg || bg === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(bg) || /\/\s*0\)$/.test(bg)
-      if (clear && cs.backgroundImage === 'none' && cs.boxShadow === 'none' && !(parseFloat(cs.borderTopWidth) > 0) && !(parseFloat(cs.borderBottomWidth) > 0)) continue
+      if (clear && cs.backgroundImage === 'none' && cs.boxShadow === 'none' && !(parseFloat(cs.borderTopWidth) > 0) && !(parseFloat(cs.borderBottomWidth) > 0) && !(parseFloat(cs.borderLeftWidth) > 0) && !(parseFloat(cs.borderRightWidth) > 0)) continue
       const q = el.getBoundingClientRect()
       if (!q.width || !q.height) continue
       l = Math.min(l, q.left)
@@ -1244,16 +1244,24 @@ export function blockFitter() {
   /**
    * 옆으로 나란한 단의 남는 너비 (docs/VISUAL-RULES.md 6의 가로). 판은 본문 너비를 칸으로 다 나누지만, 글 폭(--measure)이나 내용이
    * 칸보다 좁으면 내용이 칸마다 왼쪽에 붙어 컴포넌트 둘이 본문 왼쪽 70% 안에 몰리고 오른쪽이 통째로 비었다. 줄(data-band)마다
-   * 단(어느 칸도 가로지르지 않는 세로 경계로 나눈 묶음)의 그려진 너비를 재어, 남는 너비를 단 사이와 오른쪽 끝에 2 : 1로 나눈다
-   * (단을 칸째 오른쪽으로 옮긴다, --bk-shift-x). 단 사이를 좁히지는 않는다. 이음표가 선 줄은 그대로.
+   * 단(어느 칸도 가로지르지 않는 세로 경계로 나눈 묶음)의 그려진 너비를 재어, 남는 너비를 양 끝과 단 사이에 고르게 나눈다
+   * 짧은 글 둘은 각 칸 안에서 내용만 옮기고, 그 밖에는 단을 칸째 오른쪽으로 옮긴다(--bk-shift-x). 칸끼리 겹치게 되면 옮기지 않는다.
+   * 이음표가 선 줄은 그대로.
    * 바탕(들여 쓰기, 강조)이 있는 칸도 같이 옮긴다: 예전에는 면이 칸 너비라서 뺐는데, 지금은 어느 바탕도 면이나 선을 그리지 않아
    * (looks.css) 강조로 쓴 결정 요청 옆의 목록이 본문 왼쪽 70% 안에 몰리고 오른쪽 30%가 통째로 비었다
    */
-  function balance(cells: HTMLElement[], area: HTMLElement, hold?: Map<string, number>): void {
+  function balance(cells: HTMLElement[], area: HTMLElement, hold?: Map<string, number>, contentHold?: Map<string, number>): void {
     if (hold) {
       for (const c of cells) {
         const px = hold.get(c.dataset.block ?? '')
         if (px) c.style.setProperty('--bk-shift-x', px + 'px')
+        const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+        const contentPx = contentHold?.get(c.dataset.block ?? '')
+        if (inner && contentPx) {
+          inner.style.setProperty('--bk-content-shift', contentPx + 'px')
+          if (Number(c.style.getPropertyValue('--x')) + Number(c.style.getPropertyValue('--w')) === 12 && contentPx > 0)
+            inner.style.setProperty('--bk-content-limit', contentPx + 'px')
+        }
       }
       return
     }
@@ -1261,6 +1269,32 @@ export function blockFitter() {
     const k = a.width / area.offsetWidth
     if (!a.width || !k) return
     const num = (c: HTMLElement, v: string) => Number(c.style.getPropertyValue(v)) || 0
+    // 짧은 글 둘은 칸 전체를 옮기면 칸이 겹치거나 본문 밖으로 나갈 수 있다. 각 칸 안의 그려진 글만 남는 공간 안에서 옮긴다.
+    // 같은 줄의 글 둘에만 쓰므로 다른 줄과의 정렬, 그림과 연결 기호는 건드리지 않는다.
+    const shortText = new Set(['callout', 'message', 'bullets', 'text', 'quote'])
+    if (cells.length === 2 && cells.every((c) => shortText.has(c.dataset.type ?? '') && !c.classList.contains('lk-row')) && num(cells[0], '--y') === num(cells[1], '--y') && cells[0].dataset.band === cells[1].dataset.band) {
+      const pair = [...cells].sort((p, q) => num(p, '--x') - num(q, '--x'))
+      const ink = pair.map((c) => drawnX(c, true))
+      if (ink.every((x): x is { l: number; r: number } => !!x) && ink[0].r <= ink[1].l) {
+        const widths = ink.map((x) => x!.r - x!.l)
+        const unit = (a.width - widths[0] - widths[1]) / 3
+        const targets = [a.left + unit, a.left + 2 * unit + widths[0]]
+        if (unit >= 72 * k) {
+          pair.forEach((c, i) => {
+            const r = c.getBoundingClientRect()
+            const d = Math.max(r.left - ink[i]!.l, Math.min(r.right - ink[i]!.r, targets[i] - ink[i]!.l))
+            const px = Math.round(d / k)
+            const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+            if (inner && px) {
+              inner.style.setProperty('--bk-content-shift', px + 'px')
+              if (i === 1 && num(c, '--x') + num(c, '--w') === 12 && px > 0)
+                inner.style.setProperty('--bk-content-limit', px + 'px')
+            }
+          })
+          return
+        }
+      }
+    }
     const bands = new Map<string, HTMLElement[]>()
     for (const c of cells) bands.set(c.dataset.band ?? '', (bands.get(c.dataset.band ?? '') || []).concat(c))
     bands.forEach((band) => {
@@ -1270,7 +1304,7 @@ export function blockFitter() {
       let others = -Infinity
       for (const c of cells) {
         if (band.includes(c)) continue
-        const x = drawnX(c)
+        const x = drawnX(c, true)
         if (x) others = Math.max(others, x.r)
       }
       if (others >= a.right - 0.25 * a.width) return
@@ -1283,7 +1317,8 @@ export function blockFitter() {
         let l = Infinity
         let r = -Infinity
         for (const c of col) {
-          const x = drawnX(c)
+          // 들여 쓰기와 강조도 바탕을 칠하지 않는다. 칸 전체를 내용으로 세면 짧은 글 사이가 실제보다 좁다고 보아 양 끝을 더 비우지 못한다.
+          const x = drawnX(c, true)
           if (!x) continue
           l = Math.min(l, x.l)
           r = Math.max(r, x.r)
@@ -1292,15 +1327,15 @@ export function blockFitter() {
       })
       if (inks.some((x) => !(x.l < x.r))) return
       const widths = inks.map((x) => x.r - x.l)
-      const spare = a.right - inks[0].l - widths.reduce((s, w) => s + w, 0)
-      // 단 사이 하나에 2, 오른쪽 끝에 1
-      const unit = spare / (2 * (cols.length - 1) + 1)
+      const spare = a.width - widths.reduce((s, w) => s + w, 0)
+      // 양 끝과 단 사이를 같은 폭으로: 가운데만 넓히면 양쪽 내용이 서로 멀어져 한 장으로 읽히지 않는다.
+      const unit = spare / (cols.length + 1)
       // 오른쪽 끝이 이미 그만큼(과 캔버스 24px)보다 좁으면 그대로
       if (a.right - inks[inks.length - 1].r <= unit + 24 * k) return
-      let at = inks[0].l
+      let at = a.left + unit
       const dx = inks.map((x, i) => {
         const d = at - x.l
-        at += widths[i] + 2 * unit
+        at += widths[i] + unit
         return d
       })
       // 앞 단보다 덜 옮기는 단이 있으면(칸끼리 겹친다) 그대로
@@ -1416,6 +1451,9 @@ export function blockFitter() {
         c.style.removeProperty('--bk-shift')
         c.style.removeProperty('--bk-shift-x')
         c.style.removeProperty('--bk-trim')
+        const inner = c.querySelector<HTMLElement>(':scope > .bk-in')
+        inner?.style.removeProperty('--bk-content-shift')
+        inner?.style.removeProperty('--bk-content-limit')
       }
       delete area.dataset.eye
       // 편집 화면의 편집 표시(칸 옆으로 나온 단추 같은)는 재는 동안 뺀다 (edit.css)
@@ -1494,7 +1532,7 @@ export function blockFitter() {
       lift(cells)
       tone(cells)
       pack(cells, area)
-      balance(cells, area, hold?.xs)
+      balance(cells, area, hold?.xs, hold?.contentXs)
       // 키우고 쌓은 뒤에도 내용이 본문 높이의 60%에 못 미치면(docs/VISUAL-RULES.md 6) 한 단계 더 키운다. 사이를 벌려 채우지 않고
       // 글자와 그림의 단계를 올려 딱 맞게. 판은 남는 높이를 맨 아래 칸(내용이 적은 날짜 한 줄 같은)에 주어서 윗줄 칸은 제 내용만큼만
       // 높아, 칸 높이로만 재면 윗줄은 키울 수 없었다. 그래서 키워 볼 때는 칸마다 남는 높이만큼 더 준 채로 재고(--bk-trim을 음수로),
@@ -1508,6 +1546,10 @@ export function blockFitter() {
           const inners = cells.map((c) => c.querySelector<HTMLElement>(':scope > .bk-in')).filter((el): el is HTMLElement => !!el)
           const reset = () => {
             for (const c of cells) for (const v of ['--bk-lift', '--bk-shift', '--bk-shift-x', '--bk-trim']) c.style.removeProperty(v)
+            for (const inner of inners) {
+              inner.style.removeProperty('--bk-content-shift')
+              inner.style.removeProperty('--bk-content-limit')
+            }
             for (const l of Array.from(area.querySelectorAll<HTMLElement>(':scope > :is(.bk-link, .bk-line)'))) {
               l.style.removeProperty('--bk-shift')
               l.style.removeProperty('--bk-trim')
@@ -1521,7 +1563,7 @@ export function blockFitter() {
             lift(cells)
             tone(cells)
             pack(cells, area)
-            balance(cells, area, hold?.xs)
+            balance(cells, area, hold?.xs, hold?.contentXs)
           }
           reset()
           setFit(more)
@@ -1611,6 +1653,7 @@ export function blockFitter() {
           board,
           eye,
           xs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.style.getPropertyValue('--bk-shift-x')) || 0])),
+          contentXs: new Map(cells.map((c) => [c.dataset.block ?? '', parseFloat(c.querySelector<HTMLElement>(':scope > .bk-in')?.style.getPropertyValue('--bk-content-shift') || '') || 0])),
           up: Math.max(1, ...cells.map((c) => Number(c.style.getPropertyValue('--bk-fit') || 1))),
         })
       linkAxes(cells, area)
