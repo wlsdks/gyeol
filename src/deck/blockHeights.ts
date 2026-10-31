@@ -124,7 +124,7 @@ export const BLOCK_HEIGHTS: Record<string, Partial<Record<number, number[]>>> = 
   'progress.base.plain': { 12: [150, 150, 230, 340, 430, 520, 540, 620] },
   'progress.board.card': { 12: [220, 220, 420, 510, 530, 620, 480, 550] },
   'progress.board.plain': { 12: [210, 210, 410, 500, 510, 600, 480, 550] },
-  'quote.base.card': { 4: [200], 6: [200], 8: [160], 12: [180] },
+  'quote.base.card': { 4: [260], 6: [220], 8: [180], 12: [180] },
   'quote.base.plain': { 4: [160], 6: [160], 8: [110], 12: [110] },
   'range.base.card': { 3: [290], 4: [260], 6: [260], 8: [190], 12: [190] },
   'range.base.plain': { 3: [180], 4: [180], 6: [180], 8: [110], 12: [110] },
