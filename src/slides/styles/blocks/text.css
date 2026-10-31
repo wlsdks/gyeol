@@ -189,6 +189,25 @@
   }
 }
 
+/* 여섯 항목을 낮고 넓은 줄에 쌓으면 소제목이 글자 높이를 차지해 목록이 지나치게 작아진다.
+   소제목을 옆에 두고 두 단을 한 묶음으로 읽게 해 남는 가로 공간으로 높이를 아낀다. */
+@container bk (min-width: 1300px) and (height < 310px) {
+  .bk-look-plain > .bk-in:has(> .bk-bl > .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) {
+    --bk-h: 1;
+  }
+
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) {
+    display: grid;
+    grid-template-columns: fit-content(350px) minmax(0, 1fr);
+    column-gap: var(--bk-col-gap);
+    align-content: start;
+  }
+
+  .bk-look-plain > .bk-in > .bk-bl:has(> .bk-h + .bk-list:is([data-n='5'], [data-n='6'])) > .bk-h {
+    margin-bottom: 0;
+  }
+}
+
 /* 한 줄을 다 쓰는 넓은 칸이 넉넉히 높으면 단을 나누지 않는다. 단 나누기와 나란히 세우기는 높이가 모자랄 때의 짜임이다:
    높이가 넉넉한데 다섯을 셋과 둘로 나누면 목록이 장의 왼쪽 위 4분의 1에 작게 몰리고, 오른쪽 단 아래와 장의 아래 3분의 1이 통째로 비었다.
    사람이 짠 장처럼 한 단(글 폭 --measure)으로 두고 줄 사이를 높이에 맞게 넓힌다(--bk-air). 소제목이 있으면 소제목을 왼쪽 반,
