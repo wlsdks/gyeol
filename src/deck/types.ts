@@ -105,6 +105,10 @@ export interface Item {
 export type ItemKey = Exclude<keyof Item, 'id'>
 
 export interface SlideOptions {
+  /** 이 슬라이드의 제목과 부제를 감춘다. 작성한 글은 그대로 남는다 */
+  hideHead?: boolean
+  /** 이 슬라이드의 출처와 아래 표시를 감춘다. 작성한 출처는 그대로 남는다 */
+  hideFoot?: boolean
   /** 강조할 항목 (0부터, -1은 강조 없음). 어느 레이아웃이 쓰는지는 LayoutSpec.highlight */
   highlight?: number
   /** 두 판으로 나뉜 장(LayoutSpec.panes): 옆 판을 반대쪽에. 이미지와 설명이면 이미지를 오른쪽에 */

@@ -13,7 +13,7 @@ const sample = (): Slide => ({
   id: 's1',
   fields: { title: '가짜 제목' },
   blocks: [block('kpi', 'k'), block('callout', 'c', { text: '가짜 결정 요청' }), block('bullets', 'b')].reduce<Block[]>((out, b) => autoPlace(out, b) ?? out, []),
-  options: { tone: 'invert', motion: 'calm', transition: 'fade', order: ['c', 'k', 'b'] },
+  options: { tone: 'invert', motion: 'calm', transition: 'fade', order: ['c', 'k', 'b'], hideHead: true, hideFoot: true },
 })
 
 describe('내 컴포넌트 파일', () => {

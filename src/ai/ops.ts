@@ -107,6 +107,8 @@ export type Op =
       place?: TitlePlace | null
       transition?: Transition | null
       scene?: SceneId | null
+      hideHead?: boolean
+      hideFoot?: boolean
     }
   /** font: null이면 테마의 글꼴로 */
   | {
@@ -267,7 +269,7 @@ export const OP_KEYS = {
   set_layout: ['op', 'slide', 'layout', 'variant'],
   set_hidden: ['op', 'slide', 'hidden'],
   set_item_count: ['op', 'slide', 'count'],
-  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'scene'],
+  set_options: ['op', 'slide', 'highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'scene', 'hideHead', 'hideFoot'],
   set_theme: ['op', 'theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'],
   set_guide: ['op', 'slide', 'text'],
   set_hint: ['op', 'slide', 'block', 'field', 'item', 'text'],
@@ -450,13 +452,15 @@ export function parseOp(v: unknown): Op | null {
         if (v.highlight !== undefined && !isInt(v.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) return null
         if (v.flip !== undefined && typeof v.flip !== 'boolean') return null
         if (v.contain !== undefined && typeof v.contain !== 'boolean') return null
+        if (v.hideHead !== undefined && typeof v.hideHead !== 'boolean') return null
+        if (v.hideFoot !== undefined && typeof v.hideFoot !== 'boolean') return null
         if (v.motion !== undefined && v.motion !== null && !isOneOf(MOTIONS, v.motion)) return null
         if (v.tone !== undefined && !isOneOf(TONES, v.tone)) return null
         if (v.place !== undefined && v.place !== null && !isOneOf(PLACES, v.place)) return null
         if (v.transition !== undefined && v.transition !== null && !isOneOf(TRANSITIONS, v.transition)) return null
         // 모르는 장면은 꼴부터 틀린 것 (요청을 통째로 받지 않는다). 맞지 않는 장면은 적용할 때 장을 보고 건너뛴다
         if (v.scene !== undefined && v.scene !== null && !isScene(v.scene)) return null
-        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place, v.transition, v.scene].every((x) => x === undefined)) return null
+        if ([v.highlight, v.flip, v.pane, v.contain, v.motion, v.tone, v.place, v.transition, v.scene, v.hideHead, v.hideFoot].every((x) => x === undefined)) return null
         return {
           op: v.op,
           slide,
@@ -469,6 +473,8 @@ export function parseOp(v: unknown): Op | null {
           place: v.place as TitlePlace | null | undefined,
           transition: v.transition as Transition | null | undefined,
           scene: v.scene as SceneId | null | undefined,
+          hideHead: v.hideHead as boolean | undefined,
+          hideFoot: v.hideFoot as boolean | undefined,
         }
       }
       // set_hint
@@ -713,6 +719,8 @@ export function applyOps(deck: Deck, ops: Op[]): Applied {
       }
       case 'set_options': {
         const options = { ...s.options }
+        if (op.hideHead !== undefined) options.hideHead = op.hideHead || undefined
+        if (op.hideFoot !== undefined) options.hideFoot = op.hideFoot || undefined
         if (op.highlight !== undefined) {
           if (!spec.highlight) return fail('not_for_layout')
           if (op.highlight >= Math.min(s.items.length, spec.items?.max ?? 0)) return fail('out_of_range')

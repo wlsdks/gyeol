@@ -119,7 +119,7 @@ function refsFor(shape: ShapeDeck) {
 const SETTABLE: Partial<Record<Op['op'], readonly string[]>> = {
   add_slide: ['layout', 'role'],
   set_layout: ['variant'],
-  set_options: ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'scene'],
+  set_options: ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'scene', 'hideHead', 'hideFoot'],
   set_theme: ['theme', 'accent', 'motion', 'font', 'size', 'footer', 'transition'],
   add_block: ['variant', 'look', 'effect'],
   set_block: ['variant', 'look', 'effect', 'when', 'speed', 'from', 'count', 'highlight'],

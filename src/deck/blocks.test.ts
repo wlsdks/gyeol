@@ -10,6 +10,7 @@ import {
   blockMinH,
   blockMissing,
   blockNames,
+  boardAreaH,
   boardFit,
   boardFromRows,
   BOARD_COLS,
@@ -392,6 +393,14 @@ describe('자리 정하기', () => {
     // 장 맨 위 제목을 글자 윗선으로 올리는 만큼도 글꼴마다(명조 제목은 고딕보다 크다): 한 줄짜리 보통 크기 709와 705
     const short = { fields: { title: '내년 예산 제안' } } as unknown as Slide
     expect(composeAreaH(short, { theme: { font: 'serif' } }) - composeAreaH(short)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('머리와 아래 표시를 감추면 편집과 발표에서 그 공간을 본문에 돌려준다', () => {
+    const slide = { ...makeSlide('compose'), fields: { title: '제목', lead: '부제' } }
+    const hidden = { ...slide, options: { hideHead: true, hideFoot: true } }
+    expect(composeAreaH(hidden)).toBe(1080 - FRAME.y * 2)
+    expect(boardAreaH(hidden)).toBe(composeAreaH(hidden))
+    expect(composeAreaH(hidden)).toBeGreaterThan(composeAreaH(slide))
   })
 
   it('아무 데나 놓아도 놓을 수 있는 자리 가운데 하나로 들어간다', () => {

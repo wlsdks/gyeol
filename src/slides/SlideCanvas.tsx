@@ -176,6 +176,8 @@ export const SlideCanvas = memo(function SlideCanvas({
           `tr-${transitionOf(deck, slide)}`,
           `va-${variantOf(slide)}`,
           size,
+          slide.options.hideHead === true && 'hide-head',
+          slide.options.hideFoot === true && 'hide-foot',
           tone !== 'base' && `tone-${tone}`,
           isDarkLook(deck.theme, tone) && 'is-dark',
           solo && 'is-solo',
@@ -189,7 +191,7 @@ export const SlideCanvas = memo(function SlideCanvas({
       >
         <View />
         {mode === 'edit' && spec.panes && !solo && <PaneTools />}
-        {!solo && (source || mark) && (
+        {!solo && slide.options.hideFoot !== true && (source || mark) && (
           <footer className="s-foot">
             {source ? <T k="source" className="s-source" /> : <span />}
             {mark && (

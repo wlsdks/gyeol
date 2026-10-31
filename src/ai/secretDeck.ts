@@ -37,7 +37,7 @@ export function secretDeck(): Deck {
       notes: s('notes'),
       hints: { title: s('hint') },
       // 장면: 표지에는 맞는 장면(나가도 되는 값), 한 장 요약에는 목록에 있지만 맞지 않는 장면, 나머지는 비밀
-      options: { ...slide.options, motion: s('motion'), tone: s('tone'), transition: s('transition'), order: [s('order')], scene: i === 0 ? 'opening' : i === 1 ? 'numbers' : s('scene') } as unknown as Deck['slides'][number]['options'],
+      options: { ...slide.options, motion: s('motion'), tone: s('tone'), transition: s('transition'), order: [s('order')], hideHead: s('hideHead'), hideFoot: s('hideFoot'), scene: i === 0 ? 'opening' : i === 1 ? 'numbers' : s('scene') } as unknown as Deck['slides'][number]['options'],
       fields: Object.fromEntries([...Object.keys(slide.fields), 'title', 'lead', 'body'].map((k) => [k, s(`field-${k}`)])),
       items: slide.items.map((it, j) => ({ ...it, id: s(`item-${j}`), title: s('t'), body: s('b'), value: s('v'), meta: s('m'), image: s('img') })),
     })) as Deck['slides']).concat(composeSecret(s)),

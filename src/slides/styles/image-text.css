@@ -63,6 +63,10 @@
   text-wrap: pretty;
 }
 
+.slide.hide-head > .ix .ix-body {
+  margin-top: 0;
+}
+
 .l-imageText .s-foot {
   left: calc(var(--side-w, 1120px) + 96px);
 }

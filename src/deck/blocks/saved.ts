@@ -41,7 +41,7 @@ export const SAVED_NAME_MAX = 40
 const STANDARD_AREA_H = 640
 
 /** 장에 따라 가는 설정 가운데 부품 장이 쓰는 것 */
-const SLIDE_OPTION_KEYS = ['tone', 'motion', 'transition', 'order'] as const
+const SLIDE_OPTION_KEYS = ['tone', 'motion', 'transition', 'order', 'hideHead', 'hideFoot'] as const
 
 /** 처음에 지어 두는 이름: 컴포넌트 이름들 (셋이 넘으면 앞의 둘과 '외 n') */
 export function savedName(blocks: Block[]): string {
@@ -148,6 +148,8 @@ export function cleanPart(v: unknown, lost?: { n: number }): SavedPart | null {
     const o = isRecord(v.slide.options) ? v.slide.options : {}
     const known = new Set(blocks.map((b) => b.id))
     const options: SlideOptions = {}
+    if (o.hideHead === true) options.hideHead = true
+    if (o.hideFoot === true) options.hideFoot = true
     if (oneOf<Tone>(TONES, o.tone)) options.tone = o.tone
     if (oneOf<Motion>(MOTIONS, o.motion)) options.motion = o.motion
     if (oneOf<Transition>(TRANSITIONS, o.transition)) options.transition = o.transition

@@ -121,6 +121,17 @@ describe('그리는 칸만 남긴 장 (shownOnly)', () => {
     expect(statement.fields.title).toBe('제목 글')
     for (const id of LAYOUT_ORDER) for (const to of LAYOUT_ORDER) expect(unshownCount(shownOnly(withLayout(filled(id), to))), `${id}→${to}`).toBe(0)
   })
+
+  it('숨긴 제목과 출처는 빈칸으로 세지 않고 발표 파일에서만 빼며 원래 글은 보존한다', () => {
+    const slide = { ...makeSlide('compose'), fields: { title: '제목', lead: '부제', source: '출처' }, options: { hideHead: true, hideFoot: true } }
+    const shown = shownOnly(slide)
+    expect(shown.fields).toEqual({})
+    expect(slide.fields).toEqual({ title: '제목', lead: '부제', source: '출처' })
+    const blank = { ...slide, fields: { title: '', lead: '', source: '' } }
+    const meta = createDeck({ type: 'weekly', audience: 'practitioner', minutes: 10, method: 'live', title: '주간 업무 보고', org: '', presenter: '', theme: 'white' }).meta
+    expect(missingFields(blank, meta).some((m) => m.key === 'title')).toBe(false)
+    expect(optionalBlanks(blank, meta).some((m) => m.key === 'lead' || m.key === 'source')).toBe(false)
+  })
 })
 
 describe('칸의 이름 (labelFor)', () => {

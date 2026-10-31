@@ -923,8 +923,9 @@ function layoutFill(slide: HTMLElement): string[] {
   }
   if (bottom === -Infinity) return []
   const used = (bottom - b.top) / room
-  // 제목이 없거나 머리 줄뿐인 덜 쓴 장은 fitLayout도 내리지 않는다(내리면 머리 글자만 가운데에 뜬다)
-  if (used < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return []
+  // 머리 줄뿐인 덜 쓴 장은 fitLayout도 내리지 않는다(내리면 머리 글자만 가운데에 뜬다).
+  // 제목이 없어도 본문이 완결되어 있으면 위아래 균형을 검사한다.
+  if (used < 0.25) return []
   return used < LAYOUT_EYE ? [`본문을 ${Math.round(used * 100)}%만 채우고 위에 붙어 있어요(아래 ${Math.round((room - (bottom - b.top)) / k)}px 빔)`] : []
 }
 

@@ -346,11 +346,11 @@ function lineCount(text: string, fs: number, width: number, g: Glyphs): number {
  * 머리 너비(HEAD.titleW)를 넘으면 줄이 바뀐다. 부제 너비, 제목과 부제 사이, 머리 아래 FRAME.gap도 틀(frame.ts)의 값이다. 발표 설정(글자 크기, 보내는 자료)도 본다.
  * 장의 틀(frame.ts)에서 제목은 글자 윗선을 맞추느라 조금 올라간다
  */
-export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'>, look?: { meta?: { method?: string }; theme?: { id?: string; font?: string; size?: string } }, edit?: boolean): number {
+export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'> & Partial<Pick<Slide, 'options'>>, look?: { meta?: { method?: string }; theme?: { id?: string; font?: string; size?: string } }, edit?: boolean): number {
   // 편집 화면은 비운 제목에도 안내를 보여서 그만큼 본문이 낮다. 비운 부제의 안내는 제목 아래 여백 위에 겹쳐 두어
   // 자리를 밀지 않는다(edit.css)
-  const title = slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
-  const lead = slide.fields.lead?.trim() ?? ''
+  const title = slide.options?.hideHead === true ? '' : slide.fields.title?.trim() || (edit ? hintFor('compose', slide.hints ?? {}, 'title') : '')
+  const lead = slide.options?.hideHead === true ? '' : slide.fields.lead?.trim() ?? ''
   const type = look?.meta?.method === 'send' ? HEAD.read : HEAD.present
   const scale = look?.theme?.size === 'small' ? TEXT_SCALE.small : look?.theme?.size === 'large' ? TEXT_SCALE.large : 1
   const n = [...title].length
@@ -360,11 +360,11 @@ export function composeAreaH(slide: Pick<Slide, 'fields' | 'hints'>, look?: { me
   const titleH = title ? lineCount(title, tfs, HEAD.titleW, g.title) * tfs * HEAD.titleLine : 0
   const leadH = lead ? lineCount(lead, lfs, HEAD.leadW, g.lead) * lfs * HEAD.leadLine : 0
   const head = titleH - (title ? tfs * g.trim : 0) + leadH + (title && lead ? HEAD.between : 0)
-  return Math.floor(1080 - FRAME.y - FRAME.bottom - (head ? head + FRAME.gap : 0))
+  return Math.floor(1080 - FRAME.y - (slide.options?.hideFoot === true ? FRAME.y : FRAME.bottom) - (head ? head + FRAME.gap : 0))
 }
 
 /** 판을 나누는 데 쓰는 본문 높이: 편집 화면 기준(비운 제목의 안내도 자리를 차지한다). 발표 화면은 이보다 넓어서 잘리지 않는다 */
-export const boardAreaH = (slide: Pick<Slide, 'fields' | 'hints'>, look?: Parameters<typeof composeAreaH>[1]) => composeAreaH(slide, look, true)
+export const boardAreaH = (slide: Pick<Slide, 'fields' | 'hints'> & Partial<Pick<Slide, 'options'>>, look?: Parameters<typeof composeAreaH>[1]) => composeAreaH(slide, look, true)
 
 /**
  * 바뀐 부품 장의 판을 다시 맞춘다: 부품이 커졌거나(항목, 모양, 바탕), 제목이 길어져 본문이 낮아졌거나, 글자 크기를 바꿨으면

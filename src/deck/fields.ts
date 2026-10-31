@@ -81,11 +81,16 @@ export interface Missing {
   block?: string
 }
 
+/** 표시하지 않는 머리와 아래 띠는 빈칸으로 세거나 발표 파일에 넣지 않는다. */
+function hiddenField(slide: Slide, key: string): boolean {
+  return (slide.options.hideHead === true && (key === 'title' || key === 'lead')) || (slide.options.hideFoot === true && key === 'source')
+}
+
 export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
   const spec = LAYOUTS[slide.layout]
   const out: Missing[] = []
   for (const f of spec.fields) {
-    if (f.optional) continue
+    if (f.optional || hiddenField(slide, f.key)) continue
     if (!readField(slide, meta, f.key).trim()) out.push({ key: f.key, label: f.label })
   }
   if (slide.layout === 'compose') {
@@ -113,7 +118,7 @@ export function missingFields(slide: Slide, meta: DeckMeta): Missing[] {
  */
 export function optionalBlanks(slide: Slide, meta: DeckMeta): Missing[] {
   return LAYOUTS[slide.layout].fields
-    .filter((f) => f.optional && !f.named && !readField(slide, meta, f.key).trim())
+    .filter((f) => f.optional && !f.named && !hiddenField(slide, f.key) && !readField(slide, meta, f.key).trim())
     .filter((f) => !(slide.layout === 'cover' && f.key === 'ask' && !asksDecision(meta.type)))
     .map((f) => ({ key: f.key, label: f.label }))
 }
@@ -143,7 +148,9 @@ function within<T extends Cells>(x: T, spec: CellSpec): T {
  * 다른 사람에게 보내는 HTML 파일에 넣을 장(exportHtml.tsx의 deckData)
  */
 export function shownOnly(slide: Slide): Slide {
-  return { ...within(slide, LAYOUTS[slide.layout]), blocks: slide.layout === 'compose' ? slide.blocks?.map((b) => within(b, BLOCKS[b.type])) : undefined }
+  const shown = within(slide, LAYOUTS[slide.layout])
+  const fields = Object.fromEntries(Object.entries(shown.fields).filter(([key]) => !hiddenField(slide, key)))
+  return { ...shown, fields, blocks: slide.layout === 'compose' ? slide.blocks?.map((b) => within(b, BLOCKS[b.type])) : undefined }
 }
 
 /** 채운 칸의 수 (발표 전체의 값은 빼고, 부품 안의 칸까지) */

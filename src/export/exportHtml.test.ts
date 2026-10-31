@@ -28,6 +28,14 @@ describe('내보낸 HTML의 CSP', () => {
 })
 
 describe('HTML 파일에 넣는 덱', () => {
+  it('숨긴 제목과 출처는 작업 파일에 남고 듣는 분에게 보내는 데이터에서는 빠진다', () => {
+    const deck = createSampleDeck()
+    const slide = { ...makeSlide('compose'), fields: { title: '숨긴 제목', lead: '숨긴 부제', source: '숨긴 출처' }, options: { hideHead: true, hideFoot: true } }
+    deck.slides = [slide]
+    const data = deckData(deck)
+    for (const text of Object.values(slide.fields)) expect(data).not.toContain(text)
+    expect(slide.fields.title).toBe('숨긴 제목')
+  })
   it('듣는 분께 보이지 않는 글(발표자 노트, 숨긴 장, 레이아웃을 바꿔 가려진 칸)은 넣지 않는다', () => {
     const deck = createSampleDeck()
     const item = (title: string, body: string) => ({ ...emptyItem(), title, body })

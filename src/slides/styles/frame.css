@@ -32,6 +32,24 @@
   margin-top: calc(var(--body-gap) + var(--eye, 0px));
 }
 
+/* 숨긴 머리는 본문과의 간격도 차지하지 않는다. 컴포넌트 안의 머리는 이 장의 머리가 아니다. */
+.slide.hide-head > .s-head {
+  display: none;
+}
+
+.slide.hide-head > .s-head + .s-body,
+.slide > .s-head:empty + .s-body {
+  margin-top: var(--eye, 0px);
+}
+
+.slide.hide-head > .s-head + .bk-area {
+  margin-top: 0;
+}
+
+.slide.hide-foot {
+  --pad-bottom: var(--pad-y);
+}
+
 /* 아래 띠: 한 줄. 왼쪽에 숫자 장의 출처·기준, 오른쪽에 단락 지도와 쪽 번호.
    글자 아랫선이 아래 틀선(--pad-y)에 닿는다. 출처가 길면 위로 두 줄까지 늘어난다(본문과는 --body-gap만큼 떨어져 있다) */
 .s-foot {

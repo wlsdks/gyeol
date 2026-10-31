@@ -109,6 +109,7 @@ export function Inspector({
       </section>
       <ShapeSection slide={slide} shown={shown} look={look} />
       <LookSection deck={deck} slide={slide} />
+      <FrameSection slide={slide} />
     </div>
   )
 }
@@ -125,10 +126,22 @@ function Unshown({ slide }: { slide: Slide }) {
       <EyeOffIcon />
       가려진 칸 {n}곳
       <Info label="가려진 칸 설명" align="start">
-        채워 둔 칸 가운데 이 레이아웃에는 없는 칸이라 슬라이드에 보이지 않아요. 지우지 않고 남겨 두었으니, 그 칸이 있는 레이아웃으로 바꾸면 다시
+        채워 둔 칸 가운데 현재 레이아웃이나 표시 설정에서 보이지 않는 칸이에요. 글은 지우지 않고 남겨 두었으니 레이아웃이나 표시 설정을 바꾸면 다시
         보여요. 발표 파일(HTML), PDF, PPT에는 들어가지 않고 작업 파일에만 남아요.
       </Info>
     </p>
+  )
+}
+
+/** 슬라이드마다 제목과 아래 띠를 감추되, 적어 둔 글은 다시 켜면 돌아온다. */
+function FrameSection({ slide }: { slide: Slide }) {
+  const setOptions = useDeck((s) => s.setOptions)
+  return (
+    <section className="ins-sec">
+      <h2 className="ins-h">표시</h2>
+      <Toggle label="제목과 부제" on={slide.options.hideHead !== true} onChange={(on) => setOptions(slide.id, { hideHead: on ? undefined : true })} />
+      <Toggle label="출처와 아래 표시" on={slide.options.hideFoot !== true} onChange={(on) => setOptions(slide.id, { hideFoot: on ? undefined : true })} />
+    </section>
   )
 }
 

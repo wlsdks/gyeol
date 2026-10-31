@@ -1,4 +1,4 @@
-import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, BOARD_ROWS, boardFit, boardFromRows, composeAreaH, needRows } from '../deck/blocks'
+import { BLOCK_LOOK_IDS, BLOCKS, BLOCK_TYPES, BOARD_ROWS, boardFit, boardFromRows, composeAreaH, needRows, settleDeck } from '../deck/blocks'
 import { sampleBlock } from '../deck/blockSamples'
 import { BLUEPRINTS } from '../deck/blueprints'
 import { pageInfo } from '../deck/fields'
@@ -30,6 +30,7 @@ import { dirSlides } from './dirSlides'
 // &count=5 는 레이아웃 장의 항목 수를 그만큼(정한 범위 안에서). 예시 항목을 되풀이해 채운다.
 // &names=10월 1주,10월 2주 와 &values=900,60,40 은 레이아웃 장과 부품 장의 항목 이름과 값을 그 글로(쉼표로 나눠 되풀이). 긴 이름, 큰 차이를 볼 때.
 // &flip=1 은 두 판으로 나뉜 장(표지, 사례, 이미지와 설명, 결정 요청)의 옆 판을 반대쪽으로, &side=3 처럼 숫자면 옆 판의 너비(고를 수 있는 값일 때만).
+// &hideHead=1, &hideFoot=1 은 제목·부제와 아래 표시를 각각 숨긴 슬라이드를 점검한다. &blankHead=1 은 제목과 부제를 비운다.
 // set=edge 는 차트 장이 무너지기 쉬운 값(음수, 빈 값, 많은 항목, 같은 값)만 모아 본다.
 // set=review 는 부품 장의 대표 조합 몇 장 (reviewSlides.ts, 고치기 전과 후를 견줄 때). &w=1920 이면 장을 줄이지 않고 그린다.
 // set=stress&type=bullets 는 부품 하나를 항목 수, 칸 너비, 칸 높이마다 (stress.ts의 checkStress). type=many 는 부품 하나부터 여섯까지.
@@ -265,20 +266,24 @@ export function Gallery() {
   }
   const accent = params.get('accent')
   if (accent) look.accent = `#${accent}`
-  const deck = {
+  const raw = {
     ...base,
     theme: { ...base.theme, ...look },
     slides: slides.map((s) => ({
       ...withTexts(withCount(s, Number(params.get('count')) || 0), params.get('names')?.split(','), params.get('values')?.split(',')),
+      ...(params.get('blankHead') === '1' ? { fields: { ...s.fields, title: '', lead: '' } } : {}),
       options: {
         ...s.options,
         ...(tone ? { tone } : {}),
         ...(hl !== null && LAYOUTS[s.layout].highlight ? { highlight: Number(hl) } : {}),
         ...(flip && LAYOUTS[s.layout].panes ? { flip } : {}),
         ...(side && LAYOUTS[s.layout].panes?.sides.includes(side) ? { pane: side } : {}),
+        ...(params.get('hideHead') === '1' ? { hideHead: true } : {}),
+        ...(params.get('hideFoot') === '1' ? { hideFoot: true } : {}),
       },
     })),
   }
+  const deck = ['hideHead', 'hideFoot', 'blankHead'].some((key) => params.get(key) === '1') ? settleDeck(raw) : raw
   const info = pageInfo(picked)
   return (
     <div className="gallery" style={params.get('w') ? { gridTemplateColumns: `${params.get('w')}px` } : undefined}>

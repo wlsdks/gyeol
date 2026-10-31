@@ -13,6 +13,12 @@
   min-height: 0;
 }
 
+/* 제목을 숨기면 목록이 빠진 제목의 격자 줄과 간격을 차지하지 않는다. */
+.slide.hide-head > .ag {
+  grid-template-rows: minmax(0, 1fr);
+  row-gap: 0;
+}
+
 .ag-title {
   --fs: var(--t-title);
 }

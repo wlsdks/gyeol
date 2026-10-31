@@ -54,7 +54,10 @@ beforeAll(async () => {
   // 공유 폴더 옆에 작업 파일(.deck)이 있다고 치자. 비밀이 들어 있다.
   writeFileSync(join(base, '비밀 보고.deck'), JSON.stringify(secretDeck()))
   // 공유된 발표 하나 (비밀을 심은 덱에서 만든 모양)
-  const shape = toShape(secretDeck())
+  const example = secretDeck()
+  example.slides[0].options.hideHead = true
+  example.slides[0].options.hideFoot = true
+  const shape = toShape(example)
   writeFileSync(join(share, 'decks', `${shape.deck}.json`), JSON.stringify(shape))
   // 누가 공유 폴더 안에 폴더 밖 파일로 가는 링크를 만들어 둔 경우. 꼴이 맞는 모양 파일이라도 읽히면 안 된다.
   const outside = toShape(createSampleDeck())
@@ -198,6 +201,17 @@ describe('MCP 서버', () => {
     // 맞지 않는 장면은 받아 두고 앱이 적용할 때 건너뛴다(scene_unfit). 모르는 장면, 글자는 받지 않는다
     for (const scene of ['film', SECRET, 1])
       expect((await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_options', slide: shape.slides[1].id, scene }] })).isError, String(scene)).toBe(true)
+    expect(raw.join('\n')).not.toContain(SECRET)
+  })
+
+  it('제목과 아래 표시 설정은 참거짓만 공유하고 제안한다', async () => {
+    const { value: list } = await tool('list_decks')
+    const { value: shape, isError } = await tool('get_shape', { deck: list.decks[0].deck })
+    expect(isError).toBe(false)
+    expect(shape.slides[0].options).toMatchObject({ hideHead: true, hideFoot: true })
+    const ok = await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_options', slide: shape.slides[0].id, hideHead: false, hideFoot: false }] })
+    expect(ok.isError).toBe(false)
+    expect((await tool('propose_changes', { deck: shape.deck, ops: [{ op: 'set_options', slide: shape.slides[0].id, hideHead: SECRET }] })).isError).toBe(true)
     expect(raw.join('\n')).not.toContain(SECRET)
   })
 

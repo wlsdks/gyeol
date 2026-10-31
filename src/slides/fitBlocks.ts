@@ -1745,11 +1745,11 @@ export function blockFitter() {
    * 못 미치면 (가) 본문의 글자와 그림을 한 단계씩(1.2, 1.44) 키우고 (나) 그래도 비면 줄 사이를 줄마다 같은 값으로 넓힌다(--fill-air,
    * 캔버스 px, airMax까지. 레이아웃 CSS가 줄 사이에 더한다). 넘치거나 겹치거나 그림이 찌그러지거나 장 제목과 다투면 한 단계 앞으로.
    * (다) 그래도 60%에 못 미치면 위에 붙여 아래만 길게 비우지 않고 눈높이 가운데로 내린다(--eye, 위 : 아래 = 1 : 1.2. 부품 장의 eyeLevel과 같다).
-   * 제목이 없거나 내용이 본문의 4분의 1도 안 되는 덜 쓴 장은 내리지 않는다.
+   * 내용이 본문의 4분의 1도 안 되는 덜 쓴 장은 내리지 않는다.
    * 장 제목과 다투어 키우지 못하는 세 단 요점, 줄 사이가 없는 가로 일정과 단계 흐름, 숫자 하나 장이 위 절반에 몰리고 아래가 통째로 비었다.
    * 본문 높이는 본문 상자가 아니라 장에서 본문이 쓸 수 있는 자리(본문 윗선부터 하단 표시 몫 위까지)로 잰다: 비교 장은 본문 상자가
    * 내용 높이뿐이라(화살표를 내용 가운데에 두려고) 늘 다 찬 것으로 재어, 줄 셋이 위 절반에 몰려도 키우지도 넓히지도 않았다.
-   * 표지, 단락 장, 마지막 장, 부품 장, 제목 없는 장은 하지 않는다. 움직이는 중이면 끝난 뒤에
+   * 표지, 단락 장, 마지막 장, 부품 장은 하지 않는다. 움직이는 중이면 끝난 뒤에
    */
   /** 본문마다 지난번 맞추기에서 찾은 줄 사이(--fill-air) 값 */
   const lastAir = new WeakMap<HTMLElement, number>()
@@ -1827,17 +1827,17 @@ export function blockFitter() {
       return false
     }
     // (다) 눈높이 가운데로: 위의 빈 곳과 아래(장 틀의 아랫선까지)의 빈 곳이 1 : 1.2. 하단 표시 몫 밖으로는 내리지 않는다.
-    // 아직 덜 쓴 장은 위에 둔다: 제목이 없거나(발표할 때 빈 제목은 그리지 않는다) 머리 줄뿐인 얇은 내용(본문의 4분의 1 밑)을
-    // 내리면 '지금 → 추진 후' 같은 머리 글자만 장 가운데에 떠 보였다
+    // 아직 덜 쓴 장은 위에 둔다: 머리 줄뿐인 얇은 내용(본문의 4분의 1 밑)을 내리면 '지금 → 추진 후' 같은 글자만 가운데에 뜬다.
+    // 제목이 없는 완성된 일정도 가운데로 두어 아래가 통째로 비지 않게 한다.
     const eye = () => {
       const f = fill()
-      if (f >= FILL_EYE || f < 0.25 || !slide.querySelector(':scope > .s-head .s-title')) return
+      if (f >= FILL_EYE || f < 0.25) return
       const bottom = drawnBottom()
       if (bottom === -Infinity) return
       // 위의 빈 곳은 보이는 그대로 장 머리(제목, 부제) 아래부터 센다: 본문 윗선부터 세면 --body-gap만큼 위가 넓어져
       // 단계 흐름이 가운데보다 아래에 앉았다. (gap + move) : (아래 - move) = 1 : 1.2
       const head = slide.querySelector<HTMLElement>(':scope > .s-head')
-      const gap = head ? Math.max(0, b.top - head.getBoundingClientRect().bottom) : 0
+      const gap = head?.getClientRects().length ? Math.max(0, b.top - head.getBoundingClientRect().bottom) : 0
       const move = Math.round(Math.min((frame - bottom - 1.2 * gap) / 2.2, end - bottom) / k)
       if (move < 8) return
       setB('--eye', move + 'px')

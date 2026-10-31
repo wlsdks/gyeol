@@ -68,7 +68,7 @@ export interface ShapeSlide {
    * transition: 이 장으로 넘어올 때(발표 전체 설정을 따르면 빠진다). order: 부품 장의 부품이 나오는 차례(부품 해시 id, 정했을 때만).
    * scene: 골라 둔 장면(카탈로그 scenes). 지금 장에 맞을 때만 나온다: 맞지 않는 장면은 발표할 때 쉬어서 AI가 헷갈린다
    */
-  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[]; scene?: SceneId }
+  options: { highlight?: number; flip?: boolean; pane?: number; contain?: boolean; motion?: Motion; tone?: Tone; place?: Place; transition?: Transition; order?: string[]; scene?: SceneId; hideHead?: boolean; hideFoot?: boolean }
   /** 레이아웃 안의 모양 id. 카탈로그 layouts[].variants 중 하나, 한 가지뿐이면 'base' */
   variant: string
   /** 부품 장(layout 'compose')만: 판(12×12)에 놓인 부품들, 읽는 차례(위에서 아래, 왼쪽에서 오른쪽)로. 부품의 종류, 자리, 바탕, 움직임과 칸이 찼는지만 */
@@ -189,6 +189,10 @@ export function catalog() {
     fonts: FONTS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     textSizes: TEXT_SIZES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     footers: FOOTERS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
+    slideDisplay: [
+      { id: 'hideHead', name: '제목과 부제 숨기기', description: '이 슬라이드의 제목과 부제를 감추고 본문에 자리를 돌려줘요.' },
+      { id: 'hideFoot', name: '출처와 아래 표시 숨기기', description: '이 슬라이드의 출처와 아래 표시를 감추고 본문에 자리를 돌려줘요.' },
+    ],
     transitions: TRANSITIONS.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     tones: TONES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
     places: PLACES.map((m) => ({ id: m.id, name: m.name, description: m.description })),
@@ -321,6 +325,8 @@ function shapeSlide(deck: Deck, slide: Slide): ShapeSlide {
     : []
   const options: ShapeSlide['options'] = {}
   const o = slide.options ?? {}
+  if (o.hideHead === true) options.hideHead = true
+  if (o.hideFoot === true) options.hideFoot = true
   // 가져온 파일이면 아무 수나 있을 수 있다. 범위 밖의 수를 그대로 넣으면 모양 전체가 꼴 확인에서 버려진다
   if (spec.highlight && isInt(o.highlight, HIGHLIGHT_MIN, HIGHLIGHT_MAX)) options.highlight = o.highlight
   // 두 판으로 나뉜 장: 옆 판의 자리와 너비 (고를 수 있는 값일 때만)
@@ -435,7 +441,9 @@ function checkSlide(v: unknown): boolean {
   const itemKeys = spec.items?.fields.map((f) => f.key) ?? []
   if (!v.items.every((it) => checkStates(it, itemKeys))) return false
   const o = v.options
-  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'order', 'scene'])) return false
+  if (!isObj(o) || !onlyKeys(o, ['highlight', 'flip', 'pane', 'contain', 'motion', 'tone', 'place', 'transition', 'order', 'scene', 'hideHead', 'hideFoot'])) return false
+  if (o.hideHead !== undefined && typeof o.hideHead !== 'boolean') return false
+  if (o.hideFoot !== undefined && typeof o.hideFoot !== 'boolean') return false
   // 장면은 목록의 id이고 이 장에 맞는 것만 (toShape도 맞을 때만 넣는다)
   if (o.scene !== undefined && !(isScene(o.scene) && sceneFits({ layout: v.layout as LayoutId, blocks: at }, o.scene))) return false
   if (o.transition !== undefined && !(isOneOf(TRANSITIONS, o.transition) && o.transition !== 'auto')) return false

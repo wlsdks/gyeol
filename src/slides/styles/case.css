@@ -44,6 +44,10 @@
   text-wrap: pretty;
 }
 
+.slide.hide-head > .cs-main .cs-body {
+  margin-top: 0;
+}
+
 /* 한마디는 본문 바로 아래에(--body-gap만큼 띄워): 왼쪽 단의 아래 끝에 붙이던 때는 본문과 한마디 사이가 장의 절반쯤 비어
    한 단이 위아래로 찢어져 보였다. 남는 높이는 맨 아래에 모인다(docs/VISUAL-RULES.md 6). 한 단계 크게 써서 본문과 갈린다 */
 .cs-quote {

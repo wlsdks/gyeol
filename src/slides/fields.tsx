@@ -497,6 +497,7 @@ function isOptional(spec: { fields: { key: string; optional?: boolean; named?: b
 /** 슬라이드 칸 또는 덱 단위 값(`$org` 등) */
 export function T({ k, ...props }: TextProps & { k: string }) {
   const { slide, meta, actions, fieldPrefix = '', folds, labels } = useSlide()
+  if (!fieldPrefix && slide.options.hideHead === true && (k === 'title' || k === 'lead')) return null
   return (
     <Field
       value={readField(slide, meta, k)}

@@ -52,6 +52,18 @@ describe('제안 읽기', () => {
 })
 
 describe('제안 적용', () => {
+  it('머리와 아래 표시를 감추거나 다시 보여도 사람이 쓴 글은 그대로 남는다', () => {
+    const { deck: next, results } = run({ op: 'set_options', slide: sid(1), hideHead: true, hideFoot: true })
+    expect(results[0].ok).toBe(true)
+    expect(writtenText(next)).toEqual(writtenText(deck))
+    expect(checkShape(toShape(next))).toBe(true)
+    expect(toShape(next).slides[1].options).toMatchObject({ hideHead: true, hideFoot: true })
+    const back = applyOps(next, [{ op: 'set_options', slide: sid(1), hideHead: false, hideFoot: false }]).deck
+    expect(writtenText(back)).toEqual(writtenText(deck))
+    expect(back.slides[1].options.hideHead).toBeUndefined()
+    expect(back.slides[1].options.hideFoot).toBeUndefined()
+    expect(parseOp({ op: 'set_options', slide: sid(1), hideHead: '비밀' })).toBeNull()
+  })
   it('레이아웃, 순서, 숨김, 테마를 바꿔도 적은 글은 그대로다', () => {
     const kpi = shape.slides.findIndex((s) => s.layout === 'kpi')
     const { deck: next, results } = run(
