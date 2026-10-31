@@ -984,6 +984,35 @@ export function blockFitter() {
         }
       }
     }
+    // 위쪽 칸이 다른 나란한 칸들은 각각 쌓이면서 맞춘 첫 글줄이 다시 어긋날 수 있다.
+    // 아래 내용과 본문 끝에 여유가 있는 바탕 없는 칸만 마지막으로 내린다. 이음표가 있는 조합은 기존 쌓기를 따른다.
+    if (!links.length) {
+      const rows = new Map<string, typeof items>()
+      for (const x of items) {
+        if (!firstTop.has(x.c)) continue
+        const key = (x.c.dataset.band ?? '') + '|' + x.c.style.getPropertyValue('--y')
+        rows.set(key, (rows.get(key) || []).concat(x))
+      }
+      for (const row of rows.values()) {
+        if (row.length < 2) continue
+        const tops = row.map((x) => firstTop.get(x.c)! + dy.get(x.c)!)
+        const goal = Math.max(...tops)
+        if (goal - Math.min(...tops) <= 4 * k || goal - Math.min(...tops) > 32 * k) continue
+        const changes = row.flatMap((x, i) => {
+          const move = Math.round((goal - tops[i]) / k) * k
+          return move > 0 ? [{ x, move }] : []
+        })
+        const safe = changes.every(({ x, move }) => {
+          if (!x.c.classList.contains('bk-look-plain') || x.ink!.b + dy.get(x.c)! + move > a.bottom + k) return false
+          return items.every((below) => !below.above.includes(x.c) || below.ink!.t + dy.get(below.c)! - (x.ink!.b + dy.get(x.c)! + move) >= gap0 - k)
+        })
+        if (!safe) continue
+        for (const { x, move } of changes) {
+          dy.set(x.c, dy.get(x.c)! + move)
+          lineUp.set(x.c, move)
+        }
+      }
+    }
     const head = area.parentElement?.querySelector<HTMLElement>(':scope > .s-head')
     // 제목 없는 한 문장 장(부품 하나)만 위아래 가운데에: 장 전체가 그 한 문장이다
     if ((!head || !head.getClientRects().length) && items.length === 1) {
