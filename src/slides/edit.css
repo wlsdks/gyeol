@@ -82,6 +82,20 @@
     0 0 0 calc(1px / var(--vs, 0.5)) rgb(255 255 255 / 0.9);
 }
 
+/* 작은 출처 칸에서도 지금 쓰는 곳이 보이도록 테 모서리에 표시한다. 장의 확대 비율과 무관하게 화면에서 같은 크기다. */
+.slide.m-edit .ed.is-empty:focus-within > .ed-halo::before {
+  content: '';
+  position: absolute;
+  top: calc(-6px / var(--vs, 0.5));
+  left: 0;
+  width: calc(12px / var(--vs, 0.5));
+  height: calc(12px / var(--vs, 0.5));
+  box-sizing: border-box;
+  border: calc(2px / var(--vs, 0.5)) solid white;
+  border-radius: 50%;
+  background: var(--sel);
+}
+
 /* 글이 넘친 칸(editor/SlideStage.tsx의 useOverflow가 data-over를 단다): 주황 점선 하나. 쓰는 중이면 파란 실선 하나만 (두 겹이 되지 않게).
    손을 올린 점선보다 뒤에 둔다: 넘친 칸은 올려도 주황 */
 .slide.m-edit .ed[data-over]:not(:focus-within) > .ed-halo {
